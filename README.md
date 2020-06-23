@@ -1,2 +1,4 @@
 # quo-vadis
-A next-generation, cross-stack coordination layer to map runtime components to the hardware. 
+A next-generation, machine-independent coordination layer to arbitrate
+access among multiple runtime components and map workers efficiently
+to heterogenous machines. 
