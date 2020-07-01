@@ -11,3 +11,6 @@
 
 SUBDIRS = \
 hwloc
+
+noinst_HEADERS = \
+common.h

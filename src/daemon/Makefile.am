@@ -8,3 +8,12 @@
 # This file is part of the quo-vadis project. See the LICENSE file at the
 # top-level directory of this distribution.
 #
+
+bin_PROGRAMS = \
+qvd
+
+qvd_SOURCES = \
+qvd.cc
+
+qvd_CPPFLAGS = \
+-I${top_srcdir}/src
