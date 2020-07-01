@@ -128,27 +128,31 @@ target_triplet = @target@
 @HWLOC_HAVE_WINDOWS_TRUE@am__append_27 = -Xlinker --output-def -Xlinker .libs/libhwloc.def
 @HWLOC_HAVE_PLUGINS_TRUE@am__append_28 = -export-dynamic
 @HWLOC_BUILD_STANDALONE_TRUE@am__append_29 = hwloc.dtd hwloc2.dtd hwloc2-diff.dtd
-subdir = hwloc
+subdir = src/core/hwloc/hwloc
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/config/hwloc.m4 \
-	$(top_srcdir)/config/hwloc_check_attributes.m4 \
-	$(top_srcdir)/config/hwloc_check_vendor.m4 \
-	$(top_srcdir)/config/hwloc_check_visibility.m4 \
-	$(top_srcdir)/config/hwloc_components.m4 \
-	$(top_srcdir)/config/hwloc_internal.m4 \
-	$(top_srcdir)/config/hwloc_pkg.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/src/core/hwloc/config/hwloc.m4 \
+	$(top_srcdir)/src/core/hwloc/config/hwloc_check_attributes.m4 \
+	$(top_srcdir)/src/core/hwloc/config/hwloc_check_vendor.m4 \
+	$(top_srcdir)/src/core/hwloc/config/hwloc_check_visibility.m4 \
+	$(top_srcdir)/src/core/hwloc/config/hwloc_components.m4 \
+	$(top_srcdir)/src/core/hwloc/config/hwloc_pkg.m4 \
+	$(top_srcdir)/src/core/hwloc/config/netloc.m4 \
+	$(top_srcdir)/config/ax-cxx-compile-stdcxx-11.m4 \
+	$(top_srcdir)/config/ax-cxx-compile-stdcxx.m4 \
 	$(top_srcdir)/config/libtool.m4 \
 	$(top_srcdir)/config/ltoptions.m4 \
 	$(top_srcdir)/config/ltsugar.m4 \
 	$(top_srcdir)/config/ltversion.m4 \
 	$(top_srcdir)/config/lt~obsolete.m4 \
-	$(top_srcdir)/config/netloc.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/config/quo-vadis-pkg-libtool-version.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
-CONFIG_HEADER = $(top_builddir)/include/private/autogen/config.h \
-	$(top_builddir)/include/hwloc/autogen/config.h
+CONFIG_HEADER = $(top_builddir)/config.h \
+	$(top_builddir)/src/core/hwloc/include/private/autogen/config.h \
+	$(top_builddir)/src/core/hwloc/include/hwloc/autogen/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
@@ -323,8 +327,8 @@ AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
 am__v_at_1 = 
-DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include/private/autogen -I$(top_builddir)/include/hwloc/autogen
-depcomp = $(SHELL) $(top_srcdir)/./config/depcomp
+DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir) -I$(top_builddir)/src/core/hwloc/include/private/autogen -I$(top_builddir)/src/core/hwloc/include/hwloc/autogen
+depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/base64.Plo ./$(DEPDIR)/bind.Plo \
 	./$(DEPDIR)/bitmap.Plo ./$(DEPDIR)/components.Plo \
@@ -411,42 +415,31 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/topology-aix.c \
-	$(srcdir)/topology-bgq.c $(srcdir)/topology-cuda.c \
-	$(srcdir)/topology-darwin.c $(srcdir)/topology-freebsd.c \
-	$(srcdir)/topology-gl.c $(srcdir)/topology-hpux.c \
-	$(srcdir)/topology-netbsd.c $(srcdir)/topology-nvml.c \
-	$(srcdir)/topology-opencl.c \
-	$(srcdir)/topology-solaris-chiptype.c \
-	$(srcdir)/topology-solaris.c $(srcdir)/topology-windows.c \
-	$(top_srcdir)/./config/depcomp
+am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/depcomp
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AR = @AR@
-AS = @AS@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BASH = @BASH@
-BUNZIPP = @BUNZIPP@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
-CC_FOR_BUILD = @CC_FOR_BUILD@
 CFLAGS = @CFLAGS@
-CONFIGURE_DEPENDENCIES = @CONFIGURE_DEPENDENCIES@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
+CXXCPPFLAGS = @CXXCPPFLAGS@
 CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
+DATE = @DATE@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
-DIFF = @DIFF@
 DLLTOOL = @DLLTOOL@
 DOXYGEN = @DOXYGEN@
 DSYMUTIL = @DSYMUTIL@
@@ -455,19 +448,16 @@ ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
-EPSTOPDF = @EPSTOPDF@
 EXEEXT = @EXEEXT@
+FCFLAGS = @FCFLAGS@
+FFLAGS = @FFLAGS@
 FGREP = @FGREP@
-FIG2DEV = @FIG2DEV@
 GREP = @GREP@
-GS = @GS@
-HWLOC_CAIRO_CFLAGS = @HWLOC_CAIRO_CFLAGS@
-HWLOC_CAIRO_LIBS = @HWLOC_CAIRO_LIBS@
+HAVE_CXX11 = @HAVE_CXX11@
+HOSTNAME = @HOSTNAME@
 HWLOC_CFLAGS = @HWLOC_CFLAGS@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_CUDA_LIBS = @HWLOC_CUDA_LIBS@
-HWLOC_DIFF_U = @HWLOC_DIFF_U@
-HWLOC_DIFF_W = @HWLOC_DIFF_W@
 HWLOC_DL_LIBS = @HWLOC_DL_LIBS@
 HWLOC_EMBEDDED_CFLAGS = @HWLOC_EMBEDDED_CFLAGS@
 HWLOC_EMBEDDED_CPPFLAGS = @HWLOC_EMBEDDED_CPPFLAGS@
@@ -486,8 +476,6 @@ HWLOC_LIBXML2_LIBS = @HWLOC_LIBXML2_LIBS@
 HWLOC_LTDL_LIBS = @HWLOC_LTDL_LIBS@
 HWLOC_MS_LIB = @HWLOC_MS_LIB@
 HWLOC_MS_LIB_ARCH = @HWLOC_MS_LIB_ARCH@
-HWLOC_NUMA_CFLAGS = @HWLOC_NUMA_CFLAGS@
-HWLOC_NUMA_LIBS = @HWLOC_NUMA_LIBS@
 HWLOC_NVML_LIBS = @HWLOC_NVML_LIBS@
 HWLOC_OPENCL_CFLAGS = @HWLOC_OPENCL_CFLAGS@
 HWLOC_OPENCL_LDFLAGS = @HWLOC_OPENCL_LDFLAGS@
@@ -496,16 +484,11 @@ HWLOC_PCIACCESS_CFLAGS = @HWLOC_PCIACCESS_CFLAGS@
 HWLOC_PCIACCESS_LIBS = @HWLOC_PCIACCESS_LIBS@
 HWLOC_PLUGINS_DIR = @HWLOC_PLUGINS_DIR@
 HWLOC_PLUGINS_PATH = @HWLOC_PLUGINS_PATH@
-HWLOC_PS_LIBS = @HWLOC_PS_LIBS@
 HWLOC_RELEASE_DATE = @HWLOC_RELEASE_DATE@
 HWLOC_REQUIRES = @HWLOC_REQUIRES@
-HWLOC_TERMCAP_LIBS = @HWLOC_TERMCAP_LIBS@
 HWLOC_VERSION = @HWLOC_VERSION@
-HWLOC_W3_GENERATOR = @HWLOC_W3_GENERATOR@
 HWLOC_X11_CPPFLAGS = @HWLOC_X11_CPPFLAGS@
 HWLOC_X11_LIBS = @HWLOC_X11_LIBS@
-HWLOC_XML_LOCALIZED = @HWLOC_XML_LOCALIZED@
-HWLOC_runstatedir = @HWLOC_runstatedir@
 HWLOC_top_builddir = @HWLOC_top_builddir@
 HWLOC_top_srcdir = @HWLOC_top_srcdir@
 INSTALL = @INSTALL@
@@ -522,22 +505,9 @@ LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
-LYNX = @LYNX@
-MAKEINDEX = @MAKEINDEX@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
-MPI_CPPFLAGS = @MPI_CPPFLAGS@
-MPI_LDADD = @MPI_LDADD@
-NETLOC_CFLAGS = @NETLOC_CFLAGS@
-NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
-NETLOC_EMBEDDED_CFLAGS = @NETLOC_EMBEDDED_CFLAGS@
-NETLOC_EMBEDDED_CPPFLAGS = @NETLOC_EMBEDDED_CPPFLAGS@
-NETLOC_EMBEDDED_LDADD = @NETLOC_EMBEDDED_LDADD@
-NETLOC_EMBEDDED_LIBS = @NETLOC_EMBEDDED_LIBS@
-NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
-NETLOC_LIBS = @NETLOC_LIBS@
-NETLOC_LIBS_PRIVATE = @NETLOC_LIBS_PRIVATE@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
@@ -552,17 +522,19 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
-PDFLATEX = @PDFLATEX@
 PKG_CONFIG = @PKG_CONFIG@
+QUO_VADIS_LIBVINFO = @QUO_VADIS_LIBVINFO@
+QUO_VADIS_VERSION_AGE = @QUO_VADIS_VERSION_AGE@
+QUO_VADIS_VERSION_CURRENT = @QUO_VADIS_VERSION_CURRENT@
+QUO_VADIS_VERSION_REVISION = @QUO_VADIS_VERSION_REVISION@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
+USER = @USER@
 VERSION = @VERSION@
-W3M = @W3M@
 XMKMF = @XMKMF@
-XMLLINT = @XMLLINT@
 X_CFLAGS = @X_CFLAGS@
 X_EXTRA_LIBS = @X_EXTRA_LIBS@
 X_LIBS = @X_LIBS@
@@ -603,8 +575,6 @@ infodir = @infodir@
 install_sh = @install_sh@
 libdir = @libdir@
 libexecdir = @libexecdir@
-libhwloc_so_version = @libhwloc_so_version@
-libnetloc_so_version = @libnetloc_so_version@
 localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
@@ -626,7 +596,6 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-xz = @xz@
 AM_CFLAGS = $(HWLOC_CFLAGS)
 # Beware that files are not rebuilt automatically when reconfiguring with different paths in these flags.
 AM_CPPFLAGS = $(HWLOC_CPPFLAGS) -DHWLOC_INSIDE_LIBHWLOC \
@@ -712,9 +681,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign hwloc/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/core/hwloc/hwloc/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign hwloc/Makefile
+	  $(AUTOMAKE) --foreign src/core/hwloc/hwloc/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -906,25 +875,22 @@ $(am__depfiles_remade):
 am--depfiles: $(am__depfiles_remade)
 
 .c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
 
 .c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
-@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .c.lo:
-@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
-@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
@@ -1124,9 +1090,9 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+@HWLOC_HAVE_WINDOWS_FALSE@uninstall-local:
 @HWLOC_HAVE_MS_LIB_FALSE@clean-local:
 @HWLOC_HAVE_WINDOWS_FALSE@clean-local:
-@HWLOC_HAVE_WINDOWS_FALSE@uninstall-local:
 @HWLOC_HAVE_WINDOWS_FALSE@install-exec-hook:
 clean: clean-am
 

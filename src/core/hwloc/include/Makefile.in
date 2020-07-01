@@ -107,29 +107,33 @@ target_triplet = @target@
 @HWLOC_BUILD_STANDALONE_TRUE@@HWLOC_HAVE_SOLARIS_TRUE@       private/solaris-chiptype.h
 
 @HWLOC_BUILD_STANDALONE_TRUE@@HWLOC_HAVE_SCHED_SETAFFINITY_TRUE@am__append_4 = hwloc/glibc-sched.h
-subdir = include
+subdir = src/core/hwloc/include
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/config/hwloc.m4 \
-	$(top_srcdir)/config/hwloc_check_attributes.m4 \
-	$(top_srcdir)/config/hwloc_check_vendor.m4 \
-	$(top_srcdir)/config/hwloc_check_visibility.m4 \
-	$(top_srcdir)/config/hwloc_components.m4 \
-	$(top_srcdir)/config/hwloc_internal.m4 \
-	$(top_srcdir)/config/hwloc_pkg.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/src/core/hwloc/config/hwloc.m4 \
+	$(top_srcdir)/src/core/hwloc/config/hwloc_check_attributes.m4 \
+	$(top_srcdir)/src/core/hwloc/config/hwloc_check_vendor.m4 \
+	$(top_srcdir)/src/core/hwloc/config/hwloc_check_visibility.m4 \
+	$(top_srcdir)/src/core/hwloc/config/hwloc_components.m4 \
+	$(top_srcdir)/src/core/hwloc/config/hwloc_pkg.m4 \
+	$(top_srcdir)/src/core/hwloc/config/netloc.m4 \
+	$(top_srcdir)/config/ax-cxx-compile-stdcxx-11.m4 \
+	$(top_srcdir)/config/ax-cxx-compile-stdcxx.m4 \
 	$(top_srcdir)/config/libtool.m4 \
 	$(top_srcdir)/config/ltoptions.m4 \
 	$(top_srcdir)/config/ltsugar.m4 \
 	$(top_srcdir)/config/ltversion.m4 \
 	$(top_srcdir)/config/lt~obsolete.m4 \
-	$(top_srcdir)/config/netloc.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/config/quo-vadis-pkg-libtool-version.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__include_HEADERS_DIST) \
 	$(am__include_hwloc_HEADERS_DIST) $(am__noinst_HEADERS_DIST) \
 	$(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
-CONFIG_HEADER = $(top_builddir)/include/private/autogen/config.h \
-	$(top_builddir)/include/hwloc/autogen/config.h
+CONFIG_HEADER = $(top_builddir)/config.h \
+	$(top_builddir)/src/core/hwloc/include/private/autogen/config.h \
+	$(top_builddir)/src/core/hwloc/include/hwloc/autogen/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_P = $(am__v_P_@AM_V@)
@@ -220,28 +224,25 @@ ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 AR = @AR@
-AS = @AS@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 BASH = @BASH@
-BUNZIPP = @BUNZIPP@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
-CC_FOR_BUILD = @CC_FOR_BUILD@
 CFLAGS = @CFLAGS@
-CONFIGURE_DEPENDENCIES = @CONFIGURE_DEPENDENCIES@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
 CXXCPP = @CXXCPP@
+CXXCPPFLAGS = @CXXCPPFLAGS@
 CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
+DATE = @DATE@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
-DIFF = @DIFF@
 DLLTOOL = @DLLTOOL@
 DOXYGEN = @DOXYGEN@
 DSYMUTIL = @DSYMUTIL@
@@ -250,19 +251,16 @@ ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
-EPSTOPDF = @EPSTOPDF@
 EXEEXT = @EXEEXT@
+FCFLAGS = @FCFLAGS@
+FFLAGS = @FFLAGS@
 FGREP = @FGREP@
-FIG2DEV = @FIG2DEV@
 GREP = @GREP@
-GS = @GS@
-HWLOC_CAIRO_CFLAGS = @HWLOC_CAIRO_CFLAGS@
-HWLOC_CAIRO_LIBS = @HWLOC_CAIRO_LIBS@
+HAVE_CXX11 = @HAVE_CXX11@
+HOSTNAME = @HOSTNAME@
 HWLOC_CFLAGS = @HWLOC_CFLAGS@
 HWLOC_CPPFLAGS = @HWLOC_CPPFLAGS@
 HWLOC_CUDA_LIBS = @HWLOC_CUDA_LIBS@
-HWLOC_DIFF_U = @HWLOC_DIFF_U@
-HWLOC_DIFF_W = @HWLOC_DIFF_W@
 HWLOC_DL_LIBS = @HWLOC_DL_LIBS@
 HWLOC_EMBEDDED_CFLAGS = @HWLOC_EMBEDDED_CFLAGS@
 HWLOC_EMBEDDED_CPPFLAGS = @HWLOC_EMBEDDED_CPPFLAGS@
@@ -281,8 +279,6 @@ HWLOC_LIBXML2_LIBS = @HWLOC_LIBXML2_LIBS@
 HWLOC_LTDL_LIBS = @HWLOC_LTDL_LIBS@
 HWLOC_MS_LIB = @HWLOC_MS_LIB@
 HWLOC_MS_LIB_ARCH = @HWLOC_MS_LIB_ARCH@
-HWLOC_NUMA_CFLAGS = @HWLOC_NUMA_CFLAGS@
-HWLOC_NUMA_LIBS = @HWLOC_NUMA_LIBS@
 HWLOC_NVML_LIBS = @HWLOC_NVML_LIBS@
 HWLOC_OPENCL_CFLAGS = @HWLOC_OPENCL_CFLAGS@
 HWLOC_OPENCL_LDFLAGS = @HWLOC_OPENCL_LDFLAGS@
@@ -291,16 +287,11 @@ HWLOC_PCIACCESS_CFLAGS = @HWLOC_PCIACCESS_CFLAGS@
 HWLOC_PCIACCESS_LIBS = @HWLOC_PCIACCESS_LIBS@
 HWLOC_PLUGINS_DIR = @HWLOC_PLUGINS_DIR@
 HWLOC_PLUGINS_PATH = @HWLOC_PLUGINS_PATH@
-HWLOC_PS_LIBS = @HWLOC_PS_LIBS@
 HWLOC_RELEASE_DATE = @HWLOC_RELEASE_DATE@
 HWLOC_REQUIRES = @HWLOC_REQUIRES@
-HWLOC_TERMCAP_LIBS = @HWLOC_TERMCAP_LIBS@
 HWLOC_VERSION = @HWLOC_VERSION@
-HWLOC_W3_GENERATOR = @HWLOC_W3_GENERATOR@
 HWLOC_X11_CPPFLAGS = @HWLOC_X11_CPPFLAGS@
 HWLOC_X11_LIBS = @HWLOC_X11_LIBS@
-HWLOC_XML_LOCALIZED = @HWLOC_XML_LOCALIZED@
-HWLOC_runstatedir = @HWLOC_runstatedir@
 HWLOC_top_builddir = @HWLOC_top_builddir@
 HWLOC_top_srcdir = @HWLOC_top_srcdir@
 INSTALL = @INSTALL@
@@ -317,22 +308,9 @@ LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
-LYNX = @LYNX@
-MAKEINDEX = @MAKEINDEX@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
-MPI_CPPFLAGS = @MPI_CPPFLAGS@
-MPI_LDADD = @MPI_LDADD@
-NETLOC_CFLAGS = @NETLOC_CFLAGS@
-NETLOC_CPPFLAGS = @NETLOC_CPPFLAGS@
-NETLOC_EMBEDDED_CFLAGS = @NETLOC_EMBEDDED_CFLAGS@
-NETLOC_EMBEDDED_CPPFLAGS = @NETLOC_EMBEDDED_CPPFLAGS@
-NETLOC_EMBEDDED_LDADD = @NETLOC_EMBEDDED_LDADD@
-NETLOC_EMBEDDED_LIBS = @NETLOC_EMBEDDED_LIBS@
-NETLOC_LDFLAGS = @NETLOC_LDFLAGS@
-NETLOC_LIBS = @NETLOC_LIBS@
-NETLOC_LIBS_PRIVATE = @NETLOC_LIBS_PRIVATE@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
@@ -347,17 +325,19 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
-PDFLATEX = @PDFLATEX@
 PKG_CONFIG = @PKG_CONFIG@
+QUO_VADIS_LIBVINFO = @QUO_VADIS_LIBVINFO@
+QUO_VADIS_VERSION_AGE = @QUO_VADIS_VERSION_AGE@
+QUO_VADIS_VERSION_CURRENT = @QUO_VADIS_VERSION_CURRENT@
+QUO_VADIS_VERSION_REVISION = @QUO_VADIS_VERSION_REVISION@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
+USER = @USER@
 VERSION = @VERSION@
-W3M = @W3M@
 XMKMF = @XMKMF@
-XMLLINT = @XMLLINT@
 X_CFLAGS = @X_CFLAGS@
 X_EXTRA_LIBS = @X_EXTRA_LIBS@
 X_LIBS = @X_LIBS@
@@ -398,8 +378,6 @@ infodir = @infodir@
 install_sh = @install_sh@
 libdir = @libdir@
 libexecdir = @libexecdir@
-libhwloc_so_version = @libhwloc_so_version@
-libnetloc_so_version = @libnetloc_so_version@
 localedir = @localedir@
 localstatedir = @localstatedir@
 mandir = @mandir@
@@ -421,7 +399,6 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-xz = @xz@
 @HWLOC_BUILD_STANDALONE_TRUE@include_HEADERS = hwloc.h $(am__append_1)
 @HWLOC_BUILD_STANDALONE_TRUE@include_hwlocdir = $(includedir)/hwloc
 @HWLOC_BUILD_STANDALONE_TRUE@include_hwloc_HEADERS = hwloc/bitmap.h \
@@ -461,9 +438,9 @@ $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign include/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign src/core/hwloc/include/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign include/Makefile
+	  $(AUTOMAKE) --foreign src/core/hwloc/include/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
