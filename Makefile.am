@@ -9,10 +9,10 @@
 # top-level directory of this distribution.
 #
 
-ACLOCAL_AMFLAGS = -Iconfig -Isrc/hwloc/config
+ACLOCAL_AMFLAGS = -Iconfig -Isrc/core/hwloc/config
 
 EXTRA_DIST = \
-AUTHORS \
+AUTHORS.txt \
 README.md \
 autogen
 

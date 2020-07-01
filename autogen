@@ -11,6 +11,6 @@
 # top-level directory of this distribution.
 #
 
-autoreconf --force --install
+autoreconf --force --install -Iconfig
 
 exit $?

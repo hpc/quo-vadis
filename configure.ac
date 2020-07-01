@@ -108,7 +108,7 @@ enable_libudev=no
 
 HWLOC_SET_SYMBOL_PREFIX(quo_vadis_internal_)
 
-HWLOC_SETUP_CORE([src/hwloc],
+HWLOC_SETUP_CORE([src/core/hwloc],
                  [],
                  [AC_MSG_ERROR([*** hwloc configure failure. ***])],
                  [1])
@@ -164,7 +164,9 @@ AC_SUBST([LDFLAGS])
 AC_SUBST([LIBS])
 
 AC_CONFIG_FILES([Makefile
-                 src/Makefile])
+                 src/Makefile
+                 src/core/Makefile
+                 src/daemon/Makefile])
 
 AC_OUTPUT
 

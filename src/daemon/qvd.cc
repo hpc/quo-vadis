@@ -10,7 +10,7 @@
  */
 
 /**
- * @file quo-vadis.cc
+ * @file qvd.cc
  */
 
 /*
