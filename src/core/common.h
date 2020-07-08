@@ -26,9 +26,17 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+#ifdef HAVE_THREADS_H
+#include <threads.h>
+#endif
 
 #include <cstdlib>
 #include <cstdio>
+#include <cstdint>
+#include <iostream>
 
 /* ////////////////////////////////////////////////////////////////////////// */
 /* Internal convenience macros                                                */
@@ -45,13 +53,19 @@
 do {                                                                           \
     fprintf(stderr, QVI_PANIC_PREFIX "%s failed: %s.\n", __func__, (msg));     \
     fflush(stderr);                                                            \
-    exit(EXIT_FAILURE);                                                        \
+    _exit(EXIT_FAILURE);                                                       \
 } while(0)
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+static inline char *
+qvi_strerr(int ec)
+{
+    static thread_local char sb[4096];
+    return strerror_r(ec, sb, sizeof(sb));
+}
 
 #ifdef __cplusplus
 }

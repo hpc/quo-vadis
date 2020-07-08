@@ -19,8 +19,6 @@
 
 #include "core/common.h"
 
-#include <cstdlib>
-
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -33,23 +31,63 @@
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
-static int
-maxfd(void)
+#include <cstdlib>
+
+static void
+closefds(void)
 {
-    // TODO(skg)
-    return 0;
+    // Determine the max number of file descriptors.
+    struct rlimit rl;
+    if (getrlimit(RLIMIT_NOFILE, &rl) < 0) {
+        qvi_panic("Cannot determine RLIMIT_NOFILE");
+    }
+    // Default: no limit on this resource, so pick one.
+    int64_t maxfd = 1024;
+    if (rl.rlim_max != RLIM_INFINITY) {
+        // Not RLIM_INFINITY, so set to resource limit.
+        maxfd = (int64_t)rl.rlim_max;
+    }
+    // Close all the file descriptors.
+    for (int64_t fd = 0; fd < maxfd; ++fd) {
+        (void)close(fd);
+    }
+}
+
+static void
+become_session_leader(void)
+{
+    const char *eprefix = "An error occurred while becoming the session leader";
+    pid_t pid = 0;
+    // TODO(skg) Improve error message.
+    if ((pid = fork()) < 0) {
+        qvi_panic("Can't fork()");
+    }
+    // Parent
+    if (pid != 0) {
+        // _exit(2) used to match daemon(3) behavior.
+        _exit(EXIT_SUCCESS);
+    }
+    // Child
+    pid_t pgid = setsid();
+    if (pgid < 0) {
+        qvi_panic("Can't setsid()");
+    }
 }
 
 int
-main(int argc, char **argv)
+main(int, char **)
 {
-    // Clear umask.
-    // Note: this system call always succeeds.
+    // Clear umask. Note: this system call always succeeds.
     umask(0);
-    // Determine max file descriptor.
-    const int mfd = maxfd();
-    // Determine max number of file descriptors.
+    // Become a session leader to lose controlling TTY.
+    become_session_leader();
+    // Close all file descriptors.
+    closefds();
+
     return EXIT_SUCCESS;
 }
 
