@@ -66,7 +66,7 @@ LT_INIT
 AC_CHECK_HEADERS([\
 inttypes.h limits.h stdint.h stdlib.h string.h unistd.h stdbool.h time.h \
 sched.h strings.h stdio.h errno.h math.h sys/types.h sys/stat.h sys/time.h \
-sys/resource.h threads.h
+sys/resource.h threads.h stdarg.h
 ])
 
 ################################################################################

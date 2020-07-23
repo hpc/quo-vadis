@@ -32,11 +32,18 @@
 #ifdef HAVE_THREADS_H
 #include <threads.h>
 #endif
+#ifdef HAVE_STDARG_H
+#include <stdarg.h>
+#endif
 
 #include <cstdlib>
 #include <cstdio>
 #include <cstdint>
 #include <iostream>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* ////////////////////////////////////////////////////////////////////////// */
 /* Internal convenience macros                                                */
@@ -56,15 +63,21 @@ do {                                                                           \
     _exit(EXIT_FAILURE);                                                       \
 } while(0)
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 static inline char *
 qvi_strerr(int ec)
 {
     static thread_local char sb[4096];
     return strerror_r(ec, sb, sizeof(sb));
+}
+
+static inline char *
+qvi_msg(const char *fmt, ...)
+{
+    static thread_local char sb[4096];
+    va_list args;
+    va_start(args, fmt);
+    (void)vsnprintf(sb, sizeof(sb), fmt, args);
+    return sb;
 }
 
 #ifdef __cplusplus

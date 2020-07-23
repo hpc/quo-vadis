@@ -19,6 +19,9 @@
 
 #include "core/common.h"
 
+#ifdef HAVE_STDIO_H
+#include <stdio.h>
+#endif
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -43,7 +46,9 @@ closefds(void)
     // Determine the max number of file descriptors.
     struct rlimit rl;
     if (getrlimit(RLIMIT_NOFILE, &rl) < 0) {
-        qvi_panic("Cannot determine RLIMIT_NOFILE");
+        static const char *er = "Cannot determine RLIMIT_NOFILE";
+        char *em = qvi_msg("%s (%s)", er, qvi_strerr(errno));
+        qvi_panic(em);
     }
     // Default: no limit on this resource, so pick one.
     int64_t maxfd = 1024;
@@ -60,11 +65,9 @@ closefds(void)
 static void
 become_session_leader(void)
 {
-    const char *eprefix = "An error occurred while becoming the session leader";
     pid_t pid = 0;
-    // TODO(skg) Improve error message.
     if ((pid = fork()) < 0) {
-        qvi_panic("Can't fork()");
+        qvi_panic(qvi_strerr(errno));
     }
     // Parent
     if (pid != 0) {
@@ -74,7 +77,15 @@ become_session_leader(void)
     // Child
     pid_t pgid = setsid();
     if (pgid < 0) {
-        qvi_panic("Can't setsid()");
+        qvi_panic(qvi_strerr(errno));
+    }
+}
+
+static void
+main_loop(void)
+{
+    while(true) {
+        sleep(1);
     }
 }
 
@@ -87,6 +98,8 @@ main(int, char **)
     become_session_leader();
     // Close all file descriptors.
     closefds();
+    // Enter the main processing loop.
+    main_loop();
 
     return EXIT_SUCCESS;
 }
