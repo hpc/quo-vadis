@@ -2,7 +2,7 @@ quo-vadis Authors
 =================
 
 The following list contains the github IDs, names, and affiliations of
-individuals who have committed code to the libquo repository.
+individuals who have committed code to the quo-vadis repository.
 
 Username          Name                        Affiliation(s)
 ----------------  --------------------------- -------------------------

@@ -17,6 +17,9 @@
 #include "config.h"
 #endif
 
+#include "nng/nng.h"
+#include "nng/protocol/reqrep0/rep.h"
+
 #include "core/common.h"
 
 #ifdef HAVE_STDIO_H
@@ -84,8 +87,14 @@ become_session_leader(void)
 static void
 main_loop(void)
 {
+    nng_socket sock;
+    int rv;
+    if ((rv = nng_rep0_open(&sock)) == 0) {
+        qvi_panic("nng_rep0_open");
+    }
     while(true) {
         sleep(1);
+        break;
     }
 }
 
