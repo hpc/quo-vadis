@@ -17,11 +17,6 @@
 #include "config.h"
 #endif
 
-// TODO(skg) Add compile-time switch to toggle debug level
-#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
-#include "nng/nng.h"
-#include "nng/protocol/reqrep0/rep.h"
-
 #include "core/common.h"
 #include "core/logger.h"
 

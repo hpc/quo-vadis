@@ -21,6 +21,8 @@
 
 #include "common.h"
 
+// TODO(skg) Add compile-time switch to toggle debug level
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_sinks.h"
 #include "spdlog/sinks/syslog_sink.h"
