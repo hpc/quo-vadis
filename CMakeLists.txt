@@ -34,9 +34,11 @@ include(cmake/hwloc.cmake)
 # Always use lib, not things like lib64 (looking at you, GNUInstallDirs)
 set(CMAKE_INSTALL_LIBDIR lib CACHE PATH "" FORCE)
 
+# Add third-party source
+add_subdirectory(3rdparty)
 # TODO(skg) Improve
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic")
-
+# Add our source
 add_subdirectory(src)
 
 # TODO(skg) Add more, improve.

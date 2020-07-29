@@ -9,7 +9,7 @@
 # top-level directory of this distribution.
 #
 
-set(QVI_NNG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/3rdparty/nng-1.3.0)
+set(QVI_NNG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/nng-1.3.0)
 
 set(NNG_TESTS OFF CACHE BOOL "" FORCE)
 add_subdirectory(${QVI_NNG_DIR})

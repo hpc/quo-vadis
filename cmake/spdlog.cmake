@@ -9,7 +9,7 @@
 # top-level directory of this distribution.
 #
 
-set(QVI_SPDLOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/3rdparty/spdlog-1.7.0)
+set(QVI_SPDLOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/spdlog-1.7.0)
 
 add_subdirectory(${QVI_SPDLOG_DIR})
 

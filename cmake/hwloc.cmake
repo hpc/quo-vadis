@@ -12,7 +12,7 @@
 # To include support for external projects
 include(ExternalProject)
 
-set(QVI_HWLOC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/3rdparty/hwloc-2.2.0)
+set(QVI_HWLOC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/hwloc-2.2.0)
 set(QVI_HWLOC_BIN ${CMAKE_CURRENT_BINARY_DIR}/hwloc)
 set(QVI_HWLOC_STATIC_LIB ${QVI_HWLOC_BIN}/lib/libhwloc.a)
 set(QVI_HWLOC_INCLUDES ${QVI_HWLOC_BIN}/include)

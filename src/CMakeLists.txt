@@ -9,7 +9,6 @@
 # top-level directory of this distribution.
 #
 
-add_subdirectory(3rdparty)
 add_subdirectory(core)
 add_subdirectory(api)
 add_subdirectory(daemon)
