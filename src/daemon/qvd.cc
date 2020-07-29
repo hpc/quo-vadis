@@ -49,12 +49,13 @@
 static void
 closefds(void)
 {
+    QVI_SYSLOG_DEBUG("Entered {}", __func__);
     // Determine the max number of file descriptors.
     struct rlimit rl;
     if (getrlimit(RLIMIT_NOFILE, &rl) < 0) {
-        static const char *er = "Cannot determine RLIMIT_NOFILE";
-        char *em = qvi_msg("%s (%s)", er, qvi_strerr(errno));
-        qvi_panic(em);
+        static const char *ers = "Cannot determine RLIMIT_NOFILE";
+        const int err = errno;
+        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qvi_strerr(err));
     }
     // Default: no limit on this resource, so pick one.
     int64_t maxfd = 1024;
@@ -71,9 +72,12 @@ closefds(void)
 static void
 become_session_leader(void)
 {
+    QVI_SYSLOG_DEBUG("Entered {}", __func__);
     pid_t pid = 0;
     if ((pid = fork()) < 0) {
-        qvi_panic(qvi_strerr(errno));
+        static const char *ers = "fork() failed";
+        const int err = errno;
+        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qvi_strerr(err));
     }
     // Parent
     if (pid != 0) {
@@ -83,18 +87,22 @@ become_session_leader(void)
     // Child
     pid_t pgid = setsid();
     if (pgid < 0) {
-        qvi_panic(qvi_strerr(errno));
+        static const char *ers = "setsid() failed";
+        const int err = errno;
+        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qvi_strerr(err));
     }
 }
 
 static void
 main_loop(void)
 {
+    QVI_SYSLOG_DEBUG("Entered {}", __func__);
 }
 
 int
 main(int, char **)
 {
+    QVI_SYSLOG_DEBUG("Entered {}", __func__);
     // Clear umask. Note: this system call always succeeds.
     umask(0);
     // Become a session leader to lose controlling TTY.

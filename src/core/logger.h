@@ -141,6 +141,12 @@ SPDLOG_LOGGER_WARN(Logger::console_warn(), __VA_ARGS__)
 #define QVI_LOG_ERROR(...) \
 SPDLOG_LOGGER_ERROR(Logger::console_error(), __VA_ARGS__)
 
+#define QVI_PANIC_LOG_ERROR(...)                                               \
+do {                                                                           \
+    SPDLOG_LOGGER_ERROR(Logger::console_error(), __VA_ARGS__);                 \
+    _exit(EXIT_FAILURE);                                                       \
+} while (0)
+
 #define QVI_LOG_DEBUG(...) \
 SPDLOG_LOGGER_DEBUG(Logger::console_debug(), __VA_ARGS__)
 //
@@ -154,6 +160,12 @@ SPDLOG_LOGGER_WARN(Logger::syslog_warn(), __VA_ARGS__)
 
 #define QVI_SYSLOG_ERROR(...) \
 SPDLOG_LOGGER_ERROR(Logger::syslog_error(), __VA_ARGS__)
+
+#define QVI_PANIC_SYSLOG_ERROR(...)                                            \
+do {                                                                           \
+    SPDLOG_LOGGER_ERROR(Logger::syslog_error(), __VA_ARGS__);                  \
+    _exit(EXIT_FAILURE);                                                       \
+} while (0)
 
 #define QVI_SYSLOG_DEBUG(...) \
 SPDLOG_LOGGER_DEBUG(Logger::syslog_debug(), __VA_ARGS__)
