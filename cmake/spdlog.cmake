@@ -9,24 +9,8 @@
 # top-level directory of this distribution.
 #
 
-add_executable(
-    qvd
-    qvd.cc
-)
+set(QVI_SPDLOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src/3rdparty/spdlog-1.7.0)
 
-target_include_directories(
-    qvd
-    PRIVATE ..
-    PRIVATE ${PROJECT_BINARY_DIR}
-)
-
-# spdlog
-target_link_libraries(qvd PRIVATE spdlog)
-
-# nng
-target_link_libraries(qvd PRIVATE nng)
-
-# hwloc
-target_link_libraries(qvd PRIVATE hwloc)
+add_subdirectory(${QVI_SPDLOG_DIR})
 
 # vim: ts=4 sts=4 sw=4 expandtab

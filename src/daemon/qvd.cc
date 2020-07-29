@@ -17,10 +17,13 @@
 #include "config.h"
 #endif
 
+// TODO(skg) Add compile-time switch to toggle debug level
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
 #include "nng/nng.h"
 #include "nng/protocol/reqrep0/rep.h"
 
 #include "core/common.h"
+#include "core/logger.h"
 
 #ifdef HAVE_STDIO_H
 #include <stdio.h>
@@ -87,15 +90,6 @@ become_session_leader(void)
 static void
 main_loop(void)
 {
-    nng_socket sock;
-    int rv;
-    if ((rv = nng_rep0_open(&sock)) == 0) {
-        qvi_panic("nng_rep0_open");
-    }
-    while(true) {
-        sleep(1);
-        break;
-    }
 }
 
 int

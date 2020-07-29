@@ -13,8 +13,7 @@
  * @file common.h
  */
 
-#ifndef QVI_CORE_COMMON_H_INCLUDED
-#define QVI_CORE_COMMON_H_INCLUDED
+#pragma once
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -52,9 +51,9 @@ extern "C" {
 #define QVI_TOSTRING(x)  QVI_STRINGIFY(x)
 
 #define QVI_ERR_AT       __FILE__ ":" QVI_TOSTRING(__LINE__) ""
-#define QVI_ERR_PREFIX   "[" PACKAGE_NAME " ERROR @ " QVI_ERR_AT "] "
-#define QVI_PANIC_PREFIX "[" PACKAGE_NAME " PANIC @ " QVI_ERR_AT "] "
-#define QVI_WARN_PREFIX  "[" PACKAGE_NAME " WARNING @ " QVI_ERR_AT "] "
+#define QVI_ERR_PREFIX   "[" PACKAGE_NAME " ERROR at " QVI_ERR_AT "] "
+#define QVI_PANIC_PREFIX "[" PACKAGE_NAME " PANIC at " QVI_ERR_AT "] "
+#define QVI_WARN_PREFIX  "[" PACKAGE_NAME " WARNING at " QVI_ERR_AT "] "
 
 #define qvi_panic(msg)                                                         \
 do {                                                                           \
@@ -82,8 +81,6 @@ qvi_msg(const char *fmt, ...)
 
 #ifdef __cplusplus
 }
-#endif
-
 #endif
 
 /*

@@ -27,11 +27,15 @@ configure_file(config.h.in config.h)
 add_definitions(-DHAVE_CONFIG_H)
 
 # Internal, third-party packages
+include(cmake/spdlog.cmake)
 include(cmake/nng.cmake)
 include(cmake/hwloc.cmake)
 
 # Always use lib, not things like lib64 (looking at you, GNUInstallDirs)
 set(CMAKE_INSTALL_LIBDIR lib CACHE PATH "" FORCE)
+
+# TODO(skg) Improve
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -pedantic")
 
 add_subdirectory(src)
 
