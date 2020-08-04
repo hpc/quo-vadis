@@ -9,10 +9,10 @@
 # top-level directory of this distribution.
 #
 
-# To include support for external projects
+# Includes support for external projects
 include(ExternalProject)
 
-set(QVI_HWLOC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/hwloc-2.2.0)
+set(QVI_HWLOC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/hwloc-2.2.0)
 set(QVI_HWLOC_BIN ${CMAKE_CURRENT_BINARY_DIR}/hwloc)
 set(QVI_HWLOC_STATIC_LIB ${QVI_HWLOC_BIN}/lib/libhwloc.a)
 set(QVI_HWLOC_INCLUDES ${QVI_HWLOC_BIN}/include)
@@ -47,11 +47,9 @@ add_dependencies(hwloc libhwloc)
 
 set_target_properties(
     hwloc
-    PROPERTIES IMPORTED_LOCATION ${QVI_HWLOC_STATIC_LIB}
-)
-set_target_properties(
-    hwloc
-    PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${QVI_HWLOC_INCLUDES}
+    PROPERTIES
+      IMPORTED_LOCATION ${QVI_HWLOC_STATIC_LIB}
+      INTERFACE_INCLUDE_DIRECTORIES ${QVI_HWLOC_INCLUDES}
 )
 
 # vim: ts=4 sts=4 sw=4 expandtab

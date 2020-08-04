@@ -9,24 +9,19 @@
 # top-level directory of this distribution.
 #
 
-add_executable(
-    qvd
-    qvd.cc
+# Install
+install(
+    FILES
+      quo-vadis.h
+    DESTINATION
+      include
 )
 
-target_include_directories(
-    qvd
-    PRIVATE ..
-    PRIVATE ${PROJECT_BINARY_DIR}
+install(
+    DIRECTORY
+      quo-vadis
+    DESTINATION
+      include
 )
-
-# spdlog
-target_link_libraries(qvd PRIVATE spdlog)
-
-# nng
-target_link_libraries(qvd PRIVATE nng)
-
-# hwloc
-target_link_libraries(qvd PRIVATE hwloc)
 
 # vim: ts=4 sts=4 sw=4 expandtab

@@ -9,8 +9,35 @@
 # top-level directory of this distribution.
 #
 
-set(QVI_SPDLOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/spdlog-1.7.0)
+# Includes support for external projects
+include(ExternalProject)
 
-add_subdirectory(${QVI_SPDLOG_DIR})
+set(QVI_SPDLOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/spdlog-1.7.0)
+set(QVI_SPDLOG_BIN ${CMAKE_CURRENT_BINARY_DIR}/spdlog)
+set(QVI_SPDLOG_STATIC_LIB ${QVI_SPDLOG_BIN}/lib/libspdlog.a)
+set(QVI_SPDLOG_INCLUDES ${QVI_SPDLOG_BIN}/include)
+
+file(MAKE_DIRECTORY ${QVI_SPDLOG_INCLUDES})
+
+ExternalProject_Add(
+    libspdlog
+    SOURCE_DIR ${QVI_SPDLOG_DIR}
+    PREFIX ${QVI_SPDLOG_BIN}
+    CMAKE_ARGS
+      -DCMAKE_INSTALL_PREFIX:PATH=${QVI_SPDLOG_BIN}
+      -DSPDLOG_BUILD_EXAMPLE:BOOL=NO
+      -DCMAKE_INSTALL_LIBDIR:PATH=lib
+    BUILD_BYPRODUCTS ${QVI_SPDLOG_STATIC_LIB}
+)
+
+add_library(spdlog STATIC IMPORTED GLOBAL)
+add_dependencies(spdlog libspdlog)
+
+set_target_properties(
+    spdlog
+    PROPERTIES
+      IMPORTED_LOCATION ${QVI_SPDLOG_STATIC_LIB}
+      INTERFACE_INCLUDE_DIRECTORIES ${QVI_SPDLOG_INCLUDES}
+)
 
 # vim: ts=4 sts=4 sw=4 expandtab

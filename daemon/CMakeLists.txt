@@ -9,4 +9,23 @@
 # top-level directory of this distribution.
 #
 
+add_executable(
+    quo-vadisd
+    quo-vadisd.cc
+)
+
+target_include_directories(
+    quo-vadisd
+    PRIVATE
+      ${PROJECT_BINARY_DIR}
+      ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(
+    quo-vadisd
+    qvi-hw-server
+)
+
+install(TARGETS quo-vadisd DESTINATION bin)
+
 # vim: ts=4 sts=4 sw=4 expandtab

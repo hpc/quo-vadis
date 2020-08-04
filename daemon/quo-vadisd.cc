@@ -10,36 +10,26 @@
  */
 
 /**
- * @file qvd.cc
+ * @file quo-vadisd.cc
  */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "quo-vadis/config.h"
+#include "quo-vadis/common.h"
+#include "quo-vadis/logger.h"
+#include "quo-vadis/hw-server.h"
 
-#include "core/common.h"
-#include "core/logger.h"
-
-#ifdef HAVE_STDIO_H
 #include <stdio.h>
-#endif
-#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
-#endif
-#ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
-#endif
-#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
-#endif
-#ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
-#endif
-#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
 
 #include <cstdlib>
+
+struct context {
+    qvi_hw_server_t *hws = nullptr;
+};
 
 static void
 closefds(void)
@@ -68,6 +58,7 @@ static void
 become_session_leader(void)
 {
     QVI_SYSLOG_DEBUG("Entered {}", __func__);
+
     pid_t pid = 0;
     if ((pid = fork()) < 0) {
         static const char *ers = "fork() failed";
@@ -89,6 +80,26 @@ become_session_leader(void)
 }
 
 static void
+gather_hwinfo(
+    context *ctx
+) {
+    QVI_SYSLOG_DEBUG("Entered {}", __func__);
+
+    char const*ers = nullptr;
+
+    int rc = qvi_hw_server_construct(&ctx->hws);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_hw_server_construct() failed";
+        goto out;
+    }
+    // TODO(skg) Add flags option
+out:
+    if (ers) {
+        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, rc, qvi_strerr(rc));
+    }
+}
+
+static void
 main_loop(void)
 {
     QVI_SYSLOG_DEBUG("Entered {}", __func__);
@@ -98,12 +109,16 @@ int
 main(int, char **)
 {
     QVI_SYSLOG_DEBUG("Entered {}", __func__);
+    //
+    context ctx;
     // Clear umask. Note: this system call always succeeds.
     umask(0);
     // Become a session leader to lose controlling TTY.
     become_session_leader();
     // Close all file descriptors.
     closefds();
+    // Gather hardware information.
+    gather_hwinfo(&ctx);
     // Enter the main processing loop.
     main_loop();
 

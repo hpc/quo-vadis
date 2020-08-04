@@ -13,24 +13,16 @@
  * @file common.h
  */
 
-#pragma once
+#ifndef QUO_VADIS_COMMON_H
+#define QUO_VADIS_COMMON_H
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-// We use the constants in errno for internal error codes.
-#ifdef HAVE_ERRNO_H
+#include "quo-vadis/config.h"
+#include "quo-vadis/rc.h"
+
 #include <errno.h>
-#endif
-#ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
-#ifdef HAVE_STRING_H
 #include <string.h>
-#endif
-#ifdef HAVE_THREADS_H
 #include <threads.h>
-#endif
 
 #include <cstdlib>
 #include <cstdio>
@@ -56,6 +48,8 @@ qvi_strerr(int ec)
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
 
 /*
