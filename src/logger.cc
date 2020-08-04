@@ -13,7 +13,7 @@
  * @file logger.cc
  */
 
-#include "quo-vadis/logger.h"
+#include "qvprivate/logger.h"
 
 qvi_logger::qvi_logger(void)
 {

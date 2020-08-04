@@ -14,10 +14,11 @@
  */
 
 #include "quo-vadis/config.h"
-#include "quo-vadis/common.h"
-#include "quo-vadis/logger.h"
-#include "quo-vadis/hw-loc.h"
 
+#include "quo-vadis/hw-loc.h"
+#include "quo-vadis/common.h"
+
+#include "qvprivate/logger.h"
 
 #include "hwloc.h"
 

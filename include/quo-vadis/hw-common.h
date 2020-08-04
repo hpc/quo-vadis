@@ -17,9 +17,10 @@
 #define QUO_VADIS_HW_COMMON_H
 
 #include "quo-vadis/config.h"
+
 #include "quo-vadis/common.h"
 
-#include "hwloc/include/hwloc.h"
+#include "hwloc.h"
 
 #ifdef __cplusplus
 extern "C" {

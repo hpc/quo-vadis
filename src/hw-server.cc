@@ -15,12 +15,11 @@
 
 #include "quo-vadis/config.h"
 
-#include "quo-vadis/common.h"
-#include "quo-vadis/logger.h"
-#include "quo-vadis/hw-loc.h"
 #include "quo-vadis/hw-server.h"
+#include "quo-vadis/hw-loc.h"
+#include "quo-vadis/common.h"
 
-#include "hwloc.h"
+#include "qvprivate/logger.h"
 
 // Type definition
 struct qvi_hw_server_t {

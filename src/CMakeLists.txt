@@ -12,12 +12,13 @@
 ################################################################################
 ################################################################################
 add_library(
-    libqvi-logger
+    qvi-logger
     logger.cc
+    ../include/qvprivate/logger.h
 )
 
 target_include_directories(
-    libqvi-logger
+    qvi-logger
     PUBLIC
       $<INSTALL_INTERFACE:include>
       $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
@@ -26,7 +27,7 @@ target_include_directories(
 )
 
 target_link_libraries(
-    libqvi-logger
+    qvi-logger
     PUBLIC
       spdlog
 )
@@ -34,12 +35,13 @@ target_link_libraries(
 ################################################################################
 ################################################################################
 add_library(
-    libqvi-hw-loc
+    qvi-hw-loc
     hw-loc.cc
+    ../include/quo-vadis/hw-loc.h
 )
 
 target_include_directories(
-    libqvi-hw-loc
+    qvi-hw-loc
     PUBLIC
       $<INSTALL_INTERFACE:include>
       $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
@@ -48,8 +50,8 @@ target_include_directories(
 )
 
 target_link_libraries(
-    libqvi-hw-loc
-    libqvi-logger
+    qvi-hw-loc
+    qvi-logger
     hwloc
 )
 
@@ -58,6 +60,7 @@ target_link_libraries(
 add_library(
     qvi-hw-server
     hw-server.cc
+    ../include/quo-vadis/hw-server.h
 )
 
 target_include_directories(
@@ -71,7 +74,7 @@ target_include_directories(
 
 target_link_libraries(
     qvi-hw-server
-    libqvi-hw-loc
+    qvi-hw-loc
     nng
 )
 
