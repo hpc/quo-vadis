@@ -19,6 +19,9 @@ project(quo-vadis VERSION 0.0.1 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Specify default build type
+include(cmake/build-type.cmake)
+
 # Generate a compile_commands.json file (for development tools)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
