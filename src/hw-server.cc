@@ -19,7 +19,7 @@
 #include "quo-vadis/hw-loc.h"
 #include "quo-vadis/common.h"
 
-#include "qvprivate/logger.h"
+#include "private/logger.h"
 
 // Type definition
 struct qvi_hw_server_t {

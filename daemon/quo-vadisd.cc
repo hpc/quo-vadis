@@ -18,7 +18,7 @@
 #include "quo-vadis/common.h"
 #include "quo-vadis/hw-server.h"
 
-#include "qvprivate/logger.h"
+#include "private/logger.h"
 
 #include <stdio.h>
 #include <sys/types.h>

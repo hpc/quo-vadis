@@ -13,7 +13,12 @@
  * @file logger.cc
  */
 
-#include "qvprivate/logger.h"
+#include "quo-vadis/config.h"
+
+#include "private/logger.h"
+
+#include "spdlog/sinks/stdout_sinks.h"
+#include "spdlog/sinks/syslog_sink.h"
 
 qvi_logger::qvi_logger(void)
 {
@@ -73,25 +78,25 @@ qvi_logger::operator=(const qvi_logger &)
 //
 // console
 //
-qvi_logger::ilogger_t
+qvi_logger::logger_t
 qvi_logger::console_info(void)
 {
     return qvi_logger::the_qvi_logger().m_console_info;
 }
 
-qvi_logger::ilogger_t
+qvi_logger::logger_t
 qvi_logger::console_warn(void)
 {
     return qvi_logger::the_qvi_logger().m_console_warn;
 }
 
-qvi_logger::ilogger_t
+qvi_logger::logger_t
 qvi_logger::console_error(void)
 {
     return qvi_logger::the_qvi_logger().m_console_error;
 }
 
-qvi_logger::ilogger_t
+qvi_logger::logger_t
 qvi_logger::console_debug(void)
 {
     return qvi_logger::the_qvi_logger().m_console_debug;
@@ -100,25 +105,25 @@ qvi_logger::console_debug(void)
 //
 // syslog
 //
-qvi_logger::ilogger_t
+qvi_logger::logger_t
 qvi_logger::syslog_info(void)
 {
     return qvi_logger::the_qvi_logger().m_syslog_info;
 }
 
-qvi_logger::ilogger_t
+qvi_logger::logger_t
 qvi_logger::syslog_warn(void)
 {
     return qvi_logger::the_qvi_logger().m_syslog_warn;
 }
 
-qvi_logger::ilogger_t
+qvi_logger::logger_t
 qvi_logger::syslog_error(void)
 {
     return qvi_logger::the_qvi_logger().m_syslog_error;
 }
 
-qvi_logger::ilogger_t
+qvi_logger::logger_t
 qvi_logger::syslog_debug(void)
 {
     return qvi_logger::the_qvi_logger().m_syslog_debug;

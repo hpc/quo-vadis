@@ -16,28 +16,27 @@
 #ifndef QUO_VADIS_LOGGER_H
 #define QUO_VADIS_LOGGER_H
 
-#include "quo-vadis/config.h"
-
-// TODO(skg) Add compile-time switch to toggle debug level
+#ifdef NDEBUG
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
+#else
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
+#endif
 #include "spdlog/spdlog.h"
-#include "spdlog/sinks/stdout_sinks.h"
-#include "spdlog/sinks/syslog_sink.h"
 
 class qvi_logger {
     // Convenience internal logger type alias.
-    using ilogger_t = decltype(spdlog::get(""));
+    using logger_t = decltype(spdlog::get(""));
     // Log sinks.
     // console (stdout)
-    ilogger_t m_console_info;
-    ilogger_t m_console_error;
-    ilogger_t m_console_warn;
-    ilogger_t m_console_debug;
+    logger_t m_console_info;
+    logger_t m_console_error;
+    logger_t m_console_warn;
+    logger_t m_console_debug;
     // syslog
-    ilogger_t m_syslog_info;
-    ilogger_t m_syslog_error;
-    ilogger_t m_syslog_warn;
-    ilogger_t m_syslog_debug;
+    logger_t m_syslog_info;
+    logger_t m_syslog_error;
+    logger_t m_syslog_warn;
+    logger_t m_syslog_debug;
     //
     qvi_logger(void);
     //
@@ -55,30 +54,30 @@ public:
     //
     // console
     //
-    static ilogger_t
+    static logger_t
     console_info(void);
     //
-    static ilogger_t
+    static logger_t
     console_warn(void);
     //
-    static ilogger_t
+    static logger_t
     console_error(void);
     //
-    static ilogger_t
+    static logger_t
     console_debug(void);
     //
     // syslog
     //
-    static ilogger_t
+    static logger_t
     syslog_info(void);
     //
-    static ilogger_t
+    static logger_t
     syslog_warn(void);
     //
-    static ilogger_t
+    static logger_t
     syslog_error(void);
     //
-    static ilogger_t
+    static logger_t
     syslog_debug(void);
 };
 

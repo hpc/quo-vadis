@@ -38,6 +38,7 @@ set_target_properties(
     PROPERTIES
       IMPORTED_LOCATION ${QVI_SPDLOG_STATIC_LIB}
       INTERFACE_INCLUDE_DIRECTORIES ${QVI_SPDLOG_INCLUDES}
+      INTERFACE_LINK_LIBRARIES Threads::Threads
 )
 
 # vim: ts=4 sts=4 sw=4 expandtab

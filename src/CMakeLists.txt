@@ -14,7 +14,13 @@
 add_library(
     qvi-logger
     logger.cc
-    ../include/qvprivate/logger.h
+    ../include/private/logger.h
+)
+
+target_compile_options(
+    qvi-logger
+    PRIVATE
+      -DSPDLOG_COMPILED_LIB
 )
 
 target_include_directories(

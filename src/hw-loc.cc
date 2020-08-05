@@ -18,7 +18,7 @@
 #include "quo-vadis/hw-loc.h"
 #include "quo-vadis/common.h"
 
-#include "qvprivate/logger.h"
+#include "private/logger.h"
 
 #include "hwloc.h"
 
