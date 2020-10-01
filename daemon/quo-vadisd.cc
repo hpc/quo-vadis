@@ -28,7 +28,7 @@
 #include <cstdlib>
 
 struct context {
-    qvi_hw_server_t *hws = nullptr;
+    qv_hw_server_t *hws = nullptr;
 };
 
 static void
@@ -87,13 +87,13 @@ gather_hwinfo(
 
     char const *ers = nullptr;
 
-    int rc = qvi_hw_server_construct(&ctx->hws);
+    int rc = qv_hw_server_construct(&ctx->hws);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hw_server_construct() failed";
         goto out;
     }
 
-    rc = qvi_hw_server_init(ctx->hws);
+    rc = qv_hw_server_init(ctx->hws);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hw_server_init() failed";
         goto out;
@@ -106,7 +106,9 @@ out:
 }
 
 static void
-main_loop(void)
+main_loop(
+    context *
+)
 {
     QVI_SYSLOG_DEBUG("Entered {}", __func__);
 }
@@ -126,7 +128,7 @@ main(int, char **)
     // Gather hardware information.
     gather_hwinfo(&ctx);
     // Enter the main processing loop.
-    main_loop();
+    main_loop(&ctx);
 
     return EXIT_SUCCESS;
 }

@@ -16,44 +16,75 @@
 #ifndef QUO_VADIS_HW_LOC_H
 #define QUO_VADIS_HW_LOC_H
 
+#include <unistd.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 /* Forward declarations. */
-struct qvi_hwloc_t;
-typedef struct qvi_hwloc_t qvi_hwloc_t;
+struct qv_hwloc_s;
+typedef struct qv_hwloc_s qv_hwloc_t;
+
+typedef void * qv_bitmap_t;
 
 /**
  *
  */
 int
-qvi_hwloc_construct(
-    qvi_hwloc_t **hwl
+qv_hwloc_construct(
+    qv_hwloc_t **hwl
 );
 
 /**
  *
  */
 void
-qvi_hwloc_destruct(
-    qvi_hwloc_t *hwl
+qv_hwloc_destruct(
+    qv_hwloc_t *hwl
 );
 
 /**
  *
  */
 int
-qvi_hwloc_init(
-    qvi_hwloc_t *hwl
+qv_hwloc_init(
+    qv_hwloc_t *hwl
 );
 
 /**
  *
  */
 int
-qvi_hwloc_topo_load(
-    qvi_hwloc_t *hwl
+qv_hwloc_topo_load(
+    qv_hwloc_t *hwl
+);
+
+/**
+ *
+ */
+int
+qv_hwloc_task_get_cpubind(
+    qv_hwloc_t *hwl,
+    pid_t who,
+    qv_bitmap_t *out_bitmap
+);
+
+/**
+ *
+ */
+int
+qv_hwloc_bitmap_free(
+    qv_bitmap_t bitmap
+);
+
+/**
+ *
+ */
+int
+qv_hwloc_bitmap_asprintf(
+    qv_bitmap_t bitmap,
+    char **result
 );
 
 #ifdef __cplusplus

@@ -19,34 +19,34 @@
 #include "quo-vadis/hw-server.h"
 #include "quo-vadis/hw-loc.h"
 
-/** qvi_hw_server_t type definition */
-struct qvi_hw_server_t {
-    qvi_hwloc_t *qvi_hwloc = nullptr;
+/** qv_hw_server_t type definition */
+struct qv_hw_server_s {
+    qv_hwloc_t *qv_hwloc = nullptr;
 };
 
 int
-qvi_hw_server_construct(
-    qvi_hw_server_t **hws
+qv_hw_server_construct(
+    qv_hw_server_t **hws
 ) {
     if (!hws) return QV_ERR_INVLD_ARG;
 
     char const *ers = nullptr;
 
-    qvi_hw_server_t *ihws = (qvi_hw_server_t *)calloc(1, sizeof(*ihws));
+    qv_hw_server_t *ihws = (qv_hw_server_t *)calloc(1, sizeof(*ihws));
     if (!ihws) {
         QVI_LOG_ERROR("calloc() failed");
         return QV_ERR_OOR;
     }
 
-    int rc = qvi_hwloc_construct(&ihws->qvi_hwloc);
+    int rc = qv_hwloc_construct(&ihws->qv_hwloc);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_construct() failed";
+        ers = "qv_hwloc_construct() failed";
         goto out;
     }
 out:
     if (ers) {
         QVI_LOG_ERROR("{} with rc={}", ers, rc);
-        qvi_hw_server_destruct(ihws);
+        qv_hw_server_destruct(ihws);
         return rc;
     }
     *hws = ihws;
@@ -54,32 +54,32 @@ out:
 }
 
 void
-qvi_hw_server_destruct(
-    qvi_hw_server_t *hws
+qv_hw_server_destruct(
+    qv_hw_server_t *hws
 ) {
     if (!hws) return;
 
-    qvi_hwloc_destruct(hws->qvi_hwloc);
+    qv_hwloc_destruct(hws->qv_hwloc);
     free(hws);
 }
 
 int
-qvi_hw_server_init(
-    qvi_hw_server_t *hws
+qv_hw_server_init(
+    qv_hw_server_t *hws
 ) {
     if (!hws) return QV_ERR_INVLD_ARG;
 
     char const *ers = nullptr;
 
-    int rc = qvi_hwloc_init(hws->qvi_hwloc);
+    int rc = qv_hwloc_init(hws->qv_hwloc);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_init() failed";
+        ers = "qv_hwloc_init() failed";
         goto out;
     }
 
-    rc = qvi_hwloc_topo_load(hws->qvi_hwloc);
+    rc = qv_hwloc_topo_load(hws->qv_hwloc);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_topo_load() failed";
+        ers = "qv_hwloc_topo_load() failed";
         goto out;
     }
 out:

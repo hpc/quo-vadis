@@ -21,18 +21,18 @@
 #include "hwloc.h"
 
 // Type definition
-struct qvi_hwloc_t {
+struct qv_hwloc_s {
     /** The node topology. */
     hwloc_topology_t topo;
 };
 
 int
-qvi_hwloc_construct(
-    qvi_hwloc_t **hwl
+qv_hwloc_construct(
+    qv_hwloc_t **hwl
 ) {
     if (!hwl) return QV_ERR_INVLD_ARG;
 
-    qvi_hwloc_t *ihwl = (qvi_hwloc_t *)calloc(1, sizeof(*ihwl));
+    qv_hwloc_t *ihwl = (qv_hwloc_t *)calloc(1, sizeof(*ihwl));
     if (!ihwl) {
         QVI_LOG_ERROR("calloc() failed");
         return QV_ERR_OOR;
@@ -43,8 +43,8 @@ qvi_hwloc_construct(
 }
 
 void
-qvi_hwloc_destruct(
-    qvi_hwloc_t *hwl
+qv_hwloc_destruct(
+    qv_hwloc_t *hwl
 ) {
     if (!hwl) return;
 
@@ -53,8 +53,8 @@ qvi_hwloc_destruct(
 }
 
 int
-qvi_hwloc_init(
-    qvi_hwloc_t *hwl
+qv_hwloc_init(
+    qv_hwloc_t *hwl
 ) {
     if (!hwl) return QV_ERR_INVLD_ARG;
 
@@ -74,8 +74,8 @@ out:
 }
 
 int
-qvi_hwloc_topo_load(
-    qvi_hwloc_t *hwl
+qv_hwloc_topo_load(
+    qv_hwloc_t *hwl
 ) {
     if (!hwl) return QV_ERR_INVLD_ARG;
 
@@ -116,6 +116,75 @@ out:
     if (ers) {
         QVI_LOG_ERROR("{} with rc={}", ers, rc);
         return QV_ERR_TOPO;
+    }
+    return QV_SUCCESS;
+}
+
+/**
+ * \note Caller is responsible for freeing returned resources via
+ * qv_hwloc_bitmap_free().
+ */
+int
+qv_hwloc_task_get_cpubind(
+    qv_hwloc_t *hwl,
+    pid_t who,
+    qv_bitmap_t *out_bitmap
+) {
+    if (!hwl || !out_bitmap) return QV_ERR_INVLD_ARG;
+
+    int rc = QV_SUCCESS;
+
+    hwloc_bitmap_t cur_bind = nullptr;
+    if (!(cur_bind = hwloc_bitmap_alloc())) {
+        QVI_LOG_ERROR("hwloc_bitmap_alloc() failed");
+        rc = QV_ERR_OOR;
+        goto out;
+    }
+    // TODO(skg) Add another routine to also support getting TIDs.
+    if (hwloc_get_proc_cpubind(
+            hwl->topo,
+            who,
+            cur_bind,
+            HWLOC_CPUBIND_PROCESS
+       )) {
+        const int err = errno;
+        static const char *ers = "hwloc_get_proc_cpubind failed";
+        QVI_LOG_ERROR("{} (rc={}, {})", ers, err, qvi_strerr(err));
+        rc = QV_ERR_TOPO;
+        goto out;
+    }
+    *out_bitmap = (hwloc_bitmap_t)cur_bind;
+out:
+    /* Cleanup on failure */
+    if (rc != QV_SUCCESS) {
+        if (cur_bind) hwloc_bitmap_free(cur_bind);
+        *out_bitmap = nullptr;
+    }
+    return rc;
+}
+
+int
+qv_hwloc_bitmap_free(
+    qv_bitmap_t bitmap
+) {
+    if (!bitmap) return QV_ERR_INVLD_ARG;
+
+    hwloc_bitmap_free((hwloc_bitmap_t)bitmap);
+
+    return QV_SUCCESS;
+}
+
+int
+qv_hwloc_bitmap_asprintf(
+    qv_bitmap_t bitmap,
+    char **result
+) {
+    if (!bitmap || !result) return QV_ERR_INVLD_ARG;
+    /* Caller is responsible for freeing returned resources. */
+    int rc = hwloc_bitmap_asprintf(result, (hwloc_bitmap_t)bitmap);
+    if (rc == -1) {
+        QVI_LOG_ERROR("hwloc_bitmap_asprintf() failed");
+        return QV_ERR_OOR;
     }
     return QV_SUCCESS;
 }
