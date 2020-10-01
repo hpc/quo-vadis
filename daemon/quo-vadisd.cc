@@ -40,7 +40,7 @@ closefds(void)
     if (getrlimit(RLIMIT_NOFILE, &rl) < 0) {
         static const char *ers = "Cannot determine RLIMIT_NOFILE";
         const int err = errno;
-        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qv_rc_strerr(err));
+        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qvi_strerr(err));
     }
     // Default: no limit on this resource, so pick one.
     int64_t maxfd = 1024;
@@ -63,7 +63,7 @@ become_session_leader(void)
     if ((pid = fork()) < 0) {
         static const char *ers = "fork() failed";
         const int err = errno;
-        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qv_rc_strerr(err));
+        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qvi_strerr(err));
     }
     // Parent
     if (pid != 0) {
@@ -75,7 +75,7 @@ become_session_leader(void)
     if (pgid < 0) {
         static const char *ers = "setsid() failed";
         const int err = errno;
-        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qv_rc_strerr(err));
+        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qvi_strerr(err));
     }
 }
 

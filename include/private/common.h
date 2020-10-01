@@ -31,6 +31,24 @@
 #include <cstdint>
 #include <iostream>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ *
+ */
+static inline char *
+qvi_strerr(int ec)
+{
+    static thread_local char sb[4096];
+    return strerror_r(ec, sb, sizeof(sb));
+}
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif
 
 /*

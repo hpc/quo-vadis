@@ -14,15 +14,14 @@
  */
 
 #include "private/common.h"
+#include "private/logger.h"
 
 #include "quo-vadis/hw-server.h"
 #include "quo-vadis/hw-loc.h"
 
-#include "private/logger.h"
-
-// Type definition
+/** qvi_hw_server_t type definition */
 struct qvi_hw_server_t {
-    qvi_hwloc_t *qvi_hwloc;
+    qvi_hwloc_t *qvi_hwloc = nullptr;
 };
 
 int
