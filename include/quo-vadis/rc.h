@@ -20,6 +20,8 @@
 extern "C" {
 #endif
 
+/** Return codes. */
+// If this changes, please update the order and contents of qv_rc_strerrs.
 enum {
     QV_SUCCESS = 0,
     QV_SUCCESS_ALREADY_DONE,
@@ -34,6 +36,28 @@ enum {
     QV_ERR_POP,
     QV_ERR_NOT_FOUND
 };
+
+/** Description of the return codes. */
+static const char *qv_rc_strerrs[] = {
+    "Success",
+    "Success, operation already complete",
+    "General, unspecified error",
+    "System error",
+    "Out of resources",
+    "Invalid argument",
+    "Call before initialization",
+    "Hardware topology error",
+    "MPI error",
+    "Operation not supported",
+    "Pop operation error",
+    "Not found"
+};
+
+static inline const char *
+qv_rc_strerr(int ec)
+{
+    return qv_rc_strerrs[ec];
+}
 
 #ifdef __cplusplus
 }

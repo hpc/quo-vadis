@@ -13,10 +13,10 @@
  * @file hw-hwloc.cc
  */
 
-#include "quo-vadis/common.h"
-#include "quo-vadis/hw-loc.h"
-
+#include "private/common.h"
 #include "private/logger.h"
+
+#include "quo-vadis/hw-loc.h"
 
 #include "hwloc.h"
 

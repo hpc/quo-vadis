@@ -13,11 +13,10 @@
  * @file quo-vadisd.cc
  */
 
-#include "quo-vadis/common.h"
+#include "private/common.h"
+#include "private/logger.h"
 
 #include "quo-vadis/hw-server.h"
-
-#include "private/logger.h"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -41,7 +40,7 @@ closefds(void)
     if (getrlimit(RLIMIT_NOFILE, &rl) < 0) {
         static const char *ers = "Cannot determine RLIMIT_NOFILE";
         const int err = errno;
-        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qvi_strerr(err));
+        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qv_rc_strerr(err));
     }
     // Default: no limit on this resource, so pick one.
     int64_t maxfd = 1024;
@@ -64,7 +63,7 @@ become_session_leader(void)
     if ((pid = fork()) < 0) {
         static const char *ers = "fork() failed";
         const int err = errno;
-        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qvi_strerr(err));
+        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qv_rc_strerr(err));
     }
     // Parent
     if (pid != 0) {
@@ -76,7 +75,7 @@ become_session_leader(void)
     if (pgid < 0) {
         static const char *ers = "setsid() failed";
         const int err = errno;
-        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qvi_strerr(err));
+        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qv_rc_strerr(err));
     }
 }
 
@@ -86,7 +85,7 @@ gather_hwinfo(
 ) {
     QVI_SYSLOG_DEBUG("Entered {}", __func__);
 
-    char const*ers = nullptr;
+    char const *ers = nullptr;
 
     int rc = qvi_hw_server_construct(&ctx->hws);
     if (rc != QV_SUCCESS) {
@@ -102,8 +101,7 @@ gather_hwinfo(
     // TODO(skg) Add flags option
 out:
     if (ers) {
-        // TODO(skg) Fix qvi_strerr to reflect real code/name pairs.
-        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, rc, qvi_strerr(rc));
+        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, rc, qv_rc_strerr(rc));
     }
 }
 

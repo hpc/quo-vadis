@@ -13,11 +13,13 @@
  * @file common.h
  */
 
-#ifndef QUO_VADIS_COMMON_H
-#define QUO_VADIS_COMMON_H
+#ifndef QVI_COMMON_H
+#define QVI_COMMON_H
 
 #include "quo-vadis/config.h"
 #include "quo-vadis/rc.h"
+
+#include "private/macros.h"
 
 #include <errno.h>
 #include <unistd.h>
@@ -28,27 +30,6 @@
 #include <cstdio>
 #include <cstdint>
 #include <iostream>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-////////////////////////////////////////////////////////////////////////////////
-// Internal convenience macros                                                //
-////////////////////////////////////////////////////////////////////////////////
-#define QVI_STRINGIFY(x) #x
-#define QVI_TOSTRING(x)  QVI_STRINGIFY(x)
-
-static inline char *
-qvi_strerr(int ec)
-{
-    static thread_local char sb[4096];
-    return strerror_r(ec, sb, sizeof(sb));
-}
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 

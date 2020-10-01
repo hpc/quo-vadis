@@ -13,8 +13,8 @@
  * @file logger.h
  */
 
-#ifndef QUO_VADIS_LOGGER_H
-#define QUO_VADIS_LOGGER_H
+#ifndef QVI_LOGGER_H
+#define QVI_LOGGER_H
 
 #ifdef NDEBUG
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO

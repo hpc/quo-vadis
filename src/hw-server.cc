@@ -13,7 +13,8 @@
  * @file hw-server.cc
  */
 
-#include "quo-vadis/common.h"
+#include "private/common.h"
+
 #include "quo-vadis/hw-server.h"
 #include "quo-vadis/hw-loc.h"
 
