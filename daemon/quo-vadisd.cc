@@ -13,9 +13,8 @@
  * @file quo-vadisd.cc
  */
 
-#include "quo-vadis/config.h"
-
 #include "quo-vadis/common.h"
+
 #include "quo-vadis/hw-server.h"
 
 #include "private/logger.h"
@@ -94,9 +93,16 @@ gather_hwinfo(
         ers = "qvi_hw_server_construct() failed";
         goto out;
     }
+
+    rc = qvi_hw_server_init(ctx->hws);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_hw_server_init() failed";
+        goto out;
+    }
     // TODO(skg) Add flags option
 out:
     if (ers) {
+        // TODO(skg) Fix qvi_strerr to reflect real code/name pairs.
         QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, rc, qvi_strerr(rc));
     }
 }

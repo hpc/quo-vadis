@@ -16,8 +16,6 @@
 #ifndef QUO_VADIS_HW_LOC_H
 #define QUO_VADIS_HW_LOC_H
 
-#include "quo-vadis/config.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -32,6 +30,30 @@ typedef struct qvi_hwloc_t qvi_hwloc_t;
 int
 qvi_hwloc_construct(
     qvi_hwloc_t **hwl
+);
+
+/**
+ *
+ */
+void
+qvi_hwloc_destruct(
+    qvi_hwloc_t *hwl
+);
+
+/**
+ *
+ */
+int
+qvi_hwloc_init(
+    qvi_hwloc_t *hwl
+);
+
+/**
+ *
+ */
+int
+qvi_hwloc_topo_load(
+    qvi_hwloc_t *hwl
 );
 
 #ifdef __cplusplus

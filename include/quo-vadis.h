@@ -17,17 +17,9 @@
 #define QUO_VADIS_H
 
 /** Convenience definition. */
-#define QV 1
-
+#define QUO_VADIS 1
+/** Return codes. */
 #include "quo-vadis/rc.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 

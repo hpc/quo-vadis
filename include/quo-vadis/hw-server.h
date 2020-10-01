@@ -24,9 +24,28 @@ extern "C" {
 struct qvi_hw_server_t;
 typedef struct qvi_hw_server_t qvi_hw_server_t;
 
+/**
+ *
+ */
 int
 qvi_hw_server_construct(
     qvi_hw_server_t **hws
+);
+
+/**
+ *
+ */
+void
+qvi_hw_server_destruct(
+    qvi_hw_server_t *hws
+);
+
+/**
+ *
+ */
+int
+qvi_hw_server_init(
+    qvi_hw_server_t *hws
 );
 
 #ifdef __cplusplus
