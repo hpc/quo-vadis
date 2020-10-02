@@ -41,13 +41,13 @@ target_link_libraries(
 ################################################################################
 ################################################################################
 add_library(
-    qvi-hw-loc
+    qv-hw-loc
     hw-loc.cc
     ../include/quo-vadis/hw-loc.h
 )
 
 target_include_directories(
-    qvi-hw-loc
+    qv-hw-loc
     PUBLIC
       $<INSTALL_INTERFACE:include>
       $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
@@ -56,7 +56,7 @@ target_include_directories(
 )
 
 target_link_libraries(
-    qvi-hw-loc
+    qv-hw-loc
     qvi-logger
     hwloc
 )
@@ -64,13 +64,13 @@ target_link_libraries(
 ################################################################################
 ################################################################################
 add_library(
-    qvi-hw-server
+    qv-hw-server
     hw-server.cc
     ../include/quo-vadis/hw-server.h
 )
 
 target_include_directories(
-    qvi-hw-server
+    qv-hw-server
     PUBLIC
       $<INSTALL_INTERFACE:include>
       $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
@@ -79,8 +79,8 @@ target_include_directories(
 )
 
 target_link_libraries(
-    qvi-hw-server
-    qvi-hw-loc
+    qv-hw-server
+    qv-hw-loc
     nng
 )
 

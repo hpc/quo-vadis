@@ -10,22 +10,36 @@
 #
 
 add_executable(
-    quo-vadisd
-    quo-vadisd.cc
+    test-hw-server
+    test-hw-server.c
 )
 
 target_include_directories(
-    quo-vadisd
+    test-hw-server
     PRIVATE
-      ${PROJECT_BINARY_DIR}
       ${CMAKE_SOURCE_DIR}/include
 )
 
 target_link_libraries(
-    quo-vadisd
+    test-hw-server
     qv-hw-server
 )
+################################################################################
+################################################################################
+add_executable(
+    test-hw-loc
+    test-hw-loc.c
+)
 
-install(TARGETS quo-vadisd DESTINATION bin)
+target_include_directories(
+    test-hw-loc
+    PRIVATE
+      ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(
+    test-hw-loc
+    qv-hw-loc
+)
 
 # vim: ts=4 sts=4 sw=4 expandtab

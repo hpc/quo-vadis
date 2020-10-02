@@ -38,7 +38,6 @@ qv_hwloc_construct(
         return QV_ERR_OOR;
     }
     *hwl = ihwl;
-
     return QV_SUCCESS;
 }
 
@@ -171,7 +170,6 @@ qv_hwloc_bitmap_free(
     if (!bitmap) return QV_ERR_INVLD_ARG;
 
     hwloc_bitmap_free((hwloc_bitmap_t)bitmap);
-
     return QV_SUCCESS;
 }
 
@@ -182,12 +180,14 @@ qv_hwloc_bitmap_asprintf(
 ) {
     if (!bitmap || !result) return QV_ERR_INVLD_ARG;
     /* Caller is responsible for freeing returned resources. */
-    int rc = hwloc_bitmap_asprintf(result, (hwloc_bitmap_t)bitmap);
-    if (rc) {
+    char *iresult = nullptr;
+    (void)hwloc_bitmap_asprintf(&iresult, (hwloc_bitmap_t)bitmap);
+    if (!iresult) {
         QVI_LOG_ERROR("hwloc_bitmap_asprintf() failed");
         *result = nullptr;
         return QV_ERR_OOR;
     }
+    *result = iresult;
     return QV_SUCCESS;
 }
 

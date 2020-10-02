@@ -13,7 +13,7 @@
 cmake_minimum_required(VERSION 3.10)
 
 # Set the project name and version
-project(quo-vadis VERSION 0.0.1 LANGUAGES CXX)
+project(quo-vadis VERSION 0.0.1 LANGUAGES C CXX)
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 11)
@@ -53,6 +53,8 @@ include(cmake/hwloc.cmake)
 add_subdirectory(include)
 add_subdirectory(src)
 add_subdirectory(daemon)
+# Add test source
+add_subdirectory(tests)
 
 # TODO(skg) Add more, improve.
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
