@@ -44,7 +44,6 @@ main(void)
         ers = "qv_hw_server_finalize() failed";
         goto out;
     }
-
 out:
     qv_hw_server_destruct(hws);
     if (ers) {
@@ -54,7 +53,6 @@ out:
     printf("# Done\n");
     return EXIT_SUCCESS;
 }
-
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab

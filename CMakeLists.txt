@@ -15,6 +15,10 @@ cmake_minimum_required(VERSION 3.10)
 # Set the project name and version
 project(quo-vadis VERSION 0.0.1 LANGUAGES C CXX)
 
+# Specify the C standard
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
