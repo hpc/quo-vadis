@@ -54,7 +54,7 @@ static const char *qv_rc_strerrs[] = {
 };
 
 static inline const char *
-qv_rc_strerr(int ec)
+qv_strerr(int ec)
 {
     return qv_rc_strerrs[ec];
 }

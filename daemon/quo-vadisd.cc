@@ -101,7 +101,7 @@ gather_hwinfo(
     // TODO(skg) Add flags option
 out:
     if (ers) {
-        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, rc, qv_rc_strerr(rc));
+        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
 }
 

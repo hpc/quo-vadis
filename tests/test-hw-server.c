@@ -47,7 +47,7 @@ main(void)
 out:
     qv_hw_server_destruct(hws);
     if (ers) {
-        fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_rc_strerr(rc));
+        fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         return EXIT_FAILURE;
     }
     printf("# Done\n");
