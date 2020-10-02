@@ -24,6 +24,8 @@ target_link_libraries(
     test-hw-server
     qv-hw-server
 )
+
+
 ################################################################################
 ################################################################################
 add_executable(
@@ -40,6 +42,13 @@ target_include_directories(
 target_link_libraries(
     test-hw-loc
     qv-hw-loc
+)
+
+# Use the C linker to test for C/C++ linkage problems.
+set_target_properties(
+    test-hw-server
+    test-hw-loc
+    PROPERTIES LINKER_LANGUAGE C
 )
 
 # vim: ts=4 sts=4 sw=4 expandtab
