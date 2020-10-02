@@ -90,6 +90,15 @@ out:
     return QV_SUCCESS;
 }
 
+int
+qv_hw_server_finalize(
+    qv_hw_server_t *hws
+) {
+    if (!hws) return QV_ERR_INVLD_ARG;
+
+    return QV_SUCCESS;
+}
+
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
  */

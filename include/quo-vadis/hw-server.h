@@ -48,6 +48,14 @@ qv_hw_server_init(
     qv_hw_server_t *hws
 );
 
+/**
+ *
+ */
+int
+qv_hw_server_finalize(
+    qv_hw_server_t *hws
+);
+
 #ifdef __cplusplus
 }
 #endif

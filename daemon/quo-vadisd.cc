@@ -108,14 +108,15 @@ out:
 static void
 main_loop(
     context *
-)
-{
+) {
     QVI_SYSLOG_DEBUG("Entered {}", __func__);
 }
 
 int
-main(int, char **)
-{
+main(
+    int,
+    char **
+) {
     QVI_SYSLOG_DEBUG("Entered {}", __func__);
     //
     context ctx;

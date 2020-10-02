@@ -132,35 +132,36 @@ qv_hwloc_task_get_cpubind(
 ) {
     if (!hwl || !out_bitmap) return QV_ERR_INVLD_ARG;
 
-    int rc = QV_SUCCESS;
+    int qrc = QV_SUCCESS, rc = 0;
 
-    hwloc_bitmap_t cur_bind = nullptr;
-    if (!(cur_bind = hwloc_bitmap_alloc())) {
+    hwloc_bitmap_t cur_bind = hwloc_bitmap_alloc();
+    if (!cur_bind) {
         QVI_LOG_ERROR("hwloc_bitmap_alloc() failed");
-        rc = QV_ERR_OOR;
+        qrc = QV_ERR_OOR;
         goto out;
     }
     // TODO(skg) Add another routine to also support getting TIDs.
-    if (hwloc_get_proc_cpubind(
+    rc = hwloc_get_proc_cpubind(
             hwl->topo,
             who,
             cur_bind,
             HWLOC_CPUBIND_PROCESS
-       )) {
+    );
+    if (rc) {
         const int err = errno;
         static const char *ers = "hwloc_get_proc_cpubind failed";
         QVI_LOG_ERROR("{} (rc={}, {})", ers, err, qvi_strerr(err));
-        rc = QV_ERR_TOPO;
+        qrc = QV_ERR_TOPO;
         goto out;
     }
     *out_bitmap = (hwloc_bitmap_t)cur_bind;
 out:
     /* Cleanup on failure */
-    if (rc != QV_SUCCESS) {
+    if (qrc != QV_SUCCESS) {
         if (cur_bind) hwloc_bitmap_free(cur_bind);
         *out_bitmap = nullptr;
     }
-    return rc;
+    return qrc;
 }
 
 int
@@ -182,8 +183,9 @@ qv_hwloc_bitmap_asprintf(
     if (!bitmap || !result) return QV_ERR_INVLD_ARG;
     /* Caller is responsible for freeing returned resources. */
     int rc = hwloc_bitmap_asprintf(result, (hwloc_bitmap_t)bitmap);
-    if (rc == -1) {
+    if (rc) {
         QVI_LOG_ERROR("hwloc_bitmap_asprintf() failed");
+        *result = nullptr;
         return QV_ERR_OOR;
     }
     return QV_SUCCESS;
