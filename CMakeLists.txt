@@ -23,6 +23,11 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Testing
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    include(CTest)
+endif()
+
 # Pthread support
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
@@ -57,8 +62,10 @@ include(cmake/hwloc.cmake)
 add_subdirectory(include)
 add_subdirectory(src)
 add_subdirectory(daemon)
-# Add test source
-add_subdirectory(tests)
+# Conditionally add test source
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
 
 # TODO(skg) Add more, improve.
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})

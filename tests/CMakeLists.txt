@@ -9,6 +9,8 @@
 # top-level directory of this distribution.
 #
 
+################################################################################
+################################################################################
 add_executable(
     test-hw-server
     test-hw-server.c
@@ -25,7 +27,8 @@ target_link_libraries(
     qv-hw-server
 )
 
-
+add_test(hw-server test-hw-server)
+# TODO(skg) Add valgrind tests.
 ################################################################################
 ################################################################################
 add_executable(
@@ -44,6 +47,10 @@ target_link_libraries(
     qv-hw-loc
 )
 
+add_test(hw-loc test-hw-loc)
+
+################################################################################
+################################################################################
 # Use the C linker to test for C/C++ linkage problems.
 set_target_properties(
     test-hw-server
