@@ -8,3 +8,8 @@ architectures.
 ```
 mkdir build && cd !$ && cmake .. && make
 ```
+
+## Internal Software Dependencies
+* hwloc (https://github.com/open-mpi/hwloc)
+* nng (https://github.com/nanomsg/nng)
+* spdlog (https://github.com/gabime/spdlog)
