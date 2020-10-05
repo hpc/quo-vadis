@@ -67,11 +67,22 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
     add_subdirectory(tests)
 endif()
 
+# CPack
 # TODO(skg) Add more, improve.
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 set(CPACK_SOURCE_GENERATOR "TBZ2;TGZ;ZIP")
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt)
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "quo-vadis")
 include(CPack)
+
+# pkg-config
+configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/pkg-config.pc.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc"
+)
+install(
+    FILES "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc"
+    DESTINATION lib/pkgconfig
+)
 
 # vim: ts=4 sts=4 sw=4 expandtab
