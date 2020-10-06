@@ -16,9 +16,84 @@
 #ifndef QVI_MSG_H
 #define QVI_MSG_H
 
+#include "nng/nng.h"
+#include "nng/protocol/reqrep0/rep.h"
+#include "nng/protocol/reqrep0/req.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+// Forward declarations.
+struct qvi_msg_server_s;
+typedef struct qvi_msg_server_s qvi_msg_server_t;
+
+struct qvi_msg_client_s;
+typedef struct qvi_msg_client_s qvi_msg_client_t;
+
+/** Message type definition. */
+typedef struct qvi_msg_s {
+    enum {
+        INIT,
+        RECV,
+        WAIT,
+        SEND
+    } state;
+    nng_aio *aio;
+    nng_socket sock;
+    // TODO(skg) Change name
+    nng_msg *msg;
+} qvi_msg_t;
+
+/**
+ *
+ */
+int
+qvi_msg_server_construct(
+    qvi_msg_server_t **server
+);
+
+/**
+ *
+ */
+void
+qvi_msg_server_destruct(
+    qvi_msg_server_t *server
+);
+
+/**
+ *
+ */
+int
+qvi_msg_server_start(
+    qvi_msg_server_t *server,
+    const char *url,
+    int qdepth
+);
+
+/**
+ *
+ */
+int
+qvi_msg_client_construct(
+    qvi_msg_client_t **client
+);
+
+/**
+ *
+ */
+void
+qvi_msg_client_destruct(
+    qvi_msg_client_t *client
+);
+
+// TODO(skg) FIXME
+int
+qvi_msg_client_send(
+    qvi_msg_client_t *client,
+    const char *url,
+    const char *msecstr
+);
 
 #ifdef __cplusplus
 }

@@ -22,10 +22,10 @@
 extern "C" {
 #endif
 
-/* Forward declarations. */
+// Forward declarations.
 struct qv_hwloc_s;
 typedef struct qv_hwloc_s qv_hwloc_t;
-
+// Convenience typedefs
 typedef void * qv_bitmap_t;
 
 /**

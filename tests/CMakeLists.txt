@@ -51,10 +51,41 @@ add_test(hw-loc test-hw-loc)
 
 ################################################################################
 ################################################################################
+add_executable(
+    test-msg
+    test-msg.c
+)
+
+target_include_directories(
+    test-msg
+    PRIVATE
+      ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(
+    test-msg
+    qvi-msg
+)
+
+add_test(
+    NAME
+      test-msg
+    COMMAND
+      bash -c "export URL=\"tcp://127.0.0.1:55995\"    && \
+      (${CMAKE_CURRENT_BINARY_DIR}/test-msg $URL -s &) && \
+      (${CMAKE_CURRENT_BINARY_DIR}/test-msg $URL 1 &)  && \
+      (${CMAKE_CURRENT_BINARY_DIR}/test-msg $URL 1 &)  && \
+      ${CMAKE_CURRENT_BINARY_DIR}/test-msg $URL 3      && \
+      killall test-msg"
+)
+
+################################################################################
+################################################################################
 # Use the C linker to test for C/C++ linkage problems.
 set_target_properties(
     test-hw-server
     test-hw-loc
+    test-msg
     PROPERTIES LINKER_LANGUAGE C
 )
 

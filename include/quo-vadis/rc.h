@@ -32,6 +32,7 @@ enum {
     QV_ERR_CALL_BEFORE_INIT,
     QV_ERR_TOPO,
     QV_ERR_MPI,
+    QV_ERR_MSG,
     QV_ERR_NOT_SUPPORTED,
     QV_ERR_POP,
     QV_ERR_NOT_FOUND
@@ -41,13 +42,14 @@ enum {
 static const char *qv_rc_strerrs[] = {
     "Success",
     "Success, operation already complete",
-    "General, unspecified error",
+    "Unspecified error",
     "System error",
     "Out of resources",
     "Invalid argument",
     "Call before initialization",
     "Hardware topology error",
     "MPI error",
+    "Internal message error",
     "Operation not supported",
     "Pop operation error",
     "Not found"

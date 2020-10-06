@@ -64,6 +64,29 @@ target_link_libraries(
 ################################################################################
 ################################################################################
 add_library(
+    qvi-msg
+    msg.cc
+    ../include/private/msg.h
+)
+
+target_include_directories(
+    qvi-msg
+    PUBLIC
+      $<INSTALL_INTERFACE:include>
+      $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+)
+
+target_link_libraries(
+    qvi-msg
+    qvi-logger
+    nng
+)
+
+################################################################################
+################################################################################
+add_library(
     qv-hw-server
     hw-server.cc
     ../include/quo-vadis/hw-server.h
@@ -81,7 +104,6 @@ target_include_directories(
 target_link_libraries(
     qv-hw-server
     qv-hw-loc
-    nng
 )
 
 # vim: ts=4 sts=4 sw=4 expandtab
