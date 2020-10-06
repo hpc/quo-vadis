@@ -6,11 +6,11 @@ architectures.
 
 ## Building
 ```shell
-mkdir build && cd !$ && cmake .. && make
+mkdir build && cd build && cmake .. && make
 ```
 Or, using [ninja](https://ninja-build.org/), perform the following:
 ```shell
-mkdir build && cd !$ && cmake -G Ninja .. && ninja
+mkdir build && cd build && cmake -G Ninja .. && ninja
 ```
 
 ## Testing
