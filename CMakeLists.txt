@@ -23,6 +23,12 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Project Generator Info
+message(
+    STATUS
+      "Generator used is ${CMAKE_GENERATOR}"
+)
+
 # Testing
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     include(CTest)
@@ -77,7 +83,7 @@ include(CPack)
 
 # pkg-config
 configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/pkg-config.pc.cmake"
+    "${CMAKE_CURRENT_SOURCE_DIR}/pkg-config.pc.in"
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc"
 )
 install(

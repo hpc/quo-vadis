@@ -5,8 +5,22 @@ among multiple runtime components and map workers efficiently to heterogeneous
 architectures.
 
 ## Building
-```
+```shell
 mkdir build && cd !$ && cmake .. && make
+```
+Or, using [ninja](https://ninja-build.org/), perform the following:
+```shell
+mkdir build && cd !$ && cmake -G Ninja .. && ninja
+```
+
+## Testing
+Depending on the type of generator used perform either of the following:
+```shell
+make test
+```
+
+```shell
+ninja test
 ```
 
 ## Internal Software Dependencies

@@ -19,6 +19,16 @@ set(QVI_HWLOC_INCLUDES ${QVI_HWLOC_BIN}/include)
 
 file(MAKE_DIRECTORY ${QVI_HWLOC_INCLUDES})
 
+if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")
+    # Workaround for the following warning when attempting to perform make -j:
+    # make[3]: warning: jobserver unavailable:
+    # using -j1.  Add '+' to parent make rule.
+    set(QVI_HWLOC_BUILD_COMMAND "\$(MAKE)")
+else()
+    # Ninja doesn't like $(MAKE), so just use make
+    set(QVI_HWLOC_BUILD_COMMAND "make")
+endif()
+
 ExternalProject_Add(
     libhwloc
     SOURCE_DIR ${QVI_HWLOC_DIR}
@@ -37,8 +47,8 @@ ExternalProject_Add(
       --enable-nvml=no
       --enable-pci=no
       --enable-libudev=no
-    BUILD_COMMAND $(MAKE)
-    INSTALL_COMMAND $(MAKE) install
+    BUILD_COMMAND ${QVI_HWLOC_BUILD_COMMAND}
+    INSTALL_COMMAND ${QVI_HWLOC_BUILD_COMMAND} install
     BUILD_BYPRODUCTS ${QVI_HWLOC_STATIC_LIB}
 )
 
