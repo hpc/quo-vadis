@@ -69,7 +69,7 @@ target_link_libraries(
 
 add_test(
     NAME
-      test-msg
+      msg
     COMMAND
       bash -c "export URL=\"tcp://127.0.0.1:55995\"    && \
       (${CMAKE_CURRENT_BINARY_DIR}/test-msg $URL -s &) && \
