@@ -89,4 +89,12 @@ set_target_properties(
     PROPERTIES LINKER_LANGUAGE C
 )
 
+# Set test timeout
+set_tests_properties(
+    hw-server
+    hw-loc
+    msg
+    PROPERTIES TIMEOUT 15
+)
+
 # vim: ts=4 sts=4 sw=4 expandtab

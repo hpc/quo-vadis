@@ -42,7 +42,7 @@ typedef struct qvi_msg_s {
     nng_aio *aio;
     nng_socket sock;
     // TODO(skg) Change name
-    nng_msg *msg;
+    nng_msg *payload;
 } qvi_msg_t;
 
 /**
