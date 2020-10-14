@@ -39,9 +39,9 @@ struct qvi_msg_client_s {
 
 static void
 server_cb(
-    void *arg
+    void *data
 ) {
-    qvi_msg_t *msg = (qvi_msg_t *)arg;
+    qvi_msg_t *msg = (qvi_msg_t *)data;
     nng_msg *payload;
     int rv;
     uint32_t when;
@@ -52,6 +52,7 @@ server_cb(
         nng_recv_aio(msg->sock, msg->aio);
         break;
     case qvi_msg_t::RECV:
+        // NOTE: this call typically fails during teardown.
         if (nng_aio_result(msg->aio) != 0) {
             return;
         }
@@ -222,10 +223,10 @@ server_listen(
         goto out;
     }
     for (int i = 0; i < server->qdepth; ++i) {
-        // This start the state machine.
+        // This starts the state machine.
         server_cb(server->messages[i]);
     }
-    nng_msleep(10000);
+    nng_msleep(2000);
 #if 0
     // TODO(skg) Add proper shutdown
     while (true) {
@@ -335,22 +336,28 @@ qvi_msg_client_send(
     msec = atoi(msecstr) * 100;
 
     if ((rv = nng_req0_open(&client->sock)) != 0) {
+        QVI_LOG_INFO("nng_req0_open failed");
     }
 
     if ((rv = nng_dial(client->sock, url, NULL, 0)) != 0) {
+        QVI_LOG_INFO("nng_dial failed");
     }
 
     start = nng_clock();
 
     if ((rv = nng_msg_alloc(&msg, 0)) != 0) {
+        QVI_LOG_INFO("nng_msg_alloc failed");
     }
     if ((rv = nng_msg_append_u32(msg, msec)) != 0) {
+        QVI_LOG_INFO("nng_msg_append_u32 failed");
     }
 
     if ((rv = nng_sendmsg(client->sock, msg, 0)) != 0) {
+        QVI_LOG_INFO("nng_sendmsg failed");
     }
 
     if ((rv = nng_recvmsg(client->sock, &msg, 0)) != 0) {
+        QVI_LOG_INFO("nng_recvmsg failed");
     }
     end = nng_clock();
     nng_msg_free(msg);
