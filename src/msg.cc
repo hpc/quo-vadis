@@ -13,6 +13,9 @@
  * @file msg.cc
  */
 
+// TODO(skg) Bind the server to some subset of hardware resources because it
+// spawns threads.
+
 #include "private/common.h"
 #include "private/msg.h"
 #include "private/logger.h"
@@ -49,8 +52,8 @@ server_cb(
         nng_recv_aio(msg->sock, msg->aio);
         break;
     case qvi_msg_t::RECV:
-        if ((rv = nng_aio_result(msg->aio)) != 0) {
-            // TODO(skg) deal with error
+        if (nng_aio_result(msg->aio) != 0) {
+            return;
         }
         payload = nng_aio_get_msg(msg->aio);
         if ((rv = nng_msg_trim_u32(payload, &when)) != 0) {
@@ -79,7 +82,7 @@ server_cb(
         nng_recv_aio(msg->sock, msg->aio);
         break;
     default:
-        // TODO(skg) deal with error
+        QVI_LOG_ERROR("Invalid state entered: {}", msg->state);
         break;
     }
 }
@@ -140,14 +143,35 @@ qvi_msg_server_destruct(
     qvi_msg_server_t *server
 ) {
     if (!server) return;
+    // Close the socket before we free any other resources.
+    int rc = nng_close(server->sock);
+    if (rc != 0) {
+        char const *ers = "nng_close() failed";
+        QVI_LOG_WARN("{} with rc={} ({})", ers, rc, nng_strerror(rc));
+    }
 
     if (server->messages) {
         for (int i = 0; i < server->qdepth; ++i) {
+            nng_aio_free(server->messages[i]->aio);
             nng_free(server->messages[i], sizeof(qvi_msg_t));
         }
         free(server->messages);
     }
     free(server);
+}
+
+static void
+server_register_atexit(void)
+{
+    // We want exactly one atexit handler installed per process.
+    static bool handler_installed = false;
+    if (!handler_installed) {
+        int rc = atexit(nng_fini);
+        if (rc) {
+            QVI_LOG_WARN("atexit(nng_fini) failed");
+        }
+        handler_installed = true;
+    }
 }
 
 static int
@@ -156,6 +180,9 @@ server_setup(
     const char *url,
     int qdepth
 ) {
+    // Register cleanup function at exit.
+    server_register_atexit();
+    // Queue depth sanity
     if (qdepth < 0) {
         QVI_LOG_ERROR("Negative queue depths not supported");
         return QV_ERR_INVLD_ARG;
@@ -195,14 +222,16 @@ server_listen(
         goto out;
     }
     for (int i = 0; i < server->qdepth; ++i) {
-        // This starts them (INIT state)
-        // TODO(skg) Check for errors here
+        // This start the state machine.
         server_cb(server->messages[i]);
     }
+    nng_msleep(10000);
+#if 0
     // TODO(skg) Add proper shutdown
     while (true) {
         nng_msleep(3600000);
     }
+#endif
 out:
     if (ers) {
         QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, nng_strerror(rc));
@@ -252,6 +281,20 @@ out:
     return QV_SUCCESS;
 }
 
+static void
+client_register_atexit(void)
+{
+    // We want exactly one atexit handler installed per process.
+    static bool handler_installed = false;
+    if (!handler_installed) {
+        int rc = atexit(nng_fini);
+        if (rc) {
+            QVI_LOG_WARN("atexit(nng_fini) failed");
+        }
+        handler_installed = true;
+    }
+}
+
 int
 qvi_msg_client_construct(
     qvi_msg_client_t **client
@@ -263,6 +306,7 @@ qvi_msg_client_construct(
         QVI_LOG_ERROR("calloc() failed");
         return QV_ERR_OOR;
     }
+    client_register_atexit();
     *client = iclient;
     return QV_SUCCESS;
 }
@@ -286,9 +330,9 @@ qvi_msg_client_send(
     nng_msg *msg;
     nng_time start;
     nng_time end;
-    unsigned msec;
+    uint32_t msec;
 
-    msec = atoi(msecstr) * 1000;
+    msec = atoi(msecstr) * 100;
 
     if ((rv = nng_req0_open(&client->sock)) != 0) {
     }

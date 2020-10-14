@@ -41,7 +41,6 @@ typedef struct qvi_msg_s {
     } state;
     nng_aio *aio;
     nng_socket sock;
-    // TODO(skg) Change name
     nng_msg *payload;
 } qvi_msg_t;
 
