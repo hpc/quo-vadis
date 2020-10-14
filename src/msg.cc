@@ -181,8 +181,6 @@ server_setup(
     const char *url,
     int qdepth
 ) {
-    // Register cleanup function at exit.
-    server_register_atexit();
     // Queue depth sanity
     if (qdepth < 0) {
         QVI_LOG_ERROR("Negative queue depths not supported");
@@ -195,6 +193,8 @@ server_setup(
         QVI_LOG_ERROR("snprintf() truncated");
         return QV_ERR_INTERNAL;
     }
+    // Register cleanup function at exit.
+    server_register_atexit();
     return QV_SUCCESS;
 }
 
@@ -226,13 +226,6 @@ server_listen(
         // This starts the state machine.
         server_cb(server->messages[i]);
     }
-    nng_msleep(2000);
-#if 0
-    // TODO(skg) Add proper shutdown
-    while (true) {
-        nng_msleep(3600000);
-    }
-#endif
 out:
     if (ers) {
         QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, nng_strerror(rc));

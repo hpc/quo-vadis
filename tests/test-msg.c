@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 int
 server(
@@ -38,6 +39,7 @@ server(
         ers = "qvi_msg_server_start() failed";
         goto out;
     }
+    sleep(10);
 out:
     qvi_msg_server_destruct(server);
     if (ers) {
