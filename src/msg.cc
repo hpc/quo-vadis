@@ -85,29 +85,38 @@ server_cb(
 }
 
 static int
-server_allocate_messages(
-    nng_socket sock,
-    qvi_msg_t **msg
+server_allocate_msg_queue(
+    qvi_msg_server_t *server
 ) {
-    qvi_msg_t *imsg = nullptr;
+    if (!server) return QV_ERR_INVLD_ARG;
 
-    if ((imsg = (qvi_msg_t *)nng_alloc(sizeof(*imsg))) == NULL) {
-        QVI_LOG_ERROR("nng_alloc() failed");
+    server->messages = (qvi_msg_t **)calloc(
+        server->qdepth,
+        sizeof(*(server->messages))
+    );
+    if (!server->messages) {
+        QVI_LOG_ERROR("calloc() failed");
         return QV_ERR_OOR;
     }
-    int rc = nng_aio_alloc(&imsg->aio, server_cb, imsg);
-    if (rc != 0) {
-        QVI_LOG_ERROR(
-            "nng_aio_alloc() failed with rc={} ({})",
-            rc,
-            nng_strerror(rc)
-        );
-        return QV_ERR_MSG;
+    for (int i = 0; i < server->qdepth; ++i) {
+        qvi_msg_t *imsg = nullptr;
+        if (!(imsg = (qvi_msg_t *)nng_alloc(sizeof(*imsg)))) {
+            QVI_LOG_ERROR("nng_alloc() failed");
+            return QV_ERR_OOR;
+        }
+        int rc = nng_aio_alloc(&imsg->aio, server_cb, imsg);
+        if (rc != 0) {
+            QVI_LOG_ERROR(
+                "nng_aio_alloc() failed with rc={} ({})",
+                rc,
+                nng_strerror(rc)
+            );
+            return QV_ERR_MSG;
+        }
+        imsg->state = qvi_msg_t::INIT;
+        imsg->sock  = server->sock;
+        server->messages[i] = imsg;
     }
-    imsg->state = qvi_msg_t::INIT;
-    imsg->sock  = sock;
-
-    *msg = imsg;
     return QV_SUCCESS;
 }
 
@@ -147,75 +156,44 @@ server_setup(
     const char *url,
     int qdepth
 ) {
-    int rc = QV_SUCCESS;
-    char const *ers = nullptr;
-
     if (qdepth < 0) {
         QVI_LOG_ERROR("Negative queue depths not supported");
         return QV_ERR_INVLD_ARG;
     }
     server->qdepth = qdepth;
 
-    server->messages = (qvi_msg_t **)calloc(
-        server->qdepth,
-        sizeof(*(server->messages))
-    );
-    if (!server->messages) {
-        QVI_LOG_ERROR("calloc() failed");
-        return QV_ERR_OOR;
-    }
-
     const int nwritten = snprintf(server->url, sizeof(server->url), "%s", url);
     if (nwritten >= URL_MAX_LEN) {
-        ers = "snprintf() truncated";
-        rc = QV_ERR_INTERNAL;
-        goto out;
+        QVI_LOG_ERROR("snprintf() truncated");
+        return QV_ERR_INTERNAL;
     }
-out:
-    if (ers) {
-        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-    }
-    return rc;
+    return QV_SUCCESS;
 }
 
-int
-qvi_msg_server_start(
-    qvi_msg_server_t *server,
-    const char *url,
-    int qdepth
+static int
+server_open_commchan(
+    qvi_msg_server_t *server
 ) {
-    if (!server || !url) return QV_ERR_INVLD_ARG;
-    // NNG-specific error strings
-    char const *nng_ers = nullptr;
-    // Internal error strings
+    int rc = nng_rep0_open_raw(&server->sock);
+    if (rc != 0) {
+        char const *ers = "nng_rep0_open_raw() failed";
+        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, nng_strerror(rc));
+        return QV_ERR_MSG;
+    }
+    return QV_SUCCESS;
+}
+
+static int
+server_listen(
+    qvi_msg_server_t *server
+) {
     char const *ers = nullptr;
 
-    int rc = server_setup(server, url, qdepth);
-    if (rc != QV_SUCCESS) {
-        ers = "server_setup() failed";
-        goto out;
-    }
-
-    rc = nng_rep0_open_raw(&server->sock);
+    int rc = nng_listen(server->sock, server->url, NULL, 0);
     if (rc != 0) {
-        nng_ers = "nng_rep0_open_raw() failed";
+        ers = "nng_listen() failed";
         goto out;
     }
-
-    for (int i = 0; i < server->qdepth; ++i) {
-        rc = server_allocate_messages(server->sock, &(server->messages[i]));
-        if (rc != QV_SUCCESS) {
-            ers = "server_allocate_messages() failed";
-            goto out;
-        }
-    }
-
-    rc = nng_listen(server->sock, server->url, NULL, 0);
-    if (rc != 0) {
-        nng_ers = "nng_listen() failed";
-        goto out;
-    }
-
     for (int i = 0; i < server->qdepth; ++i) {
         // This starts them (INIT state)
         // TODO(skg) Check for errors here
@@ -226,10 +204,47 @@ qvi_msg_server_start(
         nng_msleep(3600000);
     }
 out:
-    if (nng_ers) {
+    if (ers) {
         QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, nng_strerror(rc));
         return QV_ERR_MSG;
     }
+    return QV_SUCCESS;
+}
+
+int
+qvi_msg_server_start(
+    qvi_msg_server_t *server,
+    const char *url,
+    int qdepth
+) {
+    if (!server || !url) return QV_ERR_INVLD_ARG;
+
+    char const *ers = nullptr;
+
+    int rc = server_setup(server, url, qdepth);
+    if (rc != QV_SUCCESS) {
+        ers = "server_setup() failed";
+        goto out;
+    }
+
+    rc = server_open_commchan(server);
+    if (rc != QV_SUCCESS) {
+        ers = "server_open_commchan() failed";
+        goto out;
+    }
+
+    rc = server_allocate_msg_queue(server);
+    if (rc != QV_SUCCESS) {
+        ers = "server_allocate_msg_queue() failed";
+        goto out;
+    }
+
+    rc = server_listen(server);
+    if (rc != QV_SUCCESS) {
+        ers = "server_listen() failed";
+        goto out;
+    }
+out:
     if (ers) {
         QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
         return rc;
@@ -267,11 +282,11 @@ qvi_msg_client_send(
     const char *url,
     const char *msecstr
 ) {
-    int        rv;
-    nng_msg *  msg;
-    nng_time   start;
-    nng_time   end;
-    unsigned   msec;
+    int rv;
+    nng_msg *msg;
+    nng_time start;
+    nng_time end;
+    unsigned msec;
 
     msec = atoi(msecstr) * 1000;
 
