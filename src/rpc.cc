@@ -22,6 +22,8 @@
 
 #include "nng/supplemental/util/platform.h"
 
+#include <stdarg.h>
+
 // This should be more than plenty for our use case.
 #define URL_MAX_LEN 1024
 
@@ -36,6 +38,100 @@ struct qvi_rpc_client_s {
     char url[URL_MAX_LEN];
     nng_socket sock;
 };
+
+struct qvi_rpc_rep_s {
+    int rc;
+    nng_msg *msg;
+};
+
+
+
+// We currently support encoding up to 8 arguments:
+// 64 bits for the underlying qvi_rpc_args_t type divided by
+// 8 bits for the QVI_RPC_TYPE_* types.
+typedef uint64_t qvi_rpc_args_t;
+
+// We currently support up to 8 types. If this ever changes, please carefully
+// update all structures associated with the handling of these values.
+typedef uint8_t qvi_rpc_type_t;
+#define QVI_RPC_TYPE_NONE (0x00)
+#define QVI_RPC_TYPE_INT  (0x01 << 0)
+#define QVI_RPC_TYPE_CSTR (0x01 << 1)
+
+typedef enum qvi_rpc_fun_e {
+    TASK_GET_CPUBIND
+} qvi_rpc_fun_t;
+
+static int
+rpc_pack(
+    nng_msg **msg,
+    qvi_rpc_args_t argl,
+    va_list args
+) {
+    char const *ers = nullptr;
+
+    nng_msg *imsg = nullptr;
+    int rc = nng_msg_alloc(&imsg, 0);
+    if (rc != 0) {
+        QVI_LOG_ERROR("nng_msg_alloc() failed");
+        return QV_ERR_MSG;
+    }
+    // Maximum number of arguments we can process.
+    const size_t nargs = sizeof(argl) / sizeof(qvi_rpc_type_t);
+    // Number of bits for a given RPC type.
+    const size_t abits = sizeof(qvi_rpc_type_t) * 8;
+    // Type mask used to help retrieve the underlying RPC type.
+    const qvi_rpc_args_t mask = 0xFF;
+    // Flag indicating we are done processing arguments.
+    bool done = false;
+
+    for (size_t argidx = 0; argidx < nargs && !done; ++argidx) {
+        qvi_rpc_type_t type = (qvi_rpc_type_t)(argl & mask);
+        switch (type) {
+            case QVI_RPC_TYPE_NONE:
+                done = true;
+                break;
+            case QVI_RPC_TYPE_INT: {
+                int value = va_arg(args, int);
+                QVI_LOG_INFO("{} is an int = {}!", argidx, value);
+                break;
+            }
+            case QVI_RPC_TYPE_CSTR: {
+                char *value = va_arg(args, char *);
+                QVI_LOG_INFO("{} is a cstr = {}!", argidx, value);
+                break;
+            }
+            default:
+                QVI_LOG_INFO("TYPEVAL={}", type);
+                ers = "Unrecognized RPC type";
+                rc = QV_ERR_INTERNAL;
+                goto out;
+        }
+        // Advance argument bits to process next argument.
+        argl = argl >> abits;
+    }
+out:
+    if (ers) {
+        QVI_LOG_ERROR("{}", ers);
+        return rc;
+    }
+    *msg = imsg;
+    return QV_SUCCESS;
+}
+
+int
+qvi_rpc_call(
+    qvi_rpc_fun_t funid,
+    qvi_rpc_args_t argl,
+    ...
+) {
+    va_list vl;
+    va_start(vl, argl);
+    nng_msg *msg = nullptr;
+    rpc_pack(&msg, argl, vl);
+    va_end(vl);
+    return 0;
+}
 
 static void
 server_cb(
@@ -325,6 +421,12 @@ qvi_rpc_client_send(
     nng_time start;
     nng_time end;
     uint32_t msec;
+
+    qvi_rpc_args_t args = QVI_RPC_TYPE_INT;
+    args = args | (QVI_RPC_TYPE_CSTR << 8);
+    args = args | (QVI_RPC_TYPE_INT << 16);
+
+    qvi_rpc_call(TASK_GET_CPUBIND, args, 1, "hi", 2);
 
     msec = atoi(msecstr) * 100;
 
