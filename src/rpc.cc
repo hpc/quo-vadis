@@ -60,10 +60,44 @@ typedef enum qvi_rpc_fun_e {
     TASK_GET_CPUBIND
 } qvi_rpc_fun_t;
 
+/**
+ * Returns the maximum number of arguments that can be packed into a
+ * qvi_rpc_args_t structure.
+ */
+static inline size_t
+rpc_args_maxn(void)
+{
+    return sizeof(qvi_rpc_args_t) / sizeof(qvi_rpc_type_t);
+}
+
+/**
+ * Returns the number of bits used for RPC types.
+ */
+static inline size_t
+rpc_type_nbits(void)
+{
+    return sizeof(qvi_rpc_type_t) * 8;
+}
+
+/**
+ * Returns the qvi_rpc_args_t from the RPC message header.
+ */
+static inline qvi_rpc_args_t
+rpc_args_from_msg_header(
+    nng_msg *msg
+) {
+    qvi_rpc_args_t argl;
+    memcpy(&argl, nng_msg_header(msg), sizeof(argl));
+    return argl;
+}
+
+/**
+ *
+ */
 static int
 rpc_pack(
     nng_msg **msg,
-    qvi_rpc_args_t argl,
+    const qvi_rpc_args_t argl,
     va_list args
 ) {
     char const *ers = nullptr;
@@ -74,18 +108,18 @@ rpc_pack(
         QVI_LOG_ERROR("nng_msg_alloc() failed");
         return QV_ERR_MSG;
     }
-    // Maximum number of arguments we can process.
-    const size_t nargs = sizeof(argl) / sizeof(qvi_rpc_type_t);
-    // Number of bits for a given RPC type.
-    const size_t tbits = sizeof(qvi_rpc_type_t) * 8;
+    const size_t nargs = rpc_args_maxn();
+    const size_t tbits = rpc_type_nbits();
     // Type mask used to help retrieve the underlying RPC type.
     const qvi_rpc_args_t mask = 0xFF;
     // Flag indicating whether or not we are done processing arguments.
     bool done = false;
+    // We will need to manipulate the argument list contents, so copy it.
+    qvi_rpc_args_t arglc = argl;
     // Process each argument and store them into the message body in the order
     // in which they were specified.
     for (size_t argidx = 0; argidx < nargs && !done; ++argidx) {
-        qvi_rpc_type_t type = (qvi_rpc_type_t)(argl & mask);
+        qvi_rpc_type_t type = (qvi_rpc_type_t)(arglc & mask);
         switch (type) {
             case QVI_RPC_TYPE_NONE: {
                 done = true;
@@ -113,7 +147,13 @@ rpc_pack(
                 goto out;
         }
         // Advance argument bits to process next argument.
-        argl = argl >> tbits;
+        arglc = arglc >> tbits;
+    }
+    // Add argument information to the header to make unpacking easier.
+    rc = nng_msg_header_append(imsg, &argl, sizeof(argl));
+    if (rc != 0) {
+        ers = "nng_msg_header_append() failed";
+        rc = QV_ERR_MSG;
     }
 out:
     if (ers) {
@@ -121,6 +161,72 @@ out:
         return rc;
     }
     *msg = imsg;
+    return QV_SUCCESS;
+}
+
+/**
+ *
+ */
+static int
+rpc_unpack(
+    nng_msg *msg
+) {
+    int rc = QV_SUCCESS;
+    char const *ers = nullptr;
+    // Get argument list from message header.
+    qvi_rpc_args_t argl = rpc_args_from_msg_header(msg);
+    // Get pointer to start of message body.
+    uint8_t *bodyp = (uint8_t *)nng_msg_body(msg);
+
+    const size_t nargs = rpc_args_maxn();
+    const size_t tbits = rpc_type_nbits();
+    // Type mask used to help retrieve the underlying RPC type.
+    const qvi_rpc_args_t mask = 0xFF;
+    // Flag indicating whether or not we are done processing arguments.
+    bool done = false;
+    // Process each argument and store them into the message body in the order
+    // in which they were specified.
+    for (size_t argidx = 0; argidx < nargs && !done; ++argidx) {
+        qvi_rpc_type_t type = (qvi_rpc_type_t)(argl & mask);
+        switch (type) {
+            case QVI_RPC_TYPE_NONE: {
+                done = true;
+                break;
+            }
+            case QVI_RPC_TYPE_INT: {
+                int value;
+                memcpy(&value, bodyp, sizeof(value));
+                QVI_LOG_INFO("INT = {}", value);
+                bodyp += sizeof(value);
+                break;
+            }
+            case QVI_RPC_TYPE_CSTR: {
+                char const *cstr = (char const *)bodyp;
+                int bufsize = snprintf(NULL, 0, "%s", cstr) + 1;
+                char *value = (char *)calloc(bufsize, sizeof(*value));
+                if (!value) {
+                    ers = "calloc() failed";
+                    rc = QV_ERR_OOR;
+                    goto out;
+                }
+                memcpy(value, cstr, bufsize);
+                QVI_LOG_INFO("CSTR = {}", value);
+                bodyp += bufsize;
+                break;
+            }
+            default:
+                ers = "Unrecognized RPC type";
+                rc = QV_ERR_INTERNAL;
+                goto out;
+        }
+        // Advance argument bits to process next argument.
+        argl = argl >> tbits;
+    }
+out:
+    if (ers) {
+        QVI_LOG_ERROR("{}", ers);
+        return rc;
+    }
     return QV_SUCCESS;
 }
 
@@ -135,15 +241,7 @@ qvi_rpc_call(
     nng_msg *msg = nullptr;
     rpc_pack(&msg, argl, vl);
     va_end(vl);
-    uint8_t *data = (uint8_t *)nng_msg_body(msg);
-    int a, b;
-    char hi[100];
-    memcpy(&a, data, sizeof(a));
-    data += sizeof(a);
-    memcpy(hi, data, strlen((char *)data) + 1);
-    data += strlen(hi) + 1;
-    memcpy(&b, data, sizeof(b));
-    QVI_LOG_INFO("HERE YOU GO {} {} {}", a, hi, b);
+    rpc_unpack(msg);
     nng_msg_free(msg);
     return 0;
 }

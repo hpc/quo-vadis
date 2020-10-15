@@ -22,6 +22,7 @@
 #include "private/macros.h"
 
 #include <errno.h>
+#include <assert.h>
 #include <unistd.h>
 #include <string.h>
 #include <threads.h>
