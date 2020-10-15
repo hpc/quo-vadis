@@ -10,11 +10,11 @@
  */
 
 /**
- * @file test-msg.c
+ * @file test-rpc.c
  */
 
 #include "quo-vadis.h"
-#include "private/msg.h"
+#include "private/rpc.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -27,21 +27,21 @@ server(
 ) {
     char const *ers = NULL;
 
-    qvi_msg_server_t *server = NULL;
-    int rc = qvi_msg_server_construct(&server);
+    qvi_rpc_server_t *server = NULL;
+    int rc = qvi_rpc_server_construct(&server);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_msg_server_construct() failed";
+        ers = "qvi_rpc_server_construct() failed";
         goto out;
     }
 
-    rc = qvi_msg_server_start(server, url, 10);
+    rc = qvi_rpc_server_start(server, url, 10);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_msg_server_start() failed";
+        ers = "qvi_rpc_server_start() failed";
         goto out;
     }
     sleep(10);
 out:
-    qvi_msg_server_destruct(server);
+    qvi_rpc_server_destruct(server);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         exit(EXIT_FAILURE);
@@ -57,19 +57,19 @@ client(
 ) {
     char const *ers = NULL;
 
-    qvi_msg_client_t *client = NULL;
-    int rc = qvi_msg_client_construct(&client);
+    qvi_rpc_client_t *client = NULL;
+    int rc = qvi_rpc_client_construct(&client);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_msg_client_construct() failed";
+        ers = "qvi_rpc_client_construct() failed";
         goto out;
     }
-    rc = qvi_msg_client_send(client, url, msecstr);
+    rc = qvi_rpc_client_send(client, url, msecstr);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_msg_client_send() failed";
+        ers = "qvi_rpc_client_send() failed";
         goto out;
     }
 out:
-    qvi_msg_client_destruct(client);
+    qvi_rpc_client_destruct(client);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         exit(EXIT_FAILURE);
@@ -82,7 +82,7 @@ main(
     int argc,
     char **argv
 ) {
-    printf("# Starting msg test\n");
+    printf("# Starting rpc test\n");
 
     int rc;
 

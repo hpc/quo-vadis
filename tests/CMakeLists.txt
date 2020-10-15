@@ -52,32 +52,32 @@ add_test(hw-loc test-hw-loc)
 ################################################################################
 ################################################################################
 add_executable(
-    test-msg
-    test-msg.c
+    test-rpc
+    test-rpc.c
 )
 
 target_include_directories(
-    test-msg
+    test-rpc
     PRIVATE
       ${CMAKE_SOURCE_DIR}/include
 )
 
 target_link_libraries(
-    test-msg
-    qvi-msg
+    test-rpc
+    qvi-rpc
 )
 
 add_test(
     NAME
-      msg
+      rpc
     COMMAND
       bash -c "export URL=\"tcp://127.0.0.1:55995\"    && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-msg $URL -s &) && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-msg $URL 2 &)  && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-msg $URL 1 &)  && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-msg $URL 1 &)  && \
-      ${CMAKE_CURRENT_BINARY_DIR}/test-msg $URL 3      && \
-      killall test-msg"
+      (${CMAKE_CURRENT_BINARY_DIR}/test-rpc $URL -s &) && \
+      (${CMAKE_CURRENT_BINARY_DIR}/test-rpc $URL 2 &)  && \
+      (${CMAKE_CURRENT_BINARY_DIR}/test-rpc $URL 1 &)  && \
+      (${CMAKE_CURRENT_BINARY_DIR}/test-rpc $URL 1 &)  && \
+      ${CMAKE_CURRENT_BINARY_DIR}/test-rpc $URL 3      && \
+      killall test-rpc"
 )
 
 ################################################################################
@@ -86,7 +86,7 @@ add_test(
 set_target_properties(
     test-hw-server
     test-hw-loc
-    test-msg
+    test-rpc
     PROPERTIES LINKER_LANGUAGE C
 )
 
@@ -94,7 +94,7 @@ set_target_properties(
 set_tests_properties(
     hw-server
     hw-loc
-    msg
+    rpc
     PROPERTIES TIMEOUT 15
 )
 

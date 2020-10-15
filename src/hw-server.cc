@@ -21,7 +21,7 @@
 
 /** qv_hw_server_t type definition */
 struct qv_hw_server_s {
-    qv_hwloc_t *qv_hwloc = nullptr;
+    qv_hwloc_t *qv_hwloc;
 };
 
 int

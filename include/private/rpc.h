@@ -10,11 +10,11 @@
  */
 
 /**
- * @file msg.h
+ * @file rpc.h
  */
 
-#ifndef QVI_MSG_H
-#define QVI_MSG_H
+#ifndef QVI_RPC_H
+#define QVI_RPC_H
 
 #include "nng/nng.h"
 #include "nng/protocol/reqrep0/rep.h"
@@ -25,14 +25,14 @@ extern "C" {
 #endif
 
 // Forward declarations.
-struct qvi_msg_server_s;
-typedef struct qvi_msg_server_s qvi_msg_server_t;
+struct qvi_rpc_server_s;
+typedef struct qvi_rpc_server_s qvi_rpc_server_t;
 
-struct qvi_msg_client_s;
-typedef struct qvi_msg_client_s qvi_msg_client_t;
+struct qvi_rpc_client_s;
+typedef struct qvi_rpc_client_s qvi_rpc_client_t;
 
 /** Message type definition. */
-typedef struct qvi_msg_s {
+typedef struct qvi_rpc_s {
     enum {
         INIT,
         RECV,
@@ -42,30 +42,32 @@ typedef struct qvi_msg_s {
     nng_aio *aio;
     nng_socket sock;
     nng_msg *payload;
-} qvi_msg_t;
+} qvi_rpc_t;
 
 /**
  *
  */
 int
-qvi_msg_server_construct(
-    qvi_msg_server_t **server
+qvi_rpc_server_construct(
+    qvi_rpc_server_t **server
 );
 
 /**
  *
  */
 void
-qvi_msg_server_destruct(
-    qvi_msg_server_t *server
+qvi_rpc_server_destruct(
+    qvi_rpc_server_t *server
 );
 
 /**
- *
+ * qdepth is the maximum number of outstanding requests we can handle.  It
+ * represents outstanding work items.  Select a small number to reduce memory
+ * usage.
  */
 int
-qvi_msg_server_start(
-    qvi_msg_server_t *server,
+qvi_rpc_server_start(
+    qvi_rpc_server_t *server,
     const char *url,
     int qdepth
 );
@@ -74,22 +76,22 @@ qvi_msg_server_start(
  *
  */
 int
-qvi_msg_client_construct(
-    qvi_msg_client_t **client
+qvi_rpc_client_construct(
+    qvi_rpc_client_t **client
 );
 
 /**
  *
  */
 void
-qvi_msg_client_destruct(
-    qvi_msg_client_t *client
+qvi_rpc_client_destruct(
+    qvi_rpc_client_t *client
 );
 
 // TODO(skg) FIXME
 int
-qvi_msg_client_send(
-    qvi_msg_client_t *client,
+qvi_rpc_client_send(
+    qvi_rpc_client_t *client,
     const char *url,
     const char *msecstr
 );

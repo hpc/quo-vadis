@@ -10,14 +10,14 @@
  */
 
 /**
- * @file msg.cc
+ * @file rpc.cc
  */
 
 // TODO(skg) Bind the server to some subset of hardware resources because it
 // spawns threads.
 
 #include "private/common.h"
-#include "private/msg.h"
+#include "private/rpc.h"
 #include "private/logger.h"
 
 #include "nng/supplemental/util/platform.h"
@@ -25,14 +25,14 @@
 // This should be more than plenty for our use case.
 #define URL_MAX_LEN 1024
 
-struct qvi_msg_server_s {
+struct qvi_rpc_server_s {
     char url[URL_MAX_LEN];
     nng_socket sock;
     int qdepth;
-    qvi_msg_t **messages;
+    qvi_rpc_t **messages;
 };
 
-struct qvi_msg_client_s {
+struct qvi_rpc_client_s {
     char url[URL_MAX_LEN];
     nng_socket sock;
 };
@@ -41,17 +41,17 @@ static void
 server_cb(
     void *data
 ) {
-    qvi_msg_t *msg = (qvi_msg_t *)data;
+    qvi_rpc_t *msg = (qvi_rpc_t *)data;
     nng_msg *payload;
     int rv;
     uint32_t when;
 
     switch (msg->state) {
-    case qvi_msg_t::INIT:
-        msg->state = qvi_msg_t::RECV;
+    case qvi_rpc_t::INIT:
+        msg->state = qvi_rpc_t::RECV;
         nng_recv_aio(msg->sock, msg->aio);
         break;
-    case qvi_msg_t::RECV:
+    case qvi_rpc_t::RECV:
         // NOTE: this call typically fails during teardown.
         if (nng_aio_result(msg->aio) != 0) {
             return;
@@ -64,22 +64,22 @@ server_cb(
             return;
         }
         msg->payload = payload;
-        msg->state = qvi_msg_t::WAIT;
+        msg->state = qvi_rpc_t::WAIT;
         nng_sleep_aio(when, msg->aio);
         break;
-    case qvi_msg_t::WAIT:
+    case qvi_rpc_t::WAIT:
         // We could add more data to the message here.
         nng_aio_set_msg(msg->aio, msg->payload);
         msg->payload = nullptr;
-        msg->state = qvi_msg_t::SEND;
+        msg->state = qvi_rpc_t::SEND;
         nng_send_aio(msg->sock, msg->aio);
         break;
-    case qvi_msg_t::SEND:
+    case qvi_rpc_t::SEND:
         if ((rv = nng_aio_result(msg->aio)) != 0) {
             nng_msg_free(msg->payload);
             // TODO(skg) deal with error
         }
-        msg->state = qvi_msg_t::RECV;
+        msg->state = qvi_rpc_t::RECV;
         nng_recv_aio(msg->sock, msg->aio);
         break;
     default:
@@ -89,12 +89,12 @@ server_cb(
 }
 
 static int
-server_allocate_msg_queue(
-    qvi_msg_server_t *server
+server_allocate_outstanding_msg_queue(
+    qvi_rpc_server_t *server
 ) {
     if (!server) return QV_ERR_INVLD_ARG;
 
-    server->messages = (qvi_msg_t **)calloc(
+    server->messages = (qvi_rpc_t **)calloc(
         server->qdepth,
         sizeof(*(server->messages))
     );
@@ -103,8 +103,8 @@ server_allocate_msg_queue(
         return QV_ERR_OOR;
     }
     for (int i = 0; i < server->qdepth; ++i) {
-        qvi_msg_t *imsg = nullptr;
-        if (!(imsg = (qvi_msg_t *)nng_alloc(sizeof(*imsg)))) {
+        qvi_rpc_t *imsg = nullptr;
+        if (!(imsg = (qvi_rpc_t *)nng_alloc(sizeof(*imsg)))) {
             QVI_LOG_ERROR("nng_alloc() failed");
             return QV_ERR_OOR;
         }
@@ -117,7 +117,7 @@ server_allocate_msg_queue(
             );
             return QV_ERR_MSG;
         }
-        imsg->state = qvi_msg_t::INIT;
+        imsg->state = qvi_rpc_t::INIT;
         imsg->sock  = server->sock;
         server->messages[i] = imsg;
     }
@@ -125,12 +125,12 @@ server_allocate_msg_queue(
 }
 
 int
-qvi_msg_server_construct(
-    qvi_msg_server_t **server
+qvi_rpc_server_construct(
+    qvi_rpc_server_t **server
 ) {
     if (!server) return QV_ERR_INVLD_ARG;
 
-    qvi_msg_server_t *iserver = (qvi_msg_server_t *)calloc(1, sizeof(*iserver));
+    qvi_rpc_server_t *iserver = (qvi_rpc_server_t *)calloc(1, sizeof(*iserver));
     if (!iserver) {
         QVI_LOG_ERROR("calloc() failed");
         return QV_ERR_OOR;
@@ -140,8 +140,8 @@ qvi_msg_server_construct(
 }
 
 void
-qvi_msg_server_destruct(
-    qvi_msg_server_t *server
+qvi_rpc_server_destruct(
+    qvi_rpc_server_t *server
 ) {
     if (!server) return;
     // Close the socket before we free any other resources.
@@ -154,7 +154,7 @@ qvi_msg_server_destruct(
     if (server->messages) {
         for (int i = 0; i < server->qdepth; ++i) {
             nng_aio_free(server->messages[i]->aio);
-            nng_free(server->messages[i], sizeof(qvi_msg_t));
+            nng_free(server->messages[i], sizeof(qvi_rpc_t));
         }
         free(server->messages);
     }
@@ -177,7 +177,7 @@ server_register_atexit(void)
 
 static int
 server_setup(
-    qvi_msg_server_t *server,
+    qvi_rpc_server_t *server,
     const char *url,
     int qdepth
 ) {
@@ -200,7 +200,7 @@ server_setup(
 
 static int
 server_open_commchan(
-    qvi_msg_server_t *server
+    qvi_rpc_server_t *server
 ) {
     int rc = nng_rep0_open_raw(&server->sock);
     if (rc != 0) {
@@ -213,11 +213,11 @@ server_open_commchan(
 
 static int
 server_listen(
-    qvi_msg_server_t *server
+    qvi_rpc_server_t *server
 ) {
     char const *ers = nullptr;
 
-    int rc = nng_listen(server->sock, server->url, NULL, 0);
+    int rc = nng_listen(server->sock, server->url, nullptr, 0);
     if (rc != 0) {
         ers = "nng_listen() failed";
         goto out;
@@ -235,8 +235,8 @@ out:
 }
 
 int
-qvi_msg_server_start(
-    qvi_msg_server_t *server,
+qvi_rpc_server_start(
+    qvi_rpc_server_t *server,
     const char *url,
     int qdepth
 ) {
@@ -256,9 +256,9 @@ qvi_msg_server_start(
         goto out;
     }
 
-    rc = server_allocate_msg_queue(server);
+    rc = server_allocate_outstanding_msg_queue(server);
     if (rc != QV_SUCCESS) {
-        ers = "server_allocate_msg_queue() failed";
+        ers = "server_allocate_outstanding_msg_queue() failed";
         goto out;
     }
 
@@ -290,12 +290,12 @@ client_register_atexit(void)
 }
 
 int
-qvi_msg_client_construct(
-    qvi_msg_client_t **client
+qvi_rpc_client_construct(
+    qvi_rpc_client_t **client
 ) {
     if (!client) return QV_ERR_INVLD_ARG;
 
-    qvi_msg_client_t *iclient = (qvi_msg_client_t *)calloc(1, sizeof(*iclient));
+    qvi_rpc_client_t *iclient = (qvi_rpc_client_t *)calloc(1, sizeof(*iclient));
     if (!iclient) {
         QVI_LOG_ERROR("calloc() failed");
         return QV_ERR_OOR;
@@ -306,8 +306,8 @@ qvi_msg_client_construct(
 }
 
 void
-qvi_msg_client_destruct(
-    qvi_msg_client_t *client
+qvi_rpc_client_destruct(
+    qvi_rpc_client_t *client
 ) {
     if (!client) return;
 
@@ -315,8 +315,8 @@ qvi_msg_client_destruct(
 }
 
 int
-qvi_msg_client_send(
-    qvi_msg_client_t *client,
+qvi_rpc_client_send(
+    qvi_rpc_client_t *client,
     const char *url,
     const char *msecstr
 ) {
@@ -332,7 +332,7 @@ qvi_msg_client_send(
         QVI_LOG_INFO("nng_req0_open failed");
     }
 
-    if ((rv = nng_dial(client->sock, url, NULL, 0)) != 0) {
+    if ((rv = nng_dial(client->sock, url, nullptr, 0)) != 0) {
         QVI_LOG_INFO("nng_dial failed");
     }
 

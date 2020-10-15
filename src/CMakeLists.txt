@@ -64,13 +64,13 @@ target_link_libraries(
 ################################################################################
 ################################################################################
 add_library(
-    qvi-msg
-    msg.cc
-    ../include/private/msg.h
+    qvi-rpc
+    rpc.cc
+    ../include/private/rpc.h
 )
 
 target_include_directories(
-    qvi-msg
+    qvi-rpc
     PUBLIC
       $<INSTALL_INTERFACE:include>
       $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
@@ -79,7 +79,7 @@ target_include_directories(
 )
 
 target_link_libraries(
-    qvi-msg
+    qvi-rpc
     qvi-logger
     nng
 )
