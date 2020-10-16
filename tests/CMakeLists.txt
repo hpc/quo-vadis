@@ -73,6 +73,7 @@ add_test(
     COMMAND
       bash -c "export URL=\"tcp://127.0.0.1:55995\"    && \
       (${CMAKE_CURRENT_BINARY_DIR}/test-rpc $URL -s &) && \
+      sleep 2 && \
       (${CMAKE_CURRENT_BINARY_DIR}/test-rpc $URL 2 &)  && \
       (${CMAKE_CURRENT_BINARY_DIR}/test-rpc $URL 1 &)  && \
       (${CMAKE_CURRENT_BINARY_DIR}/test-rpc $URL 1 &)  && \

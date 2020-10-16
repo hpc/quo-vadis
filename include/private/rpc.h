@@ -32,7 +32,7 @@ struct qvi_rpc_client_s;
 typedef struct qvi_rpc_client_s qvi_rpc_client_t;
 
 /** Message type definition. */
-typedef struct qvi_rpc_s {
+typedef struct qvi_rpc_wqi_s {
     enum {
         INIT,
         RECV,
@@ -41,8 +41,8 @@ typedef struct qvi_rpc_s {
     } state;
     nng_aio *aio;
     nng_socket sock;
-    nng_msg *payload;
-} qvi_rpc_t;
+    nng_msg *msg;
+} qvi_rpc_wqi_t;
 
 /**
  *
