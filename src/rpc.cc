@@ -13,8 +13,11 @@
  * @file rpc.cc
  */
 
-// TODO(skg) Bind the server to some subset of hardware resources because it
-// spawns threads.
+// TODO(skg)
+// * Bind the server to some subset of hardware resources because it
+//   spawns threads.
+// * Add message magic to front/back of message body and verify entire message
+//   was sent successfully.
 
 #include "private/common.h"
 #include "private/rpc.h"
