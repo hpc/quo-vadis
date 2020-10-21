@@ -186,6 +186,7 @@ rpc_pack(
             case QVI_RPC_TYPE_INT: {
                 const int value = va_arg(args, int);
                 if (nng_msg_append(imsg, &value, sizeof(value)) != 0) {
+                    ers = "QVI_RPC_TYPE_INT: nng_msg_append() failed";
                     rc = QV_ERR_MSG;
                     goto out;
                 }
@@ -194,6 +195,7 @@ rpc_pack(
             case QVI_RPC_TYPE_CSTR: {
                 char *value = va_arg(args, char *);
                 if (nng_msg_append(imsg, value, strlen(value) + 1) != 0) {
+                    ers = "QVI_RPC_TYPE_CSTR: nng_msg_append() failed";
                     rc = QV_ERR_MSG;
                     goto out;
                 }
@@ -210,6 +212,8 @@ rpc_pack(
 out:
     if (ers) {
         QVI_LOG_ERROR("{}", ers);
+        nng_msg_free(imsg);
+        *msg = nullptr;
         return rc;
     }
     *msg = imsg;
@@ -385,17 +389,23 @@ out:
 int
 qvi_rpc_call(
     qvi_rpc_client_t *client,
-    qvi_rpc_funid_t funid,
-    qvi_rpc_argv_t argv,
+    const qvi_rpc_funid_t funid,
+    const qvi_rpc_argv_t argv,
     ...
 ) {
-    int rc = QV_SUCCESS;
-
     va_list vl;
     va_start(vl, argv);
+
     nng_msg *msg = nullptr;
-    rpc_pack(&msg, funid, argv, vl);
+    int rc = rpc_pack(&msg, funid, argv, vl);
+
     va_end(vl);
+    // Do this here to make dealing with va_start()/va_end() easier.
+    if (rc != QV_SUCCESS) {
+        char const *ers = "rpc_pack() failed";
+        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+        return rc;
+    }
 
     rc = nng_sendmsg(client->sock, msg, 0);
     if (rc != 0) {
