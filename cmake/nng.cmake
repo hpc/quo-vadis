@@ -12,7 +12,7 @@
 # Includes support for external projects
 include(ExternalProject)
 
-set(QVI_NNG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/nng-1.3.0)
+set(QVI_NNG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/nng-1.3.2)
 set(QVI_NNG_BIN ${CMAKE_CURRENT_BINARY_DIR}/nng)
 set(QVI_NNG_STATIC_LIB ${QVI_NNG_BIN}/lib/libnng.a)
 set(QVI_NNG_INCLUDES ${QVI_NNG_BIN}/include)
