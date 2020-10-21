@@ -62,7 +62,14 @@ client(
         ers = "qvi_rpc_client_construct() failed";
         goto out;
     }
-    rc = qvi_rpc_client_send(client, url);
+
+    rc = qvi_rpc_client_connect(client, url);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_rpc_client_connect() failed";
+        goto out;
+    }
+
+    rc = qvi_rpc_client_send(client);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rpc_client_send() failed";
         goto out;

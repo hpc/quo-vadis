@@ -88,11 +88,19 @@ qvi_rpc_client_destruct(
     qvi_rpc_client_t *client
 );
 
+/**
+ *
+ */
+int
+qvi_rpc_client_connect(
+    qvi_rpc_client_t *client,
+    const char *url
+);
+
 // TODO(skg) FIXME
 int
 qvi_rpc_client_send(
-    qvi_rpc_client_t *client,
-    const char *url
+    qvi_rpc_client_t *client
 );
 
 #ifdef __cplusplus

@@ -385,16 +385,11 @@ out:
 int
 qvi_rpc_call(
     qvi_rpc_client_t *client,
-    const char *url,
     qvi_rpc_funid_t funid,
     qvi_rpc_argv_t argv,
     ...
 ) {
-    int rc = client_connect(client, url);
-    if (rc != QV_SUCCESS) {
-        QVI_LOG_ERROR("client_connect() failed");
-        return rc;
-    }
+    int rc = QV_SUCCESS;
 
     va_list vl;
     va_start(vl, argv);
@@ -413,7 +408,6 @@ qvi_rpc_call(
     }
 
     nng_msg_free(msg);
-    nng_close(client->sock);
 
     return QV_SUCCESS;
 }
@@ -695,13 +689,22 @@ qvi_rpc_client_destruct(
 ) {
     if (!client) return;
 
+    nng_close(client->sock);
+
     free(client);
 }
 
 int
-qvi_rpc_client_send(
+qvi_rpc_client_connect(
     qvi_rpc_client_t *client,
     const char *url
+) {
+    return client_connect(client, url);
+}
+
+int
+qvi_rpc_client_send(
+    qvi_rpc_client_t *client
 ) {
     nng_time start;
     nng_time end;
@@ -710,10 +713,15 @@ qvi_rpc_client_send(
     args = args | (QVI_RPC_TYPE_CSTR << 8);
     args = args | (QVI_RPC_TYPE_INT << 16);
 
+    qvi_rpc_call(
+        client,
+        TASK_GET_CPUBIND,
+        args,
+        1, "a loooooooooooooooong string", -42
+    );
     start = nng_clock();
     qvi_rpc_call(
         client,
-        url,
         TASK_GET_CPUBIND,
         args,
         1, "a loooooooooooooooong string", -42
