@@ -92,8 +92,7 @@ qvi_rpc_client_destruct(
 int
 qvi_rpc_client_send(
     qvi_rpc_client_t *client,
-    const char *url,
-    const char *msecstr
+    const char *url
 );
 
 #ifdef __cplusplus

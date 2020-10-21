@@ -52,8 +52,7 @@ out:
 // TODO(skg) Add timeout to terminate when the server fails, etc.
 int
 client(
-    const char *url,
-    const char *msecstr
+    const char *url
 ) {
     char const *ers = NULL;
 
@@ -63,7 +62,7 @@ client(
         ers = "qvi_rpc_client_construct() failed";
         goto out;
     }
-    rc = qvi_rpc_client_send(client, url, msecstr);
+    rc = qvi_rpc_client_send(client, url);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rpc_client_send() failed";
         goto out;
@@ -94,7 +93,7 @@ main(
         rc = server(argv[1]);
     }
     else {
-        rc = client(argv[1], argv[2]);
+        rc = client(argv[1]);
     }
     exit(rc == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
 }

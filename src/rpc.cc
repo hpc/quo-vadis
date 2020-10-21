@@ -47,6 +47,9 @@ struct qvi_rpc_client_s {
 // 8 bits for the QVI_RPC_TYPE_* types.
 typedef uint64_t qvi_rpc_argv_t;
 
+// Type bitmask used to help retrieve the underlying RPC type.
+static const qvi_rpc_argv_t rpc_argv_type_mask = 0x00000000000000FF;
+
 // We currently support up to 8 types. If this ever changes, please carefully
 // update all structures associated with the handling of these values.
 typedef uint8_t qvi_rpc_wqi_type_t;
@@ -72,7 +75,7 @@ register_atexit(void)
     // We want exactly one atexit handler installed per process.
     static bool handler_installed = false;
     if (!handler_installed) {
-        int rc = atexit(nng_fini);
+        const int rc = atexit(nng_fini);
         if (rc) {
             QVI_LOG_WARN("atexit(nng_fini) failed");
         }
@@ -106,7 +109,7 @@ msg_append_header(
     nng_msg *msg,
     qvi_msg_header_t *hdr
 ) {
-    int rc = nng_msg_append(msg, hdr, sizeof(*hdr));
+    const int rc = nng_msg_append(msg, hdr, sizeof(*hdr));
     if (rc != 0) {
         QVI_LOG_ERROR(
             "nng_msg_append() failed with rc={} ({})",
@@ -124,7 +127,7 @@ msg_append_header(
 static inline int
 rpc_pack_msg_prep(
     nng_msg **msg,
-    qvi_rpc_funid_t funid,
+    const qvi_rpc_funid_t funid,
     const qvi_rpc_argv_t argv
 ) {
     int rc = nng_msg_alloc(msg, 0);
@@ -137,6 +140,7 @@ rpc_pack_msg_prep(
     rc = msg_append_header(*msg, &msghdr);
     if (rc != QV_SUCCESS) {
         nng_msg_free(*msg);
+        *msg = nullptr;
         return rc;
     }
     return QV_SUCCESS;
@@ -148,7 +152,7 @@ rpc_pack_msg_prep(
 static int
 rpc_pack(
     nng_msg **msg,
-    qvi_rpc_funid_t funid,
+    const qvi_rpc_funid_t funid,
     const qvi_rpc_argv_t argv,
     va_list args
 ) {
@@ -163,8 +167,6 @@ rpc_pack(
     //
     const size_t nargs = rpc_args_maxn();
     const size_t tbits = rpc_type_nbits();
-    // Type mask used to help retrieve the underlying RPC type.
-    const qvi_rpc_argv_t mask = 0xFF;
     // Flag indicating whether or not we are done processing arguments.
     bool done = false;
     // We will need to manipulate the argument list contents, so copy it.
@@ -172,14 +174,17 @@ rpc_pack(
     // Process each argument and store them into the message body in the order
     // in which they were specified.
     for (size_t argidx = 0; argidx < nargs && !done; ++argidx) {
-        qvi_rpc_wqi_type_t type = (qvi_rpc_wqi_type_t)(argvc & mask);
+        const qvi_rpc_wqi_type_t type = (qvi_rpc_wqi_type_t)(
+            argvc & rpc_argv_type_mask
+        );
         switch (type) {
+            // The values are packed contiguously, so we have reached the end.
             case QVI_RPC_TYPE_NONE: {
                 done = true;
                 break;
             }
             case QVI_RPC_TYPE_INT: {
-                int value = va_arg(args, int);
+                const int value = va_arg(args, int);
                 if (nng_msg_append(imsg, &value, sizeof(value)) != 0) {
                     rc = QV_ERR_MSG;
                     goto out;
@@ -243,14 +248,17 @@ rpc_unpack(
     //
     const size_t nargs = rpc_args_maxn();
     const size_t tbits = rpc_type_nbits();
-    // Type mask used to help retrieve the underlying RPC type.
-    const qvi_rpc_argv_t mask = 0xFF;
     // Flag indicating whether or not we are done processing arguments.
     bool done = false;
-    // TODO(skg) Add description about what's going on here.
+    // Unpack the values in the message body and 'return' them to the caller by
+    // reference. Notice during the unpacking process, namely during va_arg(),
+    // we add an extra level of indirection to the decoded type. For example,
+    // QVI_RPC_TYPE_INT will expect an int * as an argument, not an int.
     qvi_rpc_argv_t argv = msghdr.argv;
     for (size_t argidx = 0; argidx < nargs && !done; ++argidx) {
-        qvi_rpc_wqi_type_t type = (qvi_rpc_wqi_type_t)(argv & mask);
+        const qvi_rpc_wqi_type_t type = (qvi_rpc_wqi_type_t)(
+            argv & rpc_argv_type_mask
+        );
         switch (type) {
             case QVI_RPC_TYPE_NONE: {
                 done = true;
@@ -304,6 +312,9 @@ test_fun(int a, char *b, int c) {
     return 0;
 }
 
+/**
+ *
+ */
 static int
 rpc_dispatch(
     nng_msg *msg
@@ -341,6 +352,9 @@ out:
     return rc;
 }
 
+/**
+ *
+ */
 static int
 client_connect(
     qvi_rpc_client_t *client,
@@ -458,10 +472,34 @@ server_cb(
 /**
  *
  */
+static void
+server_deallocate_outstanding_msg_queue(
+    qvi_rpc_server_t *server
+) {
+    if (!server->wqis) return;
+
+    for (uint16_t i = 0; i < server->qdepth; ++i) {
+        if (server->wqis[i]->aio) {
+            nng_aio_free(server->wqis[i]->aio);
+        }
+        if (server->wqis[i]) {
+            nng_free(server->wqis[i], sizeof(qvi_rpc_wqi_t));
+        }
+    }
+    free(server->wqis);
+    server->wqis = nullptr;
+}
+
+/**
+ *
+ */
 static int
 server_allocate_outstanding_msg_queue(
     qvi_rpc_server_t *server
 ) {
+    int rc = QV_SUCCESS;
+    char const *ers = nullptr;
+
     server->wqis = (qvi_rpc_wqi_t **)calloc(
         server->qdepth,
         sizeof(*server->wqis)
@@ -470,24 +508,30 @@ server_allocate_outstanding_msg_queue(
         QVI_LOG_ERROR("calloc() failed");
         return QV_ERR_OOR;
     }
+
     for (uint16_t i = 0; i < server->qdepth; ++i) {
         qvi_rpc_wqi_t *wqi = nullptr;
         if (!(wqi = (qvi_rpc_wqi_t *)nng_alloc(sizeof(*wqi)))) {
-            QVI_LOG_ERROR("nng_alloc() failed");
-            return QV_ERR_OOR;
+            ers = "nng_alloc() failed";
+            rc = QV_ERR_OOR;
+            goto out;
         }
-        int rc = nng_aio_alloc(&wqi->aio, server_cb, wqi);
+        rc = nng_aio_alloc(&wqi->aio, server_cb, wqi);
         if (rc != 0) {
-            QVI_LOG_ERROR(
-                "nng_aio_alloc() failed with rc={} ({})",
-                rc,
-                nng_strerror(rc)
-            );
-            return QV_ERR_MSG;
+            ers = "nng_aio_alloc() failed";
+            rc = QV_ERR_OOR;
+            goto out;
         }
         wqi->state = qvi_rpc_wqi_t::INIT;
         wqi->sock  = server->sock;
         server->wqis[i] = wqi;
+    }
+out:
+    if (ers) {
+        QVI_LOG_ERROR("{}", ers);
+        // Relinquish any allocated resources.
+        server_deallocate_outstanding_msg_queue(server);
+        return rc;
     }
     return QV_SUCCESS;
 }
@@ -518,14 +562,9 @@ qvi_rpc_server_destruct(
         char const *ers = "nng_close() failed";
         QVI_LOG_WARN("{} with rc={} ({})", ers, rc, nng_strerror(rc));
     }
-
-    if (server->wqis) {
-        for (uint16_t i = 0; i < server->qdepth; ++i) {
-            nng_aio_free(server->wqis[i]->aio);
-            nng_free(server->wqis[i], sizeof(qvi_rpc_wqi_t));
-        }
-        free(server->wqis);
-    }
+    //
+    server_deallocate_outstanding_msg_queue(server);
+    //
     free(server);
 }
 
@@ -534,7 +573,7 @@ static int
 server_setup(
     qvi_rpc_server_t *server,
     const char *url,
-    int qdepth
+    uint16_t qdepth
 ) {
     server->qdepth = qdepth;
 
@@ -548,11 +587,14 @@ server_setup(
     return QV_SUCCESS;
 }
 
+/**
+ *
+ */
 static int
 server_open_commchan(
     qvi_rpc_server_t *server
 ) {
-    int rc = nng_rep0_open_raw(&server->sock);
+    const int rc = nng_rep0_open_raw(&server->sock);
     if (rc != 0) {
         char const *ers = "nng_rep0_open_raw() failed";
         QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, nng_strerror(rc));
@@ -561,6 +603,9 @@ server_open_commchan(
     return QV_SUCCESS;
 }
 
+/**
+ *
+ */
 static int
 server_listen(
     qvi_rpc_server_t *server
@@ -592,9 +637,10 @@ qvi_rpc_server_start(
 ) {
     if (!server || !url) return QV_ERR_INVLD_ARG;
 
+    int rc = QV_SUCCESS;
     char const *ers = nullptr;
 
-    int rc = server_setup(server, url, qdepth);
+    rc = server_setup(server, url, qdepth);
     if (rc != QV_SUCCESS) {
         ers = "server_setup() failed";
         goto out;
@@ -620,6 +666,8 @@ qvi_rpc_server_start(
 out:
     if (ers) {
         QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+        // Start failed, so relinquish allocated resources.
+        qvi_rpc_server_destruct(server);
         return rc;
     }
     return QV_SUCCESS;
@@ -653,8 +701,7 @@ qvi_rpc_client_destruct(
 int
 qvi_rpc_client_send(
     qvi_rpc_client_t *client,
-    const char *url,
-    const char *msecstr
+    const char *url
 ) {
     nng_time start;
     nng_time end;
