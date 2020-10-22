@@ -42,21 +42,6 @@ struct qvi_rpc_client_s {
     nng_socket sock;
 };
 
-// We currently support encoding up to 8 arguments:
-// 64 bits for the underlying qvi_rpc_argv_t type divided by
-// 8 bits for the QVI_RPC_TYPE_* types.
-typedef uint64_t qvi_rpc_argv_t;
-
-// Type bitmask used to help retrieve the underlying RPC type.
-static const qvi_rpc_argv_t rpc_argv_type_mask = 0x00000000000000FF;
-
-// We currently support up to 8 types. If this ever changes, please carefully
-// update all structures associated with the handling of these values.
-typedef uint8_t qvi_rpc_wqi_type_t;
-#define QVI_RPC_TYPE_NONE (0x00     )
-#define QVI_RPC_TYPE_INT  (0x01 << 0)
-#define QVI_RPC_TYPE_CSTR (0x01 << 1)
-
 typedef enum qvi_rpc_fun_e {
     TASK_GET_CPUBIND
 } qvi_rpc_funid_t;
@@ -81,24 +66,6 @@ register_atexit(void)
         }
         handler_installed = true;
     }
-}
-/**
- * Returns the maximum number of arguments that can be packed into a
- * qvi_rpc_argv_t structure.
- */
-static inline size_t
-rpc_args_maxn(void)
-{
-    return sizeof(qvi_rpc_argv_t) / sizeof(qvi_rpc_wqi_type_t);
-}
-
-/**
- * Returns the number of bits used for RPC types.
- */
-static inline size_t
-rpc_type_nbits(void)
-{
-    return sizeof(qvi_rpc_wqi_type_t) * 8;
 }
 
 /**
@@ -165,8 +132,8 @@ rpc_pack(
         return rc;
     }
     //
-    const size_t nargs = rpc_args_maxn();
-    const size_t tbits = rpc_type_nbits();
+    const size_t nargs = qvi_rpc_args_maxn();
+    const size_t tbits = qvi_rpc_type_nbits();
     // Flag indicating whether or not we are done processing arguments.
     bool done = false;
     // We will need to manipulate the argument list contents, so copy it.
@@ -174,7 +141,7 @@ rpc_pack(
     // Process each argument and store them into the message body in the order
     // in which they were specified.
     for (size_t argidx = 0; argidx < nargs && !done; ++argidx) {
-        const qvi_rpc_wqi_type_t type = (qvi_rpc_wqi_type_t)(
+        const qvi_rpc_arg_type_t type = (qvi_rpc_arg_type_t)(
             argvc & rpc_argv_type_mask
         );
         switch (type) {
@@ -250,8 +217,8 @@ rpc_unpack(
     // Get pointer to start of message body.
     uint8_t *bodyp = (uint8_t *)nng_msg_body(msg);
     //
-    const size_t nargs = rpc_args_maxn();
-    const size_t tbits = rpc_type_nbits();
+    const size_t nargs = qvi_rpc_args_maxn();
+    const size_t tbits = qvi_rpc_type_nbits();
     // Flag indicating whether or not we are done processing arguments.
     bool done = false;
     // Unpack the values in the message body and 'return' them to the caller by
@@ -260,7 +227,7 @@ rpc_unpack(
     // QVI_RPC_TYPE_INT will expect an int * as an argument, not an int.
     qvi_rpc_argv_t argv = msghdr.argv;
     for (size_t argidx = 0; argidx < nargs && !done; ++argidx) {
-        const qvi_rpc_wqi_type_t type = (qvi_rpc_wqi_type_t)(
+        const qvi_rpc_arg_type_t type = (qvi_rpc_arg_type_t)(
             argv & rpc_argv_type_mask
         );
         switch (type) {
@@ -445,6 +412,7 @@ server_cb(
         }
         msg = nng_aio_get_msg(wqi->aio);
         // TODO(skg) trim in dispatch to eat all of the body?
+        // TODO(skg) Check for rpc_dispatch errors.
         rpc_dispatch(msg);
         wqi->msg = msg;
         wqi->state = qvi_rpc_wqi_t::WAIT;
@@ -719,9 +687,14 @@ qvi_rpc_client_send(
     nng_time start;
     nng_time end;
 
-    qvi_rpc_argv_t args = QVI_RPC_TYPE_INT;
-    args = args | (QVI_RPC_TYPE_CSTR << 8);
-    args = args | (QVI_RPC_TYPE_INT << 16);
+    qvi_rpc_argv_t args = 0;
+    qvi_rpc_argv_insert_at(&args, QVI_RPC_TYPE_INT,  0);
+    qvi_rpc_argv_insert_at(&args, QVI_RPC_TYPE_CSTR, 1);
+    qvi_rpc_argv_insert_at(&args, QVI_RPC_TYPE_INT,  2);
+
+    qvi_rpc_argv_t targs = 0;
+    qvi_rpc_argv_pack(&targs, 0, 1, 1, "hi", 1);
+    QVI_LOG_INFO("PACKED RES={}", targs);
 
     qvi_rpc_call(
         client,
