@@ -33,18 +33,9 @@ typedef struct qvi_rpc_server_s qvi_rpc_server_t;
 struct qvi_rpc_client_s;
 typedef struct qvi_rpc_client_s qvi_rpc_client_t;
 
-/** Message type definition. */
-typedef struct qvi_rpc_wqi_s {
-    enum {
-        INIT,
-        RECV,
-        WAIT,
-        SEND
-    } state;
-    nng_aio *aio;
-    nng_socket sock;
-    nng_msg *msg;
-} qvi_rpc_wqi_t;
+typedef enum qvi_rpc_fun_e {
+    TASK_GET_CPUBIND
+} qvi_rpc_funid_t;
 
 // We currently support encoding up to 8 arguments:
 // 64 bits for the underlying qvi_rpc_argv_t type divided by
@@ -146,10 +137,12 @@ qvi_rpc_client_connect(
     const char *url
 );
 
-// TODO(skg) FIXME
 int
-qvi_rpc_client_send(
-    qvi_rpc_client_t *client
+qvi_rpc_client_req(
+    qvi_rpc_client_t *client,
+    const qvi_rpc_funid_t funid,
+    const qvi_rpc_argv_t argv,
+    ...
 );
 
 #ifdef __cplusplus

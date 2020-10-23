@@ -30,6 +30,19 @@
 // This should be more than plenty for our use case.
 #define URL_MAX_LEN 1024
 
+/** Message type definition. */
+typedef struct qvi_rpc_wqi_s {
+    enum {
+        INIT,
+        RECV,
+        WAIT,
+        SEND
+    } state;
+    nng_aio *aio;
+    nng_socket sock;
+    nng_msg *msg;
+} qvi_rpc_wqi_t;
+
 struct qvi_rpc_server_s {
     char url[URL_MAX_LEN];
     nng_socket sock;
@@ -41,10 +54,6 @@ struct qvi_rpc_client_s {
     char url[URL_MAX_LEN];
     nng_socket sock;
 };
-
-typedef enum qvi_rpc_fun_e {
-    TASK_GET_CPUBIND
-} qvi_rpc_funid_t;
 
 typedef struct qvi_msg_header_s {
     qvi_rpc_funid_t funid;
@@ -78,11 +87,8 @@ msg_append_header(
 ) {
     const int rc = nng_msg_append(msg, hdr, sizeof(*hdr));
     if (rc != 0) {
-        QVI_LOG_ERROR(
-            "nng_msg_append() failed with rc={} ({})",
-            rc,
-            nng_strerror(rc)
-        );
+        char const *ers = "nng_msg_append() failed";
+        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, nng_strerror(rc));
         return QV_ERR_MSG;
     }
     return QV_SUCCESS;
@@ -297,7 +303,8 @@ rpc_dispatch(
     const size_t trim = rpc_unpack_msg_header(msg, &msghdr);
     rc = nng_msg_trim(msg, trim);
     if (rc != 0) {
-        QVI_LOG_ERROR("{} with rc={} ({})", rc, nng_strerror(rc));
+        ers = "nng_msg_trim() failed";
+        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, nng_strerror(rc));
         return QV_ERR_MSG;
     }
 
@@ -346,7 +353,7 @@ client_connect(
     }
 out:
     if (ers) {
-        QVI_LOG_ERROR("{} with rc={} ({})", rc, nng_strerror(rc));
+        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, nng_strerror(rc));
         nng_close(client->sock);
         return QV_ERR_MSG;
     }
@@ -354,7 +361,7 @@ out:
 }
 
 int
-qvi_rpc_call(
+qvi_rpc_client_req(
     qvi_rpc_client_t *client,
     const qvi_rpc_funid_t funid,
     const qvi_rpc_argv_t argv,
@@ -669,7 +676,6 @@ qvi_rpc_client_destruct(
     if (!client) return;
 
     nng_close(client->sock);
-
     free(client);
 }
 
@@ -679,39 +685,6 @@ qvi_rpc_client_connect(
     const char *url
 ) {
     return client_connect(client, url);
-}
-
-// TODO(skg) Remove
-int
-qvi_rpc_client_send(
-    qvi_rpc_client_t *client
-) {
-    nng_time start;
-    nng_time end;
-
-    int a = 1, c = -42;
-    char const *b = "a loooooooooooooooong string";
-
-    qvi_rpc_argv_t args = 0;
-    qvi_rpc_argv_pack(&args, 0, a, b, c);
-
-    qvi_rpc_call(
-        client,
-        TASK_GET_CPUBIND,
-        args,
-        a, b, c
-    );
-    start = nng_clock();
-    qvi_rpc_call(
-        client,
-        TASK_GET_CPUBIND,
-        args,
-        ++a, b, c
-    );
-    end = nng_clock();
-
-    printf("Request took %u milliseconds.\n", (uint32_t)(end - start));
-    return 0;
 }
 
 /*

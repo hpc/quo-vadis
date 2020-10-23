@@ -16,6 +16,10 @@
 #ifndef QVI_RMI_H
 #define QVI_RMI_H
 
+#include "quo-vadis/hw-loc.h"
+
+#include <unistd.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -66,6 +70,22 @@ qvi_rmi_client_construct(
 void
 qvi_rmi_client_destruct(
     qvi_rmi_client_t *client
+);
+
+/**
+ *
+ */
+int
+qvi_rmi_client_connect(
+    qvi_rmi_client_t *client,
+    const char *url
+);
+
+int
+qvi_rmi_task_get_cpubind(
+    qvi_rmi_client_t *client,
+    pid_t who,
+    qv_bitmap_t *out_bitmap
 );
 
 #ifdef __cplusplus

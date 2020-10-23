@@ -33,33 +33,33 @@ add_test(hw-loc test-hw-loc)
 ################################################################################
 ################################################################################
 add_executable(
-    test-rpc
-    test-rpc.c
+    test-rmi
+    test-rmi.c
 )
 
 target_include_directories(
-    test-rpc
+    test-rmi
     PRIVATE
       ${CMAKE_SOURCE_DIR}/include
 )
 
 target_link_libraries(
-    test-rpc
-    qvi-rpc
+    test-rmi
+    qvi-rmi
 )
 
 add_test(
     NAME
-      rpc
+      rmi
     COMMAND
-      bash -c "export URL=\"tcp://127.0.0.1:55995\"    && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-rpc $URL -s &) && \
-      sleep 2 && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-rpc $URL 2 &)  && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-rpc $URL 1 &)  && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-rpc $URL 1 &)  && \
-      ${CMAKE_CURRENT_BINARY_DIR}/test-rpc $URL 3      && \
-      killall test-rpc"
+      bash -c "export URL=\"tcp://127.0.0.1:55995\"     && \
+      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -s &)  && \
+      sleep 2                                           && \
+      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &)  && \
+      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &)  && \
+      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &)  && \
+       ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c     && \
+      killall test-rmi"
 )
 
 ################################################################################
@@ -67,14 +67,14 @@ add_test(
 # Use the C linker to test for C/C++ linkage problems.
 set_target_properties(
     test-hw-loc
-    test-rpc
+    test-rmi
     PROPERTIES LINKER_LANGUAGE C
 )
 
 # Set test timeout
 set_tests_properties(
     hw-loc
-    rpc
+    rmi
     PROPERTIES TIMEOUT 15
 )
 

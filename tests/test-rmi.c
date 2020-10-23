@@ -10,77 +10,89 @@
  */
 
 /**
- * @file test-rpc.c
+ * @file test-rmi.c
  */
 
 #include "quo-vadis.h"
-#include "private/rpc.h"
+#include "private/rmi.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 
-int
+static int
 server(
     const char *url
 ) {
+    printf("# Starting Server (%s)\n", url);
+
     char const *ers = NULL;
 
-    qvi_rpc_server_t *server = NULL;
-    int rc = qvi_rpc_server_construct(&server);
+    qvi_rmi_server_t *server = NULL;
+    int rc = qvi_rmi_server_construct(&server);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rpc_server_construct() failed";
+        ers = "qvi_rmi_server_construct() failed";
         goto out;
     }
 
-    rc = qvi_rpc_server_start(server, url, 10);
+    rc = qvi_rmi_server_start(server, url);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rpc_server_start() failed";
+        ers = "qvi_rmi_server_start() failed";
         goto out;
     }
+    // Let the main thread take a snooze while the server does its thing.
     sleep(10);
 out:
-    qvi_rpc_server_destruct(server);
+    qvi_rmi_server_destruct(server);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
-        exit(EXIT_FAILURE);
+        return 1;
     }
     return 0;
 }
 
-// TODO(skg) Add timeout to terminate when the server fails, etc.
-int
+static int
 client(
     const char *url
 ) {
+    printf("# Starting Client (%s)\n", url);
+
     char const *ers = NULL;
 
-    qvi_rpc_client_t *client = NULL;
-    int rc = qvi_rpc_client_construct(&client);
+    qvi_rmi_client_t *client = NULL;
+    int rc = qvi_rmi_client_construct(&client);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rpc_client_construct() failed";
+        ers = "qvi_rmi_client_construct() failed";
         goto out;
     }
 
-    rc = qvi_rpc_client_connect(client, url);
+    rc = qvi_rmi_client_connect(client, url);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rpc_client_connect() failed";
         goto out;
     }
 
-    rc = qvi_rpc_client_send(client);
+    pid_t mypid = getpid();
+    qv_bitmap_t bitmap;
+    rc = qvi_rmi_task_get_cpubind(client, mypid, bitmap);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rpc_client_send() failed";
+        ers = "qvi_rmi_task_get_cpubind() failed";
         goto out;
     }
 out:
-    qvi_rpc_client_destruct(client);
+    qvi_rmi_client_destruct(client);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
-        exit(EXIT_FAILURE);
+        return 1;
     }
     return 0;
+}
+
+static void
+usage(const char *appn)
+{
+    fprintf(stderr, "Usage: %s URL -s|-c\n", appn);
 }
 
 int
@@ -88,21 +100,23 @@ main(
     int argc,
     char **argv
 ) {
-    printf("# Starting rpc test\n");
+    int rc = 0;
 
-    int rc;
-
-    if (argc < 3) {
-        fprintf(stderr, "Usage: %s <url> [-s|<secs>]\n", argv[0]);
+    if (argc != 3) {
+        usage(argv[0]);
         return EXIT_FAILURE;
     }
     if (strcmp(argv[2], "-s") == 0) {
         rc = server(argv[1]);
     }
-    else {
+    else if (strcmp(argv[2], "-c") == 0) {
         rc = client(argv[1]);
     }
-    exit(rc == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
+    else {
+        usage(argv[0]);
+        return EXIT_FAILURE;
+    }
+    return (rc == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 /*

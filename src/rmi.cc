@@ -51,6 +51,12 @@ qvi_rmi_server_construct(
         ers = "qv_hwloc_construct() failed";
         goto out;
     }
+
+    rc = qvi_rpc_server_construct(&iserver->rpcserv);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_rpc_server_construct() failed";
+        goto out;
+    }
 out:
     if (ers) {
         QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
@@ -70,6 +76,7 @@ qvi_rmi_server_destruct(
 
     qv_hwloc_destruct(server->hwloc);
     qvi_rpc_server_destruct(server->rpcserv);
+    free(server);
 }
 
 /**
@@ -145,6 +152,12 @@ qvi_rmi_client_construct(
         QVI_LOG_ERROR("calloc() failed");
         return QV_ERR_OOR;
     }
+
+    rc = qvi_rpc_client_construct(&icli->rcpcli);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_rpc_client_construct() failed";
+        goto out;
+    }
 out:
     if (ers) {
         QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
@@ -163,6 +176,44 @@ qvi_rmi_client_destruct(
     if (!client) return;
 
     qvi_rpc_client_destruct(client->rcpcli);
+    free(client);
+}
+
+int
+qvi_rmi_client_connect(
+    qvi_rmi_client_t *client,
+    const char *url
+) {
+    return qvi_rpc_client_connect(client->rcpcli, url);
+}
+
+int
+qvi_rmi_task_get_cpubind(
+    qvi_rmi_client_t *client,
+    pid_t who,
+    qv_bitmap_t *out_bitmap
+) {
+    if (!client) return QV_ERR_INVLD_ARG;
+
+    int rc = QV_SUCCESS;
+    char const *ers = nullptr;
+
+    int a = 0, c = -505;
+    char const *b = "|can you see me..?|";
+
+    qvi_rpc_argv_t args = 0;
+    qvi_rpc_argv_pack(&args, 0, a, b, c);
+
+    rc = qvi_rpc_client_req(client->rcpcli, TASK_GET_CPUBIND, args, a, b, c);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_rpc_client_req() failed";
+        goto out;
+    }
+out:
+    if (ers) {
+        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+    }
+    return rc;
 }
 
 /*
