@@ -9,25 +9,6 @@
 # top-level directory of this distribution.
 #
 
-################################################################################
-################################################################################
-add_executable(
-    test-hw-server
-    test-hw-server.c
-)
-
-target_include_directories(
-    test-hw-server
-    PRIVATE
-      ${CMAKE_SOURCE_DIR}/include
-)
-
-target_link_libraries(
-    test-hw-server
-    qv-hw-server
-)
-
-add_test(hw-server test-hw-server)
 # TODO(skg) Add valgrind tests.
 ################################################################################
 ################################################################################
@@ -85,7 +66,6 @@ add_test(
 ################################################################################
 # Use the C linker to test for C/C++ linkage problems.
 set_target_properties(
-    test-hw-server
     test-hw-loc
     test-rpc
     PROPERTIES LINKER_LANGUAGE C
@@ -93,7 +73,6 @@ set_target_properties(
 
 # Set test timeout
 set_tests_properties(
-    hw-server
     hw-loc
     rpc
     PROPERTIES TIMEOUT 15

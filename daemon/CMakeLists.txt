@@ -17,13 +17,15 @@ add_executable(
 target_include_directories(
     quo-vadisd
     PRIVATE
-      ${PROJECT_BINARY_DIR}
-      ${CMAKE_SOURCE_DIR}/include
+      $<INSTALL_INTERFACE:include>
+      $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
 )
 
 target_link_libraries(
     quo-vadisd
-    qv-hw-server
+    qvi-rmi
 )
 
 install(TARGETS quo-vadisd DESTINATION bin)

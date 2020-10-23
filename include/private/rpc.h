@@ -118,7 +118,7 @@ int
 qvi_rpc_server_start(
     qvi_rpc_server_t *server,
     const char *url,
-    int qdepth
+    uint16_t qdepth
 );
 
 /**
@@ -162,7 +162,7 @@ qvi_rpc_client_send(
  * Primary qvi_rpc_argv_type template.
  */
 template<typename T>
-qvi_rpc_arg_type_t
+inline qvi_rpc_arg_type_t
 qvi_rpc_argv_type(T)
 {
     assert(false && "qvi_rpc_argv_type() failed: cannot deduce type.");
@@ -172,7 +172,7 @@ qvi_rpc_argv_type(T)
  * int qvi_rpc_argv_type template specialization.
  */
 template<>
-qvi_rpc_arg_type_t
+inline qvi_rpc_arg_type_t
 qvi_rpc_argv_type(int)
 {
     return QVI_RPC_TYPE_INT;
@@ -182,7 +182,7 @@ qvi_rpc_argv_type(int)
  * char const * qvi_rpc_argv_type template specialization.
  */
 template<>
-qvi_rpc_arg_type_t
+inline qvi_rpc_arg_type_t
 qvi_rpc_argv_type(char const *)
 {
     return QVI_RPC_TYPE_CSTR;

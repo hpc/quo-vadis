@@ -10,50 +10,62 @@
  */
 
 /**
- * @file hw-server.h
+ * @file rmi.h
  */
 
-#ifndef QUO_VADIS_HW_SERVER_H
-#define QUO_VADIS_HW_SERVER_H
+#ifndef QVI_RMI_H
+#define QVI_RMI_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 // Forward declarations.
-struct qv_hw_server_s;
-typedef struct qv_hw_server_s qv_hw_server_t;
+struct qvi_rmi_server_s;
+typedef struct qvi_rmi_server_s qvi_rmi_server_t;
+
+struct qvi_rmi_client_s;
+typedef struct qvi_rmi_client_s qvi_rmi_client_t;
 
 /**
  *
  */
 int
-qv_hw_server_construct(
-    qv_hw_server_t **hws
+qvi_rmi_server_construct(
+    qvi_rmi_server_t **server
 );
 
 /**
  *
  */
 void
-qv_hw_server_destruct(
-    qv_hw_server_t *hws
+qvi_rmi_server_destruct(
+    qvi_rmi_server_t *server
 );
 
 /**
  *
  */
 int
-qv_hw_server_init(
-    qv_hw_server_t *hws
+qvi_rmi_server_start(
+    qvi_rmi_server_t *server,
+    const char *url
 );
 
 /**
  *
  */
 int
-qv_hw_server_finalize(
-    qv_hw_server_t *hws
+qvi_rmi_client_construct(
+    qvi_rmi_client_t **client
+);
+
+/**
+ *
+ */
+void
+qvi_rmi_client_destruct(
+    qvi_rmi_client_t *client
 );
 
 #ifdef __cplusplus

@@ -14,9 +14,8 @@
  */
 
 #include "private/common.h"
+#include "private/rmi.h"
 #include "private/logger.h"
-
-#include "quo-vadis/hw-server.h"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -28,7 +27,7 @@
 #include <cstdlib>
 
 struct context {
-    qv_hw_server_t *hws = nullptr;
+    qvi_rmi_server_t *rmiserv;
 };
 
 static void
@@ -80,22 +79,22 @@ become_session_leader(void)
 }
 
 static void
-gather_hwinfo(
+start_rmi(
     context *ctx
 ) {
     QVI_SYSLOG_DEBUG("Entered {}", __func__);
 
     char const *ers = nullptr;
 
-    int rc = qv_hw_server_construct(&ctx->hws);
+    int rc = qvi_rmi_server_construct(&ctx->rmiserv);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_hw_server_construct() failed";
+        ers = "qvi_rmi_server_construct() failed";
         goto out;
     }
 
-    rc = qv_hw_server_init(ctx->hws);
+    rc = qvi_rmi_server_start(ctx->rmiserv, "tcp://127.0.0.1:55995");
     if (rc != QV_SUCCESS) {
-        ers = "qvi_hw_server_init() failed";
+        ers = "qvi_rmi_server_start() failed";
         goto out;
     }
     // TODO(skg) Add flags option
@@ -127,7 +126,7 @@ main(
     // Close all file descriptors.
     closefds();
     // Gather hardware information.
-    gather_hwinfo(&ctx);
+    start_rmi(&ctx);
     // Enter the main processing loop.
     main_loop(&ctx);
 

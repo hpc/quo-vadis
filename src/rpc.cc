@@ -392,6 +392,7 @@ qvi_rpc_call(
 /**
  *
  */
+// TODO(skg) Optimize
 static void
 server_cb(
     void *data
@@ -605,7 +606,7 @@ int
 qvi_rpc_server_start(
     qvi_rpc_server_t *server,
     const char *url,
-    int qdepth
+    uint16_t qdepth
 ) {
     if (!server || !url) return QV_ERR_INVLD_ARG;
 
@@ -680,6 +681,7 @@ qvi_rpc_client_connect(
     return client_connect(client, url);
 }
 
+// TODO(skg) Remove
 int
 qvi_rpc_client_send(
     qvi_rpc_client_t *client
@@ -687,27 +689,24 @@ qvi_rpc_client_send(
     nng_time start;
     nng_time end;
 
-    qvi_rpc_argv_t args = 0;
-    qvi_rpc_argv_insert_at(&args, QVI_RPC_TYPE_INT,  0);
-    qvi_rpc_argv_insert_at(&args, QVI_RPC_TYPE_CSTR, 1);
-    qvi_rpc_argv_insert_at(&args, QVI_RPC_TYPE_INT,  2);
+    int a = 1, c = -42;
+    char const *b = "a loooooooooooooooong string";
 
-    qvi_rpc_argv_t targs = 0;
-    qvi_rpc_argv_pack(&targs, 0, 1, 1, "hi", 1);
-    QVI_LOG_INFO("PACKED RES={}", targs);
+    qvi_rpc_argv_t args = 0;
+    qvi_rpc_argv_pack(&args, 0, a, b, c);
 
     qvi_rpc_call(
         client,
         TASK_GET_CPUBIND,
         args,
-        1, "a loooooooooooooooong string", -42
+        a, b, c
     );
     start = nng_clock();
     qvi_rpc_call(
         client,
         TASK_GET_CPUBIND,
         args,
-        1, "a loooooooooooooooong string", -42
+        ++a, b, c
     );
     end = nng_clock();
 

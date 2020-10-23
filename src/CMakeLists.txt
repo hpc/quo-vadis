@@ -87,13 +87,13 @@ target_link_libraries(
 ################################################################################
 ################################################################################
 add_library(
-    qv-hw-server
-    hw-server.cc
-    ../include/quo-vadis/hw-server.h
+    qvi-rmi
+    rmi.cc
+    ../include/private/rmi.h
 )
 
 target_include_directories(
-    qv-hw-server
+    qvi-rmi
     PUBLIC
       $<INSTALL_INTERFACE:include>
       $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
@@ -102,7 +102,8 @@ target_include_directories(
 )
 
 target_link_libraries(
-    qv-hw-server
+    qvi-rmi
+    qvi-rpc
     qv-hw-loc
 )
 
