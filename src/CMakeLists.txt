@@ -19,7 +19,7 @@ add_library(
 
 target_compile_options(
     qvi-logger
-    PRIVATE
+    PUBLIC
       -DSPDLOG_COMPILED_LIB
 )
 
