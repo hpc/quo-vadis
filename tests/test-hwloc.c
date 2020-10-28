@@ -14,7 +14,7 @@
  */
 
 #include "quo-vadis.h"
-#include "quo-vadis/hw-loc.h"
+#include "quo-vadis/qv-hwloc.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -46,7 +46,7 @@ main(void)
         goto out;
     }
 
-    qv_bitmap_t bitmap;
+    qv_hwloc_bitmap_t bitmap;
     rc = qv_hwloc_task_get_cpubind(
         hwl,
         getpid(),

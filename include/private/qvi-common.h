@@ -10,16 +10,16 @@
  */
 
 /**
- * @file common.h
+ * @file qvi-common.h
  */
 
 #ifndef QVI_COMMON_H
 #define QVI_COMMON_H
 
 #include "quo-vadis/config.h"
-#include "quo-vadis/rc.h"
+#include "quo-vadis/qv-rc.h"
 
-#include "private/macros.h"
+#include "private/qvi-macros.h"
 
 #include <errno.h>
 #include <assert.h>

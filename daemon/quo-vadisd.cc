@@ -13,9 +13,9 @@
  * @file quo-vadisd.cc
  */
 
-#include "private/common.h"
-#include "private/rmi.h"
-#include "private/logger.h"
+#include "private/qvi-common.h"
+#include "private/qvi-rmi.h"
+#include "private/qvi-logger.h"
 
 #include <stdio.h>
 #include <sys/types.h>

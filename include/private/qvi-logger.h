@@ -10,7 +10,7 @@
  */
 
 /**
- * @file logger.h
+ * @file qvi-logger.h
  */
 
 #ifndef QVI_LOGGER_H

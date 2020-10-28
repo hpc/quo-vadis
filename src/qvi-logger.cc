@@ -10,12 +10,12 @@
  */
 
 /**
- * @file logger.cc
+ * @file qvi-logger.cc
  */
 
 #include "quo-vadis/config.h"
 
-#include "private/logger.h"
+#include "private/qvi-logger.h"
 
 #include "spdlog/sinks/stdout_sinks.h"
 #include "spdlog/sinks/syslog_sink.h"

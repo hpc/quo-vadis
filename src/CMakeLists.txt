@@ -13,8 +13,8 @@
 ################################################################################
 add_library(
     qvi-logger
-    logger.cc
-    ../include/private/logger.h
+    qvi-logger.cc
+    ../include/private/qvi-logger.h
 )
 
 target_compile_options(
@@ -41,13 +41,13 @@ target_link_libraries(
 ################################################################################
 ################################################################################
 add_library(
-    qv-hw-loc
-    hw-loc.cc
-    ../include/quo-vadis/hw-loc.h
+    qv-hwloc
+    qv-hwloc.cc
+    ../include/quo-vadis/qv-hwloc.h
 )
 
 target_include_directories(
-    qv-hw-loc
+    qv-hwloc
     PUBLIC
       $<INSTALL_INTERFACE:include>
       $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
@@ -56,17 +56,23 @@ target_include_directories(
 )
 
 target_link_libraries(
-    qv-hw-loc
-    qvi-logger
-    hwloc
+    qv-hwloc
+    PUBLIC
+      hwloc
+)
+
+target_link_libraries(
+    qv-hwloc
+    PRIVATE
+      qvi-logger
 )
 
 ################################################################################
 ################################################################################
 add_library(
     qvi-rpc
-    rpc.cc
-    ../include/private/rpc.h
+    qvi-rpc.cc
+    ../include/private/qvi-rpc.h
 )
 
 target_include_directories(
@@ -81,6 +87,7 @@ target_include_directories(
 target_link_libraries(
     qvi-rpc
     qvi-logger
+    qv-hwloc
     nng
 )
 
@@ -88,8 +95,8 @@ target_link_libraries(
 ################################################################################
 add_library(
     qvi-rmi
-    rmi.cc
-    ../include/private/rmi.h
+    qvi-rmi.cc
+    ../include/private/qvi-rmi.h
 )
 
 target_include_directories(
@@ -104,7 +111,6 @@ target_include_directories(
 target_link_libraries(
     qvi-rmi
     qvi-rpc
-    qv-hw-loc
 )
 
 # vim: ts=4 sts=4 sw=4 expandtab

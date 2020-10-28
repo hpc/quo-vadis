@@ -13,8 +13,8 @@
  * @file hw-loc.h
  */
 
-#ifndef QUO_VADIS_HW_LOC_H
-#define QUO_VADIS_HW_LOC_H
+#ifndef QUO_VADIS_HWLOC_H
+#define QUO_VADIS_HWLOC_H
 
 #include <unistd.h>
 
@@ -26,7 +26,7 @@ extern "C" {
 struct qv_hwloc_s;
 typedef struct qv_hwloc_s qv_hwloc_t;
 // Convenience typedefs
-typedef void * qv_bitmap_t;
+typedef void * qv_hwloc_bitmap_t;
 
 /**
  *
@@ -67,15 +67,21 @@ int
 qv_hwloc_task_get_cpubind(
     qv_hwloc_t *hwl,
     pid_t who,
-    qv_bitmap_t *out_bitmap
+    qv_hwloc_bitmap_t *out_bitmap
 );
+
+/**
+ *
+ */
+qv_hwloc_bitmap_t
+qv_hwloc_bitmap_alloc(void);
 
 /**
  *
  */
 int
 qv_hwloc_bitmap_free(
-    qv_bitmap_t bitmap
+    qv_hwloc_bitmap_t bitmap
 );
 
 /**
@@ -83,8 +89,17 @@ qv_hwloc_bitmap_free(
  */
 int
 qv_hwloc_bitmap_asprintf(
-    qv_bitmap_t bitmap,
+    qv_hwloc_bitmap_t bitmap,
     char **result
+);
+
+/**
+ *
+ */
+int
+qv_hwloc_bitmap_sscanf(
+    qv_hwloc_bitmap_t bitmap,
+    const char *string
 );
 
 #ifdef __cplusplus

@@ -31,9 +31,10 @@ enum {
     QV_ERR_OOR,
     QV_ERR_INVLD_ARG,
     QV_ERR_CALL_BEFORE_INIT,
-    QV_ERR_TOPO,
+    QV_ERR_HWLOC,
     QV_ERR_MPI,
     QV_ERR_MSG,
+    QV_ERR_RPC,
     QV_ERR_NOT_SUPPORTED,
     QV_ERR_POP,
     QV_ERR_NOT_FOUND
@@ -49,9 +50,10 @@ static const char *qv_rc_strerrs[] = {
     "Out of resources",
     "Invalid argument",
     "Call before initialization",
-    "Hardware topology error",
+    "Hardware locality error",
     "MPI error",
     "Internal message error",
+    "Remote procedure call error",
     "Operation not supported",
     "Pop operation error",
     "Not found"

@@ -13,22 +13,22 @@
 ################################################################################
 ################################################################################
 add_executable(
-    test-hw-loc
-    test-hw-loc.c
+    test-hwloc
+    test-hwloc.c
 )
 
 target_include_directories(
-    test-hw-loc
+    test-hwloc
     PRIVATE
       ${CMAKE_SOURCE_DIR}/include
 )
 
 target_link_libraries(
-    test-hw-loc
-    qv-hw-loc
+    test-hwloc
+    qv-hwloc
 )
 
-add_test(hw-loc test-hw-loc)
+add_test(hwloc test-hwloc)
 
 ################################################################################
 ################################################################################
@@ -66,14 +66,14 @@ add_test(
 ################################################################################
 # Use the C linker to test for C/C++ linkage problems.
 set_target_properties(
-    test-hw-loc
+    test-hwloc
     test-rmi
     PROPERTIES LINKER_LANGUAGE C
 )
 
 # Set test timeout
 set_tests_properties(
-    hw-loc
+    hwloc
     rmi
     PROPERTIES TIMEOUT 15
 )

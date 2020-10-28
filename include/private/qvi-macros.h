@@ -10,7 +10,7 @@
  */
 
 /**
- * @file macros.h
+ * @file qvi-macros.h
  */
 
 #ifndef QVI_MACROS_H
@@ -18,6 +18,16 @@
 
 #define QVI_STRINGIFY(x) #x
 #define QVI_TOSTRING(x)  QVI_STRINGIFY(x)
+
+/**
+ * Convenience macro used to silence warnings about unused variables.
+ *
+ * @param[in] x Unused variable.
+ */
+#define QVI_UNUSED(x)                                                          \
+do {                                                                           \
+    (void)(x);                                                                 \
+} while (0)
 
 #endif
 

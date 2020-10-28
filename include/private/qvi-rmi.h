@@ -10,13 +10,13 @@
  */
 
 /**
- * @file rmi.h
+ * @file qvi-rmi.h
  */
 
 #ifndef QVI_RMI_H
 #define QVI_RMI_H
 
-#include "quo-vadis/hw-loc.h"
+#include "private/qvi-rpc.h"
 
 #include <unistd.h>
 
@@ -85,7 +85,7 @@ int
 qvi_rmi_task_get_cpubind(
     qvi_rmi_client_t *client,
     pid_t who,
-    qv_bitmap_t *out_bitmap
+    qv_hwloc_bitmap_t *out_bitmap
 );
 
 #ifdef __cplusplus

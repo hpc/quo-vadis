@@ -14,7 +14,7 @@
  */
 
 #include "quo-vadis.h"
-#include "private/rmi.h"
+#include "private/qvi-rmi.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -25,7 +25,7 @@ static int
 server(
     const char *url
 ) {
-    printf("# Starting Server (%s)\n", url);
+    printf("# [%d] Starting Server (%s)\n", getpid(), url);
 
     char const *ers = NULL;
 
@@ -56,7 +56,7 @@ static int
 client(
     const char *url
 ) {
-    printf("# Starting Client (%s)\n", url);
+    printf("# [%d] Starting Client (%s)\n", getpid(), url);
 
     char const *ers = NULL;
 
@@ -74,12 +74,17 @@ client(
     }
 
     pid_t mypid = getpid();
-    qv_bitmap_t bitmap;
-    rc = qvi_rmi_task_get_cpubind(client, mypid, bitmap);
+    qv_hwloc_bitmap_t bitmap;
+    rc = qvi_rmi_task_get_cpubind(client, mypid, &bitmap);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_task_get_cpubind() failed";
         goto out;
     }
+    char *res;
+    qv_hwloc_bitmap_asprintf(bitmap, &res);
+    printf("%d's cpubind is %s\n", mypid, res);
+    qv_hwloc_bitmap_free(bitmap);
+    free(res);
 out:
     qvi_rmi_client_destruct(client);
     if (ers) {

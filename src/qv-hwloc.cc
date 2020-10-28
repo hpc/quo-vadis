@@ -10,15 +10,17 @@
  */
 
 /**
- * @file hw-hwloc.cc
+ * @file qv-hwloc.cc
  */
 
-#include "private/common.h"
-#include "private/logger.h"
+#include "private/qvi-common.h"
+#include "private/qvi-logger.h"
 
-#include "quo-vadis/hw-loc.h"
+#include "quo-vadis/qv-hwloc.h"
 
 #include "hwloc.h"
+
+// TODO(skg) Add bitmap_alloc
 
 // Type definition
 struct qv_hwloc_s {
@@ -67,7 +69,7 @@ qv_hwloc_init(
 out:
     if (ers) {
         QVI_LOG_ERROR("{} with rc={}", ers, rc);
-        return QV_ERR_TOPO;
+        return QV_ERR_HWLOC;
     }
     return QV_SUCCESS;
 }
@@ -114,8 +116,24 @@ qv_hwloc_topo_load(
 out:
     if (ers) {
         QVI_LOG_ERROR("{} with rc={}", ers, rc);
-        return QV_ERR_TOPO;
+        return QV_ERR_HWLOC;
     }
+    return QV_SUCCESS;
+}
+
+qv_hwloc_bitmap_t
+qv_hwloc_bitmap_alloc(void)
+{
+    return (qv_hwloc_bitmap_t)hwloc_bitmap_alloc();
+}
+
+int
+qv_hwloc_bitmap_free(
+    qv_hwloc_bitmap_t bitmap
+) {
+    if (!bitmap) return QV_ERR_INVLD_ARG;
+
+    hwloc_bitmap_free((hwloc_bitmap_t)bitmap);
     return QV_SUCCESS;
 }
 
@@ -127,7 +145,7 @@ int
 qv_hwloc_task_get_cpubind(
     qv_hwloc_t *hwl,
     pid_t who,
-    qv_bitmap_t *out_bitmap
+    qv_hwloc_bitmap_t *out_bitmap
 ) {
     if (!hwl || !out_bitmap) return QV_ERR_INVLD_ARG;
 
@@ -150,7 +168,7 @@ qv_hwloc_task_get_cpubind(
         const int err = errno;
         static const char *ers = "hwloc_get_proc_cpubind failed";
         QVI_LOG_ERROR("{} (rc={}, {})", ers, err, qvi_strerr(err));
-        qrc = QV_ERR_TOPO;
+        qrc = QV_ERR_HWLOC;
         goto out;
     }
     *out_bitmap = (hwloc_bitmap_t)cur_bind;
@@ -164,18 +182,8 @@ out:
 }
 
 int
-qv_hwloc_bitmap_free(
-    qv_bitmap_t bitmap
-) {
-    if (!bitmap) return QV_ERR_INVLD_ARG;
-
-    hwloc_bitmap_free((hwloc_bitmap_t)bitmap);
-    return QV_SUCCESS;
-}
-
-int
 qv_hwloc_bitmap_asprintf(
-    qv_bitmap_t bitmap,
+    qv_hwloc_bitmap_t bitmap,
     char **result
 ) {
     if (!bitmap || !result) return QV_ERR_INVLD_ARG;
@@ -188,6 +196,19 @@ qv_hwloc_bitmap_asprintf(
         return QV_ERR_OOR;
     }
     *result = iresult;
+    return QV_SUCCESS;
+}
+
+int
+qv_hwloc_bitmap_sscanf(
+    qv_hwloc_bitmap_t bitmap,
+    const char *string
+) {
+    int rc = hwloc_bitmap_sscanf((hwloc_bitmap_t)bitmap, string);
+    if (rc != 0) {
+        QVI_LOG_ERROR("hwloc_bitmap_sscanf() failed");
+        return QV_ERR_HWLOC;
+    }
     return QV_SUCCESS;
 }
 

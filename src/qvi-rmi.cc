@@ -10,21 +10,17 @@
  */
 
 /**
- * @file rmi.cc
+ * @file qvi-rmi.cc
  *
  * Resource Management and Inquiry
  */
 
-#include "private/common.h"
-#include "private/rmi.h"
-#include "private/rpc.h"
-#include "private/logger.h"
-
-#include "quo-vadis/hw-loc.h"
+#include "private/qvi-common.h"
+#include "private/qvi-rmi.h"
+#include "private/qvi-logger.h"
 
 struct qvi_rmi_server_s {
     qvi_rpc_server_t *rpcserv;
-    qv_hwloc_t *hwloc;
 };
 
 struct qvi_rmi_client_s {
@@ -44,12 +40,6 @@ qvi_rmi_server_construct(
     if (!iserver) {
         QVI_LOG_ERROR("calloc() failed");
         return QV_ERR_OOR;
-    }
-
-    rc = qv_hwloc_construct(&iserver->hwloc);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_hwloc_construct() failed";
-        goto out;
     }
 
     rc = qvi_rpc_server_construct(&iserver->rpcserv);
@@ -74,37 +64,8 @@ qvi_rmi_server_destruct(
 ) {
     if (!server) return;
 
-    qv_hwloc_destruct(server->hwloc);
     qvi_rpc_server_destruct(server->rpcserv);
     free(server);
-}
-
-/**
- *
- */
-static int
-server_hwloc_init(
-    qvi_rmi_server_t *server
-) {
-    int rc = QV_SUCCESS;
-    char const *ers = nullptr;
-
-    rc = qv_hwloc_init(server->hwloc);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_hwloc_init() failed";
-        goto out;
-    }
-
-    rc = qv_hwloc_topo_load(server->hwloc);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_hwloc_topo_load() failed";
-        goto out;
-    }
-out:
-    if (ers) {
-        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-    }
-    return rc;
 }
 
 int
@@ -116,18 +77,12 @@ qvi_rmi_server_start(
 
     int rc = QV_SUCCESS;
     char const *ers = nullptr;
-
     // TODO(skg) Get this value by some nice means.
     const uint16_t qdepth = 10;
+
     rc = qvi_rpc_server_start(server->rpcserv, url, qdepth);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rpc_server_start() failed";
-        goto out;
-    }
-
-    rc = server_hwloc_init(server);
-    if (rc != QV_SUCCESS) {
-        ers = "server_hwloc_init() failed";
         goto out;
     }
 out:
@@ -191,24 +146,42 @@ int
 qvi_rmi_task_get_cpubind(
     qvi_rmi_client_t *client,
     pid_t who,
-    qv_bitmap_t *out_bitmap
+    qv_hwloc_bitmap_t *out_bitmap
 ) {
     if (!client) return QV_ERR_INVLD_ARG;
 
     int rc = QV_SUCCESS;
     char const *ers = nullptr;
 
-    int a = 0, c = -505;
-    char const *b = "|can you see me..?|";
+    qv_hwloc_bitmap_t bitmap = qv_hwloc_bitmap_alloc();
 
     qvi_rpc_argv_t args = 0;
-    qvi_rpc_argv_pack(&args, 0, a, b, c);
+    // TODO(skg) Hide starting index.
+    qvi_rpc_argv_pack(&args, 0, who, out_bitmap);
 
-    rc = qvi_rpc_client_req(client->rcpcli, TASK_GET_CPUBIND, args, a, b, c);
+    rc = qvi_rpc_client_req(
+        client->rcpcli,
+        QV_TASK_GET_CPUBIND,
+        args,
+        who,
+        out_bitmap
+    );
     if (rc != QV_SUCCESS) {
         ers = "qvi_rpc_client_req() failed";
         goto out;
     }
+
+    qvi_rpc_fun_args_t fun_args;
+    rc = qvi_rpc_client_rep(
+        client->rcpcli,
+        &fun_args
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_rpc_client_rep() failed";
+        goto out;
+    }
+    qv_hwloc_bitmap_sscanf(bitmap, fun_args.bitm_args[0]);
+    *out_bitmap = bitmap;
 out:
     if (ers) {
         QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
@@ -218,4 +191,5 @@ out:
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
+ *
  */

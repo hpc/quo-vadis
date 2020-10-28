@@ -10,11 +10,13 @@
  */
 
 /**
- * @file rpc.h
+ * @file qvi-rpc.h
  */
 
 #ifndef QVI_RPC_H
 #define QVI_RPC_H
+
+#include "quo-vadis/qv-hwloc.h"
 
 #include "nng/nng.h"
 #include "nng/protocol/reqrep0/rep.h"
@@ -33,8 +35,8 @@ typedef struct qvi_rpc_server_s qvi_rpc_server_t;
 struct qvi_rpc_client_s;
 typedef struct qvi_rpc_client_s qvi_rpc_client_t;
 
-typedef enum qvi_rpc_fun_e {
-    TASK_GET_CPUBIND
+typedef enum qvi_rpc_funid_e {
+    QV_TASK_GET_CPUBIND
 } qvi_rpc_funid_t;
 
 // We currently support encoding up to 8 arguments:
@@ -51,6 +53,32 @@ typedef uint8_t qvi_rpc_arg_type_t;
 #define QVI_RPC_TYPE_NONE (0x00     )
 #define QVI_RPC_TYPE_INT  (0x01 << 0)
 #define QVI_RPC_TYPE_CSTR (0x01 << 1)
+#define QVI_RPC_TYPE_BITM (0x01 << 2)
+
+/**
+ * The underlying type used to store arguments for RPC calls. If the number of
+ * arguments required to handle a particular function call ever exceeds the
+ * storage provided, then update array size of the given type.
+ */
+typedef struct qvi_rpc_fun_args_s {
+    // Return code from underlying call from RPC dispatch.
+    int rc;
+    // Function argument storage.
+    int    int_args[4];
+    char *cstr_args[4];
+    // We encode all bitmaps as strings. This is a buffer large enough to store
+    // 3 encoded bitmaps from a system with 512 cores (I think): 512 bits / 8 =
+    // 64 bytes. In hex, 2 chars are required to encode each byte, so 64 / 2 =
+    // 32. 32 + 1 for string termination. If this isn't enough, update.  Note:
+    // we use statically sized buffers to avoid lots of small allocations.
+    char  bitm_args[3][33];
+    // Argument counters for each type.
+    uint8_t int_i;
+    uint8_t cstr_i;
+    uint8_t bitm_i;
+    // Pointer to initialized qv_hwloc_t instance.
+    qv_hwloc_t *hwloc;
+} qvi_rpc_fun_args_t;
 
 /**
  * Returns the maximum number of arguments that can be packed into a
@@ -145,6 +173,12 @@ qvi_rpc_client_req(
     ...
 );
 
+int
+qvi_rpc_client_rep(
+    qvi_rpc_client_t *client,
+    qvi_rpc_fun_args_t *fun_args
+);
+
 #ifdef __cplusplus
 }
 #endif
@@ -179,6 +213,26 @@ inline qvi_rpc_arg_type_t
 qvi_rpc_argv_type(char const *)
 {
     return QVI_RPC_TYPE_CSTR;
+}
+
+/**
+ * qv_hwloc_bitmap_t qvi_rpc_argv_type template specialization.
+ */
+template<>
+inline qvi_rpc_arg_type_t
+qvi_rpc_argv_type(qv_hwloc_bitmap_t)
+{
+    return QVI_RPC_TYPE_BITM;
+}
+
+/**
+ * qv_hwloc_bitmap_t * qvi_rpc_argv_type template specialization.
+ */
+template<>
+inline qvi_rpc_arg_type_t
+qvi_rpc_argv_type(qv_hwloc_bitmap_t *)
+{
+    return QVI_RPC_TYPE_BITM;
 }
 
 /**

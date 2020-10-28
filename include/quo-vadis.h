@@ -19,7 +19,7 @@
 /** Convenience definition. */
 #define QUO_VADIS 1
 /** Return codes. */
-#include "quo-vadis/rc.h"
+#include "quo-vadis/qv-rc.h"
 
 #endif
 
