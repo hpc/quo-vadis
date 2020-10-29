@@ -281,10 +281,7 @@ server_rpc_unpack(
     const size_t tbits = qvi_rpc_type_nbits();
     // Flag indicating whether or not we are done processing arguments.
     bool done = false;
-    // Unpack the values in the message body and 'return' them to the caller by
-    // reference. Notice during the unpacking process, namely during va_arg(),
-    // we add an extra level of indirection to the decoded type. For example,
-    // QVI_RPC_TYPE_INT will expect an int * as an argument, not an int.
+    // Unpack the values in the message body and populate relevant parameters.
     qvi_rpc_argv_t argv = msghdr.argv;
     for (size_t argidx = 0; argidx < nargs && !done; ++argidx) {
         const qvi_rpc_arg_type_t type = (qvi_rpc_arg_type_t)(
