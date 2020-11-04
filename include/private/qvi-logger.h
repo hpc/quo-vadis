@@ -82,44 +82,44 @@ public:
 };
 
 //
-// console
+// Console
 //
-#define QVI_LOG_INFO(...) \
+#define qvi_log_info(...)                                                      \
 SPDLOG_LOGGER_INFO(qvi_logger::console_info(), __VA_ARGS__)
 
-#define QVI_LOG_WARN(...) \
+#define qvi_log_warn(...)                                                      \
 SPDLOG_LOGGER_WARN(qvi_logger::console_warn(), __VA_ARGS__)
 
-#define QVI_LOG_ERROR(...) \
+#define qvi_log_error(...)                                                     \
 SPDLOG_LOGGER_ERROR(qvi_logger::console_error(), __VA_ARGS__)
 
-#define QVI_PANIC_LOG_ERROR(...)                                               \
+#define qvi_panic_log_error(...)                                               \
 do {                                                                           \
     SPDLOG_LOGGER_ERROR(qvi_logger::console_error(), __VA_ARGS__);             \
     _exit(EXIT_FAILURE);                                                       \
 } while (0)
 
-#define QVI_LOG_DEBUG(...) \
+#define qvi_log_debug(...)                                                     \
 SPDLOG_LOGGER_DEBUG(qvi_logger::console_debug(), __VA_ARGS__)
 //
-// syslog
+// Syslog
 //
-#define QVI_SYSLOG_INFO(...) \
+#define qvi_syslog_info(...)                                                   \
 SPDLOG_LOGGER_INFO(qvi_logger::syslog_info(), __VA_ARGS__)
 
-#define QVI_SYSLOG_WARN(...) \
+#define qvi_syslog_warn(...)                                                   \
 SPDLOG_LOGGER_WARN(qvi_logger::syslog_warn(), __VA_ARGS__)
 
-#define QVI_SYSLOG_ERROR(...) \
+#define qvi_syslog_error(...)                                                  \
 SPDLOG_LOGGER_ERROR(qvi_logger::syslog_error(), __VA_ARGS__)
 
-#define QVI_PANIC_SYSLOG_ERROR(...)                                            \
+#define qvi_panic_syslog_error(...)                                            \
 do {                                                                           \
     SPDLOG_LOGGER_ERROR(qvi_logger::syslog_error(), __VA_ARGS__);              \
     _exit(EXIT_FAILURE);                                                       \
 } while (0)
 
-#define QVI_SYSLOG_DEBUG(...) \
+#define qvi_syslog_debug(...)                                                  \
 SPDLOG_LOGGER_DEBUG(qvi_logger::syslog_debug(), __VA_ARGS__)
 
 #endif

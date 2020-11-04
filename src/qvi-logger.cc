@@ -13,8 +13,7 @@
  * @file qvi-logger.cc
  */
 
-#include "quo-vadis/config.h"
-
+#include "private/qvi-common.h"
 #include "private/qvi-logger.h"
 
 #include "spdlog/sinks/stdout_sinks.h"
@@ -25,7 +24,7 @@ qvi_logger::qvi_logger(void)
     // Formatting applied globally to all registered loggers
     spdlog::set_pattern("[" PACKAGE_NAME " %l at (%s::%!::%#)] %v");
     //
-    // console
+    // Console
     //
     m_console_info = spdlog::stdout_logger_mt("console_info");
     m_console_info->set_level(spdlog::level::info);
@@ -41,7 +40,7 @@ qvi_logger::qvi_logger(void)
     m_console_debug->set_level(spdlog::level::debug);
     m_console_debug->set_pattern("[%H:%M:%S.%e pid=%P tid=%t] %v");
     //
-    // syslog
+    // Syslog
     //
     m_syslog_info = spdlog::syslog_logger_mt("syslog_info");
     m_syslog_info->set_level(spdlog::level::info);
@@ -76,7 +75,7 @@ qvi_logger::operator=(const qvi_logger &)
 }
 
 //
-// console
+// Console
 //
 qvi_logger::logger_t
 qvi_logger::console_info(void)
@@ -103,7 +102,7 @@ qvi_logger::console_debug(void)
 }
 
 //
-// syslog
+// Syslog
 //
 qvi_logger::logger_t
 qvi_logger::syslog_info(void)

@@ -23,7 +23,6 @@
 #include "private/qvi-rpc.h"
 #include "private/qvi-logger.h"
 
-#include "hwloc.h"
 #include "nng/supplemental/util/platform.h"
 
 #include <stdarg.h>
@@ -38,24 +37,25 @@ typedef struct qvi_rpc_wqi_s {
         RECV,
         SEND
     } state;
-    nng_aio *aio;
-    nng_socket sock;
-    nng_msg *msg;
     //
     qv_hwloc_t *hwloc;
+    //
+    nng_msg *msg;
+    nng_aio *aio;
+    nng_socket sock;
 } qvi_rpc_wqi_t;
 
 struct qvi_rpc_server_s {
-    char url[URL_MAX_LEN];
+    qv_hwloc_t *hwloc;
+    qvi_rpc_wqi_t **wqis;
     nng_socket sock;
     uint16_t qdepth;
-    qvi_rpc_wqi_t **wqis;
-    qv_hwloc_t *hwloc;
+    char url[URL_MAX_LEN];
 };
 
 struct qvi_rpc_client_s {
-    char url[URL_MAX_LEN];
     nng_socket sock;
+    char url[URL_MAX_LEN];
 };
 
 typedef struct qvi_msg_header_s {
@@ -85,20 +85,41 @@ static int
 rpc_stub_task_get_cpubind(
     qvi_rpc_fun_args_t *args
 ) {
-    qv_hwloc_bitmap_t bitmap;
+    int rc = QV_SUCCESS;
+    char const *ers = nullptr;
 
-    int rc = qv_hwloc_task_get_cpubind(
+    // TODO(skg) Improve.
+    qv_hwloc_bitmap_t bitmap;
+    const int bufsize = sizeof(args->bitm_args[0]);
+    int nwritten;
+
+    rc = qv_hwloc_task_get_cpubind(
         args->hwloc,
         args->int_args[0],
         &bitmap
     );
     if (rc != QV_SUCCESS) {
-        static char const *ers = "qv_hwloc_task_get_cpubind() failed";
-        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        qv_hwloc_bitmap_free(bitmap);
-        return QV_ERR_RPC;
+        ers = "qv_hwloc_task_get_cpubind() failed";
+        rc = QV_ERR_RPC;
+        goto out;
     }
-    hwloc_bitmap_snprintf(args->bitm_args[0], sizeof(args->bitm_args[0]), (hwloc_bitmap_t)bitmap);
+
+    // TODO(skg) Implement helper.
+    rc = qv_hwloc_bitmap_snprintf(
+        args->bitm_args[0],
+        bufsize,
+        bitmap,
+        &nwritten
+    );
+    if (rc != QV_SUCCESS || nwritten >= bufsize) {
+        ers = "qv_hwloc_bitmap_snprintf() failed";
+        rc = QV_ERR_INTERNAL;
+        goto out;
+    }
+out:
+    if (ers) {
+        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+    }
     qv_hwloc_bitmap_free(bitmap);
     return QV_SUCCESS;
 }
@@ -122,7 +143,7 @@ register_atexit(void)
     if (!handler_installed) {
         const int rc = atexit(nng_fini);
         if (rc) {
-            QVI_LOG_WARN("atexit(nng_fini) failed");
+            qvi_log_warn("atexit(nng_fini) failed");
         }
         handler_installed = true;
     }
@@ -139,7 +160,7 @@ msg_append_header(
     const int rc = nng_msg_append(msg, hdr, sizeof(*hdr));
     if (rc != 0) {
         char const *ers = "nng_msg_append() failed";
-        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, nng_strerror(rc));
+        qvi_log_error("{} with rc={} ({})", ers, rc, nng_strerror(rc));
         return QV_ERR_MSG;
     }
     return QV_SUCCESS;
@@ -156,7 +177,7 @@ rpc_pack_msg_prep(
 ) {
     int rc = nng_msg_alloc(msg, 0);
     if (rc != 0) {
-        QVI_LOG_ERROR("nng_msg_alloc() failed");
+        qvi_log_error("nng_msg_alloc() failed");
         return QV_ERR_MSG;
     }
 
@@ -185,7 +206,7 @@ client_rpc_pack(
     nng_msg *imsg = nullptr;
     int rc = rpc_pack_msg_prep(&imsg, funid, argv);
     if (rc != QV_SUCCESS) {
-        QVI_LOG_ERROR("rpc_pack_msg_prep() failed");
+        qvi_log_error("rpc_pack_msg_prep() failed");
         return rc;
     }
     //
@@ -241,7 +262,7 @@ client_rpc_pack(
     }
 out:
     if (ers) {
-        QVI_LOG_ERROR("{}", ers);
+        qvi_log_error("{}", ers);
         nng_msg_free(imsg);
         *msg = nullptr;
         return rc;
@@ -325,38 +346,8 @@ server_rpc_unpack(
     }
 out:
     if (ers) {
-        QVI_LOG_ERROR("{}", ers);
+        qvi_log_error("{}", ers);
         return rc;
-    }
-    return QV_SUCCESS;
-}
-
-/**
- *
- */
-static int
-client_connect(
-    qvi_rpc_client_t *client,
-    const char *url
-) {
-    char const *ers = nullptr;
-
-    int rc = nng_req0_open(&client->sock);
-    if (rc != 0) {
-        ers = "nng_req0_open() failed";
-        goto out;
-    }
-
-    rc = nng_dial(client->sock, url, nullptr, 0);
-    if (rc != 0) {
-        ers = "nng_dial() failed";
-        goto out;
-    }
-out:
-    if (ers) {
-        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, nng_strerror(rc));
-        nng_close(client->sock);
-        return QV_ERR_MSG;
     }
     return QV_SUCCESS;
 }
@@ -370,21 +361,22 @@ qvi_rpc_client_req(
 ) {
     va_list vl;
     va_start(vl, argv);
-
+    //
     nng_msg *msg = nullptr;
     int rc = client_rpc_pack(&msg, funid, argv, vl);
-
+    //
     va_end(vl);
     // Do this here to make dealing with va_start()/va_end() easier.
     if (rc != QV_SUCCESS) {
         char const *ers = "client_rpc_pack() failed";
-        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
         return rc;
     }
 
     rc = nng_sendmsg(client->sock, msg, 0);
     if (rc != 0) {
-        QVI_LOG_INFO("nng_sendmsg() failed");
+        qvi_log_info("nng_sendmsg() failed");
+        // TODO(skg) Cleanup and return error to caller.
     }
     // Freeing up of the msg resource will be done for us.
     return QV_SUCCESS;
@@ -398,7 +390,7 @@ qvi_rpc_client_rep(
     nng_msg *msg;
     int rc = nng_recvmsg(client->sock, &msg, 0);
     if (rc != 0) {
-        QVI_LOG_INFO("nng_recvmsg() failed");
+        qvi_log_info("nng_recvmsg() failed");
     }
 
     memmove(fun_args, nng_msg_body(msg), sizeof(*fun_args));
@@ -436,7 +428,7 @@ server_msg_state_machine(
         nng_recv_aio(wqi->sock, wqi->aio);
         break;
     default:
-        QVI_LOG_ERROR("Invalid state entered: {}", wqi->state);
+        qvi_log_error("Invalid state entered: {}", wqi->state);
         break;
     }
 }
@@ -453,9 +445,11 @@ server_deallocate_outstanding_msg_queue(
     for (uint16_t i = 0; i < server->qdepth; ++i) {
         if (server->wqis[i]->aio) {
             nng_aio_free(server->wqis[i]->aio);
+            server->wqis[i]->aio = nullptr;
         }
         if (server->wqis[i]) {
             nng_free(server->wqis[i], sizeof(qvi_rpc_wqi_t));
+            server->wqis[i] = nullptr;
         }
     }
     free(server->wqis);
@@ -477,7 +471,7 @@ server_allocate_outstanding_msg_queue(
         sizeof(*server->wqis)
     );
     if (!server->wqis) {
-        QVI_LOG_ERROR("calloc() failed");
+        qvi_log_error("calloc() failed");
         return QV_ERR_OOR;
     }
 
@@ -501,7 +495,7 @@ server_allocate_outstanding_msg_queue(
     }
 out:
     if (ers) {
-        QVI_LOG_ERROR("{}", ers);
+        qvi_log_error("{}", ers);
         // Relinquish any allocated resources.
         server_deallocate_outstanding_msg_queue(server);
         return rc;
@@ -532,7 +526,7 @@ server_hwloc_init(
     }
 out:
     if (ers) {
-        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
     }
     return rc;
 }
@@ -548,7 +542,7 @@ qvi_rpc_server_construct(
 
     qvi_rpc_server_t *iserver = (qvi_rpc_server_t *)calloc(1, sizeof(*iserver));
     if (!iserver) {
-        QVI_LOG_ERROR("calloc() failed");
+        qvi_log_error("calloc() failed");
         return QV_ERR_OOR;
     }
 
@@ -559,7 +553,7 @@ qvi_rpc_server_construct(
     }
 out:
     if (ers) {
-        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
         qvi_rpc_server_destruct(iserver);
         *server = nullptr;
         return rc;
@@ -577,7 +571,7 @@ qvi_rpc_server_destruct(
     int rc = nng_close(server->sock);
     if (rc != 0) {
         char const *ers = "nng_close() failed during shutdown";
-        QVI_LOG_WARN("{} with rc={} ({})", ers, rc, nng_strerror(rc));
+        qvi_log_warn("{} with rc={} ({})", ers, rc, nng_strerror(rc));
     }
     //
     server_deallocate_outstanding_msg_queue(server);
@@ -595,7 +589,7 @@ server_setup(
 
     const int nwritten = snprintf(server->url, sizeof(server->url), "%s", url);
     if (nwritten >= URL_MAX_LEN) {
-        QVI_LOG_ERROR("snprintf() truncated");
+        qvi_log_error("snprintf() truncated");
         return QV_ERR_INTERNAL;
     }
     // Register cleanup function at exit.
@@ -613,7 +607,7 @@ server_open_commchan(
     const int rc = nng_rep0_open_raw(&server->sock);
     if (rc != 0) {
         char const *ers = "nng_rep0_open_raw() failed";
-        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, nng_strerror(rc));
+        qvi_log_error("{} with rc={} ({})", ers, rc, nng_strerror(rc));
         return QV_ERR_MSG;
     }
     return QV_SUCCESS;
@@ -639,7 +633,7 @@ server_listen(
     }
 out:
     if (ers) {
-        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, nng_strerror(rc));
+        qvi_log_error("{} with rc={} ({})", ers, rc, nng_strerror(rc));
         return QV_ERR_MSG;
     }
     return QV_SUCCESS;
@@ -687,7 +681,7 @@ qvi_rpc_server_start(
     }
 out:
     if (ers) {
-        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
         // Start failed, so relinquish allocated resources.
         qvi_rpc_server_destruct(server);
         return rc;
@@ -703,7 +697,7 @@ qvi_rpc_client_construct(
 
     qvi_rpc_client_t *iclient = (qvi_rpc_client_t *)calloc(1, sizeof(*iclient));
     if (!iclient) {
-        QVI_LOG_ERROR("calloc() failed");
+        qvi_log_error("calloc() failed");
         return QV_ERR_OOR;
     }
     register_atexit();
@@ -726,7 +720,26 @@ qvi_rpc_client_connect(
     qvi_rpc_client_t *client,
     const char *url
 ) {
-    return client_connect(client, url);
+    char const *ers = nullptr;
+
+    int rc = nng_req0_open(&client->sock);
+    if (rc != 0) {
+        ers = "nng_req0_open() failed";
+        goto out;
+    }
+
+    rc = nng_dial(client->sock, url, nullptr, 0);
+    if (rc != 0) {
+        ers = "nng_dial() failed";
+        goto out;
+    }
+out:
+    if (ers) {
+        qvi_log_error("{} with rc={} ({})", ers, rc, nng_strerror(rc));
+        nng_close(client->sock);
+        return QV_ERR_MSG;
+    }
+    return QV_SUCCESS;
 }
 
 /**
@@ -742,7 +755,6 @@ server_msg_state_recv(
     if (nng_aio_result(wqi->aio) != 0) {
         return;
     }
-    // TODO(skg) trim in dispatch to eat all of the body?
     // TODO(skg) Check for server_msg_state_recv errors.
     nng_msg *msg = nng_aio_get_msg(wqi->aio);
 
@@ -752,7 +764,7 @@ server_msg_state_recv(
     rc = nng_msg_trim(msg, trim);
     if (rc != 0) {
         ers = "nng_msg_trim() failed";
-        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, nng_strerror(rc));
+        qvi_log_error("{} with rc={} ({})", ers, rc, nng_strerror(rc));
     }
 
     qvi_rpc_fun_args_t fun_args;
@@ -775,7 +787,7 @@ server_msg_state_recv(
     // Prepare message for reply. In this case, set message content to the newly
     // populated function arguments.
     if (nng_msg_append(msg, &fun_args, sizeof(fun_args)) != 0) {
-        QVI_LOG_ERROR("nng_msg_append() failed");
+        qvi_log_error("nng_msg_append() failed");
     }
     // Prepare the WQI for next state: SEND.
     wqi->msg = msg;

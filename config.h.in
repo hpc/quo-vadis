@@ -19,6 +19,10 @@
 #define PACKAGE_VERSION_MINOR @quo-vadis_VERSION_MINOR@
 #define PACKAGE_VERSION_PATCH @quo-vadis_VERSION_PATCH@
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #cmakedefine HAVE_ERRNO_H 1
 #cmakedefine HAVE_INTTYPES_H 1
 #cmakedefine HAVE_LIMITS_H 1

@@ -12,19 +12,21 @@
 ################################################################################
 ################################################################################
 add_library(
-    qvi-logger
+    qvi-utils
+    qvi-utils.cc
     qvi-logger.cc
+    ../include/private/qvi-utils.h
     ../include/private/qvi-logger.h
 )
 
 target_compile_options(
-    qvi-logger
+    qvi-utils
     PUBLIC
       -DSPDLOG_COMPILED_LIB
 )
 
 target_include_directories(
-    qvi-logger
+    qvi-utils
     PUBLIC
       $<INSTALL_INTERFACE:include>
       $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
@@ -33,7 +35,7 @@ target_include_directories(
 )
 
 target_link_libraries(
-    qvi-logger
+    qvi-utils
     PUBLIC
       spdlog
 )
@@ -64,7 +66,7 @@ target_link_libraries(
 target_link_libraries(
     qv-hwloc
     PRIVATE
-      qvi-logger
+      qvi-utils
 )
 
 ################################################################################
@@ -86,7 +88,7 @@ target_include_directories(
 
 target_link_libraries(
     qvi-rpc
-    qvi-logger
+    qvi-utils
     qv-hwloc
     nng
 )

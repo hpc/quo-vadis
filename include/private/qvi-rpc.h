@@ -39,16 +39,22 @@ typedef enum qvi_rpc_funid_e {
     QV_TASK_GET_CPUBIND
 } qvi_rpc_funid_t;
 
-// We currently support encoding up to 8 arguments:
-// 64 bits for the underlying qvi_rpc_argv_t type divided by
-// 8 bits for the QVI_RPC_TYPE_* types.
+/**
+* We currently support encoding up to 8 arguments:
+* 64 bits for the underlying qvi_rpc_argv_t type divided by
+* 8 bits for the QVI_RPC_TYPE_* types.
+*/
 typedef uint64_t qvi_rpc_argv_t;
 
-// Type bitmask used to help retrieve the underlying RPC type.
+/**
+ * Type bitmask used to help retrieve the underlying RPC type.
+ */
 static const qvi_rpc_argv_t rpc_argv_type_mask = 0x00000000000000FF;
 
-// We currently support up to 8 types. If this ever changes, please carefully
-// update all structures associated with the handling of these values.
+/**
+ * We currently support up to 8 types. If this ever changes, please carefully
+ * update all structures associated with the handling of these values.
+ */
 typedef uint8_t qvi_rpc_arg_type_t;
 #define QVI_RPC_TYPE_NONE (0x00     )
 #define QVI_RPC_TYPE_INT  (0x01 << 0)
@@ -67,11 +73,11 @@ typedef struct qvi_rpc_fun_args_s {
     int    int_args[4];
     char *cstr_args[4];
     // We encode all bitmaps as strings. This is a buffer large enough to store
-    // 3 encoded bitmaps from a system with 512 cores (I think): 512 bits / 8 =
+    // 3 encoded bitmaps from a system with 512 PEs (I think): 512 bits / 8 =
     // 64 bytes. In hex, 2 chars are required to encode each byte, so 64 / 2 =
-    // 32. 32 + 1 for string termination. If this isn't enough, update.  Note:
-    // we use statically sized buffers to avoid lots of small allocations.
-    char  bitm_args[3][33];
+    // 32. 32 + 1 for string termination + fluff. If this isn't enough, update.
+    // Note: we use statically sized buffers to avoid lots of small allocations.
+    char  bitm_args[3][48];
     // Argument counters for each type.
     uint8_t int_i;
     uint8_t cstr_i;
@@ -240,7 +246,7 @@ qvi_rpc_argv_type(qv_hwloc_bitmap_t *)
  */
 template<typename ARG>
 void
-qvi_rpc_argv_pack(
+qvi_rpc_argv_pack_impl(
     qvi_rpc_argv_t *argv,
     uint8_t pos,
     ARG arg
@@ -253,14 +259,26 @@ qvi_rpc_argv_pack(
  */
 template<typename CAR_ARGS, typename... CDR_ARGS>
 void
-qvi_rpc_argv_pack(
+qvi_rpc_argv_pack_impl(
     qvi_rpc_argv_t *argv,
     uint8_t pos,
     CAR_ARGS arg,
     CDR_ARGS... args
 ) {
-    qvi_rpc_argv_pack(argv, pos, arg);
-    qvi_rpc_argv_pack(argv, pos + 1, args...);
+    qvi_rpc_argv_pack_impl(argv, pos, arg);
+    qvi_rpc_argv_pack_impl(argv, pos + 1, args...);
+}
+
+/**
+ *
+ */
+template<typename... CDR_ARGS>
+void
+qvi_rpc_argv_pack(
+    qvi_rpc_argv_t *argv,
+    CDR_ARGS... args
+) {
+    qvi_rpc_argv_pack_impl(argv, 0, args...);
 }
 
 #endif // C++

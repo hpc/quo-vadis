@@ -38,7 +38,7 @@ qvi_rmi_server_construct(
 
     qvi_rmi_server_t *iserver = (qvi_rmi_server_t *)calloc(1, sizeof(*iserver));
     if (!iserver) {
-        QVI_LOG_ERROR("calloc() failed");
+        qvi_log_error("calloc() failed");
         return QV_ERR_OOR;
     }
 
@@ -49,7 +49,7 @@ qvi_rmi_server_construct(
     }
 out:
     if (ers) {
-        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
         qvi_rmi_server_destruct(iserver);
         *server = nullptr;
         return rc;
@@ -87,7 +87,7 @@ qvi_rmi_server_start(
     }
 out:
     if (ers) {
-        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
         qvi_rmi_server_destruct(server);
     }
     return rc;
@@ -104,7 +104,7 @@ qvi_rmi_client_construct(
 
     qvi_rmi_client_t *icli = (qvi_rmi_client_t *)calloc(1, sizeof(*icli));
     if (!icli) {
-        QVI_LOG_ERROR("calloc() failed");
+        qvi_log_error("calloc() failed");
         return QV_ERR_OOR;
     }
 
@@ -115,7 +115,7 @@ qvi_rmi_client_construct(
     }
 out:
     if (ers) {
-        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
         qvi_rmi_client_destruct(icli);
         *client = nullptr;
         return rc;
@@ -156,8 +156,7 @@ qvi_rmi_task_get_cpubind(
     qv_hwloc_bitmap_t bitmap = qv_hwloc_bitmap_alloc();
 
     qvi_rpc_argv_t args = 0;
-    // TODO(skg) Hide starting index.
-    qvi_rpc_argv_pack(&args, 0, who, out_bitmap);
+    qvi_rpc_argv_pack(&args, who, out_bitmap);
 
     rc = qvi_rpc_client_req(
         client->rcpcli,
@@ -184,7 +183,7 @@ qvi_rmi_task_get_cpubind(
     *out_bitmap = bitmap;
 out:
     if (ers) {
-        QVI_LOG_ERROR("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
     }
     return rc;
 }

@@ -10,20 +10,22 @@
  */
 
 /**
- * @file quo-vadis.h
+ * @file qvi-utils.cc
  */
 
-#ifndef QUO_VADIS_H
-#define QUO_VADIS_H
+#include "private/qvi-utils.h"
 
-/** Convenience definition. */
-#define QUO_VADIS 1
-/** Generated configuration. */
-#include "quo-vadis/config.h"
-/** Return codes. */
-#include "quo-vadis/qv-rc.h"
+#include <chrono>
 
-#endif
+double
+qvi_time(void)
+{
+    using namespace std::chrono;
+
+    const auto n = steady_clock::now();
+    auto tse_ms = time_point_cast<microseconds>(n).time_since_epoch().count();
+    return double(tse_ms) / 1e6;
+}
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab

@@ -10,7 +10,7 @@
  */
 
 /**
- * @file test-hw-loc.c
+ * @file test-hwloc.c
  */
 
 #include "quo-vadis.h"
@@ -22,7 +22,7 @@
 int
 main(void)
 {
-    printf("# Starting hw-loc test\n");
+    printf("# Starting hwloc test\n");
 
     char const *ers = NULL;
     qv_hwloc_t *hwl;

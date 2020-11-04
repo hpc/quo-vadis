@@ -14,6 +14,7 @@
  */
 
 #include "private/qvi-common.h"
+#include "private/qvi-utils.h"
 #include "private/qvi-rmi.h"
 #include "private/qvi-logger.h"
 
@@ -33,13 +34,13 @@ struct context {
 static void
 closefds(void)
 {
-    QVI_SYSLOG_DEBUG("Entered {}", __func__);
+    qvi_syslog_debug("Entered {}", __func__);
     // Determine the max number of file descriptors.
     struct rlimit rl;
     if (getrlimit(RLIMIT_NOFILE, &rl) < 0) {
         static const char *ers = "Cannot determine RLIMIT_NOFILE";
         const int err = errno;
-        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qvi_strerr(err));
+        qvi_panic_syslog_error("{} (rc={}, {})", ers, err, qvi_strerr(err));
     }
     // Default: no limit on this resource, so pick one.
     int64_t maxfd = 1024;
@@ -56,13 +57,13 @@ closefds(void)
 static void
 become_session_leader(void)
 {
-    QVI_SYSLOG_DEBUG("Entered {}", __func__);
+    qvi_syslog_debug("Entered {}", __func__);
 
     pid_t pid = 0;
     if ((pid = fork()) < 0) {
         static const char *ers = "fork() failed";
         const int err = errno;
-        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qvi_strerr(err));
+        qvi_panic_syslog_error("{} (rc={}, {})", ers, err, qvi_strerr(err));
     }
     // Parent
     if (pid != 0) {
@@ -74,7 +75,7 @@ become_session_leader(void)
     if (pgid < 0) {
         static const char *ers = "setsid() failed";
         const int err = errno;
-        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, err, qvi_strerr(err));
+        qvi_panic_syslog_error("{} (rc={}, {})", ers, err, qvi_strerr(err));
     }
 }
 
@@ -82,7 +83,7 @@ static void
 start_rmi(
     context *ctx
 ) {
-    QVI_SYSLOG_DEBUG("Entered {}", __func__);
+    qvi_syslog_debug("Entered {}", __func__);
 
     char const *ers = nullptr;
 
@@ -100,7 +101,7 @@ start_rmi(
     // TODO(skg) Add flags option
 out:
     if (ers) {
-        QVI_PANIC_SYSLOG_ERROR("{} (rc={}, {})", ers, rc, qv_strerr(rc));
+        qvi_panic_syslog_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
 }
 
@@ -108,7 +109,7 @@ static void
 main_loop(
     context *
 ) {
-    QVI_SYSLOG_DEBUG("Entered {}", __func__);
+    qvi_syslog_debug("Entered {}", __func__);
 }
 
 int
@@ -116,7 +117,7 @@ main(
     int,
     char **
 ) {
-    QVI_SYSLOG_DEBUG("Entered {}", __func__);
+    qvi_syslog_debug("Entered {}", __func__);
     //
     context ctx;
     // Clear umask. Note: this system call always succeeds.

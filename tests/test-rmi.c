@@ -14,7 +14,9 @@
  */
 
 #include "quo-vadis.h"
+
 #include "private/qvi-rmi.h"
+#include "private/qvi-utils.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -28,6 +30,7 @@ server(
     printf("# [%d] Starting Server (%s)\n", getpid(), url);
 
     char const *ers = NULL;
+    double start = qvi_time(), end;
 
     qvi_rmi_server_t *server = NULL;
     int rc = qvi_rmi_server_construct(&server);
@@ -41,6 +44,8 @@ server(
         ers = "qvi_rmi_server_start() failed";
         goto out;
     }
+    end = qvi_time();
+    printf("# [%d] Server Start Time %lf seconds\n", getpid(), end - start);
     // Let the main thread take a snooze while the server does its thing.
     sleep(10);
 out:
@@ -82,7 +87,7 @@ client(
     }
     char *res;
     qv_hwloc_bitmap_asprintf(bitmap, &res);
-    printf("%d's cpubind is %s\n", mypid, res);
+    printf("# [%d] cpubind = %s\n", mypid, res);
     qv_hwloc_bitmap_free(bitmap);
     free(res);
 out:
@@ -106,6 +111,8 @@ main(
     char **argv
 ) {
     int rc = 0;
+
+    setbuf(stdout, NULL);
 
     if (argc != 3) {
         usage(argv[0]);

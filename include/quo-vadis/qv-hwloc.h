@@ -10,7 +10,7 @@
  */
 
 /**
- * @file hw-loc.h
+ * @file qv-hwloc.h
  */
 
 #ifndef QUO_VADIS_HWLOC_H
@@ -25,8 +25,13 @@ extern "C" {
 // Forward declarations.
 struct qv_hwloc_s;
 typedef struct qv_hwloc_s qv_hwloc_t;
+
 // Convenience typedefs
-typedef void * qv_hwloc_bitmap_t;
+struct qv_hwloc_bitmap_s;
+typedef struct qv_hwloc_bitmap_s * qv_hwloc_bitmap_t;
+
+struct qv_hwloc_topology_s;
+typedef struct qv_hwloc_topology_s * qv_hwloc_topology_t;
 
 /**
  *
@@ -64,6 +69,15 @@ qv_hwloc_topo_load(
  *
  */
 int
+qv_hwloc_topology_dup(
+    qv_hwloc_topology_t *newtopology,
+    qv_hwloc_topology_t oldtopology
+);
+
+/**
+ *
+ */
+int
 qv_hwloc_task_get_cpubind(
     qv_hwloc_t *hwl,
     pid_t who,
@@ -82,6 +96,17 @@ qv_hwloc_bitmap_alloc(void);
 int
 qv_hwloc_bitmap_free(
     qv_hwloc_bitmap_t bitmap
+);
+
+/**
+ *
+ */
+int
+qv_hwloc_bitmap_snprintf(
+    char *buf,
+    size_t buflen,
+    qv_hwloc_bitmap_t bitmap,
+    int *result
 );
 
 /**
