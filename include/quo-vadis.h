@@ -16,12 +16,18 @@
 #ifndef QUO_VADIS_H
 #define QUO_VADIS_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /** Convenience definition. */
 #define QUO_VADIS 1
-/** Generated configuration. */
-#include "quo-vadis/config.h"
 /** Return codes. */
 #include "quo-vadis/qv-rc.h"
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

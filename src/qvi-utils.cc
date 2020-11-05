@@ -13,9 +13,23 @@
  * @file qvi-utils.cc
  */
 
+#include "quo-vadis/config.h"
+
 #include "private/qvi-utils.h"
 
 #include <chrono>
+
+char *
+qvi_strerr(int ec)
+{
+    static thread_local char sb[4096];
+    return strerror_r(ec, sb, sizeof(sb));
+}
+
+pid_t
+qvi_gettid(void) {
+    return (pid_t)syscall(SYS_gettid);
+}
 
 double
 qvi_time(void)

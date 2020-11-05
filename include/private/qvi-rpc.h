@@ -16,11 +16,7 @@
 #ifndef QVI_RPC_H
 #define QVI_RPC_H
 
-#include "quo-vadis/qv-hwloc.h"
-
-#include "nng/nng.h"
-#include "nng/protocol/reqrep0/rep.h"
-#include "nng/protocol/reqrep0/req.h"
+#include "private/qvi-hwloc.h"
 
 #include <assert.h>
 
@@ -82,8 +78,8 @@ typedef struct qvi_rpc_fun_args_s {
     uint8_t int_i;
     uint8_t cstr_i;
     uint8_t bitm_i;
-    // Pointer to initialized qv_hwloc_t instance.
-    qv_hwloc_t *hwloc;
+    // Pointer to initialized qvi_hwloc_t instance.
+    qvi_hwloc_t *hwloc;
 } qvi_rpc_fun_args_t;
 
 /**
@@ -222,21 +218,21 @@ qvi_rpc_argv_type(char const *)
 }
 
 /**
- * qv_hwloc_bitmap_t qvi_rpc_argv_type template specialization.
+ * qvi_hwloc_bitmap_t qvi_rpc_argv_type template specialization.
  */
 template<>
 inline qvi_rpc_arg_type_t
-qvi_rpc_argv_type(qv_hwloc_bitmap_t)
+qvi_rpc_argv_type(qvi_hwloc_bitmap_t)
 {
     return QVI_RPC_TYPE_BITM;
 }
 
 /**
- * qv_hwloc_bitmap_t * qvi_rpc_argv_type template specialization.
+ * qvi_hwloc_bitmap_t * qvi_rpc_argv_type template specialization.
  */
 template<>
 inline qvi_rpc_arg_type_t
-qvi_rpc_argv_type(qv_hwloc_bitmap_t *)
+qvi_rpc_argv_type(qvi_hwloc_bitmap_t *)
 {
     return QVI_RPC_TYPE_BITM;
 }

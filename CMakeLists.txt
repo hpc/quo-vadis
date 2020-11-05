@@ -46,7 +46,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Check include files
 include(cmake/cif.cmake)
-# Add config file
+# Add generated configuration file
 configure_file(config.h.in include/${PROJECT_NAME}/config.h)
 # Install the generated configuration file
 install(

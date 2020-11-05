@@ -36,20 +36,19 @@ target_include_directories(
 
 target_link_libraries(
     qvi-utils
-    PUBLIC
-      spdlog
+    spdlog
 )
 
 ################################################################################
 ################################################################################
 add_library(
-    qv-hwloc
-    qv-hwloc.cc
-    ../include/quo-vadis/qv-hwloc.h
+    qvi-hwloc
+    qvi-hwloc.cc
+    ../include/private/qvi-hwloc.h
 )
 
 target_include_directories(
-    qv-hwloc
+    qvi-hwloc
     PUBLIC
       $<INSTALL_INTERFACE:include>
       $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
@@ -58,15 +57,9 @@ target_include_directories(
 )
 
 target_link_libraries(
-    qv-hwloc
-    PUBLIC
-      hwloc
-)
-
-target_link_libraries(
-    qv-hwloc
-    PRIVATE
-      qvi-utils
+    qvi-hwloc
+    qvi-utils
+    hwloc
 )
 
 ################################################################################
@@ -89,7 +82,7 @@ target_include_directories(
 target_link_libraries(
     qvi-rpc
     qvi-utils
-    qv-hwloc
+    qvi-hwloc
     nng
 )
 

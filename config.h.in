@@ -13,6 +13,9 @@
  * @file config.h
  */
 
+#ifndef QUO_VADIS_CONFIG_H
+#define QUO_VADIS_CONFIG_H
+
 #define PACKAGE_NAME "@PROJECT_NAME@"
 
 #define PACKAGE_VERSION_MAJOR @quo-vadis_VERSION_MAJOR@
@@ -42,6 +45,8 @@
 #cmakedefine HAVE_THREADS_H 1
 #cmakedefine HAVE_TIME_H 1
 #cmakedefine HAVE_UNISTD_H 1
+
+#endif
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab

@@ -146,14 +146,14 @@ int
 qvi_rmi_task_get_cpubind(
     qvi_rmi_client_t *client,
     pid_t who,
-    qv_hwloc_bitmap_t *out_bitmap
+    qvi_hwloc_bitmap_t *out_bitmap
 ) {
     if (!client) return QV_ERR_INVLD_ARG;
 
     int rc = QV_SUCCESS;
     char const *ers = nullptr;
 
-    qv_hwloc_bitmap_t bitmap = qv_hwloc_bitmap_alloc();
+    qvi_hwloc_bitmap_t bitmap = qvi_hwloc_bitmap_alloc();
 
     qvi_rpc_argv_t args = 0;
     qvi_rpc_argv_pack(&args, who, out_bitmap);
@@ -179,7 +179,7 @@ qvi_rmi_task_get_cpubind(
         ers = "qvi_rpc_client_rep() failed";
         goto out;
     }
-    qv_hwloc_bitmap_sscanf(bitmap, fun_args.bitm_args[0]);
+    qvi_hwloc_bitmap_sscanf(bitmap, fun_args.bitm_args[0]);
     *out_bitmap = bitmap;
 out:
     if (ers) {

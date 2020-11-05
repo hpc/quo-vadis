@@ -14,7 +14,7 @@
  */
 
 #include "quo-vadis.h"
-#include "quo-vadis/qv-hwloc.h"
+#include "private/qvi-hwloc.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -25,53 +25,53 @@ main(void)
     printf("# Starting hwloc test\n");
 
     char const *ers = NULL;
-    qv_hwloc_t *hwl;
+    qvi_hwloc_t *hwl;
     char *binds = NULL;
 
-    int rc = qv_hwloc_construct(&hwl);
+    int rc = qvi_hwloc_construct(&hwl);
     if (rc != QV_SUCCESS) {
-        ers = "qv_hwloc_construct() failed";
+        ers = "qvi_hwloc_construct() failed";
         goto out;
     }
 
-    rc = qv_hwloc_init(hwl);
+    rc = qvi_hwloc_init(hwl);
     if (rc != QV_SUCCESS) {
-        ers = "qv_hwloc_init() failed";
+        ers = "qvi_hwloc_init() failed";
         goto out;
     }
 
-    rc = qv_hwloc_topo_load(hwl);
+    rc = qvi_hwloc_topo_load(hwl);
     if (rc != QV_SUCCESS) {
-        ers = "qv_hwloc_topo_load() failed";
+        ers = "qvi_hwloc_topo_load() failed";
         goto out;
     }
 
-    qv_hwloc_bitmap_t bitmap;
-    rc = qv_hwloc_task_get_cpubind(
+    qvi_hwloc_bitmap_t bitmap;
+    rc = qvi_hwloc_task_get_cpubind(
         hwl,
         getpid(),
         &bitmap
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_hwloc_task_get_cpubind() failed";
+        ers = "qvi_hwloc_task_get_cpubind() failed";
         goto out;
     }
 
-    rc = qv_hwloc_bitmap_asprintf(bitmap, &binds);
+    rc = qvi_hwloc_bitmap_asprintf(bitmap, &binds);
     if (rc != QV_SUCCESS) {
-        ers = "qv_hwloc_bitmap_asprintf() failed";
+        ers = "qvi_hwloc_bitmap_asprintf() failed";
         goto out;
     }
     printf("# cpuset=%s\n", binds);
     free(binds);
 
-    rc = qv_hwloc_bitmap_free(bitmap);
+    rc = qvi_hwloc_bitmap_free(bitmap);
     if (rc != QV_SUCCESS) {
-        ers = "qv_hwloc_bitmap_free() failed";
+        ers = "qvi_hwloc_bitmap_free() failed";
         goto out;
     }
 out:
-    qv_hwloc_destruct(hwl);
+    qvi_hwloc_destruct(hwl);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         return EXIT_FAILURE;

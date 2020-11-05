@@ -23,6 +23,9 @@
 #include "private/qvi-rpc.h"
 #include "private/qvi-logger.h"
 
+#include "nng/nng.h"
+#include "nng/protocol/reqrep0/rep.h"
+#include "nng/protocol/reqrep0/req.h"
 #include "nng/supplemental/util/platform.h"
 
 #include <stdarg.h>
@@ -38,7 +41,7 @@ typedef struct qvi_rpc_wqi_s {
         SEND
     } state;
     //
-    qv_hwloc_t *hwloc;
+    qvi_hwloc_t *hwloc;
     //
     nng_msg *msg;
     nng_aio *aio;
@@ -46,7 +49,7 @@ typedef struct qvi_rpc_wqi_s {
 } qvi_rpc_wqi_t;
 
 struct qvi_rpc_server_s {
-    qv_hwloc_t *hwloc;
+    qvi_hwloc_t *hwloc;
     qvi_rpc_wqi_t **wqis;
     nng_socket sock;
     uint16_t qdepth;
@@ -89,30 +92,30 @@ rpc_stub_task_get_cpubind(
     char const *ers = nullptr;
 
     // TODO(skg) Improve.
-    qv_hwloc_bitmap_t bitmap;
+    qvi_hwloc_bitmap_t bitmap;
     const int bufsize = sizeof(args->bitm_args[0]);
     int nwritten;
 
-    rc = qv_hwloc_task_get_cpubind(
+    rc = qvi_hwloc_task_get_cpubind(
         args->hwloc,
         args->int_args[0],
         &bitmap
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_hwloc_task_get_cpubind() failed";
+        ers = "qvi_hwloc_task_get_cpubind() failed";
         rc = QV_ERR_RPC;
         goto out;
     }
 
     // TODO(skg) Implement helper.
-    rc = qv_hwloc_bitmap_snprintf(
+    rc = qvi_hwloc_bitmap_snprintf(
         args->bitm_args[0],
         bufsize,
         bitmap,
         &nwritten
     );
     if (rc != QV_SUCCESS || nwritten >= bufsize) {
-        ers = "qv_hwloc_bitmap_snprintf() failed";
+        ers = "qvi_hwloc_bitmap_snprintf() failed";
         rc = QV_ERR_INTERNAL;
         goto out;
     }
@@ -120,7 +123,7 @@ out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
     }
-    qv_hwloc_bitmap_free(bitmap);
+    qvi_hwloc_bitmap_free(bitmap);
     return QV_SUCCESS;
 }
 
@@ -248,7 +251,7 @@ client_rpc_pack(
             }
             case QVI_RPC_TYPE_BITM: {
                 // TODO(skg) Make sure this is the correct type
-                qv_hwloc_bitmap_t *value = va_arg(args, qv_hwloc_bitmap_t *);
+                qvi_hwloc_bitmap_t *value = va_arg(args, qvi_hwloc_bitmap_t *);
                 QVI_UNUSED(value);
                 break;
             }
@@ -513,15 +516,15 @@ server_hwloc_init(
     int rc = QV_SUCCESS;
     char const *ers = nullptr;
 
-    rc = qv_hwloc_init(server->hwloc);
+    rc = qvi_hwloc_init(server->hwloc);
     if (rc != QV_SUCCESS) {
-        ers = "qv_hwloc_init() failed";
+        ers = "qvi_hwloc_init() failed";
         goto out;
     }
 
-    rc = qv_hwloc_topo_load(server->hwloc);
+    rc = qvi_hwloc_topo_load(server->hwloc);
     if (rc != QV_SUCCESS) {
-        ers = "qv_hwloc_topo_load() failed";
+        ers = "qvi_hwloc_topo_load() failed";
         goto out;
     }
 out:
@@ -546,9 +549,9 @@ qvi_rpc_server_construct(
         return QV_ERR_OOR;
     }
 
-    rc = qv_hwloc_construct(&iserver->hwloc);
+    rc = qvi_hwloc_construct(&iserver->hwloc);
     if (rc != QV_SUCCESS) {
-        ers = "qv_hwloc_construct() failed";
+        ers = "qvi_hwloc_construct() failed";
         goto out;
     }
 out:
@@ -575,7 +578,7 @@ qvi_rpc_server_destruct(
     }
     //
     server_deallocate_outstanding_msg_queue(server);
-    qv_hwloc_destruct(server->hwloc);
+    qvi_hwloc_destruct(server->hwloc);
     free(server);
 }
 

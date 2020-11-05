@@ -17,30 +17,21 @@ add_executable(
     test-hwloc.c
 )
 
-target_include_directories(
-    test-hwloc
-    PRIVATE
-      ${CMAKE_SOURCE_DIR}/include
-)
-
 target_link_libraries(
     test-hwloc
-    qv-hwloc
+    qvi-hwloc
 )
 
-add_test(hwloc test-hwloc)
+add_test(
+    hwloc
+    test-hwloc
+)
 
 ################################################################################
 ################################################################################
 add_executable(
     test-rmi
     test-rmi.c
-)
-
-target_include_directories(
-    test-rmi
-    PRIVATE
-      ${CMAKE_SOURCE_DIR}/include
 )
 
 target_link_libraries(

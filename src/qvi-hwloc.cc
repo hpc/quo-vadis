@@ -14,25 +14,22 @@
  */
 
 #include "private/qvi-common.h"
+#include "private/qvi-hwloc.h"
 #include "private/qvi-logger.h"
 
-#include "quo-vadis/qv-hwloc.h"
-
-#include "hwloc.h"
-
 // Type definition
-struct qv_hwloc_s {
+struct qvi_hwloc_s {
     /** The node topology. */
     hwloc_topology_t topo;
 };
 
 int
-qv_hwloc_construct(
-    qv_hwloc_t **hwl
+qvi_hwloc_construct(
+    qvi_hwloc_t **hwl
 ) {
     if (!hwl) return QV_ERR_INVLD_ARG;
 
-    qv_hwloc_t *ihwl = (qv_hwloc_t *)calloc(1, sizeof(*ihwl));
+    qvi_hwloc_t *ihwl = (qvi_hwloc_t *)calloc(1, sizeof(*ihwl));
     if (!ihwl) {
         qvi_log_error("calloc() failed");
         return QV_ERR_OOR;
@@ -42,8 +39,8 @@ qv_hwloc_construct(
 }
 
 void
-qv_hwloc_destruct(
-    qv_hwloc_t *hwl
+qvi_hwloc_destruct(
+    qvi_hwloc_t *hwl
 ) {
     if (!hwl) return;
 
@@ -52,8 +49,8 @@ qv_hwloc_destruct(
 }
 
 int
-qv_hwloc_init(
-    qv_hwloc_t *hwl
+qvi_hwloc_init(
+    qvi_hwloc_t *hwl
 ) {
     if (!hwl) return QV_ERR_INVLD_ARG;
 
@@ -73,8 +70,8 @@ out:
 }
 
 int
-qv_hwloc_topo_load(
-    qv_hwloc_t *hwl
+qvi_hwloc_topo_load(
+    qvi_hwloc_t *hwl
 ) {
     if (!hwl) return QV_ERR_INVLD_ARG;
 
@@ -119,15 +116,15 @@ out:
     return QV_SUCCESS;
 }
 
-qv_hwloc_bitmap_t
-qv_hwloc_bitmap_alloc(void)
+qvi_hwloc_bitmap_t
+qvi_hwloc_bitmap_alloc(void)
 {
-    return (qv_hwloc_bitmap_t)hwloc_bitmap_alloc();
+    return (qvi_hwloc_bitmap_t)hwloc_bitmap_alloc();
 }
 
 int
-qv_hwloc_bitmap_free(
-    qv_hwloc_bitmap_t bitmap
+qvi_hwloc_bitmap_free(
+    qvi_hwloc_bitmap_t bitmap
 ) {
     if (!bitmap) return QV_ERR_INVLD_ARG;
 
@@ -137,13 +134,13 @@ qv_hwloc_bitmap_free(
 
 /**
  * \note Caller is responsible for freeing returned resources via
- * qv_hwloc_bitmap_free().
+ * qvi_hwloc_bitmap_free().
  */
 int
-qv_hwloc_task_get_cpubind(
-    qv_hwloc_t *hwl,
+qvi_hwloc_task_get_cpubind(
+    qvi_hwloc_t *hwl,
     pid_t who,
-    qv_hwloc_bitmap_t *out_bitmap
+    qvi_hwloc_bitmap_t *out_bitmap
 ) {
     if (!hwl || !out_bitmap) return QV_ERR_INVLD_ARG;
 
@@ -168,7 +165,7 @@ qv_hwloc_task_get_cpubind(
         qrc = QV_ERR_HWLOC;
         goto out;
     }
-    *out_bitmap = (qv_hwloc_bitmap_t)cur_bind;
+    *out_bitmap = (qvi_hwloc_bitmap_t)cur_bind;
 out:
     /* Cleanup on failure */
     if (qrc != QV_SUCCESS) {
@@ -179,10 +176,10 @@ out:
 }
 
 int
-qv_hwloc_bitmap_snprintf(
+qvi_hwloc_bitmap_snprintf(
     char *buf,
     size_t buflen,
-    qv_hwloc_bitmap_t bitmap,
+    qvi_hwloc_bitmap_t bitmap,
     int *result
 ) {
     *result = hwloc_bitmap_snprintf(
@@ -194,8 +191,8 @@ qv_hwloc_bitmap_snprintf(
 }
 
 int
-qv_hwloc_bitmap_asprintf(
-    qv_hwloc_bitmap_t bitmap,
+qvi_hwloc_bitmap_asprintf(
+    qvi_hwloc_bitmap_t bitmap,
     char **result
 ) {
     if (!bitmap || !result) return QV_ERR_INVLD_ARG;
@@ -213,8 +210,8 @@ qv_hwloc_bitmap_asprintf(
 }
 
 int
-qv_hwloc_bitmap_sscanf(
-    qv_hwloc_bitmap_t bitmap,
+qvi_hwloc_bitmap_sscanf(
+    qvi_hwloc_bitmap_t bitmap,
     const char *string
 ) {
     int rc = hwloc_bitmap_sscanf((hwloc_bitmap_t)bitmap, string);
