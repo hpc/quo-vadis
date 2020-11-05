@@ -13,8 +13,9 @@
  * @file test-hwloc.c
  */
 
-#include "quo-vadis.h"
 #include "private/qvi-hwloc.h"
+
+#include "quo-vadis.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -40,13 +41,13 @@ main(void)
         goto out;
     }
 
-    rc = qvi_hwloc_topo_load(hwl);
+    rc = qvi_hwloc_topology_load(hwl);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_topo_load() failed";
+        ers = "qvi_hwloc_topology_load() failed";
         goto out;
     }
 
-    qvi_hwloc_bitmap_t bitmap;
+    hwloc_bitmap_t bitmap;
     rc = qvi_hwloc_task_get_cpubind(
         hwl,
         getpid(),
@@ -57,7 +58,7 @@ main(void)
         goto out;
     }
 
-    rc = qvi_hwloc_bitmap_asprintf(bitmap, &binds);
+    rc = qvi_hwloc_bitmap_asprintf(&binds, bitmap);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_bitmap_asprintf() failed";
         goto out;
@@ -65,11 +66,7 @@ main(void)
     printf("# cpuset=%s\n", binds);
     free(binds);
 
-    rc = qvi_hwloc_bitmap_free(bitmap);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_bitmap_free() failed";
-        goto out;
-    }
+    hwloc_bitmap_free(bitmap);
 out:
     qvi_hwloc_destruct(hwl);
     if (ers) {

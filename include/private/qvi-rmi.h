@@ -85,7 +85,7 @@ int
 qvi_rmi_task_get_cpubind(
     qvi_rmi_client_t *client,
     pid_t who,
-    qvi_hwloc_bitmap_t *out_bitmap
+    hwloc_bitmap_t *out_bitmap
 );
 
 #ifdef __cplusplus

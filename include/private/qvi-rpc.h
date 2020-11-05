@@ -222,7 +222,7 @@ qvi_rpc_argv_type(char const *)
  */
 template<>
 inline qvi_rpc_arg_type_t
-qvi_rpc_argv_type(qvi_hwloc_bitmap_t)
+qvi_rpc_argv_type(hwloc_bitmap_t)
 {
     return QVI_RPC_TYPE_BITM;
 }
@@ -232,7 +232,7 @@ qvi_rpc_argv_type(qvi_hwloc_bitmap_t)
  */
 template<>
 inline qvi_rpc_arg_type_t
-qvi_rpc_argv_type(qvi_hwloc_bitmap_t *)
+qvi_rpc_argv_type(hwloc_bitmap_t *)
 {
     return QVI_RPC_TYPE_BITM;
 }

@@ -13,8 +13,7 @@
  * @file qvi-utils.cc
  */
 
-#include "quo-vadis/config.h"
-
+#include "private/qvi-common.h"
 #include "private/qvi-utils.h"
 
 #include <chrono>

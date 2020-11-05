@@ -19,7 +19,7 @@
 
 // Type definition
 struct qvi_hwloc_s {
-    /** The node topology. */
+    /** The cached node topology. */
     hwloc_topology_t topo;
 };
 
@@ -70,7 +70,7 @@ out:
 }
 
 int
-qvi_hwloc_topo_load(
+qvi_hwloc_topology_load(
     qvi_hwloc_t *hwl
 ) {
     if (!hwl) return QV_ERR_INVLD_ARG;
@@ -116,31 +116,30 @@ out:
     return QV_SUCCESS;
 }
 
-qvi_hwloc_bitmap_t
-qvi_hwloc_bitmap_alloc(void)
-{
-    return (qvi_hwloc_bitmap_t)hwloc_bitmap_alloc();
-}
-
 int
-qvi_hwloc_bitmap_free(
-    qvi_hwloc_bitmap_t bitmap
+qvi_hwloc_bitmap_asprintf(
+    char **result,
+    hwloc_const_bitmap_t bitmap
 ) {
-    if (!bitmap) return QV_ERR_INVLD_ARG;
+    if (!bitmap || !result) return QV_ERR_INVLD_ARG;
 
-    hwloc_bitmap_free((hwloc_bitmap_t)bitmap);
-    return QV_SUCCESS;
+    int rc = QV_SUCCESS;
+    // Caller is responsible for freeing returned resources.
+    char *iresult = nullptr;
+    (void)hwloc_bitmap_asprintf(&iresult, bitmap);
+    if (!iresult) {
+        qvi_log_error("hwloc_bitmap_asprintf() failed");
+        rc = QV_ERR_OOR;
+    }
+    *result = iresult;
+    return rc;
 }
 
-/**
- * \note Caller is responsible for freeing returned resources via
- * qvi_hwloc_bitmap_free().
- */
 int
 qvi_hwloc_task_get_cpubind(
     qvi_hwloc_t *hwl,
     pid_t who,
-    qvi_hwloc_bitmap_t *out_bitmap
+    hwloc_bitmap_t *out_bitmap
 ) {
     if (!hwl || !out_bitmap) return QV_ERR_INVLD_ARG;
 
@@ -165,7 +164,7 @@ qvi_hwloc_task_get_cpubind(
         qrc = QV_ERR_HWLOC;
         goto out;
     }
-    *out_bitmap = (qvi_hwloc_bitmap_t)cur_bind;
+    *out_bitmap = cur_bind;
 out:
     /* Cleanup on failure */
     if (qrc != QV_SUCCESS) {
@@ -173,53 +172,6 @@ out:
         *out_bitmap = nullptr;
     }
     return qrc;
-}
-
-int
-qvi_hwloc_bitmap_snprintf(
-    char *buf,
-    size_t buflen,
-    qvi_hwloc_bitmap_t bitmap,
-    int *result
-) {
-    *result = hwloc_bitmap_snprintf(
-        buf,
-        buflen,
-        (hwloc_const_bitmap_t)bitmap
-    );
-    return QV_SUCCESS;
-}
-
-int
-qvi_hwloc_bitmap_asprintf(
-    qvi_hwloc_bitmap_t bitmap,
-    char **result
-) {
-    if (!bitmap || !result) return QV_ERR_INVLD_ARG;
-
-    int rc = QV_SUCCESS;
-    // Caller is responsible for freeing returned resources.
-    char *iresult = nullptr;
-    (void)hwloc_bitmap_asprintf(&iresult, (hwloc_bitmap_t)bitmap);
-    if (!iresult) {
-        qvi_log_error("hwloc_bitmap_asprintf() failed");
-        rc = QV_ERR_OOR;
-    }
-    *result = iresult;
-    return rc;
-}
-
-int
-qvi_hwloc_bitmap_sscanf(
-    qvi_hwloc_bitmap_t bitmap,
-    const char *string
-) {
-    int rc = hwloc_bitmap_sscanf((hwloc_bitmap_t)bitmap, string);
-    if (rc != 0) {
-        qvi_log_error("hwloc_bitmap_sscanf() failed");
-        return QV_ERR_HWLOC;
-    }
-    return QV_SUCCESS;
 }
 
 /*

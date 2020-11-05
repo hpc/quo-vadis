@@ -28,13 +28,6 @@ extern "C" {
 struct qvi_hwloc_s;
 typedef struct qvi_hwloc_s qvi_hwloc_t;
 
-// Convenience typedefs
-struct qvi_hwloc_bitmap_s;
-typedef struct qvi_hwloc_bitmap_s * qvi_hwloc_bitmap_t;
-
-struct qvi_hwloc_topology_s;
-typedef struct qvi_hwloc_topology_s * qvi_hwloc_topology_t;
-
 /**
  *
  */
@@ -63,7 +56,7 @@ qvi_hwloc_init(
  *
  */
 int
-qvi_hwloc_topo_load(
+qvi_hwloc_topology_load(
     qvi_hwloc_t *hwl
 );
 
@@ -71,9 +64,9 @@ qvi_hwloc_topo_load(
  *
  */
 int
-qvi_hwloc_topology_dup(
-    qvi_hwloc_topology_t *newtopology,
-    qvi_hwloc_topology_t oldtopology
+qvi_hwloc_bitmap_asprintf(
+    char **result,
+    hwloc_const_bitmap_t bitmap
 );
 
 /**
@@ -83,50 +76,7 @@ int
 qvi_hwloc_task_get_cpubind(
     qvi_hwloc_t *hwl,
     pid_t who,
-    qvi_hwloc_bitmap_t *out_bitmap
-);
-
-/**
- *
- */
-qvi_hwloc_bitmap_t
-qvi_hwloc_bitmap_alloc(void);
-
-/**
- *
- */
-int
-qvi_hwloc_bitmap_free(
-    qvi_hwloc_bitmap_t bitmap
-);
-
-/**
- *
- */
-int
-qvi_hwloc_bitmap_snprintf(
-    char *buf,
-    size_t buflen,
-    qvi_hwloc_bitmap_t bitmap,
-    int *result
-);
-
-/**
- *
- */
-int
-qvi_hwloc_bitmap_asprintf(
-    qvi_hwloc_bitmap_t bitmap,
-    char **result
-);
-
-/**
- *
- */
-int
-qvi_hwloc_bitmap_sscanf(
-    qvi_hwloc_bitmap_t bitmap,
-    const char *string
+    hwloc_bitmap_t *out_bitmap
 );
 
 #ifdef __cplusplus

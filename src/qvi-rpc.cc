@@ -92,7 +92,7 @@ rpc_stub_task_get_cpubind(
     char const *ers = nullptr;
 
     // TODO(skg) Improve.
-    qvi_hwloc_bitmap_t bitmap;
+    hwloc_bitmap_t bitmap;
     const int bufsize = sizeof(args->bitm_args[0]);
     int nwritten;
 
@@ -108,13 +108,12 @@ rpc_stub_task_get_cpubind(
     }
 
     // TODO(skg) Implement helper.
-    rc = qvi_hwloc_bitmap_snprintf(
+    nwritten = hwloc_bitmap_snprintf(
         args->bitm_args[0],
         bufsize,
-        bitmap,
-        &nwritten
+        bitmap
     );
-    if (rc != QV_SUCCESS || nwritten >= bufsize) {
+    if (nwritten >= bufsize) {
         ers = "qvi_hwloc_bitmap_snprintf() failed";
         rc = QV_ERR_INTERNAL;
         goto out;
@@ -123,7 +122,7 @@ out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
     }
-    qvi_hwloc_bitmap_free(bitmap);
+    hwloc_bitmap_free(bitmap);
     return QV_SUCCESS;
 }
 
@@ -251,7 +250,7 @@ client_rpc_pack(
             }
             case QVI_RPC_TYPE_BITM: {
                 // TODO(skg) Make sure this is the correct type
-                qvi_hwloc_bitmap_t *value = va_arg(args, qvi_hwloc_bitmap_t *);
+                hwloc_bitmap_t *value = va_arg(args, hwloc_bitmap_t *);
                 QVI_UNUSED(value);
                 break;
             }
@@ -522,9 +521,9 @@ server_hwloc_init(
         goto out;
     }
 
-    rc = qvi_hwloc_topo_load(server->hwloc);
+    rc = qvi_hwloc_topology_load(server->hwloc);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_topo_load() failed";
+        ers = "qvi_hwloc_topology_load() failed";
         goto out;
     }
 out:

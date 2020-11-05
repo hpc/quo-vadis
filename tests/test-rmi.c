@@ -13,10 +13,10 @@
  * @file test-rmi.c
  */
 
-#include "quo-vadis.h"
-
 #include "private/qvi-rmi.h"
 #include "private/qvi-utils.h"
+
+#include "quo-vadis.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -79,16 +79,16 @@ client(
     }
 
     pid_t mypid = getpid();
-    qvi_hwloc_bitmap_t bitmap;
+    hwloc_bitmap_t bitmap;
     rc = qvi_rmi_task_get_cpubind(client, mypid, &bitmap);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_task_get_cpubind() failed";
         goto out;
     }
     char *res;
-    qvi_hwloc_bitmap_asprintf(bitmap, &res);
+    qvi_hwloc_bitmap_asprintf(&res, bitmap);
     printf("# [%d] cpubind = %s\n", mypid, res);
-    qvi_hwloc_bitmap_free(bitmap);
+    hwloc_bitmap_free(bitmap);
     free(res);
 out:
     qvi_rmi_client_destruct(client);
