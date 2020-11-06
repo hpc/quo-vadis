@@ -27,17 +27,10 @@ main(void)
 
     char const *ers = NULL;
     qvi_hwloc_t *hwl;
-    char *binds = NULL;
 
     int rc = qvi_hwloc_construct(&hwl);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_construct() failed";
-        goto out;
-    }
-
-    rc = qvi_hwloc_init(hwl);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_init() failed";
         goto out;
     }
 
@@ -58,6 +51,7 @@ main(void)
         goto out;
     }
 
+    char *binds;
     rc = qvi_hwloc_bitmap_asprintf(&binds, bitmap);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_bitmap_asprintf() failed";
@@ -66,8 +60,8 @@ main(void)
     printf("# cpuset=%s\n", binds);
     free(binds);
 
-    hwloc_bitmap_free(bitmap);
 out:
+    hwloc_bitmap_free(bitmap);
     qvi_hwloc_destruct(hwl);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));

@@ -515,15 +515,9 @@ server_hwloc_init(
     int rc = QV_SUCCESS;
     char const *ers = nullptr;
 
-    rc = qvi_hwloc_init(server->hwloc);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_init() failed";
-        goto out;
-    }
-
     rc = qvi_hwloc_topology_load(server->hwloc);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_topology_load() failed";
+        ers = "qvi_hwloc_topo_load() failed";
         goto out;
     }
 out:

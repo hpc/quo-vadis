@@ -25,7 +25,7 @@ target_include_directories(
 
 target_link_libraries(
     quo-vadisd
-    qvi-rmi
+    quo-vadis
 )
 
 install(TARGETS quo-vadisd DESTINATION bin)

@@ -48,8 +48,11 @@ qvi_hwloc_destruct(
     free(hwl);
 }
 
-int
-qvi_hwloc_init(
+/**
+ *
+ */
+static int
+topology_init(
     qvi_hwloc_t *hwl
 ) {
     if (!hwl) return QV_ERR_INVLD_ARG;
@@ -75,11 +78,16 @@ qvi_hwloc_topology_load(
 ) {
     if (!hwl) return QV_ERR_INVLD_ARG;
 
+    int rc = QV_SUCCESS;
     char const *ers = nullptr;
 
+    rc = topology_init(hwl);
+    if (rc != QV_SUCCESS) {
+        return rc;
+    }
     /* Set flags that influence hwloc's behavior. */
     static const unsigned int flags = HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM;
-    int rc = hwloc_topology_set_flags(hwl->topo, flags);
+    rc = hwloc_topology_set_flags(hwl->topo, flags);
     if (rc != 0) {
         ers = "hwloc_topology_set_flags() failed";
         goto out;

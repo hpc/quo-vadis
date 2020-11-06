@@ -19,7 +19,7 @@ add_executable(
 
 target_link_libraries(
     test-hwloc
-    qvi-hwloc
+    quo-vadis
 )
 
 add_test(
@@ -36,7 +36,7 @@ add_executable(
 
 target_link_libraries(
     test-rmi
-    qvi-rmi
+    quo-vadis
 )
 
 add_test(
@@ -55,10 +55,28 @@ add_test(
 
 ################################################################################
 ################################################################################
+add_executable(
+    test-scopes
+    test-scopes.c
+)
+
+target_link_libraries(
+    test-scopes
+    quo-vadis
+)
+
+add_test(
+    scopes
+    test-scopes
+)
+
+################################################################################
+################################################################################
 # Use the C linker to test for C/C++ linkage problems.
 set_target_properties(
     test-hwloc
     test-rmi
+    test-scopes
     PROPERTIES LINKER_LANGUAGE C
 )
 
@@ -66,6 +84,7 @@ set_target_properties(
 set_tests_properties(
     hwloc
     rmi
+    scopes
     PROPERTIES TIMEOUT 15
 )
 

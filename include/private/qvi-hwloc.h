@@ -48,14 +48,6 @@ qvi_hwloc_destruct(
  *
  */
 int
-qvi_hwloc_init(
-    qvi_hwloc_t *hwl
-);
-
-/**
- *
- */
-int
 qvi_hwloc_topology_load(
     qvi_hwloc_t *hwl
 );

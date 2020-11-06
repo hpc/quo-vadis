@@ -13,6 +13,7 @@
 ################################################################################
 add_library(
     qvi-utils
+    OBJECT
     qvi-utils.cc
     qvi-logger.cc
     ../include/private/qvi-utils.h
@@ -43,6 +44,7 @@ target_link_libraries(
 ################################################################################
 add_library(
     qvi-hwloc
+    OBJECT
     qvi-hwloc.cc
     ../include/private/qvi-hwloc.h
 )
@@ -66,6 +68,7 @@ target_link_libraries(
 ################################################################################
 add_library(
     qvi-rpc
+    OBJECT
     qvi-rpc.cc
     ../include/private/qvi-rpc.h
 )
@@ -90,6 +93,7 @@ target_link_libraries(
 ################################################################################
 add_library(
     qvi-rmi
+    OBJECT
     qvi-rmi.cc
     ../include/private/qvi-rmi.h
 )
@@ -107,5 +111,30 @@ target_link_libraries(
     qvi-rmi
     qvi-rpc
 )
+
+################################################################################
+################################################################################
+add_library(
+    quo-vadis
+)
+
+target_include_directories(
+    quo-vadis
+    PUBLIC
+      $<INSTALL_INTERFACE:include>
+      $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+)
+
+target_link_libraries(
+    quo-vadis
+    qvi-utils
+    qvi-hwloc
+    qvi-rpc
+    qvi-rmi
+)
+
+install(TARGETS quo-vadis DESTINATION lib)
 
 # vim: ts=4 sts=4 sw=4 expandtab
