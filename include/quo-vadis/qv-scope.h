@@ -10,24 +10,26 @@
  */
 
 /**
- * @file quo-vadis.h
+ * @file qv-scope.h
  */
 
-#ifndef QUO_VADIS_H
-#define QUO_VADIS_H
+#ifndef QUO_VADIS_SCOPE_H
+#define QUO_VADIS_SCOPE_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** Convenience definition. */
-#define QUO_VADIS 1
-/** Return codes. */
-#include "quo-vadis/qv-rc.h"
-/** Group support. */
-#include "quo-vadis/qv-group.h"
-/** Scope support. */
-#include "quo-vadis/qv-scope.h"
+struct qv_scope_s;
+typedef struct qv_scope_s qv_scope_t;
+
+/**
+ *
+ */
+int
+qv_scope_split(
+    qv_scope_t *scope
+);
 
 #ifdef __cplusplus
 }

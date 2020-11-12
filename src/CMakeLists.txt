@@ -43,6 +43,30 @@ target_link_libraries(
 ################################################################################
 ################################################################################
 add_library(
+    qvi-pmi
+    OBJECT
+    qvi-pmi.cc
+    ../include/private/qvi-pmi.h
+)
+
+target_include_directories(
+    qvi-pmi
+    PUBLIC
+      $<INSTALL_INTERFACE:include>
+      $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+)
+
+target_link_libraries(
+    qvi-pmi
+    qvi-utils
+    pmix
+)
+
+################################################################################
+################################################################################
+add_library(
     qvi-hwloc
     OBJECT
     qvi-hwloc.cc
@@ -92,30 +116,13 @@ target_link_libraries(
 ################################################################################
 ################################################################################
 add_library(
-    qvi-rmi
-    OBJECT
+    quo-vadis
     qvi-rmi.cc
     ../include/private/qvi-rmi.h
-)
-
-target_include_directories(
-    qvi-rmi
-    PUBLIC
-      $<INSTALL_INTERFACE:include>
-      $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
-      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-)
-
-target_link_libraries(
-    qvi-rmi
-    qvi-rpc
-)
-
-################################################################################
-################################################################################
-add_library(
-    quo-vadis
+    qv-group.cc
+    ../include/quo-vadis/qv-group.h
+    qv-scope.cc
+    ../include/quo-vadis/qv-scope.h
 )
 
 target_include_directories(
@@ -130,9 +137,9 @@ target_include_directories(
 target_link_libraries(
     quo-vadis
     qvi-utils
+    qvi-pmi
     qvi-hwloc
     qvi-rpc
-    qvi-rmi
 )
 
 install(TARGETS quo-vadis DESTINATION lib)

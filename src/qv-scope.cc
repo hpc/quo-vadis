@@ -10,30 +10,17 @@
  */
 
 /**
- * @file quo-vadis.h
+ * @file qv-scope.cc
  */
 
-#ifndef QUO_VADIS_H
-#define QUO_VADIS_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/** Convenience definition. */
-#define QUO_VADIS 1
-/** Return codes. */
-#include "quo-vadis/qv-rc.h"
-/** Group support. */
-#include "quo-vadis/qv-group.h"
-/** Scope support. */
+#include "private/qvi-common.h"
 #include "quo-vadis/qv-scope.h"
+#include "private/qvi-hwloc.h"
+#include "private/qvi-logger.h"
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+// Type definition
+struct qv_scope_s {
+};
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab

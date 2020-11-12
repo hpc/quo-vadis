@@ -10,7 +10,7 @@
  */
 
 /**
- * @file rc.h
+ * @file qv-rc.h
  */
 
 #ifndef QUO_VADIS_RC_H
@@ -37,6 +37,7 @@ enum {
     QV_ERR_RPC,
     QV_ERR_NOT_SUPPORTED,
     QV_ERR_POP,
+    QV_ERR_PMI,
     QV_ERR_NOT_FOUND
 };
 
@@ -56,6 +57,7 @@ static const char *qv_rc_strerrs[] = {
     "Remote procedure call error",
     "Operation not supported",
     "Pop operation error",
+    "PMI operation error",
     "Not found"
 };
 

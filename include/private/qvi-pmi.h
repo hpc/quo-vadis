@@ -10,24 +10,45 @@
  */
 
 /**
- * @file quo-vadis.h
+ * @file qvi-pmi.h
  */
 
-#ifndef QUO_VADIS_H
-#define QUO_VADIS_H
+#ifndef QVI_PMI_H
+#define QVI_PMI_H
+
+#include "private/qvi-common.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** Convenience definition. */
-#define QUO_VADIS 1
-/** Return codes. */
-#include "quo-vadis/qv-rc.h"
-/** Group support. */
-#include "quo-vadis/qv-group.h"
-/** Scope support. */
-#include "quo-vadis/qv-scope.h"
+// Forward declarations.
+struct qvi_pmi_s;
+typedef struct qvi_pmi_s qvi_pmi_t;
+
+/**
+ *
+ */
+int
+qvi_pmi_construct(
+    qvi_pmi_t **pmi
+);
+
+/**
+ *
+ */
+void
+qvi_pmi_destruct(
+    qvi_pmi_t *pmi
+);
+
+/**
+ *
+ */
+int
+qvi_pmi_load(
+    qvi_pmi_t *pmi
+);
 
 #ifdef __cplusplus
 }

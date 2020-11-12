@@ -10,7 +10,7 @@
  */
 
 /**
- * @file qv-hwloc.cc
+ * @file qvi-hwloc.cc
  */
 
 #include "private/qvi-common.h"

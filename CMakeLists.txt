@@ -15,6 +15,9 @@ cmake_minimum_required(VERSION 3.10)
 # Set the project name and version
 project(quo-vadis VERSION 0.0.1 LANGUAGES C CXX)
 
+# Append our module path
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+
 # Specify the C standard
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
@@ -37,6 +40,9 @@ endif()
 # Pthread support
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
+
+# PMIx support
+find_package(PMIx REQUIRED)
 
 # Specify default build type
 include(cmake/build-type.cmake)
