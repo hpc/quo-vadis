@@ -17,29 +17,30 @@
 #include "private/qvi-mpi.h"
 #include "private/qvi-log.h"
 
+#include <new>
 #include <unordered_map>
 
 struct qvi_mpi_group_s {
-    MPI_Group mpi_group;
+    MPI_Group mpi_group = MPI_GROUP_NULL;
 };
 
 struct qvi_mpi_s {
     /** Node ID */
-    int node_id;
+    int node_id = 0;
     /** World ID */
-    int world_id;
+    int world_id = 0;
     /** Node size */
-    int node_size;
+    int node_size = 0;
     /** World size */
-    int world_size;
+    int world_size = 0;
     /** Duplicate of MPI_COMM_WORLD */
-    MPI_Comm world_comm;
+    MPI_Comm world_comm = MPI_COMM_NULL;
     /** Node communicator */
-    MPI_Comm node_comm;
+    MPI_Comm node_comm = MPI_COMM_NULL;
     /** Maintains the next available group ID value */
-    uint64_t group_next_id;
+    uint64_t group_next_id = QVI_MPI_GROUP_INTRINSIC_END;
     /** Group table (ID to internal structure mapping) */
-    std::unordered_map<uint64_t, qvi_mpi_group_t> *group_tab;
+    std::unordered_map<uint64_t, qvi_mpi_group_t> *group_tab = nullptr;
 };
 
 /**
@@ -65,18 +66,25 @@ qvi_mpi_construct(
     if (!mpi) return QV_ERR_INVLD_ARG;
 
     int rc = QV_SUCCESS;
+    char const *ers = nullptr;
 
-    qvi_mpi_t *impi = (qvi_mpi_s *)calloc(1, sizeof(*impi));
+    qvi_mpi_t *impi = qvi_new qvi_mpi_t;
     if (!impi) {
-        qvi_log_error("calloc() failed");
+        ers = "memory allocation failed";
         rc = QV_ERR_OOR;
+        goto out;
     }
-    // Communicators
-    impi->world_comm = MPI_COMM_NULL;
-    impi->node_comm = MPI_COMM_NULL;
     // Groups
-    impi->group_tab = new std::unordered_map<uint64_t, qvi_mpi_group_t>;
-    impi->group_next_id = QVI_MPI_GROUP_INTRINSIC_END;
+    impi->group_tab = qvi_new std::unordered_map<uint64_t, qvi_mpi_group_t>;
+    if (!impi->group_tab) {
+        ers = "memory allocation failed";
+        rc = QV_ERR_OOR;
+        goto out;
+    }
+out:
+    if (ers) {
+        qvi_log_error(ers);
+    }
     *mpi = impi;
     return rc;
 }
@@ -92,9 +100,14 @@ qvi_mpi_destruct(
     if (mpi->node_comm != MPI_COMM_NULL) {
         MPI_Comm_free(&mpi->node_comm);
     }
-    // TODO(skg) Free groups
+    for (auto &i : *mpi->group_tab) {
+        auto &mpi_group = i.second.mpi_group;
+        if (mpi_group != MPI_GROUP_NULL) {
+            MPI_Group_free(&mpi_group);
+        }
+    }
     delete mpi->group_tab;
-    free(mpi);
+    delete mpi;
 }
 
 /**
@@ -140,8 +153,7 @@ create_intrinsic_groups(
     char const *ers = nullptr;
     int rc;
 
-
-    qvi_mpi_group_t self_group;
+    qvi_mpi_group_t self_group, node_group;
     rc = MPI_Comm_group(
         MPI_COMM_SELF,
         &self_group.mpi_group
@@ -150,7 +162,6 @@ create_intrinsic_groups(
         ers = "MPI_Comm_group(MPI_COMM_SELF) failed";
         goto out;
     }
-    qvi_mpi_group_t node_group;
     rc = MPI_Comm_group(
         mpi->node_comm,
         &node_group.mpi_group

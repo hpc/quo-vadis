@@ -29,6 +29,11 @@ do {                                                                           \
     (void)(x);                                                                 \
 } while (0)
 
+/**
+ * Convenience wrapper around new(std::nothrow).
+ */
+#define qvi_new new(std::nothrow)
+
 #endif
 
 /*
