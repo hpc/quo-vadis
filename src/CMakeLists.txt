@@ -15,9 +15,9 @@ add_library(
     qvi-utils
     OBJECT
     qvi-utils.cc
-    qvi-logger.cc
+    qvi-log.cc
     ../include/private/qvi-utils.h
-    ../include/private/qvi-logger.h
+    ../include/private/qvi-log.h
 )
 
 target_compile_options(
@@ -62,6 +62,31 @@ target_link_libraries(
     qvi-pmi
     qvi-utils
     pmix
+)
+
+################################################################################
+################################################################################
+add_library(
+    qvi-mpi
+    OBJECT
+    qvi-mpi.cc
+    ../include/private/qvi-mpi.h
+)
+
+target_include_directories(
+    qvi-mpi
+    PUBLIC
+      ${MPI_C_INCLUDE_DIRS}
+      $<INSTALL_INTERFACE:include>
+      $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+)
+
+target_link_libraries(
+    qvi-mpi
+    qvi-utils
+    ${MPI_C_LIBRARIES}
 )
 
 ################################################################################
@@ -115,6 +140,7 @@ target_link_libraries(
 
 ################################################################################
 ################################################################################
+# TODO(skg) Add an MPI variant of the library. For now, just include MPI bits.
 add_library(
     quo-vadis
     qvi-rmi.cc
@@ -138,6 +164,7 @@ target_link_libraries(
     quo-vadis
     qvi-utils
     qvi-pmi
+    qvi-mpi
     qvi-hwloc
     qvi-rpc
 )

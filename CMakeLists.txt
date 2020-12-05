@@ -41,8 +41,16 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
+################################################################################
+# Goup Support #################################################################
+################################################################################
+# TODO(skg) At this point both are 'required', but this isn't necessary: we only
+# need one or the other.
 # PMIx support
 find_package(PMIx REQUIRED)
+# MPI support
+# TODO(skg) Make sure that we are at least at MPI-3
+find_package(MPI REQUIRED)
 
 # Specify default build type
 include(cmake/build-type.cmake)

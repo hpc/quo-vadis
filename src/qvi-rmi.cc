@@ -17,7 +17,7 @@
 
 #include "private/qvi-common.h"
 #include "private/qvi-rmi.h"
-#include "private/qvi-logger.h"
+#include "private/qvi-log.h"
 
 struct qvi_rmi_server_s {
     qvi_rpc_server_t *rpcserv;

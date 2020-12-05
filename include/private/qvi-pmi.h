@@ -46,7 +46,27 @@ qvi_pmi_destruct(
  *
  */
 int
-qvi_pmi_load(
+qvi_pmi_init(
+    qvi_pmi_t *pmi
+);
+
+int
+qvi_pmi_finalize(
+    qvi_pmi_t *pmi
+);
+
+uint32_t
+qvi_pmi_lid(
+    qvi_pmi_t *pmi
+);
+
+uint32_t
+qvi_pmi_gid(
+    qvi_pmi_t *pmi
+);
+
+uint32_t
+qvi_pmi_usize(
     qvi_pmi_t *pmi
 );
 

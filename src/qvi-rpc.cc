@@ -21,7 +21,7 @@
 
 #include "private/qvi-common.h"
 #include "private/qvi-rpc.h"
-#include "private/qvi-logger.h"
+#include "private/qvi-log.h"
 
 #include "nng/nng.h"
 #include "nng/protocol/reqrep0/rep.h"

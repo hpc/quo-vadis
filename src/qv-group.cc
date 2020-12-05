@@ -16,7 +16,7 @@
 #include "private/qvi-common.h"
 #include "quo-vadis/qv-group.h"
 #include "private/qvi-hwloc.h"
-#include "private/qvi-logger.h"
+#include "private/qvi-log.h"
 
 // Type definition
 struct qv_group_s {

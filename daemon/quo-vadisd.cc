@@ -16,7 +16,7 @@
 #include "private/qvi-common.h"
 #include "private/qvi-utils.h"
 #include "private/qvi-rmi.h"
-#include "private/qvi-logger.h"
+#include "private/qvi-log.h"
 
 #include <stdio.h>
 #include <sys/types.h>

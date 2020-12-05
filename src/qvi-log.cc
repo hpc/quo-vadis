@@ -10,11 +10,11 @@
  */
 
 /**
- * @file qvi-logger.cc
+ * @file qvi-log.cc
  */
 
 #include "private/qvi-common.h"
-#include "private/qvi-logger.h"
+#include "private/qvi-log.h"
 
 #include "spdlog/sinks/stdout_sinks.h"
 #include "spdlog/sinks/syslog_sink.h"

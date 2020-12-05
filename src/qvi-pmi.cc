@@ -15,14 +15,17 @@
 
 #include "private/qvi-common.h"
 #include "private/qvi-pmi.h"
-#include "private/qvi-logger.h"
+#include "private/qvi-log.h"
 
 #include "pmix.h"
 
 struct qvi_pmi_s {
     pmix_proc_t myproc;
-    uint16_t lid;
+    /** Local (node) ID */
+    uint32_t lid;
+    /** Global (job) ID */
     uint32_t gid;
+    /** Universe size   */
     uint32_t universe_size;
 };
 
@@ -52,7 +55,7 @@ qvi_pmi_destruct(
 }
 
 int
-qvi_pmi_load(
+qvi_pmi_init(
     qvi_pmi_t *pmi
 ) {
     int rc;
@@ -93,14 +96,47 @@ qvi_pmi_load(
     }
     pmi->lid = val->data.uint16;
     PMIX_VALUE_RELEASE(val);
-
-    qvi_log_info("hi from {} ({}) of {}", pmi->gid, pmi->lid, pmi->universe_size);
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, PMIx_Error_string(rc));
         return QV_ERR_PMI;
     }
     return QV_SUCCESS;
+}
+
+int
+qvi_pmi_finalize(
+    qvi_pmi_t *pmi
+) {
+    QVI_UNUSED(pmi);
+
+    int rc = PMIx_Finalize(nullptr, 0);
+    if (rc != PMIX_SUCCESS) {
+        char const *ers = "PMIx_Finalize() failed";
+        qvi_log_warn("{} with rc={} ({})", ers, rc, PMIx_Error_string(rc));
+    }
+    return QV_SUCCESS;
+}
+
+uint32_t
+qvi_pmi_lid(
+    qvi_pmi_t *pmi
+) {
+    return pmi->lid;
+}
+
+uint32_t
+qvi_pmi_gid(
+    qvi_pmi_t *pmi
+) {
+    return pmi->gid;
+}
+
+uint32_t
+qvi_pmi_usize(
+    qvi_pmi_t *pmi
+) {
+    return pmi->universe_size;
 }
 
 /*

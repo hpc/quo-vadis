@@ -10,10 +10,10 @@
  */
 
 /**
- * @file test-pmi.c
+ * @file test-mpi.c
  */
 
-#include "private/qvi-pmi.h"
+#include "private/qvi-mpi.h"
 #include "private/qvi-utils.h"
 
 #include "quo-vadis.h"
@@ -31,42 +31,53 @@ main(
     int rc = QV_SUCCESS;
     char const *ers = NULL;
 
-    qvi_pmi_t *pmi = NULL;
+    qvi_mpi_t *mpi = NULL;
 
-    uint32_t gid = 0;
-    uint32_t lid = 0;
-    uint32_t usize = 0;
+    int gid = 0;
+    int lid = 0;
+    int wsize = 0;
+    int nsize = 0;
 
-    rc = qvi_pmi_construct(&pmi);
+    rc = MPI_Init(&argc, &argv);
+    if (rc != MPI_SUCCESS) {
+        ers = "MPI_Init() failed";
+        fprintf(stderr, "%s\n", ers);
+        return EXIT_FAILURE;
+    }
+
+    rc = qvi_mpi_construct(&mpi);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_pmi_construct() failed";
+        ers = "qvi_mpi_construct() failed";
         goto out;
     }
 
-    rc = qvi_pmi_init(pmi);
+    rc = qvi_mpi_init(mpi, MPI_COMM_WORLD);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_pmi_init() failed";
+        ers = "qvi_mpi_init() failed";
         goto out;
     }
 
-    gid = qvi_pmi_gid(pmi);
-    lid = qvi_pmi_lid(pmi);
-    usize = qvi_pmi_usize(pmi);
+    gid = qvi_mpi_world_id(mpi);
+    lid = qvi_mpi_node_id(mpi);
+    wsize = qvi_mpi_world_size(mpi);
+    nsize = qvi_mpi_node_size(mpi);
 
     printf(
-        "Hello from gid=%"PRIu32" (lid=%"PRIu32") of usize=%"PRIu32"\n",
+        "Hello from gid=%d (lid=%d, nsize=%d) of wsize=%d\n",
         gid,
         lid,
-        usize
+        nsize,
+        wsize
     );
 
-    rc = qvi_pmi_finalize(pmi);
+    rc = qvi_mpi_finalize(mpi);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_pmi_finalize() failed";
+        ers = "qvi_mpi_finalize() failed";
         goto out;
     }
 out:
-    qvi_pmi_destruct(pmi);
+    qvi_mpi_destruct(mpi);
+    MPI_Finalize();
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         return EXIT_FAILURE;

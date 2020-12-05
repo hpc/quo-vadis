@@ -10,11 +10,11 @@
  */
 
 /**
- * @file qvi-logger.h
+ * @file qvi-log.h
  */
 
-#ifndef QVI_LOGGER_H
-#define QVI_LOGGER_H
+#ifndef QVI_LOG_H
+#define QVI_LOG_H
 
 #ifdef NDEBUG
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO

@@ -15,7 +15,7 @@
 
 #include "private/qvi-common.h"
 #include "private/qvi-hwloc.h"
-#include "private/qvi-logger.h"
+#include "private/qvi-log.h"
 
 // Type definition
 struct qvi_hwloc_s {
