@@ -39,7 +39,7 @@ struct qvi_mpi_s {
     /** Maintains the next available group ID value */
     uint64_t group_next_id;
     /** Group table (ID to internal structure mapping) */
-    std::unordered_map<uint64_t, qvi_mpi_group_t> group_tab;
+    std::unordered_map<uint64_t, qvi_mpi_group_t> *group_tab;
 };
 
 /**
@@ -75,6 +75,7 @@ qvi_mpi_construct(
     impi->world_comm = MPI_COMM_NULL;
     impi->node_comm = MPI_COMM_NULL;
     // Groups
+    impi->group_tab = new std::unordered_map<uint64_t, qvi_mpi_group_t>;
     impi->group_next_id = QVI_MPI_GROUP_INTRINSIC_END;
     *mpi = impi;
     return rc;
@@ -92,6 +93,7 @@ qvi_mpi_destruct(
         MPI_Comm_free(&mpi->node_comm);
     }
     // TODO(skg) Free groups
+    delete mpi->group_tab;
     free(mpi);
 }
 
@@ -157,8 +159,8 @@ create_intrinsic_groups(
         ers = "MPI_Comm_group(node_comm) failed";
         goto out;
     }
-    mpi->group_tab[QVI_MPI_GROUP_SELF] = self_group;
-    mpi->group_tab[QVI_MPI_GROUP_NODE] = node_group;
+    mpi->group_tab->insert({QVI_MPI_GROUP_SELF, self_group});
+    mpi->group_tab->insert({QVI_MPI_GROUP_NODE, node_group});
 out:
     if (ers) {
         qvi_log_error(ers);
