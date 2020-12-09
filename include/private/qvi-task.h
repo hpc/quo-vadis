@@ -10,26 +10,53 @@
  */
 
 /**
- * @file quo-vadis.h
+ * @file qvi-task.h
  */
 
-#ifndef QUO_VADIS_H
-#define QUO_VADIS_H
+#ifndef QVI_TASK_H
+#define QVI_TASK_H
+
+#include "private/qvi-common.h"
+#include "quo-vadis/qv-task.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** Convenience definition. */
-#define QUO_VADIS 1
-/** Return codes. */
-#include "quo-vadis/qv-rc.h"
-/** Task things. */
-#include "quo-vadis/qv-task.h"
-/** Group support. */
-#include "quo-vadis/qv-group.h"
-/** Scope support. */
-#include "quo-vadis/qv-scope.h"
+/**
+ *
+ */
+int
+qvi_task_construct(
+    qv_task_t **task
+);
+
+/**
+ *
+ */
+void
+qvi_task_destruct(
+    qv_task_t *task
+);
+
+/**
+ *
+ */
+int
+qvi_task_init(
+    qv_task_t *task,
+    pid_t pid,
+    qv_task_gid_t gid,
+    int id
+);
+
+/**
+ *
+ */
+pid_t
+qvi_task_pid(
+    qv_task_t *task
+);
 
 #ifdef __cplusplus
 }

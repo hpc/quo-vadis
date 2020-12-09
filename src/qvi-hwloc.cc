@@ -29,9 +29,9 @@ qvi_hwloc_construct(
 ) {
     if (!hwl) return QV_ERR_INVLD_ARG;
 
-    qvi_hwloc_t *ihwl = (qvi_hwloc_t *)calloc(1, sizeof(*ihwl));
+    qvi_hwloc_t *ihwl = qvi_new qvi_hwloc_t;
     if (!ihwl) {
-        qvi_log_error("calloc() failed");
+        qvi_log_error("memory allocation failed");
         return QV_ERR_OOR;
     }
     *hwl = ihwl;
@@ -45,7 +45,7 @@ qvi_hwloc_destruct(
     if (!hwl) return;
 
     hwloc_topology_destroy(hwl->topo);
-    free(hwl);
+    delete hwl;
 }
 
 /**

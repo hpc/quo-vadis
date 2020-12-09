@@ -37,9 +37,9 @@ qvi_pmi_construct(
 
     int rc = QV_SUCCESS;
 
-    qvi_pmi_t *ipmi = (qvi_pmi_s *)calloc(1, sizeof(*ipmi));
+    qvi_pmi_t *ipmi = qvi_new qvi_pmi_t;
     if (!ipmi) {
-        qvi_log_error("calloc() failed");
+        qvi_log_error("memory allocation failed");
         rc = QV_ERR_OOR;
     }
     *pmi = ipmi;
@@ -51,7 +51,7 @@ qvi_pmi_destruct(
     qvi_pmi_t *pmi
 ) {
     if (!pmi) return;
-    free(pmi);
+    delete pmi;
 }
 
 int

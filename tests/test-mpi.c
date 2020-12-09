@@ -13,6 +13,7 @@
  * @file test-mpi.c
  */
 
+#include "private/qvi-task.h"
 #include "private/qvi-mpi.h"
 #include "private/qvi-utils.h"
 
@@ -28,30 +29,34 @@ main(
     int argc,
     char **argv
 ) {
-    int rc = QV_SUCCESS;
     char const *ers = NULL;
 
+    qv_task_t *task = NULL;
     qvi_mpi_t *mpi = NULL;
 
+    qv_task_gid_t task_gid;
     int gid = 0;
-    int lid = 0;
+    int lid = 0, task_lid = 0;
     int wsize = 0;
     int nsize = 0;
 
-    rc = MPI_Init(&argc, &argv);
+    int rc = MPI_Init(&argc, &argv);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Init() failed";
         fprintf(stderr, "%s\n", ers);
         return EXIT_FAILURE;
     }
-
+    rc = qvi_task_construct(&task);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_task_construct() failed";
+        goto out;
+    }
     rc = qvi_mpi_construct(&mpi);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_construct() failed";
         goto out;
     }
-
-    rc = qvi_mpi_init(mpi, MPI_COMM_WORLD);
+    rc = qvi_mpi_init(mpi, task, MPI_COMM_WORLD);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_init() failed";
         goto out;
@@ -61,6 +66,28 @@ main(
     lid = qvi_mpi_node_id(mpi);
     wsize = qvi_mpi_world_size(mpi);
     nsize = qvi_mpi_node_size(mpi);
+
+    task_gid = qv_task_gid(task);
+    task_lid = qv_task_id(task);
+
+    if (lid != task_lid) {
+        fprintf(
+            stderr,
+            "Local ID mismatch: (lid != task_lid) %d != %d\n",
+            lid,
+            task_lid
+        );
+        return EXIT_FAILURE;
+    }
+    if (gid != task_gid) {
+        fprintf(
+            stderr,
+            "Global ID mismatch: (gid != task_gid) %d != %" PRId64 "\n",
+            gid,
+            task_gid
+        );
+        return EXIT_FAILURE;
+    }
 
     printf(
         "Hello from gid=%d (lid=%d, nsize=%d) of wsize=%d\n",
@@ -77,6 +104,7 @@ main(
     }
 out:
     qvi_mpi_destruct(mpi);
+    qvi_task_destruct(task);
     MPI_Finalize();
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));

@@ -10,26 +10,17 @@
  */
 
 /**
- * @file quo-vadis.h
+ * @file qv-mpi.h
  */
 
-#ifndef QUO_VADIS_H
-#define QUO_VADIS_H
+#ifndef QUO_VADIS_MPI_H
+#define QUO_VADIS_MPI_H
+
+#include "mpi.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** Convenience definition. */
-#define QUO_VADIS 1
-/** Return codes. */
-#include "quo-vadis/qv-rc.h"
-/** Task things. */
-#include "quo-vadis/qv-task.h"
-/** Group support. */
-#include "quo-vadis/qv-group.h"
-/** Scope support. */
-#include "quo-vadis/qv-scope.h"
 
 #ifdef __cplusplus
 }

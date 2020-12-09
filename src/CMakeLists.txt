@@ -71,6 +71,7 @@ add_library(
     OBJECT
     qvi-mpi.cc
     ../include/private/qvi-mpi.h
+    ../include/quo-vadis/qv-mpi.h
 )
 
 target_include_directories(
@@ -143,6 +144,9 @@ target_link_libraries(
 # TODO(skg) Add an MPI variant of the library. For now, just include MPI bits.
 add_library(
     quo-vadis
+    qv-task.cc
+    ../include/private/qvi-task.h
+    ../include/quo-vadis/qv-task.h
     qvi-rmi.cc
     ../include/private/qvi-rmi.h
     qv-group.cc

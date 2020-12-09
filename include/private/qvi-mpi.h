@@ -18,7 +18,8 @@
 
 #include "private/qvi-common.h"
 
-#include "mpi.h"
+#include "quo-vadis/qv-mpi.h"
+#include "quo-vadis/qv-task.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,13 +33,15 @@ struct qvi_mpi_group_s;
 typedef struct qvi_mpi_group_s qvi_mpi_group_t;
 
 /**
- * Built-in groups.
+ * Intrinsic groups.
  */
-enum qvi_mpi_group_intrinsic_e {
+enum qvi_mpi_group_intrinsic_id_e {
     QVI_MPI_GROUP_NULL = 0,
     QVI_MPI_GROUP_SELF,
     QVI_MPI_GROUP_NODE,
-    // Sentinel value marking first available group ID.
+    // Sentinel value marking first available group ID. This is expected to be
+    // the very last item, so don't change its relative position without
+    // carefully modifying at the code that uses this value.
     QVI_MPI_GROUP_INTRINSIC_END
 };
 
@@ -47,7 +50,7 @@ enum qvi_mpi_group_intrinsic_e {
  */
 int
 qvi_mpi_construct(
-    qvi_mpi_t **pmi
+    qvi_mpi_t **mpi
 );
 
 /**
@@ -55,7 +58,7 @@ qvi_mpi_construct(
  */
 void
 qvi_mpi_destruct(
-    qvi_mpi_t *pmi
+    qvi_mpi_t *mpi
 );
 
 /**
@@ -63,7 +66,8 @@ qvi_mpi_destruct(
  */
 int
 qvi_mpi_init(
-    qvi_mpi_t *pmi,
+    qvi_mpi_t *mpi,
+    qv_task_t *task,
     MPI_Comm comm
 );
 
@@ -72,7 +76,7 @@ qvi_mpi_init(
  */
 int
 qvi_mpi_finalize(
-    qvi_mpi_t *pmi
+    qvi_mpi_t *mpi
 );
 
 /**
@@ -88,7 +92,7 @@ qvi_mpi_node_size(
  */
 int
 qvi_mpi_node_id(
-    qvi_mpi_t *pmi
+    qvi_mpi_t *mpi
 );
 
 /**
@@ -96,7 +100,7 @@ qvi_mpi_node_id(
  */
 int
 qvi_mpi_world_size(
-    qvi_mpi_t *pmi
+    qvi_mpi_t *mpi
 );
 
 /**
@@ -104,7 +108,7 @@ qvi_mpi_world_size(
  */
 int
 qvi_mpi_world_id(
-    qvi_mpi_t *pmi
+    qvi_mpi_t *mpi
 );
 
 #ifdef __cplusplus
