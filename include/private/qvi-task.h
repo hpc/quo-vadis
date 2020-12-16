@@ -46,7 +46,7 @@ int
 qvi_task_init(
     qv_task_t *task,
     pid_t pid,
-    qv_task_gid_t gid,
+    int64_t gid,
     int id
 );
 

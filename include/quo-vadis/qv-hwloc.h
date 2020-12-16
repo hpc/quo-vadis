@@ -10,36 +10,30 @@
  */
 
 /**
- * @file qv-task.h
+ * @file qv-hwloc.h
  */
 
-#ifndef QUO_VADIS_TASK_H
-#define QUO_VADIS_TASK_H
-
-#include <stdint.h>
+#ifndef QUO_VADIS_HWLOC_H
+#define QUO_VADIS_HWLOC_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct qv_task_s;
-typedef struct qv_task_s qv_task_t;
-
-/**
- *
- */
-int64_t
-qv_task_gid(
-    qv_task_t *task
-);
-
-/**
- *
- */
-int
-qv_task_id(
-    qv_task_t *task
-);
+typedef enum qv_hwloc_obj_type_e {
+    QV_HWLOC_OBJ_MACHINE,
+    QV_HWLOC_OBJ_PACKAGE,
+    QV_HWLOC_OBJ_CORE,
+    QV_HWLOC_OBJ_PU,
+    QV_HWLOC_OBJ_L1CACHE,
+    QV_HWLOC_OBJ_L2CACHE,
+    QV_HWLOC_OBJ_L3CACHE,
+    QV_HWLOC_OBJ_L4CACHE,
+    QV_HWLOC_OBJ_L5CACHE,
+    QV_HWLOC_OBJ_NUMANODE,
+    // TODO(skg) Consider just providing things like GPU
+    QV_HWLOC_OBJ_OS_DEVICE
+} qv_hwloc_obj_type_t;
 
 #ifdef __cplusplus
 }

@@ -14,14 +14,117 @@
  */
 
 #include "private/qvi-common.h"
+
 #include "private/qvi-hwloc.h"
 #include "private/qvi-log.h"
+
+#include "quo-vadis/qv-hwloc.h"
 
 // Type definition
 struct qvi_hwloc_s {
     /** The cached node topology. */
     hwloc_topology_t topo;
 };
+
+static int
+obj_type_from_external(
+    qv_hwloc_obj_type_t external,
+    hwloc_obj_type_t *internal
+) {
+    switch(external) {
+        case(QV_HWLOC_OBJ_MACHINE):
+            *internal = HWLOC_OBJ_MACHINE;
+            break;
+        case(QV_HWLOC_OBJ_PACKAGE):
+            *internal = HWLOC_OBJ_PACKAGE;
+            break;
+        case(QV_HWLOC_OBJ_CORE):
+            *internal = HWLOC_OBJ_CORE;
+            break;
+        case(QV_HWLOC_OBJ_PU):
+            *internal = HWLOC_OBJ_PU;
+            break;
+        case(QV_HWLOC_OBJ_L1CACHE):
+            *internal = HWLOC_OBJ_L1CACHE;
+            break;
+        case(QV_HWLOC_OBJ_L2CACHE):
+            *internal = HWLOC_OBJ_L2CACHE;
+            break;
+        case(QV_HWLOC_OBJ_L3CACHE):
+            *internal = HWLOC_OBJ_L3CACHE;
+            break;
+        case(QV_HWLOC_OBJ_L4CACHE):
+            *internal = HWLOC_OBJ_L4CACHE;
+            break;
+        case(QV_HWLOC_OBJ_L5CACHE):
+            *internal = HWLOC_OBJ_L5CACHE;
+            break;
+        case(QV_HWLOC_OBJ_NUMANODE):
+            *internal = HWLOC_OBJ_NUMANODE;
+            break;
+        case(QV_HWLOC_OBJ_OS_DEVICE):
+            *internal = HWLOC_OBJ_OS_DEVICE;
+            break;
+        default:
+            return QV_ERR_INVLD_ARG;
+    }
+    return QV_SUCCESS;
+}
+
+static int
+obj_get_by_type(
+    qvi_hwloc_t *hwloc,
+    qv_hwloc_obj_type_t type,
+    unsigned type_index,
+    hwloc_obj_t *out_obj
+) {
+    hwloc_obj_type_t real_type;
+    int rc = obj_type_from_external(type, &real_type);
+    if (rc != QV_SUCCESS) return rc;
+
+    *out_obj = hwloc_get_obj_by_type(hwloc->topo, real_type, type_index);
+    if (!*out_obj) {
+        // There are a couple of reasons why target_obj may be NULL. If this
+        // ever happens and the specified type and obj index are valid, then
+        // improve this code.
+        return QV_ERR_HWLOC;
+    }
+    return QV_SUCCESS;
+}
+
+static int
+obj_type_depth(
+    qvi_hwloc_t *hwloc,
+    qv_hwloc_obj_type_t type,
+    int *depth
+) {
+    hwloc_obj_type_t real_type;
+    int rc = obj_type_from_external(type, &real_type);
+    if (rc != QV_SUCCESS) return rc;
+
+    int d = hwloc_get_type_depth(hwloc->topo, real_type);
+    if (d == HWLOC_TYPE_DEPTH_UNKNOWN) {
+        *depth = 0;
+    }
+    *depth = d;
+    return QV_SUCCESS;
+}
+
+int
+qvi_hwloc_get_nobjs_by_type(
+   qvi_hwloc_t *hwloc,
+   qv_hwloc_obj_type_t target_type,
+   int *out_nobjs
+) {
+    if (!hwloc || !out_nobjs) return QV_ERR_INVLD_ARG;
+
+    int depth;
+    int rc = obj_type_depth(hwloc, target_type, &depth);
+    if (rc != QV_SUCCESS) return rc;
+
+    *out_nobjs = hwloc_get_nbobjs_by_depth(hwloc->topo, depth);
+    return QV_SUCCESS;
+}
 
 int
 qvi_hwloc_construct(

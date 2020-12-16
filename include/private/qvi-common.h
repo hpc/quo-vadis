@@ -33,6 +33,11 @@
 #include <threads.h>
 #include <unistd.h>
 
+#ifdef __cplusplus
+#include <unordered_map>
+#include <new>
+#endif
+
 #endif
 
 /*

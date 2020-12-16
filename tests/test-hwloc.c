@@ -13,12 +13,55 @@
  * @file test-hwloc.c
  */
 
+#include "private/qvi-macros.h"
 #include "private/qvi-hwloc.h"
 
 #include "quo-vadis.h"
 
 #include <stdlib.h>
 #include <stdio.h>
+
+static int
+echo_hw_info(
+    qvi_hwloc_t *hwl
+) {
+    typedef struct hw_name_type_s {
+        char const *name;
+        qv_hwloc_obj_type_t type;
+    } hw_name_type_t;
+
+    const hw_name_type_t nts[] = {
+        {QVI_STRINGIFY(QV_HWLOC_OBJ_MACHINE),  QV_HWLOC_OBJ_MACHINE},
+        {QVI_STRINGIFY(QV_HWLOC_OBJ_PACKAGE),  QV_HWLOC_OBJ_PACKAGE},
+        {QVI_STRINGIFY(QV_HWLOC_OBJ_CORE),     QV_HWLOC_OBJ_CORE},
+        {QVI_STRINGIFY(QV_HWLOC_OBJ_PU),       QV_HWLOC_OBJ_PU},
+        {QVI_STRINGIFY(QV_HWLOC_OBJ_L1CACHE),  QV_HWLOC_OBJ_L1CACHE},
+        {QVI_STRINGIFY(QV_HWLOC_OBJ_L2CACHE),  QV_HWLOC_OBJ_L2CACHE},
+        {QVI_STRINGIFY(QV_HWLOC_OBJ_L3CACHE),  QV_HWLOC_OBJ_L3CACHE},
+        {QVI_STRINGIFY(QV_HWLOC_OBJ_L4CACHE),  QV_HWLOC_OBJ_L4CACHE},
+        {QVI_STRINGIFY(QV_HWLOC_OBJ_L5CACHE),  QV_HWLOC_OBJ_L5CACHE},
+        {QVI_STRINGIFY(QV_HWLOC_OBJ_NUMANODE), QV_HWLOC_OBJ_NUMANODE}
+    };
+
+    const int num_nts = sizeof(nts) / sizeof(hw_name_type_t);
+
+    printf("# System Hardware Overview --------------\n");
+    for (int i = 0; i < num_nts; ++i) {
+        int n;
+        int rc = qvi_hwloc_get_nobjs_by_type(hwl, nts[i].type, &n);
+        if (rc != QV_SUCCESS) {
+            fprintf(
+                stderr,
+                "qvi_hwloc_get_nobjs_by_type(%s) failed\n",
+                nts[i].name
+            );
+            return rc;
+        }
+        printf("# %s=%d\n", nts[i].name, n);
+    }
+    printf("# ---------------------------------------\n");
+    return QV_SUCCESS;
+}
 
 int
 main(void)
@@ -37,6 +80,12 @@ main(void)
     rc = qvi_hwloc_topology_load(hwl);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_topology_load() failed";
+        goto out;
+    }
+
+    rc = echo_hw_info(hwl);
+    if (rc != QV_SUCCESS) {
+        ers = "echo_hw_info() failed";
         goto out;
     }
 

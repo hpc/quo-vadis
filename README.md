@@ -25,4 +25,5 @@ make test # Or ninja test for ninja builds
 * spdlog (https://github.com/gabime/spdlog)
 
 ## External Software Dependencies
+* An MPI-3 implementation (https://www.open-mpi.org, https://www.mpich.org)
 * OpenPMIx (https://github.com/openpmix/openpmix)

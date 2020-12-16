@@ -91,23 +91,7 @@ qvi_mpi_node_size(
  *
  */
 int
-qvi_mpi_node_id(
-    qvi_mpi_t *mpi
-);
-
-/**
- *
- */
-int
 qvi_mpi_world_size(
-    qvi_mpi_t *mpi
-);
-
-/**
- *
- */
-int
-qvi_mpi_world_id(
     qvi_mpi_t *mpi
 );
 

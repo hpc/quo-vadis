@@ -97,6 +97,7 @@ add_library(
     OBJECT
     qvi-hwloc.cc
     ../include/private/qvi-hwloc.h
+    ../include/quo-vadis/qv-hwloc.h
 )
 
 target_include_directories(

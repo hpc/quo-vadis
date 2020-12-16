@@ -22,8 +22,6 @@
 struct qv_group_s {
 };
 
-
-
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
  */

@@ -24,11 +24,12 @@ static const int qvi_task_id_invalid = -1;
 // Type definition
 struct qv_task_s {
     /** Global task ID */
-    qv_task_gid_t gid = qvi_task_id_invalid;
+    int64_t gid = qvi_task_id_invalid;
     /** Node-local task ID */
     int id = qvi_task_id_invalid;
     /** Process ID */
     pid_t pid = 0;
+    // TODO(skg) Handle to children?
 };
 
 int
@@ -51,6 +52,7 @@ out:
     if (ers) {
         qvi_log_error(ers);
         qvi_task_destruct(itask);
+        *task = nullptr;
     }
     return rc;
 }
@@ -60,13 +62,15 @@ qvi_task_destruct(
     qv_task_t *task
 ) {
     if (!task) return;
+
+    delete task;
 }
 
 int
 qvi_task_init(
     qv_task_t *task,
     pid_t pid,
-    qv_task_gid_t gid,
+    int64_t gid,
     int id
 ) {
     task->pid = pid;
@@ -82,7 +86,7 @@ qvi_task_pid(
     return task->pid;
 }
 
-qv_task_gid_t
+int64_t
 qv_task_gid(
     qv_task_t *task
 ) {

@@ -16,6 +16,8 @@
 #ifndef QVI_HWLOC_H
 #define QVI_HWLOC_H
 
+#include "quo-vadis/qv-hwloc.h"
+
 #include <unistd.h>
 
 #include "hwloc.h"
@@ -50,6 +52,16 @@ qvi_hwloc_destruct(
 int
 qvi_hwloc_topology_load(
     qvi_hwloc_t *hwl
+);
+
+/**
+ *
+ */
+int
+qvi_hwloc_get_nobjs_by_type(
+   qvi_hwloc_t *hwloc,
+   qv_hwloc_obj_type_t target_type,
+   int *out_nobjs
 );
 
 /**

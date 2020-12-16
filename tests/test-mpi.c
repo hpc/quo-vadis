@@ -34,9 +34,8 @@ main(
     qv_task_t *task = NULL;
     qvi_mpi_t *mpi = NULL;
 
-    qv_task_gid_t task_gid;
-    int gid = 0;
-    int lid = 0, task_lid = 0;
+    int64_t task_gid;
+    int task_lid = 0;
     int wsize = 0;
     int nsize = 0;
 
@@ -62,37 +61,15 @@ main(
         goto out;
     }
 
-    gid = qvi_mpi_world_id(mpi);
-    lid = qvi_mpi_node_id(mpi);
     wsize = qvi_mpi_world_size(mpi);
     nsize = qvi_mpi_node_size(mpi);
-
     task_gid = qv_task_gid(task);
     task_lid = qv_task_id(task);
 
-    if (lid != task_lid) {
-        fprintf(
-            stderr,
-            "Local ID mismatch: (lid != task_lid) %d != %d\n",
-            lid,
-            task_lid
-        );
-        return EXIT_FAILURE;
-    }
-    if (gid != task_gid) {
-        fprintf(
-            stderr,
-            "Global ID mismatch: (gid != task_gid) %d != %" PRId64 "\n",
-            gid,
-            task_gid
-        );
-        return EXIT_FAILURE;
-    }
-
     printf(
-        "Hello from gid=%d (lid=%d, nsize=%d) of wsize=%d\n",
-        gid,
-        lid,
+        "Hello from gid=%" PRId64 " (lid=%d, nsize=%d) of wsize=%d\n",
+        task_gid,
+        task_lid,
         nsize,
         wsize
     );

@@ -14,12 +14,10 @@
  */
 
 #include "private/qvi-common.h"
+
 #include "private/qvi-mpi.h"
 #include "private/qvi-task.h"
 #include "private/qvi-log.h"
-
-#include <new>
-#include <unordered_map>
 
 using group_tab_id_t = uint64_t;
 using group_tab_t = std::unordered_map<group_tab_id_t, qvi_mpi_group_t>;
@@ -195,7 +193,6 @@ qvi_mpi_destruct(
     if (mpi->world_comm != MPI_COMM_NULL) {
         MPI_Comm_free(&mpi->world_comm);
     }
-    qvi_task_destruct(mpi->task);
     delete mpi;
 }
 
@@ -343,21 +340,6 @@ qvi_mpi_finalize(
 ) {
     QVI_UNUSED(mpi);
     return QV_SUCCESS;
-}
-
-int
-qvi_mpi_node_id(
-    qvi_mpi_t *mpi
-) {
-    return qv_task_id(mpi->task);
-}
-
-int
-qvi_mpi_world_id(
-    qvi_mpi_t *mpi
-) {
-    qv_task_gid_t gid = qv_task_gid(mpi->task);
-    return (int)gid;
 }
 
 int
