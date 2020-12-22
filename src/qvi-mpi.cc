@@ -14,7 +14,6 @@
  */
 
 #include "private/qvi-common.h"
-
 #include "private/qvi-mpi.h"
 #include "private/qvi-task.h"
 #include "private/qvi-log.h"
@@ -245,26 +244,36 @@ create_intrinsic_groups(
     qvi_mpi_t *mpi
 ) {
     char const *ers = nullptr;
+    int qvrc;
 
     qvi_mpi_group_t self_group, node_group;
-
     int rc = group_create_from_comm(mpi->self_comm, &self_group);
     if (rc != MPI_SUCCESS) {
         ers = "group_create_from_comm(self_comm) failed";
+        qvrc = QV_ERR_MPI;
         goto out;
     }
     rc = group_create_from_comm(mpi->node_comm, &node_group);
     if (rc != MPI_SUCCESS) {
         ers = "group_create_from_comm(node_comm) failed";
+        qvrc = QV_ERR_MPI;
         goto out;
     }
-    group_add(mpi, &self_group, QVI_MPI_GROUP_SELF);
-    group_add(mpi, &node_group, QVI_MPI_GROUP_NODE);
+    qvrc = group_add(mpi, &self_group, QVI_MPI_GROUP_SELF);
+    if (qvrc != QV_SUCCESS) {
+        ers = "group_add(self) failed";
+        goto out;
+    }
+    qvrc = group_add(mpi, &node_group, QVI_MPI_GROUP_NODE);
+    if (qvrc != QV_SUCCESS) {
+        ers = "group_add(node) failed";
+        goto out;
+    }
 out:
     if (ers) {
         qvi_log_error(ers);
     }
-    return rc;
+    return qvrc;
 }
 
 int

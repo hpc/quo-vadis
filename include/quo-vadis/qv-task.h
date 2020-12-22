@@ -16,30 +16,12 @@
 #ifndef QUO_VADIS_TASK_H
 #define QUO_VADIS_TASK_H
 
-#include <stdint.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 struct qv_task_s;
 typedef struct qv_task_s qv_task_t;
-
-/**
- *
- */
-int64_t
-qv_task_gid(
-    qv_task_t *task
-);
-
-/**
- *
- */
-int
-qv_task_id(
-    qv_task_t *task
-);
 
 #ifdef __cplusplus
 }

@@ -63,8 +63,8 @@ main(
 
     wsize = qvi_mpi_world_size(mpi);
     nsize = qvi_mpi_node_size(mpi);
-    task_gid = qv_task_gid(task);
-    task_lid = qv_task_id(task);
+    task_gid = qvi_task_gid(task);
+    task_lid = qvi_task_id(task);
 
     printf(
         "Hello from gid=%" PRId64 " (lid=%d, nsize=%d) of wsize=%d\n",

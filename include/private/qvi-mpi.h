@@ -16,8 +16,6 @@
 #ifndef QVI_MPI_H
 #define QVI_MPI_H
 
-#include "private/qvi-common.h"
-
 #include "quo-vadis/qv-mpi.h"
 #include "quo-vadis/qv-task.h"
 

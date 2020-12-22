@@ -26,7 +26,12 @@ struct qvi_hwloc_s {
     hwloc_topology_t topo;
 };
 
-static int
+typedef enum qvi_hwloc_task_xop_obj_e {
+    QVI_HWLOC_TASK_INTERSECTS_OBJ = 0,
+    QVI_HWLOC_TASK_ISINCLUDED_IN_OBJ
+} qvi_hwloc_task_xop_obj_t;
+
+static inline int
 obj_type_from_external(
     qv_hwloc_obj_type_t external,
     hwloc_obj_type_t *internal
@@ -111,22 +116,6 @@ obj_type_depth(
 }
 
 int
-qvi_hwloc_get_nobjs_by_type(
-   qvi_hwloc_t *hwloc,
-   qv_hwloc_obj_type_t target_type,
-   int *out_nobjs
-) {
-    if (!hwloc || !out_nobjs) return QV_ERR_INVLD_ARG;
-
-    int depth;
-    int rc = obj_type_depth(hwloc, target_type, &depth);
-    if (rc != QV_SUCCESS) return rc;
-
-    *out_nobjs = hwloc_get_nbobjs_by_depth(hwloc->topo, depth);
-    return QV_SUCCESS;
-}
-
-int
 qvi_hwloc_construct(
     qvi_hwloc_t **hwl
 ) {
@@ -181,10 +170,9 @@ qvi_hwloc_topology_load(
 ) {
     if (!hwl) return QV_ERR_INVLD_ARG;
 
-    int rc = QV_SUCCESS;
     char const *ers = nullptr;
 
-    rc = topology_init(hwl);
+    int rc = topology_init(hwl);
     if (rc != QV_SUCCESS) {
         return rc;
     }
@@ -224,6 +212,22 @@ out:
         qvi_log_error("{} with rc={}", ers, rc);
         return QV_ERR_HWLOC;
     }
+    return QV_SUCCESS;
+}
+
+int
+qvi_hwloc_get_nobjs_by_type(
+   qvi_hwloc_t *hwloc,
+   qv_hwloc_obj_type_t target_type,
+   int *out_nobjs
+) {
+    if (!hwloc || !out_nobjs) return QV_ERR_INVLD_ARG;
+
+    int depth;
+    int rc = obj_type_depth(hwloc, target_type, &depth);
+    if (rc != QV_SUCCESS) return rc;
+
+    *out_nobjs = hwloc_get_nbobjs_by_depth(hwloc->topo, depth);
     return QV_SUCCESS;
 }
 
@@ -283,6 +287,80 @@ out:
         *out_bitmap = nullptr;
     }
     return qrc;
+}
+
+/**
+ *
+ */
+static int
+task_obj_xop_by_type_id(
+    qvi_hwloc_t *hwl,
+    qv_hwloc_obj_type_t type,
+    pid_t who,
+    unsigned type_index,
+    qvi_hwloc_task_xop_obj_t opid,
+    int *result
+) {
+    hwloc_obj_t obj;
+    int rc = obj_get_by_type(hwl, type, type_index, &obj);
+    if (rc != QV_SUCCESS) return rc;
+
+    hwloc_cpuset_t cur_bind;
+    rc = qvi_hwloc_task_get_cpubind(hwl, who, &cur_bind);
+    if (rc != QV_SUCCESS) return rc;
+
+    switch (opid) {
+        case QVI_HWLOC_TASK_INTERSECTS_OBJ: {
+            *result = hwloc_bitmap_intersects(cur_bind, obj->cpuset);
+            break;
+        }
+        case QVI_HWLOC_TASK_ISINCLUDED_IN_OBJ: {
+            *result = hwloc_bitmap_isincluded(cur_bind, obj->cpuset);
+        }
+    }
+
+    hwloc_bitmap_free(cur_bind);
+    return QV_SUCCESS;
+}
+
+int
+qvi_hwloc_task_intersects_obj_by_type_id(
+    qvi_hwloc_t *hwl,
+    qv_hwloc_obj_type_t type,
+    pid_t who,
+    unsigned type_index,
+    int *result
+) {
+    if (!hwl || !result) return QV_ERR_INVLD_ARG;
+
+    return task_obj_xop_by_type_id(
+        hwl,
+        type,
+        who,
+        type_index,
+        QVI_HWLOC_TASK_INTERSECTS_OBJ,
+        result
+    );
+}
+
+int
+qvi_hwloc_task_isincluded_in_obj_by_type_id(
+    qvi_hwloc_t *hwl,
+    qv_hwloc_obj_type_t type,
+    pid_t who,
+    unsigned type_index,
+    int *result
+) {
+    if (!hwl || !result) return QV_ERR_INVLD_ARG;
+
+    return task_obj_xop_by_type_id(
+        hwl,
+        type,
+        who,
+        type_index,
+        QVI_HWLOC_TASK_ISINCLUDED_IN_OBJ,
+        result
+    );
 }
 
 /*

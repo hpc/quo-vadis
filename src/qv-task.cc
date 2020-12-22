@@ -87,14 +87,14 @@ qvi_task_pid(
 }
 
 int64_t
-qv_task_gid(
+qvi_task_gid(
     qv_task_t *task
 ) {
     return task->gid;
 }
 
 int
-qv_task_id(
+qvi_task_id(
     qv_task_t *task
 ) {
     return task->id;

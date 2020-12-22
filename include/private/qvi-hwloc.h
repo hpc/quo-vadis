@@ -83,6 +83,30 @@ qvi_hwloc_task_get_cpubind(
     hwloc_bitmap_t *out_bitmap
 );
 
+/**
+ *
+ */
+int
+qvi_hwloc_task_intersects_obj_by_type_id(
+    qvi_hwloc_t *hwl,
+    qv_hwloc_obj_type_t type,
+    pid_t who,
+    unsigned type_index,
+    int *result
+);
+
+/**
+ *
+ */
+int
+qvi_hwloc_task_isincluded_in_obj_by_type_id(
+    qvi_hwloc_t *hwl,
+    qv_hwloc_obj_type_t type,
+    pid_t who,
+    unsigned type_index,
+    int *result
+);
+
 #ifdef __cplusplus
 }
 #endif

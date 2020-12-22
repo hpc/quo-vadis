@@ -58,6 +58,22 @@ qvi_task_pid(
     qv_task_t *task
 );
 
+/**
+ *
+ */
+int64_t
+qvi_task_gid(
+    qv_task_t *task
+);
+
+/**
+ *
+ */
+int
+qvi_task_id(
+    qv_task_t *task
+);
+
 #ifdef __cplusplus
 }
 #endif
