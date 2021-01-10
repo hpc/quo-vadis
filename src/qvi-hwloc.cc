@@ -316,6 +316,7 @@ task_obj_xop_by_type_id(
         }
         case QVI_HWLOC_TASK_ISINCLUDED_IN_OBJ: {
             *result = hwloc_bitmap_isincluded(cur_bind, obj->cpuset);
+            break;
         }
     }
 

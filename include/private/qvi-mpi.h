@@ -23,6 +23,9 @@
 extern "C" {
 #endif
 
+// Type definitions.
+typedef uint64_t qvi_mpi_group_id_t;
+
 // Forward declarations.
 struct qvi_mpi_s;
 typedef struct qvi_mpi_s qvi_mpi_t;
@@ -31,17 +34,15 @@ struct qvi_mpi_group_s;
 typedef struct qvi_mpi_group_s qvi_mpi_group_t;
 
 /**
- * Intrinsic groups.
+ * Intrinsic group IDs.
  */
-enum qvi_mpi_group_intrinsic_id_e {
-    QVI_MPI_GROUP_NULL = 0,
-    QVI_MPI_GROUP_SELF,
-    QVI_MPI_GROUP_NODE,
-    // Sentinel value marking first available group ID. This is expected to be
-    // the very last item, so don't change its relative position without
-    // carefully modifying at the code that uses this value.
-    QVI_MPI_GROUP_INTRINSIC_END
-};
+static const qvi_mpi_group_id_t QVI_MPI_GROUP_NULL = 0;
+static const qvi_mpi_group_id_t QVI_MPI_GROUP_SELF = 1;
+static const qvi_mpi_group_id_t QVI_MPI_GROUP_NODE = 2;
+// Sentinel value marking first available group ID. This is expected to be the
+// very last item, so don't change its relative position without carefully
+// modifying at the code that uses this value.
+static const qvi_mpi_group_id_t QVI_MPI_GROUP_INTRINSIC_END = 3;
 
 /**
  *
@@ -81,16 +82,48 @@ qvi_mpi_finalize(
  *
  */
 int
-qvi_mpi_node_size(
-    qvi_mpi_t *mpi
+qvi_mpi_group_construct(
+    qvi_mpi_group_t **group
+);
+
+/**
+ *
+ */
+void
+qvi_mpi_group_destruct(
+    qvi_mpi_group_t *group
 );
 
 /**
  *
  */
 int
-qvi_mpi_world_size(
-    qvi_mpi_t *mpi
+qvi_mpi_group_size(
+    qvi_mpi_t *mpi,
+    const qvi_mpi_group_t *group,
+    int *size
+);
+
+/**
+ *
+ */
+int
+qvi_mpi_group_lookup_by_id(
+    qvi_mpi_t *mpi,
+    qvi_mpi_group_id_t id,
+    qvi_mpi_group_t *group
+);
+
+/**
+ *
+ */
+int
+qvi_mpi_group_incl(
+    qvi_mpi_t *mpi,
+    const qvi_mpi_group_t *group,
+    int n_ids,
+    const int *ids,
+    qvi_mpi_group_t **maybe_group
 );
 
 #ifdef __cplusplus

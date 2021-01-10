@@ -26,7 +26,7 @@ struct qv_task_s {
     /** Global task ID */
     int64_t gid = qvi_task_id_invalid;
     /** Node-local task ID */
-    int id = qvi_task_id_invalid;
+    int lid = qvi_task_id_invalid;
     /** Process ID */
     pid_t pid = 0;
     // TODO(skg) Handle to children?
@@ -71,11 +71,11 @@ qvi_task_init(
     qv_task_t *task,
     pid_t pid,
     int64_t gid,
-    int id
+    int lid
 ) {
     task->pid = pid;
     task->gid = gid;
-    task->id = id;
+    task->lid = lid;
     return QV_SUCCESS;
 }
 
@@ -94,10 +94,10 @@ qvi_task_gid(
 }
 
 int
-qvi_task_id(
+qvi_task_lid(
     qv_task_t *task
 ) {
-    return task->id;
+    return task->lid;
 }
 
 /*

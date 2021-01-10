@@ -47,7 +47,7 @@ qvi_task_init(
     qv_task_t *task,
     pid_t pid,
     int64_t gid,
-    int id
+    int lid
 );
 
 /**
@@ -70,7 +70,7 @@ qvi_task_gid(
  *
  */
 int
-qvi_task_id(
+qvi_task_lid(
     qv_task_t *task
 );
 

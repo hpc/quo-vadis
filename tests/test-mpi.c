@@ -30,14 +30,9 @@ main(
     char **argv
 ) {
     char const *ers = NULL;
+    int *evens = NULL;
 
-    qv_task_t *task = NULL;
-    qvi_mpi_t *mpi = NULL;
-
-    int64_t task_gid;
-    int task_lid = 0;
-    int wsize = 0;
-    int nsize = 0;
+    MPI_Comm comm = MPI_COMM_WORLD;
 
     int rc = MPI_Init(&argc, &argv);
     if (rc != MPI_SUCCESS) {
@@ -45,26 +40,51 @@ main(
         fprintf(stderr, "%s\n", ers);
         return EXIT_FAILURE;
     }
+    int wsize;
+    rc = MPI_Comm_size(comm, &wsize);
+    if (rc != MPI_SUCCESS) {
+        ers = "MPI_Comm_size() failed";
+        fprintf(stderr, "%s\n", ers);
+        return EXIT_FAILURE;
+    }
+    qv_task_t *task = NULL;
     rc = qvi_task_construct(&task);
     if (rc != QV_SUCCESS) {
         ers = "qvi_task_construct() failed";
         goto out;
     }
+    qvi_mpi_t *mpi = NULL;
     rc = qvi_mpi_construct(&mpi);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_construct() failed";
         goto out;
     }
-    rc = qvi_mpi_init(mpi, task, MPI_COMM_WORLD);
+    rc = qvi_mpi_init(mpi, task, comm);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_init() failed";
         goto out;
     }
 
-    wsize = qvi_mpi_world_size(mpi);
-    nsize = qvi_mpi_node_size(mpi);
-    task_gid = qvi_task_gid(task);
-    task_lid = qvi_task_id(task);
+    qvi_mpi_group_t *node_group;
+    rc = qvi_mpi_group_construct(&node_group);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_mpi_group_construct() failed";
+        goto out;
+    }
+    rc = qvi_mpi_group_lookup_by_id(mpi, QVI_MPI_GROUP_NODE, node_group);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_mpi_group_lookup_by_id() failed";
+        goto out;
+    }
+    int nsize;
+    rc = qvi_mpi_group_size(mpi, node_group, &nsize);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_mpi_group_size() failed";
+        goto out;
+    }
+
+    int64_t task_gid = qvi_task_gid(task);
+    int task_lid = qvi_task_lid(task);
 
     printf(
         "Hello from gid=%" PRId64 " (lid=%d, nsize=%d) of wsize=%d\n",
@@ -74,14 +94,36 @@ main(
         wsize
     );
 
+    qvi_mpi_group_t *even_group = NULL;
+    const int n_evens = (wsize + 1) / 2;
+    evens = calloc(n_evens, sizeof(*evens));
+    if (!evens) {
+        ers = "calloc() failed";
+        goto out;
+    }
+    for (int r = 0, i = 0; r < wsize; ++r) {
+        if (r % 2 == 0) evens[i++] = r;
+    }
+    rc = qvi_mpi_group_incl(mpi, node_group, n_evens, evens, &even_group);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_mpi_group_incl() failed";
+        goto out;
+    }
+    if (even_group) {
+        printf("Task %d says hello from even group!\n", task_lid);
+    }
+
     rc = qvi_mpi_finalize(mpi);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_finalize() failed";
         goto out;
     }
 out:
+    qvi_mpi_group_destruct(node_group);
+    qvi_mpi_group_destruct(even_group);
     qvi_mpi_destruct(mpi);
     qvi_task_destruct(task);
+    if (evens) free(evens);
     MPI_Finalize();
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
