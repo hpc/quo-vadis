@@ -82,19 +82,27 @@ main(
         ers = "qvi_mpi_group_size() failed";
         goto out;
     }
+    int group_id;
+    rc = qvi_mpi_group_id(mpi, node_group, &group_id);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_mpi_group_id() failed";
+        goto out;
+    }
 
     int64_t task_gid = qvi_task_gid(task);
     int task_lid = qvi_task_lid(task);
 
     printf(
-        "Hello from gid=%" PRId64 " (lid=%d, nsize=%d) of wsize=%d\n",
+        "Hello from gid=%" PRId64
+        " (lid=%d, nsize=%d, node_gid=%d) of wsize=%d\n",
         task_gid,
         task_lid,
         nsize,
+        group_id,
         wsize
     );
 
-    qvi_mpi_group_t *even_group = NULL;
+    qvi_mpi_group_t *node_even_group = NULL;
     const int n_evens = (wsize + 1) / 2;
     evens = calloc(n_evens, sizeof(*evens));
     if (!evens) {
@@ -104,14 +112,48 @@ main(
     for (int r = 0, i = 0; r < wsize; ++r) {
         if (r % 2 == 0) evens[i++] = r;
     }
-    rc = qvi_mpi_group_incl(mpi, node_group, n_evens, evens, &even_group);
+    rc = qvi_mpi_group_create_from_ids(
+        mpi,
+        node_group,
+        n_evens,
+        evens,
+        &node_even_group
+    );
     if (rc != QV_SUCCESS) {
-        ers = "qvi_mpi_group_incl() failed";
+        ers = "qvi_mpi_group_create_from_ids() failed";
         goto out;
     }
-    if (even_group) {
-        printf("Task %d says hello from even group!\n", task_lid);
+    if (node_even_group) {
+        printf(
+            "GID=%" PRId64 " Task %d says hello from node even group!\n",
+            task_gid,
+            task_lid
+        );
     }
+
+    qvi_mpi_group_t *world_group;
+    rc = qvi_mpi_group_create_from_mpi_comm(mpi, comm, &world_group);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_mpi_group_create_from_mpi_comm() failed";
+        goto out;
+    }
+    int world_group_id, would_group_size;
+    rc = qvi_mpi_group_size(mpi, world_group, &would_group_size);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_mpi_group_size() failed";
+        goto out;
+    }
+    rc = qvi_mpi_group_id(mpi, world_group, &world_group_id);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_mpi_group_id() failed";
+        goto out;
+    }
+    printf(
+        "GID=%" PRId64 " World group task %d of %d says hello!\n",
+        task_gid,
+        world_group_id,
+        would_group_size
+    );
 
     rc = qvi_mpi_finalize(mpi);
     if (rc != QV_SUCCESS) {
@@ -119,8 +161,9 @@ main(
         goto out;
     }
 out:
+    qvi_mpi_group_destruct(world_group);
     qvi_mpi_group_destruct(node_group);
-    qvi_mpi_group_destruct(even_group);
+    qvi_mpi_group_destruct(node_even_group);
     qvi_mpi_destruct(mpi);
     qvi_task_destruct(task);
     if (evens) free(evens);

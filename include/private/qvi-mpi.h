@@ -108,6 +108,16 @@ qvi_mpi_group_size(
  *
  */
 int
+qvi_mpi_group_id(
+    qvi_mpi_t *mpi,
+    const qvi_mpi_group_t *group,
+    int *id
+);
+
+/**
+ *
+ */
+int
 qvi_mpi_group_lookup_by_id(
     qvi_mpi_t *mpi,
     qvi_mpi_group_id_t id,
@@ -118,12 +128,22 @@ qvi_mpi_group_lookup_by_id(
  *
  */
 int
-qvi_mpi_group_incl(
+qvi_mpi_group_create_from_ids(
     qvi_mpi_t *mpi,
     const qvi_mpi_group_t *group,
-    int n_ids,
-    const int *ids,
+    int num_group_ids,
+    const int *group_ids,
     qvi_mpi_group_t **maybe_group
+);
+
+/**
+ *
+ */
+int
+qvi_mpi_group_create_from_mpi_comm(
+    qvi_mpi_t *mpi,
+    MPI_Comm comm,
+    qvi_mpi_group_t **new_group
 );
 
 #ifdef __cplusplus

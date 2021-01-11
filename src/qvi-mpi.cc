@@ -43,7 +43,7 @@ struct qvi_mpi_s {
     int world_size = 0;
     /** Duplicate of MPI_COMM_SELF */
     MPI_Comm self_comm = MPI_COMM_NULL;
-    /** Duplicate of MPI_COMM_WORLD */
+    /** Duplicate of initializing communicator */
     MPI_Comm world_comm = MPI_COMM_NULL;
     /** Node communicator */
     MPI_Comm node_comm = MPI_COMM_NULL;
@@ -81,6 +81,27 @@ next_group_tab_id(
 }
 
 /**
+ * Creates 'node' communicators from an arbitrary MPI communicator.
+ */
+static int
+mpi_comm_to_new_node_comm(
+    MPI_Comm comm,
+    MPI_Comm *node_comm
+) {
+    int rc = MPI_Comm_split_type(
+        comm,
+        MPI_COMM_TYPE_SHARED,
+        0,
+        MPI_INFO_NULL,
+        node_comm
+    );
+    if (rc != MPI_SUCCESS) {
+        qvi_log_error("MPI_Comm_split_type(MPI_COMM_TYPE_SHARED) failed");
+    }
+    return rc;
+}
+
+/**
  * Creates a QV group from an MPI communicator.
  */
 static int
@@ -90,31 +111,32 @@ group_create_from_mpi_comm(
 ) {
     char const *ers = nullptr;
 
+    new_group->mpi_comm = comm;
+
     int rc = MPI_Comm_group(
-        comm,
+        new_group->mpi_comm,
         &new_group->mpi_group
     );
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_group() failed";
         goto out;
     }
-    rc = MPI_Comm_rank(
-        comm,
+    rc = MPI_Group_rank(
+        new_group->mpi_group,
         &new_group->group_id
     );
     if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_rank() failed";
+        ers = "MPI_Group_rank() failed";
         goto out;
     }
-    rc = MPI_Comm_size(
-        comm,
+    rc = MPI_Group_size(
+        new_group->mpi_group,
         &new_group->group_size
     );
     if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_size() failed";
+        ers = "MPI_Group_size() failed";
         goto out;
     }
-    new_group->mpi_comm = comm;
 out:
     if (ers) {
         qvi_log_error(ers);
@@ -129,7 +151,7 @@ out:
 static int
 group_create_from_mpi_group(
     qvi_mpi_t *mpi,
-    MPI_Comm group,
+    MPI_Group group,
     qvi_mpi_group_t **maybe_group
 ) {
     char const *ers = nullptr;
@@ -159,7 +181,10 @@ group_create_from_mpi_group(
         ers = "qvi_mpi_group_construct() failed";
         goto out;
     }
-    qvrc = group_create_from_mpi_comm(group_comm, *maybe_group);
+    qvrc = group_create_from_mpi_comm(
+        group_comm,
+        *maybe_group
+    );
     if (qvrc != QV_SUCCESS) {
         ers = "group_create_from_mpi_comm() failed";
         goto out;
@@ -265,36 +290,34 @@ create_intrinsic_comms(
 ) {
     if (!mpi) return QV_ERR_INVLD_ARG;
 
-    int rc;
+    char const *ers = nullptr;
     // MPI_COMM_SELF duplicate
-    rc = MPI_Comm_dup(
+    int rc = MPI_Comm_dup(
         MPI_COMM_SELF,
         &mpi->self_comm
     );
     if (rc != MPI_SUCCESS) {
-        qvi_log_error("MPI_Comm_dup(MPI_COMM_SELF) failed");
-        return rc;
+        ers = "MPI_Comm_dup(MPI_COMM_SELF) failed";
+        goto out;
     }
-    // MPI_COMM_WORLD duplicate
+    // 'World' (aka initializing communicator) duplicate
     rc = MPI_Comm_dup(
-        MPI_COMM_WORLD,
+        comm,
         &mpi->world_comm
     );
     if (rc != MPI_SUCCESS) {
-        qvi_log_error("MPI_Comm_dup(MPI_COMM_WORLD) failed");
-        return rc;
+        ers = "MPI_Comm_dup() failed";
+        goto out;
     }
     // Node communicator
-    rc = MPI_Comm_split_type(
-        comm,
-        MPI_COMM_TYPE_SHARED,
-        0,
-        MPI_INFO_NULL,
-        &mpi->node_comm
-    );
+    rc = mpi_comm_to_new_node_comm(comm, &mpi->node_comm);
     if (rc != MPI_SUCCESS) {
-        qvi_log_error("MPI_Comm_split_type(MPI_COMM_TYPE_SHARED) failed");
-        return rc;
+        ers = "mpi_comm_to_new_node_comm() failed";
+        goto out;
+    }
+out:
+    if (ers) {
+        qvi_log_error(ers);
     }
     return rc;
 }
@@ -306,12 +329,18 @@ create_intrinsic_groups(
     char const *ers = nullptr;
 
     qvi_mpi_group_t self_group, node_group;
-    int rc = group_create_from_mpi_comm(mpi->self_comm, &self_group);
+    int rc = group_create_from_mpi_comm(
+        mpi->self_comm,
+        &self_group
+    );
     if (rc != QV_SUCCESS) {
         ers = "group_create_from_mpi_comm(self_comm) failed";
         goto out;
     }
-    rc = group_create_from_mpi_comm(mpi->node_comm, &node_group);
+    rc = group_create_from_mpi_comm(
+        mpi->node_comm,
+        &node_group
+    );
     if (rc != QV_SUCCESS) {
         ers = "group_create_from_mpi_comm(node_comm) failed";
         goto out;
@@ -354,13 +383,13 @@ qvi_mpi_init(
     // MPI is initialized.
     rc = MPI_Comm_size(comm, &mpi->world_size);
     if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_size(MPI_COMM_WORLD) failed";
+        ers = "MPI_Comm_size() failed";
         goto out;
     }
     int world_id;
     rc = MPI_Comm_rank(comm, &world_id);
     if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_rank(MPI_COMM_WORLD) failed";
+        ers = "MPI_Comm_rank() failed";
         goto out;
     }
     rc = create_intrinsic_comms(mpi, comm);
@@ -445,6 +474,17 @@ qvi_mpi_group_size(
 }
 
 int
+qvi_mpi_group_id(
+    qvi_mpi_t *mpi,
+    const qvi_mpi_group_t *group,
+    int *id
+) {
+    if (!mpi || !group || !id) return QV_ERR_INVLD_ARG;
+    *id = group->group_id;
+    return QV_SUCCESS;
+}
+
+int
 qvi_mpi_group_lookup_by_id(
     qvi_mpi_t *mpi,
     qvi_mpi_group_id_t id,
@@ -461,14 +501,14 @@ qvi_mpi_group_lookup_by_id(
 }
 
 int
-qvi_mpi_group_incl(
+qvi_mpi_group_create_from_ids(
     qvi_mpi_t *mpi,
     const qvi_mpi_group_t *group,
-    int n_ids,
-    const int *ids,
+    int num_group_ids,
+    const int *group_ids,
     qvi_mpi_group_t **maybe_group
 ) {
-    if (!mpi || !group || n_ids < 0 || !ids || !maybe_group) {
+    if (!mpi || !group || num_group_ids < 0 || !group_ids || !maybe_group) {
         return QV_ERR_INVLD_ARG;
     }
 
@@ -478,8 +518,8 @@ qvi_mpi_group_incl(
     MPI_Group new_mpi_group;
     int rc = MPI_Group_incl(
         group->mpi_group,
-        n_ids,
-        ids,
+        num_group_ids,
+        group_ids,
         &new_mpi_group
     );
     if (rc != MPI_SUCCESS) {
@@ -497,7 +537,7 @@ qvi_mpi_group_incl(
         goto out;
     }
     // Not in the group and no errors.
-    if (!*maybe_group) {
+    if (*maybe_group == nullptr) {
         return QV_SUCCESS;
     }
     // In the group.
@@ -511,6 +551,52 @@ out:
         qvi_log_error(ers);
     }
     return qvrc;
+}
+
+int
+qvi_mpi_group_create_from_mpi_comm(
+    qvi_mpi_t *mpi,
+    MPI_Comm comm,
+    qvi_mpi_group_t **new_group
+) {
+    if (!mpi || !new_group) return QV_ERR_INVLD_ARG;
+
+    char const *ers = nullptr;
+    MPI_Comm node_comm = MPI_COMM_NULL;
+
+    *new_group = nullptr;
+    int rc = qvi_mpi_group_construct(new_group);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_mpi_group_construct() failed";
+        goto out;
+    }
+    rc = mpi_comm_to_new_node_comm(comm, &node_comm);
+    if (rc != MPI_SUCCESS) {
+        ers = "mpi_comm_to_new_node_comm() failed";
+        rc = QV_ERR_MPI;
+        goto out;
+    }
+    rc = group_create_from_mpi_comm(
+        node_comm,
+        *new_group
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "group_create_from_mpi_comm() failed";
+        goto out;
+    }
+    rc = group_add(mpi, *new_group);
+    if (rc != QV_SUCCESS) {
+        ers = "group_add() failed";
+        goto out;
+    }
+out:
+    if (ers) {
+        qvi_mpi_group_destruct(*new_group);
+        if (node_comm != MPI_COMM_NULL) {
+            MPI_Comm_free(&node_comm);
+        }
+    }
+    return rc;
 }
 
 /*
