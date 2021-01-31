@@ -137,7 +137,7 @@ target_link_libraries(
     qvi-rpc
     qvi-utils
     qvi-hwloc
-    nng
+    zmq
 )
 
 ################################################################################

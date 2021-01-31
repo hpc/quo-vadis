@@ -77,17 +77,18 @@ target_link_libraries(
     quo-vadis
 )
 
+# TODO(skg) Cleanup after failure: test-rmi can still be running on failure.
 add_test(
     NAME
       rmi
     COMMAND
       bash -c "export URL=\"tcp://127.0.0.1:55995\"     && \
       (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -s &)  && \
-      sleep 2                                           && \
       (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &)  && \
       (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &)  && \
       (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &)  && \
        ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c     && \
+      sleep 1                                           && \
       killall test-rmi"
 )
 
@@ -123,7 +124,7 @@ set_tests_properties(
     hwloc
     rmi
     scopes
-    PROPERTIES TIMEOUT 15
+    PROPERTIES TIMEOUT 10
 )
 
 # vim: ts=4 sts=4 sw=4 expandtab

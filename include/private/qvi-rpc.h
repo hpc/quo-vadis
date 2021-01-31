@@ -58,11 +58,11 @@ typedef uint8_t qvi_rpc_arg_type_t;
 #define QVI_RPC_TYPE_BITM (0x01 << 2)
 
 /**
- * The underlying type used to store arguments for RPC calls. If the number of
- * arguments required to handle a particular function call ever exceeds the
- * storage provided, then update array size of the given type.
+ * The underlying storage type used for RPC calls. If the number of arguments
+ * required to handle a particular function call ever exceeds the storage
+ * provided, then update array size of the given type.
  */
-typedef struct qvi_rpc_fun_args_s {
+typedef struct qvi_rpc_fun_data_s {
     // Return code from underlying call from RPC dispatch.
     int rc;
     // Function argument storage.
@@ -80,7 +80,7 @@ typedef struct qvi_rpc_fun_args_s {
     uint8_t bitm_i;
     // Pointer to initialized qvi_hwloc_t instance.
     qvi_hwloc_t *hwloc;
-} qvi_rpc_fun_args_t;
+} qvi_rpc_fun_data_t;
 
 /**
  * Returns the maximum number of arguments that can be packed into a
@@ -131,15 +131,12 @@ qvi_rpc_server_destruct(
 );
 
 /**
- * qdepth is the maximum number of outstanding requests we can handle.  It
- * represents outstanding work items.  Select a small number to reduce memory
- * usage.
+ *
  */
 int
 qvi_rpc_server_start(
     qvi_rpc_server_t *server,
-    const char *url,
-    uint16_t qdepth
+    const char *url
 );
 
 /**
@@ -178,7 +175,7 @@ qvi_rpc_client_req(
 int
 qvi_rpc_client_rep(
     qvi_rpc_client_t *client,
-    qvi_rpc_fun_args_t *fun_args
+    qvi_rpc_fun_data_t *fun_args
 );
 
 #ifdef __cplusplus

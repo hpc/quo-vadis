@@ -77,10 +77,8 @@ qvi_rmi_server_start(
 
     int rc = QV_SUCCESS;
     char const *ers = nullptr;
-    // TODO(skg) Get this value by some nice means.
-    const uint16_t qdepth = 10;
 
-    rc = qvi_rpc_server_start(server->rpcserv, url, qdepth);
+    rc = qvi_rpc_server_start(server->rpcserv, url);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rpc_server_start() failed";
         goto out;
@@ -170,16 +168,16 @@ qvi_rmi_task_get_cpubind(
         goto out;
     }
 
-    qvi_rpc_fun_args_t fun_args;
+    qvi_rpc_fun_data_t fun_data;
     rc = qvi_rpc_client_rep(
         client->rcpcli,
-        &fun_args
+        &fun_data
     );
     if (rc != QV_SUCCESS) {
         ers = "qvi_rpc_client_rep() failed";
         goto out;
     }
-    hwloc_bitmap_sscanf(bitmap, fun_args.bitm_args[0]);
+    hwloc_bitmap_sscanf(bitmap, fun_data.bitm_args[0]);
     *out_bitmap = bitmap;
 out:
     if (ers) {

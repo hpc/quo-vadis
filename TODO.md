@@ -1,5 +1,6 @@
 # TODO
 
+* Remove NNG if ZeroMQ works out.
 * Implement transparent loading of synthetic hardware topologies for development
   purposes.
 * Implement a qvid distribution service.
@@ -8,6 +9,7 @@
   variable that specifies the connection information). I'm not a huge fan of
   this, but it's certainly the easiest route.
     - Parse /proc/net/tcp?
+    - https://zguide.zeromq.org/docs/chapter8/#Network-Discovery
 * Focus on writing a test that demonstrates hierarchical RMI.
 * Improve logger flushing.
 * Consider turning off C++ exceptions.
