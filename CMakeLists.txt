@@ -80,7 +80,6 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
 
 # Internal, third-party packages
 include(cmake/spdlog.cmake)
-include(cmake/nng.cmake)
 include(cmake/hwloc.cmake)
 
 # Add our source
