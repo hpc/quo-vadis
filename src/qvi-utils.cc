@@ -22,7 +22,7 @@
 char *
 qvi_strerr(int ec)
 {
-    static thread_local char sb[4096];
+    static thread_local char sb[1024];
     return strerror_r(ec, sb, sizeof(sb));
 }
 

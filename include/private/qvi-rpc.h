@@ -127,7 +127,7 @@ qvi_rpc_server_construct(
  */
 void
 qvi_rpc_server_destruct(
-    qvi_rpc_server_t *server
+    qvi_rpc_server_t **server
 );
 
 /**
@@ -152,7 +152,7 @@ qvi_rpc_client_construct(
  */
 void
 qvi_rpc_client_destruct(
-    qvi_rpc_client_t *client
+    qvi_rpc_client_t **client
 );
 
 /**

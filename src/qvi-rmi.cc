@@ -64,7 +64,7 @@ qvi_rmi_server_destruct(
 ) {
     if (!server) return;
 
-    qvi_rpc_server_destruct(server->rpcserv);
+    qvi_rpc_server_destruct(&server->rpcserv);
     free(server);
 }
 
@@ -128,7 +128,7 @@ qvi_rmi_client_destruct(
 ) {
     if (!client) return;
 
-    qvi_rpc_client_destruct(client->rcpcli);
+    qvi_rpc_client_destruct(&client->rcpcli);
     free(client);
 }
 
