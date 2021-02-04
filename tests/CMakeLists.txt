@@ -45,6 +45,16 @@ target_link_libraries(
 #    mpi
 #    test-mpi
 #)
+
+add_executable(
+    test-init-mpi
+    test-init-mpi.c
+)
+
+target_link_libraries(
+    test-init-mpi
+    quo-vadis
+)
 endif(MPI_FOUND)
 
 ################################################################################

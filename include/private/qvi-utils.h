@@ -57,7 +57,7 @@ qvi_byte_buffer_construct(
  */
 void
 qvi_byte_buffer_destruct(
-    qvi_byte_buffer_t *buff
+    qvi_byte_buffer_t **buff
 );
 
 /**

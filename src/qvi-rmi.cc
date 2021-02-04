@@ -1,8 +1,8 @@
 /*
- * Copyright (c)      2020 Triad National Security, LLC
+ * Copyright (c) 2020-2021 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c)      2020 Lawrence Livermore National Security, LLC
+ * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -20,25 +20,23 @@
 #include "private/qvi-log.h"
 
 struct qvi_rmi_server_s {
-    qvi_rpc_server_t *rpcserv;
+    qvi_rpc_server_t *rpcserv = nullptr;
 };
 
 struct qvi_rmi_client_s {
-    qvi_rpc_client_t *rcpcli;
+    qvi_rpc_client_t *rcpcli = nullptr;
 };
 
 int
 qvi_rmi_server_construct(
     qvi_rmi_server_t **server
 ) {
-    if (!server) return QV_ERR_INVLD_ARG;
-
     int rc = QV_SUCCESS;
     char const *ers = nullptr;
 
-    qvi_rmi_server_t *iserver = (qvi_rmi_server_t *)calloc(1, sizeof(*iserver));
+    qvi_rmi_server_t *iserver = qvi_new qvi_rmi_server_t;
     if (!iserver) {
-        qvi_log_error("calloc() failed");
+        qvi_log_error("memory allocation failed");
         return QV_ERR_OOR;
     }
 
@@ -50,22 +48,22 @@ qvi_rmi_server_construct(
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        qvi_rmi_server_destruct(iserver);
-        *server = nullptr;
-        return rc;
+        qvi_rmi_server_destruct(&iserver);
     }
     *server = iserver;
-    return QV_SUCCESS;
+    return rc;
 }
 
 void
 qvi_rmi_server_destruct(
-    qvi_rmi_server_t *server
+    qvi_rmi_server_t **server
 ) {
-    if (!server) return;
+    qvi_rmi_server_t *iserver = *server;
+    if (!iserver) return;
 
-    qvi_rpc_server_destruct(&server->rpcserv);
-    free(server);
+    qvi_rpc_server_destruct(&iserver->rpcserv);
+    delete iserver;
+    *server = nullptr;
 }
 
 int
@@ -86,7 +84,6 @@ qvi_rmi_server_start(
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        qvi_rmi_server_destruct(server);
     }
     return rc;
 }
@@ -100,9 +97,9 @@ qvi_rmi_client_construct(
     int rc = QV_SUCCESS;
     char const *ers = nullptr;
 
-    qvi_rmi_client_t *icli = (qvi_rmi_client_t *)calloc(1, sizeof(*icli));
+    qvi_rmi_client_t *icli = qvi_new qvi_rmi_client_t;
     if (!icli) {
-        qvi_log_error("calloc() failed");
+        qvi_log_error("memory allocation failed");
         return QV_ERR_OOR;
     }
 
@@ -114,22 +111,21 @@ qvi_rmi_client_construct(
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        qvi_rmi_client_destruct(icli);
-        *client = nullptr;
-        return rc;
+        qvi_rmi_client_destruct(&icli);
     }
     *client = icli;
-    return QV_SUCCESS;
+    return rc;
 }
 
 void
 qvi_rmi_client_destruct(
-    qvi_rmi_client_t *client
+    qvi_rmi_client_t **client
 ) {
-    if (!client) return;
-
-    qvi_rpc_client_destruct(&client->rcpcli);
-    free(client);
+    qvi_rmi_client_t *iclient = *client;
+    if (!iclient) return;
+    qvi_rpc_client_destruct(&iclient->rcpcli);
+    delete iclient;
+    *client = nullptr;
 }
 
 int

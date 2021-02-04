@@ -10,36 +10,19 @@
  */
 
 /**
- * @file qv-mpi.h
+ * @file qv-types.h
  */
 
-#ifndef QUO_VADIS_MPI_H
-#define QUO_VADIS_MPI_H
-
-#include "quo-vadis/qv-types.h"
-
-#include "mpi.h"
+#ifndef QUO_VADIS_TYPES_H
+#define QUO_VADIS_TYPES_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**
- *
- */
-int
-qv_mpi_create(
-    qv_context_t **ctx,
-    MPI_Comm comm
-);
-
-/**
- *
- */
-int
-qv_mpi_free(
-    qv_context_t *ctx
-);
+/** Opaque quo-vadis context. */
+struct qv_context_s;
+typedef struct qv_context_s qv_context_t;
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,6 @@
 # TODO
 
+* Implement proper server shutdown.
 * Fix spdlog build: uses GCC even if Clang is specified at top level.
 * Implement transparent loading of synthetic hardware topologies for development
   purposes.

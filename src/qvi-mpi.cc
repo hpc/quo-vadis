@@ -1,8 +1,8 @@
 /*
- * Copyright (c)      2020 Triad National Security, LLC
+ * Copyright (c) 2020-2021 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c)      2020 Lawrence Livermore National Security, LLC
+ * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -17,7 +17,6 @@
 #include "private/qvi-mpi.h"
 #include "private/qvi-task.h"
 #include "private/qvi-log.h"
-#include "quo-vadis/qv-rc.h"
 
 using group_tab_t = std::unordered_map<qvi_mpi_group_id_t, qvi_mpi_group_t>;
 
@@ -223,8 +222,6 @@ int
 qvi_mpi_construct(
     qvi_mpi_t **mpi
 ) {
-    if (!mpi) return QV_ERR_INVLD_ARG;
-
     int rc = QV_SUCCESS;
     char const *ers = nullptr;
 
@@ -235,11 +232,7 @@ qvi_mpi_construct(
         goto out;
     }
     // Task
-    rc = qvi_task_construct(&impi->task);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_task_construct() failed";
-        goto out;
-    }
+    // We don't own task memory. Set in qvi_mpi_init().
     // Groups
     impi->group_tab = qvi_new group_tab_t;
     if (!impi->group_tab) {
@@ -247,22 +240,23 @@ qvi_mpi_construct(
         rc = QV_ERR_OOR;
         goto out;
     }
-    *mpi = impi;
 out:
     if (ers) {
         qvi_log_error(ers);
-        qvi_mpi_destruct(impi);
+        qvi_mpi_destruct(&impi);
     }
+    *mpi = impi;
     return rc;
 }
 
 void
 qvi_mpi_destruct(
-    qvi_mpi_t *mpi
+    qvi_mpi_t **mpi
 ) {
-    if (!mpi) return;
-    if (mpi->group_tab) {
-        for (auto &i : *mpi->group_tab) {
+    qvi_mpi_t *impi = *mpi;
+    if (!impi) return;
+    if (impi->group_tab) {
+        for (auto &i : *impi->group_tab) {
             auto &mpi_group = i.second.mpi_group;
             if (mpi_group != MPI_GROUP_NULL) {
                 MPI_Group_free(&mpi_group);
@@ -272,12 +266,13 @@ qvi_mpi_destruct(
                 MPI_Comm_free(&mpi_comm);
             }
         }
-        delete mpi->group_tab;
+        delete impi->group_tab;
     }
-    if (mpi->world_comm != MPI_COMM_NULL) {
-        MPI_Comm_free(&mpi->world_comm);
+    if (impi->world_comm != MPI_COMM_NULL) {
+        MPI_Comm_free(&impi->world_comm);
     }
-    delete mpi;
+    delete impi;
+    *mpi = nullptr;
 }
 
 /**
@@ -288,8 +283,6 @@ create_intrinsic_comms(
     qvi_mpi_t *mpi,
     MPI_Comm comm
 ) {
-    if (!mpi) return QV_ERR_INVLD_ARG;
-
     char const *ers = nullptr;
     // MPI_COMM_SELF duplicate
     int rc = MPI_Comm_dup(
@@ -368,8 +361,6 @@ qvi_mpi_init(
     qv_task_t *task,
     MPI_Comm comm
 ) {
-    if (!mpi || !task) return QV_ERR_INVLD_ARG;
-
     char const *ers = nullptr;
     int inited;
     // If MPI isn't initialized, then we can't continue.
@@ -441,8 +432,6 @@ int
 qvi_mpi_group_construct(
     qvi_mpi_group_t **group
 ) {
-    if (!group) return QV_ERR_INVLD_ARG;
-
     int rc = QV_SUCCESS;
 
     qvi_mpi_group_t *igroup = qvi_new qvi_mpi_group_t;
@@ -456,10 +445,12 @@ qvi_mpi_group_construct(
 
 void
 qvi_mpi_group_destruct(
-    qvi_mpi_group_t *group
+    qvi_mpi_group_t **group
 ) {
-    if (!group) return;
-    delete group;
+    qvi_mpi_group_t *igroup = *group;
+    if (!igroup) return;
+    delete igroup;
+    *group = nullptr;
 }
 
 int
@@ -559,12 +550,9 @@ qvi_mpi_group_create_from_mpi_comm(
     MPI_Comm comm,
     qvi_mpi_group_t **new_group
 ) {
-    if (!mpi || !new_group) return QV_ERR_INVLD_ARG;
-
     char const *ers = nullptr;
     MPI_Comm node_comm = MPI_COMM_NULL;
 
-    *new_group = nullptr;
     int rc = qvi_mpi_group_construct(new_group);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_group_construct() failed";
@@ -591,7 +579,7 @@ qvi_mpi_group_create_from_mpi_comm(
     }
 out:
     if (ers) {
-        qvi_mpi_group_destruct(*new_group);
+        qvi_mpi_group_destruct(new_group);
         if (node_comm != MPI_COMM_NULL) {
             MPI_Comm_free(&node_comm);
         }

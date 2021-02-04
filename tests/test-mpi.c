@@ -1,8 +1,8 @@
 /*
- * Copyright (c)      2020 Triad National Security, LLC
+ * Copyright (c) 2020-2021 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c)      2020 Lawrence Livermore National Security, LLC
+ * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -23,6 +23,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+
+// TODO(skg) Cleanup: this is a mess.
 
 int
 main(
@@ -161,11 +163,11 @@ main(
         goto out;
     }
 out:
-    qvi_mpi_group_destruct(world_group);
-    qvi_mpi_group_destruct(node_group);
-    qvi_mpi_group_destruct(node_even_group);
-    qvi_mpi_destruct(mpi);
-    qvi_task_destruct(task);
+    qvi_mpi_group_destruct(&world_group);
+    qvi_mpi_group_destruct(&node_group);
+    qvi_mpi_group_destruct(&node_even_group);
+    qvi_task_destruct(&task);
+    qvi_mpi_destruct(&mpi);
     if (evens) free(evens);
     MPI_Finalize();
     if (ers) {

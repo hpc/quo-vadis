@@ -36,7 +36,7 @@ qvi_task_construct(
  */
 void
 qvi_task_destruct(
-    qv_task_t *task
+    qv_task_t **task
 );
 
 /**

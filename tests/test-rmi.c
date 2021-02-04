@@ -1,8 +1,8 @@
 /*
- * Copyright (c)      2020 Triad National Security, LLC
+ * Copyright (c) 2020-2021 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c)      2020 Lawrence Livermore National Security, LLC
+ * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -46,10 +46,8 @@ server(
     }
     end = qvi_time();
     printf("# [%d] Server Start Time %lf seconds\n", getpid(), end - start);
-    // Let the main thread take a snooze while the server does its thing.
-    sleep(10);
 out:
-    qvi_rmi_server_destruct(server);
+    qvi_rmi_server_destruct(&server);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         return 1;
@@ -91,7 +89,7 @@ client(
     hwloc_bitmap_free(bitmap);
     free(res);
 out:
-    qvi_rmi_client_destruct(client);
+    qvi_rmi_client_destruct(&client);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         return 1;

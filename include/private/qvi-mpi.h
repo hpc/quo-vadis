@@ -1,8 +1,8 @@
 /*
- * Copyright (c)      2020 Triad National Security, LLC
+ * Copyright (c) 2020-2021 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c)      2020 Lawrence Livermore National Security, LLC
+ * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -57,7 +57,7 @@ qvi_mpi_construct(
  */
 void
 qvi_mpi_destruct(
-    qvi_mpi_t *mpi
+    qvi_mpi_t **mpi
 );
 
 /**
@@ -91,7 +91,7 @@ qvi_mpi_group_construct(
  */
 void
 qvi_mpi_group_destruct(
-    qvi_mpi_group_t *group
+    qvi_mpi_group_t **group
 );
 
 /**

@@ -379,7 +379,7 @@ server_msg_recv(
 }
 
 /**
- * TODO(skg) Lots of error path cleanup needed.
+ *
  */
 static int
 server_msg_send(
@@ -417,9 +417,9 @@ server_go(
     qvi_rpc_server_t *server
 ) {
     int rc;
+    qvi_rpc_fun_data_t fun_data;
 
     while (true) {
-        qvi_rpc_fun_data_t fun_data;
         rc = server_msg_recv(server, &fun_data);
         if (rc != QV_SUCCESS) return rc;
         rc = server_msg_send(server, &fun_data);
@@ -472,7 +472,7 @@ qvi_rpc_server_start(
         goto out;
     }
 
-    // TODO(skg) Create in thread.
+    // TODO(skg) Add option to create in thread?
     rc = server_go(server);
     if (rc != QV_SUCCESS) {
         ers = "server_go() failed";
@@ -518,8 +518,7 @@ client_rpc_pack_msg_prep(
     qvi_msg_header_t msghdr = {funid, argv};
     rc = client_msg_append_header(*buff, &msghdr);
     if (rc != QV_SUCCESS) {
-        qvi_byte_buffer_destruct(*buff);
-        *buff = nullptr;
+        qvi_byte_buffer_destruct(buff);
     }
     return rc;
 }
@@ -595,8 +594,7 @@ client_rpc_pack(
 out:
     if (ers) {
         qvi_log_error("{}", ers);
-        qvi_byte_buffer_destruct(*buff);
-        *buff = nullptr;
+        qvi_byte_buffer_destruct(buff);
     }
     return rc;
 }
@@ -609,7 +607,8 @@ client_msg_free_byte_buffer_cb(
     void *,
     void *hint
 ) {
-    qvi_byte_buffer_destruct((qvi_byte_buffer_t *)hint);
+    qvi_byte_buffer_t *buff = (qvi_byte_buffer_t *)hint;
+    qvi_byte_buffer_destruct(&buff);
 }
 
 int

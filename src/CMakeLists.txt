@@ -154,6 +154,8 @@ add_library(
     ../include/quo-vadis/qv-group.h
     qv-scope.cc
     ../include/quo-vadis/qv-scope.h
+    qv-mpi.cc
+    ../include/quo-vadis/qv-mpi.h
 )
 
 target_include_directories(

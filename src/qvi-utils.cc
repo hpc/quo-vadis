@@ -59,30 +59,37 @@ int
 qvi_byte_buffer_construct(
     qvi_byte_buffer_t **buff
 ) {
+    int rc = QV_SUCCESS;
+
     qvi_byte_buffer_t *ibuff = qvi_new qvi_byte_buffer_t;
     if (!ibuff) {
-        *buff = nullptr;
-        return QV_ERR_OOR;
+        rc = QV_ERR_OOR;
+        goto out;
     }
 
     ibuff->capacity = ibuff->min_growth;
     ibuff->data = calloc(ibuff->capacity, sizeof(uint8_t));
     if (!ibuff->data) {
-        qvi_byte_buffer_destruct(ibuff);
-        return QV_ERR_OOR;
+        rc = QV_ERR_OOR;
+        goto out;
     }
-
+out:
+    if (rc != QV_SUCCESS) {
+        qvi_byte_buffer_destruct(&ibuff);
+    }
     *buff = ibuff;
     return QV_SUCCESS;
 }
 
 void
 qvi_byte_buffer_destruct(
-    qvi_byte_buffer_t *buff
+    qvi_byte_buffer_t **buff
 ) {
-    if (!buff) return;
-    if (buff->data) free(buff->data);
-    delete buff;
+    qvi_byte_buffer_t *ibuff = *buff;
+    if (!ibuff) return;
+    if (ibuff->data) free(ibuff->data);
+    delete ibuff;
+    *buff = nullptr;
 }
 
 void *
