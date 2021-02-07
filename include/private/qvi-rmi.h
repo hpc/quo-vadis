@@ -11,12 +11,14 @@
 
 /**
  * @file qvi-rmi.h
+ *
+ * Resource Management and Inquiry
  */
 
 #ifndef QVI_RMI_H
 #define QVI_RMI_H
 
-#include "private/qvi-rpc.h"
+#include "private/qvi-hwloc.h"
 
 #include <unistd.h>
 

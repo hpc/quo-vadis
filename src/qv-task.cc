@@ -17,8 +17,6 @@
 #include "private/qvi-task.h"
 #include "private/qvi-log.h"
 
-#include "quo-vadis/qv-task.h"
-
 static const int qvi_task_id_invalid = -1;
 
 // Type definition

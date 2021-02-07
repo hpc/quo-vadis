@@ -1,8 +1,8 @@
 #
-# Copyright (c)      2020 Triad National Security, LLC
+# Copyright (c) 2020-2021 Triad National Security, LLC
 #                         All rights reserved.
 #
-# Copyright (c)      2020 Lawrence Livermore National Security, LLC
+# Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
 #                         All rights reserved.
 #
 # This file is part of the quo-vadis project. See the LICENSE file at the
@@ -15,8 +15,8 @@ add_library(
     qvi-utils
     OBJECT
     qvi-utils.cc
-    qvi-log.cc
     ../include/private/qvi-utils.h
+    qvi-log.cc
     ../include/private/qvi-log.h
 )
 
@@ -69,9 +69,9 @@ target_link_libraries(
 add_library(
     qvi-mpi
     OBJECT
+    ../include/quo-vadis.h
     qvi-mpi.cc
     ../include/private/qvi-mpi.h
-    ../include/quo-vadis/qv-mpi.h
 )
 
 target_include_directories(
@@ -95,9 +95,9 @@ target_link_libraries(
 add_library(
     qvi-hwloc
     OBJECT
+    ../include/quo-vadis.h
     qvi-hwloc.cc
     ../include/private/qvi-hwloc.h
-    ../include/quo-vadis/qv-hwloc.h
 )
 
 target_include_directories(
@@ -145,17 +145,14 @@ target_link_libraries(
 # TODO(skg) Add an MPI variant of the library. For now, just include MPI bits.
 add_library(
     quo-vadis
+    ../include/quo-vadis.h
     qv-task.cc
     ../include/private/qvi-task.h
-    ../include/quo-vadis/qv-task.h
+    qv-group.cc
+    qv-scope.cc
     qvi-rmi.cc
     ../include/private/qvi-rmi.h
-    qv-group.cc
-    ../include/quo-vadis/qv-group.h
-    qv-scope.cc
-    ../include/quo-vadis/qv-scope.h
     qv-mpi.cc
-    ../include/quo-vadis/qv-mpi.h
 )
 
 target_include_directories(
@@ -170,10 +167,10 @@ target_include_directories(
 target_link_libraries(
     quo-vadis
     qvi-utils
-    qvi-pmi
-    qvi-mpi
     qvi-hwloc
     qvi-rpc
+    qvi-pmi
+    qvi-mpi
 )
 
 install(TARGETS quo-vadis DESTINATION lib)

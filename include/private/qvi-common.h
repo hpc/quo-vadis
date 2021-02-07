@@ -1,8 +1,8 @@
 /*
- * Copyright (c)      2020 Triad National Security, LLC
+ * Copyright (c) 2020-2021 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c)      2020 Lawrence Livermore National Security, LLC
+ * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -17,16 +17,16 @@
 #define QVI_COMMON_H
 
 #include "quo-vadis/config.h"
-#include "quo-vadis/qv-rc.h"
-
 #include "private/qvi-macros.h"
+
+#include "quo-vadis.h"
 
 #include <assert.h>
 #include <errno.h>
-#include <stdlib.h>
-#include <stdint.h>
 #include <inttypes.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/syscall.h>
@@ -34,6 +34,8 @@
 #include <unistd.h>
 
 #ifdef __cplusplus
+#include "private/qvi-log.h"
+
 #include <unordered_map>
 #include <new>
 #endif

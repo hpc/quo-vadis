@@ -14,7 +14,6 @@
  */
 
 #include "private/qvi-common.h"
-#include "quo-vadis/qv-scope.h"
 #include "private/qvi-hwloc.h"
 #include "private/qvi-log.h"
 

@@ -17,7 +17,6 @@
 #define QVI_TASK_H
 
 #include "private/qvi-common.h"
-#include "quo-vadis/qv-task.h"
 
 #ifdef __cplusplus
 extern "C" {

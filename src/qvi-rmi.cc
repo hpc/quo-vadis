@@ -17,7 +17,7 @@
 
 #include "private/qvi-common.h"
 #include "private/qvi-rmi.h"
-#include "private/qvi-log.h"
+#include "private/qvi-rpc.h"
 
 struct qvi_rmi_server_s {
     qvi_rpc_server_t *rpcserv = nullptr;
@@ -71,8 +71,6 @@ qvi_rmi_server_start(
     qvi_rmi_server_t *server,
     const char *url
 ) {
-    if (!server) return QV_ERR_INVLD_ARG;
-
     int rc = QV_SUCCESS;
     char const *ers = nullptr;
 
@@ -92,8 +90,6 @@ int
 qvi_rmi_client_construct(
     qvi_rmi_client_t **client
 ) {
-    if (!client) return QV_ERR_INVLD_ARG;
-
     int rc = QV_SUCCESS;
     char const *ers = nullptr;
 
@@ -142,8 +138,6 @@ qvi_rmi_task_get_cpubind(
     pid_t who,
     hwloc_bitmap_t *out_bitmap
 ) {
-    if (!client) return QV_ERR_INVLD_ARG;
-
     int rc = QV_SUCCESS;
     char const *ers = nullptr;
 

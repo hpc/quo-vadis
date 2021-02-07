@@ -455,22 +455,20 @@ qvi_mpi_group_destruct(
 
 int
 qvi_mpi_group_size(
-    qvi_mpi_t *mpi,
+    qvi_mpi_t *,
     const qvi_mpi_group_t *group,
     int *size
 ) {
-    if (!mpi || !group || !size) return QV_ERR_INVLD_ARG;
     *size = group->group_size;
     return QV_SUCCESS;
 }
 
 int
 qvi_mpi_group_id(
-    qvi_mpi_t *mpi,
+    qvi_mpi_t *,
     const qvi_mpi_group_t *group,
     int *id
 ) {
-    if (!mpi || !group || !id) return QV_ERR_INVLD_ARG;
     *id = group->group_id;
     return QV_SUCCESS;
 }
@@ -481,8 +479,6 @@ qvi_mpi_group_lookup_by_id(
     qvi_mpi_group_id_t id,
     qvi_mpi_group_t *group
 ) {
-    if (!mpi || !group) return QV_ERR_INVLD_ARG;
-
     auto got = mpi->group_tab->find(id);
     if (got == mpi->group_tab->end()) {
         return QV_ERR_NOT_FOUND;
@@ -499,10 +495,6 @@ qvi_mpi_group_create_from_ids(
     const int *group_ids,
     qvi_mpi_group_t **maybe_group
 ) {
-    if (!mpi || !group || num_group_ids < 0 || !group_ids || !maybe_group) {
-        return QV_ERR_INVLD_ARG;
-    }
-
     char const *ers = nullptr;
     int qvrc = QV_SUCCESS;
 

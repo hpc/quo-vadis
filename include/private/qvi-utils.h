@@ -16,7 +16,7 @@
 #ifndef QVI_UTILS_H
 #define QVI_UTILS_H
 
-#include "private/qvi-common.h"
+#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {

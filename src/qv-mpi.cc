@@ -14,11 +14,15 @@
  */
 
 #include "private/qvi-common.h"
-#include "private/qvi-log.h"
+#include "private/qvi-context.h"
 #include "private/qvi-task.h"
+#include "private/qvi-rmi.h"
 #include "private/qvi-mpi.h"
 
-#include "quo-vadis/qv-mpi.h"
+#include "mpi.h"
+
+// TODO(skg) Have infrastructure-specific init (e.g., MPI), but have
+// infrastructure-agnostic free(), etc (where possible).
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -26,11 +30,18 @@
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-// Type definition
-struct qv_context_s {
-    qv_task_t *task = nullptr;
-    qvi_mpi_t *mpi = nullptr;
-};
+// TODO(skg) Consider implementing a connection manager that will deal with all
+// the low-level details regarding connection setup, discovery, etc.
+static int
+connect_to_server(
+    qv_context_t *ctx
+) {
+    int rc = qvi_rmi_client_connect(
+        ctx->rmi,
+        "tcp://127.0.0.1:55995"
+    );
+    return rc;
+}
 
 int
 qv_mpi_create(
@@ -61,14 +72,27 @@ qv_mpi_create(
         goto out;
     }
 
+    rc = qvi_rmi_client_construct(&ictx->rmi);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_rmi_client_construct() failed";
+        goto out;
+    }
+
     rc = qvi_mpi_init(ictx->mpi, ictx->task, comm);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_init() failed";
         goto out;
     }
+
+    rc = connect_to_server(ictx);
+    if (rc != QV_SUCCESS) {
+        ers = "connect_to_server() failed";
+        goto out;
+    }
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+        (void)qv_free(ictx);
         *ctx = nullptr;
         return rc;
     }
@@ -76,14 +100,16 @@ out:
     return rc;
 }
 
+// TODO(skg) Move.
 int
-qv_mpi_free(
+qv_free(
     qv_context_t *ctx
 ) {
     if (!ctx) return QV_ERR_INVLD_ARG;
 
     qvi_task_destruct(&ctx->task);
     qvi_mpi_destruct(&ctx->mpi);
+    qvi_rmi_client_destruct(&ctx->rmi);
     delete ctx;
 
     return QV_SUCCESS;

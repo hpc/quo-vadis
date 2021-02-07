@@ -449,8 +449,6 @@ qvi_rpc_server_start(
     qvi_rpc_server_t *server,
     const char *url
 ) {
-    if (!server || !url) return QV_ERR_INVLD_ARG;
-
     int rc = QV_SUCCESS;
     char const *ers = nullptr;
 

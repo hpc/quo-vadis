@@ -16,8 +16,7 @@
 #ifndef QVI_MPI_H
 #define QVI_MPI_H
 
-#include "quo-vadis/qv-mpi.h"
-#include "quo-vadis/qv-task.h"
+#include "quo-vadis-mpi.h"
 
 #ifdef __cplusplus
 extern "C" {

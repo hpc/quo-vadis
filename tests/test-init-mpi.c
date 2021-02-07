@@ -56,7 +56,7 @@ main(
     }
 
 out:
-    rc = qv_mpi_free(ctx);
+    rc = qv_free(ctx);
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_free() failed";
     }

@@ -19,6 +19,32 @@
 
 #include <chrono>
 
+/** Description of the return codes. */
+static const char *qvi_rc_strerrs[] = {
+    "Success",
+    "Success, operation already complete",
+    "Unspecified error",
+    "Internal error",
+    "System error",
+    "Out of resources",
+    "Invalid argument",
+    "Call before initialization",
+    "Hardware locality error",
+    "MPI error",
+    "Internal message error",
+    "Remote procedure call error",
+    "Operation not supported",
+    "Pop operation error",
+    "PMI operation error",
+    "Not found"
+};
+
+const char *
+qv_strerr(int ec)
+{
+    return qvi_rc_strerrs[ec];
+}
+
 char *
 qvi_strerr(int ec)
 {
