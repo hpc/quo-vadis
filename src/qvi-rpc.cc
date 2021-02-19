@@ -28,15 +28,11 @@ could be that not everyone is bothered by this, but in my view clean shutdown is
 important and it makes running tests a lot easier
 #endif
 
-#include "private/qvi-common.h"
-#include "private/qvi-utils.h"
-#include "private/qvi-rpc.h"
-#include "private/qvi-log.h"
+#include "qvi-common.h"
+#include "qvi-rpc.h"
 
 #include "zmq.h"
 #include "zmq_utils.h"
-
-#include <stdarg.h>
 
 #define qvi_zmq_err_msg(ers, err_no)                                           \
 do {                                                                           \
@@ -162,8 +158,9 @@ qvi_rpc_server_construct(
 
     qvi_rpc_server_t *iserver = qvi_new qvi_rpc_server_t;
     if (!iserver) {
-        qvi_log_error("memory allocation failed");
-        return QV_ERR_OOR;
+        ers = "memory allocation failed";
+        rc = QV_ERR_OOR;
+        goto out;
     }
 
     iserver->zmq_context = zmq_ctx_new();
@@ -194,7 +191,7 @@ qvi_rpc_server_destruct(
     qvi_rpc_server_t *iserver = *server;
     if (!iserver) return;
 
-    qvi_hwloc_destruct(iserver->hwloc);
+    qvi_hwloc_destruct(&iserver->hwloc);
 
     if (iserver->zmq_sock) {
         int rc = zmq_close(iserver->zmq_sock);
@@ -210,7 +207,6 @@ qvi_rpc_server_destruct(
             qvi_log_warn("zmq_ctx_destroy() failed with {}", qvi_strerr(erno));
         }
     }
-
     delete iserver;
     *server = nullptr;
 }
@@ -444,6 +440,7 @@ server_setup(
     return QV_SUCCESS;
 }
 
+// TODO(skg) Add option to load synthetic topologies.
 int
 qvi_rpc_server_start(
     qvi_rpc_server_t *server,
@@ -618,8 +615,9 @@ qvi_rpc_client_construct(
 
     qvi_rpc_client_t *iclient = qvi_new qvi_rpc_client_t;
     if (!iclient) {
-        qvi_log_error("memory allocation failed");
-        return QV_ERR_OOR;
+        ers = "memory allocation failed";
+        rc = QV_ERR_OOR;
+        goto out;
     }
 
     iclient->zmq_context = zmq_ctx_new();

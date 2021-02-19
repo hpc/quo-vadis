@@ -14,7 +14,6 @@
  */
 
 #include "private/qvi-common.h"
-#include "private/qvi-log.h"
 #include "private/qvi-rpc.h"
 
 namespace {

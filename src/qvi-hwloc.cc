@@ -13,16 +13,8 @@
  * @file qvi-hwloc.cc
  */
 
-#include "private/qvi-common.h"
-
-#include "private/qvi-hwloc.h"
-#include "private/qvi-log.h"
-
-// Type definition
-struct qvi_hwloc_s {
-    /** The cached node topology. */
-    hwloc_topology_t topo;
-};
+#include "qvi-common.h"
+#include "qvi-hwloc.h"
 
 typedef enum qvi_hwloc_task_xop_obj_e {
     QVI_HWLOC_TASK_INTERSECTS_OBJ = 0,
@@ -117,12 +109,18 @@ int
 qvi_hwloc_construct(
     qvi_hwloc_t **hwl
 ) {
-    if (!hwl) return QV_ERR_INVLD_ARG;
+    int rc = QV_SUCCESS;
+    char const *ers = nullptr;
 
     qvi_hwloc_t *ihwl = qvi_new qvi_hwloc_t;
     if (!ihwl) {
-        qvi_log_error("memory allocation failed");
-        return QV_ERR_OOR;
+        ers = "memory allocation failed";
+        rc = QV_ERR_OOR;
+        goto out;
+    }
+out:
+    if (ers) {
+        qvi_hwloc_destruct(&ihwl);
     }
     *hwl = ihwl;
     return QV_SUCCESS;
@@ -130,12 +128,14 @@ qvi_hwloc_construct(
 
 void
 qvi_hwloc_destruct(
-    qvi_hwloc_t *hwl
+    qvi_hwloc_t **hwl
 ) {
-    if (!hwl) return;
+    qvi_hwloc_t *ihwl = *hwl;
+    if (!ihwl) return;
 
-    hwloc_topology_destroy(hwl->topo);
-    delete hwl;
+    hwloc_topology_destroy(ihwl->topo);
+    delete ihwl;
+    *hwl = nullptr;
 }
 
 /**
@@ -174,7 +174,7 @@ qvi_hwloc_topology_load(
     if (rc != QV_SUCCESS) {
         return rc;
     }
-    /* Set flags that influence hwloc's behavior. */
+    // Set flags that influence hwloc's behavior.
     static const unsigned int flags = HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM;
     rc = hwloc_topology_set_flags(hwl->topo, flags);
     if (rc != 0) {

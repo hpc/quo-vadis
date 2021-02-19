@@ -1,8 +1,8 @@
 /*
- * Copyright (c)      2020 Triad National Security, LLC
+ * Copyright (c) 2020-2021 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c)      2020 Lawrence Livermore National Security, LLC
+ * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -13,8 +13,8 @@
  * @file test-hwloc.c
  */
 
-#include "private/qvi-macros.h"
-#include "private/qvi-hwloc.h"
+#include "qvi-macros.h"
+#include "qvi-hwloc.h"
 
 #include "quo-vadis.h"
 
@@ -166,7 +166,7 @@ main(void)
 out:
     if (binds) free(binds);
     hwloc_bitmap_free(bitmap);
-    qvi_hwloc_destruct(hwl);
+    qvi_hwloc_destruct(&hwl);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         return EXIT_FAILURE;

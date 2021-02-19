@@ -15,9 +15,9 @@
  * Resource Management and Inquiry
  */
 
-#include "private/qvi-common.h"
-#include "private/qvi-rmi.h"
-#include "private/qvi-rpc.h"
+#include "qvi-common.h"
+#include "qvi-rmi.h"
+#include "qvi-rpc.h"
 
 struct qvi_rmi_server_s {
     qvi_rpc_server_t *rpcserv = nullptr;
@@ -36,8 +36,9 @@ qvi_rmi_server_construct(
 
     qvi_rmi_server_t *iserver = qvi_new qvi_rmi_server_t;
     if (!iserver) {
-        qvi_log_error("memory allocation failed");
-        return QV_ERR_OOR;
+        ers = "memory allocation failed";
+        rc = QV_ERR_OOR;
+        goto out;
     }
 
     rc = qvi_rpc_server_construct(&iserver->rpcserv);
@@ -95,8 +96,9 @@ qvi_rmi_client_construct(
 
     qvi_rmi_client_t *icli = qvi_new qvi_rmi_client_t;
     if (!icli) {
-        qvi_log_error("memory allocation failed");
-        return QV_ERR_OOR;
+        ers = "memory allocation failed";
+        rc = QV_ERR_OOR;
+        goto out;
     }
 
     rc = qvi_rpc_client_construct(&icli->rcpcli);

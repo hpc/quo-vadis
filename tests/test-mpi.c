@@ -13,9 +13,9 @@
  * @file test-mpi.c
  */
 
-#include "private/qvi-task.h"
-#include "private/qvi-mpi.h"
-#include "private/qvi-utils.h"
+#include "qvi-task.h"
+#include "qvi-mpi.h"
+#include "qvi-utils.h"
 
 #include "quo-vadis.h"
 

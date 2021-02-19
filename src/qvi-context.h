@@ -21,9 +21,11 @@
 #ifndef QVI_CONTEXT_H
 #define QVI_CONTEXT_H
 
-#include "private/qvi-common.h"
-#include "private/qvi-rmi.h"
-#include "private/qvi-mpi.h"
+#include "qvi-common.h"
+#include "qvi-hwloc.h"
+#include "qvi-rmi.h"
+// TODO(skg) This should be included conditionally.
+#include "qvi-mpi.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,6 +36,7 @@ extern "C" {
  */
 struct qv_context_s {
     qv_task_t *task = nullptr;
+    qvi_hwloc_t *hwloc = nullptr;
     qvi_rmi_client_t *rmi = nullptr;
     qvi_mpi_t *mpi = nullptr;
 };

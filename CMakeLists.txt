@@ -85,7 +85,6 @@ include(cmake/hwloc.cmake)
 # Add our source
 add_subdirectory(include)
 add_subdirectory(src)
-add_subdirectory(daemon)
 # Conditionally add test source
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
     add_subdirectory(tests)

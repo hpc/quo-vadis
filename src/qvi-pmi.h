@@ -10,67 +10,64 @@
  */
 
 /**
- * @file qvi-task.h
+ * @file qvi-pmi.h
  */
 
-#ifndef QVI_TASK_H
-#define QVI_TASK_H
+#ifndef QVI_PMI_H
+#define QVI_PMI_H
 
-#include "private/qvi-common.h"
+#include "qvi-common.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+// Forward declarations.
+struct qvi_pmi_s;
+typedef struct qvi_pmi_s qvi_pmi_t;
+
 /**
  *
  */
 int
-qvi_task_construct(
-    qv_task_t **task
+qvi_pmi_construct(
+    qvi_pmi_t **pmi
 );
 
 /**
  *
  */
 void
-qvi_task_destruct(
-    qv_task_t **task
+qvi_pmi_destruct(
+    qvi_pmi_t *pmi
 );
 
 /**
  *
  */
 int
-qvi_task_init(
-    qv_task_t *task,
-    pid_t pid,
-    int64_t gid,
-    int lid
+qvi_pmi_init(
+    qvi_pmi_t *pmi
 );
 
-/**
- *
- */
-pid_t
-qvi_task_pid(
-    qv_task_t *task
-);
-
-/**
- *
- */
-int64_t
-qvi_task_gid(
-    qv_task_t *task
-);
-
-/**
- *
- */
 int
-qvi_task_lid(
-    qv_task_t *task
+qvi_pmi_finalize(
+    qvi_pmi_t *pmi
+);
+
+uint32_t
+qvi_pmi_lid(
+    qvi_pmi_t *pmi
+);
+
+uint32_t
+qvi_pmi_gid(
+    qvi_pmi_t *pmi
+);
+
+uint32_t
+qvi_pmi_usize(
+    qvi_pmi_t *pmi
 );
 
 #ifdef __cplusplus

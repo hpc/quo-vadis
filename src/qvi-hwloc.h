@@ -16,19 +16,17 @@
 #ifndef QVI_HWLOC_H
 #define QVI_HWLOC_H
 
-#include "quo-vadis.h"
-
-#include <unistd.h>
-
+#include "qvi-common.h"
 #include "hwloc.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// Forward declarations.
-struct qvi_hwloc_s;
-typedef struct qvi_hwloc_s qvi_hwloc_t;
+typedef struct qvi_hwloc_s {
+    /** The cached node topology. */
+    hwloc_topology_t topo;
+} qvi_hwloc_t;
 
 /**
  *
@@ -43,7 +41,7 @@ qvi_hwloc_construct(
  */
 void
 qvi_hwloc_destruct(
-    qvi_hwloc_t *hwl
+    qvi_hwloc_t **hwl
 );
 
 /**

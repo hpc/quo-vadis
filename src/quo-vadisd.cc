@@ -1,8 +1,8 @@
 /*
- * Copyright (c)      2020 Triad National Security, LLC
+ * Copyright (c) 2020-2021 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c)      2020 Lawrence Livermore National Security, LLC
+ * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -13,10 +13,8 @@
  * @file quo-vadisd.cc
  */
 
-#include "private/qvi-common.h"
-#include "private/qvi-utils.h"
-#include "private/qvi-rmi.h"
-#include "private/qvi-log.h"
+#include "qvi-common.h"
+#include "qvi-rmi.h"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -112,6 +110,7 @@ main_loop(
     qvi_syslog_debug("Entered {}", __func__);
 }
 
+// TODO(skg) Add daemonize option.
 int
 main(
     int,

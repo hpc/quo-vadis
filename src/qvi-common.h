@@ -17,13 +17,17 @@
 #define QVI_COMMON_H
 
 #include "quo-vadis/config.h"
-#include "private/qvi-macros.h"
+
+#include "qvi-macros.h"
+#include "qvi-utils.h"
 
 #include "quo-vadis.h"
 
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,8 +38,9 @@
 #include <unistd.h>
 
 #ifdef __cplusplus
-#include "private/qvi-log.h"
+#include "qvi-log.h"
 
+#include <chrono>
 #include <unordered_map>
 #include <new>
 #endif

@@ -16,7 +16,7 @@
 #ifndef QVI_SCHED_H
 #define QVI_SCHED_H
 
-#include "private/qvi-common.h"
+#include "qvi-common.h"
 
 #ifdef __cplusplus
 #endif // #ifdef __cplusplus

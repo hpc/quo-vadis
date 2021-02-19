@@ -18,7 +18,7 @@
 #ifndef QVI_RMI_H
 #define QVI_RMI_H
 
-#include "private/qvi-hwloc.h"
+#include "qvi-hwloc.h"
 
 #include <unistd.h>
 

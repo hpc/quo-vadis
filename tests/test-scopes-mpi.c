@@ -10,7 +10,7 @@
  */
 
 /**
- * @file test-init-mpi.c
+ * @file test-scopes-mpi.c
  */
 
 #include "quo-vadis-mpi.h"
@@ -42,12 +42,19 @@ main(
         return EXIT_FAILURE;
     }
 
-    qv_context_t *ctx = NULL;
+    qv_context_t *ctx;
     rc = qv_mpi_create(&ctx, comm);
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_create() failed";
         goto out;
     }
+
+    qv_scope_t *base_scope;
+    rc = qv_scope_get(
+        ctx,
+        QV_SCOPE_SYSTEM,
+        &base_scope
+    );
 
 out:
     rc = qv_free(ctx);

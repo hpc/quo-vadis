@@ -13,8 +13,8 @@
  * @file test-pmi.c
  */
 
-#include "private/qvi-pmi.h"
-#include "private/qvi-utils.h"
+#include "qvi-pmi.h"
+#include "qvi-utils.h"
 
 #include "quo-vadis.h"
 

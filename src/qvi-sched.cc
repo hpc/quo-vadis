@@ -13,9 +13,9 @@
  * @file qvi-sched.cc
  */
 
-#include "private/qvi-common.h"
-#include "private/qvi-sched.h"
-#include "private/qvi-log.h"
+#include "qvi-common.h"
+#include "qvi-sched.h"
+#include "qvi-log.h"
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab

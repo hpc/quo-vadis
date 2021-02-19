@@ -13,8 +13,8 @@
  * @file test-rmi.c
  */
 
-#include "private/qvi-rmi.h"
-#include "private/qvi-utils.h"
+#include "qvi-rmi.h"
+#include "qvi-utils.h"
 
 #include "quo-vadis.h"
 

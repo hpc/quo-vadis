@@ -13,11 +13,7 @@
  * @file qvi-utils.cc
  */
 
-#include "private/qvi-common.h"
-#include "private/qvi-utils.h"
-#include "private/qvi-macros.h"
-
-#include <chrono>
+#include "qvi-common.h"
 
 /** Description of the return codes. */
 static const char *qvi_rc_strerrs[] = {
@@ -104,7 +100,7 @@ out:
         qvi_byte_buffer_destruct(&ibuff);
     }
     *buff = ibuff;
-    return QV_SUCCESS;
+    return rc;
 }
 
 void
@@ -155,6 +151,26 @@ qvi_byte_buffer_append(
     memcpy(dest, data, size);
     buff->size += size;
     return QV_SUCCESS;
+}
+
+bool
+qvi_envset(
+    const char *envvar
+) {
+    return !!getenv(envvar);
+}
+
+bool
+qvi_path_usable(
+    const char *path,
+    int *errc
+) {
+    *errc = 0;
+    if (access(path, R_OK | W_OK) == -1) {
+        *errc = errno;
+        return false;
+    }
+    return true;
 }
 
 /*

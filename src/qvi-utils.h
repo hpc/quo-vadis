@@ -1,8 +1,8 @@
 /*
- * Copyright (c)      2020 Triad National Security, LLC
+ * Copyright (c) 2020-2021 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c)      2020 Lawrence Livermore National Security, LLC
+ * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -16,6 +16,7 @@
 #ifndef QVI_UTILS_H
 #define QVI_UTILS_H
 
+#include <stdbool.h>
 #include <unistd.h>
 
 #ifdef __cplusplus
@@ -84,6 +85,23 @@ qvi_byte_buffer_append(
     qvi_byte_buffer_t *buff,
     void *data,
     size_t size
+);
+
+/**
+ *
+ */
+bool
+qvi_envset(
+    const char *envvar
+);
+
+/**
+ *
+ */
+bool
+qvi_path_usable(
+    const char *path,
+    int *errc
 );
 
 #ifdef __cplusplus

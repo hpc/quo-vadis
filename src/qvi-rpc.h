@@ -16,7 +16,7 @@
 #ifndef QVI_RPC_H
 #define QVI_RPC_H
 
-#include "private/qvi-hwloc.h"
+#include "qvi-hwloc.h"
 
 #include <assert.h>
 

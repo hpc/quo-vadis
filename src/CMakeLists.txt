@@ -14,10 +14,10 @@
 add_library(
     qvi-utils
     OBJECT
+    qvi-utils.h
+    qvi-log.h
     qvi-utils.cc
-    ../include/private/qvi-utils.h
     qvi-log.cc
-    ../include/private/qvi-log.h
 )
 
 target_compile_options(
@@ -30,7 +30,6 @@ target_include_directories(
     qvi-utils
     PUBLIC
       $<INSTALL_INTERFACE:include>
-      $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
 )
@@ -45,15 +44,14 @@ target_link_libraries(
 add_library(
     qvi-pmi
     OBJECT
+    qvi-pmi.h
     qvi-pmi.cc
-    ../include/private/qvi-pmi.h
 )
 
 target_include_directories(
     qvi-pmi
     PUBLIC
       $<INSTALL_INTERFACE:include>
-      $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
 )
@@ -67,44 +65,16 @@ target_link_libraries(
 ################################################################################
 ################################################################################
 add_library(
-    qvi-mpi
-    OBJECT
-    ../include/quo-vadis.h
-    qvi-mpi.cc
-    ../include/private/qvi-mpi.h
-)
-
-target_include_directories(
-    qvi-mpi
-    PUBLIC
-      ${MPI_C_INCLUDE_DIRS}
-      $<INSTALL_INTERFACE:include>
-      $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
-      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-)
-
-target_link_libraries(
-    qvi-mpi
-    qvi-utils
-    ${MPI_C_LIBRARIES}
-)
-
-################################################################################
-################################################################################
-add_library(
     qvi-hwloc
     OBJECT
-    ../include/quo-vadis.h
+    qvi-hwloc.h
     qvi-hwloc.cc
-    ../include/private/qvi-hwloc.h
 )
 
 target_include_directories(
     qvi-hwloc
     PUBLIC
       $<INSTALL_INTERFACE:include>
-      $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
 )
@@ -118,17 +88,39 @@ target_link_libraries(
 ################################################################################
 ################################################################################
 add_library(
+    qvi-rmi
+    OBJECT
+    qvi-rmi.h
+    qvi-rmi.cc
+)
+
+target_include_directories(
+    qvi-rmi
+    PUBLIC
+      $<INSTALL_INTERFACE:include>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+)
+
+target_link_libraries(
+    qvi-rmi
+    qvi-utils
+    hwloc
+)
+
+################################################################################
+################################################################################
+add_library(
     qvi-rpc
     OBJECT
+    qvi-rpc.h
     qvi-rpc.cc
-    ../include/private/qvi-rpc.h
 )
 
 target_include_directories(
     qvi-rpc
     PUBLIC
       $<INSTALL_INTERFACE:include>
-      $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
 )
@@ -142,25 +134,48 @@ target_link_libraries(
 
 ################################################################################
 ################################################################################
+add_library(
+    qvi-mpi
+    OBJECT
+    ../include/quo-vadis-mpi.h
+    qvi-mpi.h
+    qvi-mpi.cc
+)
+
+target_include_directories(
+    qvi-mpi
+    PUBLIC
+      ${MPI_C_INCLUDE_DIRS}
+      $<INSTALL_INTERFACE:include>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+)
+
+target_link_libraries(
+    qvi-mpi
+    qvi-utils
+    qvi-rmi
+    ${MPI_C_LIBRARIES}
+)
+
+################################################################################
+################################################################################
 # TODO(skg) Add an MPI variant of the library. For now, just include MPI bits.
 add_library(
     quo-vadis
     ../include/quo-vadis.h
-    qv-task.cc
-    ../include/private/qvi-task.h
-    qv-group.cc
-    qv-scope.cc
-    qvi-rmi.cc
-    ../include/private/qvi-rmi.h
-    qv-mpi.cc
+    qvi-task.h
+    qvi-task.cc
+    qvi-group.cc
+    qvi-scope.cc
 )
 
 target_include_directories(
     quo-vadis
     PUBLIC
       $<INSTALL_INTERFACE:include>
-      $<INSTALL_INTERFACE:include/${PROJECT_NAME}>
       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
 )
 
@@ -171,8 +186,31 @@ target_link_libraries(
     qvi-rpc
     qvi-pmi
     qvi-mpi
+    qvi-rmi
 )
 
 install(TARGETS quo-vadis DESTINATION lib)
+
+################################################################################
+################################################################################
+add_executable(
+    quo-vadisd
+    quo-vadisd.cc
+)
+
+target_include_directories(
+    quo-vadisd
+    PRIVATE
+      $<INSTALL_INTERFACE:include>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+)
+
+target_link_libraries(
+    quo-vadisd
+    quo-vadis
+)
+
+install(TARGETS quo-vadisd DESTINATION bin)
 
 # vim: ts=4 sts=4 sw=4 expandtab

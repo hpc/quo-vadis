@@ -40,7 +40,7 @@ struct qv_scope_s;
 typedef struct qv_scope_s qv_scope_t;
 
 /** Return codes. */
-// If this changes, please update the order and contents of qv_rc_strerrs.
+// If this changes, please update the order and contents of qvi_rc_strerrs.
 enum {
     QV_SUCCESS = 0,
     QV_SUCCESS_ALREADY_DONE,
@@ -60,6 +60,16 @@ enum {
     QV_ERR_NOT_FOUND
 };
 
+/** Intrinsic scopes. */
+typedef enum qv_scope_intrinsic_e {
+    QV_SCOPE_EMPTY = 0,
+    QV_SCOPE_SYSTEM,
+    QV_SCOPE_USER,
+    QV_SCOPE_JOB,
+    QV_SCOPE_PROCESS
+} qv_scope_intrinsic_t;
+
+// TODO(skg) Rename? Remove hwloc prefix?
 typedef enum qv_hwloc_obj_type_e {
     QV_HWLOC_OBJ_MACHINE,
     QV_HWLOC_OBJ_PACKAGE,
@@ -81,6 +91,25 @@ typedef enum qv_hwloc_obj_type_e {
 int
 qv_free(
     qv_context_t *ctx
+);
+
+/**
+ *
+ */
+int
+qv_scope_get(
+    qv_context_t *ctx,
+    qv_scope_intrinsic_t iscope,
+    qv_scope_t **scope
+);
+
+/**
+ *
+ */
+int
+qv_scope_free(
+    qv_context_t *ctx,
+    qv_scope_t *scope
 );
 
 /**

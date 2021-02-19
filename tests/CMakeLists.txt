@@ -29,6 +29,7 @@ add_test(
 
 ################################################################################
 ################################################################################
+# TODO(skg) Link to MPI-specific library.
 if (MPI_FOUND)
 add_executable(
     test-mpi
@@ -53,6 +54,16 @@ add_executable(
 
 target_link_libraries(
     test-init-mpi
+    quo-vadis
+)
+
+add_executable(
+    test-scopes-mpi
+    test-scopes-mpi.c
+)
+
+target_link_libraries(
+    test-scopes-mpi
     quo-vadis
 )
 endif(MPI_FOUND)

@@ -10,12 +10,12 @@
  */
 
 /**
- * @file qv-task.cc
+ * @file qvi-task.cc
  */
 
-#include "private/qvi-common.h"
-#include "private/qvi-task.h"
-#include "private/qvi-log.h"
+#include "qvi-common.h"
+#include "qvi-task.h"
+#include "qvi-log.h"
 
 static const int qvi_task_id_invalid = -1;
 

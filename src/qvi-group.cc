@@ -1,8 +1,8 @@
 /*
- * Copyright (c)      2020 Triad National Security, LLC
+ * Copyright (c) 2020-2021 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c)      2020 Lawrence Livermore National Security, LLC
+ * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -10,15 +10,13 @@
  */
 
 /**
- * @file qv-scope.cc
+ * @file qvi-group.cc
  */
 
-#include "private/qvi-common.h"
-#include "private/qvi-hwloc.h"
-#include "private/qvi-log.h"
+#include "qvi-common.h"
 
 // Type definition
-struct qv_scope_s {
+struct qv_group_s {
 };
 
 /*
