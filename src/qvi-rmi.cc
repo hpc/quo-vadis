@@ -32,7 +32,7 @@ qvi_rmi_server_construct(
     qvi_rmi_server_t **server
 ) {
     int rc = QV_SUCCESS;
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
     qvi_rmi_server_t *iserver = qvi_new qvi_rmi_server_t;
     if (!iserver) {
@@ -73,7 +73,7 @@ qvi_rmi_server_start(
     const char *url
 ) {
     int rc = QV_SUCCESS;
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
     rc = qvi_rpc_server_start(server->rpcserv, url);
     if (rc != QV_SUCCESS) {
@@ -92,7 +92,7 @@ qvi_rmi_client_construct(
     qvi_rmi_client_t **client
 ) {
     int rc = QV_SUCCESS;
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
     qvi_rmi_client_t *icli = qvi_new qvi_rmi_client_t;
     if (!icli) {
@@ -141,7 +141,7 @@ qvi_rmi_task_get_cpubind(
     hwloc_bitmap_t *out_bitmap
 ) {
     int rc = QV_SUCCESS;
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
     hwloc_bitmap_t bitmap = hwloc_bitmap_alloc();
 

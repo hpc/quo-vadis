@@ -16,8 +16,7 @@
 #ifndef QVI_UTILS_H
 #define QVI_UTILS_H
 
-#include <stdbool.h>
-#include <unistd.h>
+#include "qvi-common.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -91,17 +90,27 @@ qvi_byte_buffer_append(
  *
  */
 bool
-qvi_envset(
-    const char *envvar
+qvi_path_usable(
+    const char *path,
+    int *errc
 );
 
 /**
  *
  */
-bool
-qvi_path_usable(
-    const char *path,
-    int *errc
+int
+qvi_atoi(
+    const char *str,
+    int *maybe_val
+);
+
+/**
+ *
+ * @note: Caller is responsible for freeing URL.
+ */
+int
+qvi_url(
+    char **url
 );
 
 #ifdef __cplusplus

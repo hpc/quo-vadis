@@ -19,6 +19,11 @@ Depending on the type of generator used perform either of the following:
 make test # Or ninja test for ninja builds
 ```
 
+## Environment Variables
+```shell
+QV_PORT # The port number used for client/server communication.
+```
+
 ## Internal Software Dependencies
 * hwloc (https://github.com/open-mpi/hwloc)
 * spdlog (https://github.com/gabime/spdlog)

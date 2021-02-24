@@ -30,6 +30,7 @@ important and it makes running tests a lot easier
 
 #include "qvi-common.h"
 #include "qvi-rpc.h"
+#include "qvi-utils.h"
 
 #include "zmq.h"
 #include "zmq_utils.h"
@@ -40,14 +41,11 @@ do {                                                                           \
     qvi_log_error("{} with errno={} ({})", (ers), erno, qvi_strerr(erno));     \
 } while (0)
 
-// This should be more than plenty for our use case.
-#define QVI_RPC_URL_MAX_LEN 128
-
 struct qvi_rpc_server_s {
     void *zmq_context = nullptr;
     void *zmq_sock = nullptr;
     qvi_hwloc_t *hwloc = nullptr;
-    char url[QVI_RPC_URL_MAX_LEN] = {'\0'};
+    char url[QVI_URL_MAX] = {'\0'};
 };
 
 struct qvi_rpc_client_s {
@@ -70,7 +68,7 @@ rpc_stub_task_get_cpubind(
     qvi_rpc_fun_data_t *fun_data
 ) {
     int rc = QV_SUCCESS;
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
     // TODO(skg) Improve.
     hwloc_bitmap_t bitmap;
@@ -135,7 +133,7 @@ static int
 server_hwloc_init(
     qvi_rpc_server_t *server
 ) {
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
     int rc = qvi_hwloc_topology_load(server->hwloc);
     if (rc != QV_SUCCESS) {
@@ -154,7 +152,7 @@ qvi_rpc_server_construct(
     qvi_rpc_server_t **server
 ) {
     int rc = QV_SUCCESS;
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
     qvi_rpc_server_t *iserver = qvi_new qvi_rpc_server_t;
     if (!iserver) {
@@ -242,7 +240,7 @@ server_rpc_unpack(
     qvi_rpc_fun_data_t *fun_data
 ) {
     int rc = QV_SUCCESS;
-    char const *ers = nullptr;
+    cstr ers = nullptr;
     // Get pointer to start of message body.
     uint8_t *bodyp = (uint8_t *)msg;
     //
@@ -268,15 +266,15 @@ server_rpc_unpack(
                 break;
             }
             case QVI_RPC_TYPE_CSTR: {
-                char const *cstr = (char const *)bodyp;
-                const int bufsize = snprintf(NULL, 0, "%s", cstr) + 1;
+                cstr str = (cstr )bodyp;
+                const int bufsize = snprintf(NULL, 0, "%s", str) + 1;
                 char *value = (char *)calloc(bufsize, sizeof(*value));
                 if (!value) {
                     ers = "calloc() failed";
                     rc = QV_ERR_OOR;
                     goto out;
                 }
-                memmove(value, cstr, bufsize);
+                memmove(value, str, bufsize);
                 fun_data->cstr_args[fun_data->cstr_i++] = value;
                 bodyp += bufsize;
                 break;
@@ -433,7 +431,7 @@ server_setup(
     const char *url
 ) {
     const int nwritten = snprintf(server->url, sizeof(server->url), "%s", url);
-    if (nwritten >= QVI_RPC_URL_MAX_LEN) {
+    if (nwritten >= QVI_URL_MAX) {
         qvi_log_error("snprintf() truncated");
         return QV_ERR_INTERNAL;
     }
@@ -447,7 +445,7 @@ qvi_rpc_server_start(
     const char *url
 ) {
     int rc = QV_SUCCESS;
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
     rc = server_hwloc_init(server);
     if (rc != QV_SUCCESS) {
@@ -528,7 +526,7 @@ client_rpc_pack(
     const qvi_rpc_argv_t argv,
     va_list args
 ) {
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
     int rc = client_rpc_pack_msg_prep(buff, funid, argv);
     if (rc != QV_SUCCESS) {
@@ -611,7 +609,7 @@ qvi_rpc_client_construct(
     qvi_rpc_client_t **client
 ) {
     int rc = QV_SUCCESS;
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
     qvi_rpc_client_t *iclient = qvi_new qvi_rpc_client_t;
     if (!iclient) {
@@ -727,7 +725,7 @@ qvi_rpc_client_req(
     va_end(vl);
     // Do this here to make dealing with va_start()/va_end() easier.
     if (rc != QV_SUCCESS) {
-        char const *ers = "client_rpc_pack() failed";
+        cstr ers = "client_rpc_pack() failed";
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
         return rc;
     }

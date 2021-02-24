@@ -39,12 +39,13 @@ typedef struct qv_group_s qv_group_t;
 struct qv_scope_s;
 typedef struct qv_scope_s qv_scope_t;
 
+/* If this changes, please update the order and contents of qvi_rc_strerrs. */
 /** Return codes. */
-// If this changes, please update the order and contents of qvi_rc_strerrs.
 enum {
     QV_SUCCESS = 0,
     QV_SUCCESS_ALREADY_DONE,
     QV_ERR,
+    QV_ERR_ENV,
     QV_ERR_INTERNAL,
     QV_ERR_SYS,
     QV_ERR_OOR,
@@ -57,7 +58,9 @@ enum {
     QV_ERR_NOT_SUPPORTED,
     QV_ERR_POP,
     QV_ERR_PMI,
-    QV_ERR_NOT_FOUND
+    QV_ERR_NOT_FOUND,
+    /** Sentinel value. */
+    QV_RC_LAST
 };
 
 /** Intrinsic scopes. */

@@ -19,21 +19,24 @@
 #include "quo-vadis/config.h"
 
 #include "qvi-macros.h"
-#include "qvi-utils.h"
 
 #include "quo-vadis.h"
 
 #include <assert.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
 #include <sys/syscall.h>
+#include <sys/time.h>
+#include <sys/types.h>
 #include <threads.h>
 #include <unistd.h>
 
@@ -44,6 +47,8 @@
 #include <unordered_map>
 #include <new>
 #endif
+
+typedef char const* cstr;
 
 #endif
 

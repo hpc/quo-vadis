@@ -14,12 +14,14 @@
  */
 
 #include "qvi-common.h"
+#include "qvi-utils.h"
 
 /** Description of the return codes. */
 static const char *qvi_rc_strerrs[] = {
     "Success",
     "Success, operation already complete",
     "Unspecified error",
+    "Environment error",
     "Internal error",
     "System error",
     "Out of resources",
@@ -38,6 +40,10 @@ static const char *qvi_rc_strerrs[] = {
 const char *
 qv_strerr(int ec)
 {
+    if (ec < 0 || ec >= QV_RC_LAST) {
+        static const cstr bad = "";
+        return bad;
+    }
     return qvi_rc_strerrs[ec];
 }
 
@@ -154,13 +160,6 @@ qvi_byte_buffer_append(
 }
 
 bool
-qvi_envset(
-    const char *envvar
-) {
-    return !!getenv(envvar);
-}
-
-bool
 qvi_path_usable(
     const char *path,
     int *errc
@@ -171,6 +170,61 @@ qvi_path_usable(
         return false;
     }
     return true;
+}
+
+int
+qvi_atoi(
+    const char *str,
+    int *maybe_val
+) {
+    cstr tstr = str;
+    // Make certain str contrains only digits.
+    while ('\0' != *tstr) {
+        if (!isdigit(*tstr)) return QV_ERR_INVLD_ARG;
+        ++tstr;
+    }
+    errno = 0;
+    char *end = nullptr;
+    long val = strtol(str, &end, 10);
+    int err = errno;
+    // Did we get any digits?
+    if (str == end) return QV_ERR_INVLD_ARG;
+    // In valid range?
+    if (val > INT_MAX || (err == ERANGE && val == LONG_MAX)) {
+        return QV_ERR_INVLD_ARG;
+    }
+    if (val < INT_MIN || (err == ERANGE && val == LONG_MIN)) {
+        return QV_ERR_INVLD_ARG;
+    }
+    if (*end != '\0') return QV_ERR_INVLD_ARG;
+
+    *maybe_val = (int)val;
+    return QV_SUCCESS;
+}
+
+int
+qvi_port(
+    int *port
+) {
+    cstr ports = getenv(QVI_ENV_PORT);
+    if (!ports) return QV_ERR_ENV;
+    return qvi_atoi(ports, port);
+}
+
+int
+qvi_url(
+    char **url
+) {
+    static const cstr base = "tcp://127.0.0.1";
+
+    int port;
+    int rc = qvi_port(&port);
+    if (rc != QV_SUCCESS) return rc;
+
+    int nw = asprintf(url, "%s:%d", base, port);
+    if (nw == -1) return QV_ERR_OOR;
+
+    return QV_SUCCESS;
 }
 
 /*

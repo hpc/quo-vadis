@@ -1,8 +1,8 @@
 /*
- * Copyright (c)      2020 Triad National Security, LLC
+ * Copyright (c) 2020-2021 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c)      2020 Lawrence Livermore National Security, LLC
+ * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -33,6 +33,16 @@ do {                                                                           \
  * Convenience wrapper around new(std::nothrow).
  */
 #define qvi_new new(std::nothrow)
+
+/**
+ * Buffer size for URLs used for client/server connections.
+ */
+#define QVI_URL_MAX 128
+
+/**
+ * Port environment variable string.
+ */
+#define QVI_ENV_PORT "QV_PORT"
 
 #endif
 

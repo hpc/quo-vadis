@@ -15,20 +15,13 @@
 
 #include "qvi-common.h"
 #include "qvi-rmi.h"
-
-#include <stdio.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <unistd.h>
-
-#include <cstdlib>
+#include "qvi-utils.h"
 
 struct context {
     qvi_rmi_server_t *rmiserv;
 };
 
+#if 0
 static void
 closefds(void)
 {
@@ -51,6 +44,7 @@ closefds(void)
         (void)close(fd);
     }
 }
+#endif
 
 static void
 become_session_leader(void)
@@ -77,21 +71,35 @@ become_session_leader(void)
     }
 }
 
+#if 0
+        ers = "The following environment variable is not set: QV_PORT.\n"
+              "Please set to an unused port number.\n";
+static int
+#endif
+
 static void
 start_rmi(
     context *ctx
 ) {
     qvi_syslog_debug("Entered {}", __func__);
 
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
-    int rc = qvi_rmi_server_construct(&ctx->rmiserv);
+    // TODO(skg) Improve.
+    char *url = nullptr;
+    int rc = qvi_url(&url);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_url() failed";
+        goto out;
+    }
+
+    rc = qvi_rmi_server_construct(&ctx->rmiserv);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_server_construct() failed";
         goto out;
     }
 
-    rc = qvi_rmi_server_start(ctx->rmiserv, "tcp://127.0.0.1:55995");
+    rc = qvi_rmi_server_start(ctx->rmiserv, url);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_server_start() failed";
         goto out;
@@ -101,6 +109,7 @@ out:
     if (ers) {
         qvi_panic_syslog_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
+    if (url) free(url);
 }
 
 static void
@@ -124,7 +133,7 @@ main(
     // Become a session leader to lose controlling TTY.
     become_session_leader();
     // Close all file descriptors.
-    closefds();
+    //closefds();
     // Gather hardware information.
     start_rmi(&ctx);
     // Enter the main processing loop.
