@@ -14,7 +14,17 @@
  */
 
 #include "qvi-common.h"
+#include "qvi-utils.h"
 #include "qvi-hwloc.h"
+
+typedef struct qvi_hwloc_s {
+    /** The cached node topology. */
+    hwloc_topology_t topo = nullptr;
+    // TODO(skg) Server unlinks file.
+    /** Path to exported hardware topology. */
+    char *topo_file = nullptr;
+} qvi_hwloc_t;
+
 
 typedef enum qvi_hwloc_task_xop_obj_e {
     QVI_HWLOC_TASK_INTERSECTS_OBJ = 0,
@@ -132,6 +142,7 @@ qvi_hwloc_destruct(
 ) {
     qvi_hwloc_t *ihwl = *hwl;
     if (!ihwl) return;
+    if (ihwl->topo_file) free(ihwl->topo);
     if (ihwl->topo) hwloc_topology_destroy(ihwl->topo);
     delete ihwl;
     *hwl = nullptr;
@@ -144,8 +155,6 @@ static int
 topology_init(
     qvi_hwloc_t *hwl
 ) {
-    if (!hwl) return QV_ERR_INVLD_ARG;
-
     cstr ers = nullptr;
 
     int rc = hwloc_topology_init(&hwl->topo);
@@ -165,8 +174,6 @@ int
 qvi_hwloc_topology_load(
     qvi_hwloc_t *hwl
 ) {
-    if (!hwl) return QV_ERR_INVLD_ARG;
-
     cstr ers = nullptr;
 
     int rc = topology_init(hwl);
@@ -212,14 +219,129 @@ out:
     return QV_SUCCESS;
 }
 
+hwloc_topology_t
+qvi_hwloc_topo_get(
+    qvi_hwloc_t *hwl
+) {
+    return hwl->topo;
+}
+
+static int
+topo_fname(
+    const char *base,
+    char **name
+) {
+    const int pid = getpid();
+    srand(time(nullptr));
+    int nw = asprintf(
+        name,
+        "%s/%s-%s-%d-%d.xml",
+        base,
+        PACKAGE_NAME,
+        "hwtopo",
+        pid,
+        rand() % 256
+    );
+    if (nw == -1) {
+        *name = nullptr;
+        return QV_ERR_OOR;
+    }
+    return QV_SUCCESS;
+}
+
+/**
+ *
+ */
+static int
+topo_fopen(
+    qvi_hwloc_t *,
+    const char *path,
+    int *fd
+) {
+    *fd = open(path, O_CREAT | O_RDWR);
+    if (*fd == -1) {
+        int err = errno;
+        cstr ers = "open() failed";
+        qvi_log_error("{} {}", ers, qvi_strerr(err));
+        return QV_ERR_FILE_IO;
+    }
+    // We need to publish this file to consumers that are potentially not part
+    // of our group. We cannot assume the current umask, so set explicitly.
+    int rc = fchmod(*fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    if (rc == -1) {
+        int err = errno;
+        cstr ers = "fchmod() failed";
+        qvi_log_error("{} {}", ers, qvi_strerr(err));
+        return QV_ERR_FILE_IO;
+    }
+    return QV_SUCCESS;
+}
+
+int
+qvi_hwloc_topology_export(
+    qvi_hwloc_t *hwl,
+    const char *path
+) {
+    int qvrc = QV_SUCCESS, rc = 0, fd = 0;
+    cstr ers = nullptr;
+
+    int err;
+    bool usable = qvi_path_usable(path, &err);
+    if (!usable) {
+        ers = "Cannot export hardware topology to {} ({})";
+        qvi_log_error(ers, path, qvi_strerr(err));
+        return QV_ERR;
+    }
+
+    char *topo_xml;
+    int topo_xml_len;
+    rc = hwloc_topology_export_xmlbuffer(
+        hwl->topo,
+        &topo_xml,
+        &topo_xml_len,
+        0 // We don't need 1.x compatible XML export.
+    );
+    if (rc == -1) {
+        ers = "hwloc_topology_export_xmlbuffer() failed";
+        qvrc = QV_ERR_HWLOC;
+        goto out;
+    }
+
+    qvrc = topo_fname(path, &hwl->topo_file);
+    if (qvrc != QV_SUCCESS) {
+        ers = "topo_fname() failed";
+        goto out;
+    }
+
+    qvrc = topo_fopen(hwl, hwl->topo_file, &fd);
+    if (qvrc != QV_SUCCESS) {
+        ers = "topo_fopen() failed";
+        goto out;
+    }
+
+    rc = write(fd, topo_xml, topo_xml_len);
+    if (rc == -1 || rc != topo_xml_len) {
+        int err = errno;
+        ers = "write() failed";
+        qvi_log_error("{} {}", ers, qvi_strerr(err));
+        qvrc = QV_ERR_FILE_IO;
+        goto out;
+    }
+out:
+    if (ers) {
+        qvi_log_error("{} with rc={} ({})", ers, qvrc, qv_strerr(qvrc));
+    }
+    hwloc_free_xmlbuffer(hwl->topo, topo_xml);
+    (void)close(fd);
+    return qvrc;
+}
+
 int
 qvi_hwloc_get_nobjs_by_type(
    qvi_hwloc_t *hwloc,
    qv_hwloc_obj_type_t target_type,
    int *out_nobjs
 ) {
-    if (!hwloc || !out_nobjs) return QV_ERR_INVLD_ARG;
-
     int depth;
     int rc = obj_type_depth(hwloc, target_type, &depth);
     if (rc != QV_SUCCESS) return rc;
@@ -233,8 +355,6 @@ qvi_hwloc_bitmap_asprintf(
     char **result,
     hwloc_const_bitmap_t bitmap
 ) {
-    if (!bitmap || !result) return QV_ERR_INVLD_ARG;
-
     int rc = QV_SUCCESS;
     // Caller is responsible for freeing returned resources.
     char *iresult = nullptr;
@@ -253,8 +373,6 @@ qvi_hwloc_task_get_cpubind(
     pid_t who,
     hwloc_bitmap_t *out_bitmap
 ) {
-    if (!hwl || !out_bitmap) return QV_ERR_INVLD_ARG;
-
     int qrc = QV_SUCCESS, rc = 0;
 
     hwloc_bitmap_t cur_bind = hwloc_bitmap_alloc();
@@ -329,8 +447,6 @@ qvi_hwloc_task_intersects_obj_by_type_id(
     unsigned type_index,
     int *result
 ) {
-    if (!hwl || !result) return QV_ERR_INVLD_ARG;
-
     return task_obj_xop_by_type_id(
         hwl,
         type,
@@ -349,8 +465,6 @@ qvi_hwloc_task_isincluded_in_obj_by_type_id(
     unsigned type_index,
     int *result
 ) {
-    if (!hwl || !result) return QV_ERR_INVLD_ARG;
-
     return task_obj_xop_by_type_id(
         hwl,
         type,

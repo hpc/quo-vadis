@@ -22,6 +22,7 @@ make test # Or ninja test for ninja builds
 ## Environment Variables
 ```shell
 QV_PORT # The port number used for client/server communication.
+QV_TMPDIR # Directory used for temporary files.
 ```
 
 ## Internal Software Dependencies

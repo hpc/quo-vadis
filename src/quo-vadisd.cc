@@ -21,6 +21,7 @@
 struct context {
     qvi_hwloc_t *hwloc = nullptr;
     qvi_rmi_server_t *rmi = nullptr;
+    char *hwtopo_path = nullptr;
     bool daemonized = false;
 };
 
@@ -33,6 +34,7 @@ context_destruct(
     // TODO(skg) Fix crash in hwloc teardown.
     qvi_rmi_server_destruct(&ictx->rmi);
     qvi_hwloc_destruct(&ictx->hwloc);
+    if (ictx->hwtopo_path) free(ictx->hwtopo_path);
     delete ictx;
     *ctx = nullptr;
 }
@@ -120,7 +122,7 @@ become_session_leader(
 }
 
 static void
-start_rmi(
+rmi_start(
     context *ctx
 ) {
     qvi_log_debug("Starting RMI");
@@ -150,7 +152,7 @@ out:
 }
 
 static void
-load_hwtopo(
+hwtopo_load(
     context *ctx
 ) {
     qvi_log_debug("Loading hardware information");
@@ -158,6 +160,20 @@ load_hwtopo(
     int rc = qvi_hwloc_topology_load(ctx->hwloc);
     if (rc != QV_SUCCESS) {
         static cstr ers = "qvi_hwloc_topology_load() failed";
+        qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
+    }
+}
+
+static void
+hwtopo_export(
+    context *ctx
+) {
+    qvi_log_debug("Publishing hardware information");
+
+    cstr path = qvi_tmpdir();
+    int rc = qvi_hwloc_topology_export(ctx->hwloc, path);
+    if (rc != QV_SUCCESS) {
+        static cstr ers = "qvi_hwloc_topology_export() failed";
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
 }
@@ -181,9 +197,12 @@ main(
         // Close all file descriptors.
         closefds(ctx);
     }
-    // Gather hardware information.
-    load_hwtopo(ctx);
-    start_rmi(ctx);
+    // Gather and publish hardware information.
+    hwtopo_load(ctx);
+    hwtopo_export(ctx);
+    // Start listening for commands.
+    rmi_start(ctx);
+    // Cleanup.
     context_destruct(&ctx);
     return EXIT_SUCCESS;
 }

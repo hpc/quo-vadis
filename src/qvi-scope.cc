@@ -82,13 +82,13 @@ qv_scope_get(
         //goto out;
     }
 
-    hwloc_obj_t root = hwloc_get_root_obj(qvs->hwloc->topo);
+    hwloc_obj_t root = hwloc_get_root_obj(qvi_hwloc_topo_get(qvs->hwloc));
     char *root_cpus;
     qvi_hwloc_bitmap_asprintf(&root_cpus, root->cpuset);
     qvi_log_info("-->{}", root_cpus);
 
     hwloc_obj_t obj = hwloc_get_obj_inside_cpuset_by_type(
-        qvs->hwloc->topo,
+        qvi_hwloc_topo_get(qvs->hwloc),
         root->cpuset,
         HWLOC_OBJ_PACKAGE,
         3
@@ -99,7 +99,7 @@ qv_scope_get(
     qvi_log_info("-->{}", objcpus);
 
     hwloc_obj_t obj2 = hwloc_get_first_largest_obj_inside_cpuset(
-        qvs->hwloc->topo,
+        qvi_hwloc_topo_get(qvs->hwloc),
         obj->cpuset
     );
 

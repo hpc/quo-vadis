@@ -47,6 +47,7 @@ enum {
     QV_ERR,
     QV_ERR_ENV,
     QV_ERR_INTERNAL,
+    QV_ERR_FILE_IO,
     QV_ERR_SYS,
     QV_ERR_OOR,
     QV_ERR_INVLD_ARG,

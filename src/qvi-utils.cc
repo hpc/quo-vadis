@@ -23,6 +23,7 @@ static const char *qvi_rc_strerrs[] = {
     "Unspecified error",
     "Environment error",
     "Internal error",
+    "File I/O error",
     "System error",
     "Out of resources",
     "Invalid argument",
@@ -235,6 +236,39 @@ qvi_conn_ers(void)
                              "variable is set to an unused port number: "
                              QVI_ENV_PORT;
     return msg;
+}
+
+const char *
+qvi_tmpdir(void)
+{
+    static thread_local char tmpdir[PATH_MAX];
+
+    cstr qvenv = getenv(QVI_ENV_TMPDIR);
+    if (qvenv) {
+        int nw = snprintf(tmpdir, PATH_MAX, "%s", qvenv);
+        if (nw < PATH_MAX) return tmpdir;
+    }
+    qvenv = getenv("TMPDIR");
+    if (qvenv) {
+        int nw = snprintf(tmpdir, PATH_MAX, "%s", qvenv);
+        if (nw < PATH_MAX) return tmpdir;
+    }
+    static cstr tmp = "/tmp";
+    return tmp;
+}
+
+const char *
+whoami(void)
+{
+    static const int bsize = 128;
+    static thread_local char buff[bsize];
+    cstr user = getenv("USER");
+    if (!user) {
+        user = PACKAGE_NAME;
+    }
+    int nw = snprintf(buff, bsize, "%s", user);
+    if (nw >= bsize) return PACKAGE_NAME;
+    return buff;
 }
 
 /*

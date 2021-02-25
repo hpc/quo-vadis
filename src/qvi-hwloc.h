@@ -23,10 +23,9 @@
 extern "C" {
 #endif
 
-typedef struct qvi_hwloc_s {
-    /** The cached node topology. */
-    hwloc_topology_t topo;
-} qvi_hwloc_t;
+// Forward declarations.
+struct qvi_hwloc_s;
+typedef struct qvi_hwloc_s qvi_hwloc_t;
 
 /**
  *
@@ -49,6 +48,14 @@ qvi_hwloc_destruct(
  */
 int
 qvi_hwloc_topology_load(
+    qvi_hwloc_t *hwl
+);
+
+/**
+ *
+ */
+hwloc_topology_t
+qvi_hwloc_topo_get(
     qvi_hwloc_t *hwl
 );
 
@@ -103,6 +110,15 @@ qvi_hwloc_task_isincluded_in_obj_by_type_id(
     pid_t who,
     unsigned type_index,
     int *result
+);
+
+/**
+ *
+ */
+int
+qvi_hwloc_topology_export(
+    qvi_hwloc_t *hwl,
+    const char *path
 );
 
 #ifdef __cplusplus

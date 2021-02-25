@@ -112,8 +112,23 @@ qvi_url(
     char **url
 );
 
+/**
+ *
+ */
 const char *
 qvi_conn_ers(void);
+
+/**
+ *
+ */
+const char *
+qvi_tmpdir(void);
+
+/**
+ *
+ */
+const char *
+whoami(void);
 
 #ifdef __cplusplus
 }
