@@ -52,7 +52,7 @@ main(
 out:
     rc = qv_free(ctx);
     if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_free() failed";
+        ers = "qv_ree() failed";
     }
     MPI_Finalize();
     if (ers) {

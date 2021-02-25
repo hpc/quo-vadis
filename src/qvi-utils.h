@@ -105,13 +105,15 @@ qvi_atoi(
 );
 
 /**
- *
  * @note: Caller is responsible for freeing URL.
  */
 int
 qvi_url(
     char **url
 );
+
+const char *
+qvi_conn_ers(void);
 
 #ifdef __cplusplus
 }

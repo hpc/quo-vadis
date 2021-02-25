@@ -227,6 +227,16 @@ qvi_url(
     return QV_SUCCESS;
 }
 
+const char *
+qvi_conn_ers(void)
+{
+    static const char *msg = "Cannot determine connection information. "
+                             "Please make sure that the following environment "
+                             "variable is set to an unused port number: "
+                             QVI_ENV_PORT;
+    return msg;
+}
+
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
  */

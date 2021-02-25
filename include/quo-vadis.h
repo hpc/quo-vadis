@@ -92,6 +92,14 @@ typedef enum qv_hwloc_obj_type_e {
  *
  */
 int
+qv_create(
+    qv_context_t **ctx
+);
+
+/**
+ *
+ */
+int
 qv_free(
     qv_context_t *ctx
 );

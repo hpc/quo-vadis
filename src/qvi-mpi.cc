@@ -15,11 +15,12 @@
 
 // TODO(skg) Have infrastructure-specific init (e.g., MPI), but have
 // infrastructure-agnostic free(), etc (where possible).
+// TODO(skg) Integrate with qv_free().
+
 
 #include "qvi-common.h"
-
+#include "qvi-utils.h"
 #include "qvi-context.h"
-#include "qvi-task.h"
 
 #include "mpi.h"
 
@@ -57,16 +58,20 @@ struct qvi_mpi_s {
     group_tab_t *group_tab = nullptr;
 };
 
-// TODO(skg) Consider implementing a connection manager that will deal with all
-// the low-level details regarding connection setup, discovery, etc.
 static int
 connect_to_server(
     qv_context_t *ctx
 ) {
-    int rc = qvi_rmi_client_connect(
-        ctx->rmi,
-        "tcp://127.0.0.1:55995"
-    );
+    char *url = nullptr;
+    int rc = qvi_url(&url);
+    if (rc != QV_SUCCESS) {
+        qvi_log_error("{}", qvi_conn_ers());
+        return rc;
+    }
+
+    rc = qvi_rmi_client_connect(ctx->rmi, url);
+
+    if (url) free(url);
     return rc;
 }
 
@@ -78,36 +83,18 @@ qv_mpi_create(
     if (!ctx) return QV_ERR_INVLD_ARG;
 
     int rc = QV_SUCCESS;
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
-    qv_context_t *ictx = qvi_new qv_context_t;
-    if (!ictx) {
-        ers = "memory allocation failed";
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-
-    rc = qvi_task_construct(&ictx->task);
+    qv_context_t *ictx = nullptr;
+    rc = qv_create(&ictx);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_task_construct() failed";
-        goto out;
-    }
-
-    rc = qvi_hwloc_construct(&ictx->hwloc);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_construct() failed";
+        ers = "qv_create() failed";
         goto out;
     }
 
     rc = qvi_mpi_construct(&ictx->mpi);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_construct() failed";
-        goto out;
-    }
-
-    rc = qvi_rmi_client_construct(&ictx->rmi);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_rmi_client_construct() failed";
         goto out;
     }
 
@@ -122,29 +109,17 @@ qv_mpi_create(
         ers = "connect_to_server() failed";
         goto out;
     }
+
+    // TODO(skg) Get topo info from server.
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+        qvi_mpi_destruct(&ictx->mpi);
         (void)qv_free(ictx);
         ictx = nullptr;
     }
     *ctx = ictx;
     return rc;
-}
-
-// TODO(skg) Move.
-int
-qv_free(
-    qv_context_t *ctx
-) {
-    if (!ctx) return QV_ERR_INVLD_ARG;
-
-    qvi_task_destruct(&ctx->task);
-    qvi_mpi_destruct(&ctx->mpi);
-    qvi_rmi_client_destruct(&ctx->rmi);
-    delete ctx;
-
-    return QV_SUCCESS;
 }
 
 /**
@@ -203,7 +178,7 @@ group_create_from_mpi_comm(
     MPI_Comm comm,
     qvi_mpi_group_t *new_group
 ) {
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
     new_group->mpi_comm = comm;
 
@@ -248,7 +223,7 @@ group_create_from_mpi_group(
     MPI_Group group,
     qvi_mpi_group_t **maybe_group
 ) {
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
     int qvrc = QV_SUCCESS;
 
@@ -318,7 +293,7 @@ qvi_mpi_construct(
     qvi_mpi_t **mpi
 ) {
     int rc = QV_SUCCESS;
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
     qvi_mpi_t *impi = qvi_new qvi_mpi_t;
     if (!impi) {
@@ -378,7 +353,7 @@ create_intrinsic_comms(
     qvi_mpi_t *mpi,
     MPI_Comm comm
 ) {
-    char const *ers = nullptr;
+    cstr ers = nullptr;
     // MPI_COMM_SELF duplicate
     int rc = MPI_Comm_dup(
         MPI_COMM_SELF,
@@ -414,7 +389,7 @@ static int
 create_intrinsic_groups(
     qvi_mpi_t *mpi
 ) {
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
     qvi_mpi_group_t self_group, node_group;
     int rc = group_create_from_mpi_comm(
@@ -456,7 +431,7 @@ qvi_mpi_init(
     qv_task_t *task,
     MPI_Comm comm
 ) {
-    char const *ers = nullptr;
+    cstr ers = nullptr;
     int inited;
     // If MPI isn't initialized, then we can't continue.
     int rc = MPI_Initialized(&inited);
@@ -590,7 +565,7 @@ qvi_mpi_group_create_from_ids(
     const int *group_ids,
     qvi_mpi_group_t **maybe_group
 ) {
-    char const *ers = nullptr;
+    cstr ers = nullptr;
     int qvrc = QV_SUCCESS;
 
     MPI_Group new_mpi_group;
@@ -637,7 +612,7 @@ qvi_mpi_group_create_from_mpi_comm(
     MPI_Comm comm,
     qvi_mpi_group_t **new_group
 ) {
-    char const *ers = nullptr;
+    cstr ers = nullptr;
     MPI_Comm node_comm = MPI_COMM_NULL;
 
     int rc = qvi_mpi_group_construct(new_group);

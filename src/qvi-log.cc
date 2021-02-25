@@ -18,6 +18,8 @@
 
 #include "spdlog/sinks/stdout_sinks.h"
 #include "spdlog/sinks/syslog_sink.h"
+#include <spdlog/common.h>
+#include <spdlog/spdlog.h>
 
 qvi_logger::qvi_logger(void)
 {
@@ -126,6 +128,30 @@ qvi_logger::logger_t
 qvi_logger::syslog_debug(void)
 {
     return qvi_logger::the_qvi_logger().m_syslog_debug;
+}
+
+void
+qvi_logger::console_to_syslog(void)
+{
+    auto &logger = qvi_logger::the_qvi_logger();
+
+    spdlog::drop(logger.m_console_info->name());
+    spdlog::drop(logger.m_console_error->name());
+    spdlog::drop(logger.m_console_warn->name());
+    spdlog::drop(logger.m_console_debug->name());
+
+    logger.m_console_info = spdlog::syslog_logger_mt("consys_info");
+    logger.m_console_info->set_level(spdlog::level::info);
+    logger.m_console_info->set_pattern("%v");
+
+    logger.m_console_error = spdlog::syslog_logger_mt("consys_error");
+    logger.m_console_error->set_level(spdlog::level::err);
+
+    logger.m_console_warn = spdlog::syslog_logger_mt("consys_warn");
+    logger.m_console_warn->set_level(spdlog::level::warn);
+
+    logger.m_console_debug = spdlog::syslog_logger_mt("consys_debug");
+    logger.m_console_debug->set_level(spdlog::level::debug);
 }
 
 /*

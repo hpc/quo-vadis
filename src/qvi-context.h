@@ -12,7 +12,7 @@
 /**
  * @file qvi-context.h
  *
- * @note This file breaks convention by defining a symbol starting with qv_.
+ * @note This file breaks convention by defining a struct within a header.
  * There is good reason for this: we want to hide the implementation details of
  * QV contexts, but require its definition in a header that is accessible to
  * multiple internal consumers.
@@ -23,6 +23,7 @@
 
 #include "qvi-common.h"
 #include "qvi-hwloc.h"
+#include "qvi-task.h"
 #include "qvi-rmi.h"
 // TODO(skg) This should be included conditionally.
 #include "qvi-mpi.h"
@@ -32,7 +33,7 @@ extern "C" {
 #endif
 
 /**
- * The underlying datastructure that defines an opaque QV context.
+ * The underlying data structure that defines an opaque QV context.
  */
 struct qv_context_s {
     qv_task_t *task = nullptr;

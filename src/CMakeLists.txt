@@ -164,7 +164,9 @@ target_link_libraries(
 add_library(
     quo-vadis
     ../include/quo-vadis.h
+    qvi-context.h
     qvi-task.h
+    qvi-context.cc
     qvi-task.cc
     qvi-group.cc
     qvi-scope.cc

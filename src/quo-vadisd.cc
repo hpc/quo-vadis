@@ -14,24 +14,72 @@
  */
 
 #include "qvi-common.h"
-#include "qvi-rmi.h"
 #include "qvi-utils.h"
+#include "qvi-hwloc.h"
+#include "qvi-rmi.h"
 
 struct context {
-    qvi_rmi_server_t *rmiserv;
+    qvi_hwloc_t *hwloc = nullptr;
+    qvi_rmi_server_t *rmi = nullptr;
+    bool daemonized = false;
 };
 
-#if 0
 static void
-closefds(void)
-{
-    qvi_syslog_debug("Entered {}", __func__);
+context_destruct(
+    context **ctx
+) {
+    context *ictx = *ctx;
+    if (!ictx) return;
+    // TODO(skg) Fix crash in hwloc teardown.
+    qvi_rmi_server_destruct(&ictx->rmi);
+    qvi_hwloc_destruct(&ictx->hwloc);
+    delete ictx;
+    *ctx = nullptr;
+}
+
+static void
+context_construct(
+    context **ctx
+) {
+    int rc = QV_SUCCESS;
+    cstr ers = nullptr;
+
+    context *ictx = qvi_new context;
+    if (!ictx) {
+        ers = "memory allocation failed";
+        rc = QV_ERR_OOR;
+        goto out;
+    }
+
+    rc = qvi_hwloc_construct(&ictx->hwloc);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_hwloc_construct() failed";
+        goto out;
+    }
+
+    rc = qvi_rmi_server_construct(&ictx->rmi);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_rmi_server_construct() failed";
+        goto out;
+    }
+out:
+    if (ers) {
+        qvi_panic_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+    }
+    *ctx = ictx;
+}
+
+static void
+closefds(
+    context *
+) {
+    qvi_log_debug("Closing FDs");
     // Determine the max number of file descriptors.
     struct rlimit rl;
     if (getrlimit(RLIMIT_NOFILE, &rl) < 0) {
-        static const char *ers = "Cannot determine RLIMIT_NOFILE";
+        static cstr ers = "Cannot determine RLIMIT_NOFILE";
         const int err = errno;
-        qvi_panic_syslog_error("{} (rc={}, {})", ers, err, qvi_strerr(err));
+        qvi_panic_log_error("{} (rc={}, {})", ers, err, qvi_strerr(err));
     }
     // Default: no limit on this resource, so pick one.
     int64_t maxfd = 1024;
@@ -44,18 +92,18 @@ closefds(void)
         (void)close(fd);
     }
 }
-#endif
 
 static void
-become_session_leader(void)
-{
-    qvi_syslog_debug("Entered {}", __func__);
+become_session_leader(
+    context *
+) {
+    qvi_log_debug("Becoming session leader");
 
     pid_t pid = 0;
     if ((pid = fork()) < 0) {
-        static const char *ers = "fork() failed";
+        static cstr ers = "fork() failed";
         const int err = errno;
-        qvi_panic_syslog_error("{} (rc={}, {})", ers, err, qvi_strerr(err));
+        qvi_panic_log_error("{} (rc={}, {})", ers, err, qvi_strerr(err));
     }
     // Parent
     if (pid != 0) {
@@ -65,41 +113,30 @@ become_session_leader(void)
     // Child
     pid_t pgid = setsid();
     if (pgid < 0) {
-        static const char *ers = "setsid() failed";
+        static cstr ers = "setsid() failed";
         const int err = errno;
-        qvi_panic_syslog_error("{} (rc={}, {})", ers, err, qvi_strerr(err));
+        qvi_panic_log_error("{} (rc={}, {})", ers, err, qvi_strerr(err));
     }
 }
-
-#if 0
-        ers = "The following environment variable is not set: QV_PORT.\n"
-              "Please set to an unused port number.\n";
-static int
-#endif
 
 static void
 start_rmi(
     context *ctx
 ) {
-    qvi_syslog_debug("Entered {}", __func__);
+    qvi_log_debug("Starting RMI");
 
     cstr ers = nullptr;
 
-    // TODO(skg) Improve.
     char *url = nullptr;
     int rc = qvi_url(&url);
     if (rc != QV_SUCCESS) {
+        qvi_log_error(qvi_conn_ers());
         ers = "qvi_url() failed";
         goto out;
     }
+    qvi_log_debug("Listening on {}", url);
 
-    rc = qvi_rmi_server_construct(&ctx->rmiserv);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_rmi_server_construct() failed";
-        goto out;
-    }
-
-    rc = qvi_rmi_server_start(ctx->rmiserv, url);
+    rc = qvi_rmi_server_start(ctx->rmi, url);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_server_start() failed";
         goto out;
@@ -107,16 +144,22 @@ start_rmi(
     // TODO(skg) Add flags option
 out:
     if (ers) {
-        qvi_panic_syslog_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
+        qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
     if (url) free(url);
 }
 
 static void
-main_loop(
-    context *
+load_hwtopo(
+    context *ctx
 ) {
-    qvi_syslog_debug("Entered {}", __func__);
+    qvi_log_debug("Loading hardware information");
+
+    int rc = qvi_hwloc_topology_load(ctx->hwloc);
+    if (rc != QV_SUCCESS) {
+        static cstr ers = "qvi_hwloc_topology_load() failed";
+        qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
+    }
 }
 
 // TODO(skg) Add daemonize option.
@@ -125,20 +168,23 @@ main(
     int,
     char **
 ) {
-    qvi_syslog_debug("Entered {}", __func__);
-    //
-    context ctx;
-    // Clear umask. Note: this system call always succeeds.
-    umask(0);
-    // Become a session leader to lose controlling TTY.
-    become_session_leader();
-    // Close all file descriptors.
-    //closefds();
-    // Gather hardware information.
-    start_rmi(&ctx);
-    // Enter the main processing loop.
-    main_loop(&ctx);
+    context *ctx = nullptr;
+    context_construct(&ctx);
 
+    if (ctx->daemonized) {
+        // Redirect all console output to syslog.
+        qvi_logger::console_to_syslog();
+        // Clear umask. Note: this system call always succeeds.
+        umask(0);
+        // Become a session leader to lose controlling TTY.
+        become_session_leader(ctx);
+        // Close all file descriptors.
+        closefds(ctx);
+    }
+    // Gather hardware information.
+    load_hwtopo(ctx);
+    start_rmi(ctx);
+    context_destruct(&ctx);
     return EXIT_SUCCESS;
 }
 

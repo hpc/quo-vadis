@@ -79,6 +79,9 @@ public:
     //
     static logger_t
     syslog_debug(void);
+    //
+    static void
+    console_to_syslog(void);
 };
 
 //

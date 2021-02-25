@@ -110,7 +110,7 @@ qvi_hwloc_construct(
     qvi_hwloc_t **hwl
 ) {
     int rc = QV_SUCCESS;
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
     qvi_hwloc_t *ihwl = qvi_new qvi_hwloc_t;
     if (!ihwl) {
@@ -132,8 +132,7 @@ qvi_hwloc_destruct(
 ) {
     qvi_hwloc_t *ihwl = *hwl;
     if (!ihwl) return;
-
-    hwloc_topology_destroy(ihwl->topo);
+    if (ihwl->topo) hwloc_topology_destroy(ihwl->topo);
     delete ihwl;
     *hwl = nullptr;
 }
@@ -147,7 +146,7 @@ topology_init(
 ) {
     if (!hwl) return QV_ERR_INVLD_ARG;
 
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
     int rc = hwloc_topology_init(&hwl->topo);
     if (rc != 0) {
@@ -168,7 +167,7 @@ qvi_hwloc_topology_load(
 ) {
     if (!hwl) return QV_ERR_INVLD_ARG;
 
-    char const *ers = nullptr;
+    cstr ers = nullptr;
 
     int rc = topology_init(hwl);
     if (rc != QV_SUCCESS) {
@@ -272,7 +271,7 @@ qvi_hwloc_task_get_cpubind(
             HWLOC_CPUBIND_PROCESS
     );
     if (rc) {
-        char const *ers = "hwloc_get_proc_cpubind() failed";
+        cstr ers = "hwloc_get_proc_cpubind() failed";
         qvi_log_error("{} with rc={}", ers, rc);
         qrc = QV_ERR_HWLOC;
         goto out;
