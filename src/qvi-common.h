@@ -50,6 +50,7 @@
 #endif
 
 typedef char const* cstr;
+typedef uint8_t byte;
 
 #endif
 

@@ -28,6 +28,8 @@ could be that not everyone is bothered by this, but in my view clean shutdown is
 important and it makes running tests a lot easier
 #endif
 
+// TODO(skg) Better understand va_start rules and cleanup error paths.
+
 #include "qvi-common.h"
 #include "qvi-rpc.h"
 #include "qvi-utils.h"
@@ -54,55 +56,260 @@ struct qvi_rpc_client_s {
 };
 
 typedef struct qvi_msg_header_s {
-    qvi_rpc_funid_t funid;
-    qvi_rpc_argv_t argv;
+    qvi_rpc_funid_t fid;
+    char picture[16];
 } qvi_msg_header_t;
 
-typedef int (*qvi_rpc_fun_ptr_t)(qvi_rpc_fun_data_t *);
+typedef void (*qvi_rpc_fun_ptr_t)(
+    qvi_rpc_server_t *,
+    qvi_msg_header_t *,
+    void *,
+    qvi_byte_buffer_t **
+);
+
+static int
+buff_vsscanf(
+    void *buff,
+    const char *picture,
+    va_list args
+) {
+    int rc = QV_SUCCESS;
+    byte *pos = (byte *)buff;
+
+    const int npic = strlen(picture);
+    for (int i = 0; i < npic; ++i) {
+        if (picture[i] == 'i') {
+            memmove(va_arg(args, int *), pos, sizeof(int));
+            pos += sizeof(int);
+            continue;
+        }
+        if (picture[i] == 's') {
+            const int nw = asprintf(va_arg(args, char **), "%s", pos);
+            if (nw == -1) {
+                rc = QV_ERR_OOR;
+                break;
+            }
+            pos += nw + 1;
+            continue;
+        }
+        if (picture[i] == 'b') {
+            void **data = va_arg(args, void **);
+            size_t *dsize = va_arg(args, size_t *);
+            memmove(dsize, pos, sizeof(*dsize));
+            pos += sizeof(*dsize);
+            *data = calloc(*dsize, sizeof(byte));
+            if (!*data) {
+                rc = QV_ERR_OOR;
+                break;
+            }
+            memmove(*data, pos, *dsize);
+            pos += *dsize;
+            continue;
+        }
+        else {
+            rc = QV_ERR_INVLD_ARG;
+            break;
+        }
+    }
+    return rc;
+}
+
+static int
+buff_sscanf(
+    void *buff,
+    const char *picture,
+    ...
+) {
+    va_list args;
+    va_start(args, picture);
+    int rc = buff_vsscanf(buff, picture, args);
+    va_end(args);
+    return rc;
+}
+
+static int
+buff_vasprintf(
+    qvi_byte_buffer_t *buff,
+    const char *picture,
+    va_list args
+) {
+    int rc = QV_SUCCESS;
+
+    const int npic = strlen(picture);
+    for (int i = 0; i < npic; ++i) {
+        if (picture[i] == 'i') {
+            int data = va_arg(args, int);
+            rc = qvi_byte_buffer_append(buff, &data, sizeof(data));
+            if (rc != QV_SUCCESS) break;
+            continue;
+        }
+        if (picture[i] == 's') {
+            char *data = va_arg(args, char *);
+            rc = qvi_byte_buffer_append(buff, data, strlen(data) + 1);
+            if (rc != QV_SUCCESS) break;
+            continue;
+        }
+        if (picture[i] == 'b') {
+            void *data = va_arg(args, void *);
+            size_t dsize = va_arg(args, size_t);
+            // We store size then data so unpack has an easier time, but keep
+            // the user interface order as data then size because.
+            rc = qvi_byte_buffer_append(buff, &dsize, sizeof(dsize));
+            if (rc != QV_SUCCESS) break;
+            rc = qvi_byte_buffer_append(buff, data, dsize);
+            if (rc != QV_SUCCESS) break;
+            continue;
+        }
+        else {
+            rc = QV_ERR_INVLD_ARG;
+            break;
+        }
+    }
+    return rc;
+}
+
+/**
+ *
+ */
+static void
+client_msg_free_byte_buffer_cb(
+    void *,
+    void *hint
+) {
+    qvi_byte_buffer_t *buff = (qvi_byte_buffer_t *)hint;
+    qvi_byte_buffer_destruct(&buff);
+}
+
+/**
+ *
+ */
+static int
+buffer_append_header(
+    qvi_byte_buffer_t *buff,
+    qvi_rpc_funid_t fid,
+    const char *picture
+) {
+    qvi_msg_header_t hdr;
+    const int bcap = sizeof(hdr.picture);
+    const int nw = snprintf(hdr.picture, bcap, "%s", picture);
+    if (nw >= bcap) return QV_ERR_INTERNAL;
+    hdr.fid = fid;
+    return qvi_byte_buffer_append(buff, &hdr, sizeof(hdr));
+}
+
+/**
+ *
+ */
+static inline void *
+data_trim(
+    void *msg,
+    size_t trim
+) {
+    byte *new_base = (byte *)msg;
+    new_base += trim;
+    return new_base;
+}
+
+/**
+ *
+ */
+static inline size_t
+unpack_msg_header(
+    void *data,
+    qvi_msg_header_t *hdr
+) {
+    const size_t hdrsize = sizeof(*hdr);
+    memmove(hdr, data, hdrsize);
+    return hdrsize;
+}
+
+/**
+ * i = int
+ * s = char *
+ * b = void *, size_t (two arguments)
+ */
+static int
+rpc_vpack(
+    qvi_byte_buffer_t **buff,
+    qvi_rpc_funid_t fid,
+    const char *picture,
+    va_list args
+) {
+    int rc = QV_SUCCESS;
+    *buff = nullptr;
+
+    qvi_byte_buffer_t *ibuff;
+    rc = qvi_byte_buffer_construct(&ibuff);
+    if (rc != QV_SUCCESS) {
+        qvi_log_error("qvi_byte_buffer_construct() failed");
+        return rc;
+    }
+    // Fill and add header.
+    rc = buffer_append_header(ibuff, fid, picture);
+    if (rc != QV_SUCCESS) {
+        qvi_log_error("buffer_append_header() failed");
+        return rc;
+    }
+    rc = buff_vasprintf(ibuff, picture, args);
+    if (rc == QV_SUCCESS) *buff = ibuff;
+    return rc;
+}
+
+static int
+rpc_pack(
+    qvi_byte_buffer_t **buff,
+    qvi_rpc_funid_t fid,
+    const char *picture,
+    ...
+) {
+    va_list vl;
+    va_start(vl, picture);
+    int rc = rpc_vpack(buff, fid, picture, vl);
+    va_end(vl);
+    return rc;
+}
+
+static int
+rpc_vunpack(
+    void *data,
+    const char *picture,
+    va_list args
+) {
+    qvi_msg_header_t hdr;
+    size_t trim = unpack_msg_header(data, &hdr);
+    void *body = data_trim(data, trim);
+    return buff_vsscanf(body, picture, args);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Server-Side RPC Stub Definitions
 ////////////////////////////////////////////////////////////////////////////////
-static int
+static void
 rpc_stub_task_get_cpubind(
-    qvi_rpc_fun_data_t *fun_data
+    qvi_rpc_server_t *server,
+    qvi_msg_header_t *hdr,
+    void *input,
+    qvi_byte_buffer_t **output
 ) {
-    int rc = QV_SUCCESS;
-    cstr ers = nullptr;
+    int who;
+    buff_sscanf(input, hdr->picture, &who);
 
+    int rpcrc;
     // TODO(skg) Improve.
     hwloc_bitmap_t bitmap;
-    const int bufsize = sizeof(fun_data->bitm_args[0]);
-    int nwritten;
-
-    rc = qvi_hwloc_task_get_cpubind(
-        fun_data->hwloc,
-        fun_data->int_args[0],
+    rpcrc = qvi_hwloc_task_get_cpubind(
+        server->hwloc,
+        who,
         &bitmap
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_task_get_cpubind() failed";
-        rc = QV_ERR_RPC;
-        goto out;
-    }
+    char *bitmaps;
+    hwloc_bitmap_asprintf(&bitmaps, bitmap);
 
-    // TODO(skg) Implement helper.
-    nwritten = hwloc_bitmap_snprintf(
-        fun_data->bitm_args[0],
-        bufsize,
-        bitmap
-    );
-    if (nwritten >= bufsize) {
-        ers = "qvi_hwloc_bitmap_snprintf() failed";
-        rc = QV_ERR_INTERNAL;
-        goto out;
-    }
-out:
-    if (ers) {
-        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-    }
+    cstr picture = "is";
+    rpc_pack(output, hdr->fid, picture, rpcrc, bitmaps);
+
     hwloc_bitmap_free(bitmap);
-    return rc;
+    free(bitmaps);
 }
 
 /**
@@ -112,19 +319,6 @@ out:
 static const qvi_rpc_fun_ptr_t qvi_server_rpc_dispatch_table[] = {
     rpc_stub_task_get_cpubind
 };
-
-/**
- *
- */
-static inline size_t
-server_rpc_unpack_msg_header(
-    void *msg,
-    qvi_msg_header_t *hdr
-) {
-    const size_t hdrsize = sizeof(*hdr);
-    memmove(hdr, msg, hdrsize);
-    return hdrsize;
-}
 
 /**
  *
@@ -233,113 +427,31 @@ server_open_commchan(
 /**
  *
  */
-static int
-server_rpc_unpack(
-    void *msg,
-    const qvi_msg_header_t *msghdr,
-    qvi_rpc_fun_data_t *fun_data
-) {
-    int rc = QV_SUCCESS;
-    cstr ers = nullptr;
-    // Get pointer to start of message body.
-    uint8_t *bodyp = (uint8_t *)msg;
-    //
-    const size_t nargs = qvi_rpc_args_maxn();
-    const size_t tbits = qvi_rpc_type_nbits();
-    // Flag indicating whether or not we are done processing arguments.
-    bool done = false;
-    // Unpack the values in the message body and populate relevant parameters.
-    qvi_rpc_argv_t argv = msghdr->argv;
-    for (size_t argidx = 0; argidx < nargs && !done; ++argidx) {
-        const qvi_rpc_arg_type_t type = (qvi_rpc_arg_type_t)(
-            argv & rpc_argv_type_mask
-        );
-        switch (type) {
-            case QVI_RPC_TYPE_NONE: {
-                done = true;
-                break;
-            }
-            case QVI_RPC_TYPE_INT: {
-                int *arg = &fun_data->int_args[fun_data->int_i++];
-                memmove(arg, bodyp, sizeof(*arg));
-                bodyp += sizeof(*arg);
-                break;
-            }
-            case QVI_RPC_TYPE_CSTR: {
-                cstr str = (cstr )bodyp;
-                const int bufsize = snprintf(NULL, 0, "%s", str) + 1;
-                char *value = (char *)calloc(bufsize, sizeof(*value));
-                if (!value) {
-                    ers = "calloc() failed";
-                    rc = QV_ERR_OOR;
-                    goto out;
-                }
-                memmove(value, str, bufsize);
-                fun_data->cstr_args[fun_data->cstr_i++] = value;
-                bodyp += bufsize;
-                break;
-            }
-            case QVI_RPC_TYPE_BITM: {
-                break;
-            }
-            default:
-                ers = "Unrecognized RPC type";
-                rc = QV_ERR_INTERNAL;
-                goto out;
-        }
-        // Advance argument bits to process next argument.
-        argv = argv >> tbits;
-    }
-out:
-    if (ers) {
-        qvi_log_error("{}", ers);
-        return rc;
-    }
-    return QV_SUCCESS;
-}
-
-static inline void *
-msg_trim(
-    void *msg,
-    size_t trim
-) {
-    uint8_t *new_base = (uint8_t *)msg;
-    new_base += trim;
-    return new_base;
-}
-
-/**
- *
- */
-static inline int
-server_msg_unpack(
-    qvi_rpc_server_t *server,
-    zmq_msg_t *zmq_msg,
-    qvi_msg_header_t *msg_hdr,
-    qvi_rpc_fun_data_t *unpacked
-) {
-    void *msg = zmq_msg_data(zmq_msg);
-
-    const size_t trim = server_rpc_unpack_msg_header(msg, msg_hdr);
-    // 'Trim' message header because server_rpc_unpack() expects it.
-    msg = msg_trim(msg, trim);
-
-    memset(unpacked, 0, sizeof(*unpacked));
-    // Set hwloc instance pointer for use in server-side call.
-    unpacked->hwloc = server->hwloc;
-
-    return server_rpc_unpack(msg, msg_hdr, unpacked);
-}
-
-/**
- *
- */
 static inline int
 server_rpc_dispatch(
-    const qvi_msg_header_t *msg_hdr,
-    qvi_rpc_fun_data_t *fun_data
+    qvi_rpc_server_t *server,
+    void *data,
+    zmq_msg_t *res
 ) {
-    fun_data->rc = qvi_server_rpc_dispatch_table[msg_hdr->funid](fun_data);
+    qvi_msg_header_t hdr;
+    const size_t trim = unpack_msg_header(data, &hdr);
+    void *body = data_trim(data, trim);
+
+    qvi_byte_buffer_t *buff;
+    qvi_server_rpc_dispatch_table[hdr.fid](server, &hdr, body, &buff);
+
+    const size_t buffer_size = qvi_byte_buffer_size(buff);
+    int zmq_rc = zmq_msg_init_data(
+        res,
+        qvi_byte_buffer_data(buff),
+        buffer_size,
+        client_msg_free_byte_buffer_cb,
+        buff
+    );
+    if (zmq_rc != 0) {
+        qvi_zmq_err_msg("zmq_msg_init_data() failed", errno);
+        return QV_ERR_MSG;
+    }
     return QV_SUCCESS;
 }
 
@@ -349,27 +461,33 @@ server_rpc_dispatch(
 static int
 server_msg_recv(
     qvi_rpc_server_t *server,
-    qvi_rpc_fun_data_t *fun_data
+    zmq_msg_t *mrx,
+    zmq_msg_t *mtx
 ) {
-    zmq_msg_t msg;
-    int rc = zmq_msg_init(&msg);
+    int rc = 0, qvrc = QV_SUCCESS;
+
+    rc = zmq_msg_init(mrx);
     if (rc != 0) {
-        qvi_log_error("zmq_msg_init() failed");
-        return QV_ERR_MSG;
+        qvi_zmq_err_msg("zmq_msg_init() failed", errno);
+        qvrc = QV_ERR_MSG;
+        goto out;
     }
     // Block until a message is available to be received from socket.
-    rc = zmq_msg_recv(&msg, server->zmq_sock, 0);
+    rc = zmq_msg_recv(mrx, server->zmq_sock, 0);
     if (rc == -1) {
-        qvi_log_error("zmq_msg_recv() failed");
-        return QV_ERR_MSG;
+        qvi_zmq_err_msg("zmq_msg_recv() failed", errno);
+        qvrc = QV_ERR_MSG;
+        goto out;
     }
-
-    qvi_msg_header_t msg_hdr;
-    server_msg_unpack(server, &msg, &msg_hdr, fun_data);
-    server_rpc_dispatch(&msg_hdr, fun_data);
-
-    zmq_msg_close(&msg);
-    return QV_SUCCESS;
+    // Do RPC function dispatch.
+    qvrc = server_rpc_dispatch(server, zmq_msg_data(mrx), mtx);
+    if (qvrc != QV_SUCCESS) {
+        qvi_log_error("server_rpc_dispatch() failed");
+        goto out;
+    }
+out:
+    zmq_msg_close(mrx);
+    return qvrc;
 }
 
 /**
@@ -378,27 +496,14 @@ server_msg_recv(
 static int
 server_msg_send(
     qvi_rpc_server_t *server,
-    qvi_rpc_fun_data_t *fun_data
+    zmq_msg_t *msg
 ) {
-    static const size_t sizeof_fun_data = sizeof(*fun_data);
-
-    zmq_msg_t msg;
-    int rc = zmq_msg_init_data(
-        &msg,
-        fun_data,
-        sizeof_fun_data,
-        nullptr,
-        nullptr
-    );
-    if (rc != 0) {
-        qvi_zmq_err_msg("zmq_msg_init_data() failed", errno);
+    int rc = zmq_msg_send(msg, server->zmq_sock, 0);
+    if (rc == -1) {
+        qvi_zmq_err_msg("zmq_msg_send() failed", errno);
         return QV_ERR_MSG;
     }
-    const int nbytes_sent = zmq_msg_send(&msg, server->zmq_sock, 0);
-    if (nbytes_sent != sizeof_fun_data) {
-        qvi_zmq_err_msg("zmq_msg_send() truncated", errno);
-        return QV_ERR_MSG;
-    }
+    zmq_msg_close(msg);
     return QV_SUCCESS;
 }
 
@@ -411,12 +516,12 @@ server_go(
     qvi_rpc_server_t *server
 ) {
     int rc;
-    qvi_rpc_fun_data_t fun_data;
 
     while (true) {
-        rc = server_msg_recv(server, &fun_data);
+        zmq_msg_t mrx, mtx;
+        rc = server_msg_recv(server, &mrx, &mtx);
         if (rc != QV_SUCCESS) return rc;
-        rc = server_msg_send(server, &fun_data);
+        rc = server_msg_send(server, &mtx);
         if (rc != QV_SUCCESS) return rc;
     }
     return QV_SUCCESS;
@@ -478,132 +583,6 @@ out:
     return rc;
 }
 
-/**
- *
- */
-static inline int
-client_msg_append_header(
-    qvi_byte_buffer_t *buff,
-    qvi_msg_header_t *hdr
-) {
-    int rc = qvi_byte_buffer_append(buff, hdr, sizeof(*hdr));
-    if (rc != QV_SUCCESS) {
-        qvi_log_error("qvi_byte_buffer_append() failed");
-    }
-    return rc;
-}
-
-/**
- *
- */
-int
-client_rpc_pack_msg_prep(
-    qvi_byte_buffer_t **buff,
-    const qvi_rpc_funid_t funid,
-    const qvi_rpc_argv_t argv
-) {
-    int rc = qvi_byte_buffer_construct(buff);
-    if (rc != QV_SUCCESS) {
-        qvi_log_error("qvi_byte_buffer_construct() failed");
-        return rc;
-    }
-
-    qvi_msg_header_t msghdr = {funid, argv};
-    rc = client_msg_append_header(*buff, &msghdr);
-    if (rc != QV_SUCCESS) {
-        qvi_byte_buffer_destruct(buff);
-    }
-    return rc;
-}
-
-/**
- *
- */
-static int
-client_rpc_pack(
-    qvi_byte_buffer_t **buff,
-    const qvi_rpc_funid_t funid,
-    const qvi_rpc_argv_t argv,
-    va_list args
-) {
-    cstr ers = nullptr;
-
-    int rc = client_rpc_pack_msg_prep(buff, funid, argv);
-    if (rc != QV_SUCCESS) {
-        qvi_log_error("client_rpc_pack_msg_prep() failed");
-        return rc;
-    }
-    //
-    const size_t nargs = qvi_rpc_args_maxn();
-    const size_t tbits = qvi_rpc_type_nbits();
-    // Flag indicating whether or not we are done processing arguments.
-    bool done = false;
-    // We will need to manipulate the argument list contents, so copy it.
-    qvi_rpc_argv_t argvc = argv;
-    // Process each argument and store them into the message body in the order
-    // in which they were specified.
-    for (size_t argidx = 0; argidx < nargs && !done; ++argidx) {
-        const qvi_rpc_arg_type_t type = (qvi_rpc_arg_type_t)(
-            argvc & rpc_argv_type_mask
-        );
-        switch (type) {
-            // The values are packed contiguously, so we have reached the end.
-            case QVI_RPC_TYPE_NONE: {
-                done = true;
-                break;
-            }
-            case QVI_RPC_TYPE_INT: {
-                int value = va_arg(args, int);
-                rc = qvi_byte_buffer_append(*buff, &value, sizeof(value));
-                if (rc != QV_SUCCESS) {
-                    ers = "QVI_RPC_TYPE_INT: qvi_byte_buffer_append() failed";
-                    goto out;
-                }
-                break;
-            }
-            case QVI_RPC_TYPE_CSTR: {
-                char *value = va_arg(args, char *);
-                rc = qvi_byte_buffer_append(*buff, value, strlen(value) + 1);
-                if (rc != QV_SUCCESS) {
-                    ers = "QVI_RPC_TYPE_CSTR: qvi_byte_buffer_append() failed";
-                    goto out;
-                }
-                break;
-            }
-            case QVI_RPC_TYPE_BITM: {
-                // TODO(skg) Make sure this is the correct type
-                hwloc_bitmap_t *value = va_arg(args, hwloc_bitmap_t *);
-                QVI_UNUSED(value);
-                break;
-            }
-            default:
-                ers = "Unrecognized RPC type";
-                rc = QV_ERR_INTERNAL;
-                goto out;
-        }
-        // Advance argument bits to process next argument.
-        argvc = argvc >> tbits;
-    }
-out:
-    if (ers) {
-        qvi_log_error("{}", ers);
-        qvi_byte_buffer_destruct(buff);
-    }
-    return rc;
-}
-
-/**
- *
- */
-static void
-client_msg_free_byte_buffer_cb(
-    void *,
-    void *hint
-) {
-    qvi_byte_buffer_t *buff = (qvi_byte_buffer_t *)hint;
-    qvi_byte_buffer_destruct(&buff);
-}
-
 int
 qvi_rpc_client_construct(
     qvi_rpc_client_t **client
@@ -639,7 +618,6 @@ qvi_rpc_client_destruct(
 ) {
     qvi_rpc_client_t *iclient = *client;
     if (!iclient) return;
-
     if (iclient->zmq_sock) {
         int rc = zmq_close(iclient->zmq_sock);
         if (rc != 0) {
@@ -654,7 +632,6 @@ qvi_rpc_client_destruct(
             qvi_log_warn("zmq_ctx_destroy() failed with {}", qvi_strerr(erno));
         }
     }
-
     delete iclient;
     *client = nullptr;
 }
@@ -681,30 +658,29 @@ qvi_rpc_client_connect(
 int
 qvi_rpc_client_rep(
     qvi_rpc_client_t *client,
-    qvi_rpc_fun_data_t *fun_data
+    const char *picture,
+    ...
 ) {
     int rc = QV_SUCCESS;
 
     zmq_msg_t msg;
-    int zmq_rc = zmq_msg_init(&msg);
-    if (zmq_rc != 0) {
+    int zrc = zmq_msg_init(&msg);
+    if (zrc != 0) {
         qvi_log_error("zmq_msg_init() failed");
         rc = QV_ERR_MSG;
         goto out;
     }
     // Block until a message is available to be received from socket.
-    zmq_rc = zmq_msg_recv(&msg, client->zmq_sock, 0);
-    // zmq_msg_recv() returns the message size or -1 on error.
-    static const size_t esize = sizeof(*fun_data);
-    if (zmq_rc != esize) {
-        qvi_log_error(
-            "zmq_msg_recv() failed: expected {} bytes, received {}",
-            esize, zmq_rc
-        );
+    zrc = zmq_msg_recv(&msg, client->zmq_sock, 0);
+    if (zrc == -1) {
         rc = QV_ERR_MSG;
         goto out;
     }
-    memmove(fun_data, zmq_msg_data(&msg), esize);
+
+    va_list vl;
+    va_start(vl, picture);
+    rc = rpc_vunpack(zmq_msg_data(&msg), picture, vl);
+    va_end(vl);
 out:
     zmq_msg_close(&msg);
     return rc;
@@ -713,19 +689,19 @@ out:
 int
 qvi_rpc_client_req(
     qvi_rpc_client_t *client,
-    const qvi_rpc_funid_t funid,
-    const qvi_rpc_argv_t argv,
+    qvi_rpc_funid_t fid,
+    const char *picture
     ...
 ) {
     qvi_byte_buffer_t *buff;
 
-    va_list vl;
-    va_start(vl, argv);
-    int rc = client_rpc_pack(&buff, funid, argv, vl);
-    va_end(vl);
+    va_list args;
+    va_start(args, picture);
+    int rc = rpc_vpack(&buff, fid, picture, args);
+    va_end(args);
     // Do this here to make dealing with va_start()/va_end() easier.
     if (rc != QV_SUCCESS) {
-        cstr ers = "client_rpc_pack() failed";
+        cstr ers = "rpc_vpack() failed";
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
         return rc;
     }

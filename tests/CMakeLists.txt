@@ -1,8 +1,8 @@
 #
-# Copyright (c)      2020 Triad National Security, LLC
+# Copyright (c) 2020-2021 Triad National Security, LLC
 #                         All rights reserved.
 #
-# Copyright (c)      2020 Lawrence Livermore National Security, LLC
+# Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
 #                         All rights reserved.
 #
 # This file is part of the quo-vadis project. See the LICENSE file at the
@@ -103,14 +103,14 @@ add_test(
     NAME
       rmi
     COMMAND
-      bash -c "export URL=\"tcp://127.0.0.1:55995\"     && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -s &)  && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &)  && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &)  && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &)  && \
-       ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c     && \
-      sleep 1                                           && \
-      killall test-rmi"
+        bash -c "export URL=\"tcp://127.0.0.1:55995\"     && \
+        (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -s &)  && \
+        (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &)  && \
+        (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &)  && \
+        (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &)  && \
+         ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c     && \
+        sleep 1                                           && \
+        killall test-rmi"
 )
 
 ################################################################################

@@ -17,6 +17,7 @@
 
 #include "qvi-common.h"
 #include "qvi-rmi.h"
+#include "qvi-utils.h"
 #include "qvi-rpc.h"
 
 struct qvi_rmi_server_s {
@@ -142,34 +143,32 @@ qvi_rmi_task_get_cpubind(
 ) {
     int rc = QV_SUCCESS;
     cstr ers = nullptr;
-
     hwloc_bitmap_t bitmap = hwloc_bitmap_alloc();
-
-    qvi_rpc_argv_t args = 0;
-    qvi_rpc_argv_pack(&args, who, out_bitmap);
 
     rc = qvi_rpc_client_req(
         client->rcpcli,
-        QV_TASK_GET_CPUBIND,
-        args,
-        who,
-        out_bitmap
+        QVI_RPC_TASK_GET_CPUBIND,
+        "i",
+        who
     );
     if (rc != QV_SUCCESS) {
         ers = "qvi_rpc_client_req() failed";
         goto out;
     }
 
-    qvi_rpc_fun_data_t fun_data;
+    int rpcrc;
+    char *bitmaps;
     rc = qvi_rpc_client_rep(
         client->rcpcli,
-        &fun_data
+        "is",
+        &rpcrc,
+        &bitmaps
     );
     if (rc != QV_SUCCESS) {
         ers = "qvi_rpc_client_rep() failed";
         goto out;
     }
-    hwloc_bitmap_sscanf(bitmap, fun_data.bitm_args[0]);
+    hwloc_bitmap_sscanf(bitmap, bitmaps);
     *out_bitmap = bitmap;
 out:
     if (ers) {
