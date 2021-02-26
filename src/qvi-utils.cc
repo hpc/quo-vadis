@@ -148,14 +148,14 @@ qvi_byte_buffer_append(
         void *new_data = calloc(new_capacity, sizeof(uint8_t));
         if (!new_data) return QV_ERR_OOR;
         // Memory allocation successful.
-        memcpy(new_data, buff->data, buff->size);
+        memmove(new_data, buff->data, buff->size);
         free(buff->data);
         buff->capacity = new_capacity;
         buff->data = new_data;
     }
     uint8_t *dest = (uint8_t *)buff->data;
-    dest += buff->size + 1;
-    memcpy(dest, data, size);
+    dest += buff->size;
+    memmove(dest, data, size);
     buff->size += size;
     return QV_SUCCESS;
 }
