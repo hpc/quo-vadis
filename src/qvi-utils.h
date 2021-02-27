@@ -23,8 +23,8 @@ extern "C" {
 #endif
 
 // Forward declarations.
-struct qvi_byte_buffer_s;
-typedef struct qvi_byte_buffer_s qvi_byte_buffer_t;
+struct qvi_bbuff_s;
+typedef struct qvi_bbuff_s qvi_bbuff_t;
 
 /**
  *
@@ -48,40 +48,40 @@ qvi_time(void);
  *
  */
 int
-qvi_byte_buffer_construct(
-    qvi_byte_buffer_t **buff
+qvi_bbuff_new(
+    qvi_bbuff_t **buff
 );
 
 /**
  *
  */
 void
-qvi_byte_buffer_destruct(
-    qvi_byte_buffer_t **buff
+qvi_bbuff_free(
+    qvi_bbuff_t **buff
 );
 
 /**
  *
  */
 void *
-qvi_byte_buffer_data(
-    qvi_byte_buffer_t *buff
+qvi_bbuff_data(
+    qvi_bbuff_t *buff
 );
 
 /**
  *
  */
 size_t
-qvi_byte_buffer_size(
-    const qvi_byte_buffer_t *buff
+qvi_bbuff_size(
+    const qvi_bbuff_t *buff
 );
 
 /**
  *
  */
 int
-qvi_byte_buffer_append(
-    qvi_byte_buffer_t *buff,
+qvi_bbuff_append(
+    qvi_bbuff_t *buff,
     void *data,
     size_t size
 );

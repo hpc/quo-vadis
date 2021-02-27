@@ -33,9 +33,9 @@ server(
     double start = qvi_time(), end;
 
     qvi_rmi_server_t *server = NULL;
-    int rc = qvi_rmi_server_construct(&server);
+    int rc = qvi_rmi_server_new(&server);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rmi_server_construct() failed";
+        ers = "qvi_rmi_server_new() failed";
         goto out;
     }
 
@@ -47,7 +47,7 @@ server(
     end = qvi_time();
     printf("# [%d] Server Start Time %lf seconds\n", getpid(), end - start);
 out:
-    qvi_rmi_server_destruct(&server);
+    qvi_rmi_server_free(&server);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         return 1;
@@ -64,9 +64,9 @@ client(
     char const *ers = NULL;
 
     qvi_rmi_client_t *client = NULL;
-    int rc = qvi_rmi_client_construct(&client);
+    int rc = qvi_rmi_client_new(&client);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rmi_client_construct() failed";
+        ers = "qvi_rmi_client_new() failed";
         goto out;
     }
 
@@ -89,7 +89,7 @@ client(
     hwloc_bitmap_free(bitmap);
     free(res);
 out:
-    qvi_rmi_client_destruct(&client);
+    qvi_rmi_client_free(&client);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         return 1;

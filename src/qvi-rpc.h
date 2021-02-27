@@ -1,8 +1,8 @@
 /*
- * Copyright (c)      2020 Triad National Security, LLC
+ * Copyright (c) 2020-2021 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c)      2020 Lawrence Livermore National Security, LLC
+ * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -35,14 +35,15 @@ struct qvi_rpc_fun_data_s;
 typedef struct qvi_rpc_fun_data_s qvi_rpc_fun_data_t;
 
 typedef enum qvi_rpc_funid_e {
-    QVI_RPC_TASK_GET_CPUBIND = 0
+    RPC_FID_INVALID = 0,
+    RPC_FID_TASK_GET_CPUBIND,
 } qvi_rpc_funid_t;
 
 /**
  *
  */
 int
-qvi_rpc_server_construct(
+qvi_rpc_server_new(
     qvi_rpc_server_t **server
 );
 
@@ -50,7 +51,7 @@ qvi_rpc_server_construct(
  *
  */
 void
-qvi_rpc_server_destruct(
+qvi_rpc_server_free(
     qvi_rpc_server_t **server
 );
 
@@ -67,7 +68,7 @@ qvi_rpc_server_start(
  *
  */
 int
-qvi_rpc_client_construct(
+qvi_rpc_client_new(
     qvi_rpc_client_t **client
 );
 
@@ -75,7 +76,7 @@ qvi_rpc_client_construct(
  *
  */
 void
-qvi_rpc_client_destruct(
+qvi_rpc_client_free(
     qvi_rpc_client_t **client
 );
 
@@ -89,7 +90,7 @@ qvi_rpc_client_connect(
 );
 
 int
-qvi_rpc_client_req(
+qvi_rpc_req(
     qvi_rpc_client_t *client,
     qvi_rpc_funid_t fid,
     const char *picture
@@ -97,7 +98,7 @@ qvi_rpc_client_req(
 );
 
 int
-qvi_rpc_client_rep(
+qvi_rpc_rep(
     qvi_rpc_client_t *client,
     const char *picture,
     ...

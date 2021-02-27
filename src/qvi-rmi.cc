@@ -29,7 +29,7 @@ struct qvi_rmi_client_s {
 };
 
 int
-qvi_rmi_server_construct(
+qvi_rmi_server_new(
     qvi_rmi_server_t **server
 ) {
     int rc = QV_SUCCESS;
@@ -42,28 +42,28 @@ qvi_rmi_server_construct(
         goto out;
     }
 
-    rc = qvi_rpc_server_construct(&iserver->rpcserv);
+    rc = qvi_rpc_server_new(&iserver->rpcserv);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rpc_server_construct() failed";
+        ers = "qvi_rpc_server_new() failed";
         goto out;
     }
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        qvi_rmi_server_destruct(&iserver);
+        qvi_rmi_server_free(&iserver);
     }
     *server = iserver;
     return rc;
 }
 
 void
-qvi_rmi_server_destruct(
+qvi_rmi_server_free(
     qvi_rmi_server_t **server
 ) {
     qvi_rmi_server_t *iserver = *server;
     if (!iserver) return;
 
-    qvi_rpc_server_destruct(&iserver->rpcserv);
+    qvi_rpc_server_free(&iserver->rpcserv);
     delete iserver;
     *server = nullptr;
 }
@@ -89,7 +89,7 @@ out:
 }
 
 int
-qvi_rmi_client_construct(
+qvi_rmi_client_new(
     qvi_rmi_client_t **client
 ) {
     int rc = QV_SUCCESS;
@@ -102,27 +102,27 @@ qvi_rmi_client_construct(
         goto out;
     }
 
-    rc = qvi_rpc_client_construct(&icli->rcpcli);
+    rc = qvi_rpc_client_new(&icli->rcpcli);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rpc_client_construct() failed";
+        ers = "qvi_rpc_client_new() failed";
         goto out;
     }
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        qvi_rmi_client_destruct(&icli);
+        qvi_rmi_client_free(&icli);
     }
     *client = icli;
     return rc;
 }
 
 void
-qvi_rmi_client_destruct(
+qvi_rmi_client_free(
     qvi_rmi_client_t **client
 ) {
     qvi_rmi_client_t *iclient = *client;
     if (!iclient) return;
-    qvi_rpc_client_destruct(&iclient->rcpcli);
+    qvi_rpc_client_free(&iclient->rcpcli);
     delete iclient;
     *client = nullptr;
 }
@@ -145,27 +145,27 @@ qvi_rmi_task_get_cpubind(
     cstr ers = nullptr;
     hwloc_bitmap_t bitmap = hwloc_bitmap_alloc();
 
-    rc = qvi_rpc_client_req(
+    rc = qvi_rpc_req(
         client->rcpcli,
-        QVI_RPC_TASK_GET_CPUBIND,
+        RPC_FID_TASK_GET_CPUBIND,
         "i",
         who
     );
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rpc_client_req() failed";
+        ers = "qvi_rpc_req() failed";
         goto out;
     }
 
     int rpcrc;
     char *bitmaps;
-    rc = qvi_rpc_client_rep(
+    rc = qvi_rpc_rep(
         client->rcpcli,
         "is",
         &rpcrc,
         &bitmaps
     );
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rpc_client_rep() failed";
+        ers = "qvi_rpc_rep() failed";
         goto out;
     }
     hwloc_bitmap_sscanf(bitmap, bitmaps);

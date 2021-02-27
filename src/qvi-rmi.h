@@ -37,7 +37,7 @@ typedef struct qvi_rmi_client_s qvi_rmi_client_t;
  *
  */
 int
-qvi_rmi_server_construct(
+qvi_rmi_server_new(
     qvi_rmi_server_t **server
 );
 
@@ -45,7 +45,7 @@ qvi_rmi_server_construct(
  *
  */
 void
-qvi_rmi_server_destruct(
+qvi_rmi_server_free(
     qvi_rmi_server_t **server
 );
 
@@ -62,7 +62,7 @@ qvi_rmi_server_start(
  *
  */
 int
-qvi_rmi_client_construct(
+qvi_rmi_client_new(
     qvi_rmi_client_t **client
 );
 
@@ -70,7 +70,7 @@ qvi_rmi_client_construct(
  *
  */
 void
-qvi_rmi_client_destruct(
+qvi_rmi_client_free(
     qvi_rmi_client_t **client
 );
 

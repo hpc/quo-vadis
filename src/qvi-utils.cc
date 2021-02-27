@@ -70,27 +70,27 @@ qvi_time(void)
     return double(tse_ms) / 1e6;
 }
 
-struct qvi_byte_buffer_s {
-    // Current capacity of buffer.
+struct qvi_bbuff_s {
+    /** Current capacity of buffer. */
     size_t capacity = 0;
-    // Amount of data already stored.
+    /** Amount of data already stored. */
     size_t size = 0;
-    // Pointer to data backing store.
+    /** Pointer to data backing store. */
     void *data = nullptr;
-    // Buffer constants.
+    /** Buffer constants. */
     enum constants {
-        // Minimum growth for resizes, etc.
+        /** Minimum growth for resizes, etc. */
         min_growth = 256
     };
 };
 
 int
-qvi_byte_buffer_construct(
-    qvi_byte_buffer_t **buff
+qvi_bbuff_new(
+    qvi_bbuff_t **buff
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_byte_buffer_t *ibuff = qvi_new qvi_byte_buffer_t;
+    qvi_bbuff_t *ibuff = qvi_new qvi_bbuff_t;
     if (!ibuff) {
         rc = QV_ERR_OOR;
         goto out;
@@ -104,17 +104,17 @@ qvi_byte_buffer_construct(
     }
 out:
     if (rc != QV_SUCCESS) {
-        qvi_byte_buffer_destruct(&ibuff);
+        qvi_bbuff_free(&ibuff);
     }
     *buff = ibuff;
     return rc;
 }
 
 void
-qvi_byte_buffer_destruct(
-    qvi_byte_buffer_t **buff
+qvi_bbuff_free(
+    qvi_bbuff_t **buff
 ) {
-    qvi_byte_buffer_t *ibuff = *buff;
+    qvi_bbuff_t *ibuff = *buff;
     if (!ibuff) return;
     if (ibuff->data) free(ibuff->data);
     delete ibuff;
@@ -122,22 +122,22 @@ qvi_byte_buffer_destruct(
 }
 
 void *
-qvi_byte_buffer_data(
-    qvi_byte_buffer_t *buff
+qvi_bbuff_data(
+    qvi_bbuff_t *buff
 ) {
     return buff->data;
 }
 
 size_t
-qvi_byte_buffer_size(
-    const qvi_byte_buffer_t *buff
+qvi_bbuff_size(
+    const qvi_bbuff_t *buff
 ) {
     return buff->size;
 }
 
 int
-qvi_byte_buffer_append(
-    qvi_byte_buffer_t *buff,
+qvi_bbuff_append(
+    qvi_bbuff_t *buff,
     void *data,
     size_t size
 ) {
@@ -231,10 +231,10 @@ qvi_url(
 const char *
 qvi_conn_ers(void)
 {
-    static const char *msg = "Cannot determine connection information. "
-                             "Please make sure that the following environment "
-                             "variable is set to an unused port number: "
-                             QVI_ENV_PORT;
+    static cstr msg = "Cannot determine connection information. "
+                      "Please make sure that the following environment "
+                      "variable is set to an unused port number: "
+                      QVI_ENV_PORT;
     return msg;
 }
 

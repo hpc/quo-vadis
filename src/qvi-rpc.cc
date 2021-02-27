@@ -37,34 +37,34 @@ important and it makes running tests a lot easier
 #include "zmq.h"
 #include "zmq_utils.h"
 
-#define qvi_zmq_err_msg(ers, err_no)                                           \
+#define qvi_zerr_msg(ers, err_no)                                           \
 do {                                                                           \
     int erno = (err_no);                                                       \
     qvi_log_error("{} with errno={} ({})", (ers), erno, qvi_strerr(erno));     \
 } while (0)
 
 struct qvi_rpc_server_s {
-    void *zmq_context = nullptr;
-    void *zmq_sock = nullptr;
+    void *zctx = nullptr;
+    void *zsock = nullptr;
     qvi_hwloc_t *hwloc = nullptr;
     char url[QVI_URL_MAX] = {'\0'};
 };
 
 struct qvi_rpc_client_s {
-    void *zmq_context = nullptr;
-    void *zmq_sock = nullptr;
+    void *zctx = nullptr;
+    void *zsock = nullptr;
 };
 
 typedef struct qvi_msg_header_s {
-    qvi_rpc_funid_t fid;
-    char picture[16];
+    qvi_rpc_funid_t fid = RPC_FID_INVALID;
+    char picture[16] = {'\0'};
 } qvi_msg_header_t;
 
 typedef void (*qvi_rpc_fun_ptr_t)(
     qvi_rpc_server_t *,
     qvi_msg_header_t *,
     void *,
-    qvi_byte_buffer_t **
+    qvi_bbuff_t **
 );
 
 static int
@@ -129,7 +129,7 @@ buff_sscanf(
 
 static int
 buff_vasprintf(
-    qvi_byte_buffer_t *buff,
+    qvi_bbuff_t *buff,
     const char *picture,
     va_list args
 ) {
@@ -139,13 +139,13 @@ buff_vasprintf(
     for (int i = 0; i < npic; ++i) {
         if (picture[i] == 'i') {
             int data = va_arg(args, int);
-            rc = qvi_byte_buffer_append(buff, &data, sizeof(data));
+            rc = qvi_bbuff_append(buff, &data, sizeof(data));
             if (rc != QV_SUCCESS) break;
             continue;
         }
         if (picture[i] == 's') {
             char *data = va_arg(args, char *);
-            rc = qvi_byte_buffer_append(buff, data, strlen(data) + 1);
+            rc = qvi_bbuff_append(buff, data, strlen(data) + 1);
             if (rc != QV_SUCCESS) break;
             continue;
         }
@@ -153,10 +153,10 @@ buff_vasprintf(
             void *data = va_arg(args, void *);
             size_t dsize = va_arg(args, size_t);
             // We store size then data so unpack has an easier time, but keep
-            // the user interface order as data then size because.
-            rc = qvi_byte_buffer_append(buff, &dsize, sizeof(dsize));
+            // the user interface order as data then size.
+            rc = qvi_bbuff_append(buff, &dsize, sizeof(dsize));
             if (rc != QV_SUCCESS) break;
-            rc = qvi_byte_buffer_append(buff, data, dsize);
+            rc = qvi_bbuff_append(buff, data, dsize);
             if (rc != QV_SUCCESS) break;
             continue;
         }
@@ -169,15 +169,15 @@ buff_vasprintf(
 }
 
 /**
- *
+ * Buffer resource deallocation callback.
  */
 static void
 client_msg_free_byte_buffer_cb(
     void *,
     void *hint
 ) {
-    qvi_byte_buffer_t *buff = (qvi_byte_buffer_t *)hint;
-    qvi_byte_buffer_destruct(&buff);
+    qvi_bbuff_t *buff = (qvi_bbuff_t *)hint;
+    qvi_bbuff_free(&buff);
 }
 
 /**
@@ -185,16 +185,16 @@ client_msg_free_byte_buffer_cb(
  */
 static int
 buffer_append_header(
-    qvi_byte_buffer_t *buff,
+    qvi_bbuff_t *buff,
     qvi_rpc_funid_t fid,
     const char *picture
 ) {
     qvi_msg_header_t hdr;
+    hdr.fid = fid;
     const int bcap = sizeof(hdr.picture);
     const int nw = snprintf(hdr.picture, bcap, "%s", picture);
-    if (nw >= bcap) return QV_ERR_INTERNAL;
-    hdr.fid = fid;
-    return qvi_byte_buffer_append(buff, &hdr, sizeof(hdr));
+    assert(nw < bcap);
+    return qvi_bbuff_append(buff, &hdr, sizeof(hdr));
 }
 
 /**
@@ -230,7 +230,7 @@ unpack_msg_header(
  */
 static int
 rpc_vpack(
-    qvi_byte_buffer_t **buff,
+    qvi_bbuff_t **buff,
     qvi_rpc_funid_t fid,
     const char *picture,
     va_list args
@@ -238,10 +238,10 @@ rpc_vpack(
     int rc = QV_SUCCESS;
     *buff = nullptr;
 
-    qvi_byte_buffer_t *ibuff;
-    rc = qvi_byte_buffer_construct(&ibuff);
+    qvi_bbuff_t *ibuff;
+    rc = qvi_bbuff_new(&ibuff);
     if (rc != QV_SUCCESS) {
-        qvi_log_error("qvi_byte_buffer_construct() failed");
+        qvi_log_error("qvi_bbuff_new() failed");
         return rc;
     }
     // Fill and add header.
@@ -257,7 +257,7 @@ rpc_vpack(
 
 static int
 rpc_pack(
-    qvi_byte_buffer_t **buff,
+    qvi_bbuff_t **buff,
     qvi_rpc_funid_t fid,
     const char *picture,
     ...
@@ -285,11 +285,22 @@ rpc_vunpack(
 // Server-Side RPC Stub Definitions
 ////////////////////////////////////////////////////////////////////////////////
 static void
+rpc_stub_invalid(
+    qvi_rpc_server_t *,
+    qvi_msg_header_t *,
+    void *,
+    qvi_bbuff_t **
+) {
+    qvi_log_error("Something bad happened in RPC dispatch.");
+    assert(false);
+}
+
+static void
 rpc_stub_task_get_cpubind(
     qvi_rpc_server_t *server,
     qvi_msg_header_t *hdr,
     void *input,
-    qvi_byte_buffer_t **output
+    qvi_bbuff_t **output
 ) {
     int who;
     buff_sscanf(input, hdr->picture, &who);
@@ -317,6 +328,7 @@ rpc_stub_task_get_cpubind(
  * sync with qvi_rpc_funid_t.
  */
 static const qvi_rpc_fun_ptr_t qvi_server_rpc_dispatch_table[] = {
+    rpc_stub_invalid,
     rpc_stub_task_get_cpubind
 };
 
@@ -342,7 +354,7 @@ out:
 }
 
 int
-qvi_rpc_server_construct(
+qvi_rpc_server_new(
     qvi_rpc_server_t **server
 ) {
     int rc = QV_SUCCESS;
@@ -355,8 +367,8 @@ qvi_rpc_server_construct(
         goto out;
     }
 
-    iserver->zmq_context = zmq_ctx_new();
-    if (!iserver->zmq_context) {
+    iserver->zctx = zmq_ctx_new();
+    if (!iserver->zctx) {
         ers = "zmq_ctx_new() failed";
         rc = QV_ERR_MSG;
         goto out;
@@ -370,14 +382,14 @@ qvi_rpc_server_construct(
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        qvi_rpc_server_destruct(&iserver);
+        qvi_rpc_server_free(&iserver);
     }
     *server = iserver;
     return rc;
 }
 
 void
-qvi_rpc_server_destruct(
+qvi_rpc_server_free(
     qvi_rpc_server_t **server
 ) {
     qvi_rpc_server_t *iserver = *server;
@@ -385,15 +397,15 @@ qvi_rpc_server_destruct(
 
     qvi_hwloc_destruct(&iserver->hwloc);
 
-    if (iserver->zmq_sock) {
-        int rc = zmq_close(iserver->zmq_sock);
+    if (iserver->zsock) {
+        int rc = zmq_close(iserver->zsock);
         if (rc != 0) {
             int erno = errno;
             qvi_log_warn("zmq_close() failed with {}", qvi_strerr(erno));
         }
     }
-    if (iserver->zmq_context) {
-        int rc = zmq_ctx_destroy(iserver->zmq_context);
+    if (iserver->zctx) {
+        int rc = zmq_ctx_destroy(iserver->zctx);
         if (rc != 0) {
             int erno = errno;
             qvi_log_warn("zmq_ctx_destroy() failed with {}", qvi_strerr(erno));
@@ -410,15 +422,15 @@ static int
 server_open_commchan(
     qvi_rpc_server_t *server
 ) {
-    server->zmq_sock = zmq_socket(server->zmq_context, ZMQ_REP);
-    if (!server->zmq_sock) {
-        qvi_zmq_err_msg("zmq_socket() failed", errno);
+    server->zsock = zmq_socket(server->zctx, ZMQ_REP);
+    if (!server->zsock) {
+        qvi_zerr_msg("zsocket() failed", errno);
         return QV_ERR_MSG;
     }
 
-    int rc = zmq_bind(server->zmq_sock, server->url);
+    int rc = zmq_bind(server->zsock, server->url);
     if (rc != 0) {
-        qvi_zmq_err_msg("zmq_bind() failed", errno);
+        qvi_zerr_msg("zmq_bind() failed", errno);
         return QV_ERR_MSG;
     }
     return QV_SUCCESS;
@@ -437,19 +449,19 @@ server_rpc_dispatch(
     const size_t trim = unpack_msg_header(data, &hdr);
     void *body = data_trim(data, trim);
 
-    qvi_byte_buffer_t *buff;
+    qvi_bbuff_t *buff;
     qvi_server_rpc_dispatch_table[hdr.fid](server, &hdr, body, &buff);
 
-    const size_t buffer_size = qvi_byte_buffer_size(buff);
+    const size_t buffer_size = qvi_bbuff_size(buff);
     int zmq_rc = zmq_msg_init_data(
         res,
-        qvi_byte_buffer_data(buff),
+        qvi_bbuff_data(buff),
         buffer_size,
         client_msg_free_byte_buffer_cb,
         buff
     );
     if (zmq_rc != 0) {
-        qvi_zmq_err_msg("zmq_msg_init_data() failed", errno);
+        qvi_zerr_msg("zmq_msg_init_data() failed", errno);
         return QV_ERR_MSG;
     }
     return QV_SUCCESS;
@@ -468,14 +480,14 @@ server_msg_recv(
 
     rc = zmq_msg_init(mrx);
     if (rc != 0) {
-        qvi_zmq_err_msg("zmq_msg_init() failed", errno);
+        qvi_zerr_msg("zmq_msg_init() failed", errno);
         qvrc = QV_ERR_MSG;
         goto out;
     }
     // Block until a message is available to be received from socket.
-    rc = zmq_msg_recv(mrx, server->zmq_sock, 0);
+    rc = zmq_msg_recv(mrx, server->zsock, 0);
     if (rc == -1) {
-        qvi_zmq_err_msg("zmq_msg_recv() failed", errno);
+        qvi_zerr_msg("zmq_msg_recv() failed", errno);
         qvrc = QV_ERR_MSG;
         goto out;
     }
@@ -498,9 +510,9 @@ server_msg_send(
     qvi_rpc_server_t *server,
     zmq_msg_t *msg
 ) {
-    int rc = zmq_msg_send(msg, server->zmq_sock, 0);
+    int rc = zmq_msg_send(msg, server->zsock, 0);
     if (rc == -1) {
-        qvi_zmq_err_msg("zmq_msg_send() failed", errno);
+        qvi_zerr_msg("zmq_msg_send() failed", errno);
         return QV_ERR_MSG;
     }
     zmq_msg_close(msg);
@@ -584,7 +596,7 @@ out:
 }
 
 int
-qvi_rpc_client_construct(
+qvi_rpc_client_new(
     qvi_rpc_client_t **client
 ) {
     int rc = QV_SUCCESS;
@@ -597,8 +609,8 @@ qvi_rpc_client_construct(
         goto out;
     }
 
-    iclient->zmq_context = zmq_ctx_new();
-    if (!iclient->zmq_context) {
+    iclient->zctx = zmq_ctx_new();
+    if (!iclient->zctx) {
         ers = "zmq_ctx_new() failed";
         rc = QV_ERR_MSG;
         goto out;
@@ -606,27 +618,27 @@ qvi_rpc_client_construct(
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        qvi_rpc_client_destruct(&iclient);
+        qvi_rpc_client_free(&iclient);
     }
     *client = iclient;
     return rc;
 }
 
 void
-qvi_rpc_client_destruct(
+qvi_rpc_client_free(
     qvi_rpc_client_t **client
 ) {
     qvi_rpc_client_t *iclient = *client;
     if (!iclient) return;
-    if (iclient->zmq_sock) {
-        int rc = zmq_close(iclient->zmq_sock);
+    if (iclient->zsock) {
+        int rc = zmq_close(iclient->zsock);
         if (rc != 0) {
             int erno = errno;
             qvi_log_warn("zmq_close() failed with {}", qvi_strerr(erno));
         }
     }
-    if (iclient->zmq_context) {
-        int rc = zmq_ctx_destroy(iclient->zmq_context);
+    if (iclient->zctx) {
+        int rc = zmq_ctx_destroy(iclient->zctx);
         if (rc != 0) {
             int erno = errno;
             qvi_log_warn("zmq_ctx_destroy() failed with {}", qvi_strerr(erno));
@@ -641,22 +653,22 @@ qvi_rpc_client_connect(
     qvi_rpc_client_t *client,
     const char *url
 ) {
-    client->zmq_sock = zmq_socket(client->zmq_context, ZMQ_REQ);
-    if (!client->zmq_sock) {
-        qvi_zmq_err_msg("zmq_socket() failed", errno);
+    client->zsock = zmq_socket(client->zctx, ZMQ_REQ);
+    if (!client->zsock) {
+        qvi_zerr_msg("zsocket() failed", errno);
         return QV_ERR_MSG;
     }
 
-    int rc = zmq_connect(client->zmq_sock, url);
+    int rc = zmq_connect(client->zsock, url);
     if (rc != 0) {
-        qvi_zmq_err_msg("zmq_connect() failed", errno);
+        qvi_zerr_msg("zmq_connect() failed", errno);
         return QV_ERR_MSG;
     }
     return QV_SUCCESS;
 }
 
 int
-qvi_rpc_client_rep(
+qvi_rpc_rep(
     qvi_rpc_client_t *client,
     const char *picture,
     ...
@@ -671,7 +683,7 @@ qvi_rpc_client_rep(
         goto out;
     }
     // Block until a message is available to be received from socket.
-    zrc = zmq_msg_recv(&msg, client->zmq_sock, 0);
+    zrc = zmq_msg_recv(&msg, client->zsock, 0);
     if (zrc == -1) {
         rc = QV_ERR_MSG;
         goto out;
@@ -687,18 +699,18 @@ out:
 }
 
 int
-qvi_rpc_client_req(
+qvi_rpc_req(
     qvi_rpc_client_t *client,
     qvi_rpc_funid_t fid,
     const char *picture
     ...
 ) {
-    qvi_byte_buffer_t *buff;
+    qvi_bbuff_t *buff;
 
-    va_list args;
-    va_start(args, picture);
-    int rc = rpc_vpack(&buff, fid, picture, args);
-    va_end(args);
+    va_list vl;
+    va_start(vl, picture);
+    int rc = rpc_vpack(&buff, fid, picture, vl);
+    va_end(vl);
     // Do this here to make dealing with va_start()/va_end() easier.
     if (rc != QV_SUCCESS) {
         cstr ers = "rpc_vpack() failed";
@@ -706,23 +718,23 @@ qvi_rpc_client_req(
         return rc;
     }
 
-    const size_t buffer_size = qvi_byte_buffer_size(buff);
+    const size_t buffer_size = qvi_bbuff_size(buff);
     zmq_msg_t msg;
     int zmq_rc = zmq_msg_init_data(
         &msg,
-        qvi_byte_buffer_data(buff),
+        qvi_bbuff_data(buff),
         buffer_size,
         client_msg_free_byte_buffer_cb,
         buff
     );
     if (zmq_rc != 0) {
-        qvi_zmq_err_msg("zmq_msg_init_data() failed", errno);
+        qvi_zerr_msg("zmq_msg_init_data() failed", errno);
         return QV_ERR_MSG;
     }
 
-    const size_t nbytes_sent = zmq_msg_send(&msg, client->zmq_sock, 0);
+    const size_t nbytes_sent = zmq_msg_send(&msg, client->zsock, 0);
     if (nbytes_sent != buffer_size) {
-        qvi_zmq_err_msg("zmq_msg_send() truncated", errno);
+        qvi_zerr_msg("zmq_msg_send() truncated", errno);
         return QV_ERR_MSG;
     }
     // Freeing up of buffer resources is done for us.

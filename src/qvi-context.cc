@@ -44,7 +44,7 @@ qv_create(
         goto out;
     }
 
-    rc = qvi_rmi_client_construct(&ictx->rmi);
+    rc = qvi_rmi_client_new(&ictx->rmi);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_client_construct() failed";
         goto out;
@@ -67,7 +67,7 @@ qv_free(
 
     qvi_task_destruct(&ctx->task);
     qvi_hwloc_destruct(&ctx->hwloc);
-    qvi_rmi_client_destruct(&ctx->rmi);
+    qvi_rmi_client_free(&ctx->rmi);
     delete ctx;
 
     return QV_SUCCESS;

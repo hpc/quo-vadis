@@ -32,7 +32,7 @@ context_destruct(
     context *ictx = *ctx;
     if (!ictx) return;
     // TODO(skg) Fix crash in hwloc teardown.
-    qvi_rmi_server_destruct(&ictx->rmi);
+    qvi_rmi_server_free(&ictx->rmi);
     qvi_hwloc_destruct(&ictx->hwloc);
     if (ictx->hwtopo_path) free(ictx->hwtopo_path);
     delete ictx;
@@ -59,9 +59,9 @@ context_construct(
         goto out;
     }
 
-    rc = qvi_rmi_server_construct(&ictx->rmi);
+    rc = qvi_rmi_server_new(&ictx->rmi);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rmi_server_construct() failed";
+        ers = "qvi_rmi_server_new() failed";
         goto out;
     }
 out:
