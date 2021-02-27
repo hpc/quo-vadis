@@ -30,7 +30,7 @@ typedef struct qvi_pmi_s qvi_pmi_t;
  *
  */
 int
-qvi_pmi_construct(
+qvi_pmi_new(
     qvi_pmi_t **pmi
 );
 
@@ -38,7 +38,7 @@ qvi_pmi_construct(
  *
  */
 void
-qvi_pmi_destruct(
+qvi_pmi_free(
     qvi_pmi_t *pmi
 );
 

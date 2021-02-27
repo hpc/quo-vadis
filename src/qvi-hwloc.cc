@@ -116,7 +116,7 @@ obj_type_depth(
 }
 
 int
-qvi_hwloc_construct(
+qvi_hwloc_new(
     qvi_hwloc_t **hwl
 ) {
     int rc = QV_SUCCESS;
@@ -130,14 +130,14 @@ qvi_hwloc_construct(
     }
 out:
     if (ers) {
-        qvi_hwloc_destruct(&ihwl);
+        qvi_hwloc_free(&ihwl);
     }
     *hwl = ihwl;
     return QV_SUCCESS;
 }
 
 void
-qvi_hwloc_destruct(
+qvi_hwloc_free(
     qvi_hwloc_t **hwl
 ) {
     qvi_hwloc_t *ihwl = *hwl;

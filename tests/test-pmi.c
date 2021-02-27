@@ -37,9 +37,9 @@ main(
     uint32_t lid = 0;
     uint32_t usize = 0;
 
-    rc = qvi_pmi_construct(&pmi);
+    rc = qvi_pmi_new(&pmi);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_pmi_construct() failed";
+        ers = "qvi_pmi_new() failed";
         goto out;
     }
 
@@ -66,7 +66,7 @@ main(
         goto out;
     }
 out:
-    qvi_pmi_destruct(pmi);
+    qvi_pmi_free(pmi);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         return EXIT_FAILURE;

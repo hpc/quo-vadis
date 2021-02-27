@@ -121,9 +121,9 @@ main(void)
     char const *ers = NULL;
     qvi_hwloc_t *hwl;
 
-    int rc = qvi_hwloc_construct(&hwl);
+    int rc = qvi_hwloc_new(&hwl);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_construct() failed";
+        ers = "qvi_hwloc_new() failed";
         goto out;
     }
 
@@ -166,7 +166,7 @@ main(void)
 out:
     if (binds) free(binds);
     hwloc_bitmap_free(bitmap);
-    qvi_hwloc_destruct(&hwl);
+    qvi_hwloc_free(&hwl);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         return EXIT_FAILURE;

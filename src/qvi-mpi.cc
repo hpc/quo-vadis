@@ -92,9 +92,9 @@ qv_mpi_create(
         goto out;
     }
 
-    rc = qvi_mpi_construct(&ictx->mpi);
+    rc = qvi_mpi_new(&ictx->mpi);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_mpi_construct() failed";
+        ers = "qvi_mpi_new() failed";
         goto out;
     }
 
@@ -114,7 +114,7 @@ qv_mpi_create(
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        qvi_mpi_destruct(&ictx->mpi);
+        qvi_mpi_free(&ictx->mpi);
         (void)qv_free(ictx);
         ictx = nullptr;
     }
@@ -245,9 +245,9 @@ group_create_from_mpi_group(
         return QV_SUCCESS;
     }
     // In the group.
-    qvrc = qvi_mpi_group_construct(maybe_group);
+    qvrc = qvi_mpi_group_new(maybe_group);
     if (qvrc != QV_SUCCESS) {
-        ers = "qvi_mpi_group_construct() failed";
+        ers = "qvi_mpi_group_new() failed";
         goto out;
     }
     qvrc = group_create_from_mpi_comm(
@@ -289,7 +289,7 @@ group_add(
 }
 
 int
-qvi_mpi_construct(
+qvi_mpi_new(
     qvi_mpi_t **mpi
 ) {
     int rc = QV_SUCCESS;
@@ -313,14 +313,14 @@ qvi_mpi_construct(
 out:
     if (ers) {
         qvi_log_error(ers);
-        qvi_mpi_destruct(&impi);
+        qvi_mpi_free(&impi);
     }
     *mpi = impi;
     return rc;
 }
 
 void
-qvi_mpi_destruct(
+qvi_mpi_free(
     qvi_mpi_t **mpi
 ) {
     qvi_mpi_t *impi = *mpi;
@@ -499,7 +499,7 @@ qvi_mpi_finalize(
 }
 
 int
-qvi_mpi_group_construct(
+qvi_mpi_group_new(
     qvi_mpi_group_t **group
 ) {
     int rc = QV_SUCCESS;
@@ -514,7 +514,7 @@ qvi_mpi_group_construct(
 }
 
 void
-qvi_mpi_group_destruct(
+qvi_mpi_group_free(
     qvi_mpi_group_t **group
 ) {
     qvi_mpi_group_t *igroup = *group;
@@ -615,9 +615,9 @@ qvi_mpi_group_create_from_mpi_comm(
     cstr ers = nullptr;
     MPI_Comm node_comm = MPI_COMM_NULL;
 
-    int rc = qvi_mpi_group_construct(new_group);
+    int rc = qvi_mpi_group_new(new_group);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_mpi_group_construct() failed";
+        ers = "qvi_mpi_group_new() failed";
         goto out;
     }
     rc = mpi_comm_to_new_node_comm(comm, &node_comm);
@@ -641,7 +641,7 @@ qvi_mpi_group_create_from_mpi_comm(
     }
 out:
     if (ers) {
-        qvi_mpi_group_destruct(new_group);
+        qvi_mpi_group_free(new_group);
         if (node_comm != MPI_COMM_NULL) {
             MPI_Comm_free(&node_comm);
         }

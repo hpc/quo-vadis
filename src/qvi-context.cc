@@ -32,21 +32,21 @@ qv_create(
         goto out;
     }
 
-    rc = qvi_task_construct(&ictx->task);
+    rc = qvi_task_new(&ictx->task);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_task_construct() failed";
+        ers = "qvi_task_new() failed";
         goto out;
     }
 
-    rc = qvi_hwloc_construct(&ictx->hwloc);
+    rc = qvi_hwloc_new(&ictx->hwloc);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_construct() failed";
+        ers = "qvi_hwloc_new() failed";
         goto out;
     }
 
     rc = qvi_rmi_client_new(&ictx->rmi);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rmi_client_construct() failed";
+        ers = "qvi_rmi_client_new() failed";
         goto out;
     }
 out:
@@ -65,8 +65,8 @@ qv_free(
 ) {
     if (!ctx) return QV_ERR_INVLD_ARG;
 
-    qvi_task_destruct(&ctx->task);
-    qvi_hwloc_destruct(&ctx->hwloc);
+    qvi_task_free(&ctx->task);
+    qvi_hwloc_free(&ctx->hwloc);
     qvi_rmi_client_free(&ctx->rmi);
     delete ctx;
 

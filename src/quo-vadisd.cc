@@ -26,21 +26,21 @@ struct context {
 };
 
 static void
-context_destruct(
+context_free(
     context **ctx
 ) {
     context *ictx = *ctx;
     if (!ictx) return;
     // TODO(skg) Fix crash in hwloc teardown.
     qvi_rmi_server_free(&ictx->rmi);
-    qvi_hwloc_destruct(&ictx->hwloc);
+    qvi_hwloc_free(&ictx->hwloc);
     if (ictx->hwtopo_path) free(ictx->hwtopo_path);
     delete ictx;
     *ctx = nullptr;
 }
 
 static void
-context_construct(
+context_new(
     context **ctx
 ) {
     int rc = QV_SUCCESS;
@@ -53,9 +53,9 @@ context_construct(
         goto out;
     }
 
-    rc = qvi_hwloc_construct(&ictx->hwloc);
+    rc = qvi_hwloc_new(&ictx->hwloc);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_construct() failed";
+        ers = "qvi_hwloc_new() failed";
         goto out;
     }
 
@@ -185,7 +185,7 @@ main(
     char **
 ) {
     context *ctx = nullptr;
-    context_construct(&ctx);
+    context_new(&ctx);
 
     if (ctx->daemonized) {
         // Redirect all console output to syslog.
@@ -203,7 +203,7 @@ main(
     // Start listening for commands.
     rmi_start(ctx);
     // Cleanup.
-    context_destruct(&ctx);
+    context_free(&ctx);
     return EXIT_SUCCESS;
 }
 

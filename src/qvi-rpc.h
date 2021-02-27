@@ -36,6 +36,8 @@ typedef struct qvi_rpc_fun_data_s qvi_rpc_fun_data_t;
 
 typedef enum qvi_rpc_funid_e {
     RPC_FID_INVALID = 0,
+    RPC_FID_HELLO,
+    RPC_FID_GBYE,
     RPC_FID_TASK_GET_CPUBIND,
 } qvi_rpc_funid_t;
 

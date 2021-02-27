@@ -50,15 +50,15 @@ main(
         return EXIT_FAILURE;
     }
     qv_task_t *task = NULL;
-    rc = qvi_task_construct(&task);
+    rc = qvi_task_new(&task);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_task_construct() failed";
+        ers = "qvi_task_new() failed";
         goto out;
     }
     qvi_mpi_t *mpi = NULL;
-    rc = qvi_mpi_construct(&mpi);
+    rc = qvi_mpi_new(&mpi);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_mpi_construct() failed";
+        ers = "qvi_mpi_new() failed";
         goto out;
     }
     rc = qvi_mpi_init(mpi, task, comm);
@@ -68,9 +68,9 @@ main(
     }
 
     qvi_mpi_group_t *node_group;
-    rc = qvi_mpi_group_construct(&node_group);
+    rc = qvi_mpi_group_new(&node_group);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_mpi_group_construct() failed";
+        ers = "qvi_mpi_group_new() failed";
         goto out;
     }
     rc = qvi_mpi_group_lookup_by_id(mpi, QVI_MPI_GROUP_NODE, node_group);
@@ -163,11 +163,11 @@ main(
         goto out;
     }
 out:
-    qvi_mpi_group_destruct(&world_group);
-    qvi_mpi_group_destruct(&node_group);
-    qvi_mpi_group_destruct(&node_even_group);
-    qvi_task_destruct(&task);
-    qvi_mpi_destruct(&mpi);
+    qvi_mpi_group_free(&world_group);
+    qvi_mpi_group_free(&node_group);
+    qvi_mpi_group_free(&node_even_group);
+    qvi_task_free(&task);
+    qvi_mpi_free(&mpi);
     if (evens) free(evens);
     MPI_Finalize();
     if (ers) {

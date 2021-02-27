@@ -47,7 +47,7 @@ static const qvi_mpi_group_id_t QVI_MPI_GROUP_INTRINSIC_END = 3;
  *
  */
 int
-qvi_mpi_construct(
+qvi_mpi_new(
     qvi_mpi_t **mpi
 );
 
@@ -55,7 +55,7 @@ qvi_mpi_construct(
  *
  */
 void
-qvi_mpi_destruct(
+qvi_mpi_free(
     qvi_mpi_t **mpi
 );
 
@@ -81,7 +81,7 @@ qvi_mpi_finalize(
  *
  */
 int
-qvi_mpi_group_construct(
+qvi_mpi_group_new(
     qvi_mpi_group_t **group
 );
 
@@ -89,7 +89,7 @@ qvi_mpi_group_construct(
  *
  */
 void
-qvi_mpi_group_destruct(
+qvi_mpi_group_free(
     qvi_mpi_group_t **group
 );
 

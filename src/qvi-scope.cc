@@ -27,7 +27,7 @@ struct qv_scope_s {
  *
  */
 void
-qvi_scope_destruct(
+qvi_scope_free(
     qv_scope_t **scope
 ) {
     qv_scope_t *iscope = *scope;
@@ -40,7 +40,7 @@ qvi_scope_destruct(
  *
  */
 int
-qvi_scope_construct(
+qvi_scope_new(
     qv_scope_t **scope,
     qv_context_t *ctx
 ) {
@@ -57,7 +57,7 @@ qvi_scope_construct(
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        qvi_scope_destruct(&iscope);
+        qvi_scope_free(&iscope);
     }
     *scope = iscope;
     return rc;
@@ -75,9 +75,9 @@ qv_scope_get(
 
     qv_scope_t *qvs;
     // TODO(skg) Should we cache these?
-    int rc = qvi_scope_construct(&qvs, ctx);
+    int rc = qvi_scope_new(&qvs, ctx);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_scope_construct() failed";
+        ers = "qvi_scope_new() failed";
         return rc;
         //goto out;
     }
@@ -111,7 +111,7 @@ qv_scope_get(
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        qvi_scope_destruct(&qvs);
+        qvi_scope_free(&qvs);
     }
     *scope = qvs;
     return rc;
@@ -124,7 +124,7 @@ qv_scope_free(
 ) {
     if (!ctx || !scope) return QV_ERR_INVLD_ARG;
 
-    qvi_scope_destruct(&scope);
+    qvi_scope_free(&scope);
 
     return QV_SUCCESS;
 }

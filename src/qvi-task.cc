@@ -31,7 +31,7 @@ struct qv_task_s {
 };
 
 int
-qvi_task_construct(
+qvi_task_new(
     qv_task_t **task
 ) {
     int rc = QV_SUCCESS;
@@ -46,14 +46,14 @@ qvi_task_construct(
 out:
     if (ers) {
         qvi_log_error(ers);
-        qvi_task_destruct(&itask);
+        qvi_task_free(&itask);
     }
     *task = itask;
     return rc;
 }
 
 void
-qvi_task_destruct(
+qvi_task_free(
     qv_task_t **task
 ) {
     qv_task_t *itask = *task;

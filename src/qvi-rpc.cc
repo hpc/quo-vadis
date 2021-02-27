@@ -37,17 +37,23 @@ important and it makes running tests a lot easier
 #include "zmq.h"
 #include "zmq_utils.h"
 
-#define qvi_zerr_msg(ers, err_no)                                           \
+#define qvi_zerr_msg(ers, err_no)                                              \
 do {                                                                           \
     int erno = (err_no);                                                       \
     qvi_log_error("{} with errno={} ({})", (ers), erno, qvi_strerr(erno));     \
 } while (0)
 
+#define qvi_zwrn_msg(ers, err_no)                                              \
+do {                                                                           \
+    int erno = (err_no);                                                       \
+    qvi_log_warn("{} with errno={} ({})", (ers), erno, qvi_strerr(erno));      \
+} while (0)
+
 struct qvi_rpc_server_s {
+    qvi_hwloc_t *hwloc = nullptr;
     void *zctx = nullptr;
     void *zsock = nullptr;
-    qvi_hwloc_t *hwloc = nullptr;
-    char url[QVI_URL_MAX] = {'\0'};
+    char *url = nullptr;
 };
 
 struct qvi_rpc_client_s {
@@ -120,10 +126,10 @@ buff_sscanf(
     const char *picture,
     ...
 ) {
-    va_list args;
-    va_start(args, picture);
-    int rc = buff_vsscanf(buff, picture, args);
-    va_end(args);
+    va_list vl;
+    va_start(vl, picture);
+    int rc = buff_vsscanf(buff, picture, vl);
+    va_end(vl);
     return rc;
 }
 
@@ -180,9 +186,6 @@ client_msg_free_byte_buffer_cb(
     qvi_bbuff_free(&buff);
 }
 
-/**
- *
- */
 static int
 buffer_append_header(
     qvi_bbuff_t *buff,
@@ -197,9 +200,6 @@ buffer_append_header(
     return qvi_bbuff_append(buff, &hdr, sizeof(hdr));
 }
 
-/**
- *
- */
 static inline void *
 data_trim(
     void *msg,
@@ -210,9 +210,6 @@ data_trim(
     return new_base;
 }
 
-/**
- *
- */
 static inline size_t
 unpack_msg_header(
     void *data,
@@ -296,6 +293,24 @@ rpc_stub_invalid(
 }
 
 static void
+rpc_stub_hello(
+    qvi_rpc_server_t *,
+    qvi_msg_header_t *,
+    void *,
+    qvi_bbuff_t **
+) {
+}
+
+static void
+rpc_stub_gbye(
+    qvi_rpc_server_t *,
+    qvi_msg_header_t *,
+    void *,
+    qvi_bbuff_t **
+) {
+}
+
+static void
 rpc_stub_task_get_cpubind(
     qvi_rpc_server_t *server,
     qvi_msg_header_t *hdr,
@@ -329,12 +344,11 @@ rpc_stub_task_get_cpubind(
  */
 static const qvi_rpc_fun_ptr_t qvi_server_rpc_dispatch_table[] = {
     rpc_stub_invalid,
+    rpc_stub_hello,
+    rpc_stub_gbye,
     rpc_stub_task_get_cpubind
 };
 
-/**
- *
- */
 static int
 server_hwloc_init(
     qvi_rpc_server_t *server
@@ -374,9 +388,9 @@ qvi_rpc_server_new(
         goto out;
     }
 
-    rc = qvi_hwloc_construct(&iserver->hwloc);
+    rc = qvi_hwloc_new(&iserver->hwloc);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_construct() failed";
+        ers = "qvi_hwloc_new() failed";
         goto out;
     }
 out:
@@ -394,30 +408,24 @@ qvi_rpc_server_free(
 ) {
     qvi_rpc_server_t *iserver = *server;
     if (!iserver) return;
-
-    qvi_hwloc_destruct(&iserver->hwloc);
-
+    qvi_hwloc_free(&iserver->hwloc);
     if (iserver->zsock) {
         int rc = zmq_close(iserver->zsock);
         if (rc != 0) {
-            int erno = errno;
-            qvi_log_warn("zmq_close() failed with {}", qvi_strerr(erno));
+            qvi_zwrn_msg("zmq_close() failed", errno);
         }
     }
     if (iserver->zctx) {
         int rc = zmq_ctx_destroy(iserver->zctx);
         if (rc != 0) {
-            int erno = errno;
-            qvi_log_warn("zmq_ctx_destroy() failed with {}", qvi_strerr(erno));
+            qvi_zwrn_msg("zmq_ctx_destroy() failed", errno);
         }
     }
+    if (iserver->url) free(iserver->url);
     delete iserver;
     *server = nullptr;
 }
 
-/**
- *
- */
 static int
 server_open_commchan(
     qvi_rpc_server_t *server
@@ -436,9 +444,6 @@ server_open_commchan(
     return QV_SUCCESS;
 }
 
-/**
- *
- */
 static inline int
 server_rpc_dispatch(
     qvi_rpc_server_t *server,
@@ -467,9 +472,6 @@ server_rpc_dispatch(
     return QV_SUCCESS;
 }
 
-/**
- *
- */
 static int
 server_msg_recv(
     qvi_rpc_server_t *server,
@@ -502,9 +504,6 @@ out:
     return qvrc;
 }
 
-/**
- *
- */
 static int
 server_msg_send(
     qvi_rpc_server_t *server,
@@ -519,9 +518,6 @@ server_msg_send(
     return QV_SUCCESS;
 }
 
-/**
- *
- */
 // See: http://api.zeromq.org/4-0:zmq-msg-recv
 static int
 server_go(
@@ -539,19 +535,13 @@ server_go(
     return QV_SUCCESS;
 }
 
-/**
- *
- */
 static int
 server_setup(
     qvi_rpc_server_t *server,
     const char *url
 ) {
-    const int nwritten = snprintf(server->url, sizeof(server->url), "%s", url);
-    if (nwritten >= QVI_URL_MAX) {
-        qvi_log_error("snprintf() truncated");
-        return QV_ERR_INTERNAL;
-    }
+    const int nw = asprintf(&server->url, "%s", url);
+    if (nw == -1) return QV_ERR_OOR;
     return QV_SUCCESS;
 }
 
@@ -633,15 +623,13 @@ qvi_rpc_client_free(
     if (iclient->zsock) {
         int rc = zmq_close(iclient->zsock);
         if (rc != 0) {
-            int erno = errno;
-            qvi_log_warn("zmq_close() failed with {}", qvi_strerr(erno));
+            qvi_zwrn_msg("zmq_close() failed", errno);
         }
     }
     if (iclient->zctx) {
         int rc = zmq_ctx_destroy(iclient->zctx);
         if (rc != 0) {
-            int erno = errno;
-            qvi_log_warn("zmq_ctx_destroy() failed with {}", qvi_strerr(erno));
+            qvi_zwrn_msg("zmq_ctx_destroy() failed", errno);
         }
     }
     delete iclient;
@@ -658,7 +646,6 @@ qvi_rpc_client_connect(
         qvi_zerr_msg("zsocket() failed", errno);
         return QV_ERR_MSG;
     }
-
     int rc = zmq_connect(client->zsock, url);
     if (rc != 0) {
         qvi_zerr_msg("zmq_connect() failed", errno);
@@ -678,13 +665,14 @@ qvi_rpc_rep(
     zmq_msg_t msg;
     int zrc = zmq_msg_init(&msg);
     if (zrc != 0) {
-        qvi_log_error("zmq_msg_init() failed");
+        qvi_zerr_msg("zmq_msg_init() failed", errno);
         rc = QV_ERR_MSG;
         goto out;
     }
     // Block until a message is available to be received from socket.
     zrc = zmq_msg_recv(&msg, client->zsock, 0);
     if (zrc == -1) {
+        qvi_zerr_msg("zmq_msg_recv() failed", errno);
         rc = QV_ERR_MSG;
         goto out;
     }
@@ -715,6 +703,7 @@ qvi_rpc_req(
     if (rc != QV_SUCCESS) {
         cstr ers = "rpc_vpack() failed";
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+        qvi_bbuff_free(&buff);
         return rc;
     }
 

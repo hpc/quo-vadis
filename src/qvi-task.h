@@ -26,7 +26,7 @@ extern "C" {
  *
  */
 int
-qvi_task_construct(
+qvi_task_new(
     qv_task_t **task
 );
 
@@ -34,7 +34,7 @@ qvi_task_construct(
  *
  */
 void
-qvi_task_destruct(
+qvi_task_free(
     qv_task_t **task
 );
 

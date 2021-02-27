@@ -31,7 +31,7 @@ typedef struct qvi_hwloc_s qvi_hwloc_t;
  *
  */
 int
-qvi_hwloc_construct(
+qvi_hwloc_new(
     qvi_hwloc_t **hwl
 );
 
@@ -39,7 +39,7 @@ qvi_hwloc_construct(
  *
  */
 void
-qvi_hwloc_destruct(
+qvi_hwloc_free(
     qvi_hwloc_t **hwl
 );
 

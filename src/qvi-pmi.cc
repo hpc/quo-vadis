@@ -30,7 +30,7 @@ struct qvi_pmi_s {
 };
 
 int
-qvi_pmi_construct(
+qvi_pmi_new(
     qvi_pmi_t **pmi
 ) {
     if (!pmi) return QV_ERR_INVLD_ARG;
@@ -47,7 +47,7 @@ qvi_pmi_construct(
 }
 
 void
-qvi_pmi_destruct(
+qvi_pmi_free(
     qvi_pmi_t *pmi
 ) {
     if (!pmi) return;

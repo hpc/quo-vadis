@@ -170,6 +170,7 @@ qvi_rmi_task_get_cpubind(
     }
     hwloc_bitmap_sscanf(bitmap, bitmaps);
     *out_bitmap = bitmap;
+    free(bitmaps);
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));

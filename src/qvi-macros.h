@@ -35,11 +35,6 @@ do {                                                                           \
 #define qvi_new new(std::nothrow)
 
 /**
- * Buffer size for URLs used for client/server connections.
- */
-#define QVI_URL_MAX 128
-
-/**
  * Port environment variable string.
  */
 #define QVI_ENV_PORT "QV_PORT"
