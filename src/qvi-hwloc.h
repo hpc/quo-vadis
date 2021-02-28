@@ -118,7 +118,8 @@ qvi_hwloc_task_isincluded_in_obj_by_type_id(
 int
 qvi_hwloc_topology_export(
     qvi_hwloc_t *hwl,
-    const char *path
+    const char *base_path,
+    char **path
 );
 
 #ifdef __cplusplus

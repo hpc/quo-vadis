@@ -39,7 +39,22 @@ server(
         goto out;
     }
 
-    rc = qvi_rmi_server_start(server, url);
+    qvi_rmi_config_t *config;
+    rc = qvi_rmi_config_new(&config);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_rmi_config_new() failed";
+        goto out;
+    }
+
+    rc = asprintf(&config->url, "%s", url);
+    if (rc == -1) {
+        rc = QV_ERR_OOR;
+        goto out;
+    }
+
+    rc = qvi_rmi_server_config(server, config);
+
+    rc = qvi_rmi_server_start(server);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_server_start() failed";
         goto out;

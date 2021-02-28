@@ -22,10 +22,6 @@
 extern "C" {
 #endif
 
-// Forward declarations.
-struct qvi_bbuff_s;
-typedef struct qvi_bbuff_s qvi_bbuff_t;
-
 /**
  *
  */
@@ -43,48 +39,6 @@ qvi_gettid(void);
  */
 double
 qvi_time(void);
-
-/**
- *
- */
-int
-qvi_bbuff_new(
-    qvi_bbuff_t **buff
-);
-
-/**
- *
- */
-void
-qvi_bbuff_free(
-    qvi_bbuff_t **buff
-);
-
-/**
- *
- */
-void *
-qvi_bbuff_data(
-    qvi_bbuff_t *buff
-);
-
-/**
- *
- */
-size_t
-qvi_bbuff_size(
-    const qvi_bbuff_t *buff
-);
-
-/**
- *
- */
-int
-qvi_bbuff_append(
-    qvi_bbuff_t *buff,
-    void *data,
-    size_t size
-);
 
 /**
  *

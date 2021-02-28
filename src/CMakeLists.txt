@@ -15,8 +15,10 @@ add_library(
     qvi-utils
     OBJECT
     qvi-utils.h
+    qvi-bbuff.h
     qvi-log.h
     qvi-utils.cc
+    qvi-bbuff.cc
     qvi-log.cc
 )
 

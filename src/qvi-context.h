@@ -12,7 +12,7 @@
 /**
  * @file qvi-context.h
  *
- * @note This file breaks convention by defining a struct within a header.
+ * @note This file breaks our convention by defining a struct within a header.
  * There is good reason for this: we want to hide the implementation details of
  * QV contexts, but require its definition in a header that is accessible to
  * multiple internal consumers.
@@ -33,7 +33,7 @@ extern "C" {
 #endif
 
 /**
- * The underlying data structure that defines an opaque QV context.
+ * The underlying data structure that defines an ultimately opaque QV context.
  */
 struct qv_context_s {
     qv_task_t *task = nullptr;

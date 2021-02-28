@@ -20,8 +20,8 @@
 
 struct context {
     qvi_hwloc_t *hwloc = nullptr;
+    qvi_rmi_config_t *rmic = nullptr;
     qvi_rmi_server_t *rmi = nullptr;
-    char *hwtopo_path = nullptr;
     bool daemonized = false;
 };
 
@@ -31,10 +31,10 @@ context_free(
 ) {
     context *ictx = *ctx;
     if (!ictx) return;
+    qvi_rmi_config_free(&ictx->rmic);
     // TODO(skg) Fix crash in hwloc teardown.
     qvi_rmi_server_free(&ictx->rmi);
     qvi_hwloc_free(&ictx->hwloc);
-    if (ictx->hwtopo_path) free(ictx->hwtopo_path);
     delete ictx;
     *ctx = nullptr;
 }
@@ -50,6 +50,12 @@ context_new(
     if (!ictx) {
         ers = "memory allocation failed";
         rc = QV_ERR_OOR;
+        goto out;
+    }
+
+    rc = qvi_rmi_config_new(&ictx->rmic);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_rmi_config_new() failed";
         goto out;
     }
 
@@ -122,6 +128,33 @@ become_session_leader(
 }
 
 static void
+rmi_config(
+    context *ctx
+) {
+    qvi_log_debug("Starting RMI");
+
+    int rc = qvi_url(&ctx->rmic->url);
+    if (rc != QV_SUCCESS) {
+        qvi_log_error(qvi_conn_ers());
+        return;
+    }
+
+    rc = qvi_rmi_server_config(ctx->rmi, ctx->rmic);
+    if (rc != QV_SUCCESS) {
+        qvi_log_error("qvi_rmi_server_config() failed");
+        return;
+    }
+
+    qvi_log_debug(
+        "Configuration:\n"
+        "  * URL: {}\n"
+        "  * hwloc XML: {}\n",
+        ctx->rmic->url,
+        ctx->rmic->hwtopo_path
+    );
+}
+
+static void
 rmi_start(
     context *ctx
 ) {
@@ -129,16 +162,7 @@ rmi_start(
 
     cstr ers = nullptr;
 
-    char *url = nullptr;
-    int rc = qvi_url(&url);
-    if (rc != QV_SUCCESS) {
-        qvi_log_error(qvi_conn_ers());
-        ers = "qvi_url() failed";
-        goto out;
-    }
-    qvi_log_debug("Listening on {}", url);
-
-    rc = qvi_rmi_server_start(ctx->rmi, url);
+    int rc = qvi_rmi_server_start(ctx->rmi);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_server_start() failed";
         goto out;
@@ -148,7 +172,6 @@ out:
     if (ers) {
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
-    if (url) free(url);
 }
 
 static void
@@ -170,8 +193,12 @@ hwtopo_export(
 ) {
     qvi_log_debug("Publishing hardware information");
 
-    cstr path = qvi_tmpdir();
-    int rc = qvi_hwloc_topology_export(ctx->hwloc, path);
+    cstr basedir = qvi_tmpdir();
+    int rc = qvi_hwloc_topology_export(
+        ctx->hwloc,
+        basedir,
+        &ctx->rmic->hwtopo_path
+    );
     if (rc != QV_SUCCESS) {
         static cstr ers = "qvi_hwloc_topology_export() failed";
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
@@ -200,7 +227,8 @@ main(
     // Gather and publish hardware information.
     hwtopo_load(ctx);
     hwtopo_export(ctx);
-    // Start listening for commands.
+    // Configure RMI, start listening for commands.
+    rmi_config(ctx);
     rmi_start(ctx);
     // Cleanup.
     context_free(&ctx);

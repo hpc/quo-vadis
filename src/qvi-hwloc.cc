@@ -280,16 +280,17 @@ topo_fopen(
 int
 qvi_hwloc_topology_export(
     qvi_hwloc_t *hwl,
-    const char *path
+    const char *base_path,
+    char **path
 ) {
     int qvrc = QV_SUCCESS, rc = 0, fd = 0;
     cstr ers = nullptr;
 
     int err;
-    bool usable = qvi_path_usable(path, &err);
+    bool usable = qvi_path_usable(base_path, &err);
     if (!usable) {
         ers = "Cannot export hardware topology to {} ({})";
-        qvi_log_error(ers, path, qvi_strerr(err));
+        qvi_log_error(ers, base_path, qvi_strerr(err));
         return QV_ERR;
     }
 
@@ -307,9 +308,16 @@ qvi_hwloc_topology_export(
         goto out;
     }
 
-    qvrc = topo_fname(path, &hwl->topo_file);
+    qvrc = topo_fname(base_path, &hwl->topo_file);
     if (qvrc != QV_SUCCESS) {
         ers = "topo_fname() failed";
+        goto out;
+    }
+
+    rc = asprintf(path, "%s", hwl->topo_file);
+    if (rc == -1) {
+        ers = "asprintf() failed";
+        rc = QV_ERR_OOR;
         goto out;
     }
 

@@ -33,6 +33,7 @@ important and it makes running tests a lot easier
 #include "qvi-common.h"
 #include "qvi-rpc.h"
 #include "qvi-utils.h"
+#include "qvi-bbuff.h"
 
 #include "zmq.h"
 #include "zmq_utils.h"
@@ -72,107 +73,6 @@ typedef void (*qvi_rpc_fun_ptr_t)(
     void *,
     qvi_bbuff_t **
 );
-
-static int
-buff_vsscanf(
-    void *buff,
-    const char *picture,
-    va_list args
-) {
-    int rc = QV_SUCCESS;
-    byte *pos = (byte *)buff;
-
-    const int npic = strlen(picture);
-    for (int i = 0; i < npic; ++i) {
-        if (picture[i] == 'i') {
-            memmove(va_arg(args, int *), pos, sizeof(int));
-            pos += sizeof(int);
-            continue;
-        }
-        if (picture[i] == 's') {
-            const int nw = asprintf(va_arg(args, char **), "%s", pos);
-            if (nw == -1) {
-                rc = QV_ERR_OOR;
-                break;
-            }
-            pos += nw + 1;
-            continue;
-        }
-        if (picture[i] == 'b') {
-            void **data = va_arg(args, void **);
-            size_t *dsize = va_arg(args, size_t *);
-            memmove(dsize, pos, sizeof(*dsize));
-            pos += sizeof(*dsize);
-            *data = calloc(*dsize, sizeof(byte));
-            if (!*data) {
-                rc = QV_ERR_OOR;
-                break;
-            }
-            memmove(*data, pos, *dsize);
-            pos += *dsize;
-            continue;
-        }
-        else {
-            rc = QV_ERR_INVLD_ARG;
-            break;
-        }
-    }
-    return rc;
-}
-
-static int
-buff_sscanf(
-    void *buff,
-    const char *picture,
-    ...
-) {
-    va_list vl;
-    va_start(vl, picture);
-    int rc = buff_vsscanf(buff, picture, vl);
-    va_end(vl);
-    return rc;
-}
-
-static int
-buff_vasprintf(
-    qvi_bbuff_t *buff,
-    const char *picture,
-    va_list args
-) {
-    int rc = QV_SUCCESS;
-
-    const int npic = strlen(picture);
-    for (int i = 0; i < npic; ++i) {
-        if (picture[i] == 'i') {
-            int data = va_arg(args, int);
-            rc = qvi_bbuff_append(buff, &data, sizeof(data));
-            if (rc != QV_SUCCESS) break;
-            continue;
-        }
-        if (picture[i] == 's') {
-            char *data = va_arg(args, char *);
-            rc = qvi_bbuff_append(buff, data, strlen(data) + 1);
-            if (rc != QV_SUCCESS) break;
-            continue;
-        }
-        if (picture[i] == 'b') {
-            void *data = va_arg(args, void *);
-            size_t dsize = va_arg(args, size_t);
-            // We store size then data so unpack has an easier time, but keep
-            // the user interface order as data then size.
-            rc = qvi_bbuff_append(buff, &dsize, sizeof(dsize));
-            if (rc != QV_SUCCESS) break;
-            rc = qvi_bbuff_append(buff, data, dsize);
-            if (rc != QV_SUCCESS) break;
-            continue;
-        }
-        else {
-            rc = QV_ERR_INVLD_ARG;
-            break;
-        }
-    }
-    return rc;
-}
 
 /**
  * Buffer resource deallocation callback.
@@ -247,7 +147,7 @@ rpc_vpack(
         qvi_log_error("buffer_append_header() failed");
         return rc;
     }
-    rc = buff_vasprintf(ibuff, picture, args);
+    rc = qvi_bbuff_vasprintf(ibuff, picture, args);
     if (rc == QV_SUCCESS) *buff = ibuff;
     return rc;
 }
@@ -275,7 +175,7 @@ rpc_vunpack(
     qvi_msg_header_t hdr;
     size_t trim = unpack_msg_header(data, &hdr);
     void *body = data_trim(data, trim);
-    return buff_vsscanf(body, picture, args);
+    return qvi_data_vsscanf(body, picture, args);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -318,7 +218,7 @@ rpc_stub_task_get_cpubind(
     qvi_bbuff_t **output
 ) {
     int who;
-    buff_sscanf(input, hdr->picture, &who);
+    qvi_data_sscanf(input, hdr->picture, &who);
 
     int rpcrc;
     // TODO(skg) Improve.
