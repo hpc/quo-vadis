@@ -75,7 +75,12 @@ typedef struct qvi_msg_header_s {
     char picture[8] = {'\0'};
 } qvi_msg_header_t;
 
-typedef void (*qvi_rpc_fun_ptr_t)(
+/**
+ * @note: The return value is used for operation status (e.g., was the internal
+ * machinery successful?). The underlying target's return code is packed into
+ * the message buffer and is meant for client-side consumption.
+ */
+typedef int (*qvi_rpc_fun_ptr_t)(
     qvi_rmi_server_t *,
     qvi_msg_header_t *,
     void *,
@@ -187,20 +192,16 @@ rpc_vunpack(
 }
 
 static int
-rpc_req(
+rpc_vreq(
     qvi_rmi_client_t *client,
     qvi_rpc_funid_t fid,
-    const char *picture
-    ...
+    const char *picture,
+    va_list vl
 ) {
     int qvrc = QV_SUCCESS;
     qvi_bbuff_t *buff;
 
-    va_list vl;
-    va_start(vl, picture);
     int rc = rpc_vpack(&buff, fid, picture, vl);
-    va_end(vl);
-    // Do this here to make dealing with va_start()/va_end() easier.
     if (rc != QV_SUCCESS) {
         cstr ers = "rpc_vpack() failed";
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
@@ -239,10 +240,24 @@ out:
 }
 
 static int
-rpc_rep(
+rpc_req(
+    qvi_rmi_client_t *client,
+    qvi_rpc_funid_t fid,
+    const char *picture
+    ...
+) {
+    va_list vl;
+    va_start(vl, picture);
+    int rc = rpc_vreq(client, fid, picture, vl);
+    va_end(vl);
+    return rc;
+}
+
+static int
+rpc_vrep(
     qvi_rmi_client_t *client,
     const char *picture,
-    ...
+    va_list vl
 ) {
     int rc = QV_SUCCESS;
 
@@ -261,20 +276,30 @@ rpc_rep(
         goto out;
     }
 
-    va_list vl;
-    va_start(vl, picture);
     rc = rpc_vunpack(zmq_msg_data(&msg), picture, vl);
-    va_end(vl);
 out:
     zmq_msg_close(&msg);
+    return rc;
+}
+
+static int
+rpc_rep(
+    qvi_rmi_client_t *client,
+    const char *picture,
+    ...
+) {
+    va_list vl;
+    va_start(vl, picture);
+    int rc = rpc_vrep(client, picture, vl);
+    va_end(vl);
     return rc;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // Server-Side RPC Stub Definitions
 ////////////////////////////////////////////////////////////////////////////////
-static void
-rpc_stub_invalid(
+static int
+rpc_ssi_invalid(
     qvi_rmi_server_t *,
     qvi_msg_header_t *,
     void *,
@@ -282,10 +307,11 @@ rpc_stub_invalid(
 ) {
     qvi_log_error("Something bad happened in RPC dispatch.");
     assert(false);
+    return QV_ERR_INVLD_ARG;
 }
 
-static void
-rpc_stub_hello(
+static int
+rpc_ssi_hello(
     qvi_rmi_server_t *server,
     qvi_msg_header_t *hdr,
     void *input,
@@ -293,52 +319,58 @@ rpc_stub_hello(
 ) {
     // TODO(skg) This will go into some registry somewhere.
     int whoisit;
-    qvi_data_sscanf(input, hdr->picture, &whoisit);
-
-    rpc_pack(
+    int rc = qvi_data_sscanf(input, hdr->picture, &whoisit);
+    if (rc != QV_SUCCESS) return rc;
+    // Pack relevant configuration information.
+    rc = rpc_pack(
         output,
         hdr->fid,
         "ss",
         server->config->url,
         server->config->hwtopo_path
     );
+    return rc;
 }
 
-static void
-rpc_stub_gbye(
+static int
+rpc_ssi_gbye(
     qvi_rmi_server_t *,
     qvi_msg_header_t *,
     void *,
     qvi_bbuff_t **
 ) {
+    return QV_ERR_INVLD_ARG;
 }
 
-static void
-rpc_stub_task_get_cpubind(
+static int
+rpc_ssi_task_get_cpubind(
     qvi_rmi_server_t *server,
     qvi_msg_header_t *hdr,
     void *input,
     qvi_bbuff_t **output
 ) {
     int who;
-    qvi_data_sscanf(input, hdr->picture, &who);
+    int rc = qvi_data_sscanf(input, hdr->picture, &who);
+    if (rc != QV_SUCCESS) return rc;
 
-    int rpcrc;
-    // TODO(skg) Improve.
     hwloc_bitmap_t bitmap;
-    rpcrc = qvi_hwloc_task_get_cpubind(
+    int rpcrc = qvi_hwloc_task_get_cpubind(
         server->config->hwloc,
         who,
         &bitmap
     );
-    char *bitmaps;
-    hwloc_bitmap_asprintf(&bitmaps, bitmap);
 
-    cstr picture = "is";
-    rpc_pack(output, hdr->fid, picture, rpcrc, bitmaps);
+    char *bitmaps;
+    rc = hwloc_bitmap_asprintf(&bitmaps, bitmap);
+    if (rc == -1) rpcrc = QV_ERR_HWLOC;
+
+    rc = rpc_pack(output, hdr->fid, "is", rpcrc, bitmaps);
+    if (rc != QV_SUCCESS) return rc;
 
     hwloc_bitmap_free(bitmap);
     free(bitmaps);
+
+    return rc;
 }
 
 /**
@@ -346,10 +378,10 @@ rpc_stub_task_get_cpubind(
  * sync with qvi_rpc_funid_t.
  */
 static const qvi_rpc_fun_ptr_t qvi_server_rpc_dispatch_table[] = {
-    rpc_stub_invalid,
-    rpc_stub_hello,
-    rpc_stub_gbye,
-    rpc_stub_task_get_cpubind
+    rpc_ssi_invalid,
+    rpc_ssi_hello,
+    rpc_ssi_gbye,
+    rpc_ssi_task_get_cpubind
 };
 
 static int
@@ -376,28 +408,35 @@ server_rpc_dispatch(
     zmq_msg_t *msg_in,
     zmq_msg_t *msg_out
 ) {
-    int qvrc = QV_SUCCESS;
+    int qvrc = QV_SUCCESS, zrc;
 
     void *data = zmq_msg_data(msg_in);
     qvi_msg_header_t hdr;
     const size_t trim = unpack_msg_header(data, &hdr);
     void *body = data_trim(data, trim);
 
-    qvi_bbuff_t *resbuff;
-    qvi_server_rpc_dispatch_table[hdr.fid](server, &hdr, body, &resbuff);
+    qvi_bbuff_t *res;
+    qvrc = qvi_server_rpc_dispatch_table[hdr.fid](server, &hdr, body, &res);
+    if (qvrc != QV_SUCCESS) {
+        cstr ers = "RPC dispatch failed";
+        qvi_log_error("{} with rc={} ({})", ers, qvrc, qv_strerr(qvrc));
+        goto out;
+    }
 
-    const size_t buffer_size = qvi_bbuff_size(resbuff);
-    int zrc = zmq_msg_init_data(
+    size_t buffer_size;
+    buffer_size = qvi_bbuff_size(res);
+    zrc = zmq_msg_init_data(
         msg_out,
-        qvi_bbuff_data(resbuff),
+        qvi_bbuff_data(res),
         buffer_size,
         msg_free_byte_buffer_cb,
-        resbuff
+        res
     );
     if (zrc != 0) {
         qvi_zerr_msg("zmq_msg_init_data() failed", errno);
         qvrc = QV_ERR_MSG;
     }
+out:
     zmq_msg_close(msg_in);
     if (qvrc != QV_SUCCESS) zmq_msg_close(msg_out);
     return qvrc;
@@ -606,6 +645,7 @@ qvi_rmi_client_free(
             qvi_zwrn_msg("zmq_ctx_destroy() failed", errno);
         }
     }
+    qvi_config_rmi_free(&iclient->config);
     delete iclient;
     *client = nullptr;
 }
@@ -614,18 +654,13 @@ static int
 hello_handshake(
     qvi_rmi_client_t *client
 ) {
-    cstr ers = nullptr;
-
     int rc = rpc_req(
         client,
         RPC_FID_HELLO,
         "i",
         (int)getpid()
     );
-    if (rc != QV_SUCCESS) {
-        ers = "rpc_req() failed";
-        goto out;
-    }
+    if (rc != QV_SUCCESS) return rc;
 
     rc = rpc_rep(
         client,
@@ -633,9 +668,6 @@ hello_handshake(
         &client->config->url,
         &client->config->hwtopo_path
     );
-
-    qvi_log_debug("URL {}, HTOPO {}", client->config->url, client->config->hwtopo_path);
-out:
     return rc;
 }
 
@@ -649,15 +681,20 @@ qvi_rmi_client_connect(
         qvi_zerr_msg("zsocket() failed", errno);
         return QV_ERR_MSG;
     }
+
     int rc = zmq_connect(client->zsock, url);
     if (rc != 0) {
         qvi_zerr_msg("zmq_connect() failed", errno);
         return QV_ERR_MSG;
     }
-    hello_handshake(client);
-    return QV_SUCCESS;
+
+    return hello_handshake(client);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Client-Side (Public) RPC Stub Definitions
+////////////////////////////////////////////////////////////////////////////////
+// TODO(skg) Needs lots of work.
 int
 qvi_rmi_task_get_cpubind(
     qvi_rmi_client_t *client,
@@ -697,8 +734,9 @@ qvi_rmi_task_get_cpubind(
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+        return rc;
     }
-    return rc;
+    return rpcrc;
 }
 
 /*
