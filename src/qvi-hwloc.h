@@ -23,10 +23,6 @@
 extern "C" {
 #endif
 
-// Forward declarations.
-struct qvi_hwloc_s;
-typedef struct qvi_hwloc_s qvi_hwloc_t;
-
 /**
  *
  */

@@ -17,9 +17,11 @@ add_library(
     qvi-utils.h
     qvi-bbuff.h
     qvi-log.h
+    qvi-config.h
     qvi-utils.cc
     qvi-bbuff.cc
     qvi-log.cc
+    qvi-config.cc
 )
 
 target_compile_options(
@@ -107,29 +109,6 @@ target_include_directories(
 target_link_libraries(
     qvi-rmi
     qvi-utils
-    hwloc
-)
-
-################################################################################
-################################################################################
-add_library(
-    qvi-rpc
-    OBJECT
-    qvi-rpc.h
-    qvi-rpc.cc
-)
-
-target_include_directories(
-    qvi-rpc
-    PUBLIC
-      $<INSTALL_INTERFACE:include>
-      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-)
-
-target_link_libraries(
-    qvi-rpc
-    qvi-utils
     qvi-hwloc
     zmq
 )
@@ -187,7 +166,6 @@ target_link_libraries(
     quo-vadis
     qvi-utils
     qvi-hwloc
-    qvi-rpc
     qvi-pmi
     qvi-mpi
     qvi-rmi

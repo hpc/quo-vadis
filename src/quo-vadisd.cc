@@ -15,12 +15,13 @@
 
 #include "qvi-common.h"
 #include "qvi-utils.h"
+#include "qvi-config.h"
 #include "qvi-hwloc.h"
 #include "qvi-rmi.h"
 
 struct context {
     qvi_hwloc_t *hwloc = nullptr;
-    qvi_rmi_config_t *rmic = nullptr;
+    qvi_config_rmi_t *rmic = nullptr;
     qvi_rmi_server_t *rmi = nullptr;
     bool daemonized = false;
 };
@@ -31,7 +32,7 @@ context_free(
 ) {
     context *ictx = *ctx;
     if (!ictx) return;
-    qvi_rmi_config_free(&ictx->rmic);
+    qvi_config_rmi_free(&ictx->rmic);
     // TODO(skg) Fix crash in hwloc teardown.
     qvi_rmi_server_free(&ictx->rmi);
     qvi_hwloc_free(&ictx->hwloc);
@@ -53,9 +54,9 @@ context_new(
         goto out;
     }
 
-    rc = qvi_rmi_config_new(&ictx->rmic);
+    rc = qvi_config_rmi_new(&ictx->rmic);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rmi_config_new() failed";
+        ers = "qvi_config_rmi_new() failed";
         goto out;
     }
 
@@ -133,6 +134,8 @@ rmi_config(
 ) {
     qvi_log_debug("Starting RMI");
 
+    ctx->rmic->hwloc = ctx->hwloc;
+
     int rc = qvi_url(&ctx->rmic->url);
     if (rc != QV_SUCCESS) {
         qvi_log_error(qvi_conn_ers());
@@ -145,13 +148,8 @@ rmi_config(
         return;
     }
 
-    qvi_log_debug(
-        "Configuration:\n"
-        "  * URL: {}\n"
-        "  * hwloc XML: {}\n",
-        ctx->rmic->url,
-        ctx->rmic->hwtopo_path
-    );
+    qvi_log_debug("URL: {}", ctx->rmic->url);
+    qvi_log_debug("hwloc XML: {}", ctx->rmic->hwtopo_path);
 }
 
 static void

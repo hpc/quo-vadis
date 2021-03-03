@@ -28,33 +28,40 @@ qvi_logger::qvi_logger(void)
     //
     // Console
     //
-    m_console_info = spdlog::stdout_logger_mt("console_info");
+    m_console_info = spdlog::stderr_logger_mt("console_info");
     m_console_info->set_level(spdlog::level::info);
     m_console_info->set_pattern("%v");
+    m_console_info->flush_on(m_console_info->level());
 
-    m_console_error = spdlog::stdout_logger_mt("console_error");
+    m_console_error = spdlog::stderr_logger_mt("console_error");
     m_console_error->set_level(spdlog::level::err);
+    m_console_error->flush_on(m_console_error->level());
 
-    m_console_warn = spdlog::stdout_logger_mt("console_warn");
+    m_console_warn = spdlog::stderr_logger_mt("console_warn");
     m_console_warn->set_level(spdlog::level::warn);
 
-    m_console_debug = spdlog::stdout_logger_mt("console_debug");
+    m_console_debug = spdlog::stderr_logger_mt("console_debug");
     m_console_debug->set_level(spdlog::level::debug);
     m_console_debug->set_pattern("[%H:%M:%S.%e pid=%P tid=%t] %v");
+    m_console_debug->flush_on(m_console_debug->level());
     //
     // Syslog
     //
     m_syslog_info = spdlog::syslog_logger_mt("syslog_info");
     m_syslog_info->set_level(spdlog::level::info);
+    m_syslog_info->flush_on(m_syslog_info->level());
 
     m_syslog_error = spdlog::syslog_logger_mt("syslog_error");
     m_syslog_error->set_level(spdlog::level::err);
+    m_syslog_error->flush_on(m_syslog_error->level());
 
     m_syslog_warn = spdlog::syslog_logger_mt("syslog_warn");
     m_syslog_warn->set_level(spdlog::level::warn);
+    m_syslog_warn->flush_on(m_syslog_warn->level());
 
     m_syslog_debug = spdlog::syslog_logger_mt("syslog_debug");
     m_syslog_debug->set_level(spdlog::level::debug);
+    m_syslog_debug->flush_on(m_syslog_debug->level());
 }
 
 qvi_logger::~qvi_logger(void)
@@ -143,15 +150,19 @@ qvi_logger::console_to_syslog(void)
     logger.m_console_info = spdlog::syslog_logger_mt("consys_info");
     logger.m_console_info->set_level(spdlog::level::info);
     logger.m_console_info->set_pattern("%v");
+    logger.m_console_info->flush_on(logger.m_console_info->level());
 
     logger.m_console_error = spdlog::syslog_logger_mt("consys_error");
     logger.m_console_error->set_level(spdlog::level::err);
+    logger.m_console_error->flush_on(logger.m_console_error->level());
 
     logger.m_console_warn = spdlog::syslog_logger_mt("consys_warn");
     logger.m_console_warn->set_level(spdlog::level::warn);
+    logger.m_console_warn->flush_on(logger.m_console_warn->level());
 
     logger.m_console_debug = spdlog::syslog_logger_mt("consys_debug");
     logger.m_console_debug->set_level(spdlog::level::debug);
+    logger.m_console_debug->flush_on(logger.m_console_debug->level());
 }
 
 /*

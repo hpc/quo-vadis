@@ -17,9 +17,7 @@
 #define QVI_COMMON_H
 
 #include "quo-vadis/config.h"
-
 #include "qvi-macros.h"
-
 #include "quo-vadis.h"
 
 #include <assert.h>
@@ -51,6 +49,13 @@
 
 typedef char const* cstr;
 typedef uint8_t byte;
+
+// Forward declarations.
+struct qvi_bbuff_s;
+typedef struct qvi_bbuff_s qvi_bbuff_t;
+
+struct qvi_hwloc_s;
+typedef struct qvi_hwloc_s qvi_hwloc_t;
 
 #endif
 

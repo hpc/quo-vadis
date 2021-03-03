@@ -116,6 +116,17 @@ qvi_bbuff_vasprintf(
 
     const int npic = strlen(picture);
     for (int i = 0; i < npic; ++i) {
+        if (picture[i] == 'b') {
+            void *data = va_arg(args, void *);
+            size_t dsize = va_arg(args, size_t);
+            // We store size then data so unpack has an easier time, but keep
+            // the user interface order as data then size.
+            rc = qvi_bbuff_append(buff, &dsize, sizeof(dsize));
+            if (rc != QV_SUCCESS) break;
+            rc = qvi_bbuff_append(buff, data, dsize);
+            if (rc != QV_SUCCESS) break;
+            continue;
+        }
         if (picture[i] == 'i') {
             int data = va_arg(args, int);
             rc = qvi_bbuff_append(buff, &data, sizeof(data));
@@ -125,17 +136,6 @@ qvi_bbuff_vasprintf(
         if (picture[i] == 's') {
             char *data = va_arg(args, char *);
             rc = qvi_bbuff_append(buff, data, strlen(data) + 1);
-            if (rc != QV_SUCCESS) break;
-            continue;
-        }
-        if (picture[i] == 'b') {
-            void *data = va_arg(args, void *);
-            size_t dsize = va_arg(args, size_t);
-            // We store size then data so unpack has an easier time, but keep
-            // the user interface order as data then size.
-            rc = qvi_bbuff_append(buff, &dsize, sizeof(dsize));
-            if (rc != QV_SUCCESS) break;
-            rc = qvi_bbuff_append(buff, data, dsize);
             if (rc != QV_SUCCESS) break;
             continue;
         }
@@ -155,7 +155,7 @@ qvi_bbuff_asprintf(
 ) {
     va_list vl;
     va_start(vl, picture);
-    int rc = qvi_data_vsscanf(buff, picture, vl);
+    int rc = qvi_bbuff_vasprintf(buff, picture, vl);
     va_end(vl);
     return rc;
 }
@@ -171,20 +171,6 @@ qvi_data_vsscanf(
 
     const int npic = strlen(picture);
     for (int i = 0; i < npic; ++i) {
-        if (picture[i] == 'i') {
-            memmove(va_arg(args, int *), pos, sizeof(int));
-            pos += sizeof(int);
-            continue;
-        }
-        if (picture[i] == 's') {
-            const int nw = asprintf(va_arg(args, char **), "%s", pos);
-            if (nw == -1) {
-                rc = QV_ERR_OOR;
-                break;
-            }
-            pos += nw + 1;
-            continue;
-        }
         if (picture[i] == 'b') {
             void **data = va_arg(args, void **);
             size_t *dsize = va_arg(args, size_t *);
@@ -197,6 +183,20 @@ qvi_data_vsscanf(
             }
             memmove(*data, pos, *dsize);
             pos += *dsize;
+            continue;
+        }
+        if (picture[i] == 'i') {
+            memmove(va_arg(args, int *), pos, sizeof(int));
+            pos += sizeof(int);
+            continue;
+        }
+        if (picture[i] == 's') {
+            const int nw = asprintf(va_arg(args, char **), "%s", pos);
+            if (nw == -1) {
+                rc = QV_ERR_OOR;
+                break;
+            }
+            pos += nw + 1;
             continue;
         }
         else {

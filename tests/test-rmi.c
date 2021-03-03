@@ -14,7 +14,9 @@
  */
 
 #include "qvi-rmi.h"
+#include "qvi-config.h"
 #include "qvi-utils.h"
+#include "qvi-hwloc.h"
 
 #include "quo-vadis.h"
 
@@ -30,6 +32,7 @@ server(
     printf("# [%d] Starting Server (%s)\n", getpid(), url);
 
     char const *ers = NULL;
+    const char *basedir = qvi_tmpdir();
     double start = qvi_time(), end;
 
     qvi_rmi_server_t *server = NULL;
@@ -39,10 +42,23 @@ server(
         goto out;
     }
 
-    qvi_rmi_config_t *config;
-    rc = qvi_rmi_config_new(&config);
+    qvi_hwloc_t *hwloc;
+    rc = qvi_hwloc_new(&hwloc);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rmi_config_new() failed";
+        ers = "qvi_hwloc_new() failed";
+        goto out;
+    }
+
+    rc = qvi_hwloc_topology_load(hwloc);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_hwloc_topology_load() failed";
+        goto out;
+    }
+
+    qvi_config_rmi_t *config;
+    rc = qvi_config_rmi_new(&config);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_config_rmi_new() failed";
         goto out;
     }
 
@@ -51,6 +67,14 @@ server(
         rc = QV_ERR_OOR;
         goto out;
     }
+
+    config->hwloc = hwloc;
+
+    rc = qvi_hwloc_topology_export(
+        hwloc,
+        basedir,
+        &config->hwtopo_path
+    );
 
     rc = qvi_rmi_server_config(server, config);
 

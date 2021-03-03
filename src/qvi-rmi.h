@@ -19,7 +19,7 @@
 #define QVI_RMI_H
 
 #include "qvi-hwloc.h"
-#include "qvi-bbuff.h"
+#include "qvi-config.h"
 
 #include <unistd.h>
 
@@ -27,51 +27,12 @@
 extern "C" {
 #endif
 
-typedef struct qvi_rmi_config_s {
-    char *url;
-    char *hwtopo_path;
-} qvi_rmi_config_t;
-
 // Forward declarations.
 struct qvi_rmi_server_s;
 typedef struct qvi_rmi_server_s qvi_rmi_server_t;
 
 struct qvi_rmi_client_s;
 typedef struct qvi_rmi_client_s qvi_rmi_client_t;
-
-/**
- *
- */
-int
-qvi_rmi_config_new(
-    qvi_rmi_config_t **config
-);
-
-/**
- *
- */
-void
-qvi_rmi_config_free(
-    qvi_rmi_config_t **config
-);
-
-/**
- *
- */
-int
-qvi_rmi_config_pack(
-    qvi_rmi_config_t *config,
-    qvi_bbuff_t **packed
-);
-
-/**
- *
- */
-int
-qvi_rmi_config_unpack(
-    void *buff,
-    qvi_rmi_config_t *config
-);
 
 /**
  *
@@ -95,7 +56,7 @@ qvi_rmi_server_free(
 int
 qvi_rmi_server_config(
     qvi_rmi_server_t *server,
-    qvi_rmi_config_t *config
+    qvi_config_rmi_t *config
 );
 
 /**

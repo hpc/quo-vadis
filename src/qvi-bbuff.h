@@ -22,10 +22,6 @@
 extern "C" {
 #endif
 
-// Forward declarations.
-struct qvi_bbuff_s;
-typedef struct qvi_bbuff_s qvi_bbuff_t;
-
 /**
  *
  */

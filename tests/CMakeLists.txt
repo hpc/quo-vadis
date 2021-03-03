@@ -98,19 +98,17 @@ target_link_libraries(
     quo-vadis
 )
 
-# TODO(skg) Cleanup after failure: test-rmi can still be running on failure.
 add_test(
     NAME
       rmi
     COMMAND
-      bash -c "export URL=\"tcp://127.0.0.1:55995\"     && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -s &)  && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &)  && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &)  && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &)  && \
-       ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c     && \
-      sleep 1                                           && \
-      killall test-rmi"
+      bash -c "export URL=\"tcp://127.0.0.1:55995\"    && \
+      (sleep 5 && killall -9 test-rmi               &) && \
+      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -s &) && \
+      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &) && \
+      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &) && \
+      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &) && \
+       ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c"
 )
 
 ################################################################################
