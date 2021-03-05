@@ -44,6 +44,7 @@ typedef struct qv_scope_s qv_scope_t;
 enum {
     QV_SUCCESS = 0,
     QV_SUCCESS_ALREADY_DONE,
+    QV_SUCCESS_SHUTDOWN,
     QV_ERR,
     QV_ERR_ENV,
     QV_ERR_INTERNAL,

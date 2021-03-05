@@ -33,7 +33,6 @@ context_free(
     context *ictx = *ctx;
     if (!ictx) return;
     qvi_config_rmi_free(&ictx->rmic);
-    // TODO(skg) Fix crash in hwloc teardown.
     qvi_rmi_server_free(&ictx->rmi);
     qvi_hwloc_free(&ictx->hwloc);
     delete ictx;

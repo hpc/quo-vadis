@@ -59,7 +59,7 @@ qvi_config_rmi_pack(
     qvi_config_rmi_t *config,
     qvi_bbuff_t *buff
 ) {
-    int rc = qvi_bbuff_asprintf(
+    int rc = qvi_bbuff_sprintf(
         buff,
         QVI_CONFIG_RMI_PICTURE,
         config->url,

@@ -68,7 +68,7 @@ qvi_bbuff_append(
  *
  */
 int
-qvi_bbuff_vasprintf(
+qvi_bbuff_vsprintf(
     qvi_bbuff_t *buff,
     const char *picture,
     va_list args
@@ -78,7 +78,7 @@ qvi_bbuff_vasprintf(
  *
  */
 int
-qvi_bbuff_asprintf(
+qvi_bbuff_sprintf(
     qvi_bbuff_t *buff,
     const char *picture,
     ...

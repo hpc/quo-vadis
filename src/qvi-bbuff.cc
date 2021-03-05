@@ -13,6 +13,14 @@
  * @file qvi-bbuff.cc
  */
 
+/*
+ * Picture Reference:
+ * b = void *, size_t (two arguments)
+ * i = int
+ * s = char *
+ * z = empty (zero arguments)
+ */
+
 #include "qvi-common.h"
 #include "qvi-bbuff.h"
 
@@ -107,7 +115,7 @@ qvi_bbuff_append(
 }
 
 int
-qvi_bbuff_vasprintf(
+qvi_bbuff_vsprintf(
     qvi_bbuff_t *buff,
     const char *picture,
     va_list args
@@ -139,6 +147,9 @@ qvi_bbuff_vasprintf(
             if (rc != QV_SUCCESS) break;
             continue;
         }
+        if (picture[i] == 'z') {
+            continue;
+        }
         else {
             rc = QV_ERR_INVLD_ARG;
             break;
@@ -148,14 +159,14 @@ qvi_bbuff_vasprintf(
 }
 
 int
-qvi_bbuff_asprintf(
+qvi_bbuff_sprintf(
     qvi_bbuff_t *buff,
     const char *picture,
     ...
 ) {
     va_list vl;
     va_start(vl, picture);
-    int rc = qvi_bbuff_vasprintf(buff, picture, vl);
+    int rc = qvi_bbuff_vsprintf(buff, picture, vl);
     va_end(vl);
     return rc;
 }
@@ -197,6 +208,9 @@ qvi_data_vsscanf(
                 break;
             }
             pos += nw + 1;
+            continue;
+        }
+        if (picture[i] == 'z') {
             continue;
         }
         else {

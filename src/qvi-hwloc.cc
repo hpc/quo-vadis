@@ -25,7 +25,6 @@ typedef struct qvi_hwloc_s {
     char *topo_file = nullptr;
 } qvi_hwloc_t;
 
-
 typedef enum qvi_hwloc_task_xop_obj_e {
     QVI_HWLOC_TASK_INTERSECTS_OBJ = 0,
     QVI_HWLOC_TASK_ISINCLUDED_IN_OBJ
@@ -142,7 +141,7 @@ qvi_hwloc_free(
 ) {
     qvi_hwloc_t *ihwl = *hwl;
     if (!ihwl) return;
-    if (ihwl->topo_file) free(ihwl->topo);
+    if (ihwl->topo_file) free(ihwl->topo_file);
     if (ihwl->topo) hwloc_topology_destroy(ihwl->topo);
     delete ihwl;
     *hwl = nullptr;

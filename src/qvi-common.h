@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <limits.h>
+#include <pthread.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -43,8 +44,8 @@
 #include "qvi-log.h"
 
 #include <chrono>
-#include <unordered_map>
 #include <new>
+#include <unordered_map>
 #endif
 
 typedef char const* cstr;

@@ -78,6 +78,8 @@ server(
 
     rc = qvi_rmi_server_config(server, config);
 
+    qvi_config_rmi_free(&config);
+
     rc = qvi_rmi_server_start(server);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_server_start() failed";
@@ -86,7 +88,9 @@ server(
     end = qvi_time();
     printf("# [%d] Server Start Time %lf seconds\n", getpid(), end - start);
 out:
+    sleep(1);
     qvi_rmi_server_free(&server);
+    qvi_hwloc_free(&hwloc);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         return 1;

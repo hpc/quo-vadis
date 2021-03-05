@@ -103,7 +103,7 @@ add_test(
       rmi
     COMMAND
       bash -c "export URL=\"tcp://127.0.0.1:55995\"    && \
-      (sleep 5 && killall -9 test-rmi               &) && \
+      (sleep 3 && killall -9 test-rmi               &) && \
       (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -s &) && \
       (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &) && \
       (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &) && \
