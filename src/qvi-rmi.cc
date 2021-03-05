@@ -188,6 +188,49 @@ unpack_msg_header(
 }
 
 static int
+zmsg_send(
+    void *zsock,
+    zmq_msg_t *msg,
+    int *bsent
+) {
+    int qvrc = QV_SUCCESS;
+
+    *bsent = zmq_msg_send(msg, zsock, 0);
+    if (*bsent == -1) {
+        qvi_zerr_msg("zmq_msg_send() failed", errno);
+        qvrc = QV_ERR_MSG;
+    }
+    if (qvrc != QV_SUCCESS) zmq_msg_close(msg);
+    return qvrc;
+}
+
+static int
+zmsg_recv(
+    void *zsock,
+    zmq_msg_t *mrx
+) {
+    int rc = 0, qvrc = QV_SUCCESS;
+
+    rc = zmq_msg_init(mrx);
+    if (rc != 0) {
+        qvi_zerr_msg("zmq_msg_init() failed", errno);
+        qvrc = QV_ERR_MSG;
+        goto out;
+    }
+    // Block until a message is available to be received from socket.
+    rc = zmq_msg_recv(mrx, zsock, 0);
+    if (rc == -1) {
+        qvi_zerr_msg("zmq_msg_recv() failed", errno);
+        qvrc = QV_ERR_MSG;
+        goto out;
+    }
+out:
+    if (qvrc != QV_SUCCESS) zmq_msg_close(mrx);
+    return qvrc;
+}
+
+
+static int
 rpc_vpack(
     qvi_bbuff_t **buff,
     qvi_rpc_funid_t fid,
@@ -273,17 +316,15 @@ rpc_vreq(
         goto out;
     }
 
-    size_t nbytes_sent;
-    nbytes_sent = zmq_msg_send(&msg, zsock, 0);
-    if (nbytes_sent != buffer_size) {
+    int nbytes_sent;
+    qvrc = zmsg_send(zsock, &msg, &nbytes_sent);
+    if (buffer_size != (size_t)nbytes_sent) {
         qvi_zerr_msg("zmq_msg_send() truncated", errno);
         qvrc = QV_ERR_MSG;
         goto out;
     }
 out:
-    if (qvrc != QV_SUCCESS) {
-        zmq_msg_close(&msg);
-    }
+    if (qvrc != QV_SUCCESS) zmq_msg_close(&msg);
     // Else freeing of buffer and message resources is done for us.
     return qvrc;
 }
@@ -308,23 +349,9 @@ rpc_vrep(
     const char *picture,
     va_list vl
 ) {
-    int rc = QV_SUCCESS;
-
     zmq_msg_t msg;
-    int zrc = zmq_msg_init(&msg);
-    if (zrc != 0) {
-        qvi_zerr_msg("zmq_msg_init() failed", errno);
-        rc = QV_ERR_MSG;
-        goto out;
-    }
-    // Block until a message is available to be received from socket.
-    zrc = zmq_msg_recv(&msg, zsock, 0);
-    if (zrc == -1) {
-        qvi_zerr_msg("zmq_msg_recv() failed", errno);
-        rc = QV_ERR_MSG;
-        goto out;
-    }
-
+    int rc = zmsg_recv(zsock, &msg);
+    if (rc != QV_SUCCESS) goto out;
     rc = rpc_vunpack(zmq_msg_data(&msg), picture, vl);
 out:
     zmq_msg_close(&msg);
@@ -354,7 +381,7 @@ rpc_ssi_invalid(
     void *,
     qvi_bbuff_t **
 ) {
-    qvi_log_error("Something bad happened in RPC dispatch");
+    qvi_log_error("Something bad happened in RPC dispatch.");
     assert(false);
     return QV_ERR_INVLD_ARG;
 }
@@ -363,10 +390,9 @@ static int
 rpc_ssi_shutdown(
     qvi_rmi_server_t *,
     qvi_msg_header_t *hdr,
-    void *input,
+    void *,
     qvi_bbuff_t **output
 ) {
-    (void)qvi_data_sscanf(input, hdr->picture);
     (void)rpc_pack(output, hdr->fid, "z");
     return QV_SUCCESS_SHUTDOWN;
 }
@@ -506,52 +532,10 @@ server_rpc_dispatch(
     }
 out:
     zmq_msg_close(msg_in);
-    if (qvrc != QV_SUCCESS && qvrc != QV_SUCCESS_SHUTDOWN) zmq_msg_close(msg_out);
+    if (qvrc != QV_SUCCESS && qvrc != QV_SUCCESS_SHUTDOWN) {
+        zmq_msg_close(msg_out);
+    }
     return (shutdown ? QV_SUCCESS_SHUTDOWN : qvrc);
-}
-
-// TODO(skg) Merge recv calls (client/server).
-static int
-server_msg_recv(
-    void *zsock,
-    zmq_msg_t *mrx
-) {
-    int rc = 0, qvrc = QV_SUCCESS;
-
-    rc = zmq_msg_init(mrx);
-    if (rc != 0) {
-        qvi_zerr_msg("zmq_msg_init() failed", errno);
-        qvrc = QV_ERR_MSG;
-        goto out;
-    }
-    // Block until a message is available to be received from socket.
-    rc = zmq_msg_recv(mrx, zsock, 0);
-    if (rc == -1) {
-        qvi_zerr_msg("zmq_msg_recv() failed", errno);
-        qvrc = QV_ERR_MSG;
-        goto out;
-    }
-out:
-    if (qvrc != QV_SUCCESS) zmq_msg_close(mrx);
-    return qvrc;
-}
-
-
-// TODO(skg) Merge send calls (client/server).
-static int
-server_msg_send(
-    void *zsock,
-    zmq_msg_t *msg
-) {
-    int qvrc = QV_SUCCESS;
-
-    int rc = zmq_msg_send(msg, zsock, 0);
-    if (rc == -1) {
-        qvi_zerr_msg("zmq_msg_send() failed", errno);
-        qvrc = QV_ERR_MSG;
-    }
-    if (qvrc != QV_SUCCESS) zmq_msg_close(msg);
-    return qvrc;
 }
 
 static void *
@@ -566,16 +550,16 @@ server_go(
     );
     if (!zworksock) return nullptr;
 
-    int rc;
+    int rc, bsent;
     bool active = true;
     do {
         zmq_msg_t mrx, mtx;
-        rc = server_msg_recv(zworksock, &mrx);
+        rc = zmsg_recv(zworksock, &mrx);
         if (rc != QV_SUCCESS) break;
         rc = server_rpc_dispatch(server, &mrx, &mtx);
         if (rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN) break;
         if (rc == QV_SUCCESS_SHUTDOWN) active = false;
-        rc = server_msg_send(zworksock, &mtx);
+        rc = zmsg_send(zworksock, &mtx, &bsent);
         if (rc != QV_SUCCESS) break;
     } while(active);
 
