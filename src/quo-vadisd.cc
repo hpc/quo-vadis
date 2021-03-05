@@ -177,7 +177,13 @@ hwtopo_load(
 ) {
     qvi_log_debug("Loading hardware information");
 
-    int rc = qvi_hwloc_topology_load(ctx->hwloc);
+    int rc = qvi_hwloc_topology_init(ctx->hwloc, nullptr);
+    if (rc != QV_SUCCESS) {
+        static cstr ers = "qvi_hwloc_topology_init() failed";
+        qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
+    }
+
+    rc = qvi_hwloc_topology_load(ctx->hwloc);
     if (rc != QV_SUCCESS) {
         static cstr ers = "qvi_hwloc_topology_load() failed";
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));

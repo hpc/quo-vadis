@@ -49,6 +49,12 @@ server(
         goto out;
     }
 
+    rc = qvi_hwloc_topology_init(hwloc, NULL);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_hwloc_topology_init() failed";
+        goto out;
+    }
+
     rc = qvi_hwloc_topology_load(hwloc);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_topology_load() failed";
@@ -88,7 +94,7 @@ server(
     end = qvi_time();
     printf("# [%d] Server Start Time %lf seconds\n", getpid(), end - start);
 out:
-    sleep(1);
+    sleep(2);
     qvi_rmi_server_free(&server);
     qvi_hwloc_free(&hwloc);
     if (ers) {

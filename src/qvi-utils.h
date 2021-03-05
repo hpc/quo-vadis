@@ -82,7 +82,16 @@ qvi_tmpdir(void);
  *
  */
 const char *
-whoami(void);
+qvi_whoami(void);
+
+/**
+ *
+ */
+int
+qvi_file_size(
+    const char *path,
+    size_t *size
+);
 
 #ifdef __cplusplus
 }

@@ -59,15 +59,15 @@ struct qvi_rmi_client_s {
 };
 
 typedef enum qvi_rpc_funid_e {
-    INVALID = 0,
-    SERVER_SHUTDOWN,
-    HELLO,
-    GBYE,
-    TASK_GET_CPUBIND,
+    FID_INVALID = 0,
+    FID_SERVER_SHUTDOWN,
+    FID_HELLO,
+    FID_GBYE,
+    FID_TASK_GET_CPUBIND,
 } qvi_rpc_funid_t;
 
 typedef struct qvi_msg_header_s {
-    qvi_rpc_funid_t fid = INVALID;
+    qvi_rpc_funid_t fid = FID_INVALID;
     char picture[8] = {'\0'};
 } qvi_msg_header_t;
 
@@ -470,7 +470,7 @@ rpc_ssi_task_get_cpubind(
  * Maps a given qvi_rpc_funid_t to a given function pointer. Must be kept in
  * sync with qvi_rpc_funid_t.
  */
-static const qvi_rpc_fun_ptr_t qvi_server_rpc_dispatch_table[] = {
+static const qvi_rpc_fun_ptr_t rpc_dispatch_table[] = {
     rpc_ssi_invalid,
     rpc_ssi_shutdown,
     rpc_ssi_hello,
@@ -505,7 +505,7 @@ server_rpc_dispatch(
     zmq_msg_t *msg_in,
     zmq_msg_t *msg_out
 ) {
-    int qvrc = QV_SUCCESS;
+    int rc = QV_SUCCESS;
     bool shutdown = false;
 
     void *data = zmq_msg_data(msg_in);
@@ -514,22 +514,22 @@ server_rpc_dispatch(
     void *body = data_trim(data, trim);
 
     qvi_bbuff_t *res;
-    qvrc = qvi_server_rpc_dispatch_table[hdr.fid](server, &hdr, body, &res);
-    if (qvrc != QV_SUCCESS && qvrc != QV_SUCCESS_SHUTDOWN) {
+    rc = rpc_dispatch_table[hdr.fid](server, &hdr, body, &res);
+    if (rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN) {
         cstr ers = "RPC dispatch failed";
-        qvi_log_error("{} with rc={} ({})", ers, qvrc, qv_strerr(qvrc));
+        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
         goto out;
     }
     // Shutdown?
-    if (qvrc == QV_SUCCESS_SHUTDOWN) shutdown = true;
+    if (rc == QV_SUCCESS_SHUTDOWN) shutdown = true;
 
-    qvrc = zmsg_init_from_bbuff(res, msg_out);
+    rc = zmsg_init_from_bbuff(res, msg_out);
 out:
     zmq_msg_close(msg_in);
-    if (qvrc != QV_SUCCESS && qvrc != QV_SUCCESS_SHUTDOWN) {
+    if (rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN) {
         zmq_msg_close(msg_out);
     }
-    return (shutdown ? QV_SUCCESS_SHUTDOWN : qvrc);
+    return (shutdown ? QV_SUCCESS_SHUTDOWN : rc);
 }
 
 static void *
@@ -544,7 +544,7 @@ server_go(
     );
     if (!zworksock) return nullptr;
 
-    int rc, bsent;
+    int rc, bsent, bsentt = 0;
     bool active = true;
     do {
         zmq_msg_t mrx, mtx;
@@ -555,7 +555,10 @@ server_go(
         if (rc == QV_SUCCESS_SHUTDOWN) active = false;
         rc = zmsg_send(zworksock, &mtx, &bsent);
         if (rc != QV_SUCCESS) break;
+        bsentt += bsent;
     } while(active);
+    // Nice to understand messaging characteristics.
+    qvi_log_debug("Server Sent {} bytes", bsentt);
 
     zsocket_close(&zworksock);
 
@@ -601,7 +604,7 @@ static void
 send_server_shutdown_msg(
     qvi_rmi_server_t *server
 ) {
-    (void)rpc_req(server->zlo, SERVER_SHUTDOWN, "z");
+    (void)rpc_req(server->zlo, FID_SERVER_SHUTDOWN, "z");
     (void)rpc_rep(server->zlo, "z");
 }
 
@@ -615,6 +618,7 @@ qvi_rmi_server_free(
     zsocket_close(&iserver->zlo);
     zsocket_close(&iserver->zrouter);
     zctx_destroy(&iserver->zctx);
+    unlink(iserver->config->hwtopo_path);
     qvi_config_rmi_free(&iserver->config);
     pthread_join(iserver->worker_thread, nullptr);
     delete iserver;
@@ -698,6 +702,12 @@ qvi_rmi_client_new(
         ers = "qvi_config_rmi_new() failed";
         goto out;
     }
+    // Remember clients own the hwloc data, unlike the server.
+    rc = qvi_hwloc_new(&icli->config->hwloc);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_hwloc_new() failed";
+        goto out;
+    }
 
     icli->zctx = zmq_ctx_new();
     if (!icli->zctx) {
@@ -722,6 +732,7 @@ qvi_rmi_client_free(
     if (!iclient) return;
     zsocket_close(&iclient->zsock);
     zctx_destroy(&iclient->zctx);
+    qvi_hwloc_free(&iclient->config->hwloc);
     qvi_config_rmi_free(&iclient->config);
     delete iclient;
     *client = nullptr;
@@ -731,7 +742,7 @@ static int
 hello_handshake(
     qvi_rmi_client_t *client
 ) {
-    int rc = rpc_req(client->zsock, HELLO, "i", (int)getpid());
+    int rc = rpc_req(client->zsock, FID_HELLO, "i", (int)getpid());
     if (rc != QV_SUCCESS) return rc;
 
     qvi_config_rmi_t *config = client->config;
@@ -743,20 +754,23 @@ qvi_rmi_client_connect(
     qvi_rmi_client_t *client,
     const char *url
 ) {
-    client->zsock = zmq_socket(client->zctx, ZMQ_REQ);
-    if (!client->zsock) {
-        qvi_zerr_msg("zsocket() failed", errno);
-        return QV_ERR_MSG;
-    }
+    client->zsock = zsocket_create_and_connect(
+        client->zctx,
+        ZMQ_REQ,
+        url
+    );
+    if (!client->zsock) return QV_ERR_MSG;
 
-    int rc = zmq_connect(client->zsock, url);
-    if (rc != 0) {
-        zsocket_close(&client->zsock);
-        qvi_zerr_msg("zmq_connect() failed", errno);
-        return QV_ERR_MSG;
-    }
+    int rc = hello_handshake(client);
+    if (rc != QV_SUCCESS) return rc;
 
-    return hello_handshake(client);
+    rc = qvi_hwloc_topology_init(
+        client->config->hwloc,
+        client->config->hwtopo_path
+    );
+    if (rc != QV_SUCCESS) return rc;
+
+    return qvi_hwloc_topology_load(client->config->hwloc);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -768,7 +782,7 @@ qvi_rmi_task_get_cpubind(
     pid_t who,
     hwloc_bitmap_t *bitmap
 ) {
-    int qvrc = rpc_req(client->zsock, TASK_GET_CPUBIND, "i", (int)who);
+    int qvrc = rpc_req(client->zsock, FID_TASK_GET_CPUBIND, "i", (int)who);
     if (qvrc != QV_SUCCESS) goto out;
 
     int rpcrc;

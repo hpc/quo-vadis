@@ -43,6 +43,15 @@ qvi_hwloc_free(
  *
  */
 int
+qvi_hwloc_topology_init(
+    qvi_hwloc_t *hwl,
+    const char *xml
+);
+
+/**
+ *
+ */
+int
 qvi_hwloc_topology_load(
     qvi_hwloc_t *hwl
 );

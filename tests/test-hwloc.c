@@ -127,6 +127,12 @@ main(void)
         goto out;
     }
 
+    rc = qvi_hwloc_topology_init(hwl, NULL);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_hwloc_topology_init() failed";
+        goto out;
+    }
+
     rc = qvi_hwloc_topology_load(hwl);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_topology_load() failed";

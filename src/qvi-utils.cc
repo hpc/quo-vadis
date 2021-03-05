@@ -168,7 +168,7 @@ qvi_tmpdir(void)
 }
 
 const char *
-whoami(void)
+qvi_whoami(void)
 {
     static const int bsize = 128;
     static thread_local char buff[bsize];
@@ -179,6 +179,18 @@ whoami(void)
     int nw = snprintf(buff, bsize, "%s", user);
     if (nw >= bsize) return PACKAGE_NAME;
     return buff;
+}
+
+int
+qvi_file_size(
+    const char *path,
+    size_t *size
+) {
+    struct stat st;
+    int rc = stat(path, &st);
+    if (rc == -1) return QV_ERR_FILE_IO;
+    *size = st.st_size;
+    return QV_SUCCESS;
 }
 
 /*

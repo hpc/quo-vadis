@@ -20,7 +20,6 @@
 typedef struct qvi_hwloc_s {
     /** The cached node topology. */
     hwloc_topology_t topo = nullptr;
-    // TODO(skg) Server unlinks file.
     /** Path to exported hardware topology. */
     char *topo_file = nullptr;
 } qvi_hwloc_t;
@@ -147,25 +146,30 @@ qvi_hwloc_free(
     *hwl = nullptr;
 }
 
-/**
- *
- */
 static int
-topology_init(
-    qvi_hwloc_t *hwl
+topo_set_from_xml(
+    qvi_hwloc_t *hwl,
+    const char *path
 ) {
-    cstr ers = nullptr;
-
-    int rc = hwloc_topology_init(&hwl->topo);
-    if (rc != 0) {
-        ers = "hwloc_topology_init() failed";
-        goto out;
-    }
-out:
-    if (ers) {
-        qvi_log_error("{} with rc={}", ers, rc);
+    int rc = hwloc_topology_set_xml(hwl->topo, path);
+    if (rc == -1) {
+        qvi_log_error("hwloc_topology_set_xml() failed");
         return QV_ERR_HWLOC;
     }
+    return QV_SUCCESS;
+}
+
+int
+qvi_hwloc_topology_init(
+    qvi_hwloc_t *hwl,
+    const char *xml
+) {
+    int rc = hwloc_topology_init(&hwl->topo);
+    if (rc != 0) {
+        qvi_log_error("hwloc_topology_init() failed");
+        return QV_ERR_HWLOC;
+    }
+    if (xml) return topo_set_from_xml(hwl, xml);
     return QV_SUCCESS;
 }
 
@@ -174,14 +178,9 @@ qvi_hwloc_topology_load(
     qvi_hwloc_t *hwl
 ) {
     cstr ers = nullptr;
-
-    int rc = topology_init(hwl);
-    if (rc != QV_SUCCESS) {
-        return rc;
-    }
     // Set flags that influence hwloc's behavior.
     static const unsigned int flags = HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM;
-    rc = hwloc_topology_set_flags(hwl->topo, flags);
+    int rc = hwloc_topology_set_flags(hwl->topo, flags);
     if (rc != 0) {
         ers = "hwloc_topology_set_flags() failed";
         goto out;
