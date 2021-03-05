@@ -187,6 +187,26 @@ unpack_msg_header(
     return hdrsize;
 }
 
+static inline int
+zmsg_init_from_bbuff(
+    qvi_bbuff_t *bbuff,
+    zmq_msg_t *zmsg
+) {
+    const size_t buffer_size = qvi_bbuff_size(bbuff);
+    int zrc = zmq_msg_init_data(
+        zmsg,
+        qvi_bbuff_data(bbuff),
+        buffer_size,
+        msg_free_byte_buffer_cb,
+        bbuff
+    );
+    if (zrc != 0) {
+        qvi_zerr_msg("zmq_msg_init_data() failed", errno);
+        return QV_ERR_MSG;
+    }
+    return QV_SUCCESS;
+}
+
 static int
 zmsg_send(
     void *zsock,
@@ -228,7 +248,6 @@ out:
     if (qvrc != QV_SUCCESS) zmq_msg_close(mrx);
     return qvrc;
 }
-
 
 static int
 rpc_vpack(
@@ -291,34 +310,21 @@ rpc_vreq(
     va_list vl
 ) {
     int qvrc = QV_SUCCESS;
-    qvi_bbuff_t *buff;
 
+    qvi_bbuff_t *buff;
     int rc = rpc_vpack(&buff, fid, picture, vl);
     if (rc != QV_SUCCESS) {
-        cstr ers = "rpc_vpack() failed";
-        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
         qvi_bbuff_free(&buff);
         return rc;
     }
 
-    const size_t buffer_size = qvi_bbuff_size(buff);
     zmq_msg_t msg;
-    int zrc = zmq_msg_init_data(
-        &msg,
-        qvi_bbuff_data(buff),
-        buffer_size,
-        msg_free_byte_buffer_cb,
-        buff
-    );
-    if (zrc != 0) {
-        qvi_zerr_msg("zmq_msg_init_data() failed", errno);
-        qvrc = QV_ERR_MSG;
-        goto out;
-    }
+    rc = zmsg_init_from_bbuff(buff, &msg);
+    if (rc != QV_SUCCESS) goto out;
 
     int nbytes_sent;
     qvrc = zmsg_send(zsock, &msg, &nbytes_sent);
-    if (buffer_size != (size_t)nbytes_sent) {
+    if (nbytes_sent != (int)qvi_bbuff_size(buff)) {
         qvi_zerr_msg("zmq_msg_send() truncated", errno);
         qvrc = QV_ERR_MSG;
         goto out;
@@ -499,7 +505,7 @@ server_rpc_dispatch(
     zmq_msg_t *msg_in,
     zmq_msg_t *msg_out
 ) {
-    int qvrc = QV_SUCCESS, zrc;
+    int qvrc = QV_SUCCESS;
     bool shutdown = false;
 
     void *data = zmq_msg_data(msg_in);
@@ -517,19 +523,7 @@ server_rpc_dispatch(
     // Shutdown?
     if (qvrc == QV_SUCCESS_SHUTDOWN) shutdown = true;
 
-    size_t buffer_size;
-    buffer_size = qvi_bbuff_size(res);
-    zrc = zmq_msg_init_data(
-        msg_out,
-        qvi_bbuff_data(res),
-        buffer_size,
-        msg_free_byte_buffer_cb,
-        res
-    );
-    if (zrc != 0) {
-        qvi_zerr_msg("zmq_msg_init_data() failed", errno);
-        qvrc = QV_ERR_MSG;
-    }
+    qvrc = zmsg_init_from_bbuff(res, msg_out);
 out:
     zmq_msg_close(msg_in);
     if (qvrc != QV_SUCCESS && qvrc != QV_SUCCESS_SHUTDOWN) {
