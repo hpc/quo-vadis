@@ -78,6 +78,15 @@ qvi_hwloc_get_nobjs_by_type(
  *
  */
 int
+qvi_hwloc_emit_cpubind(
+   qvi_hwloc_t *hwl,
+   pid_t who
+);
+
+/**
+ *
+ */
+int
 qvi_hwloc_bitmap_asprintf(
     char **result,
     hwloc_const_bitmap_t bitmap

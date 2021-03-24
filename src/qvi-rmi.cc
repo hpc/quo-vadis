@@ -15,8 +15,6 @@
  * Resource Management and Inquiry
  */
 
-// TODO(skg) See: http://api.zeromq.org/4-0:zmq-msg-recv
-
 #include "qvi-common.h"
 #include "qvi-rmi.h"
 #include "qvi-utils.h"
@@ -48,13 +46,18 @@ struct qvi_rmi_server_s {
     void *zrouter = nullptr;
     /** Loopback socket for managerial messages */
     void *zlo = nullptr;
-    /** The worker thread  */
+    /** The worker thread */
     pthread_t worker_thread;
+    /** Flag indicating if main thread blocks for workers to complete. */
+    bool blocks = false;
 };
 
 struct qvi_rmi_client_s {
+    /** Client configuration */
     qvi_config_rmi_t *config = nullptr;
+    /** ZMQ context */
     void *zctx = nullptr;
+    /** Communication socket */
     void *zsock = nullptr;
 };
 
@@ -559,9 +562,10 @@ server_go(
     } while(active);
     // Nice to understand messaging characteristics.
     qvi_log_debug("Server Sent {} bytes", bsentt);
-
     zsocket_close(&zworksock);
-
+    if (rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN) {
+        qvi_log_error("RX/TX loop exited with rc={} ({})", rc, qv_strerr(rc));
+    }
     return nullptr;
 }
 
@@ -620,7 +624,9 @@ qvi_rmi_server_free(
     zctx_destroy(&iserver->zctx);
     unlink(iserver->config->hwtopo_path);
     qvi_config_rmi_free(&iserver->config);
-    pthread_join(iserver->worker_thread, nullptr);
+    if (!iserver->blocks) {
+        pthread_join(iserver->worker_thread, nullptr);
+    }
     delete iserver;
     *server = nullptr;
 }
@@ -663,9 +669,10 @@ server_start_workers(
 
 int
 qvi_rmi_server_start(
-    qvi_rmi_server_t *server
+    qvi_rmi_server_t *server,
+    bool block
 ) {
-    // Main thread opens channel used to communicate with clients.
+    // Main thread opens channels used to communicate with clients.
     int rc = server_open_clichans(server);
     if (rc != QV_SUCCESS) return rc;
     // Start workers in new thread.
@@ -679,6 +686,10 @@ qvi_rmi_server_start(
         cstr ers = "pthread_create() failed";
         qvi_log_error("{} with rc={} ({})", ers, rc, qvi_strerr(rc));
         rc = QV_ERR_SYS;
+    }
+    if (block && rc == QV_SUCCESS) {
+        server->blocks = true;
+        pthread_join(server->worker_thread, nullptr);
     }
     return rc;
 }
@@ -771,6 +782,13 @@ qvi_rmi_client_connect(
     if (rc != QV_SUCCESS) return rc;
 
     return qvi_hwloc_topology_load(client->config->hwloc);
+}
+
+qvi_hwloc_t *
+qvi_rmi_client_hwloc_get(
+    qvi_rmi_client_t *client
+) {
+    return client->config->hwloc;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

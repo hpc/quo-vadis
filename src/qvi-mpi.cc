@@ -70,6 +70,8 @@ connect_to_server(
     }
 
     rc = qvi_rmi_client_connect(ctx->rmi, url);
+    // Cache pointer to initialized hwloc instance.
+    ctx->hwloc = qvi_rmi_client_hwloc_get(ctx->rmi);
 
     if (url) free(url);
     return rc;
@@ -109,8 +111,6 @@ qv_mpi_create(
         ers = "connect_to_server() failed";
         goto out;
     }
-
-    // TODO(skg) Get topo info from server.
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));

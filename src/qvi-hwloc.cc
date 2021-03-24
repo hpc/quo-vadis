@@ -140,8 +140,8 @@ qvi_hwloc_free(
 ) {
     qvi_hwloc_t *ihwl = *hwl;
     if (!ihwl) return;
-    if (ihwl->topo_file) free(ihwl->topo_file);
     if (ihwl->topo) hwloc_topology_destroy(ihwl->topo);
+    if (ihwl->topo_file) free(ihwl->topo_file);
     delete ihwl;
     *hwl = nullptr;
 }
@@ -357,6 +357,24 @@ qvi_hwloc_get_nobjs_by_type(
 }
 
 int
+qvi_hwloc_emit_cpubind(
+   qvi_hwloc_t *hwl,
+   pid_t who
+) {
+    hwloc_bitmap_t bitmap;
+    int rc = qvi_hwloc_task_get_cpubind(hwl, who, &bitmap);
+    if (rc != QV_SUCCESS) return rc;
+
+    char *bitmaps;
+    rc = qvi_hwloc_bitmap_asprintf(&bitmaps, bitmap);
+    if (rc != QV_SUCCESS) return rc;
+
+    qvi_log_info("[pid={} tid={}] cpubind={}", who, qvi_gettid(), bitmaps);
+    free(bitmaps);
+    return rc;
+}
+
+int
 qvi_hwloc_bitmap_asprintf(
     char **result,
     hwloc_const_bitmap_t bitmap
@@ -413,7 +431,7 @@ out:
 /**
  *
  */
-static int
+static inline int
 task_obj_xop_by_type_id(
     qvi_hwloc_t *hwl,
     qv_hwloc_obj_type_t type,

@@ -86,7 +86,7 @@ server(
 
     qvi_config_rmi_free(&config);
 
-    rc = qvi_rmi_server_start(server);
+    rc = qvi_rmi_server_start(server, false);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_server_start() failed";
         goto out;

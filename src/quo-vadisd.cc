@@ -159,7 +159,8 @@ rmi_start(
 
     cstr ers = nullptr;
 
-    int rc = qvi_rmi_server_start(ctx->rmi);
+    static const bool blocks = true;
+    int rc = qvi_rmi_server_start(ctx->rmi, blocks);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_server_start() failed";
         goto out;

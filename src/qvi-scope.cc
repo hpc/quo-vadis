@@ -44,7 +44,7 @@ qvi_scope_new(
     qv_scope_t **scope,
     qv_context_t *ctx
 ) {
-    char const *ers = nullptr;
+    cstr ers = nullptr;
     int rc = QV_SUCCESS;
 
     qv_scope_t *iscope = qvi_new qv_scope_t;
@@ -71,16 +71,10 @@ qv_scope_get(
 ) {
     if (!ctx || !scope) return QV_ERR_INVLD_ARG;
 
-    char const *ers = nullptr;
-
-    qv_scope_t *qvs;
     // TODO(skg) Should we cache these?
+    qv_scope_t *qvs;
     int rc = qvi_scope_new(&qvs, ctx);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_scope_new() failed";
-        return rc;
-        //goto out;
-    }
+    if (rc != QV_SUCCESS) return rc;
 
     hwloc_obj_t root = hwloc_get_root_obj(qvi_hwloc_topo_get(qvs->hwloc));
     char *root_cpus;
@@ -106,11 +100,8 @@ qv_scope_get(
     char *obj2cpus;
     qvi_hwloc_bitmap_asprintf(&obj2cpus, obj2->cpuset);
     qvi_log_info("-->{} {}", obj2cpus, obj2->logical_index);
-
-
 out:
-    if (ers) {
-        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+    if (rc != QV_SUCCESS) {
         qvi_scope_free(&qvs);
     }
     *scope = qvs;

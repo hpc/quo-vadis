@@ -64,7 +64,8 @@ qvi_rmi_server_config(
  */
 int
 qvi_rmi_server_start(
-    qvi_rmi_server_t *server
+    qvi_rmi_server_t *server,
+    bool block
 );
 
 /**
@@ -92,6 +93,17 @@ qvi_rmi_client_connect(
     const char *url
 );
 
+/**
+ *
+ */
+qvi_hwloc_t *
+qvi_rmi_client_hwloc_get(
+    qvi_rmi_client_t *client
+);
+
+/**
+ *
+ */
 int
 qvi_rmi_task_get_cpubind(
     qvi_rmi_client_t *client,

@@ -66,7 +66,6 @@ qv_free(
     if (!ctx) return QV_ERR_INVLD_ARG;
 
     qvi_task_free(&ctx->task);
-    qvi_hwloc_free(&ctx->hwloc);
     qvi_rmi_client_free(&ctx->rmi);
     delete ctx;
 
