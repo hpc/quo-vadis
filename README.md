@@ -25,6 +25,11 @@ QV_PORT # The port number used for client/server communication.
 QV_TMPDIR # Directory used for temporary files.
 ```
 
+For developers and debugging:
+```shell
+HWLOC_XMLFILE # Path to system topology XML file.
+```
+
 ## Internal Software Dependencies
 * hwloc (https://github.com/open-mpi/hwloc)
 * spdlog (https://github.com/gabime/spdlog)

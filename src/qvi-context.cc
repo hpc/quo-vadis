@@ -38,12 +38,6 @@ qv_create(
         goto out;
     }
 
-    rc = qvi_hwloc_new(&ictx->hwloc);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_new() failed";
-        goto out;
-    }
-
     rc = qvi_rmi_client_new(&ictx->rmi);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_client_new() failed";

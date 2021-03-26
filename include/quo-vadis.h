@@ -74,21 +74,20 @@ typedef enum qv_scope_intrinsic_e {
     QV_SCOPE_PROCESS
 } qv_scope_intrinsic_t;
 
-// TODO(skg) Rename? Remove hwloc prefix?
-typedef enum qv_hwloc_obj_type_e {
-    QV_HWLOC_OBJ_MACHINE,
-    QV_HWLOC_OBJ_PACKAGE,
-    QV_HWLOC_OBJ_CORE,
-    QV_HWLOC_OBJ_PU,
-    QV_HWLOC_OBJ_L1CACHE,
-    QV_HWLOC_OBJ_L2CACHE,
-    QV_HWLOC_OBJ_L3CACHE,
-    QV_HWLOC_OBJ_L4CACHE,
-    QV_HWLOC_OBJ_L5CACHE,
-    QV_HWLOC_OBJ_NUMANODE,
+typedef enum qv_hw_obj_type_e {
+    QV_HW_OBJ_MACHINE,
+    QV_HW_OBJ_PACKAGE,
+    QV_HW_OBJ_CORE,
+    QV_HW_OBJ_PU,
+    QV_HW_OBJ_L1CACHE,
+    QV_HW_OBJ_L2CACHE,
+    QV_HW_OBJ_L3CACHE,
+    QV_HW_OBJ_L4CACHE,
+    QV_HW_OBJ_L5CACHE,
+    QV_HW_OBJ_NUMANODE,
     // TODO(skg) Consider just providing things like GPU
-    QV_HWLOC_OBJ_OS_DEVICE
-} qv_hwloc_obj_type_t;
+    QV_HW_OBJ_OS_DEVICE
+} qv_hw_obj_type_t;
 
 /**
  *
@@ -123,6 +122,17 @@ int
 qv_scope_free(
     qv_context_t *ctx,
     qv_scope_t *scope
+);
+
+/**
+ *
+ */
+int
+qv_scope_split(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    int n,
+    qv_scope_t **subscope
 );
 
 /**

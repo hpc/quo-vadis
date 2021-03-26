@@ -55,6 +55,28 @@ main(
         QV_SCOPE_SYSTEM,
         &base_scope
     );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_get() failed";
+        goto out;
+    }
+
+    qv_scope_t *sub_scope;
+    rc = qv_scope_split(
+        ctx,
+        base_scope,
+        2,
+        &sub_scope
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_split() failed";
+        goto out;
+    }
+
+    rc = qv_scope_free(ctx, base_scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_free() failed";
+        goto out;
+    }
 
 out:
     rc = qv_free(ctx);

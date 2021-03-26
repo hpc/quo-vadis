@@ -38,6 +38,7 @@ extern "C" {
 struct qv_context_s {
     qv_task_t *task = nullptr;
     qvi_hwloc_t *hwloc = nullptr;
+    hwloc_topology_t topo = nullptr;
     qvi_rmi_client_t *rmi = nullptr;
     qvi_mpi_t *mpi = nullptr;
 };

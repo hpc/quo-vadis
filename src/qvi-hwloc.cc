@@ -31,41 +31,41 @@ typedef enum qvi_hwloc_task_xop_obj_e {
 
 static inline int
 obj_type_from_external(
-    qv_hwloc_obj_type_t external,
+    qv_hw_obj_type_t external,
     hwloc_obj_type_t *internal
 ) {
     switch(external) {
-        case(QV_HWLOC_OBJ_MACHINE):
+        case(QV_HW_OBJ_MACHINE):
             *internal = HWLOC_OBJ_MACHINE;
             break;
-        case(QV_HWLOC_OBJ_PACKAGE):
+        case(QV_HW_OBJ_PACKAGE):
             *internal = HWLOC_OBJ_PACKAGE;
             break;
-        case(QV_HWLOC_OBJ_CORE):
+        case(QV_HW_OBJ_CORE):
             *internal = HWLOC_OBJ_CORE;
             break;
-        case(QV_HWLOC_OBJ_PU):
+        case(QV_HW_OBJ_PU):
             *internal = HWLOC_OBJ_PU;
             break;
-        case(QV_HWLOC_OBJ_L1CACHE):
+        case(QV_HW_OBJ_L1CACHE):
             *internal = HWLOC_OBJ_L1CACHE;
             break;
-        case(QV_HWLOC_OBJ_L2CACHE):
+        case(QV_HW_OBJ_L2CACHE):
             *internal = HWLOC_OBJ_L2CACHE;
             break;
-        case(QV_HWLOC_OBJ_L3CACHE):
+        case(QV_HW_OBJ_L3CACHE):
             *internal = HWLOC_OBJ_L3CACHE;
             break;
-        case(QV_HWLOC_OBJ_L4CACHE):
+        case(QV_HW_OBJ_L4CACHE):
             *internal = HWLOC_OBJ_L4CACHE;
             break;
-        case(QV_HWLOC_OBJ_L5CACHE):
+        case(QV_HW_OBJ_L5CACHE):
             *internal = HWLOC_OBJ_L5CACHE;
             break;
-        case(QV_HWLOC_OBJ_NUMANODE):
+        case(QV_HW_OBJ_NUMANODE):
             *internal = HWLOC_OBJ_NUMANODE;
             break;
-        case(QV_HWLOC_OBJ_OS_DEVICE):
+        case(QV_HW_OBJ_OS_DEVICE):
             *internal = HWLOC_OBJ_OS_DEVICE;
             break;
         default:
@@ -74,10 +74,20 @@ obj_type_from_external(
     return QV_SUCCESS;
 }
 
+/**
+ *
+ */
+static int
+get_pu_depth(
+    qvi_hwloc_t *hwloc
+) {
+    return hwloc_get_type_or_below_depth(hwloc->topo, HWLOC_OBJ_CORE);
+}
+
 static int
 obj_get_by_type(
     qvi_hwloc_t *hwloc,
-    qv_hwloc_obj_type_t type,
+    qv_hw_obj_type_t type,
     unsigned type_index,
     hwloc_obj_t *out_obj
 ) {
@@ -95,10 +105,11 @@ obj_get_by_type(
     return QV_SUCCESS;
 }
 
+
 static int
 obj_type_depth(
     qvi_hwloc_t *hwloc,
-    qv_hwloc_obj_type_t type,
+    qv_hw_obj_type_t type,
     int *depth
 ) {
     hwloc_obj_type_t real_type;
@@ -118,18 +129,12 @@ qvi_hwloc_new(
     qvi_hwloc_t **hwl
 ) {
     int rc = QV_SUCCESS;
-    cstr ers = nullptr;
 
     qvi_hwloc_t *ihwl = qvi_new qvi_hwloc_t;
-    if (!ihwl) {
-        ers = "memory allocation failed";
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-out:
-    if (ers) {
-        qvi_hwloc_free(&ihwl);
-    }
+    if (!ihwl) rc = QV_ERR_OOR;
+
+    if (rc != QV_SUCCESS) qvi_hwloc_free(&ihwl);
+
     *hwl = ihwl;
     return QV_SUCCESS;
 }
@@ -188,19 +193,20 @@ qvi_hwloc_topology_load(
 
     rc = hwloc_topology_set_all_types_filter(
         hwl->topo,
-        HWLOC_TYPE_FILTER_KEEP_ALL
+        HWLOC_TYPE_FILTER_KEEP_IMPORTANT
     );
     if (rc != 0) {
         ers = "hwloc_topology_set_all_types_filter() failed";
         goto out;
     }
 
-    rc = hwloc_topology_set_io_types_filter(
+    rc = hwloc_topology_set_type_filter(
         hwl->topo,
+        HWLOC_OBJ_OS_DEVICE,
         HWLOC_TYPE_FILTER_KEEP_IMPORTANT
     );
     if (rc != 0) {
-        ers = "hwloc_topology_set_io_types_filter() failed";
+        ers = "hwloc_topology_set_type_filter() failed";
         goto out;
     }
 
@@ -345,7 +351,7 @@ out:
 int
 qvi_hwloc_get_nobjs_by_type(
    qvi_hwloc_t *hwloc,
-   qv_hwloc_obj_type_t target_type,
+   qv_hw_obj_type_t target_type,
    int *out_nobjs
 ) {
     int depth;
@@ -407,10 +413,10 @@ qvi_hwloc_task_get_cpubind(
     }
     // TODO(skg) Add another routine to also support getting TIDs.
     rc = hwloc_get_proc_cpubind(
-            hwl->topo,
-            who,
-            cur_bind,
-            HWLOC_CPUBIND_PROCESS
+        hwl->topo,
+        who,
+        cur_bind,
+        HWLOC_CPUBIND_PROCESS
     );
     if (rc) {
         cstr ers = "hwloc_get_proc_cpubind() failed";
@@ -434,7 +440,7 @@ out:
 static inline int
 task_obj_xop_by_type_id(
     qvi_hwloc_t *hwl,
-    qv_hwloc_obj_type_t type,
+    qv_hw_obj_type_t type,
     pid_t who,
     unsigned type_index,
     qvi_hwloc_task_xop_obj_t opid,
@@ -466,7 +472,7 @@ task_obj_xop_by_type_id(
 int
 qvi_hwloc_task_intersects_obj_by_type_id(
     qvi_hwloc_t *hwl,
-    qv_hwloc_obj_type_t type,
+    qv_hw_obj_type_t type,
     pid_t who,
     unsigned type_index,
     int *result
@@ -484,7 +490,7 @@ qvi_hwloc_task_intersects_obj_by_type_id(
 int
 qvi_hwloc_task_isincluded_in_obj_by_type_id(
     qvi_hwloc_t *hwl,
-    qv_hwloc_obj_type_t type,
+    qv_hw_obj_type_t type,
     pid_t who,
     unsigned type_index,
     int *result
@@ -497,6 +503,30 @@ qvi_hwloc_task_isincluded_in_obj_by_type_id(
         QVI_HWLOC_TASK_ISINCLUDED_IN_OBJ,
         result
     );
+}
+
+int
+qvi_hwloc_calc_nobjs_in_cpuset(
+    qvi_hwloc_t *hwl,
+    qv_hw_obj_type_t target_obj,
+    hwloc_const_cpuset_t cpuset,
+    unsigned *nobjs
+) {
+    int depth;
+    int rc = obj_type_depth(hwl, target_obj, &depth);
+    if (rc != QV_SUCCESS) return rc;
+
+    unsigned n = 0;
+    hwloc_topology_t topo = hwl->topo;
+    hwloc_obj_t obj = nullptr;
+    while ((obj = hwloc_get_next_obj_by_depth(topo, depth, obj))) {
+        if (!hwloc_bitmap_isincluded(obj->cpuset, cpuset)) continue;
+        // Ignore objects with empty sets (can happen when outside of cgroup).
+        if (hwloc_bitmap_iszero(obj->cpuset)) continue;
+        n++;
+    }
+    *nobjs = n;
+    return QV_SUCCESS;
 }
 
 /*

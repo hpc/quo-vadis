@@ -70,7 +70,7 @@ qvi_hwloc_topo_get(
 int
 qvi_hwloc_get_nobjs_by_type(
    qvi_hwloc_t *hwloc,
-   qv_hwloc_obj_type_t target_type,
+   qv_hw_obj_type_t target_type,
    int *out_nobjs
 );
 
@@ -108,7 +108,7 @@ qvi_hwloc_task_get_cpubind(
 int
 qvi_hwloc_task_intersects_obj_by_type_id(
     qvi_hwloc_t *hwl,
-    qv_hwloc_obj_type_t type,
+    qv_hw_obj_type_t type,
     pid_t who,
     unsigned type_index,
     int *result
@@ -120,7 +120,7 @@ qvi_hwloc_task_intersects_obj_by_type_id(
 int
 qvi_hwloc_task_isincluded_in_obj_by_type_id(
     qvi_hwloc_t *hwl,
-    qv_hwloc_obj_type_t type,
+    qv_hw_obj_type_t type,
     pid_t who,
     unsigned type_index,
     int *result
@@ -134,6 +134,17 @@ qvi_hwloc_topology_export(
     qvi_hwloc_t *hwl,
     const char *base_path,
     char **path
+);
+
+/**
+ *
+ */
+int
+qvi_hwloc_calc_nobjs_in_cpuset(
+    qvi_hwloc_t *hwl,
+    qv_hw_obj_type_t target_obj,
+    hwloc_const_cpuset_t cpuset,
+    unsigned *nobjs
 );
 
 #ifdef __cplusplus
