@@ -140,11 +140,33 @@ qvi_hwloc_topology_export(
  *
  */
 int
-qvi_hwloc_calc_nobjs_in_cpuset(
+qvi_hwloc_get_nobjs_in_cpuset(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t target_obj,
     hwloc_const_cpuset_t cpuset,
     unsigned *nobjs
+);
+
+/**
+ *
+ */
+int
+qvi_hwloc_obj_type_depth(
+    qvi_hwloc_t *hwloc,
+    qv_hw_obj_type_t type,
+    int *depth
+);
+
+/**
+ *
+ */
+int
+qvi_hwloc_get_obj_in_cpuset_by_depth(
+    qvi_hwloc_t *hwl,
+    hwloc_const_bitmap_t cpuset,
+    int depth,
+    unsigned index,
+    hwloc_obj_t *result_obj
 );
 
 #ifdef __cplusplus

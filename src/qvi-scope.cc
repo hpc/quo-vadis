@@ -22,8 +22,8 @@ struct qv_scope_s {
     qvi_hwloc_t *hwloc = nullptr;
     /** Points to cached hwloc topology. */
     hwloc_topology_t topo = nullptr;
-    /** Hardware object associated with a scope instance. */
-    hwloc_obj_t obj = nullptr;
+    /** Bitmap associated with this scope instance. */
+    hwloc_bitmap_t cpuset = nullptr;
 };
 
 void
@@ -32,6 +32,7 @@ qvi_scope_free(
 ) {
     qv_scope_t *iscope = *scope;
     if (!iscope) return;
+    hwloc_bitmap_free(iscope->cpuset);
     delete iscope;
     *scope = nullptr;
 }
@@ -48,6 +49,8 @@ qvi_scope_new(
         rc = QV_ERR_OOR;
         goto out;
     }
+    // TODO(skg) Check.
+    iscope->cpuset = hwloc_bitmap_alloc();
     iscope->hwloc = ctx->hwloc;
     iscope->topo = ctx->topo;
 out:
@@ -70,9 +73,16 @@ obj_from_intrinsic_scope(
 ) {
     // TODO(skg) Implement the rest.
     switch (iscope) {
-        case QV_SCOPE_SYSTEM:
-            scope->obj = hwloc_get_root_obj(ctx->topo);
+        case QV_SCOPE_SYSTEM: {
+            hwloc_bitmap_copy(
+                scope->cpuset,
+                hwloc_get_root_obj(ctx->topo)->cpuset
+            );
+            // TODO(skg) Needs work.
+            //scope->obj = hwloc_get_root_obj(ctx->topo);
+            //scope->obj = hwloc_get_obj_by_type(ctx->topo, HWLOC_OBJ_NUMANODE, 0);
             break;
+        }
         case QV_SCOPE_EMPTY:
             return QV_ERR_INVLD_ARG;
         case QV_SCOPE_USER:
@@ -105,35 +115,6 @@ out:
     return rc;
 }
 
-#if 0
-int
-test(void) {
-    char *root_cpus;
-    qvi_hwloc_bitmap_asprintf(&root_cpus, qvs->obj->cpuset);
-    qvi_log_info("-->{}", root_cpus);
-
-    hwloc_obj_t obj = hwloc_get_obj_inside_cpuset_by_type(
-        qvs->topo,
-        qvs->obj->cpuset,
-        HWLOC_OBJ_PACKAGE,
-        3
-    );
-
-    char *objcpus;
-    qvi_hwloc_bitmap_asprintf(&objcpus, obj->cpuset);
-    qvi_log_info("-->{}", objcpus);
-
-    hwloc_obj_t obj2 = hwloc_get_first_largest_obj_inside_cpuset(
-        qvi_hwloc_topo_get(qvs->hwloc),
-        obj->cpuset
-    );
-
-    char *obj2cpus;
-    qvi_hwloc_bitmap_asprintf(&obj2cpus, obj2->cpuset);
-    qvi_log_info("-->{} {}", obj2cpus, obj2->logical_index);
-}
-#endif
-
 int
 qv_scope_free(
     qv_context_t *ctx,
@@ -163,22 +144,49 @@ qv_scope_split(
     qv_scope_t **subscope
 ) {
     char *root_cpus;
-    qvi_hwloc_bitmap_asprintf(&root_cpus, scope->obj->cpuset);
+    qvi_hwloc_bitmap_asprintf(&root_cpus, scope->cpuset);
     qvi_log_info("Root Scope is {}", root_cpus);
-    unsigned long ulongs[4];
-    hwloc_bitmap_to_ulongs(scope->obj->cpuset, 4, ulongs);
-    for (int i = 0; i < 4; ++i) {
-        qvi_log_info("{} ulong {}", i, ulongs[i]);
-    }
 
     unsigned npus = -1;
-    qvi_hwloc_calc_nobjs_in_cpuset(
+    qvi_hwloc_get_nobjs_in_cpuset(
         ctx->hwloc,
         QV_HW_OBJ_PU,
-        scope->obj->cpuset,
+        scope->cpuset,
         &npus
     );
     qvi_log_info("Number of PUs is {}", npus);
+
+    qvi_log_info("Splitting into {} pieces", n);
+
+    int depth;
+    qvi_hwloc_obj_type_depth(ctx->hwloc, QV_HW_OBJ_PU, &depth);
+
+    int chunk_size = npus / n;
+
+    hwloc_bitmap_t ncpus = hwloc_bitmap_alloc();
+    hwloc_bitmap_zero(ncpus);
+    for (int i = 0; i < chunk_size; ++i) {
+        hwloc_obj_t dobj;
+        qvi_hwloc_get_obj_in_cpuset_by_depth(
+            ctx->hwloc,
+            scope->cpuset,
+            depth,
+            i,
+            &dobj
+        );
+        char *dobjs;
+        qvi_hwloc_bitmap_asprintf(&dobjs, dobj->cpuset);
+        qvi_log_info("OBJ cpuset at depth {} is {}", depth, dobjs);
+        hwloc_bitmap_or(ncpus, ncpus, dobj->cpuset);
+        char *news;
+        qvi_hwloc_bitmap_asprintf(&news, ncpus);
+        qvi_log_info("New cpuset is {}", news);
+    }
+    qv_scope_t *isubscope;
+    int rc = qvi_scope_new(&isubscope, ctx);
+    if (rc != QV_SUCCESS) return rc;
+    hwloc_bitmap_copy(isubscope->cpuset, ncpus);
+    *subscope = isubscope;
     return QV_SUCCESS;
 }
 

@@ -84,6 +84,24 @@ get_pu_depth(
     return hwloc_get_type_or_below_depth(hwloc->topo, HWLOC_OBJ_CORE);
 }
 
+int
+qvi_hwloc_obj_type_depth(
+    qvi_hwloc_t *hwloc,
+    qv_hw_obj_type_t type,
+    int *depth
+) {
+    hwloc_obj_type_t real_type;
+    int rc = obj_type_from_external(type, &real_type);
+    if (rc != QV_SUCCESS) return rc;
+
+    int d = hwloc_get_type_depth(hwloc->topo, real_type);
+    if (d == HWLOC_TYPE_DEPTH_UNKNOWN) {
+        *depth = 0;
+    }
+    *depth = d;
+    return QV_SUCCESS;
+}
+
 static int
 obj_get_by_type(
     qvi_hwloc_t *hwloc,
@@ -100,27 +118,9 @@ obj_get_by_type(
         // There are a couple of reasons why target_obj may be NULL. If this
         // ever happens and the specified type and obj index are valid, then
         // improve this code.
-        return QV_ERR_HWLOC;
+        qvi_log_error("hwloc_get_obj_by_type() failed. Please report");
+        return QV_ERR_INTERNAL;
     }
-    return QV_SUCCESS;
-}
-
-
-static int
-obj_type_depth(
-    qvi_hwloc_t *hwloc,
-    qv_hw_obj_type_t type,
-    int *depth
-) {
-    hwloc_obj_type_t real_type;
-    int rc = obj_type_from_external(type, &real_type);
-    if (rc != QV_SUCCESS) return rc;
-
-    int d = hwloc_get_type_depth(hwloc->topo, real_type);
-    if (d == HWLOC_TYPE_DEPTH_UNKNOWN) {
-        *depth = 0;
-    }
-    *depth = d;
     return QV_SUCCESS;
 }
 
@@ -355,7 +355,7 @@ qvi_hwloc_get_nobjs_by_type(
    int *out_nobjs
 ) {
     int depth;
-    int rc = obj_type_depth(hwloc, target_type, &depth);
+    int rc = qvi_hwloc_obj_type_depth(hwloc, target_type, &depth);
     if (rc != QV_SUCCESS) return rc;
 
     *out_nobjs = hwloc_get_nbobjs_by_depth(hwloc->topo, depth);
@@ -506,14 +506,14 @@ qvi_hwloc_task_isincluded_in_obj_by_type_id(
 }
 
 int
-qvi_hwloc_calc_nobjs_in_cpuset(
+qvi_hwloc_get_nobjs_in_cpuset(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t target_obj,
     hwloc_const_cpuset_t cpuset,
     unsigned *nobjs
 ) {
     int depth;
-    int rc = obj_type_depth(hwl, target_obj, &depth);
+    int rc = qvi_hwloc_obj_type_depth(hwl, target_obj, &depth);
     if (rc != QV_SUCCESS) return rc;
 
     unsigned n = 0;
@@ -527,6 +527,33 @@ qvi_hwloc_calc_nobjs_in_cpuset(
     }
     *nobjs = n;
     return QV_SUCCESS;
+}
+
+int
+qvi_hwloc_get_obj_in_cpuset_by_depth(
+    qvi_hwloc_t *hwl,
+    hwloc_const_bitmap_t cpuset,
+    int depth,
+    unsigned index,
+    hwloc_obj_t *result_obj
+) {
+    hwloc_topology_t topo = hwl->topo;
+
+    bool found = false;
+    unsigned i = 0;
+    hwloc_obj_t obj = nullptr;
+    while ((obj = hwloc_get_next_obj_by_depth(topo, depth, obj))) {
+        if (!hwloc_bitmap_isincluded(obj->cpuset, cpuset)) continue;
+        // Ignore objects with empty sets (can happen when outside of cgroup).
+        if (hwloc_bitmap_iszero(obj->cpuset)) continue;
+        if (i == index) {
+            *result_obj = obj;
+            found = true;
+            break;
+        }
+        i++;
+    }
+    return (found ? QV_SUCCESS : QV_ERR_HWLOC);
 }
 
 /*
