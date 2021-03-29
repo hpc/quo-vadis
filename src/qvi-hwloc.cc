@@ -74,16 +74,6 @@ obj_type_from_external(
     return QV_SUCCESS;
 }
 
-/**
- *
- */
-static int
-get_pu_depth(
-    qvi_hwloc_t *hwloc
-) {
-    return hwloc_get_type_or_below_depth(hwloc->topo, HWLOC_OBJ_CORE);
-}
-
 int
 qvi_hwloc_obj_type_depth(
     qvi_hwloc_t *hwloc,
@@ -426,7 +416,6 @@ qvi_hwloc_task_get_cpubind(
     }
     *out_bitmap = cur_bind;
 out:
-    /* Cleanup on failure */
     if (qrc != QV_SUCCESS) {
         if (cur_bind) hwloc_bitmap_free(cur_bind);
         *out_bitmap = nullptr;

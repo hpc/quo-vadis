@@ -35,17 +35,14 @@ qvi_task_new(
     qv_task_t **task
 ) {
     int rc = QV_SUCCESS;
-    char const *ers = nullptr;
 
     qv_task_t *itask = qvi_new qv_task_t;
     if (!itask) {
-        ers = "memory allocation failed";
         rc = QV_ERR_OOR;
         goto out;
     }
 out:
-    if (ers) {
-        qvi_log_error(ers);
+    if (rc != QV_SUCCESS) {
         qvi_task_free(&itask);
     }
     *task = itask;

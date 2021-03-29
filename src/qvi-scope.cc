@@ -49,8 +49,11 @@ qvi_scope_new(
         rc = QV_ERR_OOR;
         goto out;
     }
-    // TODO(skg) Check.
     iscope->cpuset = hwloc_bitmap_alloc();
+    if (!iscope->cpuset) {
+        rc = QV_ERR_OOR;
+        goto out;
+    }
     iscope->hwloc = ctx->hwloc;
     iscope->topo = ctx->topo;
 out:
@@ -130,12 +133,12 @@ qv_scope_free(
  * Each set bit represents a PU. I think the number of bits set represents the
  * number of PUs present on the system. The least-significant (right-most) bit
  * probably represents logical ID 0.
- *
- * Operations Needed:
- * Counting bits
- * Combining n-bits
  */
 
+/*
+ * TODO(skg) Is this call collective? Are we going to verify input parameter
+ * consistency across processes?
+ */
 int
 qv_scope_split(
     qv_context_t *ctx,
@@ -147,25 +150,26 @@ qv_scope_split(
     qvi_hwloc_bitmap_asprintf(&root_cpus, scope->cpuset);
     qvi_log_info("Root Scope is {}", root_cpus);
 
-    unsigned npus = -1;
+    unsigned npus;
     qvi_hwloc_get_nobjs_in_cpuset(
         ctx->hwloc,
         QV_HW_OBJ_PU,
         scope->cpuset,
         &npus
     );
-    qvi_log_info("Number of PUs is {}", npus);
-
-    qvi_log_info("Splitting into {} pieces", n);
+    qvi_log_info("Number of PUs is {}, split is {}", npus, n);
 
     int depth;
     qvi_hwloc_obj_type_depth(ctx->hwloc, QV_HW_OBJ_PU, &depth);
-
-    int chunk_size = npus / n;
-
+    // TODO(skg) We need to deal with corner cases. For example, fewer resources
+    // than request, etc.
+    const int local_id = qvi_task_lid(ctx->task);
+    const int chunk = npus / n;
     hwloc_bitmap_t ncpus = hwloc_bitmap_alloc();
+    const int base = chunk * local_id;
+    const int extent = base + chunk;
     hwloc_bitmap_zero(ncpus);
-    for (int i = 0; i < chunk_size; ++i) {
+    for (int i = base; i < extent; ++i) {
         hwloc_obj_t dobj;
         qvi_hwloc_get_obj_in_cpuset_by_depth(
             ctx->hwloc,
@@ -176,18 +180,35 @@ qv_scope_split(
         );
         char *dobjs;
         qvi_hwloc_bitmap_asprintf(&dobjs, dobj->cpuset);
-        qvi_log_info("OBJ cpuset at depth {} is {}", depth, dobjs);
+        qvi_log_info("{} OBJ cpuset at depth {} is {}", local_id, depth, dobjs);
         hwloc_bitmap_or(ncpus, ncpus, dobj->cpuset);
-        char *news;
-        qvi_hwloc_bitmap_asprintf(&news, ncpus);
-        qvi_log_info("New cpuset is {}", news);
     }
+    char *news;
+    qvi_hwloc_bitmap_asprintf(&news, ncpus);
+    qvi_log_info("{} New cpuset is {}", local_id, news);
     qv_scope_t *isubscope;
     int rc = qvi_scope_new(&isubscope, ctx);
     if (rc != QV_SUCCESS) return rc;
     hwloc_bitmap_copy(isubscope->cpuset, ncpus);
     *subscope = isubscope;
     return QV_SUCCESS;
+}
+
+int
+qv_scope_nobjs(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    qv_hw_obj_type_t obj,
+    int *n
+) {
+    if (!ctx || !scope || !n) return QV_ERR_INVLD_ARG;
+
+    return qvi_hwloc_get_nobjs_in_cpuset(
+        ctx->hwloc,
+        obj,
+        scope->cpuset,
+        (unsigned *)n
+    );
 }
 
 /*

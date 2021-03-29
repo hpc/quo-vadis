@@ -34,10 +34,19 @@ main(
         fprintf(stderr, "%s\n", ers);
         return EXIT_FAILURE;
     }
+
     int wsize;
     rc = MPI_Comm_size(comm, &wsize);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_size() failed";
+        fprintf(stderr, "%s\n", ers);
+        return EXIT_FAILURE;
+    }
+
+    int wrank;
+    rc = MPI_Comm_rank(comm, &wrank);
+    if (rc != MPI_SUCCESS) {
+        ers = "MPI_Comm_rank() failed";
         fprintf(stderr, "%s\n", ers);
         return EXIT_FAILURE;
     }
@@ -72,6 +81,19 @@ main(
         goto out;
     }
 
+    int n_cores;
+    rc = qv_scope_nobjs(
+        ctx,
+        sub_scope,
+        QV_HW_OBJ_CORE,
+        &n_cores
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_nobjs() failed";
+        goto out;
+    }
+    printf("[%d] Number of Cores in sub_scope is %d\n", wrank, n_cores);
+
     qv_scope_t *sub_sub_scope;
     rc = qv_scope_split(
         ctx,
@@ -83,6 +105,7 @@ main(
         ers = "qv_scope_split() failed";
         goto out;
     }
+
 
     rc = qv_scope_free(ctx, base_scope);
     if (rc != QV_SUCCESS) {
