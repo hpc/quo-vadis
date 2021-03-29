@@ -423,6 +423,19 @@ out:
     return qrc;
 }
 
+int
+qvi_hwloc_task_get_cpubind_as_string(
+    qvi_hwloc_t *hwl,
+    pid_t who,
+    char **bitmaps
+) {
+    hwloc_bitmap_t cpuset;
+    int rc = qvi_hwloc_task_get_cpubind(hwl, who, &cpuset);
+    if (rc != QV_SUCCESS) return rc;
+
+    return qvi_hwloc_bitmap_asprintf(bitmaps, cpuset);
+}
+
 /**
  *
  */
@@ -543,6 +556,25 @@ qvi_hwloc_get_obj_in_cpuset_by_depth(
         i++;
     }
     return (found ? QV_SUCCESS : QV_ERR_HWLOC);
+}
+
+// TODO(skg) Add support for binding threads, too.
+int
+qvi_hwloc_set_cpubind_from_bitmap(
+    qvi_hwloc_t *hwl,
+    hwloc_bitmap_t bitmap
+) {
+    int qvrc = QV_SUCCESS;
+
+    int rc = hwloc_set_cpubind(
+        hwl->topo,
+        bitmap,
+        HWLOC_CPUBIND_PROCESS
+    );
+    if (rc == -1) {
+        qvrc = QV_ERR_NOT_SUPPORTED;
+    }
+    return qvrc;
 }
 
 /*

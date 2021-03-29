@@ -112,6 +112,16 @@ qv_mpi_create(
         ers = "connect_to_server() failed";
         goto out;
     }
+
+    rc = qvi_bind_stack_init(
+        ictx->bind_stack,
+        ictx->task,
+        ictx->hwloc
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_bind_stack_init() failed";
+        goto out;
+    }
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));

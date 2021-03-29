@@ -46,6 +46,7 @@
 #include <chrono>
 #include <new>
 #include <unordered_map>
+#include <stack>
 #endif
 
 typedef char const* cstr;

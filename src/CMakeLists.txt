@@ -72,7 +72,9 @@ add_library(
     qvi-hwloc
     OBJECT
     qvi-hwloc.h
+    qvi-bind.h
     qvi-hwloc.cc
+    qvi-bind.cc
 )
 
 target_include_directories(
@@ -147,10 +149,11 @@ add_library(
     ../include/quo-vadis.h
     qvi-context.h
     qvi-task.h
-    qvi-context.cc
+    qvi-scope.h
     qvi-task.cc
     qvi-group.cc
     qvi-scope.cc
+    qv.cc
 )
 
 target_include_directories(

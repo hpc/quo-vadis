@@ -106,6 +106,16 @@ qvi_hwloc_task_get_cpubind(
  *
  */
 int
+qvi_hwloc_task_get_cpubind_as_string(
+    qvi_hwloc_t *hwl,
+    pid_t who,
+    char **bitmaps
+);
+
+/**
+ *
+ */
+int
 qvi_hwloc_task_intersects_obj_by_type_id(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t type,
@@ -167,6 +177,15 @@ qvi_hwloc_get_obj_in_cpuset_by_depth(
     int depth,
     unsigned index,
     hwloc_obj_t *result_obj
+);
+
+/**
+ *
+ */
+int
+qvi_hwloc_set_cpubind_from_bitmap(
+    qvi_hwloc_t *hwl,
+    hwloc_bitmap_t bitmap
 );
 
 #ifdef __cplusplus

@@ -149,6 +149,32 @@ qv_scope_nobjs(
 /**
  *
  */
+int
+qv_bind_push(
+    qv_context_t *ctx,
+    qv_scope_t *scope
+);
+
+/**
+ *
+ */
+int
+qv_bind_pop(
+    qv_context_t *ctx
+);
+
+/**
+ *
+ */
+int
+qv_bind_get_as_string(
+    qv_context_t *ctx,
+    char **bitmaps
+);
+
+/**
+ *
+ */
 const char *
 qv_strerr(
     int ec

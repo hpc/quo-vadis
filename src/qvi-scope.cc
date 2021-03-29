@@ -15,6 +15,7 @@
 
 #include "qvi-common.h"
 #include "qvi-context.h"
+#include "qvi-bind.h"
 
 // Type definition
 struct qv_scope_s {
@@ -23,8 +24,15 @@ struct qv_scope_s {
     /** Points to cached hwloc topology. */
     hwloc_topology_t topo = nullptr;
     /** Bitmap associated with this scope instance. */
-    hwloc_bitmap_t cpuset = nullptr;
+    hwloc_bitmap_t bitmap = nullptr;
 };
+
+hwloc_bitmap_t
+qvi_scope_bitmap_get(
+    qv_scope_t *scope
+) {
+    return scope->bitmap;
+}
 
 void
 qvi_scope_free(
@@ -32,7 +40,7 @@ qvi_scope_free(
 ) {
     qv_scope_t *iscope = *scope;
     if (!iscope) return;
-    hwloc_bitmap_free(iscope->cpuset);
+    hwloc_bitmap_free(iscope->bitmap);
     delete iscope;
     *scope = nullptr;
 }
@@ -49,8 +57,8 @@ qvi_scope_new(
         rc = QV_ERR_OOR;
         goto out;
     }
-    iscope->cpuset = hwloc_bitmap_alloc();
-    if (!iscope->cpuset) {
+    iscope->bitmap = hwloc_bitmap_alloc();
+    if (!iscope->bitmap) {
         rc = QV_ERR_OOR;
         goto out;
     }
@@ -78,7 +86,7 @@ obj_from_intrinsic_scope(
     switch (iscope) {
         case QV_SCOPE_SYSTEM: {
             hwloc_bitmap_copy(
-                scope->cpuset,
+                scope->bitmap,
                 hwloc_get_root_obj(ctx->topo)->cpuset
             );
             // TODO(skg) Needs work.
@@ -138,6 +146,8 @@ qv_scope_free(
 /*
  * TODO(skg) Is this call collective? Are we going to verify input parameter
  * consistency across processes?
+ *
+ * TODO(skg) This should also be in the server code and retrieved via RPC?
  */
 int
 qv_scope_split(
@@ -147,14 +157,14 @@ qv_scope_split(
     qv_scope_t **subscope
 ) {
     char *root_cpus;
-    qvi_hwloc_bitmap_asprintf(&root_cpus, scope->cpuset);
+    qvi_hwloc_bitmap_asprintf(&root_cpus, scope->bitmap);
     qvi_log_info("Root Scope is {}", root_cpus);
 
     unsigned npus;
     qvi_hwloc_get_nobjs_in_cpuset(
         ctx->hwloc,
         QV_HW_OBJ_PU,
-        scope->cpuset,
+        scope->bitmap,
         &npus
     );
     qvi_log_info("Number of PUs is {}, split is {}", npus, n);
@@ -173,23 +183,23 @@ qv_scope_split(
         hwloc_obj_t dobj;
         qvi_hwloc_get_obj_in_cpuset_by_depth(
             ctx->hwloc,
-            scope->cpuset,
+            scope->bitmap,
             depth,
             i,
             &dobj
         );
         char *dobjs;
         qvi_hwloc_bitmap_asprintf(&dobjs, dobj->cpuset);
-        qvi_log_info("{} OBJ cpuset at depth {} is {}", local_id, depth, dobjs);
+        qvi_log_info("{} OBJ bitmap at depth {} is {}", local_id, depth, dobjs);
         hwloc_bitmap_or(ncpus, ncpus, dobj->cpuset);
     }
     char *news;
     qvi_hwloc_bitmap_asprintf(&news, ncpus);
-    qvi_log_info("{} New cpuset is {}", local_id, news);
+    qvi_log_info("{} New bitmap is {}", local_id, news);
     qv_scope_t *isubscope;
     int rc = qvi_scope_new(&isubscope, ctx);
     if (rc != QV_SUCCESS) return rc;
-    hwloc_bitmap_copy(isubscope->cpuset, ncpus);
+    hwloc_bitmap_copy(isubscope->bitmap, ncpus);
     *subscope = isubscope;
     return QV_SUCCESS;
 }
@@ -206,7 +216,7 @@ qv_scope_nobjs(
     return qvi_hwloc_get_nobjs_in_cpuset(
         ctx->hwloc,
         obj,
-        scope->cpuset,
+        scope->bitmap,
         (unsigned *)n
     );
 }

@@ -14,6 +14,7 @@
  */
 
 #include "quo-vadis-mpi.h"
+#include "qvi-rmi.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -94,6 +95,47 @@ main(
     }
     printf("[%d] Number of Cores in sub_scope is %d\n", wrank, n_cores);
 
+    char *binds;
+    rc = qv_bind_get_as_string(ctx, &binds);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_get_as_string() failed";
+        goto out;
+    }
+    printf("[%d] Current cpubind is %s\n", wrank, binds);
+    free(binds);
+
+    rc = qv_bind_push(ctx, sub_scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_push() failed";
+        goto out;
+    }
+
+    char *bind1s;
+    rc = qv_bind_get_as_string(ctx, &bind1s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_get_as_string() failed";
+        goto out;
+    }
+    printf("[%d] New cpubind is %s\n", wrank, bind1s);
+    free(bind1s);
+
+    rc = qv_bind_pop(ctx);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_pop() failed";
+        goto out;
+    }
+
+    char *bind2s;
+    rc = qv_bind_get_as_string(ctx, &bind2s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_get_as_string() failed";
+        goto out;
+    }
+    printf("[%d] Popped cpubind is %s\n", wrank, bind2s);
+    free(bind2s);
+
+    // TODO(skg) Add test to make popped is same as original.
+
     qv_scope_t *sub_sub_scope;
     rc = qv_scope_split(
         ctx,
@@ -105,7 +147,6 @@ main(
         ers = "qv_scope_split() failed";
         goto out;
     }
-
 
     rc = qv_scope_free(ctx, base_scope);
     if (rc != QV_SUCCESS) {
@@ -124,10 +165,8 @@ main(
         ers = "qv_scope_free() failed";
         goto out;
     }
-
 out:
-    rc = qv_free(ctx);
-    if (rc != QV_SUCCESS) {
+    if (qv_free(ctx) != QV_SUCCESS) {
         ers = "qv_free() failed";
     }
     MPI_Finalize();

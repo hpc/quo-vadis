@@ -20,6 +20,7 @@
 static const char *qvi_rc_strerrs[] = {
     "Success",
     "Success, operation already complete",
+    "Succcess, shut down",
     "Unspecified error",
     "Environment error",
     "Internal error",

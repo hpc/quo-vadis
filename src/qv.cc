@@ -10,7 +10,7 @@
  */
 
 /**
- * @file qvi-context.cc
+ * @file qv.cc
  */
 
 #include "qvi-common.h"
@@ -43,6 +43,12 @@ qv_create(
         ers = "qvi_rmi_client_new() failed";
         goto out;
     }
+
+    rc = qvi_bind_stack_new(&ictx->bind_stack);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_bind_stack_new() failed";
+        goto out;
+    }
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
@@ -60,10 +66,47 @@ qv_free(
     if (!ctx) return QV_ERR_INVLD_ARG;
 
     qvi_task_free(&ctx->task);
+    qvi_bind_stack_free(&ctx->bind_stack);
     qvi_rmi_client_free(&ctx->rmi);
     delete ctx;
 
     return QV_SUCCESS;
+}
+
+int
+qv_bind_push(
+    qv_context_t *ctx,
+    qv_scope_t *scope
+) {
+    if (!ctx || !scope) return QV_ERR_INVLD_ARG;
+
+    return qvi_bind_push(
+        ctx->bind_stack,
+        qvi_scope_bitmap_get(scope)
+    );
+}
+
+int
+qv_bind_pop(
+    qv_context_t *ctx
+) {
+    if (!ctx) return QV_ERR_INVLD_ARG;
+
+    return qvi_bind_pop(ctx->bind_stack);
+}
+
+int
+qv_bind_get_as_string(
+    qv_context_t *ctx,
+    char **bitmaps
+) {
+    if (!ctx || !bitmaps) return QV_ERR_INVLD_ARG;
+
+    return qvi_hwloc_task_get_cpubind_as_string(
+        ctx->hwloc,
+        qvi_task_pid(ctx->task),
+        bitmaps
+    );
 }
 
 /*
