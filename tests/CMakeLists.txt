@@ -134,7 +134,11 @@ add_test(
 set_target_properties(
     test-hwloc
     test-rmi
+    test-init-mpi
+    test-pmi
+    test-mpi
     test-scopes
+    test-scopes-mpi
     PROPERTIES LINKER_LANGUAGE C
 )
 

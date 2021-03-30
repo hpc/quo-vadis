@@ -23,6 +23,26 @@
 extern "C" {
 #endif
 
+/**
+ *
+ */
+int
+qvi_scope_new(
+    qv_scope_t **scope,
+    qv_context_t *ctx
+);
+
+/**
+ *
+ */
+void
+qvi_scope_free(
+    qv_scope_t **scope
+);
+
+/**
+ *
+ */
 hwloc_bitmap_t
 qvi_scope_bitmap_get(
     qv_scope_t *scope

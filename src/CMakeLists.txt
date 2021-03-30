@@ -153,7 +153,7 @@ add_library(
     qvi-task.cc
     qvi-group.cc
     qvi-scope.cc
-    qv.cc
+    quo-vadis.cc
 )
 
 target_include_directories(

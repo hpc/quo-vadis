@@ -10,7 +10,7 @@
  */
 
 /**
- * @file qv.cc
+ * @file quo-vadis.cc
  */
 
 #include "qvi-common.h"

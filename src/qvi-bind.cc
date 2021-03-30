@@ -15,8 +15,6 @@
 
 #include "qvi-common.h"
 #include "qvi-bind.h"
-#include "qvi-log.h"
-#include <stack>
 
 using qvi_bitmap_stack_t = std::stack<hwloc_bitmap_t>;
 

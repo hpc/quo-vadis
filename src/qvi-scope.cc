@@ -14,6 +14,7 @@
  */
 
 #include "qvi-common.h"
+#include "qvi-scope.h"
 #include "qvi-context.h"
 #include "qvi-bind.h"
 
@@ -26,24 +27,6 @@ struct qv_scope_s {
     /** Bitmap associated with this scope instance. */
     hwloc_bitmap_t bitmap = nullptr;
 };
-
-hwloc_bitmap_t
-qvi_scope_bitmap_get(
-    qv_scope_t *scope
-) {
-    return scope->bitmap;
-}
-
-void
-qvi_scope_free(
-    qv_scope_t **scope
-) {
-    qv_scope_t *iscope = *scope;
-    if (!iscope) return;
-    hwloc_bitmap_free(iscope->bitmap);
-    delete iscope;
-    *scope = nullptr;
-}
 
 int
 qvi_scope_new(
@@ -72,11 +55,29 @@ out:
     return rc;
 }
 
+void
+qvi_scope_free(
+    qv_scope_t **scope
+) {
+    qv_scope_t *iscope = *scope;
+    if (!iscope) return;
+    hwloc_bitmap_free(iscope->bitmap);
+    delete iscope;
+    *scope = nullptr;
+}
+
+hwloc_bitmap_t
+qvi_scope_bitmap_get(
+    qv_scope_t *scope
+) {
+    return scope->bitmap;
+}
+
 /**
  * TODO(skg) This should probably live in the daemon/server because it knows
  * about jobs, users, etc.
  */
-int
+static int
 obj_from_intrinsic_scope(
     qv_context_t *ctx,
     qv_scope_intrinsic_t iscope,
@@ -113,7 +114,7 @@ qv_scope_get(
     qv_scope_t **scope
 ) {
     if (!ctx || !scope) return QV_ERR_INVLD_ARG;
-    // TODO(skg) Should we cache these?
+
     qv_scope_t *qvs;
     int rc = qvi_scope_new(&qvs, ctx);
     if (rc != QV_SUCCESS) return rc;
@@ -154,6 +155,7 @@ qv_scope_split(
     qv_context_t *ctx,
     qv_scope_t *scope,
     int n,
+    int group_id,
     qv_scope_t **subscope
 ) {
     char *root_cpus;
@@ -173,10 +175,9 @@ qv_scope_split(
     qvi_hwloc_obj_type_depth(ctx->hwloc, QV_HW_OBJ_PU, &depth);
     // TODO(skg) We need to deal with corner cases. For example, fewer resources
     // than request, etc.
-    const int local_id = qvi_task_lid(ctx->task);
     const int chunk = npus / n;
     hwloc_bitmap_t ncpus = hwloc_bitmap_alloc();
-    const int base = chunk * local_id;
+    const int base = chunk * group_id;
     const int extent = base + chunk;
     hwloc_bitmap_zero(ncpus);
     for (int i = base; i < extent; ++i) {
@@ -190,12 +191,12 @@ qv_scope_split(
         );
         char *dobjs;
         qvi_hwloc_bitmap_asprintf(&dobjs, dobj->cpuset);
-        qvi_log_info("{} OBJ bitmap at depth {} is {}", local_id, depth, dobjs);
+        qvi_log_info("{} OBJ bitmap at depth {} is {}", group_id, depth, dobjs);
         hwloc_bitmap_or(ncpus, ncpus, dobj->cpuset);
     }
     char *news;
     qvi_hwloc_bitmap_asprintf(&news, ncpus);
-    qvi_log_info("{} New bitmap is {}", local_id, news);
+    qvi_log_info("{} New bitmap is {}", group_id, news);
     qv_scope_t *isubscope;
     int rc = qvi_scope_new(&isubscope, ctx);
     if (rc != QV_SUCCESS) return rc;
