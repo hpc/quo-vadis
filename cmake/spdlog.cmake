@@ -1,8 +1,8 @@
 #
-# Copyright (c)      2020 Triad National Security, LLC
+# Copyright (c) 2020-2021 Triad National Security, LLC
 #                         All rights reserved.
 #
-# Copyright (c)      2020 Lawrence Livermore National Security, LLC
+# Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
 #                         All rights reserved.
 #
 # This file is part of the quo-vadis project. See the LICENSE file at the
@@ -24,6 +24,8 @@ ExternalProject_Add(
     SOURCE_DIR ${QVI_SPDLOG_DIR}
     PREFIX ${QVI_SPDLOG_BIN}
     CMAKE_ARGS
+      -DCMAKE_C_COMPILER:FILEPATH=${CMAKE_C_COMPILER}
+      -DCMAKE_CXX_COMPILER:FILEPATH=${CMAKE_CXX_COMPILER}
       -DCMAKE_INSTALL_PREFIX:PATH=${QVI_SPDLOG_BIN}
       -DSPDLOG_BUILD_EXAMPLE:BOOL=NO
       -DCMAKE_INSTALL_LIBDIR:PATH=lib

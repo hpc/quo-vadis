@@ -1,8 +1,8 @@
 #
-# Copyright (c)      2020 Triad National Security, LLC
+# Copyright (c) 2020-2021 Triad National Security, LLC
 #                         All rights reserved.
 #
-# Copyright (c)      2020 Lawrence Livermore National Security, LLC
+# Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
 #                         All rights reserved.
 #
 # This file is part of the quo-vadis project. See the LICENSE file at the
@@ -34,6 +34,8 @@ ExternalProject_Add(
     SOURCE_DIR ${QVI_HWLOC_DIR}
     PREFIX ${QVI_HWLOC_BIN}
     CONFIGURE_COMMAND ${QVI_HWLOC_DIR}/configure
+      CC=${CMAKE_C_COMPILER}
+      CXX=${CMAKE_CXX_COMPILER}
       --prefix=${QVI_HWLOC_BIN}
       --with-hwloc-symbol-prefix=quo_vadis_internal_
       --enable-plugins=no

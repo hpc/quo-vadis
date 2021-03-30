@@ -1,6 +1,5 @@
 # TODO
 
-* Fix spdlog build: uses GCC even if Clang is specified at top level.
 * Implement transparent loading of synthetic hardware topologies for development
   purposes.
 * Implement a qvid distribution service.
