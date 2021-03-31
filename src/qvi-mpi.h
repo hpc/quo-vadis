@@ -145,6 +145,14 @@ qvi_mpi_group_create_from_mpi_comm(
     qvi_mpi_group_t **new_group
 );
 
+/**
+ *
+ */
+int
+qvi_mpi_node_barrier(
+    qvi_mpi_t *mpi
+);
+
 #ifdef __cplusplus
 }
 #endif

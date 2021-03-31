@@ -52,6 +52,8 @@ main(
         return EXIT_FAILURE;
     }
 
+    setbuf(stdout, NULL);
+
     qv_context_t *ctx;
     rc = qv_mpi_create(&ctx, comm);
     if (rc != QV_SUCCESS) {
@@ -165,6 +167,12 @@ main(
     rc = qv_scope_free(ctx, sub_sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
+        goto out;
+    }
+
+    rc = qv_barrier(ctx);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_barrier() failed";
         goto out;
     }
 out:

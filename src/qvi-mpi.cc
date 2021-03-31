@@ -16,6 +16,7 @@
 // TODO(skg) Have infrastructure-specific init (e.g., MPI), but have
 // infrastructure-agnostic free(), etc (where possible).
 // TODO(skg) Integrate with qv_free().
+// TODO(skg) Maybe we don't need all this group stuff.
 
 
 #include "qvi-common.h"
@@ -658,6 +659,24 @@ out:
         }
     }
     return rc;
+}
+
+int
+qvi_mpi_node_barrier(
+    qvi_mpi_t *mpi
+) {
+    MPI_Request request;
+    int rc = MPI_Ibarrier(mpi->node_comm, &request);
+    if (rc != MPI_SUCCESS) return QV_ERR_MPI;
+
+    int done = 0;
+    do {
+        rc = MPI_Test(&request, &done, MPI_STATUS_IGNORE);
+        if (rc != MPI_SUCCESS) return QV_ERR_MPI;
+        usleep(50000);
+    } while (!done);
+
+    return QV_SUCCESS;
 }
 
 /*

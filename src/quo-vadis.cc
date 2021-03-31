@@ -109,6 +109,16 @@ qv_bind_get_as_string(
     );
 }
 
+// TODO(skg) Add support for other, non-MPI barriers.
+int
+qv_barrier(
+    qv_context_t *ctx
+) {
+    if (!ctx) return QV_ERR_INVLD_ARG;
+
+    return qvi_mpi_node_barrier(ctx->mpi);
+}
+
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
  */

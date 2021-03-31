@@ -176,6 +176,14 @@ qv_bind_get_as_string(
 /**
  *
  */
+int
+qv_barrier(
+    qv_context_t *ctx
+);
+
+/**
+ *
+ */
 const char *
 qv_strerr(
     int ec
