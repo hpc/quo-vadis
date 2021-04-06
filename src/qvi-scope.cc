@@ -174,7 +174,7 @@ qv_scope_split(
     int depth;
     qvi_hwloc_obj_type_depth(ctx->hwloc, QV_HW_OBJ_PU, &depth);
     // TODO(skg) We need to deal with corner cases. For example, fewer resources
-    // than request, etc.
+    // than request, more groups than chunks.
     const int chunk = npus / n;
     hwloc_bitmap_t ncpus = hwloc_bitmap_alloc();
     const int base = chunk * group_id;

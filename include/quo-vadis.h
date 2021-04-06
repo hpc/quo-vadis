@@ -75,7 +75,7 @@ typedef enum qv_scope_intrinsic_e {
 } qv_scope_intrinsic_t;
 
 typedef enum qv_hw_obj_type_e {
-    QV_HW_OBJ_MACHINE,
+    QV_HW_OBJ_MACHINE = 0,
     QV_HW_OBJ_PACKAGE,
     QV_HW_OBJ_CORE,
     QV_HW_OBJ_PU,

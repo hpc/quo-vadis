@@ -137,13 +137,13 @@ rmi_config(
 
     int rc = qvi_url(&ctx->rmic->url);
     if (rc != QV_SUCCESS) {
-        qvi_log_error(qvi_conn_ers());
+        qvi_panic_log_error(qvi_conn_ers());
         return;
     }
 
     rc = qvi_rmi_server_config(ctx->rmi, ctx->rmic);
     if (rc != QV_SUCCESS) {
-        qvi_log_error("qvi_rmi_server_config() failed");
+        qvi_panic_log_error("qvi_rmi_server_config() failed");
         return;
     }
 
