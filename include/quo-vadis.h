@@ -31,10 +31,6 @@ typedef struct qv_context_s qv_context_t;
 struct qv_task_s;
 typedef struct qv_task_s qv_task_t;
 
-/** Opaque quo-vadis group. */
-struct qv_group_s;
-typedef struct qv_group_s qv_group_t;
-
 /** Opaque quo-vadis scope. */
 struct qv_scope_s;
 typedef struct qv_scope_s qv_scope_t;

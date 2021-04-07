@@ -433,7 +433,9 @@ qvi_hwloc_task_get_cpubind_as_string(
     int rc = qvi_hwloc_task_get_cpubind(hwl, who, &cpuset);
     if (rc != QV_SUCCESS) return rc;
 
-    return qvi_hwloc_bitmap_asprintf(bitmaps, cpuset);
+    rc = qvi_hwloc_bitmap_asprintf(bitmaps, cpuset);
+    hwloc_bitmap_free(cpuset);
+    return rc;
 }
 
 /**

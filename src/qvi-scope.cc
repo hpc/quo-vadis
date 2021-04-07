@@ -161,6 +161,7 @@ qv_scope_split(
     char *root_cpus;
     qvi_hwloc_bitmap_asprintf(&root_cpus, scope->bitmap);
     qvi_log_info("Root Scope is {}", root_cpus);
+    free(root_cpus);
 
     unsigned npus;
     qvi_hwloc_get_nobjs_in_cpuset(
@@ -192,15 +193,18 @@ qv_scope_split(
         char *dobjs;
         qvi_hwloc_bitmap_asprintf(&dobjs, dobj->cpuset);
         qvi_log_info("{} OBJ bitmap at depth {} is {}", group_id, depth, dobjs);
+        free(dobjs);
         hwloc_bitmap_or(ncpus, ncpus, dobj->cpuset);
     }
     char *news;
     qvi_hwloc_bitmap_asprintf(&news, ncpus);
     qvi_log_info("{} New bitmap is {}", group_id, news);
+    free(news);
     qv_scope_t *isubscope;
     int rc = qvi_scope_new(&isubscope, ctx);
     if (rc != QV_SUCCESS) return rc;
     hwloc_bitmap_copy(isubscope->bitmap, ncpus);
+    hwloc_bitmap_free(ncpus);
     *subscope = isubscope;
     return QV_SUCCESS;
 }

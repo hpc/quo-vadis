@@ -59,7 +59,11 @@ qvi_bind_stack_free(
 ) {
     qvi_bind_stack_t *ibstack = *bstack;
     if (!ibstack) return;
-    // The contents of the stack are NOT owned by us.
+    while (!ibstack->stack->empty()) {
+        hwloc_bitmap_t bitm = ibstack->stack->top();
+        hwloc_bitmap_free(bitm);
+        ibstack->stack->pop();
+    }
     delete ibstack->stack;
     delete ibstack;
     *bstack = nullptr;
@@ -92,16 +96,17 @@ qvi_bind_push(
     qvi_bind_stack_t *bstack,
     hwloc_bitmap_t bitmap
 ) {
+    // Copy input bitmap because we don't want to directly modify it.
+    hwloc_bitmap_t bitmap_copy = hwloc_bitmap_alloc();
+    hwloc_bitmap_copy(bitmap_copy, bitmap);
     // Change policy
     int rc = qvi_hwloc_set_cpubind_from_bitmap(
         bstack->hwloc,
-        bitmap
+        bitmap_copy
     );
-    if (rc != QV_SUCCESS) {
-        return rc;
-    }
-
-    bstack->stack->push(bitmap);
+    if (rc != QV_SUCCESS) return rc;
+    // Push bitmap onto stack.
+    bstack->stack->push(bitmap_copy);
 
     return QV_SUCCESS;
 }
@@ -118,9 +123,7 @@ qvi_bind_pop(
         bstack->hwloc,
         bstack->stack->top()
     );
-    if (rc != QV_SUCCESS) {
-        return rc;
-    }
+    if (rc != QV_SUCCESS) return rc;
 
     return QV_SUCCESS;
 }

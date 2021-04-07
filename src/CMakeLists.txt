@@ -151,7 +151,6 @@ add_library(
     qvi-task.h
     qvi-scope.h
     qvi-task.cc
-    qvi-group.cc
     qvi-scope.cc
     quo-vadis.cc
 )
