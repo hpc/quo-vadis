@@ -57,6 +57,7 @@ enum {
     QV_ERR_POP,
     QV_ERR_PMI,
     QV_ERR_NOT_FOUND,
+    QV_ERR_SPLIT,
     /** Sentinel value. */
     QV_RC_LAST
 };

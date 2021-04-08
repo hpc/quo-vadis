@@ -138,13 +138,6 @@ qv_scope_free(
 }
 
 /*
- * Bitmaps:
- * Each set bit represents a PU. I think the number of bits set represents the
- * number of PUs present on the system. The least-significant (right-most) bit
- * probably represents logical ID 0.
- */
-
-/*
  * TODO(skg) Is this call collective? Are we going to verify input parameter
  * consistency across processes?
  *
@@ -158,55 +151,91 @@ qv_scope_split(
     int group_id,
     qv_scope_t **subscope
 ) {
-    char *root_cpus;
-    qvi_hwloc_bitmap_asprintf(&root_cpus, scope->bitmap);
-    qvi_log_info("Root Scope is {}", root_cpus);
-    free(root_cpus);
+    static const cstr epref = "qv_scope_split Error: ";
 
+    if (!ctx || !scope || !subscope) {
+        return QV_ERR_INVLD_ARG;
+    }
+    if (n <= 0 ) {
+        qvi_log_error("{} n <= 0 (n = {})", epref, n);
+        return QV_ERR_INVLD_ARG;
+    }
+    if (group_id < 0) {
+        qvi_log_error("{} group_id < 0 (group_id = {})", epref, group_id);
+        return QV_ERR_INVLD_ARG;
+    }
     unsigned npus;
-    qvi_hwloc_get_nobjs_in_cpuset(
+    int qvrc = qvi_hwloc_get_nobjs_in_cpuset(
         ctx->hwloc,
         QV_HW_OBJ_PU,
         scope->bitmap,
         &npus
     );
-    qvi_log_info("Number of PUs is {}, split is {}", npus, n);
+    if (qvrc != QV_SUCCESS) return qvrc;
+    // We use PUs to split resources.  Each set bit represents a PU. The number
+    // of bits set represents the number of PUs present on the system. The
+    // least-significant (right-most) bit represents logical ID 0.
+    int pu_depth;
+    qvrc = qvi_hwloc_obj_type_depth(
+        ctx->hwloc,
+        QV_HW_OBJ_PU,
+        &pu_depth
+    );
+    if (qvrc != QV_SUCCESS) return qvrc;
 
-    int depth;
-    qvi_hwloc_obj_type_depth(ctx->hwloc, QV_HW_OBJ_PU, &depth);
-    // TODO(skg) We need to deal with corner cases. For example, fewer resources
-    // than request, more groups than chunks.
+    int rc;
     const int chunk = npus / n;
-    hwloc_bitmap_t ncpus = hwloc_bitmap_alloc();
+    // This happens when n > npus. We can't support that split.
+    if (chunk == 0) {
+        qvi_log_error("{} n > npus ({} > {})", epref, n, npus);
+        return QV_ERR_SPLIT;
+    }
+    // Group IDs must be < n: 0, 1, ... , n-1.
+    if (group_id >= n) {
+        qvi_log_error("{} group_id >= n ({} >= {})", epref, group_id, n);
+        return QV_ERR_SPLIT;
+    }
+    // Calculate base and extent of split.
     const int base = chunk * group_id;
     const int extent = base + chunk;
-    hwloc_bitmap_zero(ncpus);
+    // Allocate and zero-out a new bitmap that will encode the split.
+    hwloc_bitmap_t bitm = hwloc_bitmap_alloc();
+    if (!bitm) return QV_ERR_OOR;
+    hwloc_bitmap_zero(bitm);
     for (int i = base; i < extent; ++i) {
         hwloc_obj_t dobj;
-        qvi_hwloc_get_obj_in_cpuset_by_depth(
+        qvrc = qvi_hwloc_get_obj_in_cpuset_by_depth(
             ctx->hwloc,
             scope->bitmap,
-            depth,
+            pu_depth,
             i,
             &dobj
         );
-        char *dobjs;
-        qvi_hwloc_bitmap_asprintf(&dobjs, dobj->cpuset);
-        qvi_log_info("{} OBJ bitmap at depth {} is {}", group_id, depth, dobjs);
-        free(dobjs);
-        hwloc_bitmap_or(ncpus, ncpus, dobj->cpuset);
+        if (qvrc != QV_SUCCESS) goto out;
+
+        rc = hwloc_bitmap_or(bitm, bitm, dobj->cpuset);
+        if (rc != 0) {
+            qvrc = QV_ERR_HWLOC;
+            goto out;
+        }
     }
-    char *news;
-    qvi_hwloc_bitmap_asprintf(&news, ncpus);
-    qvi_log_info("{} New bitmap is {}", group_id, news);
-    free(news);
+    // Create new sub-scope.
     qv_scope_t *isubscope;
-    int rc = qvi_scope_new(&isubscope, ctx);
-    if (rc != QV_SUCCESS) return rc;
-    hwloc_bitmap_copy(isubscope->bitmap, ncpus);
-    hwloc_bitmap_free(ncpus);
+    qvrc = qvi_scope_new(&isubscope, ctx);
+    if (qvrc != QV_SUCCESS) goto out;
+
+    rc = hwloc_bitmap_copy(isubscope->bitmap, bitm);
+    if (rc != 0) {
+        qvrc = QV_ERR_HWLOC;
+        goto out;
+    }
+out:
+    hwloc_bitmap_free(bitm);
+    if (qvrc != QV_SUCCESS) {
+        qvi_scope_free(&isubscope);
+    }
     *subscope = isubscope;
-    return QV_SUCCESS;
+    return qvrc;
 }
 
 int

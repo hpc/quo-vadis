@@ -36,7 +36,8 @@ static const char *qvi_rc_strerrs[] = {
     "Operation not supported",
     "Pop operation error",
     "PMI operation error",
-    "Not found"
+    "Not found",
+    "Split error"
 };
 
 const char *

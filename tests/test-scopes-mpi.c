@@ -83,7 +83,7 @@ main(
         ers = "qv_scope_nobjs() failed";
         goto out;
     }
-    printf("[%d] Number of NUMA in sub_scope is %d\n", wrank, n_cores);
+    printf("[%d] Number of NUMA in base_scope is %d\n", wrank, n_cores);
 
     qv_scope_t *sub_scope;
     rc = qv_scope_split(
@@ -156,7 +156,7 @@ main(
         ctx,
         sub_scope,
         2,
-        0,
+        wrank,
         &sub_sub_scope
     );
     if (rc != QV_SUCCESS) {
@@ -174,7 +174,7 @@ main(
         ers = "qv_scope_nobjs() failed";
         goto out;
     }
-    printf("[%d] Number of NUMA in sub_scope is %d\n", wrank, n_cores);
+    printf("[%d] Number of NUMA in sub_sub_scope is %d\n", wrank, n_cores);
 
     rc = qv_scope_free(ctx, base_scope);
     if (rc != QV_SUCCESS) {
