@@ -202,6 +202,7 @@ group_create_from_mpi_comm(
         ers = "MPI_Comm_group() failed";
         goto out;
     }
+
     rc = MPI_Group_rank(
         new_group->mpi_group,
         &new_group->group_id
@@ -210,6 +211,7 @@ group_create_from_mpi_comm(
         ers = "MPI_Group_rank() failed";
         goto out;
     }
+
     rc = MPI_Group_size(
         new_group->mpi_group,
         &new_group->group_size
@@ -305,11 +307,9 @@ qvi_mpi_new(
     qvi_mpi_t **mpi
 ) {
     int rc = QV_SUCCESS;
-    cstr ers = nullptr;
 
     qvi_mpi_t *impi = qvi_new qvi_mpi_t;
     if (!impi) {
-        ers = "memory allocation failed";
         rc = QV_ERR_OOR;
         goto out;
     }
@@ -318,13 +318,11 @@ qvi_mpi_new(
     // Groups
     impi->group_tab = qvi_new group_tab_t;
     if (!impi->group_tab) {
-        ers = "memory allocation failed";
         rc = QV_ERR_OOR;
         goto out;
     }
 out:
-    if (ers) {
-        qvi_log_error(ers);
+    if (rc != QV_SUCCESS) {
         qvi_mpi_free(&impi);
     }
     *mpi = impi;
@@ -459,28 +457,33 @@ qvi_mpi_init(
         ers = "MPI_Comm_size() failed";
         goto out;
     }
+
     int world_id;
     rc = MPI_Comm_rank(comm, &world_id);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_rank() failed";
         goto out;
     }
+
     rc = create_intrinsic_comms(mpi, comm);
     if (rc != MPI_SUCCESS) {
         ers = "create_intrinsic_comms() failed";
         goto out;
     }
+
     rc = MPI_Comm_size(mpi->node_comm, &mpi->node_size);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_size(node_comm) failed";
         goto out;
     }
+
     int node_id;
     rc = MPI_Comm_rank(mpi->node_comm, &node_id);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_rank(node_comm) failed";
         goto out;
     }
+
     rc = create_intrinsic_groups(mpi);
     if (rc != MPI_SUCCESS) {
         ers = "create_intrinsic_groups() failed";
@@ -517,10 +520,8 @@ qvi_mpi_group_new(
     int rc = QV_SUCCESS;
 
     qvi_mpi_group_t *igroup = qvi_new qvi_mpi_group_t;
-    if (!igroup) {
-        qvi_log_error("memory allocation failed");
-        rc = QV_ERR_OOR;
-    }
+    if (!igroup) rc = QV_ERR_OOR;
+
     *group = igroup;
     return rc;
 }
@@ -592,6 +593,7 @@ qvi_mpi_group_create_from_ids(
         qvrc = QV_ERR_MPI;
         goto out;
     }
+
     qvrc = group_create_from_mpi_group(
         mpi,
         new_mpi_group,
@@ -619,6 +621,38 @@ out:
 }
 
 int
+qvi_mpi_group_create_from_split(
+    qvi_mpi_t *mpi,
+    const qvi_mpi_group_t *group,
+    int color,
+    int key,
+    qvi_mpi_group_t **my_group
+) {
+    int qvrc = QV_SUCCESS;
+
+    MPI_Comm split_comm = MPI_COMM_NULL;
+    int rc = MPI_Comm_split(
+        group->mpi_comm,
+        color,
+        key,
+        &split_comm
+    );
+    if (rc != MPI_SUCCESS) {
+        qvrc = QV_ERR_MPI;
+        goto out;
+    }
+
+    qvrc = qvi_mpi_group_create_from_mpi_comm(
+        mpi,
+        split_comm,
+        my_group
+    );
+out:
+    if (split_comm != MPI_COMM_NULL) MPI_Comm_free(&split_comm);
+    return qvrc;
+}
+
+int
 qvi_mpi_group_create_from_mpi_comm(
     qvi_mpi_t *mpi,
     MPI_Comm comm,
@@ -632,12 +666,14 @@ qvi_mpi_group_create_from_mpi_comm(
         ers = "qvi_mpi_group_new() failed";
         goto out;
     }
+
     rc = mpi_comm_to_new_node_comm(comm, &node_comm);
     if (rc != MPI_SUCCESS) {
         ers = "mpi_comm_to_new_node_comm() failed";
         rc = QV_ERR_MPI;
         goto out;
     }
+
     rc = group_create_from_mpi_comm(
         node_comm,
         *new_group
@@ -646,6 +682,7 @@ qvi_mpi_group_create_from_mpi_comm(
         ers = "group_create_from_mpi_comm() failed";
         goto out;
     }
+
     rc = group_add(mpi, *new_group);
     if (rc != QV_SUCCESS) {
         ers = "group_add() failed";

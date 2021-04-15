@@ -67,6 +67,7 @@ typedef enum qvi_rpc_funid_e {
     FID_HELLO,
     FID_GBYE,
     FID_TASK_GET_CPUBIND,
+    FID_SCOPE_GET_INTRINSIC_SCOPE_CPUSET
 } qvi_rpc_funid_t;
 
 typedef struct qvi_msg_header_s {
@@ -469,6 +470,64 @@ rpc_ssi_task_get_cpubind(
     return rc;
 }
 
+// TODO(skg) Lots of error path cleanup is required.
+static int
+rpc_ssi_scope_get_intrinsic_scope_cpuset(
+    qvi_rmi_server_t *server,
+    qvi_msg_header_t *hdr,
+    void *input,
+    qvi_bbuff_t **output
+) {
+    // Get intrinsic scope as integer from client request.
+    int sai;
+    int rc = qvi_data_sscanf(input, hdr->picture, &sai);
+    if (rc != QV_SUCCESS) return rc;
+
+    hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
+    if (!cpuset) return QV_ERR_OOR;
+
+    hwloc_topology_t topo = qvi_hwloc_topo_get(server->config->hwloc);
+    qv_scope_intrinsic_t iscope = (qv_scope_intrinsic_t)sai;
+    int rpcrc = QV_SUCCESS;
+    // TODO(skg) Implement the rest.
+    switch (iscope) {
+        case QV_SCOPE_SYSTEM: {
+            // TODO(skg) Deal with errors.
+            hwloc_bitmap_copy(
+                cpuset,
+                hwloc_get_root_obj(topo)->cpuset
+            );
+            // TODO(skg) Needs work.
+            //scope->obj = hwloc_get_root_obj(ctx->topo);
+            //scope->obj = hwloc_get_obj_by_type(ctx->topo, HWLOC_OBJ_NUMANODE, 0);
+            break;
+        }
+        case QV_SCOPE_EMPTY:
+            rpcrc = QV_ERR_INVLD_ARG;
+            break;
+        case QV_SCOPE_USER:
+        case QV_SCOPE_JOB:
+        case QV_SCOPE_PROCESS:
+            rpcrc = QV_ERR_INTERNAL;
+            break;
+        default:
+            rpcrc = QV_ERR_INVLD_ARG;
+            break;
+    }
+    // TODO(skg) We need to make sure that other errors didn't occur.
+    char *bitmaps = nullptr;
+    rc = hwloc_bitmap_asprintf(&bitmaps, cpuset);
+    if (rc == -1) rpcrc = QV_ERR_HWLOC;
+
+    rc = rpc_pack(output, hdr->fid, "is", rpcrc, bitmaps);
+    if (rc != QV_SUCCESS) return rc;
+
+    hwloc_bitmap_free(cpuset);
+    if (bitmaps) free(bitmaps);
+
+    return rc;
+}
+
 /**
  * Maps a given qvi_rpc_funid_t to a given function pointer. Must be kept in
  * sync with qvi_rpc_funid_t.
@@ -478,7 +537,8 @@ static const qvi_rpc_fun_ptr_t rpc_dispatch_table[] = {
     rpc_ssi_shutdown,
     rpc_ssi_hello,
     rpc_ssi_gbye,
-    rpc_ssi_task_get_cpubind
+    rpc_ssi_task_get_cpubind,
+    rpc_ssi_scope_get_intrinsic_scope_cpuset
 };
 
 static int
@@ -798,20 +858,54 @@ int
 qvi_rmi_task_get_cpubind(
     qvi_rmi_client_t *client,
     pid_t who,
-    hwloc_bitmap_t *bitmap
+    hwloc_bitmap_t bitmap
 ) {
     int qvrc = rpc_req(client->zsock, FID_TASK_GET_CPUBIND, "i", (int)who);
-    if (qvrc != QV_SUCCESS) goto out;
+    if (qvrc != QV_SUCCESS) return qvrc;
 
     int rpcrc;
-    char *bitmaps;
+    char *bitmaps = nullptr;
     qvrc = rpc_rep(client->zsock, "is", &rpcrc, &bitmaps);
     if (qvrc != QV_SUCCESS) goto out;
 
-    *bitmap = hwloc_bitmap_alloc();
-    hwloc_bitmap_sscanf(*bitmap, bitmaps);
-    free(bitmaps);
+    if (hwloc_bitmap_sscanf(bitmap, bitmaps) != 0) {
+        qvrc = QV_ERR_HWLOC;
+        goto out;
+    }
 out:
+    if (bitmaps) free(bitmaps);
+    if (qvrc != QV_SUCCESS) return qvrc;
+    return rpcrc;
+}
+
+int
+qvi_rmi_scope_get_intrinsic_scope_cpuset(
+    qvi_rmi_client_t *client,
+    qv_scope_intrinsic_t iscope,
+    hwloc_bitmap_t cpuset
+) {
+    int qvrc = QV_SUCCESS;
+
+    const int sai = (int)iscope;
+    qvrc = rpc_req(
+        client->zsock,
+        FID_SCOPE_GET_INTRINSIC_SCOPE_CPUSET,
+        "i",
+        sai
+    );
+    if (qvrc != QV_SUCCESS) return qvrc;
+
+    int rpcrc;
+    char *cpusets = nullptr;
+    qvrc = rpc_rep(client->zsock, "is", &rpcrc, &cpusets);
+    if (qvrc != QV_SUCCESS) goto out;
+
+    if (hwloc_bitmap_sscanf(cpuset, cpusets) != 0) {
+        qvrc = QV_ERR_HWLOC;
+        goto out;
+    }
+out:
+    if (cpusets) free(cpusets);
     if (qvrc != QV_SUCCESS) return qvrc;
     return rpcrc;
 }

@@ -126,8 +126,8 @@ client(
     }
 
     pid_t mypid = getpid();
-    hwloc_bitmap_t bitmap;
-    rc = qvi_rmi_task_get_cpubind(client, mypid, &bitmap);
+    hwloc_bitmap_t bitmap = hwloc_bitmap_alloc();
+    rc = qvi_rmi_task_get_cpubind(client, mypid, bitmap);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_task_get_cpubind() failed";
         goto out;

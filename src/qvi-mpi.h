@@ -149,6 +149,18 @@ qvi_mpi_group_create_from_mpi_comm(
  *
  */
 int
+qvi_mpi_group_create_from_split(
+    qvi_mpi_t *mpi,
+    const qvi_mpi_group_t *group,
+    int color,
+    int key,
+    qvi_mpi_group_t **my_group
+);
+
+/**
+ *
+ */
+int
 qvi_mpi_node_barrier(
     qvi_mpi_t *mpi
 );

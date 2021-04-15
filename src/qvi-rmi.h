@@ -108,7 +108,17 @@ int
 qvi_rmi_task_get_cpubind(
     qvi_rmi_client_t *client,
     pid_t who,
-    hwloc_bitmap_t *out_bitmap
+    hwloc_bitmap_t bitmap
+);
+
+/**
+ *
+ */
+int
+qvi_rmi_scope_get_intrinsic_scope_cpuset(
+    qvi_rmi_client_t *client,
+    qv_scope_intrinsic_t iscope,
+    hwloc_bitmap_t cpuset
 );
 
 #ifdef __cplusplus

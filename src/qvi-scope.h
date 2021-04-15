@@ -48,6 +48,15 @@ qvi_scope_bitmap_get(
     qv_scope_t *scope
 );
 
+/**
+ *
+ */
+int
+qvi_scope_bitmap_set(
+    qv_scope_t *scope,
+    hwloc_const_bitmap_t bitmap
+);
+
 #ifdef __cplusplus
 }
 #endif
