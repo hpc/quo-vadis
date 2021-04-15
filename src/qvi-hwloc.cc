@@ -220,6 +220,18 @@ qvi_hwloc_topo_get(
     return hwl->topo;
 }
 
+int
+qvi_hwloc_bitmap_alloc(
+    hwloc_bitmap_t *bitmap
+) {
+    int rc = QV_SUCCESS;
+
+    *bitmap = hwloc_bitmap_alloc();
+    if (!*bitmap) rc = QV_ERR_OOR;
+
+    return rc;
+}
+
 static int
 topo_fname(
     const char *base,
@@ -395,12 +407,10 @@ qvi_hwloc_task_get_cpubind(
 ) {
     int qrc = QV_SUCCESS, rc = 0;
 
-    hwloc_bitmap_t cur_bind = hwloc_bitmap_alloc();
-    if (!cur_bind) {
-        qvi_log_error("hwloc_bitmap_alloc() failed");
-        qrc = QV_ERR_OOR;
-        goto out;
-    }
+    hwloc_bitmap_t cur_bind;
+    qrc = qvi_hwloc_bitmap_alloc(&cur_bind);
+    if (qrc != QV_SUCCESS) return qrc;
+
     // TODO(skg) Add another routine to also support getting TIDs.
     rc = hwloc_get_proc_cpubind(
         hwl->topo,

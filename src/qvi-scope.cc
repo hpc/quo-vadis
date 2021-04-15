@@ -23,18 +23,13 @@ struct qv_scope_s {
     /** The group structure. */
     // TODO(skg) This will need work: needs to support more than just MPI.
     qvi_mpi_group_t *group = nullptr;
-    /** Points to cached hwloc instance. */
-    qvi_hwloc_t *hwloc = nullptr;
-    /** Points to cached hwloc topology. */
-    hwloc_topology_t topo = nullptr;
     /** Bitmap associated with this scope instance. */
     hwloc_bitmap_t bitmap = nullptr;
 };
 
 int
 qvi_scope_new(
-    qv_scope_t **scope,
-    qv_context_t *ctx
+    qv_scope_t **scope
 ) {
     int rc = QV_SUCCESS;
 
@@ -47,17 +42,10 @@ qvi_scope_new(
     rc = qvi_mpi_group_new(&iscope->group);
     if (rc != QV_SUCCESS) goto out;
 
-    iscope->bitmap = hwloc_bitmap_alloc();
-    if (!iscope->bitmap) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-    iscope->hwloc = ctx->hwloc;
-    iscope->topo = ctx->topo;
+    rc = qvi_hwloc_bitmap_alloc(&iscope->bitmap);
+    if (rc != QV_SUCCESS) goto out;
 out:
-    if (rc != QV_SUCCESS) {
-        qvi_scope_free(&iscope);
-    }
+    if (rc != QV_SUCCESS) qvi_scope_free(&iscope);
     *scope = iscope;
     return rc;
 }
@@ -86,12 +74,10 @@ qvi_scope_bitmap_set(
     qv_scope_t *scope,
     hwloc_const_bitmap_t bitmap
 ) {
-    int rc = QV_SUCCESS;
-
     if (hwloc_bitmap_copy(scope->bitmap, bitmap) != 0) {
-        rc = QV_ERR_HWLOC;
+        return QV_ERR_HWLOC;
     }
-    return rc;
+    return QV_SUCCESS;
 }
 
 int

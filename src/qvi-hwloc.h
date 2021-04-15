@@ -68,6 +68,14 @@ qvi_hwloc_topo_get(
  *
  */
 int
+qvi_hwloc_bitmap_alloc(
+    hwloc_bitmap_t *bitmap
+);
+
+/**
+ *
+ */
+int
 qvi_hwloc_get_nobjs_by_type(
    qvi_hwloc_t *hwloc,
    qv_hw_obj_type_t target_type,

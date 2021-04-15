@@ -128,14 +128,12 @@ qv_scope_get(
     if (!ctx || !scope) return QV_ERR_INVLD_ARG;
 
     qv_scope_t *qvs;
-    int rc = qvi_scope_new(&qvs, ctx);
+    int rc = qvi_scope_new(&qvs);
     if (rc != QV_SUCCESS) return rc;
 
-    hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
-    if (!cpuset) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
+    hwloc_bitmap_t cpuset;
+    rc = qvi_hwloc_bitmap_alloc(&cpuset);
+    if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_rmi_scope_get_intrinsic_scope_cpuset(
         ctx->rmi,
@@ -254,8 +252,10 @@ qv_scope_split(
     const int base = chunk * group_id;
     const int extent = base + chunk;
     // Allocate and zero-out a new bitmap that will encode the split.
-    hwloc_bitmap_t bitm = hwloc_bitmap_alloc();
-    if (!bitm) return QV_ERR_OOR;
+    hwloc_bitmap_t bitm;
+    qvrc = qvi_hwloc_bitmap_alloc(&bitm);
+    if (qvrc != QV_SUCCESS) return qvrc;
+
     hwloc_bitmap_zero(bitm);
     for (int i = base; i < extent; ++i) {
         hwloc_obj_t dobj;
@@ -276,15 +276,17 @@ qv_scope_split(
     }
     // Create new sub-scope.
     qv_scope_t *isubscope;
-    qvrc = qvi_scope_new(&isubscope, ctx);
+    qvrc = qvi_scope_new(&isubscope);
     if (qvrc != QV_SUCCESS) goto out;
 
-    rc = hwloc_bitmap_copy(qvi_scope_bitmap_get(isubscope), bitm);
+    rc = hwloc_bitmap_copy(
+        qvi_scope_bitmap_get(isubscope),
+        bitm
+    );
     if (rc != 0) {
         qvrc = QV_ERR_HWLOC;
         goto out;
     }
-
 out:
     hwloc_bitmap_free(bitm);
     if (qvrc != QV_SUCCESS) {

@@ -28,8 +28,7 @@ extern "C" {
  */
 int
 qvi_scope_new(
-    qv_scope_t **scope,
-    qv_context_t *ctx
+    qv_scope_t **scope
 );
 
 /**
