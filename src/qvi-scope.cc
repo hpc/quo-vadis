@@ -15,14 +15,9 @@
 
 #include "qvi-common.h"
 #include "qvi-scope.h"
-#include "qvi-context.h"
-#include "qvi-bind.h"
 
 // Type definition
 struct qv_scope_s {
-    /** The group structure. */
-    // TODO(skg) This will need work: needs to support more than just MPI.
-    qvi_mpi_group_t *group = nullptr;
     /** Bitmap associated with this scope instance. */
     hwloc_bitmap_t bitmap = nullptr;
 };
@@ -39,9 +34,6 @@ qvi_scope_new(
         goto out;
     }
 
-    rc = qvi_mpi_group_new(&iscope->group);
-    if (rc != QV_SUCCESS) goto out;
-
     rc = qvi_hwloc_bitmap_alloc(&iscope->bitmap);
     if (rc != QV_SUCCESS) goto out;
 out:
@@ -57,7 +49,6 @@ qvi_scope_free(
     qv_scope_t *iscope = *scope;
     if (!iscope) return;
     hwloc_bitmap_free(iscope->bitmap);
-    qvi_mpi_group_free(&iscope->group);
     delete iscope;
     *scope = nullptr;
 }
@@ -78,35 +69,6 @@ qvi_scope_bitmap_set(
         return QV_ERR_HWLOC;
     }
     return QV_SUCCESS;
-}
-
-int
-qv_scope_free(
-    qv_context_t *ctx,
-    qv_scope_t *scope
-) {
-    if (!ctx || !scope) return QV_ERR_INVLD_ARG;
-
-    qvi_scope_free(&scope);
-
-    return QV_SUCCESS;
-}
-
-int
-qv_scope_nobjs(
-    qv_context_t *ctx,
-    qv_scope_t *scope,
-    qv_hw_obj_type_t obj,
-    int *n
-) {
-    if (!ctx || !scope || !n) return QV_ERR_INVLD_ARG;
-
-    return qvi_hwloc_get_nobjs_in_cpuset(
-        ctx->hwloc,
-        obj,
-        scope->bitmap,
-        (unsigned *)n
-    );
 }
 
 /*

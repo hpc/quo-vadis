@@ -120,6 +120,35 @@ qv_barrier(
 }
 
 int
+qv_scope_free(
+    qv_context_t *ctx,
+    qv_scope_t *scope
+) {
+    if (!ctx || !scope) return QV_ERR_INVLD_ARG;
+
+    qvi_scope_free(&scope);
+
+    return QV_SUCCESS;
+}
+
+int
+qv_scope_nobjs(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    qv_hw_obj_type_t obj,
+    int *n
+) {
+    if (!ctx || !scope || !n) return QV_ERR_INVLD_ARG;
+
+    return qvi_hwloc_get_nobjs_in_cpuset(
+        ctx->hwloc,
+        obj,
+        qvi_scope_bitmap_get(scope),
+        (unsigned *)n
+    );
+}
+
+int
 qv_scope_get(
     qv_context_t *ctx,
     qv_scope_intrinsic_t iscope,
@@ -150,45 +179,6 @@ out:
     *scope = qvs;
     return rc;
 }
-
-#if 0
-static int
-group_create_from_scope(
-    qv_context_t *ctx,
-    qv_scope_t *scope,
-    int group_id,
-    qv_scope_t *isubscope
-) {
-    qvi_mpi_group_t *node_group;
-    int rc = qvi_mpi_group_new(&node_group);
-    if (rc != QV_SUCCESS) return rc;
-
-    rc = qvi_mpi_group_lookup_by_id(
-        ctx->mpi,
-        QVI_MPI_GROUP_NODE,
-        node_group
-    );
-    if (rc != QV_SUCCESS) goto out;
-
-    int node_id;
-    rc = qvi_mpi_group_id(
-        ctx->mpi,
-        node_group,
-        &node_id
-    );
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_mpi_group_create_from_split(
-        ctx->mpi,
-        node_group,
-        group_id,
-        node_id,
-
-out:
-    qvi_mpi_group_free(&node_group);
-    return rc;
-}
-#endif
 
 /*
  * TODO(skg) Is this call collective? Are we going to verify input parameter
