@@ -14,8 +14,8 @@
  */
 
 #include "qvi-common.h"
-#include "qvi-utils.h"
 #include "qvi-hwloc.h"
+#include "qvi-utils.h"
 
 typedef struct qvi_hwloc_s {
     /** The cached node topology. */

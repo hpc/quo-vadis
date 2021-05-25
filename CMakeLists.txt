@@ -52,7 +52,7 @@ find_package(ZMQ REQUIRED)
 # TODO(skg) At this point both are 'required', but this isn't necessary: we only
 # need one or the other.
 # PMIx support
-find_package(PMIx REQUIRED)
+# find_package(PMIx REQUIRED)
 # MPI support
 # TODO(skg) Make sure that we are at least at MPI-3
 find_package(MPI REQUIRED)

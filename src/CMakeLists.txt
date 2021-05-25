@@ -45,26 +45,26 @@ target_link_libraries(
 
 ################################################################################
 ################################################################################
-add_library(
-    qvi-pmi
-    OBJECT
-    qvi-pmi.h
-    qvi-pmi.cc
-)
-
-target_include_directories(
-    qvi-pmi
-    PUBLIC
-      $<INSTALL_INTERFACE:include>
-      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-)
-
-target_link_libraries(
-    qvi-pmi
-    qvi-utils
-    pmix
-)
+#add_library(
+#    qvi-pmi
+#    OBJECT
+#    qvi-pmi.h
+#    qvi-pmi.cc
+#)
+#
+#target_include_directories(
+#    qvi-pmi
+#    PUBLIC
+#      $<INSTALL_INTERFACE:include>
+#      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+#      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+#)
+#
+#target_link_libraries(
+#    qvi-pmi
+#    qvi-utils
+#    pmix
+#)
 
 ################################################################################
 ################################################################################
@@ -164,11 +164,11 @@ target_include_directories(
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
 )
 
+# TODO(skg) Add qvi-pmi
 target_link_libraries(
     quo-vadis
     qvi-utils
     qvi-hwloc
-    qvi-pmi
     qvi-mpi
     qvi-rmi
 )

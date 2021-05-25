@@ -70,15 +70,15 @@ endif(MPI_FOUND)
 
 ################################################################################
 ################################################################################
-add_executable(
-    test-pmi
-    test-pmi.c
-)
+#add_executable(
+#    test-pmi
+#    test-pmi.c
+#)
 
-target_link_libraries(
-    test-pmi
-    quo-vadis
-)
+#target_link_libraries(
+#    test-pmi
+#    quo-vadis
+#)
 
 # TODO(skg)
 #add_test(
@@ -131,11 +131,11 @@ add_test(
 ################################################################################
 ################################################################################
 # Use the C linker to test for C/C++ linkage problems.
+# TODO(skg) Add test-pmi
 set_target_properties(
     test-hwloc
     test-rmi
     test-init-mpi
-    test-pmi
     test-mpi
     test-scopes
     test-scopes-mpi
