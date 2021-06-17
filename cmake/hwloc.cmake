@@ -12,7 +12,7 @@
 # Includes support for external projects
 include(ExternalProject)
 
-set(QVI_HWLOC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/hwloc-2.2.0)
+set(QVI_HWLOC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/hwloc-2.5.0)
 set(QVI_HWLOC_BIN ${CMAKE_CURRENT_BINARY_DIR}/hwloc)
 set(QVI_HWLOC_STATIC_LIB ${QVI_HWLOC_BIN}/lib/libhwloc.a)
 set(QVI_HWLOC_INCLUDES ${QVI_HWLOC_BIN}/include)
@@ -36,7 +36,6 @@ ExternalProject_Add(
     CONFIGURE_COMMAND ${QVI_HWLOC_DIR}/configure
       CC=${CMAKE_C_COMPILER}
       CXX=${CMAKE_CXX_COMPILER}
-      DOXYGEN=/dev/null
       --prefix=${QVI_HWLOC_BIN}
       --with-hwloc-symbol-prefix=quo_vadis_internal_
       --enable-plugins=no
