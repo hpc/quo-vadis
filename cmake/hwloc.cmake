@@ -36,9 +36,9 @@ ExternalProject_Add(
     CONFIGURE_COMMAND ${QVI_HWLOC_DIR}/configure
       CC=${CMAKE_C_COMPILER}
       CXX=${CMAKE_CXX_COMPILER}
+      DOXYGEN=/dev/null
       --prefix=${QVI_HWLOC_BIN}
       --with-hwloc-symbol-prefix=quo_vadis_internal_
-      --enable-doxygen=no
       --enable-plugins=no
       --enable-static=yes
       --enable-shared=no
