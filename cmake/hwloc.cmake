@@ -38,6 +38,7 @@ ExternalProject_Add(
       CXX=${CMAKE_CXX_COMPILER}
       --prefix=${QVI_HWLOC_BIN}
       --with-hwloc-symbol-prefix=quo_vadis_internal_
+      --enable-doxygen=no
       --enable-plugins=no
       --enable-static=yes
       --enable-shared=no
