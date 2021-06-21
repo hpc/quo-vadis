@@ -40,7 +40,9 @@ target_include_directories(
 
 target_link_libraries(
     qvi-utils
-    spdlog
+    PUBLIC
+      Threads::Threads
+      spdlog
 )
 
 ################################################################################

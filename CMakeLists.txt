@@ -38,7 +38,8 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 endif()
 
 # Pthread support
-set(THREADS_PREFER_PTHREAD_FLAG ON)
+set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
 
 ################################################################################
