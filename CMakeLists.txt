@@ -20,11 +20,11 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 # Specify the C standard
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
+set(C_STANDARD_REQUIRED TRUE)
 
 # Specify the C++ standard
 set(CMAKE_CXX_STANDARD 11)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CXX_STANDARD_REQUIRED TRUE)
 
 # Project Generator Info
 message(
