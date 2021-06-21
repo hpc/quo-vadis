@@ -37,7 +37,6 @@
 #include <sys/syscall.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <threads.h>
 #include <unistd.h>
 
 #ifdef __cplusplus
