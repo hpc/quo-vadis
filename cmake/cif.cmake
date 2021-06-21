@@ -1,8 +1,8 @@
 #
-# Copyright (c)      2020 Triad National Security, LLC
+# Copyright (c) 2020-2021 Triad National Security, LLC
 #                         All rights reserved.
 #
-# Copyright (c)      2020 Lawrence Livermore National Security, LLC
+# Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
 #                         All rights reserved.
 #
 # This file is part of the quo-vadis project. See the LICENSE file at the
@@ -29,7 +29,6 @@ check_include_files(sys/resource.h HAVE_SYS_RESOURCE_H)
 check_include_files(sys/stat.h HAVE_SYS_STAT_H)
 check_include_files(sys/time.h HAVE_SYS_TIME_H)
 check_include_files(sys/types.h HAVE_SYS_TYPES_H)
-check_include_files(threads.h HAVE_THREADS_H)
 check_include_files(time.h HAVE_TIME_H)
 check_include_files(unistd.h HAVE_UNISTD_H)
 
