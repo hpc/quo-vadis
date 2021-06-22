@@ -12,22 +12,12 @@
 # Includes support for external projects
 include(ExternalProject)
 
-set(QVI_HWLOC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/hwloc-2.5.0)
+set(QVI_HWLOC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/hwloc-2.5.0.tar.gz)
 set(QVI_HWLOC_BIN ${CMAKE_CURRENT_BINARY_DIR}/hwloc)
 set(QVI_HWLOC_STATIC_LIB ${QVI_HWLOC_BIN}/lib/libhwloc.a)
 set(QVI_HWLOC_INCLUDES ${QVI_HWLOC_BIN}/include)
 
 file(MAKE_DIRECTORY ${QVI_HWLOC_INCLUDES})
-
-# This is a workaround for when timestamps in hwloc are confused. We don't need
-# autotools because we untar hwloc directory from a distribution.
-add_custom_target(
-    aclocal-hack ALL
-    COMMAND touch aclocal.m4 Makefile.am configure Makefile.in
-    WORKING_DIRECTORY ${QVI_HWLOC_DIR}
-    DEPENDS ${QVI_HWLOC_DIR}
-    VERBATIM
-)
 
 if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")
     # Workaround for the following warning when attempting to perform make -j:
@@ -41,10 +31,11 @@ endif()
 
 ExternalProject_Add(
     libhwloc
-    SOURCE_DIR ${QVI_HWLOC_DIR}
+    URL file://${QVI_HWLOC_DIR}
+    URL_MD5 "e9cb9230bcdf450b0948f255d505503f"
     PREFIX ${QVI_HWLOC_BIN}
     CONFIGURE_COMMAND
-      ${QVI_HWLOC_DIR}/configure
+      <SOURCE_DIR>/configure
       CC=${CMAKE_C_COMPILER}
       CXX=${CMAKE_CXX_COMPILER}
       --prefix=${QVI_HWLOC_BIN}
@@ -66,7 +57,6 @@ ExternalProject_Add(
 )
 
 add_library(hwloc STATIC IMPORTED GLOBAL)
-add_dependencies(libhwloc aclocal-hack)
 add_dependencies(hwloc libhwloc)
 
 set_target_properties(
