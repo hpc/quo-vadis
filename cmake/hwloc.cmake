@@ -19,6 +19,16 @@ set(QVI_HWLOC_INCLUDES ${QVI_HWLOC_BIN}/include)
 
 file(MAKE_DIRECTORY ${QVI_HWLOC_INCLUDES})
 
+# This is a workaround for when timestamps in hwloc are confused. We don't need
+# autotools because we untar hwloc directory from a distribution.
+add_custom_target(
+    aclocal-hack ALL
+    COMMAND touch aclocal.m4 Makefile.am configure Makefile.in
+    WORKING_DIRECTORY ${QVI_HWLOC_DIR}
+    DEPENDS ${QVI_HWLOC_DIR}
+    VERBATIM
+)
+
 if(CMAKE_GENERATOR STREQUAL "Unix Makefiles")
     # Workaround for the following warning when attempting to perform make -j:
     # make[3]: warning: jobserver unavailable:
@@ -33,7 +43,8 @@ ExternalProject_Add(
     libhwloc
     SOURCE_DIR ${QVI_HWLOC_DIR}
     PREFIX ${QVI_HWLOC_BIN}
-    CONFIGURE_COMMAND ${QVI_HWLOC_DIR}/configure
+    CONFIGURE_COMMAND
+      ${QVI_HWLOC_DIR}/configure
       CC=${CMAKE_C_COMPILER}
       CXX=${CMAKE_CXX_COMPILER}
       --prefix=${QVI_HWLOC_BIN}
@@ -55,6 +66,7 @@ ExternalProject_Add(
 )
 
 add_library(hwloc STATIC IMPORTED GLOBAL)
+add_dependencies(libhwloc aclocal-hack)
 add_dependencies(hwloc libhwloc)
 
 set_target_properties(
