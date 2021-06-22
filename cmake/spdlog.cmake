@@ -12,7 +12,7 @@
 # Includes support for external projects
 include(ExternalProject)
 
-set(QVI_SPDLOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/spdlog-1.7.0)
+set(QVI_SPDLOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/spdlog/v1.8.5.tar.gz)
 set(QVI_SPDLOG_BIN ${CMAKE_CURRENT_BINARY_DIR}/spdlog)
 set(QVI_SPDLOG_STATIC_LIB ${QVI_SPDLOG_BIN}/lib/libspdlog.a)
 set(QVI_SPDLOG_INCLUDES ${QVI_SPDLOG_BIN}/include)
@@ -21,7 +21,8 @@ file(MAKE_DIRECTORY ${QVI_SPDLOG_INCLUDES})
 
 ExternalProject_Add(
     libspdlog
-    SOURCE_DIR ${QVI_SPDLOG_DIR}
+    URL file://${QVI_SPDLOG_DIR}
+    URL_MD5 "8755cdbc857794730a022722a66d431a"
     PREFIX ${QVI_SPDLOG_BIN}
     CMAKE_ARGS
       -DCMAKE_C_COMPILER:FILEPATH=${CMAKE_C_COMPILER}
