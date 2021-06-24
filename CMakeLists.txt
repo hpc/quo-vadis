@@ -10,7 +10,7 @@
 #
 
 # Set minimum required cmake version
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.17)
 
 # Set the project name and version
 project(quo-vadis VERSION 0.0.1 LANGUAGES C CXX)
@@ -27,10 +27,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(CXX_STANDARD_REQUIRED TRUE)
 
 # Project Generator Info
-message(
-    STATUS
-      "Generator used is ${CMAKE_GENERATOR}"
-)
+message(STATUS "Generator used is ${CMAKE_GENERATOR}")
 
 # Testing
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
@@ -57,6 +54,23 @@ find_package(ZMQ REQUIRED)
 # MPI support
 # TODO(skg) Make sure that we are at least at MPI-3
 find_package(MPI REQUIRED)
+
+################################################################################
+# GPU Support ##################################################################
+################################################################################
+option(QV_DISABLE_GPU_SUPPORT "Unconditionally disable GPU support" OFF)
+
+message(CHECK_START "Determining desired GPU support level")
+if(NOT QV_DISABLE_GPU_SUPPORT)
+    message(CHECK_PASS "enabled")
+else()
+    message(CHECK_PASS "disabled")
+endif()
+
+if(NOT QV_DISABLE_GPU_SUPPORT)
+    # TODO(skg) Set minimum required version?
+    find_package(CUDAToolkit)
+endif()
 
 # Specify default build type
 include(cmake/build-type.cmake)

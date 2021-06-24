@@ -93,6 +93,14 @@ target_link_libraries(
     hwloc
 )
 
+if(CUDAToolkit_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
+target_link_libraries(
+    qvi-hwloc
+    CUDA::cudart
+    CUDA::nvml
+)
+endif()
+
 ################################################################################
 ################################################################################
 add_library(
