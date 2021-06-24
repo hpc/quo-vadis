@@ -16,6 +16,8 @@ set(QVI_HWLOC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/hwloc-2.5.0.tar.gz)
 set(QVI_HWLOC_BIN ${CMAKE_CURRENT_BINARY_DIR}/hwloc)
 set(QVI_HWLOC_STATIC_LIB ${QVI_HWLOC_BIN}/lib/libhwloc.a)
 set(QVI_HWLOC_INCLUDES ${QVI_HWLOC_BIN}/include)
+# A list of configure variables.
+set(QVI_HWLOC_CONFIG_VARS "CC=${CMAKE_C_COMPILER}" "CXX=${CMAKE_CXX_COMPILER}")
 # A list containing any relevant GPU flags required in hwloc configuration.
 set(QVI_HWLOC_GPU_FLAGS "")
 
@@ -33,14 +35,20 @@ endif()
 
 # TODO(skg) Add option to turn this off even if found.
 if(CUDAToolkit_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
+    list(APPEND QVI_HWLOC_GPU_FLAGS "--with-cuda=${CUDAToolkit_TARGET_DIR}")
     list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-cuda=yes")
     list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-nvml=yes")
-    # TODO(skg) This may be incomplete. Assumes we have pkg-config.
-    list(APPEND QVI_HWLOC_GPU_FLAGS "--with-cuda-version=${CUDAToolkit_VERSION}")
 else()
     list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-cuda=no")
     list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-nvml=no")
 endif()
+
+message(STATUS "hwloc configure variables are:")
+list(APPEND CMAKE_MESSAGE_INDENT "  ")
+foreach(var ${QVI_HWLOC_CONFIG_VARS})
+    message(STATUS "${var}")
+endforeach()
+list(POP_BACK CMAKE_MESSAGE_INDENT)
 
 message(STATUS "hwloc GPU configure flags are:")
 list(APPEND CMAKE_MESSAGE_INDENT "  ")
@@ -56,8 +64,7 @@ ExternalProject_Add(
     PREFIX ${QVI_HWLOC_BIN}
     CONFIGURE_COMMAND
       <SOURCE_DIR>/configure
-      CC=${CMAKE_C_COMPILER}
-      CXX=${CMAKE_CXX_COMPILER}
+      ${QVI_HWLOC_CONFIG_VARS}
       --prefix=${QVI_HWLOC_BIN}
       --with-hwloc-symbol-prefix=quo_vadis_internal_
       --enable-plugins=no
