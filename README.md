@@ -13,6 +13,12 @@ Or, using [ninja](https://ninja-build.org/), perform the following:
 mkdir build && cd build && cmake -G Ninja .. && ninja
 ```
 
+GPU device support is enabled by default. Define `QV_DISABLE_GPU_SUPPORT=ON` to disable it. For example, 
+```shell
+cmake -DQV_DISABLE_GPU_SUPPORT=ON ..
+```
+
+
 ## Testing
 Depending on the type of generator used perform either of the following:
 ```shell
@@ -28,6 +34,18 @@ QV_TMPDIR # Directory used for temporary files.
 For developers and debugging:
 ```shell
 HWLOC_XMLFILE # Path to system topology XML file.
+```
+### Examples
+
+```shell
+export QV_PORT=55996
+
+# Launch the daemon
+$build_dir/src/quo-vadisd &
+
+# Run a test
+$build_dir/tests/test-scopes-mpi
+
 ```
 
 ## Internal Software Dependencies
