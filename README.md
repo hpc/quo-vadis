@@ -13,11 +13,11 @@ Or, using [ninja](https://ninja-build.org/), perform the following:
 mkdir build && cd build && cmake -G Ninja .. && ninja
 ```
 
-GPU device support is enabled by default. Define `QV_DISABLE_GPU_SUPPORT=ON` to disable it. For example, 
+GPU device support is enabled by default. Define `QV_DISABLE_GPU_SUPPORT=ON` to
+disable it. For example,
 ```shell
 cmake -DQV_DISABLE_GPU_SUPPORT=ON ..
 ```
-
 
 ## Testing
 Depending on the type of generator used perform either of the following:
@@ -45,7 +45,6 @@ $build_dir/src/quo-vadisd &
 
 # Run a test
 $build_dir/tests/test-scopes-mpi
-
 ```
 
 ## Internal Software Dependencies
