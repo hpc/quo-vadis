@@ -23,7 +23,6 @@
 
 #include "qvi-common.h"
 #include "qvi-task.h"
-#include "qvi-hwloc.h"
 #include "qvi-bind.h"
 #include "qvi-rmi.h"
 #include "qvi-scope.h"
@@ -41,7 +40,6 @@ struct qv_context_s {
     qv_task_t *task = nullptr;
     qvi_hwloc_t *hwloc = nullptr;
     qvi_bind_stack_t *bind_stack = nullptr;
-    hwloc_topology_t topo = nullptr;
     qvi_rmi_client_t *rmi = nullptr;
     qvi_mpi_t *mpi = nullptr;
 };

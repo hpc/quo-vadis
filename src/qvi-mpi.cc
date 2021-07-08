@@ -73,7 +73,6 @@ connect_to_server(
     rc = qvi_rmi_client_connect(ctx->rmi, url);
     // Cache pointer to initialized hwloc instance and topology.
     ctx->hwloc = qvi_rmi_client_hwloc_get(ctx->rmi);
-    ctx->topo = qvi_hwloc_topo_get(ctx->hwloc);
 
     if (url) free(url);
     return rc;
