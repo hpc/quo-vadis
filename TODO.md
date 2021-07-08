@@ -1,5 +1,7 @@
 # TODO
 
+* Add quo-vadis-thread.h to house thread-specific calls (e.g.,
+    qv_thread_scope_split()).
 * Implement 'standalone' mode.
 * qv_scope_split() should provide splits that minimize 'movement' as much as
     possible. This is especially important on NUMA architectures.
