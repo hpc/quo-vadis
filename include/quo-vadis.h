@@ -87,6 +87,9 @@ typedef enum qv_hw_obj_type_e {
     QV_HW_OBJ_OS_DEVICE
 } qv_hw_obj_type_t;
 
+// TODO(skg) XXX
+#define QV_SCOPE_SPLIT_GROUP_MIN_DISTANCE -1
+
 /**
  *
  */
@@ -131,6 +134,18 @@ qv_scope_split(
     qv_scope_t *scope,
     int n,
     int group_id,
+    qv_scope_t **subscope
+);
+
+// TODO(skg) Implement qv_scope_split_at()
+/**
+ *
+ */
+int
+qv_scope_split_at(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    qv_hw_obj_type_t type,
     qv_scope_t **subscope
 );
 
