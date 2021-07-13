@@ -43,6 +43,7 @@
 #include "qvi-log.h"
 
 #include <chrono>
+#include <stdexcept>
 #include <new>
 #include <unordered_map>
 #include <stack>

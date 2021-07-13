@@ -14,7 +14,10 @@
  */
 
 #include "qvi-context.h"
+#include "qvi-scope.h"
 
+// TODO(skg) This should probably be an internal, base function that other
+// create() entry points use. Remove public entry point, too.
 int
 qv_create(
     qv_context_t **ctx
@@ -31,6 +34,7 @@ qv_create(
         goto out;
     }
 
+    // TODO(skg) This will probably be moved closer to taskman init.
     rc = qvi_task_new(&ictx->task);
     if (rc != QV_SUCCESS) {
         ers = "qvi_task_new() failed";
@@ -58,6 +62,8 @@ out:
     return rc;
 }
 
+// TODO(skg) This should probably be an internal, base function that other
+// create() entry points use. Remove public entry point, too.
 int
 qv_free(
     qv_context_t *ctx
@@ -109,13 +115,14 @@ qv_bind_get_as_string(
 }
 
 // TODO(skg) Add support for other, non-MPI barriers.
+// TODO(skg) Remove in favor of scope-specific barrier.
 int
 qv_barrier(
     qv_context_t *ctx
 ) {
     if (!ctx) return QV_ERR_INVLD_ARG;
 
-    return qvi_mpi_node_barrier(ctx->mpi);
+    return ctx->taskman->barrier();
 }
 
 int
@@ -148,6 +155,28 @@ qv_scope_nobjs(
 }
 
 int
+qv_scope_taskid(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    int *taskid
+) {
+    if (!ctx || !scope || !taskid) return QV_ERR_INVLD_ARG;
+
+    return qvi_scope_taskid(scope, taskid);
+}
+
+int
+qv_scope_ntasks(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    int *ntasks
+) {
+    if (!ctx || !scope || !ntasks) return QV_ERR_INVLD_ARG;
+
+    return qvi_scope_ntasks(scope, ntasks);
+}
+
+int
 qv_scope_get(
     qv_context_t *ctx,
     qv_scope_intrinsic_t iscope,
@@ -155,11 +184,17 @@ qv_scope_get(
 ) {
     if (!ctx || !scope) return QV_ERR_INVLD_ARG;
 
-    qv_scope_t *qvs;
+    qv_scope_t *qvs = nullptr;
+    hwloc_bitmap_t cpuset = nullptr;
+
     int rc = qvi_scope_new(&qvs);
     if (rc != QV_SUCCESS) return rc;
 
-    hwloc_bitmap_t cpuset;
+    qvi_group_t *group;
+    // TODO(skg) Need to handle the top-level process type.
+    rc = ctx->taskman->group_create_base(&group);
+    if (rc != QV_SUCCESS) goto out;
+
     rc = qvi_hwloc_bitmap_alloc(&cpuset);
     if (rc != QV_SUCCESS) goto out;
 
@@ -170,7 +205,7 @@ qv_scope_get(
     );
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_scope_bitmap_set(qvs, cpuset);
+    rc = qvi_scope_init(qvs, group, cpuset);
     if (rc != QV_SUCCESS) goto out;
 out:
     hwloc_bitmap_free(cpuset);
@@ -283,6 +318,16 @@ out:
     }
     *subscope = isubscope;
     return qvrc;
+}
+
+int
+qv_scope_barrier(
+    qv_context_t *ctx,
+    qv_scope_t *scope
+) {
+    if (!ctx || !scope) return QV_ERR_INVLD_ARG;
+
+    return qvi_scope_barrier(scope);
 }
 
 /*

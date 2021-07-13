@@ -79,13 +79,13 @@ main(
         goto out;
     }
     int nsize;
-    rc = qvi_mpi_group_size(mpi, node_group, &nsize);
+    rc = qvi_mpi_group_size(node_group, &nsize);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_group_size() failed";
         goto out;
     }
     int group_id;
-    rc = qvi_mpi_group_id(mpi, node_group, &group_id);
+    rc = qvi_mpi_group_id(node_group, &group_id);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_group_id() failed";
         goto out;
@@ -140,12 +140,12 @@ main(
         goto out;
     }
     int world_group_id, would_group_size;
-    rc = qvi_mpi_group_size(mpi, world_group, &would_group_size);
+    rc = qvi_mpi_group_size(world_group, &would_group_size);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_group_size() failed";
         goto out;
     }
-    rc = qvi_mpi_group_id(mpi, world_group, &world_group_id);
+    rc = qvi_mpi_group_id(world_group, &world_group_id);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_group_id() failed";
         goto out;

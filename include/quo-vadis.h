@@ -28,6 +28,7 @@ struct qv_context_s;
 typedef struct qv_context_s qv_context_t;
 
 /** Opaque quo-vadis task. */
+/* TODO(skg) Perhaps we don't need this public type */
 struct qv_task_s;
 typedef struct qv_task_s qv_task_t;
 
@@ -142,6 +143,35 @@ qv_scope_nobjs(
     qv_scope_t *scope,
     qv_hw_obj_type_t obj,
     int *n
+);
+
+/**
+ *
+ */
+int
+qv_scope_taskid(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    int *taskid
+);
+
+/**
+ *
+ */
+int
+qv_scope_ntasks(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    int *ntasks
+);
+
+/**
+ *
+ */
+int
+qv_scope_barrier(
+    qv_context_t *ctx,
+    qv_scope_t *scope
 );
 
 /**

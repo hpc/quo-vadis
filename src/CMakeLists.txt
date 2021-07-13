@@ -12,26 +12,28 @@
 ################################################################################
 ################################################################################
 add_library(
-    qvi-utils
+    qvi-core
     OBJECT
-    qvi-utils.h
+    qvi-taskman.h
+    qvi-group.h
     qvi-bbuff.h
     qvi-log.h
+    qvi-utils.h
     qvi-config.h
-    qvi-utils.cc
     qvi-bbuff.cc
     qvi-log.cc
+    qvi-utils.cc
     qvi-config.cc
 )
 
 target_compile_options(
-    qvi-utils
+    qvi-core
     PUBLIC
       -DSPDLOG_COMPILED_LIB
 )
 
 target_include_directories(
-    qvi-utils
+    qvi-core
     PUBLIC
       $<INSTALL_INTERFACE:include>
       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
@@ -39,7 +41,7 @@ target_include_directories(
 )
 
 target_link_libraries(
-    qvi-utils
+    qvi-core
     PUBLIC
       Threads::Threads
       spdlog
@@ -64,7 +66,7 @@ target_link_libraries(
 #
 #target_link_libraries(
 #    qvi-pmi
-#    qvi-utils
+#    qvi-core
 #    pmix
 #)
 
@@ -89,7 +91,7 @@ target_include_directories(
 
 target_link_libraries(
     qvi-hwloc
-    qvi-utils
+    qvi-core
     hwloc
 )
 
@@ -120,7 +122,7 @@ target_include_directories(
 
 target_link_libraries(
     qvi-rmi
-    qvi-utils
+    qvi-core
     qvi-hwloc
     zmq
 )
@@ -131,8 +133,10 @@ add_library(
     qvi-mpi
     OBJECT
     ../include/quo-vadis-mpi.h
+    qvi-taskman-mpi.h
     qvi-mpi.h
     qvi-mpi.cc
+    quo-vadis-mpi.cc
 )
 
 target_include_directories(
@@ -146,7 +150,7 @@ target_include_directories(
 
 target_link_libraries(
     qvi-mpi
-    qvi-utils
+    qvi-core
     qvi-rmi
     ${MPI_C_LIBRARIES}
 )
@@ -177,7 +181,7 @@ target_include_directories(
 # TODO(skg) Add qvi-pmi
 target_link_libraries(
     quo-vadis
-    qvi-utils
+    qvi-core
     qvi-hwloc
     qvi-mpi
     qvi-rmi

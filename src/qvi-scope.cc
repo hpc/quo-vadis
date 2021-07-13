@@ -14,27 +14,39 @@
  */
 
 #include "qvi-common.h"
+
 #include "qvi-scope.h"
 
 // Type definition
 struct qv_scope_s {
+    /** Task group associated with this scope instance. */
+    qvi_group_t *group = nullptr;
     /** Bitmap associated with this scope instance. */
     hwloc_bitmap_t bitmap = nullptr;
 };
+
+/**
+ *
+ */
+static int
+bitmap_set(
+    qv_scope_t *scope,
+    hwloc_const_bitmap_t bitmap
+) {
+    if (hwloc_bitmap_copy(scope->bitmap, bitmap) != 0) {
+        return QV_ERR_HWLOC;
+    }
+    return QV_SUCCESS;
+}
 
 int
 qvi_scope_new(
     qv_scope_t **scope
 ) {
-    int rc = QV_SUCCESS;
-
     qv_scope_t *iscope = qvi_new qv_scope_t;
-    if (!scope) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
+    if (!scope) return QV_ERR_OOR;
 
-    rc = qvi_hwloc_bitmap_alloc(&iscope->bitmap);
+    int rc = qvi_hwloc_bitmap_alloc(&iscope->bitmap);
     if (rc != QV_SUCCESS) goto out;
 out:
     if (rc != QV_SUCCESS) qvi_scope_free(&iscope);
@@ -48,9 +60,20 @@ qvi_scope_free(
 ) {
     qv_scope_t *iscope = *scope;
     if (!iscope) return;
+    qvi_group_free(&iscope->group);
     hwloc_bitmap_free(iscope->bitmap);
     delete iscope;
     *scope = nullptr;
+}
+
+int
+qvi_scope_init(
+    qv_scope_t *scope,
+    qvi_group_t *group,
+    hwloc_const_bitmap_t bitmap
+) {
+    scope->group = group;
+    return bitmap_set(scope, bitmap);
 }
 
 hwloc_bitmap_t
@@ -61,14 +84,26 @@ qvi_scope_bitmap_get(
 }
 
 int
-qvi_scope_bitmap_set(
+qvi_scope_taskid(
     qv_scope_t *scope,
-    hwloc_const_bitmap_t bitmap
+    int *taskid
 ) {
-    if (hwloc_bitmap_copy(scope->bitmap, bitmap) != 0) {
-        return QV_ERR_HWLOC;
-    }
-    return QV_SUCCESS;
+    return scope->group->id(taskid);
+}
+
+int
+qvi_scope_ntasks(
+    qv_scope_t *scope,
+    int *ntasks
+) {
+    return scope->group->size(ntasks);
+}
+
+int
+qvi_scope_barrier(
+    qv_scope_t *scope
+) {
+    return scope->group->barrier();
 }
 
 /*

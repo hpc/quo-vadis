@@ -20,6 +20,8 @@
 
 
 #include "qvi-common.h"
+
+#include "qvi-mpi.h"
 #include "qvi-utils.h"
 #include "qvi-context.h"
 
@@ -58,80 +60,6 @@ struct qvi_mpi_s {
     /** Group table (ID to internal structure mapping) */
     group_tab_t *group_tab = nullptr;
 };
-
-static int
-connect_to_server(
-    qv_context_t *ctx
-) {
-    char *url = nullptr;
-    int rc = qvi_url(&url);
-    if (rc != QV_SUCCESS) {
-        qvi_log_error("{}", qvi_conn_ers());
-        return rc;
-    }
-
-    rc = qvi_rmi_client_connect(ctx->rmi, url);
-    // Cache pointer to initialized hwloc instance and topology.
-    ctx->hwloc = qvi_rmi_client_hwloc_get(ctx->rmi);
-
-    if (url) free(url);
-    return rc;
-}
-
-int
-qv_mpi_create(
-    qv_context_t **ctx,
-    MPI_Comm comm
-) {
-    if (!ctx) return QV_ERR_INVLD_ARG;
-
-    int rc = QV_SUCCESS;
-    cstr ers = nullptr;
-
-    qv_context_t *ictx = nullptr;
-    rc = qv_create(&ictx);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_create() failed";
-        goto out;
-    }
-
-    rc = qvi_mpi_new(&ictx->mpi);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_mpi_new() failed";
-        goto out;
-    }
-
-    rc = qvi_mpi_init(ictx->mpi, ictx->task, comm);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_mpi_init() failed";
-        goto out;
-    }
-
-    rc = connect_to_server(ictx);
-    if (rc != QV_SUCCESS) {
-        ers = "connect_to_server() failed";
-        goto out;
-    }
-
-    rc = qvi_bind_stack_init(
-        ictx->bind_stack,
-        ictx->task,
-        ictx->hwloc
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_bind_stack_init() failed";
-        goto out;
-    }
-out:
-    if (ers) {
-        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        qvi_mpi_free(&ictx->mpi);
-        (void)qv_free(ictx);
-        ictx = nullptr;
-    }
-    *ctx = ictx;
-    return rc;
-}
 
 /**
  * Copies contents of internal structure from src to dst.
@@ -537,7 +465,6 @@ qvi_mpi_group_free(
 
 int
 qvi_mpi_group_size(
-    qvi_mpi_t *,
     const qvi_mpi_group_t *group,
     int *size
 ) {
@@ -547,7 +474,6 @@ qvi_mpi_group_size(
 
 int
 qvi_mpi_group_id(
-    qvi_mpi_t *,
     const qvi_mpi_group_t *group,
     int *id
 ) {
@@ -567,6 +493,29 @@ qvi_mpi_group_lookup_by_id(
     }
     cp_mpi_group(&got->second, group);
     return QV_SUCCESS;
+}
+
+int
+qvi_mpi_group_create_from_group_id(
+    qvi_mpi_t *mpi,
+    qvi_mpi_group_id_t id,
+    qvi_mpi_group_t **group
+) {
+    qvi_mpi_group_t *tmp_group;
+    int rc = qvi_mpi_group_new(&tmp_group);
+    if (rc != QV_SUCCESS) return rc;
+
+    rc = qvi_mpi_group_lookup_by_id(mpi, id, tmp_group);
+    if (rc != QV_SUCCESS) goto out;
+
+    rc = qvi_mpi_group_create_from_mpi_comm(
+        mpi,
+        tmp_group->mpi_comm,
+        group
+    );
+out:
+    qvi_mpi_group_free(&tmp_group);
+    return rc;
 }
 
 int
@@ -661,10 +610,7 @@ qvi_mpi_group_create_from_mpi_comm(
     MPI_Comm node_comm = MPI_COMM_NULL;
 
     int rc = qvi_mpi_group_new(new_group);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_mpi_group_new() failed";
-        goto out;
-    }
+    if (rc != QV_SUCCESS) return rc;
 
     rc = mpi_comm_to_new_node_comm(comm, &node_comm);
     if (rc != MPI_SUCCESS) {
@@ -697,12 +643,15 @@ out:
     return rc;
 }
 
-int
-qvi_mpi_node_barrier(
-    qvi_mpi_t *mpi
+/**
+ *
+ */
+static int
+sleepy_barrier(
+    MPI_Comm node_comm
 ) {
     MPI_Request request;
-    int rc = MPI_Ibarrier(mpi->node_comm, &request);
+    int rc = MPI_Ibarrier(node_comm, &request);
     if (rc != MPI_SUCCESS) return QV_ERR_MPI;
 
     int done = 0;
@@ -713,6 +662,20 @@ qvi_mpi_node_barrier(
     } while (!done);
 
     return QV_SUCCESS;
+}
+
+int
+qvi_mpi_node_barrier(
+    qvi_mpi_t *mpi
+) {
+    return sleepy_barrier(mpi->node_comm);
+}
+
+int
+qvi_mpi_group_barrier(
+    qvi_mpi_group_t *group
+) {
+    return sleepy_barrier(group->mpi_comm);
 }
 
 /*

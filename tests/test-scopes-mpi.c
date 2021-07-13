@@ -78,6 +78,23 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
+    int base_taskid;
+    rc = qv_scope_taskid(ctx, base_scope, &base_taskid);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_taskid() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    int base_ntasks;
+    rc = qv_scope_ntasks(ctx, base_scope, &base_ntasks);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_ntasks() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    printf("[%d] base_scope taskid is %d\n", wrank, base_taskid);
+    printf("[%d] base_scope ntasks is %d\n", wrank, base_ntasks);
+
     int n_cores;
     rc = qv_scope_nobjs(
         ctx,

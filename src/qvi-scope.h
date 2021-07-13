@@ -17,6 +17,7 @@
 #define QVI_SCOPE_H
 
 #include "qvi-common.h"
+#include "qvi-group.h"
 #include "qvi-hwloc.h"
 
 #ifdef __cplusplus
@@ -42,6 +43,16 @@ qvi_scope_free(
 /**
  *
  */
+int
+qvi_scope_init(
+    qv_scope_t *scope,
+    qvi_group_t *group,
+    hwloc_const_bitmap_t bitmap
+);
+
+/**
+ *
+ */
 hwloc_bitmap_t
 qvi_scope_bitmap_get(
     qv_scope_t *scope
@@ -51,9 +62,26 @@ qvi_scope_bitmap_get(
  *
  */
 int
-qvi_scope_bitmap_set(
+qvi_scope_taskid(
     qv_scope_t *scope,
-    hwloc_const_bitmap_t bitmap
+    int *taskid
+);
+
+/**
+ *
+ */
+int
+qvi_scope_ntasks(
+    qv_scope_t *scope,
+    int *ntasks
+);
+
+/**
+ *
+ */
+int
+qvi_scope_barrier(
+    qv_scope_t *scope
 );
 
 #ifdef __cplusplus
