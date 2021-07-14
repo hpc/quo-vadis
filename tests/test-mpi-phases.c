@@ -10,7 +10,7 @@
  */
 
 /**
- * @file test-scopes-mpi.c
+ * @file test-mpi-phases.c
  */
 
 #include "quo-vadis-mpi.h"
@@ -29,6 +29,20 @@ do {                                                                           \
     fflush(stderr);                                                            \
     exit(EXIT_FAILURE);                                                        \
 } while (0)
+
+
+
+/* el: 7/9/2021 */ 
+    /* Todo: bind_get_as_list to easily read the binding? */ 
+    /* Todo: we also need a function to extract resources from 
+        a scope: 
+        scope_get_objs(in_scope, in_obj_type, in_n_objs, out_subscope)
+        Perhaps, we can do this with a generalization of scope_add? 
+        We should keep track of what objects were given from a scope
+        so that we don't give them again. This should tie in with 
+        qv_scope_nobjs_free(qv, scope, obj_type, out_n_objs);
+     */ 
+
 
 int
 main(
@@ -94,16 +108,7 @@ main(
     }
     printf("[%d] Base scope has %d cores\n", wrank, ncores);
 
-    /* ea: 7/9/2021 */ 
-    /* Todo: bind_get_as_list to easily read the binding? */ 
-    /* Todo: we also need a function to extract resources from 
-        a scope: 
-        scope_get_objs(in_scope, in_obj_type, in_n_objs, out_subscope)
-        Perhaps, we can do this with a generalization of scope_add? 
-        We should keep track of what objects were given from a scope
-        so that we don't give them again. This should tie in with 
-        qv_scope_nobjs_free(qv, scope, obj_type, out_n_objs);
-     */ 
+    
 
     char *binds;
     rc = qv_bind_get_as_string(ctx, &binds);
@@ -161,7 +166,7 @@ main(
     printf("=> [%d] I got to run on %s\n", wrank, binds1);
     free(binds1);
 
-#if 0
+#if 1
     /* Launch one thread per core */ 
     do_pthread_things(ncores);
 
@@ -214,20 +219,28 @@ main(
        then splitting over that number. Then, 
        we could ask for a leader of each subscope.
        Instead we use the shortcut qv_scope_split_at. */ 
-#if 0
-    int leader; 
+#if 1
+    int scope_id; 
     qv_scope_t *numa_scope;
+
+    /* Split at NUMA domains */ 
     rc = qv_scope_split_at(
         ctx,
         base_scope,
         QV_HW_OBJ_NUMA, 
-        &leader,
         &numa_scope
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split_at() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+
+    /* Allow selecting a leader per NUMA */ 
+    rc = qv_scope_taskid(
+        ctx,
+        base_scope,
+        &scope_id
+    );
 
     rc = qv_bind_push(ctx, numa_scope);
     if (rc != QV_SUCCESS) {
@@ -236,7 +249,8 @@ main(
     }
 
     int pus; 
-    if (leader) { 
+    if (scope_id == 0) {
+        /* I am the lead */  
         rc = qv_scope_nobjs(
             ctx,
             numa_scope,
@@ -253,7 +267,7 @@ main(
     }
 
     /* Everybody else waits... */ 
-    rc = qv_barrier(ctx);
+    rc = qv_scope_barrier(ctx, numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_barrier() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -270,7 +284,7 @@ main(
      * Clean up 
      ***************************************/
 
-#if 0
+#if 1
     rc = qv_scope_free(ctx, numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
