@@ -21,7 +21,6 @@
 #include "qvi-bbuff.h"
 
 #include "zmq.h"
-#include "zmq_utils.h"
 
 #define ZINPROC_ADDR "inproc://qvi-rmi-workers"
 

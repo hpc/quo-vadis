@@ -87,8 +87,13 @@ typedef enum qv_hw_obj_type_e {
     QV_HW_OBJ_OS_DEVICE
 } qv_hw_obj_type_t;
 
-// TODO(skg) XXX
-#define QV_SCOPE_SPLIT_GROUP_MIN_DISTANCE -1
+/**
+ * Automatic grouping options for qv_scope_split(). The following values can be
+ * used instead of group_id to influence how task grouping is done.
+ */
+enum {
+    QV_SCOPE_SPLIT_GROUP_MIN_DISTANCE = -1
+};
 
 /**
  *
