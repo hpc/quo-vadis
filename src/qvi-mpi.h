@@ -98,8 +98,7 @@ qvi_mpi_group_free(
  */
 int
 qvi_mpi_group_size(
-    const qvi_mpi_group_t *group,
-    int *size
+    const qvi_mpi_group_t *group
 );
 
 /**
@@ -107,8 +106,7 @@ qvi_mpi_group_size(
  */
 int
 qvi_mpi_group_id(
-    const qvi_mpi_group_t *group,
-    int *id
+    const qvi_mpi_group_t *group
 );
 
 /**

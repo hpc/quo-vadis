@@ -24,8 +24,9 @@
 struct qvi_group_s {
     qvi_group_s(void) = default;
     virtual ~qvi_group_s(void) = default;
-    virtual int id(int *id) = 0;
-    virtual int size(int *size) = 0;
+    virtual int initialize(void) = 0;
+    virtual int id(void) = 0;
+    virtual int size(void) = 0;
     virtual int barrier(void) = 0;
 };
 typedef qvi_group_s qvi_group_t;
@@ -41,6 +42,7 @@ inline void
 qvi_group_free(
     qvi_group_t **group
 ) {
+    if (!group) return;
     qvi_group_t *igroup = *group;
     if (!igroup) return;
     delete igroup;
@@ -52,10 +54,9 @@ qvi_group_free(
  */
 inline int
 qvi_group_id(
-    qvi_group_t *group,
-    int *id
+    qvi_group_t *group
 ) {
-    return group->id(id);
+    return group->id();
 }
 
 /**
@@ -63,10 +64,9 @@ qvi_group_id(
  */
 inline int
 qvi_group_size(
-    qvi_group_t *group,
-    int *size
+    qvi_group_t *group
 ) {
-    return group->size(size);
+    return group->size();
 }
 
 /**

@@ -49,7 +49,7 @@ qv_mpi_create(
     qv_context_t **ctx,
     MPI_Comm comm
 ) {
-    if (!ctx) return QV_ERR_INVLD_ARG;
+    if (!ctx || comm == MPI_COMM_NULL) return QV_ERR_INVLD_ARG;
 
     int rc = QV_SUCCESS;
     cstr ers = nullptr;
@@ -70,7 +70,7 @@ qv_mpi_create(
     // Save taskman instance pointer to context.
     ictx->taskman = itaskman;
 
-    rc = qvi_mpi_init(itaskman->m_mpi, ictx->task, comm);
+    rc = qvi_mpi_init(itaskman->mpi, ictx->task, comm);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_init failed";
         goto out;

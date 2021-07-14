@@ -78,18 +78,8 @@ main(
         ers = "qvi_mpi_group_lookup_by_id() failed";
         goto out;
     }
-    int nsize;
-    rc = qvi_mpi_group_size(node_group, &nsize);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_mpi_group_size() failed";
-        goto out;
-    }
-    int group_id;
-    rc = qvi_mpi_group_id(node_group, &group_id);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_mpi_group_id() failed";
-        goto out;
-    }
+    int nsize = qvi_mpi_group_size(node_group);
+    int group_id = qvi_mpi_group_id(node_group);
 
     int64_t task_gid = qvi_task_gid(task);
     int task_lid = qvi_task_lid(task);
@@ -139,22 +129,13 @@ main(
         ers = "qvi_mpi_group_create_from_mpi_comm() failed";
         goto out;
     }
-    int world_group_id, would_group_size;
-    rc = qvi_mpi_group_size(world_group, &would_group_size);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_mpi_group_size() failed";
-        goto out;
-    }
-    rc = qvi_mpi_group_id(world_group, &world_group_id);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_mpi_group_id() failed";
-        goto out;
-    }
+    int world_group_id = qvi_mpi_group_id(world_group);
+    int world_group_size = qvi_mpi_group_size(world_group);
     printf(
         "GID=%" PRId64 " World group task %d of %d says hello!\n",
         task_gid,
         world_group_id,
-        would_group_size
+        world_group_size
     );
 
     rc = qvi_mpi_finalize(mpi);

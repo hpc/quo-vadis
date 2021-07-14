@@ -61,6 +61,14 @@ qvi_scope_bitmap_get(
 /**
  *
  */
+qvi_group_t *
+qvi_scope_group_get(
+    qv_scope_t *scope
+);
+
+/**
+ *
+ */
 int
 qvi_scope_taskid(
     qv_scope_t *scope,

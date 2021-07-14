@@ -58,6 +58,7 @@ void
 qvi_scope_free(
     qv_scope_t **scope
 ) {
+    if (!scope) return;
     qv_scope_t *iscope = *scope;
     if (!iscope) return;
     qvi_group_free(&iscope->group);
@@ -83,12 +84,20 @@ qvi_scope_bitmap_get(
     return scope->bitmap;
 }
 
+qvi_group_t *
+qvi_scope_group_get(
+    qv_scope_t *scope
+) {
+    return scope->group;
+}
+
 int
 qvi_scope_taskid(
     qv_scope_t *scope,
     int *taskid
 ) {
-    return scope->group->id(taskid);
+    *taskid = scope->group->id();
+    return QV_SUCCESS;
 }
 
 int
@@ -96,7 +105,8 @@ qvi_scope_ntasks(
     qv_scope_t *scope,
     int *ntasks
 ) {
-    return scope->group->size(ntasks);
+    *ntasks = scope->group->size();
+    return QV_SUCCESS;
 }
 
 int

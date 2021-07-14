@@ -114,8 +114,6 @@ qv_bind_get_as_string(
     );
 }
 
-// TODO(skg) Add support for other, non-MPI barriers.
-// TODO(skg) Remove in favor of scope-specific barrier.
 int
 qv_barrier(
     qv_context_t *ctx
@@ -192,6 +190,7 @@ qv_scope_get(
 
     qvi_group_t *group;
     // TODO(skg) Need to handle the top-level process type.
+    // TODO(skg) Add wrapper.
     rc = ctx->taskman->group_create_base(&group);
     if (rc != QV_SUCCESS) goto out;
 
@@ -214,10 +213,24 @@ out:
     return rc;
 }
 
+static int
+create_new_subgroup_by_color(
+    qv_context_t *ctx,
+    qvi_group_t *pargroup,
+    int color,
+    qvi_group_t **subgroup
+) {
+    const int split_key = qvi_group_id(pargroup);
+
+    return ctx->taskman->group_create_from_split(
+        pargroup,
+        color,
+        split_key,
+        subgroup
+    );
+}
+
 /*
- * TODO(skg) Is this call collective? Are we going to verify input parameter
- * consistency across processes?
- *
  * TODO(skg) This should also be in the server code and retrieved via RPC?
  */
 int
@@ -241,6 +254,7 @@ qv_scope_split(
         qvi_log_error("{} group_id < 0 (group_id = {})", epref, group_id);
         return QV_ERR_INVLD_ARG;
     }
+
     unsigned npus;
     int qvrc = qvi_hwloc_get_nobjs_in_cpuset(
         ctx->hwloc,
@@ -302,15 +316,18 @@ qv_scope_split(
     qv_scope_t *isubscope;
     qvrc = qvi_scope_new(&isubscope);
     if (qvrc != QV_SUCCESS) goto out;
-
-    rc = hwloc_bitmap_copy(
-        qvi_scope_bitmap_get(isubscope),
-        bitm
+    // Create new sub-group.
+    qvi_group_t *subgroup;
+    rc = create_new_subgroup_by_color(
+        ctx,
+        qvi_scope_group_get(scope),
+        group_id,
+        &subgroup
     );
-    if (rc != 0) {
-        qvrc = QV_ERR_HWLOC;
-        goto out;
-    }
+    if (rc != QV_SUCCESS) goto out;
+    // Initialize new sub-scope.
+    rc = qvi_scope_init(isubscope, subgroup, bitm);
+    if (rc != QV_SUCCESS) goto out;
 out:
     hwloc_bitmap_free(bitm);
     if (qvrc != QV_SUCCESS) {

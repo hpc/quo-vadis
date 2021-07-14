@@ -13,10 +13,7 @@
  * @file qvi-mpi.cc
  */
 
-// TODO(skg) Have infrastructure-specific init (e.g., MPI), but have
-// infrastructure-agnostic free(), etc (where possible).
 // TODO(skg) Integrate with qv_free().
-// TODO(skg) Maybe we don't need all this group stuff.
 
 
 #include "qvi-common.h"
@@ -260,6 +257,7 @@ void
 qvi_mpi_free(
     qvi_mpi_t **mpi
 ) {
+    if (!mpi) return;
     qvi_mpi_t *impi = *mpi;
     if (!impi) return;
     if (impi->group_tab) {
@@ -457,6 +455,7 @@ void
 qvi_mpi_group_free(
     qvi_mpi_group_t **group
 ) {
+    if (!group) return;
     qvi_mpi_group_t *igroup = *group;
     if (!igroup) return;
     delete igroup;
@@ -465,20 +464,16 @@ qvi_mpi_group_free(
 
 int
 qvi_mpi_group_size(
-    const qvi_mpi_group_t *group,
-    int *size
+    const qvi_mpi_group_t *group
 ) {
-    *size = group->group_size;
-    return QV_SUCCESS;
+    return group->group_size;
 }
 
 int
 qvi_mpi_group_id(
-    const qvi_mpi_group_t *group,
-    int *id
+    const qvi_mpi_group_t *group
 ) {
-    *id = group->group_id;
-    return QV_SUCCESS;
+    return group->group_id;
 }
 
 int
@@ -647,7 +642,7 @@ out:
  *
  */
 static int
-sleepy_barrier(
+sleepy_node_barrier(
     MPI_Comm node_comm
 ) {
     MPI_Request request;
@@ -668,14 +663,14 @@ int
 qvi_mpi_node_barrier(
     qvi_mpi_t *mpi
 ) {
-    return sleepy_barrier(mpi->node_comm);
+    return sleepy_node_barrier(mpi->node_comm);
 }
 
 int
 qvi_mpi_group_barrier(
     qvi_mpi_group_t *group
 ) {
-    return sleepy_barrier(group->mpi_comm);
+    return sleepy_node_barrier(group->mpi_comm);
 }
 
 /*

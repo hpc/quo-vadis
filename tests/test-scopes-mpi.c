@@ -30,6 +30,34 @@ do {                                                                           \
     exit(EXIT_FAILURE);                                                        \
 } while (0)
 
+static void
+scope_report(
+    qv_context_t *ctx,
+    int wrank,
+    qv_scope_t *scope,
+    char *scope_name
+) {
+    char const *ers = NULL;
+
+    int taskid;
+    int rc = qv_scope_taskid(ctx, scope, &taskid);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_taskid() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    int ntasks;
+    rc = qv_scope_ntasks(ctx, scope, &ntasks);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_ntasks() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    printf("[%d] %s taskid is %d\n", wrank, scope_name, taskid);
+    printf("[%d] %s ntasks is %d\n", wrank, scope_name, ntasks);
+    qv_scope_barrier(ctx, scope);
+}
+
 int
 main(
     int argc,
@@ -78,22 +106,7 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int base_taskid;
-    rc = qv_scope_taskid(ctx, base_scope, &base_taskid);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_taskid() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    int base_ntasks;
-    rc = qv_scope_ntasks(ctx, base_scope, &base_ntasks);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_ntasks() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    printf("[%d] base_scope taskid is %d\n", wrank, base_taskid);
-    printf("[%d] base_scope ntasks is %d\n", wrank, base_ntasks);
+    scope_report(ctx, wrank, base_scope, "base_scope");
 
     int n_cores;
     rc = qv_scope_nobjs(
@@ -132,6 +145,8 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Number of NUMA in sub_scope is %d\n", wrank, n_cores);
+
+    scope_report(ctx, wrank, sub_scope, "sub_scope");
 
     char *binds;
     rc = qv_bind_get_as_string(ctx, &binds);
