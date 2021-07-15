@@ -39,9 +39,7 @@ qvi_task_new(
     qv_task_t *itask = qvi_new qv_task_t;
     if (!itask) {
         rc = QV_ERR_OOR;
-        goto out;
     }
-out:
     if (rc != QV_SUCCESS) {
         qvi_task_free(&itask);
     }
@@ -53,6 +51,7 @@ void
 qvi_task_free(
     qv_task_t **task
 ) {
+    if (!task) return;
     qv_task_t *itask = *task;
     if (!itask) return;
     delete itask;

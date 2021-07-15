@@ -57,6 +57,7 @@ void
 qvi_bind_stack_free(
     qvi_bind_stack_t **bstack
 ) {
+    if (!bstack) return;
     qvi_bind_stack_t *ibstack = *bstack;
     if (!ibstack) return;
     while (!ibstack->stack->empty()) {

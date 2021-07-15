@@ -33,6 +33,7 @@ void
 qvi_config_rmi_free(
     qvi_config_rmi_t **config
 ) {
+    if (!config) return;
     qvi_config_rmi_t *ic = *config;
     if (!ic) return;
     if (ic->url) free(ic->url);

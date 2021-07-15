@@ -68,6 +68,7 @@ void
 qvi_bbuff_free(
     qvi_bbuff_t **buff
 ) {
+    if (!buff) return;
     qvi_bbuff_t *ibuff = *buff;
     if (!ibuff) return;
     if (ibuff->data) free(ibuff->data);

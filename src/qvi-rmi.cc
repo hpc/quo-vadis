@@ -675,6 +675,7 @@ void
 qvi_rmi_server_free(
     qvi_rmi_server_t **server
 ) {
+    if (!server) return;
     qvi_rmi_server_t *iserver = *server;
     if (!iserver) return;
     send_server_shutdown_msg(iserver);
@@ -798,6 +799,7 @@ void
 qvi_rmi_client_free(
     qvi_rmi_client_t **client
 ) {
+    if (!client) return;
     qvi_rmi_client_t *iclient = *client;
     if (!iclient) return;
     zsocket_close(&iclient->zsock);

@@ -133,6 +133,7 @@ void
 qvi_hwloc_free(
     qvi_hwloc_t **hwl
 ) {
+    if (!hwl) return;
     qvi_hwloc_t *ihwl = *hwl;
     if (!ihwl) return;
     if (ihwl->topo) hwloc_topology_destroy(ihwl->topo);

@@ -55,7 +55,65 @@ scope_report(
 
     printf("[%d] %s taskid is %d\n", wrank, scope_name, taskid);
     printf("[%d] %s ntasks is %d\n", wrank, scope_name, ntasks);
-    qv_scope_barrier(ctx, scope);
+
+    rc = qv_scope_barrier(ctx, scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_barrier() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+}
+
+static void
+change_bind(
+    qv_context_t *ctx,
+    int wrank,
+    qv_scope_t *scope
+) {
+    char const *ers = NULL;
+
+    if (getenv("HWLOC_XMLFILE")) {
+        if (wrank == 0) {
+            printf("*** Using synthetic topology. "
+                   "Skipping change_bind tests. ***\n");
+        }
+        return;
+    }
+
+    int rc = qv_bind_push(ctx, scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_push() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    char *bind1s;
+    rc = qv_bind_get_as_string(ctx, &bind1s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_get_as_string() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    printf("[%d] New cpubind is %s\n", wrank, bind1s);
+    free(bind1s);
+
+    rc = qv_bind_pop(ctx);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_pop() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    char *bind2s;
+    rc = qv_bind_get_as_string(ctx, &bind2s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_get_as_string() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    printf("[%d] Popped cpubind is %s\n", wrank, bind2s);
+    free(bind2s);
+    // TODO(skg) Add test to make popped is same as original.
+    rc = qv_scope_barrier(ctx, scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_barrier() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
 }
 
 int
@@ -156,39 +214,8 @@ main(
     }
     printf("[%d] Current cpubind is %s\n", wrank, binds);
     free(binds);
-#if 0
-    rc = qv_bind_push(ctx, sub_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_push() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
-    char *bind1s;
-    rc = qv_bind_get_as_string(ctx, &bind1s);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_get_as_string() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    printf("[%d] New cpubind is %s\n", wrank, bind1s);
-    free(bind1s);
-
-    rc = qv_bind_pop(ctx);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_pop() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    char *bind2s;
-    rc = qv_bind_get_as_string(ctx, &bind2s);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_get_as_string() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    printf("[%d] Popped cpubind is %s\n", wrank, bind2s);
-    free(bind2s);
-#endif
-
-    // TODO(skg) Add test to make popped is same as original.
+    change_bind(ctx, wrank, sub_scope);
 
     qv_scope_t *sub_sub_scope;
     rc = qv_scope_split(
