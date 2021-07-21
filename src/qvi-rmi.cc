@@ -492,10 +492,11 @@ rpc_ssi_scope_get_intrinsic_scope_cpuset(
     switch (iscope) {
         case QV_SCOPE_SYSTEM: {
             // TODO(skg) Deal with errors.
-            hwloc_bitmap_copy(
-                cpuset,
-                hwloc_get_root_obj(topo)->cpuset
+            rc = qvi_hwloc_bitmap_copy(
+                hwloc_get_root_obj(topo)->cpuset,
+                cpuset
             );
+            if (rc != QV_SUCCESS) return rc;
             // TODO(skg) Needs work.
             //scope->obj = hwloc_get_root_obj(ctx->topo);
             //scope->obj = hwloc_get_obj_by_type(ctx->topo, HWLOC_OBJ_NUMANODE, 0);

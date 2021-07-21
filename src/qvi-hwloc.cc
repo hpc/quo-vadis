@@ -17,56 +17,90 @@
 #include "qvi-hwloc.h"
 #include "qvi-utils.h"
 
-typedef struct qvi_hwloc_s {
-    /** The cached node topology. */
-    hwloc_topology_t topo = nullptr;
-    /** Path to exported hardware topology. */
-    char *topo_file = nullptr;
-} qvi_hwloc_t;
+using qvi_hwloc_dev_list_t = std::vector<qvi_hwloc_device_t *>;
 
 typedef enum qvi_hwloc_task_xop_obj_e {
     QVI_HWLOC_TASK_INTERSECTS_OBJ = 0,
     QVI_HWLOC_TASK_ISINCLUDED_IN_OBJ
 } qvi_hwloc_task_xop_obj_t;
 
+typedef struct qvi_hwloc_objx_s {
+    hwloc_obj_type_t objtype;
+    hwloc_obj_osdev_type_t osdev_type;
+} qvi_hwloc_objx_t;
+
+typedef struct qvi_hwloc_device_s {
+    /** Device cpuset */
+    hwloc_bitmap_t cpuset = nullptr;
+    /** Internal object type information */
+    qvi_hwloc_objx_t objx;
+    /** Vendor ID */
+    int vendor_id = -1;
+    /** */
+    int smi = -1;
+    /** CUDA/ROCm visible devices ID */
+    int visdevs = -1;
+    /** Device name */
+    char name[QVI_HWLOC_DEV_NAME_BUFF_SIZE] = {'\0'};
+    /** PCI bus ID */
+    char pci_bus_id[QVI_HWLOC_PCI_BUS_ID_BUFF_SIZE] = {'\0'};
+    /** UUID */
+    char uuid[QVI_HWLOC_UUID_BUFF_SIZE] = {'\0'};
+} qvi_hwloc_device_t;
+
+typedef struct qvi_hwloc_s {
+    /** The cached node topology. */
+    hwloc_topology_t topo = nullptr;
+    /** Path to exported hardware topology. */
+    char *topo_file = nullptr;
+    /** Cached devices discovered during topology load. */
+    qvi_hwloc_dev_list_t *devices = nullptr;
+    /** Cached GPUs discovered during topology load. */
+    qvi_hwloc_dev_list_t *gpus = nullptr;
+} qvi_hwloc_t;
+
+/**
+ *
+ */
 static inline int
 obj_type_from_external(
     qv_hw_obj_type_t external,
-    hwloc_obj_type_t *internal
+    qvi_hwloc_objx_t *objx
 ) {
     switch(external) {
         case(QV_HW_OBJ_MACHINE):
-            *internal = HWLOC_OBJ_MACHINE;
+            objx->objtype = HWLOC_OBJ_MACHINE;
             break;
         case(QV_HW_OBJ_PACKAGE):
-            *internal = HWLOC_OBJ_PACKAGE;
+            objx->objtype = HWLOC_OBJ_PACKAGE;
             break;
         case(QV_HW_OBJ_CORE):
-            *internal = HWLOC_OBJ_CORE;
+            objx->objtype = HWLOC_OBJ_CORE;
             break;
         case(QV_HW_OBJ_PU):
-            *internal = HWLOC_OBJ_PU;
+            objx->objtype = HWLOC_OBJ_PU;
             break;
         case(QV_HW_OBJ_L1CACHE):
-            *internal = HWLOC_OBJ_L1CACHE;
+            objx->objtype = HWLOC_OBJ_L1CACHE;
             break;
         case(QV_HW_OBJ_L2CACHE):
-            *internal = HWLOC_OBJ_L2CACHE;
+            objx->objtype = HWLOC_OBJ_L2CACHE;
             break;
         case(QV_HW_OBJ_L3CACHE):
-            *internal = HWLOC_OBJ_L3CACHE;
+            objx->objtype = HWLOC_OBJ_L3CACHE;
             break;
         case(QV_HW_OBJ_L4CACHE):
-            *internal = HWLOC_OBJ_L4CACHE;
+            objx->objtype = HWLOC_OBJ_L4CACHE;
             break;
         case(QV_HW_OBJ_L5CACHE):
-            *internal = HWLOC_OBJ_L5CACHE;
+            objx->objtype = HWLOC_OBJ_L5CACHE;
             break;
         case(QV_HW_OBJ_NUMANODE):
-            *internal = HWLOC_OBJ_NUMANODE;
+            objx->objtype = HWLOC_OBJ_NUMANODE;
             break;
-        case(QV_HW_OBJ_OS_DEVICE):
-            *internal = HWLOC_OBJ_OS_DEVICE;
+        case(QV_HW_OBJ_GPU):
+            objx->objtype = HWLOC_OBJ_OS_DEVICE;
+            objx->osdev_type = HWLOC_OBJ_OSDEV_GPU;
             break;
         default:
             return QV_ERR_INVLD_ARG;
@@ -80,11 +114,11 @@ qvi_hwloc_obj_type_depth(
     qv_hw_obj_type_t type,
     int *depth
 ) {
-    hwloc_obj_type_t real_type;
-    int rc = obj_type_from_external(type, &real_type);
+    qvi_hwloc_objx_t objx;
+    int rc = obj_type_from_external(type, &objx);
     if (rc != QV_SUCCESS) return rc;
 
-    int d = hwloc_get_type_depth(hwloc->topo, real_type);
+    int d = hwloc_get_type_depth(hwloc->topo, objx.objtype);
     if (d == HWLOC_TYPE_DEPTH_UNKNOWN) {
         *depth = 0;
     }
@@ -99,11 +133,11 @@ obj_get_by_type(
     unsigned type_index,
     hwloc_obj_t *out_obj
 ) {
-    hwloc_obj_type_t real_type;
-    int rc = obj_type_from_external(type, &real_type);
+    qvi_hwloc_objx_t objx;
+    int rc = obj_type_from_external(type, &objx);
     if (rc != QV_SUCCESS) return rc;
 
-    *out_obj = hwloc_get_obj_by_type(hwloc->topo, real_type, type_index);
+    *out_obj = hwloc_get_obj_by_type(hwloc->topo, objx.objtype, type_index);
     if (!*out_obj) {
         // There are a couple of reasons why target_obj may be NULL. If this
         // ever happens and the specified type and obj index are valid, then
@@ -121,12 +155,40 @@ qvi_hwloc_new(
     int rc = QV_SUCCESS;
 
     qvi_hwloc_t *ihwl = qvi_new qvi_hwloc_t;
-    if (!ihwl) rc = QV_ERR_OOR;
+    if (!ihwl) {
+        rc = QV_ERR_OOR;
+        goto out;
+    }
 
+    ihwl->devices = qvi_new qvi_hwloc_dev_list_t;
+    if (!ihwl->devices) {
+        rc = QV_ERR_OOR;
+        goto out;
+    }
+
+    ihwl->gpus = qvi_new qvi_hwloc_dev_list_t;
+    if (!ihwl->gpus) {
+        rc = QV_ERR_OOR;
+        goto out;
+    }
+out:
     if (rc != QV_SUCCESS) qvi_hwloc_free(&ihwl);
-
     *hwl = ihwl;
     return QV_SUCCESS;
+}
+
+static void
+qvi_hwloc_dev_list_free(
+    qvi_hwloc_dev_list_t **devl
+) {
+    if (!devl) return;
+    qvi_hwloc_dev_list_t *idevl = *devl;
+    if (!idevl) return;
+    for (auto &dev : *idevl) {
+        qvi_hwloc_device_free(&dev);
+    }
+    delete idevl;
+    *devl = nullptr;
 }
 
 void
@@ -136,6 +198,8 @@ qvi_hwloc_free(
     if (!hwl) return;
     qvi_hwloc_t *ihwl = *hwl;
     if (!ihwl) return;
+    qvi_hwloc_dev_list_free(&ihwl->devices);
+    qvi_hwloc_dev_list_free(&ihwl->gpus);
     if (ihwl->topo) hwloc_topology_destroy(ihwl->topo);
     if (ihwl->topo_file) free(ihwl->topo_file);
     delete ihwl;
@@ -166,6 +230,201 @@ qvi_hwloc_topology_init(
         return QV_ERR_HWLOC;
     }
     if (xml) return topo_set_from_xml(hwl, xml);
+    return QV_SUCCESS;
+}
+
+/**
+ * Returns a pointer to the associated PCI object, nullptr otherwise.
+ */
+static hwloc_obj_t
+get_pci_obj(
+    hwloc_obj_t dev
+) {
+    if (dev->type == HWLOC_OBJ_PCI_DEVICE) return dev;
+    if (dev->parent->type == HWLOC_OBJ_PCI_DEVICE) return dev->parent;
+    return nullptr;
+}
+
+/**
+ * Get the PCI bus ID of an input device; save it into input string.
+ * Returns a pointer to the associated PCI object, nullptr otherwise.
+ */
+static hwloc_obj_t
+get_pci_busid(
+    hwloc_obj_t dev,
+    char *busid,
+    int idsize
+) {
+    hwloc_obj_t pcidev = get_pci_obj(dev);
+    if (!pcidev) return nullptr;
+
+    int nw = snprintf(
+        busid, idsize, "%04x:%02x:%02x.%01x",
+        pcidev->attr->pcidev.domain,
+        pcidev->attr->pcidev.bus,
+        pcidev->attr->pcidev.dev,
+        pcidev->attr->pcidev.func
+    );
+    if (nw >= idsize) return nullptr;
+    return pcidev;
+}
+
+/**
+ * First pass: discover devices that must be added to the list of devices.
+ * Do not consider OSDEV_GPU devices in the first pass because they do not
+ * honor VISIBLE_DEVICES variables.
+ */
+static int
+discover_all_devices(
+    qvi_hwloc_t *hwl
+) {
+    hwloc_obj_t obj = nullptr;
+    while ((obj = hwloc_get_next_osdev(hwl->topo, obj)) != nullptr) {
+        hwloc_obj_osdev_type_t type = obj->attr->osdev.type;
+        // Consider only what is listed here.
+        if (type != HWLOC_OBJ_OSDEV_COPROC &&
+            type != HWLOC_OBJ_OSDEV_OPENFABRICS) {
+            continue;
+        }
+        // Try to get the PCI object.
+        char busid[QVI_HWLOC_PCI_BUS_ID_BUFF_SIZE];
+        hwloc_obj_t pci_obj = get_pci_busid(obj, busid, sizeof(busid));
+        if (!pci_obj) continue;
+        // Have we seen this device already?
+        // opencl0d0 and cuda0 may correspond to the same GPU hardware.
+        bool seen = false;
+        for (auto &dev : *hwl->devices) {
+            if (strcmp(dev->pci_bus_id, busid) == 0) {
+                seen = true;
+                break;
+            }
+        }
+        if (seen) continue;
+        // Add a new device with a unique PCI busid.
+        qvi_hwloc_device_t *new_dev;
+        int rc = qvi_hwloc_device_new(&new_dev);
+        if (rc != QV_SUCCESS) return rc;
+        // Set objx types.
+        new_dev->objx.objtype = HWLOC_OBJ_OS_DEVICE;
+        new_dev->objx.osdev_type = type;
+        // Set vendor ID.
+        new_dev->vendor_id = pci_obj->attr->pcidev.vendor_id;
+        // TODO(skg) Move to network device discovery and setup.
+        // TODO(skg) Get cpuset, if available.
+        if (type == HWLOC_OBJ_OSDEV_OPENFABRICS) {
+            int nw = snprintf(
+                new_dev->uuid, QVI_HWLOC_UUID_BUFF_SIZE, "%s",
+                hwloc_obj_get_info_by_name(obj, "NodeGUID")
+            );
+            // Internal error because our buffer is too small.
+            if (nw >= QVI_HWLOC_UUID_BUFF_SIZE) return QV_ERR_INTERNAL;
+        }
+        int nw = snprintf(
+            new_dev->name, QVI_HWLOC_DEV_NAME_BUFF_SIZE,
+            "%s", obj->name
+        );
+        if (nw >= QVI_HWLOC_DEV_NAME_BUFF_SIZE) return QV_ERR_INTERNAL;
+        // Set visdevs
+        int id = -1, id2 = -1;
+        if (sscanf(obj->name, "cuda%d", &id) == 1) {
+            new_dev->visdevs = id;
+        }
+        else if (sscanf(obj->name, "opencl%dd%d", &id2, &id) == 2) {
+            new_dev->visdevs = id;
+        }
+        // Save the PCI bus ID.
+        nw = snprintf(
+            new_dev->pci_bus_id, QVI_HWLOC_PCI_BUS_ID_BUFF_SIZE,
+            "%s", busid
+        );
+        if (nw >= QVI_HWLOC_PCI_BUS_ID_BUFF_SIZE) return QV_ERR_INTERNAL;
+        // Finally, add the new device to our list of available devices.
+        hwl->devices->push_back(new_dev);
+    }
+    return QV_SUCCESS;
+}
+
+/**
+ * Adds additional info to existing, discovered devices.
+ * For example, RSMI/NVML (OSDEV_GPU) devices have the UUID.
+ */
+static int
+discover_gpu_devices(
+    qvi_hwloc_t *hwl
+) {
+    hwloc_obj_t obj = nullptr;
+    while ((obj = hwloc_get_next_osdev(hwl->topo, obj)) != nullptr) {
+        if (obj->attr->osdev.type != HWLOC_OBJ_OSDEV_GPU) continue;
+        // Try to get the PCI object.
+        char busid[QVI_HWLOC_PCI_BUS_ID_BUFF_SIZE];
+        hwloc_obj_t pci_obj = get_pci_busid(obj, busid, sizeof(busid));
+        if (!pci_obj) continue;
+        /* Find the associated device. */
+        // TODO(skg) We need to split up to easily deal with different types.
+        for (auto &dev : *hwl->devices) {
+            if (strcmp(dev->pci_bus_id, busid) != 0) continue;
+            /* Add the UUID and System Management ID */
+            int id = -1;
+            if (sscanf(dev->name, "rsmi%d", &id) == 1) {
+                dev->smi = id;
+                int nw = snprintf(
+                    dev->uuid, QVI_HWLOC_UUID_BUFF_SIZE, "%s",
+                    hwloc_obj_get_info_by_name(obj, "AMDUUID")
+                );
+                if (nw >= QVI_HWLOC_UUID_BUFF_SIZE) return QV_ERR_INTERNAL;
+#if 0 // TODO(skg)
+                int hrc = hwloc_rsmi_get_device_cpuset(
+                    hwl->topo,
+                    amd_idx++,
+                    dev->cpuset
+                );
+#endif
+
+            }
+            else if (sscanf(obj->name, "nvml%d", &id) == 1) {
+                dev->smi = id;
+                int nw = snprintf(
+                    dev->uuid, QVI_HWLOC_UUID_BUFF_SIZE, "%s",
+                    hwloc_obj_get_info_by_name(obj, "NVIDIAUUID")
+                );
+                if (nw >= QVI_HWLOC_UUID_BUFF_SIZE) return QV_ERR_INTERNAL;
+                // TODO(skg) We need to set the cpuset via something like
+                // hwloc_nvml_get_device_cpuset.
+
+            }
+            // TODO(skg) XXX This is just a placeholder for the real cpuset.
+            int rc = qvi_hwloc_bitmap_copy(
+                dev->cpuset,
+                hwloc_get_root_obj(hwl->topo)->complete_cpuset // XXX
+            );
+            if (rc != QV_SUCCESS) return rc;
+
+            qvi_hwloc_device_t *gpudev;
+            rc = qvi_hwloc_device_new(&gpudev);
+            if (rc != QV_SUCCESS) return rc;
+
+            rc = qvi_hwloc_device_copy(dev, gpudev);
+            if (rc != QV_SUCCESS) return rc;
+
+            hwl->gpus->push_back(gpudev);
+        }
+    }
+    return QV_SUCCESS;
+}
+
+/**
+ *
+ */
+static int
+discover_devices(
+    qvi_hwloc_t *hwl
+) {
+    int rc = discover_all_devices(hwl);
+    if (rc != QV_SUCCESS) return rc;
+
+    rc = discover_gpu_devices(hwl);
+    if (rc != QV_SUCCESS) return rc;
+
     return QV_SUCCESS;
 }
 
@@ -206,6 +465,12 @@ qvi_hwloc_topology_load(
         ers = "hwloc_topology_load() failed";
         goto out;
     }
+
+    rc = discover_devices(hwl);
+    if (rc != 0) {
+        ers = "discover_devices() failed";
+        goto out;
+    }
 out:
     if (ers) {
         qvi_log_error("{} with rc={}", ers, rc);
@@ -231,6 +496,17 @@ qvi_hwloc_bitmap_alloc(
     if (!*bitmap) rc = QV_ERR_OOR;
 
     return rc;
+}
+
+int
+qvi_hwloc_bitmap_copy(
+    hwloc_bitmap_t src,
+    hwloc_bitmap_t dest
+) {
+    if (hwloc_bitmap_copy(dest, src) != 0) {
+        return QV_ERR_HWLOC;
+    }
+    return QV_SUCCESS;
 }
 
 static int
@@ -520,8 +796,27 @@ qvi_hwloc_task_isincluded_in_obj_by_type_id(
     );
 }
 
-int
-qvi_hwloc_get_nobjs_in_cpuset(
+/**
+ *
+ */
+static int
+get_nosdevs_in_cpuset(
+    qvi_hwloc_t *,
+    qvi_hwloc_dev_list_t *devs,
+    hwloc_const_cpuset_t cpuset,
+    unsigned *nobjs
+) {
+    unsigned ndevs = 0;
+    for (auto &dev : *devs) {
+        if (hwloc_bitmap_isincluded(dev->cpuset, cpuset)) ndevs++;
+    }
+    *nobjs = ndevs;
+
+    return QV_SUCCESS;
+}
+
+static int
+get_nobjs_in_cpuset(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t target_obj,
     hwloc_const_cpuset_t cpuset,
@@ -542,6 +837,22 @@ qvi_hwloc_get_nobjs_in_cpuset(
     }
     *nobjs = n;
     return QV_SUCCESS;
+}
+
+int
+qvi_hwloc_get_nobjs_in_cpuset(
+    qvi_hwloc_t *hwl,
+    qv_hw_obj_type_t target_obj,
+    hwloc_const_cpuset_t cpuset,
+    unsigned *nobjs
+) {
+    switch(target_obj) {
+        case(QV_HW_OBJ_GPU) :
+            return get_nosdevs_in_cpuset(hwl, hwl->gpus, cpuset, nobjs);
+        default:
+            return get_nobjs_in_cpuset(hwl, target_obj, cpuset, nobjs);
+    }
+    return QV_ERR_INTERNAL;
 }
 
 int
@@ -588,6 +899,186 @@ qvi_hwloc_set_cpubind_from_bitmap(
         qvrc = QV_ERR_NOT_SUPPORTED;
     }
     return qvrc;
+}
+
+int
+qvi_hwloc_device_new(
+    qvi_hwloc_device_t **dev
+) {
+    int rc = QV_SUCCESS;
+
+    qvi_hwloc_device_t *idev = qvi_new qvi_hwloc_device_t;
+    if (!idev) {
+        rc = QV_ERR_OOR;
+        goto out;
+    }
+
+    rc = qvi_hwloc_bitmap_alloc(&idev->cpuset);
+    if (rc != QV_SUCCESS) {
+        goto out;
+    }
+out:
+    if (rc != QV_SUCCESS) {
+        qvi_hwloc_device_free(&idev);
+    }
+    *dev = idev;
+    return rc;
+}
+
+void
+qvi_hwloc_device_free(
+    qvi_hwloc_device_t **dev
+) {
+    if (!dev) return;
+    qvi_hwloc_device_t *idev = *dev;
+    if (!idev) return;
+    if (idev->cpuset) hwloc_bitmap_free(idev->cpuset);
+    delete idev;
+    *dev = nullptr;
+}
+
+int
+qvi_hwloc_device_copy(
+    qvi_hwloc_device_t *src,
+    qvi_hwloc_device_t *dest
+) {
+    int rc = qvi_hwloc_bitmap_copy(src->cpuset, dest->cpuset);
+    if (rc != QV_SUCCESS) return rc;
+
+    dest->objx = src->objx;
+    dest->vendor_id = src->vendor_id;
+    dest->smi = src->smi;
+    dest->visdevs = src->visdevs;
+    memmove(dest->name, src->name, sizeof(src->name));
+    memmove(dest->pci_bus_id, src->pci_bus_id, sizeof(src->pci_bus_id));
+    memmove(dest->uuid, src->uuid, sizeof(src->uuid));
+
+    return QV_SUCCESS;
+}
+
+int
+qvi_hwloc_devices_emit(
+    qvi_hwloc_t *hwl,
+    qv_hw_obj_type_t obj_type
+) {
+    qvi_hwloc_dev_list_t *devlist = nullptr;
+    switch (obj_type) {
+        case QV_HW_OBJ_GPU:
+            devlist = hwl->gpus;
+            break;
+        default:
+            return QV_ERR_NOT_SUPPORTED;
+    }
+    for (auto &dev : *devlist) {
+        char *cpusets = nullptr;
+        int rc = qvi_hwloc_bitmap_asprintf(&cpusets, dev->cpuset);
+        if (rc != QV_SUCCESS) return rc;
+
+        printf("  Device Name: %s\n", dev->name);
+        printf("  Device PCI Bus ID: %s\n", dev->pci_bus_id);
+        printf("  Device UUID: %s\n", dev->uuid);
+        printf("  Device cpuset: %s\n", cpusets);
+        printf("  Device Vendor ID: %d\n", dev->vendor_id);
+        printf("  Device SMI: %d\n", dev->smi);
+        printf("  Device Visible Device ID: %d\n\n", dev->visdevs);
+
+        free(cpusets);
+    }
+    return QV_SUCCESS;
+}
+
+static int
+get_devices_in_cpuset_from_dev_list(
+    qvi_hwloc_dev_list_t *devlist,
+    hwloc_cpuset_t cpuset,
+    qvi_hwloc_dev_list_t *devs
+) {
+    for (auto &dev : *devlist) {
+        if (!hwloc_bitmap_isincluded(dev->cpuset, cpuset)) continue;
+
+        qvi_hwloc_device_t *devin;
+        int rc = qvi_hwloc_device_new(&devin);
+        if (rc != QV_SUCCESS) return rc;
+
+        rc = qvi_hwloc_device_copy(dev, devin);
+        if (rc != QV_SUCCESS) {
+            qvi_hwloc_device_free(&devin);
+            return rc;
+        }
+        devs->push_back(devin);
+    }
+    return QV_SUCCESS;
+}
+
+/**
+ *
+ */
+static int
+get_devices_in_cpuset(
+    qvi_hwloc_t *hwl,
+    qv_hw_obj_type_t obj_type,
+    hwloc_cpuset_t cpuset,
+    qvi_hwloc_dev_list_t *devs
+) {
+    qvi_hwloc_dev_list_t *devlist = nullptr;
+    // Make sure that the user provided a valid, supported device type.
+    switch (obj_type) {
+        // TODO(skg) We can support more devices, so do that eventually.
+        case QV_HW_OBJ_GPU:
+            devlist = hwl->gpus;
+            break;
+        default:
+            return QV_ERR_NOT_SUPPORTED;
+    }
+
+    return get_devices_in_cpuset_from_dev_list(
+        devlist,
+        cpuset,
+        devs
+    );
+}
+
+int
+qvi_hwloc_get_device_in_cpuset(
+    qvi_hwloc_t *hwl,
+    qv_hw_obj_type_t dev_obj,
+    hwloc_cpuset_t cpuset,
+    int i,
+    qv_device_id_type_t dev_id_type,
+    char **dev_id
+) {
+    int nw = 0;
+
+    qvi_hwloc_dev_list_t *devs = qvi_new qvi_hwloc_dev_list_t;
+    if (!devs) return QV_ERR_OOR;
+
+    int rc = get_devices_in_cpuset(hwl, dev_obj, cpuset, devs);
+    if (rc != QV_SUCCESS) {
+        goto out;
+    }
+
+    switch (dev_id_type) {
+        case (QV_DEVICE_ID_UUID):
+            nw = asprintf(dev_id, "%s", devs->at(i)->uuid);
+            break;
+        case (QV_DEVICE_ID_PCI_BUS_ID):
+            nw = asprintf(dev_id, "%s", devs->at(i)->pci_bus_id);
+            break;
+        case (QV_DEVICE_ID_ORDINAL):
+            // TODO(skg) Is this correct?
+            nw = asprintf(dev_id, "%d", devs->at(i)->visdevs);
+            break;
+        default:
+            rc = QV_ERR_INVLD_ARG;
+            goto out;
+    }
+    if (nw == -1) rc = QV_ERR_OOR;
+out:
+    if (rc != QV_SUCCESS) {
+        *dev_id = nullptr;
+    }
+    qvi_hwloc_dev_list_free(&devs);
+    return rc;
 }
 
 /*

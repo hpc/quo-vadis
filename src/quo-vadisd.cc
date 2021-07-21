@@ -30,6 +30,7 @@ static void
 context_free(
     context **ctx
 ) {
+    if (!ctx) return;
     context *ictx = *ctx;
     if (!ictx) return;
     qvi_config_rmi_free(&ictx->rmic);
@@ -189,6 +190,20 @@ hwtopo_load(
         static cstr ers = "qvi_hwloc_topology_load() failed";
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
+#if 0 // TODO(skg) XXX
+    char *root;
+    qvi_hwloc_bitmap_asprintf(
+        &root,
+        hwloc_get_root_obj(qvi_hwloc_topo_get(ctx->hwloc))->complete_cpuset
+    );
+    qvi_log_debug("ROOT CPUSET = {}", root);
+    unsigned n;
+    qvi_hwloc_get_nobjs_in_cpuset(
+        ctx->hwloc,
+        QV_HW_OBJ_CORE, hwloc_get_root_obj(qvi_hwloc_topo_get(ctx->hwloc))->complete_cpuset, &n
+    );
+    qvi_log_debug("--------------- NCORES {}", n);
+#endif
 }
 
 static void

@@ -10,10 +10,13 @@
 #
 
 # Set minimum required cmake version
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.19)
 
 # Set the project name and version
 project(quo-vadis VERSION 0.0.1 LANGUAGES C CXX)
+
+# Use -I instead of -isystem for imported targets.
+set(CMAKE_NO_SYSTEM_FROM_IMPORTED TRUE)
 
 # Append our module path
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
@@ -33,6 +36,9 @@ message(STATUS "Generator used is ${CMAKE_GENERATOR}")
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     include(CTest)
 endif()
+
+# pkg-config
+find_package(PkgConfig REQUIRED)
 
 # Pthread support
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)

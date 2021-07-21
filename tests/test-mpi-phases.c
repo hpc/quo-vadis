@@ -32,17 +32,23 @@ do {                                                                           \
 
 
 
-/* el: 7/9/2021 */ 
-    /* Todo: bind_get_as_list to easily read the binding? */ 
-    /* Todo: we also need a function to extract resources from 
-        a scope: 
+/* el: 7/9/2021 */
+    /* Todo: bind_get_as_list to easily read the binding? */
+    /* Todo: we also need a function to extract resources from
+        a scope:
         scope_get_objs(in_scope, in_obj_type, in_n_objs, out_subscope)
-        Perhaps, we can do this with a generalization of scope_add? 
+        Perhaps, we can do this with a generalization of scope_add?
         We should keep track of what objects were given from a scope
-        so that we don't give them again. This should tie in with 
+        so that we don't give them again. This should tie in with
         qv_scope_nobjs_free(qv, scope, obj_type, out_n_objs);
-     */ 
+     */
 
+static int
+do_pthread_things(int ncores)
+{
+    printf("# Doing pthread_things with %d cores\n", ncores);
+    return 0;
+}
 
 int
 main(
@@ -52,7 +58,7 @@ main(
     char const *ers = NULL;
     MPI_Comm comm = MPI_COMM_WORLD;
 
-    /* Initialization */ 
+    /* Initialization */
     int rc = MPI_Init(&argc, &argv);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Init() failed";
@@ -75,7 +81,7 @@ main(
 
     setbuf(stdout, NULL);
 
-    /* Create a QV context */ 
+    /* Create a QV context */
     qv_context_t *ctx;
     rc = qv_mpi_create(&ctx, comm);
     if (rc != QV_SUCCESS) {
@@ -108,7 +114,7 @@ main(
     }
     printf("[%d] Base scope has %d cores\n", wrank, ncores);
 
-    
+
 
     char *binds;
     rc = qv_bind_get_as_string(ctx, &binds);
@@ -119,7 +125,7 @@ main(
     printf("[%d] Initially I am running on %s\n", wrank, binds);
     free(binds);
 
-    /* Split the base scope evenly across workers */ 
+    /* Split the base scope evenly across workers */
     qv_scope_t *sub_scope;
     rc = qv_scope_split(
         ctx,
@@ -133,7 +139,7 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    /* What resources did I get? */ 
+    /* What resources did I get? */
     rc = qv_scope_nobjs(
         ctx,
         sub_scope,
@@ -146,8 +152,8 @@ main(
     }
     printf("=> [%d] I got %d cores\n", wrank, ncores);
 
-    /***************************************                                      
-     * Phase 1: Everybody works                                                   
+    /***************************************
+     * Phase 1: Everybody works
      ***************************************/
 
     rc = qv_bind_push(ctx, sub_scope);
@@ -156,7 +162,7 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    /* Where did I end up? */ 
+    /* Where did I end up? */
     char *binds1;
     rc = qv_bind_get_as_string(ctx, &binds1);
     if (rc != QV_SUCCESS) {
@@ -167,11 +173,11 @@ main(
     free(binds1);
 
 #if 1
-    /* Launch one thread per core */ 
+    /* Launch one thread per core */
     do_pthread_things(ncores);
 
-    /* Launch one kernel per GPU */  
-    int ngpus; 
+    /* Launch one kernel per GPU */
+    int ngpus;
     rc = qv_scope_nobjs(
         ctx,
         sub_scope,
@@ -184,15 +190,17 @@ main(
     }
     printf("[%d] Launching %d kernels\n", wrank, ngpus);
 
-    int i, dev; 
-    char *gpu; 
+    int i, dev;
+    char *gpu;
     for (i=0; i<ngpus; i++) {
-        QV_scope_get_device(ctx, sub_scope, QV_HW_OBJ_GPU, i, QV_ID_PCI, &gpu);
-        cudaDeviceGetByPCIBusId(&dev, gpu); 
-        cudaSetDevice(dev); 
-        /* Launch GPU kernels here */ 
+        qv_scope_get_device(ctx, sub_scope, QV_HW_OBJ_GPU, i, QV_DEVICE_ID_PCI_BUS_ID, &gpu);
+        printf("GPU %d PCI Bus ID = %s\n", i, gpu);
+        //cudaDeviceGetByPCIBusId(&dev, gpu);
+        //cudaSetDevice(dev);
+        /* Launch GPU kernels here */
+        free(gpu);
     }
-#endif 
+#endif
 
     rc = qv_bind_pop(ctx);
     if (rc != QV_SUCCESS) {
@@ -209,25 +217,25 @@ main(
     printf("[%d] Popped up to %s\n", wrank, binds2);
     free(binds2);
 
-    /***************************************                                      
-     * Phase 2: One master per resource, 
-     *          others sleep, ay. 
+    /***************************************
+     * Phase 2: One master per resource,
+     *          others sleep, ay.
      ***************************************/
 
-    /* We could also do this by finding how many 
-       NUMA objects are there in the scope, and 
-       then splitting over that number. Then, 
+    /* We could also do this by finding how many
+       NUMA objects are there in the scope, and
+       then splitting over that number. Then,
        we could ask for a leader of each subscope.
-       Instead we use the shortcut qv_scope_split_at. */ 
-#if 1
-    int scope_id; 
+       Instead we use the shortcut qv_scope_split_at. */
+#if 0
+    int scope_id;
     qv_scope_t *numa_scope;
 
-    /* Split at NUMA domains */ 
+    /* Split at NUMA domains */
     rc = qv_scope_split_at(
         ctx,
         base_scope,
-        QV_HW_OBJ_NUMA, 
+        QV_HW_OBJ_NUMA,
         &numa_scope
     );
     if (rc != QV_SUCCESS) {
@@ -235,7 +243,7 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    /* Allow selecting a leader per NUMA */ 
+    /* Allow selecting a leader per NUMA */
     rc = qv_scope_taskid(
         ctx,
         base_scope,
@@ -248,9 +256,9 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int pus; 
+    int pus;
     if (scope_id == 0) {
-        /* I am the lead */  
+        /* I am the lead */
         rc = qv_scope_nobjs(
             ctx,
             numa_scope,
@@ -261,12 +269,12 @@ main(
             ers = "qv_scope_nobjs() failed";
             panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
-        printf("=> [%d] Launching OMP region with %d threads\n", 
+        printf("=> [%d] Launching OMP region with %d threads\n",
             wrank, npus);
-        do_omp_things(npus); 
+        do_omp_things(npus);
     }
 
-    /* Everybody else waits... */ 
+    /* Everybody else waits... */
     rc = qv_scope_barrier(ctx, numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_barrier() failed";
@@ -278,20 +286,20 @@ main(
         ers = "qv_bind_pop() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-#endif 
+#endif
 
-    /***************************************                                      
-     * Clean up 
+    /***************************************
+     * Clean up
      ***************************************/
 
-#if 1
+#if 0
     rc = qv_scope_free(ctx, numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-#endif     
-    
+#endif
+
     rc = qv_scope_free(ctx, sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";

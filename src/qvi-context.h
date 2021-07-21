@@ -25,6 +25,7 @@
 
 #include "qvi-task.h"
 #include "qvi-taskman.h"
+#include "qvi-hwloc.h"
 #include "qvi-bind.h"
 #include "qvi-rmi.h"
 

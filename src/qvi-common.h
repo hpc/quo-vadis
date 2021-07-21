@@ -43,10 +43,11 @@
 #include "qvi-log.h"
 
 #include <chrono>
-#include <stdexcept>
 #include <new>
-#include <unordered_map>
 #include <stack>
+#include <stdexcept>
+#include <unordered_map>
+#include <vector>
 #endif
 
 typedef char const* cstr;

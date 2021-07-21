@@ -49,6 +49,9 @@
 #cmakedefine HAVE_TIME_H 1
 #cmakedefine HAVE_UNISTD_H 1
 
+#cmakedefine QV_DISABLE_GPU_SUPPORT
+#cmakedefine CUDAToolkit_FOUND
+
 #endif
 
 /*

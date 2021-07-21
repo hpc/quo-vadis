@@ -24,7 +24,8 @@
 
 #include "mpi.h"
 
-using group_tab_t = std::unordered_map<qvi_mpi_group_id_t, qvi_mpi_group_t>;
+using qvi_mpi_group_tab_t =
+std::unordered_map<qvi_mpi_group_id_t, qvi_mpi_group_t>;
 
 struct qvi_mpi_group_s {
     /** ID used for table lookups */
@@ -55,7 +56,7 @@ struct qvi_mpi_s {
     /** Maintains the next available group ID value */
     qvi_mpi_group_id_t group_next_id = QVI_MPI_GROUP_INTRINSIC_END;
     /** Group table (ID to internal structure mapping) */
-    group_tab_t *group_tab = nullptr;
+    qvi_mpi_group_tab_t *group_tab = nullptr;
 };
 
 /**
@@ -240,7 +241,7 @@ qvi_mpi_new(
     // Task
     // We don't own task memory. Set in qvi_mpi_init().
     // Groups
-    impi->group_tab = qvi_new group_tab_t;
+    impi->group_tab = qvi_new qvi_mpi_group_tab_t;
     if (!impi->group_tab) {
         rc = QV_ERR_OOR;
         goto out;

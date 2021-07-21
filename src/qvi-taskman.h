@@ -12,7 +12,7 @@
 /**
  * @file qvi-taskman.h
  *
- * Task management: processes, threads.
+ * Task management abstraction for processes and threads.
  */
 
 #ifndef QVI_TASKMAN_H

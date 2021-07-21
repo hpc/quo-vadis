@@ -14,6 +14,7 @@
 add_library(
     qvi-core
     OBJECT
+    ../include/quo-vadis.h
     qvi-taskman.h
     qvi-group.h
     qvi-bbuff.h
@@ -93,6 +94,7 @@ target_link_libraries(
     qvi-hwloc
     qvi-core
     hwloc
+    pciaccess
 )
 
 if(CUDAToolkit_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)

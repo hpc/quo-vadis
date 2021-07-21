@@ -39,13 +39,24 @@ static const hw_name_type_t nts[] = {
     {QVI_STRINGIFY(QV_HW_OBJ_NUMANODE), QV_HW_OBJ_NUMANODE}
 };
 
+typedef struct device_name_type_s {
+    char const *name;
+    qv_device_id_type_t type;
+} device_name_type_t;
+
+static const device_name_type_t devnts[] = {
+    {QVI_STRINGIFY(QV_DEVICE_ID_UUID),       QV_DEVICE_ID_UUID},
+    {QVI_STRINGIFY(QV_DEVICE_ID_PCI_BUS_ID), QV_DEVICE_ID_PCI_BUS_ID},
+    {QVI_STRINGIFY(QV_DEVICE_ID_ORDINAL),    QV_DEVICE_ID_ORDINAL}
+};
+
 static int
 echo_hw_info(
     qvi_hwloc_t *hwl
 ) {
     const int num_nts = sizeof(nts) / sizeof(hw_name_type_t);
 
-    printf("# System Hardware Overview --------------\n");
+    printf("\n# System Hardware Overview --------------\n");
     for (int i = 0; i < num_nts; ++i) {
         int n;
         int rc = qvi_hwloc_get_nobjs_by_type(hwl, nts[i].type, &n);
@@ -71,7 +82,7 @@ echo_task_intersections(
     const int num_nts = sizeof(nts) / sizeof(hw_name_type_t);
     const pid_t me = getpid();
 
-    printf("# Task Intersection Overview ------------\n");
+    printf("\n# Task Intersection Overview ------------\n");
     for (int i = 0; i < num_nts; ++i) {
         int nobj;
         int rc = qvi_hwloc_get_nobjs_by_type(hwl, nts[i].type, &nobj);
@@ -114,9 +125,50 @@ echo_task_intersections(
 }
 
 int
+echo_gpu_info(
+    qvi_hwloc_t *hwl
+) {
+    printf("\n# Discovered GPU Devices --------------\n");
+
+    unsigned ngpus = 0;
+    int rc = qvi_hwloc_get_nobjs_in_cpuset(
+        hwl,
+        QV_HW_OBJ_GPU,
+        hwloc_get_root_obj(qvi_hwloc_topo_get(hwl))->cpuset,
+        &ngpus
+    );
+    if (rc != QV_SUCCESS) return rc;
+    printf("# Number of GPUs: %u\n", ngpus);
+
+    rc = qvi_hwloc_devices_emit(hwl, QV_HW_OBJ_GPU);
+    if (rc != QV_SUCCESS) return rc;
+
+    const unsigned ndevids = sizeof(devnts) / sizeof(device_name_type_t);
+    for (unsigned i = 0; i < ngpus; ++i) {
+        for (unsigned j = 0; j < ndevids; ++j) {
+            char *devids = NULL;
+            rc = qvi_hwloc_get_device_in_cpuset(
+                hwl,
+                QV_HW_OBJ_GPU,
+                hwloc_get_root_obj(qvi_hwloc_topo_get(hwl))->cpuset,
+                i,
+                devnts[j].type,
+                &devids
+            );
+            if (rc != QV_SUCCESS) return rc;
+            printf("# Device %u %s = %s\n", i, devnts[j].name, devids);
+            free(devids);
+        }
+    }
+
+    printf("# -------------------------------------\n");
+    return rc;
+}
+
+int
 main(void)
 {
-    printf("# Starting hwloc test\n");
+    printf("\n# Starting hwloc test\n");
 
     char const *ers = NULL;
     qvi_hwloc_t *hwl;
@@ -138,10 +190,25 @@ main(void)
         ers = "qvi_hwloc_topology_load() failed";
         goto out;
     }
+#if 0 // TODO(skg) XXX
+    char *root;
+    qvi_hwloc_bitmap_asprintf(
+        &root,
+        hwloc_get_root_obj(qvi_hwloc_topo_get(hwl))->complete_cpuset
+    );
+    printf("==============ROOT CPUSET %s\n", root);
+    free(root);
+#endif
 
     rc = echo_hw_info(hwl);
     if (rc != QV_SUCCESS) {
         ers = "echo_hw_info() failed";
+        goto out;
+    }
+
+    rc = echo_gpu_info(hwl);
+    if (rc != QV_SUCCESS) {
+        ers = "echo_gpu_info() failed";
         goto out;
     }
 

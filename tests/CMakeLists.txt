@@ -66,6 +66,16 @@ target_link_libraries(
     test-scopes-mpi
     quo-vadis
 )
+
+add_executable(
+    test-mpi-phases
+    test-mpi-phases.c
+)
+
+target_link_libraries(
+    test-mpi-phases
+    quo-vadis
+)
 endif(MPI_FOUND)
 
 ################################################################################

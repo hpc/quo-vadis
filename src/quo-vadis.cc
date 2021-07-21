@@ -347,6 +347,28 @@ qv_scope_barrier(
     return qvi_scope_barrier(scope);
 }
 
+int
+qv_scope_get_device(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    qv_hw_obj_type_t dev_obj,
+    int i,
+    qv_device_id_type_t dev_id_type,
+    char **dev_id
+) {
+    if (!ctx || !scope || !dev_id || i < 0) return QV_ERR_INVLD_ARG;
+    // TODO(skg) This should be done via RMI.
+    return qvi_hwloc_get_device_in_cpuset(
+        ctx->hwloc,
+        dev_obj,
+        qvi_scope_bitmap_get(scope),
+        i,
+        dev_id_type,
+        dev_id
+    );
+    return QV_SUCCESS;
+}
+
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
  */

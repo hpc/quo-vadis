@@ -13,9 +13,10 @@
 include(ExternalProject)
 
 set(QVI_HWLOC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/hwloc-2.5.0.tar.gz)
-set(QVI_HWLOC_BIN ${CMAKE_CURRENT_BINARY_DIR}/hwloc)
-set(QVI_HWLOC_STATIC_LIB ${QVI_HWLOC_BIN}/lib/libhwloc.a)
-set(QVI_HWLOC_INCLUDES ${QVI_HWLOC_BIN}/include)
+set(QVI_HWLOC_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/hwloc)
+set(QVI_HWLOC_STATIC_LIB ${QVI_HWLOC_PREFIX}/lib/libhwloc.a)
+set(QVI_HWLOC_INCLUDES ${QVI_HWLOC_PREFIX}/include)
+set(QVI_HWLOC_PKG_CONFIG ${QVI_HWLOC_PREFIX}/lib/pkgconfig)
 # A list of configure variables.
 set(QVI_HWLOC_CONFIG_VARS "CC=${CMAKE_C_COMPILER}" "CXX=${CMAKE_CXX_COMPILER}")
 # A list containing any relevant GPU flags required in hwloc configuration.
@@ -32,6 +33,8 @@ else()
     # Ninja doesn't like $(MAKE), so just use make
     set(QVI_HWLOC_BUILD_COMMAND "make")
 endif()
+
+find_package(PCIAccess REQUIRED)
 
 # TODO(skg) Add option to turn this off even if found.
 if(CUDAToolkit_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
@@ -61,20 +64,20 @@ ExternalProject_Add(
     libhwloc
     URL file://${QVI_HWLOC_DIR}
     URL_MD5 "e9cb9230bcdf450b0948f255d505503f"
-    PREFIX ${QVI_HWLOC_BIN}
+    PREFIX ${QVI_HWLOC_PREFIX}
     CONFIGURE_COMMAND
       <SOURCE_DIR>/configure
       ${QVI_HWLOC_CONFIG_VARS}
-      --prefix=${QVI_HWLOC_BIN}
+      --prefix=${QVI_HWLOC_PREFIX}
       --with-hwloc-symbol-prefix=quo_vadis_internal_
+      --enable-static=no
       --enable-plugins=no
-      --enable-static=yes
       --enable-shared=no
       --enable-libxml2=no
       --enable-cairo=no
       --enable-gl=no
       --enable-opencl=no
-      --enable-pci=no
+      --enable-pci=yes
       --enable-libudev=no
       ${QVI_HWLOC_GPU_FLAGS}
     BUILD_COMMAND ${QVI_HWLOC_BUILD_COMMAND}

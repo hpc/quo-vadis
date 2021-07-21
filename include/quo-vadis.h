@@ -83,17 +83,27 @@ typedef enum qv_hw_obj_type_e {
     QV_HW_OBJ_L4CACHE,
     QV_HW_OBJ_L5CACHE,
     QV_HW_OBJ_NUMANODE,
-    // TODO(skg) Consider just providing things like GPU
-    QV_HW_OBJ_OS_DEVICE
+    /** Device types */
+    QV_HW_OBJ_GPU
 } qv_hw_obj_type_t;
 
 /**
  * Automatic grouping options for qv_scope_split(). The following values can be
- * used instead of group_id to influence how task grouping is done.
+ * used instead of group_id to influence how automatic task grouping is
+ * accomplished.
  */
 enum {
     QV_SCOPE_SPLIT_GROUP_MIN_DISTANCE = -1
 };
+
+/**
+ *
+ */
+typedef enum qv_device_id_type_e {
+    QV_DEVICE_ID_UUID = 0,
+    QV_DEVICE_ID_PCI_BUS_ID,
+    QV_DEVICE_ID_ORDINAL
+} qv_device_id_type_t;
 
 /**
  *
@@ -192,6 +202,19 @@ int
 qv_scope_barrier(
     qv_context_t *ctx,
     qv_scope_t *scope
+);
+
+/**
+ *
+ */
+int
+qv_scope_get_device(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    qv_hw_obj_type_t dev_obj,
+    int i,
+    qv_device_id_type_t dev_id_type,
+    char **dev_id
 );
 
 /**
