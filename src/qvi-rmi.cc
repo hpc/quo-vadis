@@ -491,6 +491,7 @@ rpc_ssi_scope_get_intrinsic_scope_cpuset(
     // TODO(skg) Implement the rest.
     switch (iscope) {
         case QV_SCOPE_SYSTEM: {
+            // TODO(skg) XXX XXX Use hwloc_topology_get_topology_cpuset ???
             // TODO(skg) Deal with errors.
             rc = qvi_hwloc_bitmap_copy(
                 hwloc_get_root_obj(topo)->cpuset,

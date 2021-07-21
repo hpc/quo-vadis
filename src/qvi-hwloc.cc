@@ -394,8 +394,8 @@ discover_gpu_devices(
             }
             // TODO(skg) XXX This is just a placeholder for the real cpuset.
             int rc = qvi_hwloc_bitmap_copy(
-                dev->cpuset,
-                hwloc_get_root_obj(hwl->topo)->complete_cpuset // XXX
+                hwloc_get_root_obj(hwl->topo)->complete_cpuset, //XXX
+                dev->cpuset
             );
             if (rc != QV_SUCCESS) return rc;
 
