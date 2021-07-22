@@ -182,7 +182,6 @@ qv_scope_get(
     if (rc != QV_SUCCESS) return rc;
 
     qvi_group_t *group;
-    // TODO(skg) Add wrapper.
     rc = ctx->taskman->group_create_from_intrinsic_scope(&group, iscope);
     if (rc != QV_SUCCESS) goto out;
 

@@ -482,8 +482,9 @@ rpc_ssi_scope_get_intrinsic_scope_cpuset(
     int rc = qvi_data_sscanf(input, hdr->picture, &sai);
     if (rc != QV_SUCCESS) return rc;
 
-    hwloc_bitmap_t cpuset = hwloc_bitmap_alloc();
-    if (!cpuset) return QV_ERR_OOR;
+    hwloc_bitmap_t cpuset;
+    rc = qvi_hwloc_bitmap_alloc(&cpuset);
+    if (rc != QV_SUCCESS) return rc;
 
     hwloc_topology_t topo = qvi_hwloc_topo_get(server->config->hwloc);
     qv_scope_intrinsic_t iscope = (qv_scope_intrinsic_t)sai;
@@ -491,15 +492,13 @@ rpc_ssi_scope_get_intrinsic_scope_cpuset(
     // TODO(skg) Implement the rest.
     switch (iscope) {
         case QV_SCOPE_SYSTEM: {
-            // TODO(skg) XXX XXX Use hwloc_topology_get_topology_cpuset ???
             // TODO(skg) Deal with errors.
             rc = qvi_hwloc_bitmap_copy(
-                hwloc_get_root_obj(topo)->cpuset,
+                hwloc_topology_get_topology_cpuset(topo),
                 cpuset
             );
             if (rc != QV_SUCCESS) return rc;
             // TODO(skg) Needs work.
-            //scope->obj = hwloc_get_root_obj(ctx->topo);
             //scope->obj = hwloc_get_obj_by_type(ctx->topo, HWLOC_OBJ_NUMANODE, 0);
             break;
         }

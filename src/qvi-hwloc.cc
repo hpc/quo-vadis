@@ -394,7 +394,7 @@ discover_gpu_devices(
             }
             // TODO(skg) XXX This is just a placeholder for the real cpuset.
             int rc = qvi_hwloc_bitmap_copy(
-                hwloc_get_root_obj(hwl->topo)->complete_cpuset, //XXX
+                hwloc_topology_get_topology_cpuset(hwl->topo),
                 dev->cpuset
             );
             if (rc != QV_SUCCESS) return rc;
@@ -500,9 +500,11 @@ qvi_hwloc_bitmap_alloc(
 
 int
 qvi_hwloc_bitmap_copy(
-    hwloc_bitmap_t src,
+    hwloc_const_cpuset_t src,
     hwloc_bitmap_t dest
 ) {
+    if (!src || !dest) return QV_ERR_INVLD_ARG;
+
     if (hwloc_bitmap_copy(dest, src) != 0) {
         return QV_ERR_HWLOC;
     }
