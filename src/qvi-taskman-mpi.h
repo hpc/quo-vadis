@@ -76,21 +76,32 @@ struct qvi_taskman_mpi_s : public qvi_taskman_s {
         qvi_mpi_free(&mpi);
     }
 
-    virtual int group_create_base(
-        qvi_group_t **group
+    virtual int group_create_from_intrinsic_scope(
+        qvi_group_t **group,
+        qv_scope_intrinsic_t scope
     ) {
         qvi_group_mpi_t *igroup = new qvi_group_mpi_t;
         if (!igroup) return QV_ERR_OOR;
 
-        // TODO(skg) We need to handle the top-level intrinsic process type.
+        qvi_mpi_group_id_t mpi_group;
+        switch (scope) {
+            case QV_SCOPE_SYSTEM:
+            case QV_SCOPE_USER:
+            case QV_SCOPE_JOB:
+                mpi_group = QVI_MPI_GROUP_NODE;
+                break;
+            case QV_SCOPE_PROCESS:
+                mpi_group = QVI_MPI_GROUP_SELF;
+                break;
+        }
+
         int rc = qvi_mpi_group_create_from_group_id(
             mpi,
-            QVI_MPI_GROUP_NODE,
+            mpi_group,
             &igroup->mpi_group
         );
         if (rc != QV_SUCCESS) {
-            // TODO(skg) Add wrapper.
-            delete igroup;
+            group_free(igroup);
             igroup = nullptr;
         }
         *group = igroup;
@@ -114,7 +125,7 @@ struct qvi_taskman_mpi_s : public qvi_taskman_s {
             &igroup->mpi_group
         );
         if (rc != QV_SUCCESS) {
-            delete igroup;
+            group_free(igroup);
             igroup = nullptr;
         }
         *out_group = igroup;
@@ -122,13 +133,10 @@ struct qvi_taskman_mpi_s : public qvi_taskman_s {
     }
 
     virtual void group_free(
-        qvi_group_t **group
+        qvi_group_t *group
     ) {
         if (!group) return;
-        qvi_group_t *igroup = *group;
-        if (!igroup) return;
-        delete igroup;
-        *group = nullptr;
+        delete group;
     }
 
     virtual int barrier(void)
@@ -166,9 +174,16 @@ qvi_taskman_mpi_new(
     int rc = QV_SUCCESS;
 
     qvi_taskman_mpi_t *itm = qvi_new qvi_taskman_mpi_t;
-    if (!itm) rc = QV_ERR_OOR;
+    if (!itm) {
+        rc = QV_ERR_OOR;
+        goto out;
+    }
 
     rc = itm->initialize();
+    if (rc != QV_SUCCESS) {
+        goto out;
+    }
+out:
     if (rc != QV_SUCCESS) {
         qvi_taskman_mpi_free(&itm);
     }

@@ -16,10 +16,8 @@
 #include "qvi-context.h"
 #include "qvi-scope.h"
 
-// TODO(skg) This should probably be an internal, base function that other
-// create() entry points use. Remove public entry point, too.
 int
-qv_create(
+qvi_create(
     qv_context_t **ctx
 ) {
     if (!ctx) return QV_ERR_INVLD_ARG;
@@ -34,7 +32,6 @@ qv_create(
         goto out;
     }
 
-    // TODO(skg) This will probably be moved closer to taskman init.
     rc = qvi_task_new(&ictx->task);
     if (rc != QV_SUCCESS) {
         ers = "qvi_task_new() failed";
@@ -55,27 +52,23 @@ qv_create(
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        (void)qv_free(ictx);
+        qvi_free(ictx);
         ictx = nullptr;
     }
     *ctx = ictx;
     return rc;
 }
 
-// TODO(skg) This should probably be an internal, base function that other
-// create() entry points use. Remove public entry point, too.
-int
-qv_free(
+void
+qvi_free(
     qv_context_t *ctx
 ) {
-    if (!ctx) return QV_ERR_INVLD_ARG;
+    if (!ctx) return;
 
     qvi_task_free(&ctx->task);
     qvi_bind_stack_free(&ctx->bind_stack);
     qvi_rmi_client_free(&ctx->rmi);
     delete ctx;
-
-    return QV_SUCCESS;
 }
 
 int
@@ -189,9 +182,8 @@ qv_scope_get(
     if (rc != QV_SUCCESS) return rc;
 
     qvi_group_t *group;
-    // TODO(skg) Need to handle the top-level process type.
     // TODO(skg) Add wrapper.
-    rc = ctx->taskman->group_create_base(&group);
+    rc = ctx->taskman->group_create_from_intrinsic_scope(&group, iscope);
     if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_hwloc_bitmap_alloc(&cpuset);

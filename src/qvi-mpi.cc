@@ -13,9 +13,6 @@
  * @file qvi-mpi.cc
  */
 
-// TODO(skg) Integrate with qv_free().
-
-
 #include "qvi-common.h"
 
 #include "qvi-mpi.h"

@@ -503,13 +503,10 @@ rpc_ssi_scope_get_intrinsic_scope_cpuset(
             //scope->obj = hwloc_get_obj_by_type(ctx->topo, HWLOC_OBJ_NUMANODE, 0);
             break;
         }
-        case QV_SCOPE_EMPTY:
-            rpcrc = QV_ERR_INVLD_ARG;
-            break;
         case QV_SCOPE_USER:
         case QV_SCOPE_JOB:
         case QV_SCOPE_PROCESS:
-            rpcrc = QV_ERR_INTERNAL;
+            rpcrc = QV_ERR_NOT_SUPPORTED;
             break;
         default:
             rpcrc = QV_ERR_INVLD_ARG;

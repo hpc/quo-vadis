@@ -30,10 +30,11 @@ struct qvi_taskman_s {
     virtual ~qvi_taskman_s(void) = default;
     /** The real 'constructor' that can possibly fail. */
     virtual int initialize(void) = 0;
-    /** */
-    // TODO(skg) Change name and signature to handle broader cases (e.g.,
-    // process versus system scopes).
-    virtual int group_create_base(qvi_group_t **group) = 0;
+    /** Creates a new group from an intrinsic scope. */
+    virtual int group_create_from_intrinsic_scope(
+        qvi_group_t **group,
+        qv_scope_intrinsic_t scope
+    ) = 0;
     /** */
     virtual int group_create_from_split(
         qvi_group_t *in_group,
@@ -42,7 +43,7 @@ struct qvi_taskman_s {
         qvi_group_t **out_group
     ) = 0;
     /** */
-    virtual void group_free(qvi_group_t **group) = 0;
+    virtual void group_free(qvi_group_t *group) = 0;
     /** Node-local task barrier. */
     virtual int barrier(void) = 0;
 };

@@ -60,8 +60,7 @@ enum {
 
 /** Intrinsic scopes. */
 typedef enum qv_scope_intrinsic_e {
-    QV_SCOPE_EMPTY = 0,
-    QV_SCOPE_SYSTEM,
+    QV_SCOPE_SYSTEM = 0,
     QV_SCOPE_USER,
     QV_SCOPE_JOB,
     QV_SCOPE_PROCESS
@@ -99,22 +98,6 @@ typedef enum qv_device_id_type_e {
     QV_DEVICE_ID_PCI_BUS_ID,
     QV_DEVICE_ID_ORDINAL
 } qv_device_id_type_t;
-
-/**
- *
- */
-int
-qv_create(
-    qv_context_t **ctx
-);
-
-/**
- *
- */
-int
-qv_free(
-    qv_context_t *ctx
-);
 
 /**
  *

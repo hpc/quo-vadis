@@ -33,6 +33,14 @@ qv_mpi_create(
     MPI_Comm comm
 );
 
+/**
+ *
+ */
+int
+qv_mpi_free(
+    qv_context_t *ctx
+);
+
 #ifdef __cplusplus
 }
 #endif

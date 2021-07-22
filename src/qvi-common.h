@@ -60,6 +60,22 @@ typedef struct qvi_bbuff_s qvi_bbuff_t;
 struct qvi_hwloc_s;
 typedef struct qvi_hwloc_s qvi_hwloc_t;
 
+/**
+ *
+ */
+int
+qvi_create(
+    qv_context_t **ctx
+);
+
+/**
+ *
+ */
+void
+qvi_free(
+    qv_context_t *ctx
+);
+
 #endif
 
 /*

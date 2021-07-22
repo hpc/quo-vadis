@@ -266,8 +266,8 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 out:
-    if (qv_free(ctx) != QV_SUCCESS) {
-        ers = "qv_free() failed";
+    if (qv_mpi_free(ctx) != QV_SUCCESS) {
+        ers = "qvi_free() failed";
         panic("%s", ers);
     }
     MPI_Finalize();
