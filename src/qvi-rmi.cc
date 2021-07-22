@@ -477,35 +477,38 @@ rpc_ssi_scope_get_intrinsic_scope_cpuset(
     void *input,
     qvi_bbuff_t **output
 ) {
-    // Get intrinsic scope as integer from client request.
-    int sai;
-    int rc = qvi_data_sscanf(input, hdr->picture, &sai);
+    // Get requestor PID, intrinsic scope as integers from client request.
+    int pid, sai;
+    int rc = qvi_data_sscanf(input, hdr->picture, &pid, &sai);
     if (rc != QV_SUCCESS) return rc;
 
     hwloc_bitmap_t cpuset;
-    rc = qvi_hwloc_bitmap_alloc(&cpuset);
-    if (rc != QV_SUCCESS) return rc;
 
     hwloc_topology_t topo = qvi_hwloc_topo_get(server->config->hwloc);
     qv_scope_intrinsic_t iscope = (qv_scope_intrinsic_t)sai;
     int rpcrc = QV_SUCCESS;
     // TODO(skg) Implement the rest.
     switch (iscope) {
-        case QV_SCOPE_SYSTEM: {
+        case QV_SCOPE_SYSTEM:
+        case QV_SCOPE_USER:
+        case QV_SCOPE_JOB: {
             // TODO(skg) Deal with errors.
+            rc = qvi_hwloc_bitmap_alloc(&cpuset);
+            if (rc != QV_SUCCESS) return rc;
             rc = qvi_hwloc_bitmap_copy(
                 hwloc_topology_get_topology_cpuset(topo),
                 cpuset
             );
             if (rc != QV_SUCCESS) return rc;
-            // TODO(skg) Needs work.
-            //scope->obj = hwloc_get_obj_by_type(ctx->topo, HWLOC_OBJ_NUMANODE, 0);
             break;
         }
-        case QV_SCOPE_USER:
-        case QV_SCOPE_JOB:
         case QV_SCOPE_PROCESS:
-            rpcrc = QV_ERR_NOT_SUPPORTED;
+            rc = qvi_hwloc_task_get_cpubind(
+                server->config->hwloc,
+                pid,
+                &cpuset
+            );
+            if (rc != QV_SUCCESS) return rc;
             break;
         default:
             rpcrc = QV_ERR_INVLD_ARG;
@@ -880,16 +883,19 @@ out:
 int
 qvi_rmi_scope_get_intrinsic_scope_cpuset(
     qvi_rmi_client_t *client,
+    pid_t requestor_pid,
     qv_scope_intrinsic_t iscope,
     hwloc_bitmap_t cpuset
 ) {
     int qvrc = QV_SUCCESS;
 
+    const int pid = (int)requestor_pid;
     const int sai = (int)iscope;
     qvrc = rpc_req(
         client->zsock,
         FID_SCOPE_GET_INTRINSIC_SCOPE_CPUSET,
-        "i",
+        "ii",
+        pid,
         sai
     );
     if (qvrc != QV_SUCCESS) return qvrc;

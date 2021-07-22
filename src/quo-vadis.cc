@@ -190,6 +190,7 @@ qv_scope_get(
 
     rc = qvi_rmi_scope_get_intrinsic_scope_cpuset(
         ctx->rmi,
+        qvi_task_pid(ctx->task),
         iscope,
         cpuset
     );

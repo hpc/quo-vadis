@@ -153,6 +153,24 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
+    qv_scope_t *self_scope;
+    rc = qv_scope_get(
+        ctx,
+        QV_SCOPE_PROCESS,
+        &self_scope
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_get(QV_SCOPE_PROCESS) failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    scope_report(ctx, wrank, self_scope, "self_scope");
+
+    rc = qv_scope_free(ctx, self_scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_free() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
     qv_scope_t *base_scope;
     rc = qv_scope_get(
         ctx,
