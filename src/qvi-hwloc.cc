@@ -142,7 +142,9 @@ obj_get_by_type(
         // There are a couple of reasons why target_obj may be NULL. If this
         // ever happens and the specified type and obj index are valid, then
         // improve this code.
-        qvi_log_error("hwloc_get_obj_by_type() failed. Please report");
+        qvi_log_error(
+            "hwloc_get_obj_by_type() failed. Please submit a bug report."
+        );
         return QV_ERR_INTERNAL;
     }
     return QV_SUCCESS;
