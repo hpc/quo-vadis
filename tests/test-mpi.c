@@ -49,7 +49,7 @@ main(
         fprintf(stderr, "%s\n", ers);
         return EXIT_FAILURE;
     }
-    qv_task_t *task = NULL;
+    qvi_task_t *task = NULL;
     rc = qvi_task_new(&task);
     if (rc != QV_SUCCESS) {
         ers = "qvi_task_new() failed";

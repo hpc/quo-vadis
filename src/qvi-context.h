@@ -37,7 +37,7 @@ extern "C" {
  * The underlying data structure that defines an ultimately opaque QV context.
  */
 struct qv_context_s {
-    qv_task_t *task = nullptr;
+    qvi_task_t *task = nullptr;
     qvi_taskman_t *taskman = nullptr;
     qvi_hwloc_t *hwloc = nullptr;
     qvi_bind_stack_t *bind_stack = nullptr;

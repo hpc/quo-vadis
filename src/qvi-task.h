@@ -22,12 +22,15 @@
 extern "C" {
 #endif
 
+struct qvi_task_s;
+typedef struct qvi_task_s qvi_task_t;
+
 /**
  *
  */
 int
 qvi_task_new(
-    qv_task_t **task
+    qvi_task_t **task
 );
 
 /**
@@ -35,7 +38,7 @@ qvi_task_new(
  */
 void
 qvi_task_free(
-    qv_task_t **task
+    qvi_task_t **task
 );
 
 /**
@@ -43,7 +46,7 @@ qvi_task_free(
  */
 int
 qvi_task_init(
-    qv_task_t *task,
+    qvi_task_t *task,
     pid_t pid,
     int64_t gid,
     int lid
@@ -54,7 +57,7 @@ qvi_task_init(
  */
 pid_t
 qvi_task_pid(
-    qv_task_t *task
+    qvi_task_t *task
 );
 
 /**
@@ -62,7 +65,7 @@ qvi_task_pid(
  */
 int64_t
 qvi_task_gid(
-    qv_task_t *task
+    qvi_task_t *task
 );
 
 /**
@@ -70,7 +73,7 @@ qvi_task_gid(
  */
 int
 qvi_task_lid(
-    qv_task_t *task
+    qvi_task_t *task
 );
 
 #ifdef __cplusplus

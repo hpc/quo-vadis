@@ -21,7 +21,7 @@ using qvi_bitmap_stack_t = std::stack<hwloc_bitmap_t>;
 // Type definition
 struct qvi_bind_stack_s {
     /** Initialized task instance. */
-    qv_task_t *task = nullptr;
+    qvi_task_t *task = nullptr;
     /** Initialized hwloc instance. */
     qvi_hwloc_t *hwloc = nullptr;
     /** The bind stack. */
@@ -73,7 +73,7 @@ qvi_bind_stack_free(
 int
 qvi_bind_stack_init(
     qvi_bind_stack_t *bstack,
-    qv_task_t *task,
+    qvi_task_t *task,
     qvi_hwloc_t *hwloc
 ) {
     // Cache pointer to initialized infrastructure.

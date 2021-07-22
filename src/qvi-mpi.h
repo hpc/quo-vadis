@@ -16,6 +16,7 @@
 #ifndef QVI_MPI_H
 #define QVI_MPI_H
 
+#include "qvi-task.h"
 #include "quo-vadis-mpi.h"
 
 #ifdef __cplusplus
@@ -65,7 +66,7 @@ qvi_mpi_free(
 int
 qvi_mpi_init(
     qvi_mpi_t *mpi,
-    qv_task_t *task,
+    qvi_task_t *task,
     MPI_Comm comm
 );
 

@@ -50,7 +50,7 @@ qvi_bind_stack_free(
 int
 qvi_bind_stack_init(
     qvi_bind_stack_t *bstack,
-    qv_task_t *task,
+    qvi_task_t *task,
     qvi_hwloc_t *hwloc
 );
 

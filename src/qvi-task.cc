@@ -20,7 +20,7 @@
 static const int qvi_task_id_invalid = -1;
 
 // Type definition
-struct qv_task_s {
+struct qvi_task_s {
     /** Global task ID */
     int64_t gid = qvi_task_id_invalid;
     /** Node-local task ID */
@@ -32,11 +32,11 @@ struct qv_task_s {
 
 int
 qvi_task_new(
-    qv_task_t **task
+    qvi_task_t **task
 ) {
     int rc = QV_SUCCESS;
 
-    qv_task_t *itask = qvi_new qv_task_t;
+    qvi_task_t *itask = qvi_new qvi_task_t;
     if (!itask) {
         rc = QV_ERR_OOR;
     }
@@ -49,10 +49,10 @@ qvi_task_new(
 
 void
 qvi_task_free(
-    qv_task_t **task
+    qvi_task_t **task
 ) {
     if (!task) return;
-    qv_task_t *itask = *task;
+    qvi_task_t *itask = *task;
     if (!itask) return;
     delete itask;
     *task = nullptr;
@@ -60,7 +60,7 @@ qvi_task_free(
 
 int
 qvi_task_init(
-    qv_task_t *task,
+    qvi_task_t *task,
     pid_t pid,
     int64_t gid,
     int lid
@@ -73,21 +73,21 @@ qvi_task_init(
 
 pid_t
 qvi_task_pid(
-    qv_task_t *task
+    qvi_task_t *task
 ) {
     return task->pid;
 }
 
 int64_t
 qvi_task_gid(
-    qv_task_t *task
+    qvi_task_t *task
 ) {
     return task->gid;
 }
 
 int
 qvi_task_lid(
-    qv_task_t *task
+    qvi_task_t *task
 ) {
     return task->lid;
 }

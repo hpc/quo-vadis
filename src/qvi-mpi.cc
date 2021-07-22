@@ -42,7 +42,7 @@ struct qvi_mpi_group_s {
 
 struct qvi_mpi_s {
     /** Task associated with this MPI process */
-    qv_task_t *task = nullptr;
+    qvi_task_t *task = nullptr;
     /** Node size */
     int node_size = 0;
     /** World size */
@@ -364,7 +364,7 @@ out:
 int
 qvi_mpi_init(
     qvi_mpi_t *mpi,
-    qv_task_t *task,
+    qvi_task_t *task,
     MPI_Comm comm
 ) {
     cstr ers = nullptr;

@@ -27,11 +27,6 @@ extern "C" {
 struct qv_context_s;
 typedef struct qv_context_s qv_context_t;
 
-/** Opaque quo-vadis task. */
-/* TODO(skg) Perhaps we don't need this public type */
-struct qv_task_s;
-typedef struct qv_task_s qv_task_t;
-
 /** Opaque quo-vadis scope. */
 struct qv_scope_s;
 typedef struct qv_scope_s qv_scope_t;
