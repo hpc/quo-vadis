@@ -327,6 +327,13 @@ discover_all_devices(
         );
         if (nw >= QVI_HWLOC_DEV_NAME_BUFF_SIZE) return QV_ERR_INTERNAL;
         // Set visdevs
+        // TODO(skg) Note that these are relative to a particular context, so we
+        // need to keep track of that. For example, visdevs=2,3 could be 0,1. We
+        // can use mpibind's strategy and keep an internal number that
+        // corresponds to a particular device. We can take another approach and
+        // get rid of the visdevs ID altogether. The challenge is in supporting
+        // a user's request via (e.g, CUDA_VISIBLE_DEVICES,
+        // ROCR_VISIBLE_DEVICES).
         int id = -1, id2 = -1;
         if (sscanf(obj->name, "cuda%d", &id) == 1) {
             new_dev->visdevs = id;
@@ -1069,7 +1076,8 @@ qvi_hwloc_get_device_in_cpuset(
             nw = asprintf(dev_id, "%s", devs->at(i)->pci_bus_id);
             break;
         case (QV_DEVICE_ID_ORDINAL):
-            // TODO(skg) Is this correct?
+            // TODO(skg) We need to update this to reflect a context-specific
+            // number starting at 0.
             nw = asprintf(dev_id, "%d", devs->at(i)->visdevs);
             break;
         default:
