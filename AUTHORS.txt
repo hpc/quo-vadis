@@ -6,7 +6,7 @@ individuals who have committed code to the quo-vadis repository.
 
 Username          Name                        Affiliation(s)
 ----------------  --------------------------- -------------------------
-eleon             Edgar Leon Borja            LLNL
+eleon             Edgar A. Leon               LLNL
 samuelkgutierrez  Samuel K. Gutierrez         LANL
 
 Affiliation Abbreviations
