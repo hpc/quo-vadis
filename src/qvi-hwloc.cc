@@ -985,13 +985,13 @@ qvi_hwloc_devices_emit(
         int rc = qvi_hwloc_bitmap_asprintf(&cpusets, dev->cpuset);
         if (rc != QV_SUCCESS) return rc;
 
-        printf("  Device Name: %s\n", dev->name);
-        printf("  Device PCI Bus ID: %s\n", dev->pci_bus_id);
-        printf("  Device UUID: %s\n", dev->uuid);
-        printf("  Device cpuset: %s\n", cpusets);
-        printf("  Device Vendor ID: %d\n", dev->vendor_id);
-        printf("  Device SMI: %d\n", dev->smi);
-        printf("  Device Visible Device ID: %d\n\n", dev->visdevs);
+        qvi_log_info("  Device Name: {}", dev->name);
+        qvi_log_info("  Device PCI Bus ID: {}", dev->pci_bus_id);
+        qvi_log_info("  Device UUID: {}", dev->uuid);
+        qvi_log_info("  Device cpuset: {}", cpusets);
+        qvi_log_info("  Device Vendor ID: {}", dev->vendor_id);
+        qvi_log_info("  Device SMI: {}", dev->smi);
+        qvi_log_info("  Device Visible Device ID: {}\n", dev->visdevs);
 
         free(cpusets);
     }
