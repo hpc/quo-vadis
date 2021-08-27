@@ -1,5 +1,15 @@
 # NOTES
 
+Unmanaged Context Initialization
+================================
+* Use Case:
+    - Utility thread placement in low-level infrastructure.
+* Naming
+    - Perhaps ask the caller for a name and ID at each call site?
+* Out out band communication
+    * POSIX message queues?
+    * Shared memory segment?
+
 Scopes
 ======
 * A scope describes a collection of hardware resources.
