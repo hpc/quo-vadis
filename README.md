@@ -55,3 +55,6 @@ $build_dir/tests/test-scopes-mpi
 * ZeroMQ (https://github.com/zeromq/libzmq)
 * An MPI-3 implementation (https://www.open-mpi.org, https://www.mpich.org)
 * OpenPMIx (https://github.com/openpmix/openpmix)
+
+## Los Alamos National Laboratory Code Release
+LA-CC-21-084
