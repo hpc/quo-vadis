@@ -139,6 +139,7 @@ qv_scope_split_at(
     qv_context_t *ctx,
     qv_scope_t *scope,
     qv_hw_obj_type_t type,
+    int group_id,
     qv_scope_t **subscope
 );
 
