@@ -32,17 +32,6 @@ do {                                                                           \
 
 
 
-/* el: 7/9/2021 */
-    /* Todo: bind_get_as_list to easily read the binding? */
-    /* Todo: we also need a function to extract resources from
-        a scope:
-        scope_get_objs(in_scope, in_obj_type, in_n_objs, out_subscope)
-        Perhaps, we can do this with a generalization of scope_add?
-        We should keep track of what objects were given from a scope
-        so that we don't give them again. This should tie in with
-        qv_scope_nobjs_free(qv, scope, obj_type, out_n_objs);
-     */
-
 static int
 do_pthread_things(int ncores)
 {
@@ -226,16 +215,31 @@ main(
        NUMA objects are there in the scope, and
        then splitting over that number. Then,
        we could ask for a leader of each subscope.
-       Instead we use the shortcut qv_scope_split_at. */
+       However, this does not guarantee a NUMA split.
+       Thus, we use qv_scope_split_at. */
 #if 0
-    int scope_id;
+    int nnumas, my_numa_id;
     qv_scope_t *numa_scope;
+
+    /* Get the number of NUMA domains so that we can
+       specify the color/groupid of split_at */
+    rc = qv_scope_nobjs(
+        ctx,
+        base_scope,
+	QV_HW_OBJ_NUMANODE,
+        &nnumas
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_nobjs() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
 
     /* Split at NUMA domains */
     rc = qv_scope_split_at(
         ctx,
         base_scope,
-        QV_HW_OBJ_NUMA,
+        QV_HW_OBJ_NUMANODE,
+	wrank % nnumas,          // color or group id
         &numa_scope
     );
     if (rc != QV_SUCCESS) {
@@ -246,8 +250,8 @@ main(
     /* Allow selecting a leader per NUMA */
     rc = qv_scope_taskid(
         ctx,
-        base_scope,
-        &scope_id
+        numa_scope,
+        &my_numa_id
     );
 
     rc = qv_bind_push(ctx, numa_scope);
@@ -257,8 +261,8 @@ main(
     }
 
     int pus;
-    if (scope_id == 0) {
-        /* I am the lead */
+    if (my_numa_id == 0) {
+        /* I am the process lead */
         rc = qv_scope_nobjs(
             ctx,
             numa_scope,
