@@ -242,6 +242,8 @@ qv_scope_split(
         qvi_log_error("{} n <= 0 (n = {})", epref, n);
         return QV_ERR_INVLD_ARG;
     }
+    // TODO(skg) This will have to change because our grouping algorithms will
+    // be in this space.
     if (group_id < 0) {
         qvi_log_error("{} group_id < 0 (group_id = {})", epref, group_id);
         return QV_ERR_INVLD_ARG;
@@ -327,6 +329,34 @@ out:
     }
     *subscope = isubscope;
     return qvrc;
+}
+
+/*
+ * TODO(skg) This should also be in the server code and retrieved via RPC?
+ * XXX(skg) Is this correct or do we have to do this a different way?
+ */
+int
+qv_scope_split_at(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    qv_hw_obj_type_t type,
+    int group_id,
+    qv_scope_t **subscope
+) {
+    if (!ctx || !scope || !subscope) {
+        return QV_ERR_INVLD_ARG;
+    }
+
+    unsigned ntype;
+    int qvrc = qvi_hwloc_get_nobjs_in_cpuset(
+        ctx->hwloc,
+        type,
+        qvi_scope_bitmap_get(scope),
+        &ntype
+    );
+    if (qvrc != QV_SUCCESS) return qvrc;
+
+    return qv_scope_split(ctx, scope, ntype, group_id, subscope);
 }
 
 int
