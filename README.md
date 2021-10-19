@@ -1,6 +1,6 @@
 # quo-vadis
 
-** This project is under active development and is currently not stable. **
+**This project is under active development and is currently not stable.**
 
 A next-generation, machine-independent coordination layer to arbitrate access
 among multiple runtime components and map workers efficiently to heterogeneous
