@@ -40,13 +40,12 @@ HWLOC_XMLFILE # Path to system topology XML file.
 ### Examples
 
 ```shell
+# Set communication port
 export QV_PORT=55996
-
 # Launch the daemon
-$build_dir/src/quo-vadisd &
-
+build/src/quo-vadisd &
 # Run a test
-$build_dir/tests/test-scopes-mpi
+mpiexec -n 2 build/tests/test-scopes-mpi
 ```
 
 ## Internal Software Dependencies
