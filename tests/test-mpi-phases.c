@@ -31,12 +31,18 @@ do {                                                                           \
 } while (0)
 
 
+static int
+do_omp_things(int rank, int npus)
+{
+  printf("[%d] Doing OpenMP things with %d PUs\n", rank, npus);
+  return 0;
+}
 
 static int
-do_pthread_things(int ncores)
+do_pthread_things(int rank, int ncores)
 {
-    printf("# Doing pthread_things with %d cores\n", ncores);
-    return 0;
+  printf("[%d] Doing pthread_things with %d cores\n", rank, ncores);
+  return 0;
 }
 
 int
@@ -101,9 +107,6 @@ main(
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Base scope has %d cores\n", wrank, ncores);
-
-
 
     char *binds;
     rc = qv_bind_get_as_string(ctx, &binds);
@@ -111,7 +114,8 @@ main(
         ers = "qv_bind_get_as_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Initially I am running on %s\n", wrank, binds);
+    printf("[%d] Base scope w/%d cores, running on %s\n",
+	   wrank, ncores, binds);
     free(binds);
 
     /* Split the base scope evenly across workers */
@@ -139,7 +143,6 @@ main(
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("=> [%d] I got %d cores\n", wrank, ncores);
 
     /***************************************
      * Phase 1: Everybody works
@@ -158,12 +161,13 @@ main(
         ers = "qv_bind_get_as_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("=> [%d] I got to run on %s\n", wrank, binds1);
+    printf("=> [%d] Split: got %d cores, running on %s\n",
+	   wrank, ncores, binds1);
     free(binds1);
 
 #if 1
     /* Launch one thread per core */
-    do_pthread_things(ncores);
+    do_pthread_things(wrank, ncores);
 
     /* Launch one kernel per GPU */
     int ngpus;
@@ -177,7 +181,7 @@ main(
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Launching %d kernels\n", wrank, ngpus);
+    printf("[%d] Launching %d GPU kernels\n", wrank, ngpus);
 
     int i, dev;
     char *gpu;
@@ -217,7 +221,7 @@ main(
        we could ask for a leader of each subscope.
        However, this does not guarantee a NUMA split.
        Thus, we use qv_scope_split_at. */
-#if 0
+#if 1
     int nnumas, my_numa_id;
     qv_scope_t *numa_scope;
 
@@ -260,7 +264,29 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int pus;
+    int my_nnumas; 
+    rc = qv_scope_nobjs(ctx,
+			numa_scope,
+			QV_HW_OBJ_NUMANODE,
+			&my_nnumas);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_nobjs() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    
+    /* Where did I end up? */
+    char *binds3;
+    rc = qv_bind_get_as_string(ctx, &binds3);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_get_as_string() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    printf("=> [%d] Split@: got %d NUMAs, running on %s\n",
+	   wrank, my_nnumas, binds3);
+    free(binds3);
+
+    
+    int npus;
     if (my_numa_id == 0) {
         /* I am the process lead */
         rc = qv_scope_nobjs(
@@ -273,9 +299,9 @@ main(
             ers = "qv_scope_nobjs() failed";
             panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
-        printf("=> [%d] Launching OMP region with %d threads\n",
+        printf("=> [%d] NUMA leader: Launching OMP region\n",
             wrank, npus);
-        do_omp_things(npus);
+        do_omp_things(wrank, npus);
     }
 
     /* Everybody else waits... */
