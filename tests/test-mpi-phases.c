@@ -115,7 +115,7 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Base scope w/%d cores, running on %s\n",
-	   wrank, ncores, binds);
+       wrank, ncores, binds);
     free(binds);
 
     /* Split the base scope evenly across workers */
@@ -162,7 +162,7 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("=> [%d] Split: got %d cores, running on %s\n",
-	   wrank, ncores, binds1);
+       wrank, ncores, binds1);
     free(binds1);
 
 #if 1
@@ -230,7 +230,7 @@ main(
     rc = qv_scope_nobjs(
         ctx,
         base_scope,
-	QV_HW_OBJ_NUMANODE,
+    QV_HW_OBJ_NUMANODE,
         &nnumas
     );
     if (rc != QV_SUCCESS) {
@@ -243,7 +243,7 @@ main(
         ctx,
         base_scope,
         QV_HW_OBJ_NUMANODE,
-	wrank % nnumas,          // color or group id
+    wrank % nnumas,          // color or group id
         &numa_scope
     );
     if (rc != QV_SUCCESS) {
@@ -264,16 +264,16 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int my_nnumas; 
+    int my_nnumas;
     rc = qv_scope_nobjs(ctx,
-			numa_scope,
-			QV_HW_OBJ_NUMANODE,
-			&my_nnumas);
+            numa_scope,
+            QV_HW_OBJ_NUMANODE,
+            &my_nnumas);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    
+
     /* Where did I end up? */
     char *binds3;
     rc = qv_bind_get_as_string(ctx, &binds3);
@@ -282,10 +282,10 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("=> [%d] Split@: got %d NUMAs, running on %s\n",
-	   wrank, my_nnumas, binds3);
+       wrank, my_nnumas, binds3);
     free(binds3);
 
-    
+
     int npus;
     if (my_numa_id == 0) {
         /* I am the process lead */
@@ -299,8 +299,7 @@ main(
             ers = "qv_scope_nobjs() failed";
             panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
-        printf("=> [%d] NUMA leader: Launching OMP region\n",
-            wrank, npus);
+        printf("=> [%d] NUMA leader: Launching OMP region\n", wrank);
         do_omp_things(wrank, npus);
     }
 
