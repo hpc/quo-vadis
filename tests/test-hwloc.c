@@ -171,7 +171,9 @@ main(void)
     printf("\n# Starting hwloc test\n");
 
     char const *ers = NULL;
+    char *binds = NULL;
     qvi_hwloc_t *hwl;
+    hwloc_bitmap_t bitmap = NULL;
 
     int rc = qvi_hwloc_new(&hwl);
     if (rc != QV_SUCCESS) {
@@ -212,7 +214,6 @@ main(void)
         goto out;
     }
 
-    hwloc_bitmap_t bitmap;
     rc = qvi_hwloc_task_get_cpubind(
         hwl,
         getpid(),
@@ -223,7 +224,6 @@ main(void)
         goto out;
     }
 
-    char *binds;
     rc = qvi_hwloc_bitmap_asprintf(&binds, bitmap);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_bitmap_asprintf() failed";
@@ -238,7 +238,7 @@ main(void)
     }
 out:
     if (binds) free(binds);
-    hwloc_bitmap_free(bitmap);
+    if (bitmap) hwloc_bitmap_free(bitmap);
     qvi_hwloc_free(&hwl);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));

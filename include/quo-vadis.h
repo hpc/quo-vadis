@@ -130,7 +130,6 @@ qv_scope_split(
     qv_scope_t **subscope
 );
 
-// TODO(skg) Implement qv_scope_split_at()
 /**
  *
  */

@@ -78,8 +78,10 @@ add_library(
     OBJECT
     qvi-hwloc.h
     qvi-bind.h
+    qvi-nvml.h
     qvi-hwloc.cc
     qvi-bind.cc
+    qvi-nvml.cc
 )
 
 target_include_directories(

@@ -75,6 +75,14 @@ qvi_hwloc_topo_get(
  *
  */
 int
+qvi_hwloc_topo_is_this_system(
+    qvi_hwloc_t *hwl
+);
+
+/**
+ *
+ */
+int
 qvi_hwloc_bitmap_alloc(
     hwloc_bitmap_t *bitmap
 );
@@ -246,6 +254,9 @@ qvi_hwloc_devices_emit(
     qv_hw_obj_type_t obj_type
 );
 
+/**
+ *
+ */
 int
 qvi_hwloc_get_device_in_cpuset(
     qvi_hwloc_t *hwl,

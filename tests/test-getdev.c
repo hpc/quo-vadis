@@ -47,8 +47,7 @@ int main(int argc, char **argv)
 
     /* Get base scope: RM-given resources */
     qv_scope_t *base_scope;
-    rc = qv_scope_get(ctx, QV_SCOPE_SYSTEM,
-            &base_scope);
+    rc = qv_scope_get(ctx, QV_SCOPE_SYSTEM, &base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_get() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -56,21 +55,24 @@ int main(int argc, char **argv)
 
     /* Get num GPUs */
     int ngpus;
-    rc = qv_scope_nobjs(ctx, base_scope,
-            QV_HW_OBJ_GPU, &ngpus);
+    rc = qv_scope_nobjs(ctx, base_scope, QV_HW_OBJ_GPU, &ngpus);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    if (wrank == 0)
+    if (wrank == 0) {
         printf("[%d]: Base scope has %d GPUs\n", wrank, ngpus);
+    }
 
     /* Split the base scope evenly across workers */
     qv_scope_t *rank_scope;
-    rc = qv_scope_split(ctx, base_scope,
+    rc = qv_scope_split(
+            ctx,
+            base_scope,
             wsize,        // Number of workers
             wrank,        // My group color
-            &rank_scope);
+            &rank_scope
+    );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -85,8 +87,7 @@ int main(int argc, char **argv)
 
     /* Get num GPUs */
     int rank_ngpus;
-    rc = qv_scope_nobjs(ctx, rank_scope,
-            QV_HW_OBJ_GPU, &rank_ngpus);
+    rc = qv_scope_nobjs(ctx, rank_scope, QV_HW_OBJ_GPU, &rank_ngpus);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
