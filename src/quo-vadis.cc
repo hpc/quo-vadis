@@ -96,15 +96,25 @@ qv_bind_pop(
 int
 qv_bind_get_as_string(
     qv_context_t *ctx,
-    char **bitmaps
+    char **str
 ) {
-    if (!ctx || !bitmaps) return QV_ERR_INVLD_ARG;
+    if (!ctx || !str) return QV_ERR_INVLD_ARG;
 
-    return qvi_hwloc_task_get_cpubind_as_string(
-        ctx->hwloc,
+    hwloc_cpuset_t cpuset;
+    int rc = qvi_hwloc_bitmap_alloc(&cpuset);
+    if (rc != QV_SUCCESS) return rc;
+
+    rc = qvi_rmi_task_get_cpubind(
+        ctx->rmi,
         qvi_task_pid(ctx->task),
-        bitmaps
+        cpuset
     );
+    if (rc != QV_SUCCESS) goto out;
+
+    rc = qvi_hwloc_bitmap_asprintf(str, cpuset);
+out:
+    hwloc_bitmap_free(cpuset);
+    return rc;
 }
 
 int

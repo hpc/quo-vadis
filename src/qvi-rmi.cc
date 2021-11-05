@@ -318,6 +318,7 @@ rpc_vreq(
     va_list vl
 ) {
     int qvrc = QV_SUCCESS;
+    int buffer_size = 0;
 
     qvi_bbuff_t *buff;
     int rc = rpc_vpack(&buff, fid, picture, vl);
@@ -329,10 +330,14 @@ rpc_vreq(
     zmq_msg_t msg;
     rc = zmsg_init_from_bbuff(buff, &msg);
     if (rc != QV_SUCCESS) goto out;
+    // Cache buffer size here because our call to qvi_bbuff_size() after
+    // zmsg_send() may be invalid because msg_free_byte_buffer_cb() may have
+    // already been called.
+    buffer_size = (int)qvi_bbuff_size(buff);
 
     int nbytes_sent;
     qvrc = zmsg_send(zsock, &msg, &nbytes_sent);
-    if (nbytes_sent != (int)qvi_bbuff_size(buff)) {
+    if (nbytes_sent != buffer_size) {
         qvi_zerr_msg("zmq_msg_send() truncated", errno);
         qvrc = QV_ERR_MSG;
         goto out;
@@ -454,7 +459,7 @@ rpc_ssi_task_get_cpubind(
     int qvrc = qvi_data_sscanf(input, hdr->picture, &who);
     if (qvrc != QV_SUCCESS) return qvrc;
 
-    hwloc_bitmap_t bitmap = nullptr;
+    hwloc_cpuset_t bitmap = nullptr;
     int rpcrc = qvi_hwloc_task_get_cpubind(
         server->config->hwloc,
         who,
@@ -475,7 +480,7 @@ rpc_ssi_get_nobjs_in_cpuset(
     qvi_bbuff_t **output
 ) {
     int target_obj_ai = 0;
-    hwloc_bitmap_t cpuset = nullptr;
+    hwloc_cpuset_t cpuset = nullptr;
     int qvrc = qvi_data_sscanf(
         input,
         hdr->picture,
@@ -513,7 +518,7 @@ rpc_ssi_scope_get_intrinsic_scope_cpuset(
     if (rc != QV_SUCCESS) return rc;
 
     int rpcrc = QV_SUCCESS;
-    hwloc_bitmap_t cpuset = nullptr;
+    hwloc_cpuset_t cpuset = nullptr;
     // TODO(skg) Implement the rest.
     switch ((qv_scope_intrinsic_t)iscope) {
         case QV_SCOPE_SYSTEM:
@@ -883,7 +888,7 @@ int
 qvi_rmi_task_get_cpubind(
     qvi_rmi_client_t *client,
     pid_t who,
-    hwloc_bitmap_t cpuset
+    hwloc_cpuset_t cpuset
 ) {
     int qvrc = rpc_req(client->zsock, FID_TASK_GET_CPUBIND, "i", (int)who);
     if (qvrc != QV_SUCCESS) return qvrc;
@@ -905,7 +910,7 @@ qvi_rmi_scope_get_intrinsic_scope_cpuset(
     qvi_rmi_client_t *client,
     pid_t requestor_pid,
     qv_scope_intrinsic_t iscope,
-    hwloc_bitmap_t cpuset
+    hwloc_cpuset_t cpuset
 ) {
     int qvrc = rpc_req(
         client->zsock,

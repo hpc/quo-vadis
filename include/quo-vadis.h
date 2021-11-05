@@ -218,7 +218,7 @@ qv_bind_pop(
 int
 qv_bind_get_as_string(
     qv_context_t *ctx,
-    char **bitmaps
+    char **str
 );
 
 /**
