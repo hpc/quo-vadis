@@ -15,6 +15,10 @@
  * Resource Management and Inquiry
  */
 
+// TODO(skg) We need to figure out how best to handle errors in RPC code. For
+// example, if a server-side error occurs, what do we do? Return locally or
+// return the error via RPC to the caller?
+
 #include "qvi-common.h"
 #include "qvi-rmi.h"
 #include "qvi-utils.h"
@@ -66,6 +70,7 @@ typedef enum qvi_rpc_funid_e {
     FID_HELLO,
     FID_GBYE,
     FID_TASK_GET_CPUBIND,
+    FID_GET_NOBJS_IN_CPUSET,
     FID_SCOPE_GET_INTRINSIC_SCOPE_CPUSET
 } qvi_rpc_funid_t;
 
@@ -445,28 +450,52 @@ rpc_ssi_task_get_cpubind(
     void *input,
     qvi_bbuff_t **output
 ) {
-    int who;
-    int rc = qvi_data_sscanf(input, hdr->picture, &who);
-    if (rc != QV_SUCCESS) return rc;
+    int who = 0;
+    int qvrc = qvi_data_sscanf(input, hdr->picture, &who);
+    if (qvrc != QV_SUCCESS) return qvrc;
 
-    hwloc_bitmap_t bitmap;
+    hwloc_bitmap_t bitmap = nullptr;
     int rpcrc = qvi_hwloc_task_get_cpubind(
         server->config->hwloc,
         who,
         &bitmap
     );
 
-    char *bitmaps;
-    rc = hwloc_bitmap_asprintf(&bitmaps, bitmap);
-    if (rc == -1) rpcrc = QV_ERR_HWLOC;
-
-    rc = rpc_pack(output, hdr->fid, "is", rpcrc, bitmaps);
-    if (rc != QV_SUCCESS) return rc;
-
+    qvrc = rpc_pack(output, hdr->fid, "ic", rpcrc, bitmap);
     hwloc_bitmap_free(bitmap);
-    free(bitmaps);
 
-    return rc;
+    return qvrc;
+}
+
+static int
+rpc_ssi_get_nobjs_in_cpuset(
+    qvi_rmi_server_t *server,
+    qvi_msg_header_t *hdr,
+    void *input,
+    qvi_bbuff_t **output
+) {
+    int target_obj_ai = 0;
+    hwloc_bitmap_t cpuset = nullptr;
+    int qvrc = qvi_data_sscanf(
+        input,
+        hdr->picture,
+        &target_obj_ai,
+        &cpuset
+    );
+    if (qvrc != QV_SUCCESS) return qvrc;
+
+    unsigned nobjs = 0;
+    int rpcrc = qvi_hwloc_get_nobjs_in_cpuset(
+        server->config->hwloc,
+        (qv_hw_obj_type_t)target_obj_ai,
+        cpuset,
+        &nobjs
+    );
+
+    qvrc = rpc_pack(output, hdr->fid, "iu", rpcrc, nobjs);
+
+    hwloc_bitmap_free(cpuset);
+    return qvrc;
 }
 
 // TODO(skg) Lots of error path cleanup is required.
@@ -477,18 +506,16 @@ rpc_ssi_scope_get_intrinsic_scope_cpuset(
     void *input,
     qvi_bbuff_t **output
 ) {
+    hwloc_topology_t topo = qvi_hwloc_topo_get(server->config->hwloc);
     // Get requestor PID, intrinsic scope as integers from client request.
-    int pid, sai;
-    int rc = qvi_data_sscanf(input, hdr->picture, &pid, &sai);
+    int pid, iscope;
+    int rc = qvi_data_sscanf(input, hdr->picture, &pid, &iscope);
     if (rc != QV_SUCCESS) return rc;
 
-    hwloc_bitmap_t cpuset;
-
-    hwloc_topology_t topo = qvi_hwloc_topo_get(server->config->hwloc);
-    qv_scope_intrinsic_t iscope = (qv_scope_intrinsic_t)sai;
     int rpcrc = QV_SUCCESS;
+    hwloc_bitmap_t cpuset = nullptr;
     // TODO(skg) Implement the rest.
-    switch (iscope) {
+    switch ((qv_scope_intrinsic_t)iscope) {
         case QV_SCOPE_SYSTEM:
         case QV_SCOPE_USER:
         case QV_SCOPE_JOB: {
@@ -514,16 +541,11 @@ rpc_ssi_scope_get_intrinsic_scope_cpuset(
             rpcrc = QV_ERR_INVLD_ARG;
             break;
     }
-    // TODO(skg) We need to make sure that other errors didn't occur.
-    char *bitmaps = nullptr;
-    rc = hwloc_bitmap_asprintf(&bitmaps, cpuset);
-    if (rc == -1) rpcrc = QV_ERR_HWLOC;
 
-    rc = rpc_pack(output, hdr->fid, "is", rpcrc, bitmaps);
+    rc = rpc_pack(output, hdr->fid, "ic", rpcrc, cpuset);
     if (rc != QV_SUCCESS) return rc;
 
     hwloc_bitmap_free(cpuset);
-    if (bitmaps) free(bitmaps);
 
     return rc;
 }
@@ -538,6 +560,7 @@ static const qvi_rpc_fun_ptr_t rpc_dispatch_table[] = {
     rpc_ssi_hello,
     rpc_ssi_gbye,
     rpc_ssi_task_get_cpubind,
+    rpc_ssi_get_nobjs_in_cpuset,
     rpc_ssi_scope_get_intrinsic_scope_cpuset
 };
 
@@ -860,22 +883,19 @@ int
 qvi_rmi_task_get_cpubind(
     qvi_rmi_client_t *client,
     pid_t who,
-    hwloc_bitmap_t bitmap
+    hwloc_bitmap_t cpuset
 ) {
     int qvrc = rpc_req(client->zsock, FID_TASK_GET_CPUBIND, "i", (int)who);
     if (qvrc != QV_SUCCESS) return qvrc;
 
     int rpcrc;
-    char *bitmaps = nullptr;
-    qvrc = rpc_rep(client->zsock, "is", &rpcrc, &bitmaps);
-    if (qvrc != QV_SUCCESS) goto out;
+    hwloc_cpuset_t rcpuset = nullptr;
+    qvrc = rpc_rep(client->zsock, "ic", &rpcrc, &rcpuset);
+    if (qvrc != QV_SUCCESS) return qvrc;
 
-    if (hwloc_bitmap_sscanf(bitmap, bitmaps) != 0) {
-        qvrc = QV_ERR_HWLOC;
-        goto out;
-    }
-out:
-    if (bitmaps) free(bitmaps);
+    qvrc = qvi_hwloc_bitmap_copy(rcpuset, cpuset);
+    hwloc_bitmap_free(rcpuset);
+
     if (qvrc != QV_SUCCESS) return qvrc;
     return rpcrc;
 }
@@ -887,31 +907,47 @@ qvi_rmi_scope_get_intrinsic_scope_cpuset(
     qv_scope_intrinsic_t iscope,
     hwloc_bitmap_t cpuset
 ) {
-    int qvrc = QV_SUCCESS;
-
-    const int pid = (int)requestor_pid;
-    const int sai = (int)iscope;
-    qvrc = rpc_req(
+    int qvrc = rpc_req(
         client->zsock,
         FID_SCOPE_GET_INTRINSIC_SCOPE_CPUSET,
         "ii",
-        pid,
-        sai
+        (int)requestor_pid,
+        (int)iscope
     );
     if (qvrc != QV_SUCCESS) return qvrc;
 
     int rpcrc;
-    char *cpusets = nullptr;
-    qvrc = rpc_rep(client->zsock, "is", &rpcrc, &cpusets);
-    if (qvrc != QV_SUCCESS) goto out;
-
-    if (hwloc_bitmap_sscanf(cpuset, cpusets) != 0) {
-        qvrc = QV_ERR_HWLOC;
-        goto out;
-    }
-out:
-    if (cpusets) free(cpusets);
+    hwloc_cpuset_t rcpuset = nullptr;
+    qvrc = rpc_rep(client->zsock, "ic", &rpcrc, &rcpuset);
     if (qvrc != QV_SUCCESS) return qvrc;
+
+    qvrc = qvi_hwloc_bitmap_copy(rcpuset, cpuset);
+    hwloc_bitmap_free(rcpuset);
+
+    if (qvrc != QV_SUCCESS) return qvrc;
+    return rpcrc;
+}
+
+int
+qvi_rmi_get_nobjs_in_cpuset(
+    qvi_rmi_client_t *client,
+    qv_hw_obj_type_t target_obj,
+    hwloc_const_cpuset_t cpuset,
+    unsigned *nobjs
+) {
+    int qvrc = rpc_req(
+        client->zsock,
+        FID_GET_NOBJS_IN_CPUSET,
+        "ic",
+        (int)target_obj,
+        cpuset
+    );
+    if (qvrc != QV_SUCCESS) return qvrc;
+
+    int rpcrc;
+    qvrc = rpc_rep(client->zsock, "iu", &rpcrc, nobjs);
+    if (qvrc != QV_SUCCESS) return qvrc;
+
     return rpcrc;
 }
 

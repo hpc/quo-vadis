@@ -93,7 +93,7 @@ qvi_hwloc_bitmap_alloc(
 int
 qvi_hwloc_bitmap_copy(
     hwloc_const_cpuset_t src,
-    hwloc_bitmap_t dest
+    hwloc_cpuset_t dest
 );
 
 /**
@@ -122,6 +122,15 @@ int
 qvi_hwloc_bitmap_asprintf(
     char **result,
     hwloc_const_bitmap_t bitmap
+);
+
+/**
+ *
+ */
+int
+qvi_hwloc_bitmap_sscanf(
+    hwloc_bitmap_t bitmap,
+    char *str
 );
 
 /**

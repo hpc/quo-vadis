@@ -137,8 +137,8 @@ qv_scope_nobjs(
 ) {
     if (!ctx || !scope || !n) return QV_ERR_INVLD_ARG;
 
-    return qvi_hwloc_get_nobjs_in_cpuset(
-        ctx->hwloc,
+    return qvi_rmi_get_nobjs_in_cpuset(
+        ctx->rmi,
         obj,
         qvi_scope_bitmap_get(scope),
         (unsigned *)n

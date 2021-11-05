@@ -108,7 +108,7 @@ int
 qvi_rmi_task_get_cpubind(
     qvi_rmi_client_t *client,
     pid_t who,
-    hwloc_bitmap_t bitmap
+    hwloc_bitmap_t cpuset
 );
 
 /**
@@ -120,6 +120,17 @@ qvi_rmi_scope_get_intrinsic_scope_cpuset(
     pid_t requestor_pid,
     qv_scope_intrinsic_t iscope,
     hwloc_bitmap_t cpuset
+);
+
+/**
+ *
+ */
+int
+qvi_rmi_get_nobjs_in_cpuset(
+    qvi_rmi_client_t *client,
+    qv_hw_obj_type_t target_obj,
+    hwloc_const_cpuset_t cpuset,
+    unsigned *nobjs
 );
 
 #ifdef __cplusplus

@@ -526,10 +526,12 @@ discover_devices(
 ) {
     int rc = discover_all_devices(hwl);
     if (rc != QV_SUCCESS) return rc;
+#if 0 // TODO(skg) FIXME
     rc = discover_gpu_devices(hwl);
     if (rc != QV_SUCCESS) return rc;
     rc = discover_nic_devices(hwl);
     if (rc != QV_SUCCESS) return rc;
+#endif
     return QV_SUCCESS;
 }
 
@@ -613,7 +615,7 @@ qvi_hwloc_bitmap_alloc(
 int
 qvi_hwloc_bitmap_copy(
     hwloc_const_cpuset_t src,
-    hwloc_bitmap_t dest
+    hwloc_cpuset_t dest
 ) {
     if (!src || !dest) return QV_ERR_INVLD_ARG;
 
@@ -788,6 +790,17 @@ qvi_hwloc_bitmap_asprintf(
     }
     *result = iresult;
     return rc;
+}
+
+int
+qvi_hwloc_bitmap_sscanf(
+    hwloc_bitmap_t bitmap,
+    char *str
+) {
+    if (hwloc_bitmap_sscanf(bitmap, str) != 0) {
+        return QV_ERR_HWLOC;
+    }
+    return QV_SUCCESS;
 }
 
 int

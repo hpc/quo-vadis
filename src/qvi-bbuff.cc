@@ -16,13 +16,16 @@
 /*
  * Picture Reference:
  * b = void *, size_t (two arguments)
+ * c = hwloc_cpuset_t
  * i = int
  * s = char *
+ * u = unsigned
  * z = empty (zero arguments)
  */
 
 #include "qvi-common.h"
 #include "qvi-bbuff.h"
+#include "qvi-hwloc.h"
 
 struct qvi_bbuff_s {
     /** Current capacity of buffer. */
@@ -136,6 +139,17 @@ qvi_bbuff_vsprintf(
             if (rc != QV_SUCCESS) break;
             continue;
         }
+        if (picture[i] == 'c') {
+            hwloc_cpuset_t data = va_arg(args, hwloc_cpuset_t);
+            char *datas = nullptr;
+            rc = qvi_hwloc_bitmap_asprintf(&datas, data);
+            if (rc != QV_SUCCESS) break;
+            // We are sending the string representation of the cpuset.
+            rc = qvi_bbuff_append(buff, datas, strlen(datas) + 1);
+            if (datas) free(datas);
+            if (rc != QV_SUCCESS) break;
+            continue;
+        }
         if (picture[i] == 'i') {
             int data = va_arg(args, int);
             rc = qvi_bbuff_append(buff, &data, sizeof(data));
@@ -145,6 +159,12 @@ qvi_bbuff_vsprintf(
         if (picture[i] == 's') {
             char *data = va_arg(args, char *);
             rc = qvi_bbuff_append(buff, data, strlen(data) + 1);
+            if (rc != QV_SUCCESS) break;
+            continue;
+        }
+        if (picture[i] == 'u') {
+            unsigned data = va_arg(args, unsigned);
+            rc = qvi_bbuff_append(buff, &data, sizeof(data));
             if (rc != QV_SUCCESS) break;
             continue;
         }
@@ -197,6 +217,16 @@ qvi_data_vsscanf(
             pos += *dsize;
             continue;
         }
+        if (picture[i] == 'c') {
+            hwloc_cpuset_t *cpuset = va_arg(args, hwloc_cpuset_t *);
+            rc = qvi_hwloc_bitmap_alloc(cpuset);
+            if (rc != QV_SUCCESS) break;
+            char *cpusets = (char *)pos;
+            rc = qvi_hwloc_bitmap_sscanf(*cpuset, cpusets);
+            if (rc != QV_SUCCESS) break;
+            pos += strlen(cpusets) + 1;
+            continue;
+        }
         if (picture[i] == 'i') {
             memmove(va_arg(args, int *), pos, sizeof(int));
             pos += sizeof(int);
@@ -209,6 +239,11 @@ qvi_data_vsscanf(
                 break;
             }
             pos += nw + 1;
+            continue;
+        }
+        if (picture[i] == 'u') {
+            memmove(va_arg(args, unsigned *), pos, sizeof(unsigned));
+            pos += sizeof(unsigned);
             continue;
         }
         if (picture[i] == 'z') {
