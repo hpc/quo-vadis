@@ -174,7 +174,7 @@ main(
     qv_scope_t *base_scope;
     rc = qv_scope_get(
         ctx,
-        QV_SCOPE_SYSTEM,
+        QV_SCOPE_USER,
         &base_scope
     );
     if (rc != QV_SUCCESS) {

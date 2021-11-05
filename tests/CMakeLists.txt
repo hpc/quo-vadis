@@ -48,12 +48,12 @@ target_link_libraries(
 #)
 
 add_executable(
-    test-init-mpi
-    test-init-mpi.c
+    test-mpi-init
+    test-mpi-init.c
 )
 
 target_link_libraries(
-    test-init-mpi
+    test-mpi-init
     quo-vadis
 )
 
@@ -141,12 +141,12 @@ add_test(
 ################################################################################
 ################################################################################
 add_executable(
-    test-getdev
-    test-getdev.c
+    test-getdev-mpi
+    test-getdev-mpi.c
 )
 
 target_link_libraries(
-    test-getdev
+    test-getdev-mpi
     quo-vadis
 )
 
@@ -157,7 +157,7 @@ target_link_libraries(
 set_target_properties(
     test-hwloc
     test-rmi
-    test-init-mpi
+    test-mpi-init
     test-mpi
     test-scopes
     test-scopes-mpi

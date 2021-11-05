@@ -84,6 +84,7 @@ struct qvi_taskman_mpi_s : public qvi_taskman_s {
         if (!igroup) return QV_ERR_OOR;
 
         qvi_mpi_group_id_t mpi_group;
+        // TODO(skg) Finish implementation.
         switch (scope) {
             case QV_SCOPE_SYSTEM:
             case QV_SCOPE_USER:

@@ -47,7 +47,7 @@ int main(int argc, char **argv)
 
     /* Get base scope: RM-given resources */
     qv_scope_t *base_scope;
-    rc = qv_scope_get(ctx, QV_SCOPE_SYSTEM, &base_scope);
+    rc = qv_scope_get(ctx, QV_SCOPE_USER, &base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_get() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));

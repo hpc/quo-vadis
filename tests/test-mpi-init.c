@@ -10,7 +10,7 @@
  */
 
 /**
- * @file test-init-mpi.c
+ * @file test-mpi-init.c
  */
 
 #include "quo-vadis-mpi.h"
