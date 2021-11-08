@@ -100,7 +100,7 @@ qv_bind_get_as_string(
 ) {
     if (!ctx || !str) return QV_ERR_INVLD_ARG;
 
-    hwloc_cpuset_t cpuset;
+    hwloc_cpuset_t cpuset = nullptr;
     int rc = qvi_hwloc_bitmap_alloc(&cpuset);
     if (rc != QV_SUCCESS) return rc;
 
