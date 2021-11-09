@@ -13,6 +13,8 @@
  * @file quo-vadis.cc
  */
 
+#include "qvi-common.h"
+
 #include "qvi-context.h"
 #include "qvi-scope.h"
 

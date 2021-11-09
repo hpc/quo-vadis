@@ -188,7 +188,6 @@ target_link_libraries(
     qvi-core
     qvi-hwloc
     qvi-rmi
-    qvi-mpi
 )
 
 install(TARGETS quo-vadis DESTINATION lib)

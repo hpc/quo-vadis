@@ -24,6 +24,9 @@
 extern "C" {
 #endif
 
+/** Convenience definition. */
+#define QUO_VADIS_MPI 1
+
 /**
  *
  */

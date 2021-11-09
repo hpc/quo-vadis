@@ -25,17 +25,6 @@ struct qv_scope_s {
     hwloc_cpuset_t cpuset = nullptr;
 };
 
-/**
- *
- */
-static int
-cpuset_set(
-    qv_scope_t *scope,
-    hwloc_const_cpuset_t cpuset
-) {
-    return qvi_hwloc_bitmap_copy(cpuset, scope->cpuset);
-}
-
 int
 qvi_scope_new(
     qv_scope_t **scope
@@ -71,7 +60,7 @@ qvi_scope_init(
     hwloc_const_cpuset_t cpuset
 ) {
     scope->group = group;
-    return cpuset_set(scope, cpuset);
+    return qvi_hwloc_bitmap_copy(cpuset, scope->cpuset);
 }
 
 hwloc_cpuset_t
