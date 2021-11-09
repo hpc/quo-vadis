@@ -16,14 +16,14 @@
 #include "qvi-common.h"
 #include "qvi-bind.h"
 
-using qvi_bitmap_stack_t = std::stack<hwloc_bitmap_t>;
+using qvi_bitmap_stack_t = std::stack<hwloc_cpuset_t>;
 
 // Type definition
 struct qvi_bind_stack_s {
     /** Initialized task instance. */
     qvi_task_t *task = nullptr;
-    /** Initialized hwloc instance. */
-    qvi_hwloc_t *hwloc = nullptr;
+    /** Client RMI instance. */
+    qvi_rmi_client_t *rmi = nullptr;
     /** The bind stack. */
     qvi_bitmap_stack_t *stack = nullptr;
 };
@@ -61,7 +61,7 @@ qvi_bind_stack_free(
     qvi_bind_stack_t *ibstack = *bstack;
     if (!ibstack) return;
     while (!ibstack->stack->empty()) {
-        hwloc_bitmap_t bitm = ibstack->stack->top();
+        hwloc_cpuset_t bitm = ibstack->stack->top();
         hwloc_bitmap_free(bitm);
         ibstack->stack->pop();
     }
@@ -74,19 +74,20 @@ int
 qvi_bind_stack_init(
     qvi_bind_stack_t *bstack,
     qvi_task_t *task,
-    qvi_hwloc_t *hwloc
+    qvi_rmi_client_t *rmi
 ) {
     // Cache pointer to initialized infrastructure.
     bstack->task = task;
-    bstack->hwloc = hwloc;
+    bstack->rmi = rmi;
     // Cache current binding.
-    hwloc_bitmap_t current_bind;
-    int rc = qvi_hwloc_task_get_cpubind(
-        hwloc,
+    hwloc_cpuset_t current_bind = nullptr;
+    int rc = qvi_rmi_task_get_cpubind(
+        rmi,
         qvi_task_pid(task),
         &current_bind
     );
     if (rc != QV_SUCCESS) return rc;
+
     bstack->stack->push(current_bind);
 
     return QV_SUCCESS;
@@ -95,38 +96,48 @@ qvi_bind_stack_init(
 int
 qvi_bind_push(
     qvi_bind_stack_t *bstack,
-    hwloc_bitmap_t bitmap
+    hwloc_const_cpuset_t cpuset
 ) {
     // Copy input bitmap because we don't want to directly modify it.
-    hwloc_bitmap_t bitmap_copy = hwloc_bitmap_alloc();
-    hwloc_bitmap_copy(bitmap_copy, bitmap);
+    hwloc_cpuset_t bitmap_copy = nullptr;
+    int rc = qvi_hwloc_bitmap_alloc(&bitmap_copy);
+    if (rc != QV_SUCCESS) return rc;
+
+    rc = qvi_hwloc_bitmap_copy(cpuset, bitmap_copy);
+    if (rc != QV_SUCCESS) {
+        goto out;
+    }
     // Change policy
-    int rc = qvi_hwloc_set_cpubind_from_bitmap(
-        bstack->hwloc,
+    rc = qvi_rmi_task_set_cpubind_from_cpuset(
+        bstack->rmi,
+        qvi_task_pid(bstack->task),
         bitmap_copy
     );
-    if (rc != QV_SUCCESS) return rc;
+    if (rc != QV_SUCCESS) {
+        goto out;
+    }
     // Push bitmap onto stack.
     bstack->stack->push(bitmap_copy);
-
-    return QV_SUCCESS;
+out:
+    if (rc != QV_SUCCESS) {
+        hwloc_bitmap_free(bitmap_copy);
+    }
+    return rc;
 }
 
 int
 qvi_bind_pop(
     qvi_bind_stack_t *bstack
 ) {
-    hwloc_bitmap_t current_bind = bstack->stack->top();
+    hwloc_cpuset_t current_bind = bstack->stack->top();
     hwloc_bitmap_free(current_bind);
     bstack->stack->pop();
 
-    int rc = qvi_hwloc_set_cpubind_from_bitmap(
-        bstack->hwloc,
+    return qvi_rmi_task_set_cpubind_from_cpuset(
+        bstack->rmi,
+        qvi_task_pid(bstack->task),
         bstack->stack->top()
     );
-    if (rc != QV_SUCCESS) return rc;
-
-    return QV_SUCCESS;
 }
 
 /*

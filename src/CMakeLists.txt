@@ -14,17 +14,14 @@
 add_library(
     qvi-core
     OBJECT
-    ../include/quo-vadis.h
-    qvi-taskman.h
-    qvi-group.h
-    qvi-bbuff.h
+    qvi-common.h
+    qvi-macros.h
     qvi-log.h
     qvi-utils.h
-    qvi-config.h
-    qvi-bbuff.cc
+    qvi-bbuff.h
     qvi-log.cc
     qvi-utils.cc
-    qvi-config.cc
+    qvi-bbuff.cc
 )
 
 target_compile_options(
@@ -50,37 +47,13 @@ target_link_libraries(
 
 ################################################################################
 ################################################################################
-#add_library(
-#    qvi-pmi
-#    OBJECT
-#    qvi-pmi.h
-#    qvi-pmi.cc
-#)
-#
-#target_include_directories(
-#    qvi-pmi
-#    PUBLIC
-#      $<INSTALL_INTERFACE:include>
-#      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-#      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-#)
-#
-#target_link_libraries(
-#    qvi-pmi
-#    qvi-core
-#    pmix
-#)
-
-################################################################################
-################################################################################
 add_library(
     qvi-hwloc
     OBJECT
     qvi-hwloc.h
-    qvi-bind.h
     qvi-nvml.h
+    qvi-rsmi.h
     qvi-hwloc.cc
-    qvi-bind.cc
     qvi-nvml.cc
 )
 
@@ -113,7 +86,9 @@ add_library(
     qvi-rmi
     OBJECT
     qvi-rmi.h
+    qvi-bbuff-rmi.h
     qvi-rmi.cc
+    qvi-bbuff-rmi.cc
 )
 
 target_include_directories(
@@ -133,14 +108,36 @@ target_link_libraries(
 
 ################################################################################
 ################################################################################
+#add_library(
+#    qvi-pmi
+#    OBJECT
+#    qvi-pmi.h
+#    qvi-pmi.cc
+#)
+#
+#target_include_directories(
+#    qvi-pmi
+#    PUBLIC
+#      $<INSTALL_INTERFACE:include>
+#      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+#      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+#)
+#
+#target_link_libraries(
+#    qvi-pmi
+#    qvi-core
+#    pmix
+#)
+
+################################################################################
+################################################################################
+if (MPI_FOUND)
 add_library(
     qvi-mpi
     OBJECT
-    ../include/quo-vadis-mpi.h
-    qvi-taskman-mpi.h
     qvi-mpi.h
+    qvi-taskman-mpi.h
     qvi-mpi.cc
-    quo-vadis-mpi.cc
 )
 
 target_include_directories(
@@ -155,21 +152,24 @@ target_include_directories(
 target_link_libraries(
     qvi-mpi
     qvi-core
-    qvi-rmi
     ${MPI_C_LIBRARIES}
 )
+endif(MPI_FOUND)
 
 ################################################################################
 ################################################################################
-# TODO(skg) Add an MPI variant of the library. For now, just include MPI bits.
 add_library(
     quo-vadis
     ../include/quo-vadis.h
     qvi-context.h
     qvi-task.h
+    qvi-group.h
     qvi-scope.h
+    qvi-taskman.h
+    qvi-bind.h
     qvi-task.cc
     qvi-scope.cc
+    qvi-bind.cc
     quo-vadis.cc
 )
 
@@ -187,11 +187,37 @@ target_link_libraries(
     quo-vadis
     qvi-core
     qvi-hwloc
-    qvi-mpi
     qvi-rmi
+    qvi-mpi
 )
 
 install(TARGETS quo-vadis DESTINATION lib)
+
+################################################################################
+################################################################################
+if (MPI_FOUND)
+add_library(
+    quo-vadis-mpi
+    ../include/quo-vadis-mpi.h
+    quo-vadis-mpi.cc
+)
+
+target_include_directories(
+    quo-vadis-mpi
+    PUBLIC
+      $<INSTALL_INTERFACE:include>
+      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
+      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+)
+
+target_link_libraries(
+    quo-vadis-mpi
+    qvi-mpi
+    quo-vadis
+)
+install(TARGETS quo-vadis-mpi DESTINATION lib)
+endif(MPI_FOUND)
 
 ################################################################################
 ################################################################################

@@ -45,7 +45,7 @@ export QV_PORT=55996
 # Launch the daemon
 build/src/quo-vadisd &
 # Run a test
-mpiexec -n 2 build/tests/test-scopes-mpi
+mpiexec -n 2 build/tests/test-mpi-scopes
 ```
 
 ## Internal Software Dependencies

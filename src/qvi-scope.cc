@@ -21,22 +21,19 @@
 struct qv_scope_s {
     /** Task group associated with this scope instance. */
     qvi_group_t *group = nullptr;
-    /** Bitmap associated with this scope instance. */
-    hwloc_bitmap_t bitmap = nullptr;
+    /** CPUSET associated with this scope instance. */
+    hwloc_cpuset_t cpuset = nullptr;
 };
 
 /**
  *
  */
 static int
-bitmap_set(
+cpuset_set(
     qv_scope_t *scope,
-    hwloc_const_bitmap_t bitmap
+    hwloc_const_cpuset_t cpuset
 ) {
-    if (hwloc_bitmap_copy(scope->bitmap, bitmap) != 0) {
-        return QV_ERR_HWLOC;
-    }
-    return QV_SUCCESS;
+    return qvi_hwloc_bitmap_copy(cpuset, scope->cpuset);
 }
 
 int
@@ -46,7 +43,7 @@ qvi_scope_new(
     qv_scope_t *iscope = qvi_new qv_scope_t;
     if (!scope) return QV_ERR_OOR;
 
-    int rc = qvi_hwloc_bitmap_alloc(&iscope->bitmap);
+    int rc = qvi_hwloc_bitmap_alloc(&iscope->cpuset);
     if (rc != QV_SUCCESS) goto out;
 out:
     if (rc != QV_SUCCESS) qvi_scope_free(&iscope);
@@ -62,7 +59,7 @@ qvi_scope_free(
     qv_scope_t *iscope = *scope;
     if (!iscope) return;
     qvi_group_free(&iscope->group);
-    hwloc_bitmap_free(iscope->bitmap);
+    hwloc_bitmap_free(iscope->cpuset);
     delete iscope;
     *scope = nullptr;
 }
@@ -71,17 +68,17 @@ int
 qvi_scope_init(
     qv_scope_t *scope,
     qvi_group_t *group,
-    hwloc_const_bitmap_t bitmap
+    hwloc_const_cpuset_t cpuset
 ) {
     scope->group = group;
-    return bitmap_set(scope, bitmap);
+    return cpuset_set(scope, cpuset);
 }
 
-hwloc_bitmap_t
-qvi_scope_bitmap_get(
+hwloc_cpuset_t
+qvi_scope_cpuset_get(
     qv_scope_t *scope
 ) {
-    return scope->bitmap;
+    return scope->cpuset;
 }
 
 qvi_group_t *

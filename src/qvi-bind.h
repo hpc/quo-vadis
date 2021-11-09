@@ -11,6 +11,8 @@
 
 /**
  * @file qvi-bind.h
+ *
+ * Task binding interface.
  */
 
 #ifndef QVI_BIND_H
@@ -19,6 +21,7 @@
 #include "qvi-common.h"
 #include "qvi-task.h"
 #include "qvi-hwloc.h"
+#include "qvi-rmi.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,7 +54,7 @@ int
 qvi_bind_stack_init(
     qvi_bind_stack_t *bstack,
     qvi_task_t *task,
-    qvi_hwloc_t *hwloc
+    qvi_rmi_client_t *rmi
 );
 
 /**
@@ -60,7 +63,7 @@ qvi_bind_stack_init(
 int
 qvi_bind_push(
     qvi_bind_stack_t *bstack,
-    hwloc_bitmap_t bitmap
+    hwloc_const_cpuset_t cpuset
 );
 
 /**

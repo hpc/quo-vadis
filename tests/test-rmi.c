@@ -13,10 +13,9 @@
  * @file test-rmi.c
  */
 
-#include "qvi-rmi.h"
-#include "qvi-config.h"
 #include "qvi-utils.h"
 #include "qvi-hwloc.h"
+#include "qvi-rmi.h"
 
 #include "quo-vadis.h"
 
@@ -61,10 +60,10 @@ server(
         goto out;
     }
 
-    qvi_config_rmi_t *config;
-    rc = qvi_config_rmi_new(&config);
+    qvi_rmi_config_t *config;
+    rc = qvi_rmi_config_new(&config);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_config_rmi_new() failed";
+        ers = "qvi_rmi_config_new() failed";
         goto out;
     }
 
@@ -84,7 +83,7 @@ server(
 
     rc = qvi_rmi_server_config(server, config);
 
-    qvi_config_rmi_free(&config);
+    qvi_rmi_config_free(&config);
 
     rc = qvi_rmi_server_start(server, false);
     if (rc != QV_SUCCESS) {
@@ -94,7 +93,7 @@ server(
     end = qvi_time();
     printf("# [%d] Server Start Time %lf seconds\n", getpid(), end - start);
 out:
-    sleep(2);
+    sleep(4);
     qvi_rmi_server_free(&server);
     qvi_hwloc_free(&hwloc);
     if (ers) {
@@ -126,8 +125,8 @@ client(
     }
 
     pid_t mypid = getpid();
-    hwloc_bitmap_t bitmap = hwloc_bitmap_alloc();
-    rc = qvi_rmi_task_get_cpubind(client, mypid, bitmap);
+    hwloc_bitmap_t bitmap = NULL;
+    rc = qvi_rmi_task_get_cpubind(client, mypid, &bitmap);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_task_get_cpubind() failed";
         goto out;

@@ -38,7 +38,7 @@ typedef struct qvi_hwloc_objx_s {
 
 typedef struct qvi_hwloc_device_s {
     /** Device cpuset */
-    hwloc_bitmap_t cpuset = nullptr;
+    hwloc_cpuset_t cpuset = nullptr;
     /** Internal object type information */
     qvi_hwloc_objx_t objx;
     /** Vendor ID */
@@ -602,12 +602,12 @@ qvi_hwloc_topo_is_this_system(
 
 int
 qvi_hwloc_bitmap_alloc(
-    hwloc_bitmap_t *bitmap
+    hwloc_cpuset_t *cpuset
 ) {
     int rc = QV_SUCCESS;
 
-    *bitmap = hwloc_bitmap_alloc();
-    if (!*bitmap) rc = QV_ERR_OOR;
+    *cpuset = hwloc_bitmap_alloc();
+    if (!*cpuset) rc = QV_ERR_OOR;
 
     return rc;
 }
@@ -762,28 +762,30 @@ qvi_hwloc_emit_cpubind(
    qvi_hwloc_t *hwl,
    pid_t who
 ) {
-    hwloc_bitmap_t bitmap;
-    int rc = qvi_hwloc_task_get_cpubind(hwl, who, &bitmap);
+    hwloc_cpuset_t cpuset = nullptr;
+    int rc = qvi_hwloc_task_get_cpubind(hwl, who, &cpuset);
     if (rc != QV_SUCCESS) return rc;
 
-    char *bitmaps;
-    rc = qvi_hwloc_bitmap_asprintf(&bitmaps, bitmap);
-    if (rc != QV_SUCCESS) return rc;
+    char *cpusets = nullptr;
+    rc = qvi_hwloc_bitmap_asprintf(&cpusets, cpuset);
+    if (rc != QV_SUCCESS) goto out;
 
-    qvi_log_info("[pid={} tid={}] cpubind={}", who, qvi_gettid(), bitmaps);
-    free(bitmaps);
+    qvi_log_info("[pid={} tid={}] cpubind={}", who, qvi_gettid(), cpusets);
+out:
+    if (cpuset) hwloc_bitmap_free(cpuset);
+    if (cpusets) free(cpusets);
     return rc;
 }
 
 int
 qvi_hwloc_bitmap_asprintf(
     char **result,
-    hwloc_const_bitmap_t bitmap
+    hwloc_const_cpuset_t cpuset
 ) {
     int rc = QV_SUCCESS;
     // Caller is responsible for freeing returned resources.
     char *iresult = nullptr;
-    (void)hwloc_bitmap_asprintf(&iresult, bitmap);
+    (void)hwloc_bitmap_asprintf(&iresult, cpuset);
     if (!iresult) {
         qvi_log_error("hwloc_bitmap_asprintf() failed");
         rc = QV_ERR_OOR;
@@ -794,10 +796,10 @@ qvi_hwloc_bitmap_asprintf(
 
 int
 qvi_hwloc_bitmap_sscanf(
-    hwloc_bitmap_t bitmap,
+    hwloc_cpuset_t cpuset,
     char *str
 ) {
-    if (hwloc_bitmap_sscanf(bitmap, str) != 0) {
+    if (hwloc_bitmap_sscanf(cpuset, str) != 0) {
         return QV_ERR_HWLOC;
     }
     return QV_SUCCESS;
@@ -807,11 +809,11 @@ int
 qvi_hwloc_task_get_cpubind(
     qvi_hwloc_t *hwl,
     pid_t who,
-    hwloc_bitmap_t *out_bitmap
+    hwloc_cpuset_t *out_cpuset
 ) {
     int qrc = QV_SUCCESS, rc = 0;
 
-    hwloc_bitmap_t cur_bind;
+    hwloc_cpuset_t cur_bind = nullptr;
     qrc = qvi_hwloc_bitmap_alloc(&cur_bind);
     if (qrc != QV_SUCCESS) return qrc;
 
@@ -828,26 +830,47 @@ qvi_hwloc_task_get_cpubind(
         qrc = QV_ERR_HWLOC;
         goto out;
     }
-    *out_bitmap = cur_bind;
+    *out_cpuset = cur_bind;
 out:
     if (qrc != QV_SUCCESS) {
         if (cur_bind) hwloc_bitmap_free(cur_bind);
-        *out_bitmap = nullptr;
+        *out_cpuset = nullptr;
     }
     return qrc;
+}
+
+// TODO(skg) Add support for binding threads, too.
+int
+qvi_hwloc_task_set_cpubind_from_cpuset(
+    qvi_hwloc_t *hwl,
+    pid_t who,
+    hwloc_const_cpuset_t cpuset
+) {
+    int qvrc = QV_SUCCESS;
+
+    int rc = hwloc_set_proc_cpubind(
+        hwl->topo,
+        who,
+        cpuset,
+        HWLOC_CPUBIND_PROCESS
+    );
+    if (rc == -1) {
+        qvrc = QV_ERR_NOT_SUPPORTED;
+    }
+    return qvrc;
 }
 
 int
 qvi_hwloc_task_get_cpubind_as_string(
     qvi_hwloc_t *hwl,
     pid_t who,
-    char **bitmaps
+    char **cpusets
 ) {
-    hwloc_bitmap_t cpuset;
+    hwloc_cpuset_t cpuset;
     int rc = qvi_hwloc_task_get_cpubind(hwl, who, &cpuset);
     if (rc != QV_SUCCESS) return rc;
 
-    rc = qvi_hwloc_bitmap_asprintf(bitmaps, cpuset);
+    rc = qvi_hwloc_bitmap_asprintf(cpusets, cpuset);
     hwloc_bitmap_free(cpuset);
     return rc;
 }
@@ -985,7 +1008,7 @@ qvi_hwloc_get_nobjs_in_cpuset(
 int
 qvi_hwloc_get_obj_in_cpuset_by_depth(
     qvi_hwloc_t *hwl,
-    hwloc_const_bitmap_t cpuset,
+    hwloc_const_cpuset_t cpuset,
     int depth,
     unsigned index,
     hwloc_obj_t *result_obj
@@ -1007,25 +1030,6 @@ qvi_hwloc_get_obj_in_cpuset_by_depth(
         i++;
     }
     return (found ? QV_SUCCESS : QV_ERR_HWLOC);
-}
-
-// TODO(skg) Add support for binding threads, too.
-int
-qvi_hwloc_set_cpubind_from_bitmap(
-    qvi_hwloc_t *hwl,
-    hwloc_bitmap_t bitmap
-) {
-    int qvrc = QV_SUCCESS;
-
-    int rc = hwloc_set_cpubind(
-        hwl->topo,
-        bitmap,
-        HWLOC_CPUBIND_PROCESS
-    );
-    if (rc == -1) {
-        qvrc = QV_ERR_NOT_SUPPORTED;
-    }
-    return qvrc;
 }
 
 int

@@ -40,8 +40,8 @@ struct qv_context_s {
     qvi_task_t *task = nullptr;
     qvi_taskman_t *taskman = nullptr;
     qvi_hwloc_t *hwloc = nullptr;
-    qvi_bind_stack_t *bind_stack = nullptr;
     qvi_rmi_client_t *rmi = nullptr;
+    qvi_bind_stack_t *bind_stack = nullptr;
 };
 
 #ifdef __cplusplus

@@ -18,14 +18,16 @@
 #ifndef QVI_RMI_H
 #define QVI_RMI_H
 
+#include "qvi-common.h"
+#include "qvi-bbuff.h"
 #include "qvi-hwloc.h"
-#include "qvi-config.h"
-
-#include <unistd.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+// Keep in sync with qvi_rmi_config_t structure.
+#define QVI_RMI_CONFIG_PICTURE "ss"
 
 // Forward declarations.
 struct qvi_rmi_server_s;
@@ -33,6 +35,55 @@ typedef struct qvi_rmi_server_s qvi_rmi_server_t;
 
 struct qvi_rmi_client_s;
 typedef struct qvi_rmi_client_s qvi_rmi_client_t;
+
+typedef struct qvi_rmi_config_s {
+    qvi_hwloc_t *hwloc;
+    char *url;
+    char *hwtopo_path;
+} qvi_rmi_config_t;
+
+/**
+ *
+ */
+int
+qvi_rmi_config_new(
+    qvi_rmi_config_t **config
+);
+
+/**
+ *
+ */
+void
+qvi_rmi_config_free(
+    qvi_rmi_config_t **config
+);
+
+/**
+ *
+ */
+int
+qvi_rmi_config_cp(
+    qvi_rmi_config_t *from,
+    qvi_rmi_config_t *to
+);
+
+/**
+ *
+ */
+int
+qvi_rmi_config_pack(
+    qvi_rmi_config_t *config,
+    qvi_bbuff_t *buff
+);
+
+/**
+ *
+ */
+int
+qvi_rmi_config_unpack(
+    void *buff,
+    qvi_rmi_config_t *config
+);
 
 /**
  *
@@ -56,7 +107,7 @@ qvi_rmi_server_free(
 int
 qvi_rmi_server_config(
     qvi_rmi_server_t *server,
-    qvi_config_rmi_t *config
+    qvi_rmi_config_t *config
 );
 
 /**
@@ -108,7 +159,17 @@ int
 qvi_rmi_task_get_cpubind(
     qvi_rmi_client_t *client,
     pid_t who,
-    hwloc_cpuset_t cpuset
+    hwloc_cpuset_t *cpuset
+);
+
+/**
+ *
+ */
+int
+qvi_rmi_task_set_cpubind_from_cpuset(
+    qvi_rmi_client_t *client,
+    pid_t who,
+    hwloc_const_cpuset_t cpuset
 );
 
 /**

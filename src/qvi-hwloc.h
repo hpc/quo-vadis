@@ -27,6 +27,9 @@ extern "C" {
 #define QVI_HWLOC_DEV_NAME_BUFF_SIZE   32
 #define QVI_HWLOC_UUID_BUFF_SIZE       64
 
+struct qvi_hwloc_s;
+typedef struct qvi_hwloc_s qvi_hwloc_t;
+
 struct qvi_hwloc_device_s;
 typedef struct qvi_hwloc_device_s qvi_hwloc_device_t;
 
@@ -84,7 +87,7 @@ qvi_hwloc_topo_is_this_system(
  */
 int
 qvi_hwloc_bitmap_alloc(
-    hwloc_bitmap_t *bitmap
+    hwloc_cpuset_t *cpuset
 );
 
 /**
@@ -121,7 +124,7 @@ qvi_hwloc_emit_cpubind(
 int
 qvi_hwloc_bitmap_asprintf(
     char **result,
-    hwloc_const_bitmap_t bitmap
+    hwloc_const_cpuset_t cpuset
 );
 
 /**
@@ -129,7 +132,7 @@ qvi_hwloc_bitmap_asprintf(
  */
 int
 qvi_hwloc_bitmap_sscanf(
-    hwloc_bitmap_t bitmap,
+    hwloc_cpuset_t cpuset,
     char *str
 );
 
@@ -140,7 +143,7 @@ int
 qvi_hwloc_task_get_cpubind(
     qvi_hwloc_t *hwl,
     pid_t who,
-    hwloc_bitmap_t *out_bitmap
+    hwloc_cpuset_t *out_cpuset
 );
 
 /**
@@ -150,7 +153,7 @@ int
 qvi_hwloc_task_get_cpubind_as_string(
     qvi_hwloc_t *hwl,
     pid_t who,
-    char **bitmaps
+    char **cpusets
 );
 
 /**
@@ -214,7 +217,7 @@ qvi_hwloc_obj_type_depth(
 int
 qvi_hwloc_get_obj_in_cpuset_by_depth(
     qvi_hwloc_t *hwl,
-    hwloc_const_bitmap_t cpuset,
+    hwloc_const_cpuset_t cpuset,
     int depth,
     unsigned index,
     hwloc_obj_t *result_obj
@@ -249,9 +252,10 @@ qvi_hwloc_device_copy(
  *
  */
 int
-qvi_hwloc_set_cpubind_from_bitmap(
+qvi_hwloc_task_set_cpubind_from_cpuset(
     qvi_hwloc_t *hwl,
-    hwloc_bitmap_t bitmap
+    pid_t who,
+    hwloc_const_cpuset_t cpuset
 );
 
 /**

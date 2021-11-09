@@ -11,6 +11,8 @@
 
 /**
  * @file qvi-bbuff.h
+ *
+ * Base byte buffer infrastructure.
  */
 
 #ifndef QVI_BBUFF_H
@@ -21,6 +23,9 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+struct qvi_bbuff_s;
+typedef struct qvi_bbuff_s qvi_bbuff_t;
 
 /**
  *
@@ -62,46 +67,6 @@ qvi_bbuff_append(
     qvi_bbuff_t *buff,
     void *data,
     size_t size
-);
-
-/**
- *
- */
-int
-qvi_bbuff_vsprintf(
-    qvi_bbuff_t *buff,
-    const char *picture,
-    va_list args
-);
-
-/**
- *
- */
-int
-qvi_bbuff_sprintf(
-    qvi_bbuff_t *buff,
-    const char *picture,
-    ...
-);
-
-/**
- *
- */
-int
-qvi_data_vsscanf(
-    void *data,
-    const char *picture,
-    va_list args
-);
-
-/**
- *
- */
-int
-qvi_data_sscanf(
-    void *data,
-    const char *picture,
-    ...
 );
 
 #ifdef __cplusplus

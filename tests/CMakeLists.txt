@@ -29,7 +29,7 @@ add_test(
 
 ################################################################################
 ################################################################################
-# TODO(skg) Link to MPI-specific library.
+# TODO(skg) Add MPI tests.
 if (MPI_FOUND)
 add_executable(
     test-mpi
@@ -38,14 +38,8 @@ add_executable(
 
 target_link_libraries(
     test-mpi
-    quo-vadis
+    quo-vadis-mpi
 )
-
-# TODO(skg)
-#add_test(
-#    mpi
-#    test-mpi
-#)
 
 add_executable(
     test-mpi-init
@@ -54,7 +48,7 @@ add_executable(
 
 target_link_libraries(
     test-mpi-init
-    quo-vadis
+    quo-vadis-mpi
 )
 
 add_executable(
@@ -64,7 +58,7 @@ add_executable(
 
 target_link_libraries(
     test-mpi-scopes
-    quo-vadis
+    quo-vadis-mpi
 )
 
 add_executable(
@@ -74,7 +68,7 @@ add_executable(
 
 target_link_libraries(
     test-mpi-phases
-    quo-vadis
+    quo-vadis-mpi
 )
 endif(MPI_FOUND)
 
@@ -113,7 +107,7 @@ add_test(
       rmi
     COMMAND
       bash -c "export URL=\"tcp://127.0.0.1:55995\"    && \
-      (sleep 3 && killall -9 test-rmi               &) && \
+      (sleep 5 && killall -9 test-rmi               &) && \
       (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -s &) && \
       (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &) && \
       (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &) && \
@@ -147,7 +141,7 @@ add_executable(
 
 target_link_libraries(
     test-mpi-getdev
-    quo-vadis
+    quo-vadis-mpi
 )
 
 ################################################################################

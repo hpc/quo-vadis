@@ -47,14 +47,14 @@ int
 qvi_scope_init(
     qv_scope_t *scope,
     qvi_group_t *group,
-    hwloc_const_bitmap_t bitmap
+    hwloc_const_cpuset_t cpuset
 );
 
 /**
  *
  */
-hwloc_bitmap_t
-qvi_scope_bitmap_get(
+hwloc_cpuset_t
+qvi_scope_cpuset_get(
     qv_scope_t *scope
 );
 

@@ -35,14 +35,14 @@ struct qvi_taskman_s {
         qvi_group_t **group,
         qv_scope_intrinsic_t scope
     ) = 0;
-    /** */
+    /** Creates a new group from a group split. */
     virtual int group_create_from_split(
         qvi_group_t *in_group,
         int color,
         int key,
         qvi_group_t **out_group
     ) = 0;
-    /** */
+    /** Frees provided group. */
     virtual void group_free(qvi_group_t *group) = 0;
     /** Node-local task barrier. */
     virtual int barrier(void) = 0;

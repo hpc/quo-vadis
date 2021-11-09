@@ -85,7 +85,7 @@ qv_mpi_create(
     rc = qvi_bind_stack_init(
         ictx->bind_stack,
         ictx->task,
-        ictx->hwloc
+        ictx->rmi
     );
     if (rc != QV_SUCCESS) {
         ers = "qvi_bind_stack_init() failed";

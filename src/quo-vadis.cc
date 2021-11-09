@@ -80,7 +80,7 @@ qv_bind_push(
 
     return qvi_bind_push(
         ctx->bind_stack,
-        qvi_scope_bitmap_get(scope)
+        qvi_scope_cpuset_get(scope)
     );
 }
 
@@ -101,13 +101,11 @@ qv_bind_get_as_string(
     if (!ctx || !str) return QV_ERR_INVLD_ARG;
 
     hwloc_cpuset_t cpuset = nullptr;
-    int rc = qvi_hwloc_bitmap_alloc(&cpuset);
-    if (rc != QV_SUCCESS) return rc;
 
-    rc = qvi_rmi_task_get_cpubind(
+    int rc = qvi_rmi_task_get_cpubind(
         ctx->rmi,
         qvi_task_pid(ctx->task),
-        cpuset
+        &cpuset
     );
     if (rc != QV_SUCCESS) goto out;
 
@@ -150,7 +148,7 @@ qv_scope_nobjs(
     return qvi_rmi_get_nobjs_in_cpuset(
         ctx->rmi,
         obj,
-        qvi_scope_bitmap_get(scope),
+        qvi_scope_cpuset_get(scope),
         (unsigned *)n
     );
 }
@@ -263,7 +261,7 @@ qv_scope_split(
     int qvrc = qvi_hwloc_get_nobjs_in_cpuset(
         ctx->hwloc,
         QV_HW_OBJ_PU,
-        qvi_scope_bitmap_get(scope),
+        qvi_scope_cpuset_get(scope),
         &npus
     );
     if (qvrc != QV_SUCCESS) return qvrc;
@@ -303,7 +301,7 @@ qv_scope_split(
         hwloc_obj_t dobj;
         qvrc = qvi_hwloc_get_obj_in_cpuset_by_depth(
             ctx->hwloc,
-            qvi_scope_bitmap_get(scope),
+            qvi_scope_cpuset_get(scope),
             pu_depth,
             i,
             &dobj
@@ -361,7 +359,7 @@ qv_scope_split_at(
     int qvrc = qvi_hwloc_get_nobjs_in_cpuset(
         ctx->hwloc,
         type,
-        qvi_scope_bitmap_get(scope),
+        qvi_scope_cpuset_get(scope),
         &ntype
     );
     if (qvrc != QV_SUCCESS) return qvrc;
@@ -393,7 +391,7 @@ qv_scope_get_device(
     return qvi_hwloc_get_device_in_cpuset(
         ctx->hwloc,
         dev_obj,
-        qvi_scope_bitmap_get(scope),
+        qvi_scope_cpuset_get(scope),
         i,
         dev_id_type,
         dev_id

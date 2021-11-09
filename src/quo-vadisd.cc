@@ -11,17 +11,18 @@
 
 /**
  * @file quo-vadisd.cc
+ *
+ * The quo-vadis daemon.
  */
 
 #include "qvi-common.h"
 #include "qvi-utils.h"
-#include "qvi-config.h"
 #include "qvi-hwloc.h"
 #include "qvi-rmi.h"
 
 struct context {
     qvi_hwloc_t *hwloc = nullptr;
-    qvi_config_rmi_t *rmic = nullptr;
+    qvi_rmi_config_t *rmic = nullptr;
     qvi_rmi_server_t *rmi = nullptr;
     bool daemonized = false;
 };
@@ -33,7 +34,7 @@ context_free(
     if (!ctx) return;
     context *ictx = *ctx;
     if (!ictx) return;
-    qvi_config_rmi_free(&ictx->rmic);
+    qvi_rmi_config_free(&ictx->rmic);
     qvi_rmi_server_free(&ictx->rmi);
     qvi_hwloc_free(&ictx->hwloc);
     delete ictx;
@@ -54,9 +55,9 @@ context_new(
         goto out;
     }
 
-    rc = qvi_config_rmi_new(&ictx->rmic);
+    rc = qvi_rmi_config_new(&ictx->rmic);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_config_rmi_new() failed";
+        ers = "qvi_rmi_config_new() failed";
         goto out;
     }
 
