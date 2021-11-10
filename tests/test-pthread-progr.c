@@ -41,56 +41,64 @@ void MPL_thread_create(MPL_thread_func_t func, void *data,
  *              void *restrict arg);
  */
 
-
 /*
  *  This example mimics a progress thread being launched
  *  from the MPI implementation.
  *  MPI can use the intrinsic scopes in QV to derive
  *  resources from as we do in this example.
  */
-int MPI_thread_create(pthread_t *restrict thread,
+int mpi_impl_progr_thread_create(pthread_t *restrict thread,
               const pthread_attr_t *restrict attr,
-          void *(*start_routine)(void *),
-          void *restrict arg)
+              void *(*start_routine)(void *),
+              void *restrict arg)
 {
   char const *ers = NULL;
-  MPI_Comm comm = MPI_COMM_WORLD;
 
-  /* Initialization */
-  int rc = MPI_Init(&argc, &argv);
-  if (rc != MPI_SUCCESS) {
-    ers = "MPI_Init() failed";
-    panic("%s (rc=%d)", ers, rc);
-  }
-
-  /* Create a QV context */
+  /* Create a QV context.
+   * Currently, we only have qv_mpi_create to creat a context
+   * (perhaps we can rename this function to qv_ctx_create_mpi).
+   * We need a function that would work with pthreads for example */
   qv_context_t *ctx;
-  rc = qv_mpi_create(&ctx, comm);
+  rc = qv_ctx_create_pthread(&ctx);
   if (rc != QV_SUCCESS) {
     ers = "qv_mpi_create() failed";
     panic("%s (rc=%s)", ers, qv_strerr(rc));
   }
 
+  /* Derive the resources from the USER or SYSTEM scope */
+  #if USE_SYS_SCOPE
+  #define BASE_SCOPE QV_SCOPE_SYSTEM
+  #else
+  #define BASE_SCOPE QV_USER_SCOPE
+  #endif
+
   /* Get base scope: RM-given resources */
   qv_scope_t *base_scope;
-  rc = qv_scope_get(ctx, QV_SCOPE_USER, &base_scope);
+  rc = qv_scope_get(ctx, BASE_SCOPE, &base_scope);
   if (rc != QV_SUCCESS) {
     ers = "qv_scope_get() failed";
     panic("%s (rc=%s)", ers, qv_strerr(rc));
   }
 
-  /* Get a subscope to launch a progress thread */
+  /* Need to get a subscope to launch a progress thread */
   qv_scope_t *sub_scope;
+
   /* Need to discuss what attributes make sense, e.g.,
-     "close to me" */
+     "close to me" or "close to NIC" */
+  #if USE_SYS_SCOPE
+  int qv_attr = 0;
+  #else
   int qv_attr = QV_SCOPE_ATTR_SAME_NUMA | QV_SCOPE_ATTR_EXCLUSIVE;
+  #endif
   rc = qv_scope_create(ctx, base_scope,
                QV_HW_OBJ_CORE, 1, qv_attr,
-               &subscope);
+               &sub_scope);
   if (rc != QV_SUCCESS) {
     ers = "qv_scope_create() failed";
     panic("%s (rc=%s)", ers, qv_strerr(rc));
   }
+
+  // [...]
 
   /* Two options here:
    * 1. Push into the sub_scope and then launch the thread
@@ -102,11 +110,8 @@ int MPI_thread_create(pthread_t *restrict thread,
    * scope), but one may be able to launch a new thread there.
    */
 
-  // [...]
-
    qv_pthread_create(thread, attr, start_routine, arg,
                     subscope, ctx);
-
   /* Other systems may have calls like these: */
   // qv_mos_create_thread()
   // qv_mckernel_create_thread()
