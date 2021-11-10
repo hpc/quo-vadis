@@ -18,7 +18,6 @@
 #include "qvi-utils.h"
 
 #include "qvi-nvml.h"
-#include <unordered_map>
 
 using qvi_hwloc_dev_list_t = std::vector<qvi_hwloc_device_t *>;
 using qvi_hwloc_dev_id_set_t = std::unordered_set<std::string>;
@@ -34,7 +33,7 @@ typedef struct qvi_hwloc_objx_s {
 } qvi_hwloc_objx_t;
 
 /** ID used for invisible devices. */
-#define QVI_HWLOC_DEVICE_INVISIBLE_ID -1
+static const int QVI_HWLOC_DEVICE_INVISIBLE_ID = -1;
 
 typedef struct qvi_hwloc_device_s {
     /** Device cpuset */
@@ -381,6 +380,7 @@ set_gpu_device_info(
             amd_idx++,
             dev->cpuset
         );
+        return QV_SUCCESS;
 #endif
     }
     if (sscanf(obj->name, "nvml%d", &id) == 1) {

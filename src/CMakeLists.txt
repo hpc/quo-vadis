@@ -106,6 +106,7 @@ target_link_libraries(
     zmq
 )
 
+# TODO(skg) Add qvi-pmi
 ################################################################################
 ################################################################################
 #add_library(
@@ -182,15 +183,12 @@ target_include_directories(
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
 )
 
-# TODO(skg) Add qvi-pmi
 target_link_libraries(
     quo-vadis
     qvi-core
     qvi-hwloc
     qvi-rmi
 )
-
-install(TARGETS quo-vadis DESTINATION lib)
 
 ################################################################################
 ################################################################################
