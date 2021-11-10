@@ -150,8 +150,8 @@ echo_gpu_info(
             rc = qvi_hwloc_get_device_in_cpuset(
                 hwl,
                 QV_HW_OBJ_GPU,
-                hwloc_get_root_obj(qvi_hwloc_topo_get(hwl))->cpuset,
                 i,
+                hwloc_get_root_obj(qvi_hwloc_topo_get(hwl))->cpuset,
                 devnts[j].type,
                 &devids
             );
@@ -192,15 +192,12 @@ main(void)
         ers = "qvi_hwloc_topology_load() failed";
         goto out;
     }
-#if 0 // TODO(skg) XXX
-    char *root;
-    qvi_hwloc_bitmap_asprintf(
-        &root,
-        hwloc_get_root_obj(qvi_hwloc_topo_get(hwl))->complete_cpuset
-    );
-    printf("==============ROOT CPUSET %s\n", root);
-    free(root);
-#endif
+
+    rc = qvi_hwloc_discover_devices(hwl);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_hwloc_discover_devices() failed";
+        goto out;
+    }
 
     rc = echo_hw_info(hwl);
     if (rc != QV_SUCCESS) {

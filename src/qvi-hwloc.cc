@@ -526,12 +526,10 @@ discover_devices(
 ) {
     int rc = discover_all_devices(hwl);
     if (rc != QV_SUCCESS) return rc;
-#if 0 // TODO(skg) FIXME
     rc = discover_gpu_devices(hwl);
     if (rc != QV_SUCCESS) return rc;
     rc = discover_nic_devices(hwl);
     if (rc != QV_SUCCESS) return rc;
-#endif
     return QV_SUCCESS;
 }
 
@@ -572,18 +570,19 @@ qvi_hwloc_topology_load(
         ers = "hwloc_topology_load() failed";
         goto out;
     }
-
-    rc = discover_devices(hwl);
-    if (rc != 0) {
-        ers = "discover_devices() failed";
-        goto out;
-    }
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
         return QV_ERR_HWLOC;
     }
     return QV_SUCCESS;
+}
+
+int
+qvi_hwloc_discover_devices(
+    qvi_hwloc_t *hwl
+) {
+    return discover_devices(hwl);
 }
 
 hwloc_topology_t
@@ -1173,8 +1172,8 @@ int
 qvi_hwloc_get_device_in_cpuset(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t dev_obj,
-    hwloc_cpuset_t cpuset,
     int i,
+    hwloc_cpuset_t cpuset,
     qv_device_id_type_t dev_id_type,
     char **dev_id
 ) {

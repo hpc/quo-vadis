@@ -69,6 +69,14 @@ qvi_hwloc_topology_load(
 /**
  *
  */
+int
+qvi_hwloc_discover_devices(
+    qvi_hwloc_t *hwl
+);
+
+/**
+ *
+ */
 hwloc_topology_t
 qvi_hwloc_topo_get(
     qvi_hwloc_t *hwl
@@ -274,8 +282,8 @@ int
 qvi_hwloc_get_device_in_cpuset(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t dev_obj,
-    hwloc_cpuset_t cpuset,
     int i,
+    hwloc_cpuset_t cpuset,
     qv_device_id_type_t dev_id_type,
     char **dev_id
 );

@@ -1,6 +1,8 @@
+#include "qvi-macros.h"
+#include "quo-vadis-mpi.h"
+
 #include <stdlib.h>
 #include <stdio.h>
-#include "quo-vadis-mpi.h"
 
 #define panic(vargs...)                                                        \
 do {                                                                           \
@@ -11,6 +13,59 @@ do {                                                                           \
     exit(EXIT_FAILURE);                                                        \
 } while (0)
 
+typedef struct device_name_type_s {
+    char const *name;
+    qv_device_id_type_t type;
+} device_name_type_t;
+
+static const device_name_type_t devnts[] = {
+    {QVI_STRINGIFY(QV_DEVICE_ID_UUID),       QV_DEVICE_ID_UUID},
+    {QVI_STRINGIFY(QV_DEVICE_ID_PCI_BUS_ID), QV_DEVICE_ID_PCI_BUS_ID},
+    {QVI_STRINGIFY(QV_DEVICE_ID_ORDINAL),    QV_DEVICE_ID_ORDINAL}
+};
+
+static void
+emit_gpu_info(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    const char *scope_name
+) {
+    /* Get number of GPUs */
+    int ngpus;
+    int rc = qv_scope_nobjs(ctx, scope, QV_HW_OBJ_GPU, &ngpus);
+    if (rc != QV_SUCCESS) {
+        const char *ers = "qv_scope_nobjs() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    if (ngpus == 0) {
+        printf("\n# No GPU Devices in %s\n", scope_name);
+        return;
+    }
+
+    printf("\n# Discovered GPU Devices in %s\n", scope_name);
+    const unsigned ndevids = sizeof(devnts) / sizeof(device_name_type_t);
+    for (unsigned i = 0; i < ngpus; ++i) {
+        for (unsigned j = 0; j < ndevids; ++j) {
+            char *devids = NULL;
+            int rc = qv_scope_get_device(
+                ctx,
+                scope,
+                QV_HW_OBJ_GPU,
+                i,
+                devnts[j].type,
+                &devids
+            );
+            if (rc != QV_SUCCESS) {
+                const char *ers = "qv_scope_get_device() failed";
+                panic("%s (rc=%s)", ers, qv_strerr(rc));
+            }
+            printf("# Device %u %s = %s\n", i, devnts[j].name, devids);
+            free(devids);
+        }
+    }
+    printf("# -----------------------------------------------------------\n");
+}
 
 int main(int argc, char **argv)
 {
@@ -53,7 +108,11 @@ int main(int argc, char **argv)
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    /* Get num GPUs */
+    if (wrank == 0) {
+        emit_gpu_info(ctx, base_scope, "Base Scope");
+    }
+
+    /* Get number of GPUs */
     int ngpus;
     rc = qv_scope_nobjs(ctx, base_scope, QV_HW_OBJ_GPU, &ngpus);
     if (rc != QV_SUCCESS) {

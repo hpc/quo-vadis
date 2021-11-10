@@ -72,6 +72,7 @@ typedef enum qvi_rpc_funid_e {
     FID_TASK_GET_CPUBIND,
     FID_TASK_SET_CPUBIND_FROM_CPUSET,
     FID_GET_NOBJS_IN_CPUSET,
+    FID_GET_DEVICE_IN_CPUSET,
     FID_SCOPE_GET_INTRINSIC_SCOPE_CPUSET
 } qvi_rpc_funid_t;
 
@@ -526,6 +527,42 @@ rpc_ssi_get_nobjs_in_cpuset(
     return qvrc;
 }
 
+static int
+rpc_ssi_get_device_in_cpuset(
+    qvi_rmi_server_t *server,
+    qvi_msg_header_t *hdr,
+    void *input,
+    qvi_bbuff_t **output
+) {
+    int dev_obj_ai = 0, dev_i = 0, dev_id_type_ai = 0;
+    hwloc_cpuset_t cpuset = nullptr;
+    int qvrc = qvi_data_rmi_sscanf(
+        input,
+        hdr->picture,
+        &dev_obj_ai,
+        &dev_i,
+        &cpuset,
+        &dev_id_type_ai
+    );
+    if (qvrc != QV_SUCCESS) return qvrc;
+
+    char *dev_id = nullptr;
+    int rpcrc = qvi_hwloc_get_device_in_cpuset(
+        server->config->hwloc,
+        (qv_hw_obj_type_t)dev_obj_ai,
+        dev_i,
+        cpuset,
+        (qv_device_id_type_t)dev_id_type_ai,
+        &dev_id
+    );
+
+    qvrc = rpc_pack(output, hdr->fid, "is", rpcrc, dev_id);
+
+    hwloc_bitmap_free(cpuset);
+    free(dev_id);
+    return qvrc;
+}
+
 // TODO(skg) Lots of error path cleanup is required.
 static int
 rpc_ssi_scope_get_intrinsic_scope_cpuset(
@@ -590,6 +627,7 @@ static const qvi_rpc_fun_ptr_t rpc_dispatch_table[] = {
     rpc_ssi_task_get_cpubind,
     rpc_ssi_task_set_cpubind_from_cpuset,
     rpc_ssi_get_nobjs_in_cpuset,
+    rpc_ssi_get_device_in_cpuset,
     rpc_ssi_scope_get_intrinsic_scope_cpuset
 };
 
@@ -1065,6 +1103,33 @@ qvi_rmi_get_nobjs_in_cpuset(
 
     int rpcrc;
     qvrc = rpc_rep(client->zsock, "iu", &rpcrc, nobjs);
+    if (qvrc != QV_SUCCESS) return qvrc;
+
+    return rpcrc;
+}
+
+int
+qvi_rmi_get_device_in_cpuset(
+    qvi_rmi_client_t *client,
+    qv_hw_obj_type_t dev_obj,
+    int dev_i,
+    hwloc_cpuset_t cpuset,
+    qv_device_id_type_t dev_id_type,
+    char **dev_id
+) {
+    int qvrc = rpc_req(
+        client->zsock,
+        FID_GET_DEVICE_IN_CPUSET,
+        "iici",
+        (int)dev_obj,
+        dev_i,
+        cpuset,
+        (int)dev_id_type
+    );
+    if (qvrc != QV_SUCCESS) return qvrc;
+
+    int rpcrc;
+    qvrc = rpc_rep(client->zsock, "is", &rpcrc, dev_id);
     if (qvrc != QV_SUCCESS) return qvrc;
 
     return rpcrc;

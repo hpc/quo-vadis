@@ -147,12 +147,15 @@ qv_scope_nobjs(
 ) {
     if (!ctx || !scope || !n) return QV_ERR_INVLD_ARG;
 
-    return qvi_rmi_get_nobjs_in_cpuset(
+    unsigned nu = 0;
+    int rc = qvi_rmi_get_nobjs_in_cpuset(
         ctx->rmi,
         obj,
         qvi_scope_cpuset_get(scope),
-        (unsigned *)n
+        &nu
     );
+    *n = (int)nu;
+    return rc;
 }
 
 int
@@ -388,17 +391,16 @@ qv_scope_get_device(
     qv_device_id_type_t dev_id_type,
     char **dev_id
 ) {
-    if (!ctx || !scope || !dev_id || i < 0) return QV_ERR_INVLD_ARG;
-    // TODO(skg) This should be done via RMI.
-    return qvi_hwloc_get_device_in_cpuset(
-        ctx->hwloc,
+    if (!ctx || !scope || i < 0 || !dev_id) return QV_ERR_INVLD_ARG;
+
+    return qvi_rmi_get_device_in_cpuset(
+        ctx->rmi,
         dev_obj,
-        qvi_scope_cpuset_get(scope),
         i,
+        qvi_scope_cpuset_get(scope),
         dev_id_type,
         dev_id
     );
-    return QV_SUCCESS;
 }
 
 /*

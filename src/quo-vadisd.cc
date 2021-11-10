@@ -191,6 +191,12 @@ hwtopo_load(
         static cstr ers = "qvi_hwloc_topology_load() failed";
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
+
+    rc = qvi_hwloc_discover_devices(ctx->hwloc);
+    if (rc != QV_SUCCESS) {
+        static cstr ers = "qvi_hwloc_discover_devices() failed";
+        qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
+    }
 }
 
 static void

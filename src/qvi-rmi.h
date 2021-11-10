@@ -194,6 +194,19 @@ qvi_rmi_get_nobjs_in_cpuset(
     unsigned *nobjs
 );
 
+/**
+ *
+ */
+int
+qvi_rmi_get_device_in_cpuset(
+    qvi_rmi_client_t *client,
+    qv_hw_obj_type_t dev_obj,
+    int dev_i,
+    hwloc_cpuset_t cpuset,
+    qv_device_id_type_t dev_id_type,
+    char **dev_id
+);
+
 #ifdef __cplusplus
 }
 #endif
