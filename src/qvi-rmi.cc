@@ -71,9 +71,11 @@ typedef enum qvi_rpc_funid_e {
     FID_GBYE,
     FID_TASK_GET_CPUBIND,
     FID_TASK_SET_CPUBIND_FROM_CPUSET,
+    FID_OBJ_TYPE_DEPTH,
     FID_GET_NOBJS_IN_CPUSET,
     FID_GET_DEVICE_IN_CPUSET,
-    FID_SCOPE_GET_INTRINSIC_SCOPE_CPUSET
+    FID_SCOPE_GET_INTRINSIC_SCOPE_CPUSET,
+    FID_SPLIT_CPUSET_BY_GROUP
 } qvi_rpc_funid_t;
 
 typedef struct qvi_msg_header_s {
@@ -497,6 +499,31 @@ rpc_ssi_task_set_cpubind_from_cpuset(
 }
 
 static int
+rpc_ssi_obj_type_depth(
+    qvi_rmi_server_t *server,
+    qvi_msg_header_t *hdr,
+    void *input,
+    qvi_bbuff_t **output
+) {
+    int obj_ai = 0;
+    int qvrc = qvi_data_rmi_sscanf(
+        input,
+        hdr->picture,
+        &obj_ai
+    );
+    if (qvrc != QV_SUCCESS) return qvrc;
+
+    int depth = 0;
+    int rpcrc = qvi_hwloc_obj_type_depth(
+        server->config->hwloc,
+        (qv_hw_obj_type_t)obj_ai,
+        &depth
+    );
+
+    return rpc_pack(output, hdr->fid, "ii", rpcrc, depth);
+}
+
+static int
 rpc_ssi_get_nobjs_in_cpuset(
     qvi_rmi_server_t *server,
     qvi_msg_header_t *hdr,
@@ -616,6 +643,113 @@ rpc_ssi_scope_get_intrinsic_scope_cpuset(
 }
 
 /**
+ *
+ */
+static int
+split_cpuset_by_group(
+    qvi_hwloc_t *hwl,
+    hwloc_const_cpuset_t cpuset,
+    int n,
+    int group_id,
+    hwloc_cpuset_t *result
+) {
+    unsigned npus = 0;
+    int rc = qvi_hwloc_get_nobjs_in_cpuset(
+        hwl,
+        QV_HW_OBJ_PU,
+        cpuset,
+        &npus
+    );
+    if (rc != QV_SUCCESS) return rc;
+    // We use PUs to split resources.  Each set bit represents a PU. The number
+    // of bits set represents the number of PUs present on the system. The
+    // least-significant (right-most) bit represents logical ID 0.
+    int pu_depth;
+    rc = qvi_hwloc_obj_type_depth(
+        hwl,
+        QV_HW_OBJ_PU,
+        &pu_depth
+    );
+    if (rc != QV_SUCCESS) return rc;
+
+    const int chunk = npus / n;
+    // This happens when n > npus. We can't support that split.
+    if (chunk == 0) {
+        return QV_ERR_SPLIT;
+    }
+    // Group IDs must be < n: 0, 1, ... , n-1.
+    if (group_id >= n) {
+        return QV_ERR_SPLIT;
+    }
+    // Calculate base and extent of split.
+    const int base = chunk * group_id;
+    const int extent = base + chunk;
+    // Allocate and zero-out a new bitmap that will encode the split.
+    hwloc_bitmap_t bitm;
+    rc = qvi_hwloc_bitmap_alloc(&bitm);
+    if (rc != QV_SUCCESS) return rc;
+
+    hwloc_bitmap_zero(bitm);
+    for (int i = base; i < extent; ++i) {
+        hwloc_obj_t dobj;
+        rc = qvi_hwloc_get_obj_in_cpuset_by_depth(
+            hwl,
+            cpuset,
+            pu_depth,
+            i,
+            &dobj
+        );
+        if (rc != QV_SUCCESS) goto out;
+
+        rc = hwloc_bitmap_or(bitm, bitm, dobj->cpuset);
+        if (rc != 0) {
+            rc = QV_ERR_HWLOC;
+            goto out;
+        }
+    }
+out:
+    if (rc != QV_SUCCESS) {
+        hwloc_bitmap_free(bitm);
+        bitm = nullptr;
+    }
+    *result = bitm;
+    return rc;
+}
+
+static int
+rpc_ssi_split_cpuset_by_group(
+    qvi_rmi_server_t *server,
+    qvi_msg_header_t *hdr,
+    void *input,
+    qvi_bbuff_t **output
+) {
+    hwloc_cpuset_t cpuset = nullptr;
+    int n = 0, group_id = 0;
+    int qvrc = qvi_data_rmi_sscanf(
+        input,
+        hdr->picture,
+        &cpuset,
+        &n,
+        &group_id
+    );
+    if (qvrc != QV_SUCCESS) return qvrc;
+
+    hwloc_cpuset_t result = nullptr;
+    int rpcrc = split_cpuset_by_group(
+        server->config->hwloc,
+        cpuset,
+        n,
+        group_id,
+        &result
+    );
+
+    qvrc = rpc_pack(output, hdr->fid, "ic", rpcrc, result);
+    hwloc_bitmap_free(cpuset);
+    hwloc_bitmap_free(result);
+    return qvrc;
+}
+
+/**
  * Maps a given qvi_rpc_funid_t to a given function pointer. Must be kept in
  * sync with qvi_rpc_funid_t.
  */
@@ -626,9 +760,11 @@ static const qvi_rpc_fun_ptr_t rpc_dispatch_table[] = {
     rpc_ssi_gbye,
     rpc_ssi_task_get_cpubind,
     rpc_ssi_task_set_cpubind_from_cpuset,
+    rpc_ssi_obj_type_depth,
     rpc_ssi_get_nobjs_in_cpuset,
     rpc_ssi_get_device_in_cpuset,
-    rpc_ssi_scope_get_intrinsic_scope_cpuset
+    rpc_ssi_scope_get_intrinsic_scope_cpuset,
+    rpc_ssi_split_cpuset_by_group
 };
 
 static int
@@ -1062,7 +1198,7 @@ qvi_rmi_scope_get_intrinsic_scope_cpuset(
     qvi_rmi_client_t *client,
     pid_t requestor_pid,
     qv_scope_intrinsic_t iscope,
-    hwloc_cpuset_t cpuset
+    hwloc_cpuset_t *cpuset
 ) {
     int qvrc = rpc_req(
         client->zsock,
@@ -1074,14 +1210,30 @@ qvi_rmi_scope_get_intrinsic_scope_cpuset(
     if (qvrc != QV_SUCCESS) return qvrc;
 
     int rpcrc;
-    hwloc_cpuset_t rcpuset = nullptr;
-    qvrc = rpc_rep(client->zsock, "ic", &rpcrc, &rcpuset);
+    qvrc = rpc_rep(client->zsock, "ic", &rpcrc, cpuset);
     if (qvrc != QV_SUCCESS) return qvrc;
 
-    qvrc = qvi_hwloc_bitmap_copy(rcpuset, cpuset);
-    hwloc_bitmap_free(rcpuset);
+    return rpcrc;
+}
 
+int
+qvi_rmi_obj_type_depth(
+    qvi_rmi_client_t *client,
+    qv_hw_obj_type_t type,
+    int *depth
+) {
+    int qvrc = rpc_req(
+        client->zsock,
+        FID_OBJ_TYPE_DEPTH,
+        "i",
+        (int)type
+    );
     if (qvrc != QV_SUCCESS) return qvrc;
+
+    int rpcrc;
+    qvrc = rpc_rep(client->zsock, "ii", &rpcrc, depth);
+    if (qvrc != QV_SUCCESS) return qvrc;
+
     return rpcrc;
 }
 
@@ -1130,6 +1282,31 @@ qvi_rmi_get_device_in_cpuset(
 
     int rpcrc;
     qvrc = rpc_rep(client->zsock, "is", &rpcrc, dev_id);
+    if (qvrc != QV_SUCCESS) return qvrc;
+
+    return rpcrc;
+}
+
+int
+qvi_rmi_split_cpuset_by_group(
+    qvi_rmi_client_t *client,
+    hwloc_const_cpuset_t cpuset,
+    int n,
+    int group_id,
+    hwloc_cpuset_t *result
+) {
+    int qvrc = rpc_req(
+        client->zsock,
+        FID_SPLIT_CPUSET_BY_GROUP,
+        "cii",
+        cpuset,
+        n,
+        group_id
+    );
+    if (qvrc != QV_SUCCESS) return qvrc;
+
+    int rpcrc;
+    qvrc = rpc_rep(client->zsock, "ic", &rpcrc, result);
     if (qvrc != QV_SUCCESS) return qvrc;
 
     return rpcrc;

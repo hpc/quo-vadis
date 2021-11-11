@@ -166,6 +166,9 @@ int main(int argc, char **argv)
         }
     }
 
+    qv_mpi_free(ctx);
+    MPI_Finalize();
+
     return 0;
 }
 

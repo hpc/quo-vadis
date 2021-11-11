@@ -187,6 +187,7 @@ qv_scope_get(
     qv_scope_t **scope
 ) {
     if (!ctx || !scope) return QV_ERR_INVLD_ARG;
+    *scope = nullptr;
 
     qv_scope_t *qvs = nullptr;
     hwloc_bitmap_t cpuset = nullptr;
@@ -198,14 +199,11 @@ qv_scope_get(
     rc = ctx->taskman->group_create_from_intrinsic_scope(&group, iscope);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_hwloc_bitmap_alloc(&cpuset);
-    if (rc != QV_SUCCESS) goto out;
-
     rc = qvi_rmi_scope_get_intrinsic_scope_cpuset(
         ctx->rmi,
         qvi_task_pid(ctx->task),
         iscope,
-        cpuset
+        &cpuset
     );
     if (rc != QV_SUCCESS) goto out;
 
@@ -216,6 +214,16 @@ out:
     if (rc != QV_SUCCESS) qvi_scope_free(&qvs);
     *scope = qvs;
     return rc;
+}
+
+int
+qv_scope_barrier(
+    qv_context_t *ctx,
+    qv_scope_t *scope
+) {
+    if (!ctx || !scope) return QV_ERR_INVLD_ARG;
+
+    return qvi_scope_barrier(scope);
 }
 
 static int
@@ -235,9 +243,8 @@ create_new_subgroup_by_color(
     );
 }
 
-/*
- * TODO(skg) This should also be in the server code and retrieved via RPC?
- */
+// TODO(skg) Make sure to document all the paths that may result in an error.
+// Take a look at the RPC code to get a sense of where all the paths occur.
 int
 qv_scope_split(
     qv_context_t *ctx,
@@ -248,83 +255,40 @@ qv_scope_split(
 ) {
     static const cstr epref = "qv_scope_split Error: ";
 
+    int rc = QV_SUCCESS;
+    hwloc_cpuset_t cpuset = nullptr;
+    qv_scope_t *isubscope = nullptr;
+    qvi_group_t *subgroup = nullptr;
+
     if (!ctx || !scope || !subscope) {
-        return QV_ERR_INVLD_ARG;
+        rc = QV_ERR_INVLD_ARG;
+        goto out;
     }
     if (n <= 0 ) {
         qvi_log_error("{} n <= 0 (n = {})", epref, n);
-        return QV_ERR_INVLD_ARG;
+        rc = QV_ERR_INVLD_ARG;
+        goto out;
     }
-    // TODO(skg) This will have to change because our grouping algorithms will
-    // be in this space.
+    // TODO(skg) This will have to change because
+    // our grouping algorithms will be in this space.
     if (group_id < 0) {
         qvi_log_error("{} group_id < 0 (group_id = {})", epref, group_id);
-        return QV_ERR_INVLD_ARG;
+        rc = QV_ERR_INVLD_ARG;
+        goto out;
     }
 
-    unsigned npus;
-    int qvrc = qvi_hwloc_get_nobjs_in_cpuset(
-        ctx->hwloc,
-        QV_HW_OBJ_PU,
+    rc = qvi_rmi_split_cpuset_by_group(
+        ctx->rmi,
         qvi_scope_cpuset_get(scope),
-        &npus
+        n,
+        group_id,
+        &cpuset
     );
-    if (qvrc != QV_SUCCESS) return qvrc;
-    // We use PUs to split resources.  Each set bit represents a PU. The number
-    // of bits set represents the number of PUs present on the system. The
-    // least-significant (right-most) bit represents logical ID 0.
-    int pu_depth;
-    qvrc = qvi_hwloc_obj_type_depth(
-        ctx->hwloc,
-        QV_HW_OBJ_PU,
-        &pu_depth
-    );
-    if (qvrc != QV_SUCCESS) return qvrc;
-
-    int rc;
-    const int chunk = npus / n;
-    // This happens when n > npus. We can't support that split.
-    if (chunk == 0) {
-        qvi_log_error("{} n > npus ({} > {})", epref, n, npus);
-        return QV_ERR_SPLIT;
-    }
-    // Group IDs must be < n: 0, 1, ... , n-1.
-    if (group_id >= n) {
-        qvi_log_error("{} group_id >= n ({} >= {})", epref, group_id, n);
-        return QV_ERR_SPLIT;
-    }
-    // Calculate base and extent of split.
-    const int base = chunk * group_id;
-    const int extent = base + chunk;
-    // Allocate and zero-out a new bitmap that will encode the split.
-    hwloc_bitmap_t bitm;
-    qvrc = qvi_hwloc_bitmap_alloc(&bitm);
-    if (qvrc != QV_SUCCESS) return qvrc;
-
-    hwloc_bitmap_zero(bitm);
-    for (int i = base; i < extent; ++i) {
-        hwloc_obj_t dobj;
-        qvrc = qvi_hwloc_get_obj_in_cpuset_by_depth(
-            ctx->hwloc,
-            qvi_scope_cpuset_get(scope),
-            pu_depth,
-            i,
-            &dobj
-        );
-        if (qvrc != QV_SUCCESS) goto out;
-
-        rc = hwloc_bitmap_or(bitm, bitm, dobj->cpuset);
-        if (rc != 0) {
-            qvrc = QV_ERR_HWLOC;
-            goto out;
-        }
-    }
+    if (rc != QV_SUCCESS) goto out;
     // Create new sub-scope.
-    qv_scope_t *isubscope;
-    qvrc = qvi_scope_new(&isubscope);
-    if (qvrc != QV_SUCCESS) goto out;
+    rc = qvi_scope_new(&isubscope);
+    if (rc != QV_SUCCESS) goto out;
     // Create new sub-group.
-    qvi_group_t *subgroup;
     rc = create_new_subgroup_by_color(
         ctx,
         qvi_scope_group_get(scope),
@@ -333,20 +297,22 @@ qv_scope_split(
     );
     if (rc != QV_SUCCESS) goto out;
     // Initialize new sub-scope.
-    rc = qvi_scope_init(isubscope, subgroup, bitm);
+    rc = qvi_scope_init(isubscope, subgroup, cpuset);
     if (rc != QV_SUCCESS) goto out;
 out:
-    hwloc_bitmap_free(bitm);
-    if (qvrc != QV_SUCCESS) {
+    if (cpuset) hwloc_bitmap_free(cpuset);
+    if (rc != QV_SUCCESS) {
+        // Don't explicitly free subgroup here. Hope
+        // that qvi_group_free() will do the job for us.
         qvi_scope_free(&isubscope);
     }
     *subscope = isubscope;
-    return qvrc;
+    return rc;
 }
 
 /*
  * TODO(skg) This should also be in the server code and retrieved via RPC?
- * XXX(skg) Is this correct or do we have to do this a different way?
+ * TODO(skg) This needs to be fixed. Lots of work needed.
  */
 int
 qv_scope_split_at(
@@ -370,16 +336,6 @@ qv_scope_split_at(
     if (qvrc != QV_SUCCESS) return qvrc;
 
     return qv_scope_split(ctx, scope, ntype, group_id, subscope);
-}
-
-int
-qv_scope_barrier(
-    qv_context_t *ctx,
-    qv_scope_t *scope
-) {
-    if (!ctx || !scope) return QV_ERR_INVLD_ARG;
-
-    return qvi_scope_barrier(scope);
 }
 
 int

@@ -180,7 +180,17 @@ qvi_rmi_scope_get_intrinsic_scope_cpuset(
     qvi_rmi_client_t *client,
     pid_t requestor_pid,
     qv_scope_intrinsic_t iscope,
-    hwloc_cpuset_t cpuset
+    hwloc_cpuset_t *cpuset
+);
+
+/**
+ *
+ */
+int
+qvi_rmi_obj_type_depth(
+    qvi_rmi_client_t *client,
+    qv_hw_obj_type_t type,
+    int *depth
 );
 
 /**
@@ -205,6 +215,18 @@ qvi_rmi_get_device_in_cpuset(
     hwloc_cpuset_t cpuset,
     qv_device_id_type_t dev_id_type,
     char **dev_id
+);
+
+/**
+ *
+ */
+int
+qvi_rmi_split_cpuset_by_group(
+    qvi_rmi_client_t *client,
+    hwloc_const_cpuset_t cpuset,
+    int n,
+    int group_id,
+    hwloc_cpuset_t *result
 );
 
 #ifdef __cplusplus

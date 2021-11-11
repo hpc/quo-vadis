@@ -91,7 +91,7 @@ change_bind(
         ers = "qv_bind_get_as_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] New cpubind is %s\n", wrank, bind1s);
+    printf("[%d] New cpubind is     %s\n", wrank, bind1s);
     free(bind1s);
 
     rc = qv_bind_pop(ctx);
@@ -106,7 +106,7 @@ change_bind(
         ers = "qv_bind_get_as_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Popped cpubind is %s\n", wrank, bind2s);
+    printf("[%d] Popped cpubind is  %s\n", wrank, bind2s);
     free(bind2s);
     // TODO(skg) Add test to make popped is same as original.
     rc = qv_scope_barrier(ctx, scope);

@@ -243,7 +243,7 @@ main(
         ctx,
         base_scope,
         QV_HW_OBJ_NUMANODE,
-    wrank % nnumas,          // color or group id
+        wrank % nnumas,          // color or group id
         &numa_scope
     );
     if (rc != QV_SUCCESS) {
@@ -321,13 +321,11 @@ main(
      * Clean up
      ***************************************/
 
-#if 0
     rc = qv_scope_free(ctx, numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-#endif
 
     rc = qv_scope_free(ctx, sub_scope);
     if (rc != QV_SUCCESS) {

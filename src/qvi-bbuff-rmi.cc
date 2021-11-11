@@ -27,6 +27,8 @@
 #include "qvi-bbuff-rmi.h"
 #include "qvi-hwloc.h"
 
+static cstr NULL_CPUSET = "";
+
 int
 qvi_bbuff_rmi_vsprintf(
     qvi_bbuff_t *buff,
@@ -51,11 +53,21 @@ qvi_bbuff_rmi_vsprintf(
         if (picture[i] == 'c') {
             hwloc_cpuset_t data = va_arg(args, hwloc_cpuset_t);
             char *datas = nullptr;
-            rc = qvi_hwloc_bitmap_asprintf(&datas, data);
-            if (rc != QV_SUCCESS) break;
+            // Protect against null data.
+            if (!data) {
+                int np = asprintf(&datas, "%s", NULL_CPUSET);
+                if (np == -1) {
+                    rc = QV_ERR_OOR;
+                    break;
+                }
+            }
+            else {
+                rc = qvi_hwloc_bitmap_asprintf(&datas, data);
+                if (rc != QV_SUCCESS) break;
+            }
             // We are sending the string representation of the cpuset.
             rc = qvi_bbuff_append(buff, datas, strlen(datas) + 1);
-            if (datas) free(datas);
+            free(datas);
             if (rc != QV_SUCCESS) break;
             continue;
         }
@@ -131,8 +143,14 @@ qvi_data_rmi_vsscanf(
             rc = qvi_hwloc_bitmap_alloc(cpuset);
             if (rc != QV_SUCCESS) break;
             char *cpusets = (char *)pos;
-            rc = qvi_hwloc_bitmap_sscanf(*cpuset, cpusets);
-            if (rc != QV_SUCCESS) break;
+            // Protect against empty data.
+            if (strcmp(NULL_CPUSET, cpusets) == 0) {
+                hwloc_bitmap_zero(*cpuset);
+            }
+            else {
+                rc = qvi_hwloc_bitmap_sscanf(*cpuset, cpusets);
+                if (rc != QV_SUCCESS) break;
+            }
             pos += strlen(cpusets) + 1;
             continue;
         }
