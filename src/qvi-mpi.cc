@@ -17,7 +17,6 @@
 
 #include "qvi-mpi.h"
 #include "qvi-utils.h"
-#include "qvi-context.h"
 
 #include "mpi.h"
 
