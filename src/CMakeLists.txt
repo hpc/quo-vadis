@@ -152,6 +152,7 @@ target_include_directories(
 
 target_link_libraries(
     qvi-mpi
+    qvi-hwloc
     qvi-core
     ${MPI_C_LIBRARIES}
 )
