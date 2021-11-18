@@ -19,7 +19,7 @@
 #include "qvi-scope.h"
 
 int
-qvi_create(
+qvi_context_create(
     qv_context_t **ctx
 ) {
     if (!ctx) return QV_ERR_INVLD_ARG;
@@ -54,7 +54,7 @@ qvi_create(
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        qvi_free(ictx);
+        qvi_context_free(ictx);
         ictx = nullptr;
     }
     *ctx = ictx;
@@ -62,7 +62,7 @@ out:
 }
 
 void
-qvi_free(
+qvi_context_free(
     qv_context_t *ctx
 ) {
     if (!ctx) return;
@@ -118,7 +118,7 @@ out:
 }
 
 int
-qv_barrier(
+qv_context_barrier(
     qv_context_t *ctx
 ) {
     if (!ctx) return QV_ERR_INVLD_ARG;

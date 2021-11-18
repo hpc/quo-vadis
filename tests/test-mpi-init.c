@@ -43,16 +43,16 @@ main(
     }
 
     qv_context_t *ctx = NULL;
-    rc = qv_mpi_create(&ctx, comm);
+    rc = qv_mpi_context_create(&ctx, comm);
     if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_create() failed";
+        ers = "qv_mpi_context_create() failed";
         goto out;
     }
 
 out:
-    rc = qv_mpi_free(ctx);
+    rc = qv_mpi_context_free(ctx);
     if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_free() failed";
+        ers = "qv_mpi_context_free() failed";
     }
     MPI_Finalize();
     if (ers) {

@@ -31,7 +31,7 @@ extern "C" {
  *
  */
 int
-qv_mpi_create(
+qv_mpi_context_create(
     qv_context_t **ctx,
     MPI_Comm comm
 );
@@ -40,7 +40,7 @@ qv_mpi_create(
  *
  */
 int
-qv_mpi_free(
+qv_mpi_context_free(
     qv_context_t *ctx
 );
 

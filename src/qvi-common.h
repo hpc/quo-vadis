@@ -58,7 +58,7 @@ typedef uint8_t byte;
  *
  */
 int
-qvi_create(
+qvi_context_create(
     qv_context_t **ctx
 );
 
@@ -66,7 +66,7 @@ qvi_create(
  *
  */
 void
-qvi_free(
+qvi_context_free(
     qv_context_t *ctx
 );
 

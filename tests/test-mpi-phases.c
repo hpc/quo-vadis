@@ -78,9 +78,9 @@ main(
 
     /* Create a QV context */
     qv_context_t *ctx;
-    rc = qv_mpi_create(&ctx, comm);
+    rc = qv_mpi_context_create(&ctx, comm);
     if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_create() failed";
+        ers = "qv_mpi_context_create() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -306,7 +306,7 @@ main(
     /* Everybody else waits... */
     rc = qv_scope_barrier(ctx, numa_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_barrier() failed";
+        ers = "qv_context_barrier() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -339,14 +339,14 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_barrier(ctx);
+    rc = qv_context_barrier(ctx);
     if (rc != QV_SUCCESS) {
-        ers = "qv_barrier() failed";
+        ers = "qv_context_barrier() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 out:
-    if (qv_mpi_free(ctx) != QV_SUCCESS) {
-        ers = "qv_free() failed";
+    if (qv_mpi_context_free(ctx) != QV_SUCCESS) {
+        ers = "qv_mpi_context_free() failed";
         panic("%s", ers);
     }
     MPI_Finalize();

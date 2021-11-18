@@ -45,7 +45,7 @@ out:
 }
 
 int
-qv_mpi_create(
+qv_mpi_context_create(
     qv_context_t **ctx,
     MPI_Comm comm
 ) {
@@ -55,9 +55,9 @@ qv_mpi_create(
     cstr ers = nullptr;
 
     qv_context_t *ictx = nullptr;
-    rc = qvi_create(&ictx);
+    rc = qvi_context_create(&ictx);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_create() failed";
+        ers = "qvi_context_create() failed";
         goto out;
     }
 
@@ -94,7 +94,7 @@ qv_mpi_create(
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        (void)qv_mpi_free(ictx);
+        (void)qv_mpi_context_free(ictx);
         ictx = nullptr;
     }
     *ctx = ictx;
@@ -102,12 +102,12 @@ out:
 }
 
 int
-qv_mpi_free(
+qv_mpi_context_free(
     qv_context_t *ctx
 ) {
     if (!ctx) return QV_ERR_INVLD_ARG;
     if (ctx->taskman) delete ctx->taskman;
-    qvi_free(ctx);
+    qvi_context_free(ctx);
     return QV_SUCCESS;
 }
 

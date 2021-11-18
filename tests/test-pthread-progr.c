@@ -54,14 +54,11 @@ int mpi_impl_progr_thread_create(pthread_t *restrict thread,
 {
   char const *ers = NULL;
 
-  /* Create a QV context.
-   * Currently, we only have qv_mpi_create to creat a context
-   * (perhaps we can rename this function to qv_ctx_create_mpi).
-   * We need a function that would work with pthreads for example */
+  /* Create a QV context. */
   qv_context_t *ctx;
   rc = qv_ctx_create_pthread(&ctx);
   if (rc != QV_SUCCESS) {
-    ers = "qv_mpi_create() failed";
+    ers = "qv_mpi_context_create() failed";
     panic("%s (rc=%s)", ers, qv_strerr(rc));
   }
 

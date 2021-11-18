@@ -94,9 +94,9 @@ int main(int argc, char **argv)
 
     /* Create a QV context */
     qv_context_t *ctx;
-    rc = qv_mpi_create(&ctx, comm);
+    rc = qv_mpi_context_create(&ctx, comm);
     if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_create() failed";
+        ers = "qv_mpi_context_create() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -166,7 +166,7 @@ int main(int argc, char **argv)
         }
     }
 
-    qv_mpi_free(ctx);
+    qv_mpi_context_free(ctx);
     MPI_Finalize();
 
     return 0;
