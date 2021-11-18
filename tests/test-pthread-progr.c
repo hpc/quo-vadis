@@ -56,9 +56,9 @@ int mpi_impl_progr_thread_create(pthread_t *restrict thread,
 
   /* Create a QV context. */
   qv_context_t *ctx;
-  rc = qv_ctx_create_pthread(&ctx);
+  rc = qv_pthread_context_create(&ctx);
   if (rc != QV_SUCCESS) {
-    ers = "qv_mpi_context_create() failed";
+    ers = "qv_pthread_context_create() failed";
     panic("%s (rc=%s)", ers, qv_strerr(rc));
   }
 
