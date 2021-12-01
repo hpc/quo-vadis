@@ -112,8 +112,8 @@ endif()
 # TODO(skg) Add more, improve.
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 set(CPACK_SOURCE_GENERATOR "TBZ2;TGZ;ZIP")
+set(CPACK_SOURCE_IGNORE_FILES "/\.cache/;/\.git/;/\.*.swp$;/build/")
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt)
-set(CPACK_PACKAGE_INSTALL_DIRECTORY "quo-vadis")
 include(CPack)
 
 # pkg-config

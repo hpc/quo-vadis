@@ -38,7 +38,6 @@ For developers and debugging:
 HWLOC_XMLFILE # Path to system topology XML file.
 ```
 ### Examples
-
 ```shell
 # Set communication port
 export QV_PORT=55996
@@ -56,6 +55,13 @@ mpiexec -n 2 build/tests/test-mpi-scopes
 * ZeroMQ (https://github.com/zeromq/libzmq)
 * An MPI-3 implementation (https://www.open-mpi.org, https://www.mpich.org)
 * OpenPMIx (https://github.com/openpmix/openpmix)
+
+## Packaging for Developers
+```shell
+# To generate source distributions, run the following:
+cd build
+make package_source
+```
 
 ## Los Alamos National Laboratory Code Release
 LA-CC-21-084

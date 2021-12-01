@@ -656,7 +656,7 @@ topo_fopen(
     const char *path,
     int *fd
 ) {
-    *fd = open(path, O_CREAT | O_RDWR);
+    *fd = open(path, O_CREAT | O_RDWR, 0644);
     if (*fd == -1) {
         int err = errno;
         cstr ers = "open() failed";
