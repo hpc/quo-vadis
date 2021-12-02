@@ -80,6 +80,8 @@ struct qvi_taskman_mpi_s : public qvi_taskman_s {
         qvi_group_t **group,
         qv_scope_intrinsic_t scope
     ) {
+        int rc = QV_SUCCESS;
+
         qvi_group_mpi_t *igroup = new qvi_group_mpi_t;
         if (!igroup) return QV_ERR_OOR;
 
@@ -94,13 +96,18 @@ struct qvi_taskman_mpi_s : public qvi_taskman_s {
             case QV_SCOPE_PROCESS:
                 mpi_group = QVI_MPI_GROUP_SELF;
                 break;
+            default:
+                rc = QV_ERR_INVLD_ARG;
+                break;
         }
+        if (rc != QV_SUCCESS) goto out;
 
-        int rc = qvi_mpi_group_create_from_group_id(
+        rc = qvi_mpi_group_create_from_group_id(
             mpi,
             mpi_group,
             &igroup->mpi_group
         );
+    out:
         if (rc != QV_SUCCESS) {
             group_free(igroup);
             igroup = nullptr;
