@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -140,14 +140,11 @@ qvi_data_rmi_vsscanf(
         }
         if (picture[i] == 'c') {
             hwloc_cpuset_t *cpuset = va_arg(args, hwloc_cpuset_t *);
-            rc = qvi_hwloc_bitmap_alloc(cpuset);
+            rc = qvi_hwloc_bitmap_calloc(cpuset);
             if (rc != QV_SUCCESS) break;
             char *cpusets = (char *)pos;
             // Protect against empty data.
-            if (strcmp(NULL_CPUSET, cpusets) == 0) {
-                hwloc_bitmap_zero(*cpuset);
-            }
-            else {
+            if (strcmp(NULL_CPUSET, cpusets) != 0) {
                 rc = qvi_hwloc_bitmap_sscanf(*cpuset, cpusets);
                 if (rc != QV_SUCCESS) break;
             }

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2021 Triad National Security, LLC
+# Copyright (c) 2020-2022 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -165,10 +165,12 @@ add_library(
     qvi-context.h
     qvi-task.h
     qvi-group.h
+    qvi-respool.h
     qvi-scope.h
     qvi-taskman.h
     qvi-bind.h
     qvi-task.cc
+    qvi-respool.cc
     qvi-scope.cc
     qvi-bind.cc
     quo-vadis.cc

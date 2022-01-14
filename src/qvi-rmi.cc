@@ -612,7 +612,7 @@ rpc_ssi_scope_get_intrinsic_scope_cpuset(
         case QV_SCOPE_USER:
         case QV_SCOPE_JOB: {
             // TODO(skg) Deal with errors.
-            rc = qvi_hwloc_bitmap_alloc(&cpuset);
+            rc = qvi_hwloc_bitmap_calloc(&cpuset);
             if (rc != QV_SUCCESS) return rc;
             rc = qvi_hwloc_bitmap_copy(
                 hwloc_topology_get_topology_cpuset(topo),
@@ -686,10 +686,8 @@ split_cpuset_by_group(
     const int extent = base + chunk;
     // Allocate and zero-out a new bitmap that will encode the split.
     hwloc_bitmap_t bitm;
-    rc = qvi_hwloc_bitmap_alloc(&bitm);
+    rc = qvi_hwloc_bitmap_calloc(&bitm);
     if (rc != QV_SUCCESS) return rc;
-
-    hwloc_bitmap_zero(bitm);
     for (int i = base; i < extent; ++i) {
         hwloc_obj_t dobj;
         rc = qvi_hwloc_get_obj_in_cpuset_by_depth(

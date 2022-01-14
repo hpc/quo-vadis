@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -600,13 +600,14 @@ qvi_hwloc_topo_is_this_system(
 }
 
 int
-qvi_hwloc_bitmap_alloc(
+qvi_hwloc_bitmap_calloc(
     hwloc_cpuset_t *cpuset
 ) {
     int rc = QV_SUCCESS;
 
     *cpuset = hwloc_bitmap_alloc();
     if (!*cpuset) rc = QV_ERR_OOR;
+    hwloc_bitmap_zero(*cpuset);
 
     return rc;
 }
@@ -813,7 +814,7 @@ qvi_hwloc_task_get_cpubind(
     int qrc = QV_SUCCESS, rc = 0;
 
     hwloc_cpuset_t cur_bind = nullptr;
-    qrc = qvi_hwloc_bitmap_alloc(&cur_bind);
+    qrc = qvi_hwloc_bitmap_calloc(&cur_bind);
     if (qrc != QV_SUCCESS) return qrc;
 
     // TODO(skg) Add another routine to also support getting TIDs.
@@ -1043,7 +1044,7 @@ qvi_hwloc_device_new(
         goto out;
     }
 
-    rc = qvi_hwloc_bitmap_alloc(&idev->cpuset);
+    rc = qvi_hwloc_bitmap_calloc(&idev->cpuset);
     if (rc != QV_SUCCESS) {
         goto out;
     }

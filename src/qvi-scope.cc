@@ -16,6 +16,7 @@
 #include "qvi-common.h"
 
 #include "qvi-scope.h"
+#include "qvi-respool.h"
 
 // Type definition
 struct qv_scope_s {
@@ -32,7 +33,7 @@ qvi_scope_new(
     qv_scope_t *iscope = qvi_new qv_scope_t;
     if (!scope) return QV_ERR_OOR;
 
-    int rc = qvi_hwloc_bitmap_alloc(&iscope->cpuset);
+    int rc = qvi_hwloc_bitmap_calloc(&iscope->cpuset);
     if (rc != QV_SUCCESS) goto out;
 out:
     if (rc != QV_SUCCESS) qvi_scope_free(&iscope);

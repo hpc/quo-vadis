@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -94,7 +94,7 @@ qvi_hwloc_topo_is_this_system(
  *
  */
 int
-qvi_hwloc_bitmap_alloc(
+qvi_hwloc_bitmap_calloc(
     hwloc_cpuset_t *cpuset
 );
 

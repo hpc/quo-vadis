@@ -166,6 +166,8 @@ int main(int argc, char **argv)
         }
     }
 
+    qv_scope_free(ctx, rank_scope);
+    qv_scope_free(ctx, base_scope);
     qv_mpi_context_free(ctx);
     MPI_Finalize();
 
