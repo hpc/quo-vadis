@@ -47,10 +47,11 @@ qvi_scope_free(
 ) {
     if (!scope) return;
     qv_scope_t *iscope = *scope;
-    if (!iscope) return;
+    if (!iscope) goto out;
     qvi_group_free(&iscope->group);
     hwloc_bitmap_free(iscope->cpuset);
     delete iscope;
+out:
     *scope = nullptr;
 }
 

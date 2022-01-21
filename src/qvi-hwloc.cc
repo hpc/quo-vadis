@@ -232,7 +232,7 @@ qvi_hwloc_free(
 ) {
     if (!hwl) return;
     qvi_hwloc_t *ihwl = *hwl;
-    if (!ihwl) return;
+    if (!ihwl) goto out;
     qvi_hwloc_dev_id_set_free(&ihwl->device_ids);
     qvi_hwloc_dev_list_free(&ihwl->devices);
     qvi_hwloc_dev_list_free(&ihwl->gpus);
@@ -240,6 +240,7 @@ qvi_hwloc_free(
     if (ihwl->topo) hwloc_topology_destroy(ihwl->topo);
     if (ihwl->topo_file) free(ihwl->topo_file);
     delete ihwl;
+out:
     *hwl = nullptr;
 }
 

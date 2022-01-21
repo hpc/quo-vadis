@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -20,70 +20,19 @@
 
 #include "qvi-common.h"
 #include "qvi-bbuff.h"
+#include "qvi-rmi-txrx.h"
 #include "qvi-hwloc.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// Keep in sync with qvi_rmi_config_t structure.
-#define QVI_RMI_CONFIG_PICTURE "ss"
-
-// Forward declarations.
+// Forward declarations
 struct qvi_rmi_server_s;
 typedef struct qvi_rmi_server_s qvi_rmi_server_t;
 
 struct qvi_rmi_client_s;
 typedef struct qvi_rmi_client_s qvi_rmi_client_t;
-
-typedef struct qvi_rmi_config_s {
-    qvi_hwloc_t *hwloc;
-    char *url;
-    char *hwtopo_path;
-} qvi_rmi_config_t;
-
-/**
- *
- */
-int
-qvi_rmi_config_new(
-    qvi_rmi_config_t **config
-);
-
-/**
- *
- */
-void
-qvi_rmi_config_free(
-    qvi_rmi_config_t **config
-);
-
-/**
- *
- */
-int
-qvi_rmi_config_cp(
-    qvi_rmi_config_t *from,
-    qvi_rmi_config_t *to
-);
-
-/**
- *
- */
-int
-qvi_rmi_config_pack(
-    qvi_rmi_config_t *config,
-    qvi_bbuff_t *buff
-);
-
-/**
- *
- */
-int
-qvi_rmi_config_unpack(
-    void *buff,
-    qvi_rmi_config_t *config
-);
 
 /**
  *

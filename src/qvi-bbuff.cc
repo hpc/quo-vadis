@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -24,10 +24,10 @@ struct qvi_bbuff_s {
     /** Pointer to data backing store. */
     void *data = nullptr;
     /** Buffer constants. */
-    enum constants {
+    enum {
         /** Minimum growth for resizes, etc. */
         min_growth = 256
-    };
+    } constants;
 };
 
 int

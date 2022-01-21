@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -851,74 +851,6 @@ server_go(
         qvi_log_error("RX/TX loop exited with rc={} ({})", rc, qv_strerr(rc));
     }
     return nullptr;
-}
-
-int
-qvi_rmi_config_new(
-    qvi_rmi_config_t **config
-) {
-    int rc = QV_SUCCESS;
-    qvi_rmi_config_t *ic = (qvi_rmi_config_t *)calloc(1, sizeof(*ic));
-    if (!ic) rc = QV_ERR_OOR;
-    if (rc != QV_SUCCESS) qvi_rmi_config_free(&ic);
-    *config = ic;
-    return rc;
-}
-
-void
-qvi_rmi_config_free(
-    qvi_rmi_config_t **config
-) {
-    if (!config) return;
-    qvi_rmi_config_t *ic = *config;
-    if (!ic) return;
-    if (ic->url) free(ic->url);
-    if (ic->hwtopo_path) free(ic->hwtopo_path);
-    free(ic);
-    *config = nullptr;
-}
-
-int
-qvi_rmi_config_cp(
-    qvi_rmi_config_t *from,
-    qvi_rmi_config_t *to
-) {
-    to->hwloc = from->hwloc;
-    int nw = asprintf(&to->url, "%s", from->url);
-    if (nw == -1) return QV_ERR_OOR;
-    nw = asprintf(&to->hwtopo_path, "%s", from->hwtopo_path);
-    if (nw == -1) return QV_ERR_OOR;
-    return QV_SUCCESS;
-}
-
-int
-qvi_rmi_config_pack(
-    qvi_rmi_config_t *config,
-    qvi_bbuff_t *buff
-) {
-    int rc = qvi_bbuff_rmi_sprintf(
-        buff,
-        QVI_RMI_CONFIG_PICTURE,
-        config->url,
-        config->hwtopo_path
-    );
-    return rc;
-}
-
-int
-qvi_rmi_config_unpack(
-    void *buff,
-    qvi_rmi_config_t **config
-) {
-    int rc = qvi_rmi_config_new(config);
-    if (rc != QV_SUCCESS) return rc;
-    rc = qvi_data_rmi_sscanf(
-        buff,
-        QVI_RMI_CONFIG_PICTURE,
-        &(*config)->url,
-        &(*config)->hwtopo_path
-    );
-    return rc;
 }
 
 int

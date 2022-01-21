@@ -86,8 +86,10 @@ add_library(
     qvi-rmi
     OBJECT
     qvi-rmi.h
+    qvi-rmi-txrx.h
     qvi-bbuff-rmi.h
     qvi-rmi.cc
+    qvi-rmi-txrx.cc
     qvi-bbuff-rmi.cc
 )
 
@@ -163,14 +165,16 @@ add_library(
     quo-vadis
     ../include/quo-vadis.h
     qvi-context.h
+    qvi-hwres.h
+    qvi-hwrespool.h
     qvi-task.h
     qvi-group.h
-    qvi-respool.h
     qvi-scope.h
     qvi-taskman.h
     qvi-bind.h
+    qvi-hwres.cc
+    qvi-hwrespool.cc
     qvi-task.cc
-    qvi-respool.cc
     qvi-scope.cc
     qvi-bind.cc
     quo-vadis.cc
