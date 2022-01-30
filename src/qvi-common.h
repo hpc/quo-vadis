@@ -53,6 +53,8 @@
 
 typedef char const* cstr;
 typedef uint8_t byte;
+// TODO(skg) Consider moving.
+typedef int qvi_device_id_t;
 
 /**
  *

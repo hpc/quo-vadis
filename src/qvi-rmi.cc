@@ -21,8 +21,9 @@
 
 #include "qvi-common.h"
 #include "qvi-rmi.h"
-#include "qvi-utils.h"
 #include "qvi-bbuff-rmi.h"
+#include "qvi-hwpool.h"
+#include "qvi-utils.h"
 
 #include "zmq.h"
 
@@ -42,7 +43,9 @@ do {                                                                           \
 
 struct qvi_rmi_server_s {
     /** Server configuration */
-    qvi_rmi_config_t *config = nullptr;
+    qvi_line_config_t *config = nullptr;
+    /** The base resource pool maintained by the server. */
+    qvi_hwpool_t *hwpool = nullptr;
     /** ZMQ context */
     void *zctx = nullptr;
     /** Router (client-facing) socket */
@@ -57,7 +60,7 @@ struct qvi_rmi_server_s {
 
 struct qvi_rmi_client_s {
     /** Client configuration */
-    qvi_rmi_config_t *config = nullptr;
+    qvi_line_config_t *config = nullptr;
     /** ZMQ context */
     void *zctx = nullptr;
     /** Communication socket */
@@ -74,7 +77,7 @@ typedef enum qvi_rpc_funid_e {
     FID_OBJ_TYPE_DEPTH,
     FID_GET_NOBJS_IN_CPUSET,
     FID_GET_DEVICE_IN_CPUSET,
-    FID_SCOPE_GET_INTRINSIC_SCOPE_CPUSET,
+    FID_SCOPE_GET_INTRINSIC_SCOPE_HWPOOL,
     FID_SPLIT_CPUSET_BY_GROUP
 } qvi_rpc_funid_t;
 
@@ -311,7 +314,7 @@ rpc_vunpack(
     qvi_msg_header_t hdr;
     size_t trim = unpack_msg_header(data, &hdr);
     void *body = data_trim(data, trim);
-    return qvi_data_rmi_vsscanf(body, picture, args);
+    return qvi_bbuff_rmi_vsscanf(body, picture, args);
 }
 
 static int
@@ -429,13 +432,13 @@ rpc_ssi_hello(
 ) {
     // TODO(skg) This will go into some registry somewhere.
     int whoisit;
-    int rc = qvi_data_rmi_sscanf(input, hdr->picture, &whoisit);
+    int rc = qvi_bbuff_rmi_sscanf(input, hdr->picture, &whoisit);
     if (rc != QV_SUCCESS) return rc;
     // Pack relevant configuration information.
     rc = rpc_pack(
         output,
         hdr->fid,
-        QVI_RMI_CONFIG_PICTURE,
+        QVI_LINE_CONFIG_PICTURE,
         server->config->url,
         server->config->hwtopo_path
     );
@@ -460,7 +463,7 @@ rpc_ssi_task_get_cpubind(
     qvi_bbuff_t **output
 ) {
     int who = 0;
-    int qvrc = qvi_data_rmi_sscanf(input, hdr->picture, &who);
+    int qvrc = qvi_bbuff_rmi_sscanf(input, hdr->picture, &who);
     if (qvrc != QV_SUCCESS) return qvrc;
 
     hwloc_cpuset_t bitmap = nullptr;
@@ -485,7 +488,7 @@ rpc_ssi_task_set_cpubind_from_cpuset(
 ) {
     int who = 0;
     hwloc_cpuset_t cpuset = nullptr;
-    int qvrc = qvi_data_rmi_sscanf(input, hdr->picture, &who, &cpuset);
+    int qvrc = qvi_bbuff_rmi_sscanf(input, hdr->picture, &who, &cpuset);
     if (qvrc != QV_SUCCESS) return qvrc;
 
     int rpcrc = qvi_hwloc_task_set_cpubind_from_cpuset(
@@ -506,7 +509,7 @@ rpc_ssi_obj_type_depth(
     qvi_bbuff_t **output
 ) {
     int obj_ai = 0;
-    int qvrc = qvi_data_rmi_sscanf(
+    int qvrc = qvi_bbuff_rmi_sscanf(
         input,
         hdr->picture,
         &obj_ai
@@ -532,7 +535,7 @@ rpc_ssi_get_nobjs_in_cpuset(
 ) {
     int target_obj_ai = 0;
     hwloc_cpuset_t cpuset = nullptr;
-    int qvrc = qvi_data_rmi_sscanf(
+    int qvrc = qvi_bbuff_rmi_sscanf(
         input,
         hdr->picture,
         &target_obj_ai,
@@ -540,7 +543,7 @@ rpc_ssi_get_nobjs_in_cpuset(
     );
     if (qvrc != QV_SUCCESS) return qvrc;
 
-    unsigned nobjs = 0;
+    int nobjs = 0;
     int rpcrc = qvi_hwloc_get_nobjs_in_cpuset(
         server->config->hwloc,
         (qv_hw_obj_type_t)target_obj_ai,
@@ -548,7 +551,7 @@ rpc_ssi_get_nobjs_in_cpuset(
         &nobjs
     );
 
-    qvrc = rpc_pack(output, hdr->fid, "iu", rpcrc, nobjs);
+    qvrc = rpc_pack(output, hdr->fid, "ii", rpcrc, nobjs);
 
     hwloc_bitmap_free(cpuset);
     return qvrc;
@@ -563,7 +566,7 @@ rpc_ssi_get_device_in_cpuset(
 ) {
     int dev_obj_ai = 0, dev_i = 0, dev_id_type_ai = 0;
     hwloc_cpuset_t cpuset = nullptr;
-    int qvrc = qvi_data_rmi_sscanf(
+    int qvrc = qvi_bbuff_rmi_sscanf(
         input,
         hdr->picture,
         &dev_obj_ai,
@@ -590,130 +593,87 @@ rpc_ssi_get_device_in_cpuset(
     return qvrc;
 }
 
+static int
+get_intrinsic_scope_user(
+    qvi_rmi_server_t *server,
+    pid_t,
+    qvi_line_hwpool_t **lpool
+) {
+    // TODO(skg) We need to use an interface that obtains, releases.
+    return qvi_hwpool_new_line_from_hwpool(server->hwpool, lpool);
+}
+
+static int
+get_intrinsic_scope_proc(
+    qvi_rmi_server_t *server,
+    pid_t requestor,
+    qvi_line_hwpool_t **lpool
+) {
+    // TODO(skg) We need an interface that obtains, releases.
+    hwloc_cpuset_t cpuset = nullptr;
+    int rc = qvi_hwloc_task_get_cpubind(
+        server->config->hwloc,
+        requestor,
+        &cpuset
+    );
+    // The cpuset is cleaned up for us on error.
+    if (rc != QV_SUCCESS) return rc;
+
+    qvi_hwpool_t *ipool = nullptr;
+    rc = qvi_hwpool_obtain_by_cpuset(server->hwpool, cpuset, &ipool);
+    if (rc != QV_SUCCESS) goto out;
+
+    rc = qvi_hwpool_new_line_from_hwpool(ipool, lpool);
+    if (rc != QV_SUCCESS) goto out;
+out:
+    if (cpuset) hwloc_bitmap_free(cpuset);
+    if (rc != QV_SUCCESS) {
+        qvi_line_hwpool_free(lpool);
+    }
+    return rc;
+}
+
 // TODO(skg) Lots of error path cleanup is required.
 static int
-rpc_ssi_scope_get_intrinsic_scope_cpuset(
+rpc_ssi_scope_get_intrinsic_scope_hwpool(
     qvi_rmi_server_t *server,
     qvi_msg_header_t *hdr,
     void *input,
     qvi_bbuff_t **output
 ) {
-    hwloc_topology_t topo = qvi_hwloc_topo_get(server->config->hwloc);
     // Get requestor PID, intrinsic scope as integers from client request.
     int pid, iscope;
-    int rc = qvi_data_rmi_sscanf(input, hdr->picture, &pid, &iscope);
+    int rc = qvi_bbuff_rmi_sscanf(input, hdr->picture, &pid, &iscope);
     if (rc != QV_SUCCESS) return rc;
 
     int rpcrc = QV_SUCCESS;
-    hwloc_cpuset_t cpuset = nullptr;
+    qvi_line_hwpool_t *lpool = nullptr;
     // TODO(skg) Implement the rest.
     switch ((qv_scope_intrinsic_t)iscope) {
         case QV_SCOPE_SYSTEM:
         case QV_SCOPE_USER:
         case QV_SCOPE_JOB: {
-            // TODO(skg) Deal with errors.
-            rc = qvi_hwloc_bitmap_calloc(&cpuset);
-            if (rc != QV_SUCCESS) return rc;
-            rc = qvi_hwloc_bitmap_copy(
-                hwloc_topology_get_topology_cpuset(topo),
-                cpuset
-            );
-            if (rc != QV_SUCCESS) return rc;
+            rpcrc = get_intrinsic_scope_user(server, pid, &lpool);
             break;
         }
         case QV_SCOPE_PROCESS:
-            rc = qvi_hwloc_task_get_cpubind(
-                server->config->hwloc,
-                pid,
-                &cpuset
-            );
-            if (rc != QV_SUCCESS) return rc;
+            rpcrc = get_intrinsic_scope_proc(server, pid, &lpool);
             break;
         default:
             rpcrc = QV_ERR_INVLD_ARG;
             break;
     }
-
-    rc = rpc_pack(output, hdr->fid, "ic", rpcrc, cpuset);
+    // TODO(skg) Protect against errors above.
+    rc = rpc_pack(output, hdr->fid, "ih", rpcrc, lpool);
     if (rc != QV_SUCCESS) return rc;
 
-    hwloc_bitmap_free(cpuset);
+    qvi_line_hwpool_free(&lpool);
 
     return rc;
 }
 
-/**
- *
- */
-static int
-split_cpuset_by_group(
-    qvi_hwloc_t *hwl,
-    hwloc_const_cpuset_t cpuset,
-    int n,
-    int group_id,
-    hwloc_cpuset_t *result
-) {
-    unsigned npus = 0;
-    int rc = qvi_hwloc_get_nobjs_in_cpuset(
-        hwl,
-        QV_HW_OBJ_PU,
-        cpuset,
-        &npus
-    );
-    if (rc != QV_SUCCESS) return rc;
-    // We use PUs to split resources.  Each set bit represents a PU. The number
-    // of bits set represents the number of PUs present on the system. The
-    // least-significant (right-most) bit represents logical ID 0.
-    int pu_depth;
-    rc = qvi_hwloc_obj_type_depth(
-        hwl,
-        QV_HW_OBJ_PU,
-        &pu_depth
-    );
-    if (rc != QV_SUCCESS) return rc;
-
-    const int chunk = npus / n;
-    // This happens when n > npus. We can't support that split.
-    if (chunk == 0) {
-        return QV_ERR_SPLIT;
-    }
-    // Group IDs must be < n: 0, 1, ... , n-1.
-    if (group_id >= n) {
-        return QV_ERR_SPLIT;
-    }
-    // Calculate base and extent of split.
-    const int base = chunk * group_id;
-    const int extent = base + chunk;
-    // Allocate and zero-out a new bitmap that will encode the split.
-    hwloc_bitmap_t bitm;
-    rc = qvi_hwloc_bitmap_calloc(&bitm);
-    if (rc != QV_SUCCESS) return rc;
-    for (int i = base; i < extent; ++i) {
-        hwloc_obj_t dobj;
-        rc = qvi_hwloc_get_obj_in_cpuset_by_depth(
-            hwl,
-            cpuset,
-            pu_depth,
-            i,
-            &dobj
-        );
-        if (rc != QV_SUCCESS) goto out;
-
-        rc = hwloc_bitmap_or(bitm, bitm, dobj->cpuset);
-        if (rc != 0) {
-            rc = QV_ERR_HWLOC;
-            goto out;
-        }
-    }
-out:
-    if (rc != QV_SUCCESS) {
-        hwloc_bitmap_free(bitm);
-        bitm = nullptr;
-    }
-    *result = bitm;
-    return rc;
-}
-
+// TODO(skg) Lots of work needed.
+// TODO(skg) Rename
 static int
 rpc_ssi_split_cpuset_by_group(
     qvi_rmi_server_t *server,
@@ -721,29 +681,38 @@ rpc_ssi_split_cpuset_by_group(
     void *input,
     qvi_bbuff_t **output
 ) {
-    hwloc_cpuset_t cpuset = nullptr;
+    qvi_line_hwpool_t *lpool = nullptr;
     int n = 0, group_id = 0;
-    int qvrc = qvi_data_rmi_sscanf(
+    int qvrc = qvi_bbuff_rmi_sscanf(
         input,
         hdr->picture,
-        &cpuset,
+        &lpool,
         &n,
         &group_id
     );
     if (qvrc != QV_SUCCESS) return qvrc;
 
-    hwloc_cpuset_t result = nullptr;
-    int rpcrc = split_cpuset_by_group(
+    qvi_hwpool_t *pool = nullptr;
+    qvrc = qvi_hwpool_new_from_line(lpool, &pool);
+
+    qvi_hwpool_t *result = nullptr;
+    int rpcrc = qvi_hwpool_obtain_split_by_group(
         server->config->hwloc,
-        cpuset,
+        pool,
         n,
         group_id,
         &result
     );
+    if (rpcrc != QV_SUCCESS) return rpcrc;
 
-    qvrc = rpc_pack(output, hdr->fid, "ic", rpcrc, result);
-    hwloc_bitmap_free(cpuset);
-    hwloc_bitmap_free(result);
+    qvi_line_hwpool_t *lres = nullptr;
+    qvi_hwpool_new_line_from_hwpool(result, &lres);
+
+    qvrc = rpc_pack(output, hdr->fid, "ih", rpcrc, lres);
+    qvi_line_hwpool_free(&lpool);
+    qvi_hwpool_free(&result);
+    qvi_line_hwpool_free(&lres);
+
     return qvrc;
 }
 
@@ -761,7 +730,7 @@ static const qvi_rpc_fun_ptr_t rpc_dispatch_table[] = {
     rpc_ssi_obj_type_depth,
     rpc_ssi_get_nobjs_in_cpuset,
     rpc_ssi_get_device_in_cpuset,
-    rpc_ssi_scope_get_intrinsic_scope_cpuset,
+    rpc_ssi_scope_get_intrinsic_scope_hwpool,
     rpc_ssi_split_cpuset_by_group
 };
 
@@ -867,9 +836,9 @@ qvi_rmi_server_new(
         goto out;
     }
 
-    rc = qvi_rmi_config_new(&iserver->config);
+    rc = qvi_line_config_new(&iserver->config);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rmi_config_new() failed";
+        ers = "qvi_line_config_new() failed";
         goto out;
     }
 
@@ -877,6 +846,12 @@ qvi_rmi_server_new(
     if (!iserver->zctx) {
         ers = "zmq_ctx_new() failed";
         rc = QV_ERR_MSG;
+        goto out;
+    }
+
+    rc = qvi_hwpool_new(&iserver->hwpool);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_hwpool_new() failed";
         goto out;
     }
 out:
@@ -902,26 +877,28 @@ qvi_rmi_server_free(
 ) {
     if (!server) return;
     qvi_rmi_server_t *iserver = *server;
-    if (!iserver) return;
+    if (!iserver) goto out;
     send_server_shutdown_msg(iserver);
     zsocket_close(&iserver->zlo);
     zsocket_close(&iserver->zrouter);
     zctx_destroy(&iserver->zctx);
     unlink(iserver->config->hwtopo_path);
-    qvi_rmi_config_free(&iserver->config);
+    qvi_hwpool_free(&iserver->hwpool);
+    qvi_line_config_free(&iserver->config);
     if (!iserver->blocks) {
         pthread_join(iserver->worker_thread, nullptr);
     }
     delete iserver;
+out:
     *server = nullptr;
 }
 
 int
 qvi_rmi_server_config(
     qvi_rmi_server_t *server,
-    qvi_rmi_config_t *config
+    qvi_line_config_t *config
 ) {
-    return qvi_rmi_config_cp(config, server->config);
+    return qvi_line_config_cp(config, server->config);
 }
 
 static void *
@@ -952,16 +929,66 @@ server_start_workers(
     return nullptr;
 }
 
+/**
+ *
+ */
+static int
+server_populate_base_hwpool(
+    qvi_rmi_server_t *server
+) {
+    qvi_hwloc_t *hwloc = server->config->hwloc;
+    hwloc_const_cpuset_t cpuset = qvi_hwloc_topo_get_cpuset(hwloc);
+    // The base resource pool will contain all available processors.
+    int rc = qvi_hwpool_init(server->hwpool, cpuset);
+    if (rc != QV_SUCCESS) return rc;
+    // Add all the discovered devices.
+    const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
+    for (int i = 0; devts[i] != QV_HW_OBJ_LAST; ++i) {
+        const qv_hw_obj_type_t type = devts[i];
+
+        int nobjs = 0;
+        rc = qvi_hwloc_get_nobjs_in_cpuset(hwloc, type, cpuset, &nobjs);
+        if (rc != QV_SUCCESS) break;
+        // Add all items by their ID.
+        for (int n = 0; n < nobjs; ++n) {
+            char *ids = nullptr;
+            rc = qvi_hwloc_get_device_in_cpuset(
+                hwloc,
+                type,
+                n,
+                cpuset,
+                QV_DEVICE_ID_ORDINAL,
+                &ids
+            );
+            if (rc != QV_SUCCESS) break;
+
+            int id = 0;
+            rc = qvi_atoi(ids, &id);
+            if (rc != QV_SUCCESS) break;
+            // No longer needed.
+            free(ids);
+
+            rc = qvi_hwpool_add_device(server->hwpool, type, id);
+            if (rc != QV_SUCCESS) break;
+        }
+        if (rc != QV_SUCCESS) break;
+    }
+    return rc;
+}
+
 int
 qvi_rmi_server_start(
     qvi_rmi_server_t *server,
     bool block
 ) {
+    // First populate the base hardware resource pool.
+    int qvrc = server_populate_base_hwpool(server);
+    if (qvrc != QV_SUCCESS) return qvrc;
     // Main thread opens channels used to communicate with clients.
-    int rc = server_open_clichans(server);
-    if (rc != QV_SUCCESS) return rc;
+    qvrc = server_open_clichans(server);
+    if (qvrc != QV_SUCCESS) return qvrc;
     // Start workers in new thread.
-    rc = pthread_create(
+    int rc = pthread_create(
         &server->worker_thread,
         nullptr,
         server_start_workers,
@@ -970,13 +997,13 @@ qvi_rmi_server_start(
     if (rc != 0) {
         cstr ers = "pthread_create() failed";
         qvi_log_error("{} with rc={} ({})", ers, rc, qvi_strerr(rc));
-        rc = QV_ERR_SYS;
+        qvrc = QV_ERR_SYS;
     }
-    if (block && rc == QV_SUCCESS) {
+    if (block && qvrc == QV_SUCCESS) {
         server->blocks = true;
         pthread_join(server->worker_thread, nullptr);
     }
-    return rc;
+    return qvrc;
 }
 
 int
@@ -993,9 +1020,9 @@ qvi_rmi_client_new(
         goto out;
     }
 
-    rc = qvi_rmi_config_new(&icli->config);
+    rc = qvi_line_config_new(&icli->config);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rmi_config_new() failed";
+        ers = "qvi_line_config_new() failed";
         goto out;
     }
     // Remember clients own the hwloc data, unlike the server.
@@ -1026,12 +1053,13 @@ qvi_rmi_client_free(
 ) {
     if (!client) return;
     qvi_rmi_client_t *iclient = *client;
-    if (!iclient) return;
+    if (!iclient) goto out;
     zsocket_close(&iclient->zsock);
     zctx_destroy(&iclient->zctx);
     qvi_hwloc_free(&iclient->config->hwloc);
-    qvi_rmi_config_free(&iclient->config);
+    qvi_line_config_free(&iclient->config);
     delete iclient;
+out:
     *client = nullptr;
 }
 
@@ -1042,10 +1070,10 @@ hello_handshake(
     int rc = rpc_req(client->zsock, FID_HELLO, "i", (int)getpid());
     if (rc != QV_SUCCESS) return rc;
 
-    qvi_rmi_config_t *config = client->config;
+    qvi_line_config_t *config = client->config;
     return rpc_rep(
         client->zsock,
-        QVI_RMI_CONFIG_PICTURE,
+        QVI_LINE_CONFIG_PICTURE,
         &config->url,
         &config->hwtopo_path
     );
@@ -1124,15 +1152,17 @@ qvi_rmi_task_set_cpubind_from_cpuset(
 }
 
 int
-qvi_rmi_scope_get_intrinsic_scope_cpuset(
+qvi_rmi_scope_get_intrinsic_scope_hwpool(
     qvi_rmi_client_t *client,
     pid_t requestor_pid,
     qv_scope_intrinsic_t iscope,
-    hwloc_cpuset_t *cpuset
+    qvi_hwpool_t **hwpool
 ) {
+    *hwpool = nullptr;
+
     int qvrc = rpc_req(
         client->zsock,
-        FID_SCOPE_GET_INTRINSIC_SCOPE_CPUSET,
+        FID_SCOPE_GET_INTRINSIC_SCOPE_HWPOOL,
         "ii",
         (int)requestor_pid,
         (int)iscope
@@ -1140,9 +1170,23 @@ qvi_rmi_scope_get_intrinsic_scope_cpuset(
     if (qvrc != QV_SUCCESS) return qvrc;
 
     int rpcrc;
-    qvrc = rpc_rep(client->zsock, "ic", &rpcrc, cpuset);
-    if (qvrc != QV_SUCCESS) return qvrc;
+    qvi_line_hwpool_t *line_respool;
+    qvrc = rpc_rep(
+        client->zsock,
+        "ih",
+        &rpcrc,
+        &line_respool
+    );
+    if (qvrc != QV_SUCCESS) goto out;
 
+    qvrc = qvi_hwpool_new_from_line(
+        line_respool,
+        hwpool
+    );
+    if (qvrc != QV_SUCCESS) goto out;
+out:
+    qvi_line_hwpool_free(&line_respool);
+    if (qvrc != QV_SUCCESS) return qvrc;
     return rpcrc;
 }
 
@@ -1172,7 +1216,7 @@ qvi_rmi_get_nobjs_in_cpuset(
     qvi_rmi_client_t *client,
     qv_hw_obj_type_t target_obj,
     hwloc_const_cpuset_t cpuset,
-    unsigned *nobjs
+    int *nobjs
 ) {
     int qvrc = rpc_req(
         client->zsock,
@@ -1184,7 +1228,7 @@ qvi_rmi_get_nobjs_in_cpuset(
     if (qvrc != QV_SUCCESS) return qvrc;
 
     int rpcrc;
-    qvrc = rpc_rep(client->zsock, "iu", &rpcrc, nobjs);
+    qvrc = rpc_rep(client->zsock, "ii", &rpcrc, nobjs);
     if (qvrc != QV_SUCCESS) return qvrc;
 
     return rpcrc;
@@ -1195,7 +1239,7 @@ qvi_rmi_get_device_in_cpuset(
     qvi_rmi_client_t *client,
     qv_hw_obj_type_t dev_obj,
     int dev_i,
-    hwloc_cpuset_t cpuset,
+    hwloc_const_cpuset_t cpuset,
     qv_device_id_type_t dev_id_type,
     char **dev_id
 ) {
@@ -1217,28 +1261,41 @@ qvi_rmi_get_device_in_cpuset(
     return rpcrc;
 }
 
+// TODO(skg) Rename
 int
 qvi_rmi_split_cpuset_by_group(
     qvi_rmi_client_t *client,
-    hwloc_const_cpuset_t cpuset,
+    const qvi_hwpool_t *hwpool,
     int n,
     int group_id,
-    hwloc_cpuset_t *result
+    qvi_hwpool_t **result
 ) {
-    int qvrc = rpc_req(
+    // First convert hwpool to send over the line.
+    qvi_line_hwpool_t *lpool = nullptr;
+    int qvrc = qvi_hwpool_new_line_from_hwpool(hwpool, &lpool);
+    if (qvrc != QV_SUCCESS) return qvrc;
+    // Send request.
+    qvrc = rpc_req(
         client->zsock,
         FID_SPLIT_CPUSET_BY_GROUP,
-        "cii",
-        cpuset,
+        "hii",
+        lpool,
         n,
         group_id
     );
-    if (qvrc != QV_SUCCESS) return qvrc;
+    if (qvrc != QV_SUCCESS) goto out;
+    qvi_line_hwpool_free(&lpool);
 
     int rpcrc;
-    qvrc = rpc_rep(client->zsock, "ic", &rpcrc, result);
-    if (qvrc != QV_SUCCESS) return qvrc;
+    qvrc = rpc_rep(client->zsock, "ih", &rpcrc, &lpool);
+    if (qvrc != QV_SUCCESS) goto out;
 
+    qvrc = qvi_hwpool_new_from_line(lpool, result);
+out:
+    qvi_line_hwpool_free(&lpool);
+    if (qvrc != QV_SUCCESS) {
+        return qvrc;
+    }
     return rpcrc;
 }
 

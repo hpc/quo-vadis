@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -16,25 +16,28 @@
 #include "qvi-common.h"
 
 #include "qvi-scope.h"
-#include "qvi-respool.h"
+#include "qvi-hwpool.h"
 
 // Type definition
 struct qv_scope_s {
     /** Task group associated with this scope instance. */
     qvi_group_t *group = nullptr;
-    /** CPUSET associated with this scope instance. */
-    hwloc_cpuset_t cpuset = nullptr;
+    /** Hardware resource pool. */
+    qvi_hwpool_t *hwrespool = nullptr;
 };
 
 int
 qvi_scope_new(
     qv_scope_t **scope
 ) {
-    qv_scope_t *iscope = qvi_new qv_scope_t;
-    if (!scope) return QV_ERR_OOR;
+    int rc = QV_SUCCESS;
 
-    int rc = qvi_hwloc_bitmap_calloc(&iscope->cpuset);
-    if (rc != QV_SUCCESS) goto out;
+    qv_scope_t *iscope = qvi_new qv_scope_t;
+    if (!scope) {
+        rc = QV_ERR_OOR;
+        goto out;
+    }
+    // hwrespool and group will be initialized in qvi_scope_init().
 out:
     if (rc != QV_SUCCESS) qvi_scope_free(&iscope);
     *scope = iscope;
@@ -49,7 +52,7 @@ qvi_scope_free(
     qv_scope_t *iscope = *scope;
     if (!iscope) goto out;
     qvi_group_free(&iscope->group);
-    hwloc_bitmap_free(iscope->cpuset);
+    qvi_hwpool_free(&iscope->hwrespool);
     delete iscope;
 out:
     *scope = nullptr;
@@ -59,17 +62,25 @@ int
 qvi_scope_init(
     qv_scope_t *scope,
     qvi_group_t *group,
-    hwloc_const_cpuset_t cpuset
+    qvi_hwpool_t *hwrespool
 ) {
     scope->group = group;
-    return qvi_hwloc_bitmap_copy(cpuset, scope->cpuset);
+    scope->hwrespool = hwrespool;
+    return QV_SUCCESS;
 }
 
-hwloc_cpuset_t
+hwloc_const_cpuset_t
 qvi_scope_cpuset_get(
     qv_scope_t *scope
 ) {
-    return scope->cpuset;
+    return qvi_hwpool_cpuset_get(scope->hwrespool);
+}
+
+const qvi_hwpool_t *
+qvi_scope_hwpool_get(
+    qv_scope_t *scope
+) {
+    return scope->hwrespool;
 }
 
 qvi_group_t *

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -167,8 +167,9 @@ qvi_taskman_mpi_free(
 ) {
     if (!taskman) return;
     qvi_taskman_mpi_t *itm = *taskman;
-    if (!itm) return;
+    if (!itm) goto out;
     delete itm;
+out:
     *taskman = nullptr;
 }
 

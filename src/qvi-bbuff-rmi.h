@@ -1,5 +1,5 @@
 /*
- * Copyright (c)      2021 Triad National Security, LLC
+ * Copyright (c) 2021-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -44,7 +44,7 @@ qvi_bbuff_rmi_sprintf(
  *
  */
 int
-qvi_data_rmi_vsscanf(
+qvi_bbuff_rmi_vsscanf(
     void *data,
     const char *picture,
     va_list args
@@ -54,7 +54,7 @@ qvi_data_rmi_vsscanf(
  *
  */
 int
-qvi_data_rmi_sscanf(
+qvi_bbuff_rmi_sscanf(
     void *data,
     const char *picture,
     ...

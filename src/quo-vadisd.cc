@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -18,11 +18,12 @@
 #include "qvi-common.h"
 #include "qvi-utils.h"
 #include "qvi-hwloc.h"
+#include "qvi-line.h"
 #include "qvi-rmi.h"
 
 struct context {
     qvi_hwloc_t *hwloc = nullptr;
-    qvi_rmi_config_t *rmic = nullptr;
+    qvi_line_config_t *rmic = nullptr;
     qvi_rmi_server_t *rmi = nullptr;
     bool daemonized = false;
 };
@@ -34,7 +35,7 @@ context_free(
     if (!ctx) return;
     context *ictx = *ctx;
     if (!ictx) return;
-    qvi_rmi_config_free(&ictx->rmic);
+    qvi_line_config_free(&ictx->rmic);
     qvi_rmi_server_free(&ictx->rmi);
     qvi_hwloc_free(&ictx->hwloc);
     delete ictx;
@@ -55,9 +56,9 @@ context_new(
         goto out;
     }
 
-    rc = qvi_rmi_config_new(&ictx->rmic);
+    rc = qvi_line_config_new(&ictx->rmic);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rmi_config_new() failed";
+        ers = "qvi_line_config_new() failed";
         goto out;
     }
 

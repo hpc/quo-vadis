@@ -85,6 +85,14 @@ qvi_hwloc_topo_get(
 /**
  *
  */
+hwloc_const_cpuset_t
+qvi_hwloc_topo_get_cpuset(
+    qvi_hwloc_t *hwl
+);
+
+/**
+ *
+ */
 int
 qvi_hwloc_topo_is_this_system(
     qvi_hwloc_t *hwl
@@ -172,7 +180,7 @@ qvi_hwloc_task_intersects_obj_by_type_id(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t type,
     pid_t who,
-    unsigned type_index,
+    int type_index,
     int *result
 );
 
@@ -184,7 +192,7 @@ qvi_hwloc_task_isincluded_in_obj_by_type_id(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t type,
     pid_t who,
-    unsigned type_index,
+    int type_index,
     int *result
 );
 
@@ -206,7 +214,7 @@ qvi_hwloc_get_nobjs_in_cpuset(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t target_obj,
     hwloc_const_cpuset_t cpuset,
-    unsigned *nobjs
+    int *nobjs
 );
 
 /**
@@ -227,9 +235,21 @@ qvi_hwloc_get_obj_in_cpuset_by_depth(
     qvi_hwloc_t *hwl,
     hwloc_const_cpuset_t cpuset,
     int depth,
-    unsigned index,
+    int index,
     hwloc_obj_t *result_obj
 );
+
+/**
+ *
+ */
+const qv_hw_obj_type_t *
+qvi_hwloc_supported_devices(void);
+
+/**
+ *
+ */
+int
+qvi_hwloc_n_supported_devices(void);
 
 /**
  *
@@ -283,7 +303,7 @@ qvi_hwloc_get_device_in_cpuset(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t dev_obj,
     int i,
-    hwloc_cpuset_t cpuset,
+    hwloc_const_cpuset_t cpuset,
     qv_device_id_type_t dev_id_type,
     char **dev_id
 );

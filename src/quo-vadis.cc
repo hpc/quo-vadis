@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -147,14 +147,15 @@ qv_scope_nobjs(
 ) {
     if (!ctx || !scope || !n) return QV_ERR_INVLD_ARG;
 
-    unsigned nu = 0;
+    int nu = 0;
+    // TODO(skg) We should update how we do this.
     int rc = qvi_rmi_get_nobjs_in_cpuset(
         ctx->rmi,
         obj,
         qvi_scope_cpuset_get(scope),
         &nu
     );
-    *n = (int)nu;
+    *n = nu;
     return rc;
 }
 
@@ -190,7 +191,7 @@ qv_scope_get(
     *scope = nullptr;
 
     qv_scope_t *qvs = nullptr;
-    hwloc_bitmap_t cpuset = nullptr;
+    qvi_hwpool_t *hwpool = nullptr;
 
     int rc = qvi_scope_new(&qvs);
     if (rc != QV_SUCCESS) return rc;
@@ -199,18 +200,17 @@ qv_scope_get(
     rc = ctx->taskman->group_create_from_intrinsic_scope(&group, iscope);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_rmi_scope_get_intrinsic_scope_cpuset(
+    rc = qvi_rmi_scope_get_intrinsic_scope_hwpool(
         ctx->rmi,
         qvi_task_pid(ctx->task),
         iscope,
-        &cpuset
+        &hwpool
     );
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_scope_init(qvs, group, cpuset);
+    rc = qvi_scope_init(qvs, group, hwpool);
     if (rc != QV_SUCCESS) goto out;
 out:
-    hwloc_bitmap_free(cpuset);
     if (rc != QV_SUCCESS) qvi_scope_free(&qvs);
     *scope = qvs;
     return rc;
@@ -253,10 +253,11 @@ qv_scope_split(
     int group_id,
     qv_scope_t **subscope
 ) {
+    // TODO(skg) Implement
     static const cstr epref = "qv_scope_split Error: ";
 
     int rc = QV_SUCCESS;
-    hwloc_cpuset_t cpuset = nullptr;
+    qvi_hwpool_t *hwpool = nullptr;
     qv_scope_t *isubscope = nullptr;
     qvi_group_t *subgroup = nullptr;
 
@@ -279,10 +280,10 @@ qv_scope_split(
 
     rc = qvi_rmi_split_cpuset_by_group(
         ctx->rmi,
-        qvi_scope_cpuset_get(scope),
+        qvi_scope_hwpool_get(scope),
         n,
         group_id,
-        &cpuset
+        &hwpool
     );
     if (rc != QV_SUCCESS) goto out;
     // Create new sub-scope.
@@ -297,10 +298,9 @@ qv_scope_split(
     );
     if (rc != QV_SUCCESS) goto out;
     // Initialize new sub-scope.
-    rc = qvi_scope_init(isubscope, subgroup, cpuset);
+    rc = qvi_scope_init(isubscope, subgroup, hwpool);
     if (rc != QV_SUCCESS) goto out;
 out:
-    if (cpuset) hwloc_bitmap_free(cpuset);
     if (rc != QV_SUCCESS) {
         // Don't explicitly free subgroup here. Hope
         // that qvi_group_free() will do the job for us.
@@ -326,7 +326,8 @@ qv_scope_split_at(
         return QV_ERR_INVLD_ARG;
     }
 
-    unsigned ntype;
+    int ntype;
+    // TODO(skg) Update how we do this.
     int qvrc = qvi_hwloc_get_nobjs_in_cpuset(
         ctx->hwloc,
         type,
@@ -349,6 +350,7 @@ qv_scope_get_device(
 ) {
     if (!ctx || !scope || i < 0 || !dev_id) return QV_ERR_INVLD_ARG;
 
+    // TODO(skg) Update how we do this.
     return qvi_rmi_get_device_in_cpuset(
         ctx->rmi,
         dev_obj,

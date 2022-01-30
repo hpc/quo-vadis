@@ -85,11 +85,11 @@ endif()
 add_library(
     qvi-rmi
     OBJECT
+    qvi-line.h
     qvi-rmi.h
-    qvi-rmi-txrx.h
     qvi-bbuff-rmi.h
+    qvi-line.cc
     qvi-rmi.cc
-    qvi-rmi-txrx.cc
     qvi-bbuff-rmi.cc
 )
 
@@ -165,15 +165,13 @@ add_library(
     quo-vadis
     ../include/quo-vadis.h
     qvi-context.h
-    qvi-hwres.h
-    qvi-hwrespool.h
+    qvi-hwpool.h
     qvi-task.h
     qvi-group.h
     qvi-scope.h
     qvi-taskman.h
     qvi-bind.h
-    qvi-hwres.cc
-    qvi-hwrespool.cc
+    qvi-hwpool.cc
     qvi-task.cc
     qvi-scope.cc
     qvi-bind.cc

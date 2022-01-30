@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -60,10 +60,10 @@ server(
         goto out;
     }
 
-    qvi_rmi_config_t *config;
-    rc = qvi_rmi_config_new(&config);
+    qvi_line_config_t *config;
+    rc = qvi_line_config_new(&config);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rmi_config_new() failed";
+        ers = "qvi_line_config_new() failed";
         goto out;
     }
 
@@ -83,7 +83,7 @@ server(
 
     rc = qvi_rmi_server_config(server, config);
 
-    qvi_rmi_config_free(&config);
+    qvi_line_config_free(&config);
 
     rc = qvi_rmi_server_start(server, false);
     if (rc != QV_SUCCESS) {

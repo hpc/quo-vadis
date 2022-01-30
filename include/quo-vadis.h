@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -78,7 +78,9 @@ typedef enum qv_hw_obj_type_e {
     QV_HW_OBJ_L5CACHE,
     QV_HW_OBJ_NUMANODE,
     /** Device types */
-    QV_HW_OBJ_GPU
+    QV_HW_OBJ_GPU,
+    /** Sentinel value. */
+    QV_HW_OBJ_LAST
 } qv_hw_obj_type_t;
 
 /**

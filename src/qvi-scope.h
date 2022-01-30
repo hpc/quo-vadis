@@ -1,5 +1,5 @@
 /*
- * Copyright (c)      2021 Triad National Security, LLC
+ * Copyright (c) 2021-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c)      2021 Lawrence Livermore National Security, LLC
@@ -18,6 +18,7 @@
 
 #include "qvi-common.h"
 #include "qvi-group.h"
+#include "qvi-hwpool.h"
 #include "qvi-hwloc.h"
 
 #ifdef __cplusplus
@@ -47,14 +48,22 @@ int
 qvi_scope_init(
     qv_scope_t *scope,
     qvi_group_t *group,
-    hwloc_const_cpuset_t cpuset
+    qvi_hwpool_t *hwrespool
 );
 
 /**
  *
  */
-hwloc_cpuset_t
+hwloc_const_cpuset_t
 qvi_scope_cpuset_get(
+    qv_scope_t *scope
+);
+
+/**
+ *
+ */
+const qvi_hwpool_t *
+qvi_scope_hwpool_get(
     qv_scope_t *scope
 );
 

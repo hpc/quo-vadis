@@ -20,8 +20,9 @@
 
 #include "qvi-common.h"
 #include "qvi-bbuff.h"
-#include "qvi-rmi-txrx.h"
+#include "qvi-line.h"
 #include "qvi-hwloc.h"
+#include "qvi-hwpool.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -56,7 +57,7 @@ qvi_rmi_server_free(
 int
 qvi_rmi_server_config(
     qvi_rmi_server_t *server,
-    qvi_rmi_config_t *config
+    qvi_line_config_t *config
 );
 
 /**
@@ -125,11 +126,11 @@ qvi_rmi_task_set_cpubind_from_cpuset(
  *
  */
 int
-qvi_rmi_scope_get_intrinsic_scope_cpuset(
+qvi_rmi_scope_get_intrinsic_scope_hwpool(
     qvi_rmi_client_t *client,
     pid_t requestor_pid,
     qv_scope_intrinsic_t iscope,
-    hwloc_cpuset_t *cpuset
+    qvi_hwpool_t **hwpool
 );
 
 /**
@@ -150,7 +151,7 @@ qvi_rmi_get_nobjs_in_cpuset(
     qvi_rmi_client_t *client,
     qv_hw_obj_type_t target_obj,
     hwloc_const_cpuset_t cpuset,
-    unsigned *nobjs
+    int *nobjs
 );
 
 /**
@@ -161,7 +162,7 @@ qvi_rmi_get_device_in_cpuset(
     qvi_rmi_client_t *client,
     qv_hw_obj_type_t dev_obj,
     int dev_i,
-    hwloc_cpuset_t cpuset,
+    hwloc_const_cpuset_t cpuset,
     qv_device_id_type_t dev_id_type,
     char **dev_id
 );
@@ -172,10 +173,10 @@ qvi_rmi_get_device_in_cpuset(
 int
 qvi_rmi_split_cpuset_by_group(
     qvi_rmi_client_t *client,
-    hwloc_const_cpuset_t cpuset,
+    const qvi_hwpool_t *hwpool,
     int n,
     int group_id,
-    hwloc_cpuset_t *result
+    qvi_hwpool_t **result
 );
 
 #ifdef __cplusplus

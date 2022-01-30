@@ -32,6 +32,12 @@ typedef struct qvi_hwloc_objx_s {
     hwloc_obj_osdev_type_t osdev_type;
 } qvi_hwloc_objx_t;
 
+/** Array of supported device types. */
+static const qv_hw_obj_type_t supported_devices[] = {
+    QV_HW_OBJ_GPU,
+    QV_HW_OBJ_LAST
+};
+
 /** ID used for invisible devices. */
 static const int QVI_HWLOC_DEVICE_INVISIBLE_ID = -1;
 
@@ -140,14 +146,15 @@ static int
 obj_get_by_type(
     qvi_hwloc_t *hwloc,
     qv_hw_obj_type_t type,
-    unsigned type_index,
+    int type_index,
     hwloc_obj_t *out_obj
 ) {
     qvi_hwloc_objx_t objx;
     int rc = obj_type_from_external(type, &objx);
     if (rc != QV_SUCCESS) return rc;
 
-    *out_obj = hwloc_get_obj_by_type(hwloc->topo, objx.objtype, type_index);
+    const unsigned tiau = (unsigned)type_index;
+    *out_obj = hwloc_get_obj_by_type(hwloc->topo, objx.objtype, tiau);
     if (!*out_obj) {
         // There are a couple of reasons why target_obj may be NULL. If this
         // ever happens and the specified type and obj index are valid, then
@@ -207,11 +214,12 @@ qvi_hwloc_dev_list_free(
 ) {
     if (!devl) return;
     qvi_hwloc_dev_list_t *idevl = *devl;
-    if (!idevl) return;
+    if (!idevl) goto out;
     for (auto &dev : *idevl) {
         qvi_hwloc_device_free(&dev);
     }
     delete idevl;
+out:
     *devl = nullptr;
 }
 
@@ -221,8 +229,9 @@ qvi_hwloc_dev_id_set_free(
 ) {
     if (!set) return;
     qvi_hwloc_dev_id_set_t *iset = *set;
-    if (!iset) return;
+    if (!iset) goto out;
     delete iset;
+out:
     *set = nullptr;
 }
 
@@ -540,7 +549,7 @@ qvi_hwloc_topology_load(
 ) {
     cstr ers = nullptr;
     // Set flags that influence hwloc's behavior.
-    static const unsigned int flags = HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM;
+    static const unsigned flags = HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM;
     int rc = hwloc_topology_set_flags(hwl->topo, flags);
     if (rc != 0) {
         ers = "hwloc_topology_set_flags() failed";
@@ -593,6 +602,13 @@ qvi_hwloc_topo_get(
     return hwl->topo;
 }
 
+hwloc_const_cpuset_t
+qvi_hwloc_topo_get_cpuset(
+    qvi_hwloc_t *hwl
+) {
+    return hwloc_topology_get_topology_cpuset(hwl->topo);
+}
+
 int
 qvi_hwloc_topo_is_this_system(
     qvi_hwloc_t *hwl
@@ -618,7 +634,10 @@ qvi_hwloc_bitmap_copy(
     hwloc_const_cpuset_t src,
     hwloc_cpuset_t dest
 ) {
-    if (!src || !dest) return QV_ERR_INVLD_ARG;
+    if (!src || !dest) {
+        assert(false);
+        return QV_ERR_INTERNAL;
+    }
 
     if (hwloc_bitmap_copy(dest, src) != 0) {
         return QV_ERR_HWLOC;
@@ -884,7 +903,7 @@ task_obj_xop_by_type_id(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t type,
     pid_t who,
-    unsigned type_index,
+    int type_index,
     qvi_hwloc_task_xop_obj_t opid,
     int *result
 ) {
@@ -916,7 +935,7 @@ qvi_hwloc_task_intersects_obj_by_type_id(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t type,
     pid_t who,
-    unsigned type_index,
+    int type_index,
     int *result
 ) {
     return task_obj_xop_by_type_id(
@@ -934,7 +953,7 @@ qvi_hwloc_task_isincluded_in_obj_by_type_id(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t type,
     pid_t who,
-    unsigned type_index,
+    int type_index,
     int *result
 ) {
     return task_obj_xop_by_type_id(
@@ -955,9 +974,9 @@ get_nosdevs_in_cpuset(
     qvi_hwloc_t *,
     qvi_hwloc_dev_list_t *devs,
     hwloc_const_cpuset_t cpuset,
-    unsigned *nobjs
+    int *nobjs
 ) {
-    unsigned ndevs = 0;
+    int ndevs = 0;
     for (auto &dev : *devs) {
         if (hwloc_bitmap_isincluded(dev->cpuset, cpuset)) ndevs++;
     }
@@ -971,13 +990,13 @@ get_nobjs_in_cpuset(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t target_obj,
     hwloc_const_cpuset_t cpuset,
-    unsigned *nobjs
+    int *nobjs
 ) {
     int depth;
     int rc = qvi_hwloc_obj_type_depth(hwl, target_obj, &depth);
     if (rc != QV_SUCCESS) return rc;
 
-    unsigned n = 0;
+    int n = 0;
     hwloc_topology_t topo = hwl->topo;
     hwloc_obj_t obj = nullptr;
     while ((obj = hwloc_get_next_obj_by_depth(topo, depth, obj))) {
@@ -995,7 +1014,7 @@ qvi_hwloc_get_nobjs_in_cpuset(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t target_obj,
     hwloc_const_cpuset_t cpuset,
-    unsigned *nobjs
+    int *nobjs
 ) {
     switch(target_obj) {
         case(QV_HW_OBJ_GPU) :
@@ -1011,13 +1030,13 @@ qvi_hwloc_get_obj_in_cpuset_by_depth(
     qvi_hwloc_t *hwl,
     hwloc_const_cpuset_t cpuset,
     int depth,
-    unsigned index,
+    int index,
     hwloc_obj_t *result_obj
 ) {
     hwloc_topology_t topo = hwl->topo;
 
     bool found = false;
-    unsigned i = 0;
+    int i = 0;
     hwloc_obj_t obj = nullptr;
     while ((obj = hwloc_get_next_obj_by_depth(topo, depth, obj))) {
         if (!hwloc_bitmap_isincluded(obj->cpuset, cpuset)) continue;
@@ -1031,6 +1050,18 @@ qvi_hwloc_get_obj_in_cpuset_by_depth(
         i++;
     }
     return (found ? QV_SUCCESS : QV_ERR_HWLOC);
+}
+
+const qv_hw_obj_type_t *
+qvi_hwloc_supported_devices(void) {
+    return supported_devices;
+}
+
+int
+qvi_hwloc_n_supported_devices(void) {
+    size_t fsize = sizeof(supported_devices) / sizeof(supported_devices[0]);
+    // Adjust to exclude the sentinel value.
+    return fsize - 1;
 }
 
 int
@@ -1122,7 +1153,7 @@ qvi_hwloc_devices_emit(
 static int
 get_devices_in_cpuset_from_dev_list(
     qvi_hwloc_dev_list_t *devlist,
-    hwloc_cpuset_t cpuset,
+    hwloc_const_cpuset_t cpuset,
     qvi_hwloc_dev_list_t *devs
 ) {
     for (auto &dev : *devlist) {
@@ -1149,7 +1180,7 @@ static int
 get_devices_in_cpuset(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t obj_type,
-    hwloc_cpuset_t cpuset,
+    hwloc_const_cpuset_t cpuset,
     qvi_hwloc_dev_list_t *devs
 ) {
     qvi_hwloc_dev_list_t *devlist = nullptr;
@@ -1175,7 +1206,7 @@ qvi_hwloc_get_device_in_cpuset(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t dev_obj,
     int i,
-    hwloc_cpuset_t cpuset,
+    hwloc_const_cpuset_t cpuset,
     qv_device_id_type_t dev_id_type,
     char **dev_id
 ) {
