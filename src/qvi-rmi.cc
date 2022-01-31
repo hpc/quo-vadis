@@ -15,9 +15,13 @@
  * Resource Management and Inquiry
  */
 
-// TODO(skg) We need to figure out how best to handle errors in RPC code. For
+// TODO(skg)
+// * We need to figure out how best to handle errors in RPC code. For
 // example, if a server-side error occurs, what do we do? Return locally or
 // return the error via RPC to the caller?
+//
+// * We need to have empty RPC data types that can be returned to the caller in
+// case of an non-fatal error on the server side.
 
 #include "qvi-common.h"
 #include "qvi-rmi.h"

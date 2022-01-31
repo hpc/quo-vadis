@@ -13,7 +13,9 @@
  */
 
 // TODOs
+// * Resource reference counting.
 // * Need to deal with resource unavailability.
+// * Split and attach devices properly.
 
 #include "qvi-common.h"
 #include "qvi-hwpool.h"
@@ -55,7 +57,9 @@ qvi_hwpool_new(
         const qv_hw_obj_type_t type = devts[i];
         // insert().second returns whether or not item insertion took place. If
         // true, this is a unique device type.
-        bool itp = irpool->devtab->insert({type, qvi_device_ids_t()}).second;
+        const bool itp = irpool->devtab->insert(
+            {type, qvi_device_ids_t()}
+        ).second;
         if (!itp) {
             qvi_log_debug("Duplicate device type found: {}", type);
             rc = QV_ERR_INTERNAL;
@@ -81,7 +85,7 @@ qvi_hwpool_new_from_line(
 
     rc = qvi_hwloc_bitmap_copy(line->cpuset, irpool->cpuset);
     if (rc != QV_SUCCESS) goto out;
-    
+
     for (int i = 0; devts[i] != QV_HW_OBJ_LAST; ++i) {
         // Get array of device IDs.
         const qvi_device_id_t *dids = line->device_tab[i];
