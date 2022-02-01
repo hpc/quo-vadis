@@ -59,7 +59,7 @@ qvi_bind_stack_free(
 ) {
     if (!bstack) return;
     qvi_bind_stack_t *ibstack = *bstack;
-    if (!ibstack) return;
+    if (!ibstack) goto out;
     while (!ibstack->stack->empty()) {
         hwloc_cpuset_t bitm = ibstack->stack->top();
         hwloc_bitmap_free(bitm);
@@ -67,6 +67,7 @@ qvi_bind_stack_free(
     }
     delete ibstack->stack;
     delete ibstack;
+out:
     *bstack = nullptr;
 }
 
@@ -86,11 +87,14 @@ qvi_bind_stack_init(
         qvi_task_pid(task),
         &current_bind
     );
-    if (rc != QV_SUCCESS) return rc;
+    if (rc != QV_SUCCESS) goto out;
 
     bstack->stack->push(current_bind);
-
-    return QV_SUCCESS;
+out:
+    if (rc != QV_SUCCESS) {
+        hwloc_bitmap_free(current_bind);
+    }
+    return rc;
 }
 
 int
