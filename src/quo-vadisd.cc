@@ -15,6 +15,9 @@
  * The quo-vadis daemon.
  */
 
+// TODO(skg)
+// * Add something like QV_SHUTDOWN_ON_DISCONNECT
+
 #include "qvi-common.h"
 #include "qvi-utils.h"
 #include "qvi-hwloc.h"

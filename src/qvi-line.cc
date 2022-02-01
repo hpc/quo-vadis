@@ -14,6 +14,7 @@
  */
 
 #include "qvi-common.h"
+
 #include "qvi-line.h"
 #include "qvi-bbuff-rmi.h"
 #include "qvi-utils.h"
@@ -23,7 +24,7 @@ qvi_line_config_new(
     qvi_line_config_t **config
 ) {
     int rc = QV_SUCCESS;
-    qvi_line_config_t *ic = (qvi_line_config_t *)calloc(1, sizeof(*ic));
+    qvi_line_config_t *ic = qvi_new qvi_line_config_t;
     if (!ic) rc = QV_ERR_OOR;
     // Do minimal initialization here because other routines will do the rest.
     if (rc != QV_SUCCESS) qvi_line_config_free(&ic);
@@ -40,7 +41,7 @@ qvi_line_config_free(
     if (!ic) goto out;
     if (ic->url) free(ic->url);
     if (ic->hwtopo_path) free(ic->hwtopo_path);
-    free(ic);
+    delete ic;
 out:
     *config = nullptr;
 }
@@ -97,7 +98,7 @@ qvi_line_hwpool_new(
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_line_hwpool_t *ihwp = (qvi_line_hwpool_t *)calloc(1, sizeof(*ihwp));
+    qvi_line_hwpool_t *ihwp = qvi_new qvi_line_hwpool_t;
     if (!ihwp) rc = QV_ERR_OOR;
     // Do minimal initialization here because other routines will do the rest.
     if (rc != QV_SUCCESS) qvi_line_hwpool_free(&ihwp);
@@ -120,7 +121,7 @@ qvi_line_hwpool_free(
         }
         free(ihwp->device_tab);
     }
-    free(ihwp);
+    delete ihwp;
 out:
     *hwp = nullptr;
 }

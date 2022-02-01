@@ -19,6 +19,7 @@
 #define QVI_TASKMAN_MPI_H
 
 #include "qvi-common.h"
+
 #include "qvi-taskman.h"
 #include "qvi-mpi.h"
 
@@ -77,13 +78,16 @@ struct qvi_taskman_mpi_s : public qvi_taskman_s {
     }
 
     virtual int group_create_from_intrinsic_scope(
-        qvi_group_t **group,
-        qv_scope_intrinsic_t scope
+        qv_scope_intrinsic_t scope,
+        qvi_group_t **group
     ) {
         int rc = QV_SUCCESS;
 
         qvi_group_mpi_t *igroup = new qvi_group_mpi_t;
-        if (!igroup) return QV_ERR_OOR;
+        if (!igroup) {
+            rc = QV_ERR_OOR;
+            goto out;
+        }
 
         qvi_mpi_group_id_t mpi_group;
         // TODO(skg) Finish implementation.
@@ -122,16 +126,22 @@ struct qvi_taskman_mpi_s : public qvi_taskman_s {
         int key,
         qvi_group_t **out_group
     ) {
-        qvi_group_mpi_t *igroup = new qvi_group_mpi_t;
-        if (!igroup) return QV_ERR_OOR;
+        int rc = QV_SUCCESS;
 
-        int rc = qvi_mpi_group_create_from_split(
+        qvi_group_mpi_t *igroup = new qvi_group_mpi_t;
+        if (!igroup) {
+            rc = QV_ERR_OOR;
+            goto out;
+        }
+
+        rc = qvi_mpi_group_create_from_split(
             mpi,
             static_cast<qvi_group_mpi_t *>(in_group)->mpi_group,
             color,
             key,
             &igroup->mpi_group
         );
+    out:
         if (rc != QV_SUCCESS) {
             group_free(igroup);
             igroup = nullptr;

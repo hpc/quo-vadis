@@ -1117,8 +1117,12 @@ qvi_rmi_task_get_cpubind(
 
     int rpcrc;
     qvrc = rpc_rep(client->zsock, &rpcrc, cpuset);
-    if (qvrc != QV_SUCCESS) return qvrc;
 
+    if (qvrc != QV_SUCCESS) {
+        hwloc_bitmap_free(*cpuset);
+        *cpuset = nullptr;
+        return qvrc;
+    }
     return rpcrc;
 }
 

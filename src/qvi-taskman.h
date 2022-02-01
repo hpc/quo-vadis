@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -32,8 +32,8 @@ struct qvi_taskman_s {
     virtual int initialize(void) = 0;
     /** Creates a new group from an intrinsic scope. */
     virtual int group_create_from_intrinsic_scope(
-        qvi_group_t **group,
-        qv_scope_intrinsic_t scope
+        qv_scope_intrinsic_t scope,
+        qvi_group_t **group
     ) = 0;
     /** Creates a new group from a group split. */
     virtual int group_create_from_split(

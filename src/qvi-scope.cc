@@ -33,12 +33,8 @@ qvi_scope_new(
     int rc = QV_SUCCESS;
 
     qv_scope_t *iscope = qvi_new qv_scope_t;
-    if (!scope) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
+    if (!scope) rc = QV_ERR_OOR;
     // hwrespool and group will be initialized in qvi_scope_init().
-out:
     if (rc != QV_SUCCESS) qvi_scope_free(&iscope);
     *scope = iscope;
     return rc;

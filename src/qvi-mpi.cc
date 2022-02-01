@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -256,7 +256,7 @@ qvi_mpi_free(
 ) {
     if (!mpi) return;
     qvi_mpi_t *impi = *mpi;
-    if (!impi) return;
+    if (!impi) goto out;
     if (impi->group_tab) {
         for (auto &i : *impi->group_tab) {
             auto &mpi_group = i.second.mpi_group;
@@ -274,6 +274,7 @@ qvi_mpi_free(
         MPI_Comm_free(&impi->world_comm);
     }
     delete impi;
+out:
     *mpi = nullptr;
 }
 
@@ -429,9 +430,8 @@ out:
 
 int
 qvi_mpi_finalize(
-    qvi_mpi_t *mpi
+    qvi_mpi_t *
 ) {
-    QVI_UNUSED(mpi);
     return QV_SUCCESS;
 }
 
@@ -454,8 +454,9 @@ qvi_mpi_group_free(
 ) {
     if (!group) return;
     qvi_mpi_group_t *igroup = *group;
-    if (!igroup) return;
+    if (!igroup) goto out;
     delete igroup;
+out:
     *group = nullptr;
 }
 

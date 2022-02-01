@@ -54,8 +54,7 @@ qvi_context_create(
 out:
     if (ers) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        qvi_context_free(ictx);
-        ictx = nullptr;
+        qvi_context_free(&ictx);
     }
     *ctx = ictx;
     return rc;
@@ -63,14 +62,17 @@ out:
 
 void
 qvi_context_free(
-    qv_context_t *ctx
+    qv_context_t **ctx
 ) {
     if (!ctx) return;
-
-    qvi_task_free(&ctx->task);
-    qvi_bind_stack_free(&ctx->bind_stack);
-    qvi_rmi_client_free(&ctx->rmi);
-    delete ctx;
+    qv_context_t *ictx = *ctx;
+    if (!ictx) goto out;
+    qvi_task_free(&ictx->task);
+    qvi_bind_stack_free(&ictx->bind_stack);
+    qvi_rmi_client_free(&ictx->rmi);
+    delete ictx;
+out:
+    *ctx = nullptr;
 }
 
 int
@@ -188,18 +190,20 @@ qv_scope_get(
     qv_scope_t **scope
 ) {
     if (!ctx || !scope) return QV_ERR_INVLD_ARG;
-    *scope = nullptr;
 
     qv_scope_t *qvs = nullptr;
-    qvi_hwpool_t *hwpool = nullptr;
+    qvi_group_t *group = nullptr;
 
     int rc = qvi_scope_new(&qvs);
-    if (rc != QV_SUCCESS) return rc;
-
-    qvi_group_t *group;
-    rc = ctx->taskman->group_create_from_intrinsic_scope(&group, iscope);
     if (rc != QV_SUCCESS) goto out;
 
+    rc = ctx->taskman->group_create_from_intrinsic_scope(
+        iscope,
+        &group
+    );
+    if (rc != QV_SUCCESS) goto out;
+
+    qvi_hwpool_t *hwpool;
     rc = qvi_rmi_scope_get_intrinsic_scope_hwpool(
         ctx->rmi,
         qvi_task_pid(ctx->task),
@@ -211,7 +215,10 @@ qv_scope_get(
     rc = qvi_scope_init(qvs, group, hwpool);
     if (rc != QV_SUCCESS) goto out;
 out:
-    if (rc != QV_SUCCESS) qvi_scope_free(&qvs);
+    if (rc != QV_SUCCESS) {
+        qvi_group_free(&group);
+        qvi_scope_free(&qvs);
+    }
     *scope = qvs;
     return rc;
 }
@@ -302,8 +309,7 @@ qv_scope_split(
     if (rc != QV_SUCCESS) goto out;
 out:
     if (rc != QV_SUCCESS) {
-        // Don't explicitly free subgroup here. Hope
-        // that qvi_group_free() will do the job for us.
+        qvi_group_free(&subgroup);
         qvi_scope_free(&isubscope);
     }
     *subscope = isubscope;

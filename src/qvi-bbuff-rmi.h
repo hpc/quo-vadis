@@ -18,8 +18,7 @@
  * h = qvi_line_hwpool_t *
  * i = int
  * s = char *
- * u = unsigned
- * z = empty (zero arguments)
+ * z = qvi_bbuff_rmi_zero_msg_t
  */
 
 #ifndef QVI_BBUFF_RMI_H

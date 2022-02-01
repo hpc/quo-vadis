@@ -10,7 +10,7 @@
  */
 
 /**
- * @file test-rmi.c
+ * @file test-rmi.cc
  */
 
 #include "qvi-utils.h"
@@ -110,6 +110,8 @@ client(
     printf("# [%d] Starting Client (%s)\n", getpid(), url);
 
     char const *ers = NULL;
+    pid_t mypid = getpid();
+    hwloc_bitmap_t bitmap = NULL;
 
     qvi_rmi_client_t *client = NULL;
     int rc = qvi_rmi_client_new(&client);
@@ -124,8 +126,6 @@ client(
         goto out;
     }
 
-    pid_t mypid = getpid();
-    hwloc_bitmap_t bitmap = NULL;
     rc = qvi_rmi_task_get_cpubind(client, mypid, &bitmap);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_task_get_cpubind() failed";

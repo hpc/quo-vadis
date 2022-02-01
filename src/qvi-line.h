@@ -29,18 +29,18 @@ const qvi_device_id_t qvi_line_hwpool_devid_last = -1;
 
 typedef struct qvi_line_config_s {
     /** Not sent, initialized elsewhere. */
-    qvi_hwloc_t *hwloc;
+    qvi_hwloc_t *hwloc = nullptr;
     /** Connection URL. */
-    char *url;
+    char *url = nullptr;
     /** Path to hardware topology file. */
-    char *hwtopo_path;
+    char *hwtopo_path = nullptr;
 } qvi_line_config_t;
 
 typedef struct qvi_line_hwpool_s {
     /** The cpuset of this resource pool. */
-    hwloc_bitmap_t cpuset;
+    hwloc_bitmap_t cpuset = nullptr;
     /** qv_hw_obj_type_t to array of qvi_device_ids_ts. */
-    int **device_tab;
+    int **device_tab = nullptr;
 } qvi_line_hwpool_t;
 
 /**

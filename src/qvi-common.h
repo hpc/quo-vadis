@@ -69,7 +69,7 @@ qvi_context_create(
  */
 void
 qvi_context_free(
-    qv_context_t *ctx
+    qv_context_t **ctx
 );
 
 #endif

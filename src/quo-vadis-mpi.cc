@@ -107,7 +107,7 @@ qv_mpi_context_free(
 ) {
     if (!ctx) return QV_ERR_INVLD_ARG;
     if (ctx->taskman) delete ctx->taskman;
-    qvi_context_free(ctx);
+    qvi_context_free(&ctx);
     return QV_SUCCESS;
 }
 

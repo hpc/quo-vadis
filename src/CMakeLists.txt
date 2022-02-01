@@ -137,6 +137,7 @@ if (MPI_FOUND)
 add_library(
     qvi-mpi
     OBJECT
+    ../include/quo-vadis-mpi.h
     qvi-mpi.h
     qvi-taskman-mpi.h
     qvi-mpi.cc

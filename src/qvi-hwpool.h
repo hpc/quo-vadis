@@ -100,7 +100,7 @@ int
 qvi_hwpool_obtain_split_by_group(
     qvi_hwloc_t *hwloc,
     qvi_hwpool_t *pool,
-    int n,
+    int npieces,
     int group_id,
     qvi_hwpool_t **opool
 );

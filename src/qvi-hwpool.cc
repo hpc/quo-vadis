@@ -67,7 +67,9 @@ qvi_hwpool_new(
         }
     }
 out:
-    if (rc != QV_SUCCESS) qvi_hwpool_free(&irpool);
+    if (rc != QV_SUCCESS) {
+        qvi_hwpool_free(&irpool);
+    }
     *rpool = irpool;
     return rc;
 }
@@ -221,7 +223,7 @@ static int
 split_cpuset_by_group(
     qvi_hwloc_t *hwl,
     hwloc_const_cpuset_t cpuset,
-    int n,
+    int npieces,
     int group_id,
     hwloc_cpuset_t *result
 ) {
@@ -244,13 +246,13 @@ split_cpuset_by_group(
     );
     if (rc != QV_SUCCESS) return rc;
 
-    const int chunk = npus / n;
+    const int chunk = npus / npieces;
     // This happens when n > npus. We can't support that split.
     if (chunk == 0) {
         return QV_ERR_SPLIT;
     }
-    // Group IDs must be < n: 0, 1, ... , n-1.
-    if (group_id >= n) {
+    // Group IDs must be < n: 0, 1, ... , npieces-1.
+    if (group_id >= npieces) {
         return QV_ERR_SPLIT;
     }
     // Calculate base and extent of split.
@@ -312,7 +314,7 @@ int
 qvi_hwpool_obtain_split_by_group(
     qvi_hwloc_t *hwloc,
     qvi_hwpool_t *pool,
-    int n,
+    int npieces,
     int group_id,
     qvi_hwpool_t **opool
 ) {
@@ -320,7 +322,7 @@ qvi_hwpool_obtain_split_by_group(
     int rc = split_cpuset_by_group(
         hwloc,
         pool->cpuset,
-        n,
+        npieces,
         group_id,
         &cpuset
     );

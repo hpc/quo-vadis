@@ -94,7 +94,7 @@ endif(MPI_FOUND)
 ################################################################################
 add_executable(
     test-rmi
-    test-rmi.c
+    test-rmi.cc
 )
 
 target_link_libraries(
@@ -150,7 +150,6 @@ target_link_libraries(
 # TODO(skg) Add test-pmi
 set_target_properties(
     test-hwloc
-    test-rmi
     test-mpi
     test-mpi-init
     test-mpi-getdev

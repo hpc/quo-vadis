@@ -1,5 +1,5 @@
 /*
- * Copyright (c)      2021 Triad National Security, LLC
+ * Copyright (c) 2021-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c)      2021 Lawrence Livermore National Security, LLC
@@ -44,8 +44,9 @@ qvi_group_free(
 ) {
     if (!group) return;
     qvi_group_t *igroup = *group;
-    if (!igroup) return;
+    if (!igroup) goto out;
     delete igroup;
+out:
     *group = nullptr;
 }
 
