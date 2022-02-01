@@ -24,10 +24,6 @@
 extern "C" {
 #endif
 
-// Keep in sync with the qvi_line_config_t structure.
-#define QVI_LINE_CONFIG_PICTURE "ss"
-#define QVI_LINE_HWPOOL_PICTURE "h"
-
 /** Sentinel value last value for device ID lists. */
 const qvi_device_id_t qvi_line_hwpool_devid_last = -1;
 
@@ -113,15 +109,6 @@ int
 qvi_line_hwpool_ndevids(
     qvi_line_hwpool_t *hwp,
     int devid_index
-);
-
-/**
- *
- */
-int
-qvi_line_hwpool_cp(
-    qvi_line_hwpool_t *from,
-    qvi_line_hwpool_t *to
 );
 
 /**

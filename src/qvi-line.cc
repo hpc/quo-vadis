@@ -69,9 +69,8 @@ qvi_line_config_pack(
     qvi_line_config_t *config,
     qvi_bbuff_t *buff
 ) {
-    return qvi_bbuff_rmi_sprintf(
+    return qvi_bbuff_rmi_pack(
         buff,
-        QVI_LINE_CONFIG_PICTURE,
         config->url,
         config->hwtopo_path
     );
@@ -85,9 +84,8 @@ qvi_line_config_unpack(
     int rc = qvi_line_config_new(config);
     if (rc != QV_SUCCESS) return rc;
 
-    return qvi_bbuff_rmi_sscanf(
+    return qvi_bbuff_rmi_unpack(
         buff,
-        QVI_LINE_CONFIG_PICTURE,
         &(*config)->url,
         &(*config)->hwtopo_path
     );
@@ -142,25 +140,11 @@ qvi_line_hwpool_ndevids(
 }
 
 int
-qvi_line_hwpool_cp(
-    qvi_line_hwpool_t *from,
-    qvi_line_hwpool_t *to
-) {
-    int rc = QV_SUCCESS;
-    // TODO(skg) Implement the rest
-    return rc;
-}
-
-int
 qvi_line_hwpool_pack(
     qvi_line_hwpool_t *hwp,
     qvi_bbuff_t *buff
 ) {
-    return qvi_bbuff_rmi_sprintf(
-        buff,
-        QVI_LINE_HWPOOL_PICTURE,
-        hwp
-    );
+    return qvi_bbuff_rmi_pack(buff, hwp);
 }
 
 int
@@ -168,9 +152,8 @@ qvi_line_hwpool_unpack(
     void *buff,
     qvi_line_hwpool_t **hwp
 ) {
-    return qvi_bbuff_rmi_sscanf(
+    return qvi_bbuff_rmi_unpack(
         buff,
-        QVI_LINE_HWPOOL_PICTURE,
         hwp
     );
 }

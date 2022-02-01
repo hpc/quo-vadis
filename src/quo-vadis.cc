@@ -278,7 +278,7 @@ qv_scope_split(
         goto out;
     }
 
-    rc = qvi_rmi_split_cpuset_by_group(
+    rc = qvi_rmi_split_hwpool_by_group(
         ctx->rmi,
         qvi_scope_hwpool_get(scope),
         n,

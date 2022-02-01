@@ -90,7 +90,6 @@ add_library(
     qvi-bbuff-rmi.h
     qvi-line.cc
     qvi-rmi.cc
-    qvi-bbuff-rmi.cc
 )
 
 target_include_directories(

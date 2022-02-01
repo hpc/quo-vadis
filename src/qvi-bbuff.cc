@@ -62,9 +62,10 @@ qvi_bbuff_free(
 ) {
     if (!buff) return;
     qvi_bbuff_t *ibuff = *buff;
-    if (!ibuff) return;
+    if (!ibuff) goto out;
     if (ibuff->data) free(ibuff->data);
     delete ibuff;
+out:
     *buff = nullptr;
 }
 
@@ -85,7 +86,7 @@ qvi_bbuff_size(
 int
 qvi_bbuff_append(
     qvi_bbuff_t *buff,
-    void *data,
+    const void *data,
     size_t size
 ) {
     const size_t req_capacity = size + buff->size;
