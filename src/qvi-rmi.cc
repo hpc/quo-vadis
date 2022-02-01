@@ -1056,7 +1056,7 @@ hello_handshake(
     int rc = rpc_req(
         client->zsock,
         FID_HELLO,
-        (int)getpid()
+        getpid()
     );
     if (rc != QV_SUCCESS) return rc;
 
@@ -1111,7 +1111,7 @@ qvi_rmi_task_get_cpubind(
     int qvrc = rpc_req(
         client->zsock,
         FID_TASK_GET_CPUBIND,
-        (int)who
+        who
     );
     if (qvrc != QV_SUCCESS) return qvrc;
 
@@ -1131,7 +1131,7 @@ qvi_rmi_task_set_cpubind_from_cpuset(
     int qvrc = rpc_req(
         client->zsock,
         FID_TASK_SET_CPUBIND_FROM_CPUSET,
-        (int)who,
+        who,
         cpuset
     );
     if (qvrc != QV_SUCCESS) return qvrc;
@@ -1155,8 +1155,8 @@ qvi_rmi_scope_get_intrinsic_scope_hwpool(
     int qvrc = rpc_req(
         client->zsock,
         FID_SCOPE_GET_INTRINSIC_SCOPE_HWPOOL,
-        (int)requestor_pid,
-        (int)iscope
+        requestor_pid,
+        iscope
     );
     if (qvrc != QV_SUCCESS) return qvrc;
 
@@ -1179,7 +1179,7 @@ qvi_rmi_obj_type_depth(
     int qvrc = rpc_req(
         client->zsock,
         FID_OBJ_TYPE_DEPTH,
-        (int)type
+        type
     );
     if (qvrc != QV_SUCCESS) return qvrc;
 
@@ -1200,7 +1200,7 @@ qvi_rmi_get_nobjs_in_cpuset(
     int qvrc = rpc_req(
         client->zsock,
         FID_GET_NOBJS_IN_CPUSET,
-        (int)target_obj,
+        target_obj,
         cpuset
     );
     if (qvrc != QV_SUCCESS) return qvrc;
@@ -1224,10 +1224,10 @@ qvi_rmi_get_device_in_cpuset(
     int qvrc = rpc_req(
         client->zsock,
         FID_GET_DEVICE_IN_CPUSET,
-        (int)dev_obj,
+        dev_obj,
         dev_i,
         cpuset,
-        (int)dev_id_type
+        dev_id_type
     );
     if (qvrc != QV_SUCCESS) return qvrc;
 

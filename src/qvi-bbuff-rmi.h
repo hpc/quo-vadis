@@ -149,6 +149,44 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
+    qv_hw_obj_type_t
+) {
+    picture += "i";
+}
+
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
+    qv_device_id_type_t
+) {
+    picture += "i";
+}
+
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
+    qv_scope_intrinsic_t
+) {
+    picture += "i";
+}
+
+#if QVI_SIZEOF_INT != QVI_SIZEOF_PID_T
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
+    pid_t
+) {
+    picture += "i";
+}
+#endif
+
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
     cstr
 ) {
     picture += "s";
@@ -347,6 +385,56 @@ qvi_bbuff_rmi_pack_item(
 ) {
     return qvi_bbuff_append(buff, &data, sizeof(data));
 }
+
+/**
+ * Packs qv_hw_obj_type_t as an int.
+ */
+inline int
+qvi_bbuff_rmi_pack_item(
+    qvi_bbuff_t *buff,
+    qv_hw_obj_type_t data
+) {
+    const int dai = (int)data;
+    return qvi_bbuff_append(buff, &dai, sizeof(dai));
+}
+
+/**
+ * Packs qv_device_id_type_t as an int.
+ */
+inline int
+qvi_bbuff_rmi_pack_item(
+    qvi_bbuff_t *buff,
+    qv_device_id_type_t data
+) {
+    const int dai = (int)data;
+    return qvi_bbuff_append(buff, &dai, sizeof(dai));
+}
+
+/**
+ * Packs qv_scope_intrinsic_t as an int.
+ */
+inline int
+qvi_bbuff_rmi_pack_item(
+    qvi_bbuff_t *buff,
+    qv_scope_intrinsic_t data
+) {
+    const int dai = (int)data;
+    return qvi_bbuff_append(buff, &dai, sizeof(dai));
+}
+
+#if QVI_SIZEOF_INT != QVI_SIZEOF_PID_T
+/**
+ * Packs pid_t as an int.
+ */
+inline int
+qvi_bbuff_rmi_pack_item(
+    qvi_bbuff_t *buff,
+    pid_t data
+) {
+    const int dai = (int)data;
+    return qvi_bbuff_append(buff, &dai, sizeof(dai));
+}
+#endif
 
 inline int
 qvi_bbuff_rmi_pack_item_impl(

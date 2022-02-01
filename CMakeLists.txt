@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2021 Triad National Security, LLC
+# Copyright (c) 2020-2022 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -82,7 +82,7 @@ include(cmake/build-type.cmake)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Check include files
-include(cmake/cif.cmake)
+include(cmake/CheckIncludes.cmake)
 # Add generated configuration file
 configure_file(config.h.in include/${PROJECT_NAME}/config.h)
 # Install the generated configuration file
@@ -92,6 +92,9 @@ install(
     DESTINATION
       include/${PROJECT_NAME}
 )
+
+# Check datatype sizes
+include(cmake/CheckTypes.cmake)
 
 # TODO(skg) Improve
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")

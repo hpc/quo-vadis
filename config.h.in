@@ -56,6 +56,9 @@
 #cmakedefine HAVE_TIME_H 1
 #cmakedefine HAVE_UNISTD_H 1
 
+#cmakedefine QVI_SIZEOF_INT   ${QVI_SIZEOF_INT}
+#cmakedefine QVI_SIZEOF_PID_T ${QVI_SIZEOF_PID_T}
+
 #cmakedefine QV_DISABLE_GPU_SUPPORT
 #cmakedefine CUDAToolkit_FOUND
 
