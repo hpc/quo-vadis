@@ -620,13 +620,10 @@ int
 qvi_hwloc_bitmap_calloc(
     hwloc_cpuset_t *cpuset
 ) {
-    int rc = QV_SUCCESS;
-
     *cpuset = hwloc_bitmap_alloc();
-    if (!*cpuset) rc = QV_ERR_OOR;
+    if (!*cpuset) return QV_ERR_OOR;
     hwloc_bitmap_zero(*cpuset);
-
-    return rc;
+    return QV_SUCCESS;
 }
 
 int

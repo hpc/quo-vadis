@@ -210,6 +210,7 @@ hwloc_const_cpuset_t
 qvi_hwpool_cpuset_get(
     qvi_hwpool_t *rpool
 ) {
+    if (!rpool) return nullptr;
     return rpool->cpuset;
 }
 

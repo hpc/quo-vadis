@@ -86,7 +86,16 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
-    const qvi_hwpool_t *
+    hwloc_cpuset_t *
+) {
+    picture += "c";
+}
+
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
+    qvi_line_hwpool_t *
 ) {
     picture += "h";
 }
@@ -95,7 +104,7 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
-    qvi_line_hwpool_t *
+    const qvi_hwpool_t *
 ) {
     picture += "h";
 }
@@ -113,7 +122,25 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
+    qvi_hwpool_t **
+) {
+    picture += "h";
+}
+
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
     int
+) {
+    picture += "i";
+}
+
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
+    int *
 ) {
     picture += "i";
 }
@@ -132,6 +159,15 @@ inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
     char *
+) {
+    picture += "s";
+}
+
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
+    char **
 ) {
     picture += "s";
 }

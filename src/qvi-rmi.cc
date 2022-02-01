@@ -87,7 +87,11 @@ typedef enum qvi_rpc_funid_e {
 
 typedef struct qvi_msg_header_s {
     qvi_rpc_funid_t fid = FID_INVALID;
+#if QVI_DEBUG_MODE == 1
     char picture[8] = {'\0'};
+#else
+    char picture[1] = {'\0'};
+#endif
 } qvi_msg_header_t;
 
 /**
@@ -176,13 +180,20 @@ static int
 buffer_append_header(
     qvi_bbuff_t *buff,
     qvi_rpc_funid_t fid,
-    const char *picture
+    cstr picture
 ) {
     qvi_msg_header_t hdr;
     hdr.fid = fid;
+#if QVI_DEBUG_MODE == 1
     const int bcap = sizeof(hdr.picture);
     const int nw = snprintf(hdr.picture, bcap, "%s", picture);
-    assert(nw < bcap);
+    if (nw >= bcap) {
+        // TODO(skg) Please report a bug.
+        return QV_ERR_INTERNAL;
+    }
+#else
+    QVI_UNUSED(picture);
+#endif
     return qvi_bbuff_append(buff, &hdr, sizeof(hdr));
 }
 
@@ -303,6 +314,22 @@ rpc_unpack(
 ) {
     qvi_msg_header_t hdr;
     const size_t trim = unpack_msg_header(data, &hdr);
+#if QVI_DEBUG_MODE == 1
+    std::string picture;
+    // Get the picture based on the types passed.
+    qvi_bbuff_rmi_get_picture(picture, args...);
+    // Verify it matches the arguments provided.
+    if (strcmp(picture.c_str(), hdr.picture) != 0) {
+        qvi_log_error(
+            "RPC pack/unpack type mismatch: "
+            "expected \"{}\", but detected \"{}\" "
+            "in RPC call to {}",
+            hdr.picture,
+            picture.c_str(),
+            hdr.fid
+        );
+    }
+#endif
     void *body = data_trim(data, trim);
     return qvi_bbuff_rmi_unpack(body, args...);
 }
@@ -768,8 +795,12 @@ server_go(
         if (rc != QV_SUCCESS) break;
         bsentt += bsent;
     } while(active);
+#if QVI_DEBUG_MODE == 1
     // Nice to understand messaging characteristics.
     qvi_log_debug("Server Sent {} bytes", bsentt);
+#else
+    QVI_UNUSED(bsentt);
+#endif
     zsocket_close(&zworksock);
     if (rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN) {
         qvi_log_error("RX/TX loop exited with rc={} ({})", rc, qv_strerr(rc));
@@ -1225,6 +1256,7 @@ qvi_rmi_split_hwpool_by_group(
     );
     if (qvrc != QV_SUCCESS) goto out;
 
+    // TODO(skg) Maybe in the error paths we can just do a zero rep.
     int rpcrc;
     qvrc = rpc_rep(client->zsock, &rpcrc, result);
 out:

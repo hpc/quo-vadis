@@ -1,5 +1,5 @@
 /*
- * Copyright (c)      2020 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c)      2020 Lawrence Livermore National Security, LLC
@@ -16,7 +16,7 @@
 #ifndef QVI_LOG_H
 #define QVI_LOG_H
 
-#ifdef NDEBUG
+#if QVI_DEBUG_MODE == 0
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
 #else
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_DEBUG
