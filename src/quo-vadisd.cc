@@ -16,7 +16,7 @@
  */
 
 // TODO(skg)
-// * Add something like QV_SHUTDOWN_ON_DISCONNECT
+// * Add something like QV_SHUTDOWN_ON_DISCONNECT or QV_DAEMON_KEEP_ALIVE
 
 #include "qvi-common.h"
 #include "qvi-utils.h"

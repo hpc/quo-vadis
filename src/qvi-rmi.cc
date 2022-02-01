@@ -420,7 +420,7 @@ rpc_ssi_hello(
     qvi_bbuff_t **output
 ) {
     // TODO(skg) This will go into some registry somewhere.
-    int whoisit;
+    pid_t whoisit;
     int rc = qvi_bbuff_rmi_unpack(input, &whoisit);
     if (rc != QV_SUCCESS) return rc;
     // Pack relevant configuration information.
@@ -450,7 +450,7 @@ rpc_ssi_task_get_cpubind(
     void *input,
     qvi_bbuff_t **output
 ) {
-    int who = 0;
+    pid_t who = 0;
     int qvrc = qvi_bbuff_rmi_unpack(input, &who);
     if (qvrc != QV_SUCCESS) return qvrc;
 
@@ -474,7 +474,7 @@ rpc_ssi_task_set_cpubind_from_cpuset(
     void *input,
     qvi_bbuff_t **output
 ) {
-    int who = 0;
+    pid_t who = 0;
     hwloc_cpuset_t cpuset = nullptr;
     int qvrc = qvi_bbuff_rmi_unpack(input, &who, &cpuset);
     if (qvrc != QV_SUCCESS) return qvrc;
@@ -496,17 +496,17 @@ rpc_ssi_obj_type_depth(
     void *input,
     qvi_bbuff_t **output
 ) {
-    int obj_ai = 0;
+    qv_hw_obj_type_t obj;
     int qvrc = qvi_bbuff_rmi_unpack(
         input,
-        &obj_ai
+        &obj
     );
     if (qvrc != QV_SUCCESS) return qvrc;
 
     int depth = 0;
     int rpcrc = qvi_hwloc_obj_type_depth(
         server->config->hwloc,
-        (qv_hw_obj_type_t)obj_ai,
+        obj,
         &depth
     );
 
@@ -520,11 +520,11 @@ rpc_ssi_get_nobjs_in_cpuset(
     void *input,
     qvi_bbuff_t **output
 ) {
-    int target_obj_ai = 0;
+    qv_hw_obj_type_t target_obj;
     hwloc_cpuset_t cpuset = nullptr;
     int qvrc = qvi_bbuff_rmi_unpack(
         input,
-        &target_obj_ai,
+        &target_obj,
         &cpuset
     );
     if (qvrc != QV_SUCCESS) return qvrc;
@@ -532,7 +532,7 @@ rpc_ssi_get_nobjs_in_cpuset(
     int nobjs = 0;
     int rpcrc = qvi_hwloc_get_nobjs_in_cpuset(
         server->config->hwloc,
-        (qv_hw_obj_type_t)target_obj_ai,
+        target_obj,
         cpuset,
         &nobjs
     );
@@ -550,24 +550,26 @@ rpc_ssi_get_device_in_cpuset(
     void *input,
     qvi_bbuff_t **output
 ) {
-    int dev_obj_ai = 0, dev_i = 0, dev_id_type_ai = 0;
+    qv_hw_obj_type_t dev_obj;
+    int dev_i;
     hwloc_cpuset_t cpuset = nullptr;
+    qv_device_id_type_t devid_type;
     int qvrc = qvi_bbuff_rmi_unpack(
         input,
-        &dev_obj_ai,
+        &dev_obj,
         &dev_i,
         &cpuset,
-        &dev_id_type_ai
+        &devid_type
     );
     if (qvrc != QV_SUCCESS) return qvrc;
 
     char *dev_id = nullptr;
     int rpcrc = qvi_hwloc_get_device_in_cpuset(
         server->config->hwloc,
-        (qv_hw_obj_type_t)dev_obj_ai,
+        dev_obj,
         dev_i,
         cpuset,
-        (qv_device_id_type_t)dev_id_type_ai,
+        devid_type,
         &dev_id
     );
 
@@ -668,18 +670,15 @@ rpc_ssi_split_hwpool_by_group(
     void *input,
     qvi_bbuff_t **output
 ) {
-    qvi_line_hwpool_t *lpool = nullptr;
+    qvi_hwpool_t *pool = nullptr;
     int n = 0, group_id = 0;
     int qvrc = qvi_bbuff_rmi_unpack(
         input,
-        &lpool,
+        &pool,
         &n,
         &group_id
     );
     if (qvrc != QV_SUCCESS) return qvrc;
-
-    qvi_hwpool_t *pool = nullptr;
-    qvrc = qvi_hwpool_new_from_line(lpool, &pool);
 
     qvi_hwpool_t *result = nullptr;
     int rpcrc = qvi_hwpool_obtain_split_by_group(
@@ -692,7 +691,8 @@ rpc_ssi_split_hwpool_by_group(
     if (rpcrc != QV_SUCCESS) return rpcrc;
 
     qvrc = rpc_pack(output, hdr->fid, rpcrc, result);
-    qvi_line_hwpool_free(&lpool);
+
+    qvi_hwpool_free(&pool);
     qvi_hwpool_free(&result);
 
     return qvrc;

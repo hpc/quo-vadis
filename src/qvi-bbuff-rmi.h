@@ -634,6 +634,50 @@ qvi_bbuff_rmi_unpack_item(
     return QV_SUCCESS;
 }
 
+#if QVI_SIZEOF_INT != QVI_SIZEOF_PID_T
+inline int
+qvi_bbuff_rmi_unpack_item(
+    pid_t *i,
+    byte *buffpos,
+    size_t *bytes_written
+) {
+    // Remember we are sending this as an int.
+    int pai = 0;
+    memmove(&pai, buffpos, sizeof(pai));
+    *bytes_written = sizeof(pai);
+    *i = (pid_t)pai;
+    return QV_SUCCESS;
+}
+#endif
+
+inline int
+qvi_bbuff_rmi_unpack_item(
+    qv_hw_obj_type_t *o,
+    byte *buffpos,
+    size_t *bytes_written
+) {
+    // Remember we are sending this as an int.
+    int oai = 0;
+    memmove(&oai, buffpos, sizeof(oai));
+    *bytes_written = sizeof(oai);
+    *o = (qv_hw_obj_type_t)oai;
+    return QV_SUCCESS;
+}
+
+inline int
+qvi_bbuff_rmi_unpack_item(
+    qv_device_id_type_t *o,
+    byte *buffpos,
+    size_t *bytes_written
+) {
+    // Remember we are sending this as an int.
+    int oai = 0;
+    memmove(&oai, buffpos, sizeof(oai));
+    *bytes_written = sizeof(oai);
+    *o = (qv_device_id_type_t)oai;
+    return QV_SUCCESS;
+}
+
 inline int
 qvi_bbuff_rmi_unpack_item(
     qvi_bbuff_rmi_zero_msg_t,
