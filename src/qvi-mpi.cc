@@ -20,8 +20,9 @@
 
 #include "mpi.h"
 
-using qvi_mpi_group_tab_t =
-std::unordered_map<qvi_mpi_group_id_t, qvi_mpi_group_t>;
+using qvi_mpi_group_tab_t = std::unordered_map<
+    qvi_mpi_group_id_t, qvi_mpi_group_t
+>;
 
 struct qvi_mpi_group_s {
     /** ID used for table lookups */
@@ -795,40 +796,24 @@ qvi_mpi_group_scatter_bbuffs(
     int *txcounts = nullptr, *displs = nullptr, total_bytes = 0;
     byte *mybytes = nullptr, *txbytes = nullptr;
     qvi_bbuff_t *mybbuff = nullptr;
-
+    // Root sets up relevant Scatterv data structures.
     if (group_id == root) {
         txcounts = qvi_new int[group_size];
         if (!txcounts) {
             rc = QV_ERR_OOR;
             goto out;
         }
-        for (int i = 0; i < group_size; ++i) {
-            txcounts[i] = (int)qvi_bbuff_size(txbuffs[i]);
-            total_bytes += txcounts[i];
-        }
-    }
-    // Scatter buffer sizes.
-    mpirc = MPI_Scatter(
-        txcounts, 1, MPI_INT,
-        &rxcount, 1, MPI_INT,
-        root, group->mpi_comm
-    );
-    if (mpirc != MPI_SUCCESS) {
-        rc = QV_ERR_MPI;
-        goto out;
-    }
-    // Root sets up relevant Scatterv data structures.
-    if (group->group_id == root) {
+
         displs = qvi_new int[group_size];
         if (!displs) {
             rc = QV_ERR_OOR;
             goto out;
         };
 
-        int displ = 0;
         for (int i = 0; i < group_size; ++i) {
-            displs[i] = displ;
-            displ += txcounts[i];
+            txcounts[i] = (int)qvi_bbuff_size(txbuffs[i]);
+            displs[i] = total_bytes;
+            total_bytes += txcounts[i];
         }
         // A flattened buffer containing all the relevant information.
         txbytes = qvi_new byte[total_bytes];
@@ -842,6 +827,16 @@ qvi_mpi_group_scatter_bbuffs(
             memmove(bytepos, txbuffs[i], txcounts[i]);
             bytepos += txcounts[i];
         }
+    }
+    // Scatter buffer sizes.
+    mpirc = MPI_Scatter(
+        txcounts, 1, MPI_INT,
+        &rxcount, 1, MPI_INT,
+        root, group->mpi_comm
+    );
+    if (mpirc != MPI_SUCCESS) {
+        rc = QV_ERR_MPI;
+        goto out;
     }
     // Everyone allocates a buffer for their data.
     mybytes = qvi_new byte[rxcount];

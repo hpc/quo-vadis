@@ -47,7 +47,6 @@
 #include "qvi-hwloc.h"
 #include "qvi-utils.h"
 
-// TODO(skg) Consider using std::shared_ptr elsewhere.
 using qvi_devinfos_t = std::unordered_set<
     std::shared_ptr<qvi_hwpool_devinfo_t>
 >;
@@ -262,7 +261,7 @@ qvi_hwpool_add_device(
     // insert().second returns whether or not item insertion took place. If
     // true, this is a new, unseen device that we have inserted.
     if (!itp) {
-        qvi_log_debug("Duplicate device (ID={}) found of type {}", id, type);
+        qvi_log_error("Duplicate device (ID={}) found of type {}", id, type);
         return QV_ERR_INTERNAL;
     }
     return QV_SUCCESS;
