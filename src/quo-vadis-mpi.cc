@@ -49,16 +49,12 @@ qv_mpi_context_create(
     qv_context_t **ctx,
     MPI_Comm comm
 ) {
+    if (!ctx || comm == MPI_COMM_NULL) return QV_ERR_INVLD_ARG;
+
     int rc = QV_SUCCESS;
     cstr ers = nullptr;
-    qv_context_t *ictx = nullptr;
-
-    if (!ctx || comm == MPI_COMM_NULL) {
-        ers = "Function argument check failed";
-        rc = QV_ERR_INVLD_ARG;
-        goto out;
-    }
     // Create base context.
+    qv_context_t *ictx = nullptr;
     rc = qvi_context_create(&ictx);
     if (rc != QV_SUCCESS) {
         ers = "qvi_context_create() failed";
@@ -74,7 +70,7 @@ qv_mpi_context_create(
     // Save taskman instance pointer to context.
     ictx->taskman = itaskman;
 
-    rc = qvi_mpi_init(itaskman->mpi, ictx->task, comm);
+    rc = qvi_mpi_init(itaskman->mpi, comm);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_init failed";
         goto out;
@@ -88,7 +84,7 @@ qv_mpi_context_create(
 
     rc = qvi_bind_stack_init(
         ictx->bind_stack,
-        ictx->task,
+        qvi_mpi_task_get(itaskman->mpi),
         ictx->rmi
     );
     if (rc != QV_SUCCESS) {

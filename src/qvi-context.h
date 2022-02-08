@@ -23,7 +23,6 @@
 
 #include "qvi-common.h"
 
-#include "qvi-task.h"
 #include "qvi-taskman.h"
 #include "qvi-hwloc.h"
 #include "qvi-bind.h"
@@ -37,10 +36,9 @@ extern "C" {
  * The underlying data structure that defines an ultimately opaque QV context.
  */
 struct qv_context_s {
-    qvi_task_t *task = nullptr;
-    qvi_taskman_t *taskman = nullptr;
     qvi_hwloc_t *hwloc = nullptr;
     qvi_rmi_client_t *rmi = nullptr;
+    qvi_taskman_t *taskman = nullptr;
     qvi_bind_stack_t *bind_stack = nullptr;
 };
 

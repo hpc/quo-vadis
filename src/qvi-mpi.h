@@ -69,7 +69,6 @@ qvi_mpi_free(
 int
 qvi_mpi_init(
     qvi_mpi_t *mpi,
-    qvi_task_t *task,
     MPI_Comm comm
 );
 
@@ -186,8 +185,8 @@ qvi_mpi_group_barrier(
 /**
  *
  */
-pid_t
-qvi_mpi_task_pid_get(
+qvi_task_t *
+qvi_mpi_task_get(
     qvi_mpi_t *mpi
 );
 

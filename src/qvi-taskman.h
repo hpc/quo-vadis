@@ -18,11 +18,10 @@
 #ifndef QVI_TASKMAN_H
 #define QVI_TASKMAN_H
 
+#include "qvi-task.h"
 #include "qvi-scope.h"
+// TODO(skg) Do we need RMI here?
 #include "qvi-rmi.h"
-
-// TODO(skg) We may be able to simplify this. Perhaps we can remove this layer
-// of abstraction.
 
 /**
  * Virtual base taskman class.
@@ -34,12 +33,16 @@ struct qvi_taskman_s {
     virtual ~qvi_taskman_s(void) = default;
     /** The real 'constructor' that can possibly fail. */
     virtual int initialize(void) = 0;
+    /** Returns pointer to the caller's task information. */
+    virtual qvi_task_t *task(void) = 0;
     /** Creates a new scope from an intrinsic scope. */
     virtual int scope_create_from_intrinsic(
         qvi_rmi_client_t *rmi,
         qv_scope_intrinsic_t intrinsic,
         qv_scope_t **scope
     ) = 0;
+    // TODO(skg) This shouldn't be here. Scopes should know how to split
+    // themselves.
     /** Creates a new scope from a scope split. */
     virtual int scope_create_from_split(
         qvi_hwloc_t *hwloc,
@@ -55,56 +58,6 @@ struct qvi_taskman_s {
     virtual int barrier(void) = 0;
 };
 typedef qvi_taskman_s qvi_taskman_t;
-
-/**
- *
- */
-inline int
-qvi_taskman_scope_create_from_intrinsic(
-    qvi_taskman_t *taskman,
-    qvi_rmi_client_t *rmi,
-    qv_scope_intrinsic_t intrinsic,
-    qv_scope_t **scope
-) {
-    return taskman->scope_create_from_intrinsic(
-        rmi,
-        intrinsic,
-        scope
-    );
-}
-
-/**
- *
- */
-inline int
-qvi_taskman_scope_create_from_split(
-    qvi_taskman_t *taskman,
-    qvi_hwloc_t *hwloc,
-    qvi_rmi_client_t *rmi,
-    qv_scope_t *parent,
-    int ncolors,
-    int color,
-    qv_scope_t **child
-) {
-    return taskman->scope_create_from_split(
-        hwloc,
-        rmi,
-        parent,
-        ncolors,
-        color,
-        child
-    );
-}
-
-/**
- *
- */
-inline int
-qvi_taskman_barrier(
-    qvi_taskman_t *taskman
-) {
-    return taskman->barrier();
-}
 
 #endif
 

@@ -34,12 +34,6 @@ qvi_context_create(
         goto out;
     }
 
-    rc = qvi_task_new(&ictx->task);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_task_new() failed";
-        goto out;
-    }
-
     rc = qvi_rmi_client_new(&ictx->rmi);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_client_new() failed";
@@ -66,7 +60,6 @@ qvi_context_free(
     if (!ctx) return;
     qv_context_t *ictx = *ctx;
     if (!ictx) goto out;
-    qvi_task_free(&ictx->task);
     qvi_bind_stack_free(&ictx->bind_stack);
     qvi_rmi_client_free(&ictx->rmi);
     delete ictx;
@@ -106,7 +99,7 @@ qv_bind_get_as_string(
     hwloc_cpuset_t cpuset = nullptr;
     int rc = qvi_rmi_task_get_cpubind(
         ctx->rmi,
-        qvi_task_pid(ctx->task),
+        qvi_task_pid(ctx->taskman->task()),
         &cpuset
     );
     if (rc != QV_SUCCESS) goto out;
@@ -123,7 +116,7 @@ qv_context_barrier(
 ) {
     if (!ctx) return QV_ERR_INVLD_ARG;
 
-    return qvi_taskman_barrier(ctx->taskman);
+    return ctx->taskman->barrier();
 }
 
 int
@@ -185,8 +178,7 @@ qv_scope_get(
 ) {
     if (!ctx || !scope) return QV_ERR_INVLD_ARG;
 
-    return qvi_taskman_scope_create_from_intrinsic(
-        ctx->taskman,
+    return ctx->taskman->scope_create_from_intrinsic(
         ctx->rmi,
         iscope,
         scope
@@ -233,8 +225,7 @@ qv_scope_split(
         rc = QV_ERR_INVLD_ARG;
         goto out;
     }
-    rc = qvi_taskman_scope_create_from_split(
-        ctx->taskman,
+    rc = ctx->taskman->scope_create_from_split(
         ctx->hwloc,
         ctx->rmi,
         scope,

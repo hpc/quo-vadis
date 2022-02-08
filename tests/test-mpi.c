@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -49,19 +49,15 @@ main(
         fprintf(stderr, "%s\n", ers);
         return EXIT_FAILURE;
     }
-    qvi_task_t *task = NULL;
-    rc = qvi_task_new(&task);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_task_new() failed";
-        goto out;
-    }
+
     qvi_mpi_t *mpi = NULL;
     rc = qvi_mpi_new(&mpi);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_new() failed";
         goto out;
     }
-    rc = qvi_mpi_init(mpi, task, comm);
+
+    rc = qvi_mpi_init(mpi, comm);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_init() failed";
         goto out;
@@ -81,6 +77,7 @@ main(
     int nsize = qvi_mpi_group_size(node_group);
     int group_id = qvi_mpi_group_id(node_group);
 
+    qvi_task_t *task = qvi_mpi_task_get(mpi);
     int64_t task_gid = qvi_task_gid(task);
     int task_lid = qvi_task_lid(task);
 
@@ -144,10 +141,9 @@ main(
         goto out;
     }
 out:
-    qvi_mpi_group_free(&world_group);
-    qvi_mpi_group_free(&node_group);
     qvi_mpi_group_free(&node_even_group);
-    qvi_task_free(&task);
+    qvi_mpi_group_free(&node_group);
+    qvi_mpi_group_free(&world_group);
     qvi_mpi_free(&mpi);
     if (evens) free(evens);
     MPI_Finalize();

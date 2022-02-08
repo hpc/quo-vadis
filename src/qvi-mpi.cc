@@ -236,7 +236,8 @@ qvi_mpi_new(
         goto out;
     }
     // Task
-    // We don't own task memory. Set in qvi_mpi_init().
+    rc = qvi_task_new(&impi->task);
+    if (rc != QV_SUCCESS) goto out;
     // Groups
     impi->group_tab = qvi_new qvi_mpi_group_tab_t;
     if (!impi->group_tab) {
@@ -274,16 +275,17 @@ qvi_mpi_free(
     if (impi->world_comm != MPI_COMM_NULL) {
         MPI_Comm_free(&impi->world_comm);
     }
+    qvi_task_free(&impi->task);
     delete impi;
 out:
     *mpi = nullptr;
 }
 
-pid_t
-qvi_mpi_task_pid_get(
+qvi_task_t *
+qvi_mpi_task_get(
     qvi_mpi_t *mpi
 ) {
-    return qvi_task_pid(mpi->task);
+    return mpi->task;
 }
 
 /**
@@ -369,7 +371,6 @@ out:
 int
 qvi_mpi_init(
     qvi_mpi_t *mpi,
-    qvi_task_t *task,
     MPI_Comm comm
 ) {
     cstr ers = nullptr;
@@ -421,13 +422,10 @@ qvi_mpi_init(
         goto out;
     }
     // Task initialization
-    rc = qvi_task_init(task, getpid(), world_id, node_id);
+    rc = qvi_task_init(mpi->task, getpid(), world_id, node_id);
     if (rc != QV_SUCCESS) {
         ers = "qvi_task_init() failed";
-        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        return rc;
     }
-    mpi->task = task;
 out:
     if (ers) {
         qvi_log_error("{} with rc={}", ers, rc);
@@ -530,7 +528,7 @@ qvi_mpi_group_create_from_ids(
     cstr ers = nullptr;
     int qvrc = QV_SUCCESS;
 
-    MPI_Group new_mpi_group;
+    MPI_Group new_mpi_group = QVI_MPI_GROUP_NULL;
     int rc = MPI_Group_incl(
         group->mpi_group,
         num_group_ids,
@@ -554,7 +552,8 @@ qvi_mpi_group_create_from_ids(
     }
     // Not in the group and no errors.
     if (*maybe_group == nullptr) {
-        return QV_SUCCESS;
+        rc = QV_SUCCESS;
+        goto out;
     }
     // In the group.
     qvrc = group_add(mpi, *maybe_group);
@@ -563,6 +562,9 @@ qvi_mpi_group_create_from_ids(
         goto out;
     }
 out:
+    if (new_mpi_group != MPI_GROUP_NULL) {
+        (void)MPI_Group_free(&new_mpi_group);
+    }
     if (ers) {
         qvi_log_error(ers);
     }

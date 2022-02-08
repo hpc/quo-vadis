@@ -83,6 +83,11 @@ struct qvi_taskman_mpi_s : public qvi_taskman_s {
         qvi_mpi_free(&mpi);
     }
 
+    virtual qvi_task_t *task(void)
+    {
+        return qvi_mpi_task_get(mpi);
+    }
+
     int
     group_create_from_intrinsic_scope(
         qv_scope_intrinsic_t scope,
@@ -164,7 +169,7 @@ struct qvi_taskman_mpi_s : public qvi_taskman_s {
 
         rc = qvi_rmi_scope_get_intrinsic_scope_hwpool(
             rmi,
-            qvi_mpi_task_pid_get(mpi),
+            qvi_task_pid(qvi_mpi_task_get(mpi)),
             intrinsic,
             &hwpool
         );
