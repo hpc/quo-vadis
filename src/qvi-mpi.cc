@@ -28,9 +28,9 @@ struct qvi_mpi_group_s {
     /** ID used for table lookups */
     qvi_mpi_group_id_t tabid = 0;
     /** ID (rank) in group */
-    int group_id = 0;
+    int id = 0;
     /** Size of group */
-    int group_size = 0;
+    int size = 0;
     /* Underlying MPI group */
     MPI_Group mpi_group = MPI_GROUP_NULL;
     /* Underlying MPI communicator from MPI group */
@@ -127,7 +127,7 @@ group_create_from_mpi_comm(
 
     rc = MPI_Group_rank(
         new_group->mpi_group,
-        &new_group->group_id
+        &new_group->id
     );
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Group_rank() failed";
@@ -136,7 +136,7 @@ group_create_from_mpi_comm(
 
     rc = MPI_Group_size(
         new_group->mpi_group,
-        &new_group->group_size
+        &new_group->size
     );
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Group_size() failed";
@@ -472,14 +472,14 @@ int
 qvi_mpi_group_size(
     const qvi_mpi_group_t *group
 ) {
-    return group->group_size;
+    return group->size;
 }
 
 int
 qvi_mpi_group_id(
     const qvi_mpi_group_t *group
 ) {
-    return group->group_id;
+    return group->id;
 }
 
 int
@@ -687,8 +687,8 @@ qvi_mpi_group_gather_bbuffs(
     qvi_bbuff_t ***rxbuffs
 ) {
     const int send_count = (int)qvi_bbuff_size(txbuff);
-    const int group_id = group->group_id;
-    const int group_size = group->group_size;
+    const int group_id = group->id;
+    const int group_size = group->size;
 
     int rc = QV_SUCCESS, mpirc = MPI_SUCCESS;
     int *rxcounts = nullptr, *displs = nullptr;
@@ -789,8 +789,8 @@ qvi_mpi_group_scatter_bbuffs(
     int root,
     qvi_bbuff_t **rxbuff
 ) {
-    const int group_size = group->group_size;
-    const int group_id = group->group_id;
+    const int group_size = group->size;
+    const int group_id = group->id;
 
     int rc = QV_SUCCESS, mpirc = MPI_SUCCESS, rxcount = 0;
     int *txcounts = nullptr, *displs = nullptr, total_bytes = 0;
