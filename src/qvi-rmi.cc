@@ -586,9 +586,10 @@ get_intrinsic_scope_user(
     pid_t,
     qvi_hwpool_t **hwpool
 ) {
-    // TODO(skg) Maybe the cpuset we are using isn't the best way to do this.
+    // TODO(skg) Is the cpuset the best way to do this?
     return qvi_hwpool_obtain_by_cpuset(
         server->hwpool,
+        server->config->hwloc,
         qvi_hwloc_topo_get_cpuset(server->config->hwloc),
         hwpool
     );
@@ -606,11 +607,11 @@ get_intrinsic_scope_proc(
         requestor,
         &cpuset
     );
-    // The cpuset is cleaned up for us on error.
     if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_hwpool_obtain_by_cpuset(
         server->hwpool,
+        server->config->hwloc,
         cpuset,
         hwpool
     );
@@ -631,14 +632,15 @@ rpc_ssi_scope_get_intrinsic_scope_hwpool(
     qvi_bbuff_t **output
 ) {
     // Get requestor PID, intrinsic scope as integers from client request.
-    int pid, iscope;
+    pid_t pid;
+    qv_scope_intrinsic_t iscope;
     int rc = qvi_bbuff_rmi_unpack(input, &pid, &iscope);
     if (rc != QV_SUCCESS) return rc;
 
     int rpcrc = QV_SUCCESS;
     // TODO(skg) Implement the rest.
     qvi_hwpool_t *hwpool = nullptr;
-    switch ((qv_scope_intrinsic_t)iscope) {
+    switch (iscope) {
         case QV_SCOPE_SYSTEM:
         case QV_SCOPE_USER:
         case QV_SCOPE_JOB: {
@@ -671,20 +673,20 @@ rpc_ssi_split_hwpool_by_group(
     qvi_bbuff_t **output
 ) {
     qvi_hwpool_t *pool = nullptr;
-    int n = 0, group_id = 0;
+    int npieces = 0, group_id = 0;
     int qvrc = qvi_bbuff_rmi_unpack(
         input,
         &pool,
-        &n,
+        &npieces,
         &group_id
     );
     if (qvrc != QV_SUCCESS) return qvrc;
 
     qvi_hwpool_t *result = nullptr;
     int rpcrc = qvi_hwpool_obtain_split_by_group(
-        server->config->hwloc,
         pool,
-        n,
+        server->config->hwloc,
+        npieces,
         group_id,
         &result
     );
@@ -953,8 +955,14 @@ server_populate_base_hwpool(
             if (rc != QV_SUCCESS) break;
             // No longer needed.
             free(ids);
-
-            rc = qvi_hwpool_add_device(server->hwpool, type, id);
+            // TODO(skg) Get device cpuset
+            // TODO(skg) Remove
+            hwloc_bitmap_t fake;
+            qvi_hwloc_bitmap_calloc(&fake);
+            // End TODO(skg) Remove
+            rc = qvi_hwpool_add_device(
+                server->hwpool, type, id, fake
+            );
             if (rc != QV_SUCCESS) break;
         }
         if (rc != QV_SUCCESS) break;
@@ -1242,6 +1250,9 @@ qvi_rmi_get_device_in_cpuset(
     return rpcrc;
 }
 
+/**
+ * TODO(skg) We may not need this call.
+ */
 int
 qvi_rmi_split_hwpool_by_group(
     qvi_rmi_client_t *client,

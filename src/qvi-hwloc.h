@@ -109,6 +109,14 @@ qvi_hwloc_bitmap_calloc(
 /**
  *
  */
+void
+qvi_hwloc_bitmap_free(
+    hwloc_cpuset_t *cpuset
+);
+
+/**
+ *
+ */
 int
 qvi_hwloc_bitmap_copy(
     hwloc_const_cpuset_t src,
@@ -306,6 +314,29 @@ qvi_hwloc_get_device_in_cpuset(
     hwloc_const_cpuset_t cpuset,
     qv_device_id_type_t dev_id_type,
     char **dev_id
+);
+
+/**
+ *
+ */
+int
+qvi_hwloc_split_cpuset_by_group_id(
+    qvi_hwloc_t *hwl,
+    hwloc_const_cpuset_t cpuset,
+    int npieces,
+    int group_id,
+    hwloc_cpuset_t *result
+);
+
+/**
+ *
+ */
+int
+qvi_hwloc_get_device_cpuset(
+    qvi_hwloc_t *hwl,
+    qv_hw_obj_type_t dev_obj,
+    int device_id,
+    hwloc_cpuset_t *cpuset
 );
 
 #ifdef __cplusplus

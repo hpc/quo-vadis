@@ -168,7 +168,7 @@ qvi_rmi_get_device_in_cpuset(
 );
 
 /**
- *
+ * TODO(skg) We may not need this call.
  */
 int
 qvi_rmi_split_hwpool_by_group(

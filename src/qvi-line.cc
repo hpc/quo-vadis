@@ -71,8 +71,7 @@ qvi_line_config_pack(
     qvi_bbuff_t *buff
 ) {
     return qvi_bbuff_rmi_pack(
-        buff,
-        config->url,
+        buff, config->url,
         config->hwtopo_path
     );
 }
@@ -86,10 +85,30 @@ qvi_line_config_unpack(
     if (rc != QV_SUCCESS) return rc;
 
     return qvi_bbuff_rmi_unpack(
-        buff,
-        &(*config)->url,
+        buff, &(*config)->url,
         &(*config)->hwtopo_path
     );
+}
+
+int
+qvi_line_devinfo_new(
+    qvi_line_devinfo_t *devinfo
+) {
+    int rc = QV_SUCCESS;
+
+    devinfo = qvi_new qvi_line_devinfo_t;
+    if (!devinfo) rc = QV_ERR_OOR;
+    // Do minimal initialization here because other routines will do the rest.
+    if (rc != QV_SUCCESS) qvi_line_devinfo_free(devinfo);
+    return rc;
+}
+
+void
+qvi_line_devinfo_free(
+    qvi_line_devinfo_t *devinfo
+) {
+    if (!devinfo) return;
+    qvi_hwloc_bitmap_free(&devinfo->cpuset);
 }
 
 int
@@ -113,31 +132,16 @@ qvi_line_hwpool_free(
     if (!hwp) return;
     qvi_line_hwpool_t *ihwp = *hwp;
     if (!ihwp) goto out;
-    hwloc_bitmap_free(ihwp->cpuset);
-    if (ihwp->device_tab) {
-        const int ndevt = qvi_hwloc_n_supported_devices();
-        for (int i = 0; i < ndevt; ++i) {
-            if (ihwp->device_tab[i]) free(ihwp->device_tab[i]);
+    qvi_hwloc_bitmap_free(&ihwp->cpuset);
+    if (ihwp->devinfos) {
+        for (int i = 0; i < ihwp->ndevinfos; ++i) {
+            qvi_line_devinfo_free(&ihwp->devinfos[i]);
         }
-        free(ihwp->device_tab);
+        delete[] ihwp->devinfos;
     }
     delete ihwp;
 out:
     *hwp = nullptr;
-}
-
-int
-qvi_line_hwpool_ndevids(
-    qvi_line_hwpool_t *hwp,
-    int devid_index
-) {
-    int *ids = hwp->device_tab[devid_index];
-    assert(ids);
-
-    int n = 0;
-    for (; ids[n] != qvi_line_hwpool_devid_last; ++n);
-    // Includes the sentinel value, so add 1.
-    return n + 1;
 }
 
 int
@@ -153,10 +157,7 @@ qvi_line_hwpool_unpack(
     void *buff,
     qvi_line_hwpool_t **hwp
 ) {
-    return qvi_bbuff_rmi_unpack(
-        buff,
-        hwp
-    );
+    return qvi_bbuff_rmi_unpack(buff, hwp);
 }
 
 /*

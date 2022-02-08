@@ -49,7 +49,6 @@ qvi_context_create(
     rc = qvi_bind_stack_new(&ictx->bind_stack);
     if (rc != QV_SUCCESS) {
         ers = "qvi_bind_stack_new() failed";
-        goto out;
     }
 out:
     if (ers) {
@@ -105,7 +104,6 @@ qv_bind_get_as_string(
     if (!ctx || !str) return QV_ERR_INVLD_ARG;
 
     hwloc_cpuset_t cpuset = nullptr;
-
     int rc = qvi_rmi_task_get_cpubind(
         ctx->rmi,
         qvi_task_pid(ctx->task),
@@ -125,7 +123,7 @@ qv_context_barrier(
 ) {
     if (!ctx) return QV_ERR_INVLD_ARG;
 
-    return ctx->taskman->barrier();
+    return qvi_taskman_barrier(ctx->taskman);
 }
 
 int
@@ -134,9 +132,7 @@ qv_scope_free(
     qv_scope_t *scope
 ) {
     if (!ctx || !scope) return QV_ERR_INVLD_ARG;
-
     qvi_scope_free(&scope);
-
     return QV_SUCCESS;
 }
 
@@ -149,15 +145,13 @@ qv_scope_nobjs(
 ) {
     if (!ctx || !scope || !n) return QV_ERR_INVLD_ARG;
 
-    int nu = 0;
     // TODO(skg) We should update how we do this.
     int rc = qvi_rmi_get_nobjs_in_cpuset(
         ctx->rmi,
         obj,
         qvi_scope_cpuset_get(scope),
-        &nu
+        n
     );
-    *n = nu;
     return rc;
 }
 
@@ -191,36 +185,12 @@ qv_scope_get(
 ) {
     if (!ctx || !scope) return QV_ERR_INVLD_ARG;
 
-    qv_scope_t *qvs = nullptr;
-    qvi_group_t *group = nullptr;
-
-    int rc = qvi_scope_new(&qvs);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = ctx->taskman->group_create_from_intrinsic_scope(
-        iscope,
-        &group
-    );
-    if (rc != QV_SUCCESS) goto out;
-
-    qvi_hwpool_t *hwpool;
-    rc = qvi_rmi_scope_get_intrinsic_scope_hwpool(
+    return qvi_taskman_scope_create_from_intrinsic(
+        ctx->taskman,
         ctx->rmi,
-        qvi_task_pid(ctx->task),
         iscope,
-        &hwpool
+        scope
     );
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_scope_init(qvs, group, hwpool);
-    if (rc != QV_SUCCESS) goto out;
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_group_free(&group);
-        qvi_scope_free(&qvs);
-    }
-    *scope = qvs;
-    return rc;
 }
 
 int
@@ -233,47 +203,26 @@ qv_scope_barrier(
     return qvi_scope_barrier(scope);
 }
 
-static int
-create_new_subgroup_by_color(
-    qv_context_t *ctx,
-    qvi_group_t *pargroup,
-    int color,
-    qvi_group_t **subgroup
-) {
-    const int split_key = qvi_group_id(pargroup);
-
-    return ctx->taskman->group_create_from_split(
-        pargroup,
-        color,
-        split_key,
-        subgroup
-    );
-}
-
 // TODO(skg) Make sure to document all the paths that may result in an error.
 // Take a look at the RPC code to get a sense of where all the paths occur.
 int
 qv_scope_split(
     qv_context_t *ctx,
     qv_scope_t *scope,
-    int n,
+    int npieces,
     int group_id,
     qv_scope_t **subscope
 ) {
-    // TODO(skg) Implement
     static const cstr epref = "qv_scope_split Error: ";
 
     int rc = QV_SUCCESS;
-    qvi_hwpool_t *hwpool = nullptr;
-    qv_scope_t *isubscope = nullptr;
-    qvi_group_t *subgroup = nullptr;
 
     if (!ctx || !scope || !subscope) {
         rc = QV_ERR_INVLD_ARG;
         goto out;
     }
-    if (n <= 0 ) {
-        qvi_log_error("{} n <= 0 (n = {})", epref, n);
+    if (npieces <= 0 ) {
+        qvi_log_error("{} n <= 0 (n = {})", epref, npieces);
         rc = QV_ERR_INVLD_ARG;
         goto out;
     }
@@ -284,35 +233,19 @@ qv_scope_split(
         rc = QV_ERR_INVLD_ARG;
         goto out;
     }
-
-    rc = qvi_rmi_split_hwpool_by_group(
+    rc = qvi_taskman_scope_create_from_split(
+        ctx->taskman,
+        ctx->hwloc,
         ctx->rmi,
-        qvi_scope_hwpool_get(scope),
-        n,
+        scope,
+        npieces,
         group_id,
-        &hwpool
+        subscope
     );
-    if (rc != QV_SUCCESS) goto out;
-    // Create new sub-scope.
-    rc = qvi_scope_new(&isubscope);
-    if (rc != QV_SUCCESS) goto out;
-    // Create new sub-group.
-    rc = create_new_subgroup_by_color(
-        ctx,
-        qvi_scope_group_get(scope),
-        group_id,
-        &subgroup
-    );
-    if (rc != QV_SUCCESS) goto out;
-    // Initialize new sub-scope.
-    rc = qvi_scope_init(isubscope, subgroup, hwpool);
-    if (rc != QV_SUCCESS) goto out;
 out:
     if (rc != QV_SUCCESS) {
-        qvi_group_free(&subgroup);
-        qvi_scope_free(&isubscope);
+        qvi_scope_free(subscope);
     }
-    *subscope = isubscope;
     return rc;
 }
 

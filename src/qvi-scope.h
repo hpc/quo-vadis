@@ -17,6 +17,7 @@
 #define QVI_SCOPE_H
 
 #include "qvi-common.h"
+
 #include "qvi-group.h"
 #include "qvi-hwpool.h"
 #include "qvi-hwloc.h"

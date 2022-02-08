@@ -22,6 +22,9 @@
 extern "C" {
 #endif
 
+struct qvi_hwpool_devinfo_s;
+typedef struct qvi_hwpool_devinfo_s qvi_hwpool_devinfo_t;
+
 struct qvi_hwpool_s;
 typedef struct qvi_hwpool_s qvi_hwpool_t;
 
@@ -75,7 +78,8 @@ int
 qvi_hwpool_add_device(
     qvi_hwpool_t *rpool,
     qv_hw_obj_type_t type,
-    qvi_device_id_t id
+    int id,
+    hwloc_const_cpuset_t cpuset
 );
 
 /**
@@ -92,17 +96,51 @@ qvi_hwpool_cpuset_get(
 int
 qvi_hwpool_obtain_by_cpuset(
     qvi_hwpool_t *pool,
+    qvi_hwloc_t *hwloc,
     hwloc_const_cpuset_t cpuset,
     qvi_hwpool_t **opool
 );
 
+/**
+ * TODO(skg) This will likely go away.
+ */
 int
 qvi_hwpool_obtain_split_by_group(
-    qvi_hwloc_t *hwloc,
     qvi_hwpool_t *pool,
+    qvi_hwloc_t *hwloc,
     int npieces,
     int group_id,
     qvi_hwpool_t **opool
+);
+
+/**
+ *
+ */
+int
+qvi_hwpool_split_devices(
+    qvi_hwpool_t **pools,
+    int npools,
+    qvi_hwloc_t *hwloc,
+    int ncolors,
+    int color
+);
+
+/**
+ *
+ */
+int
+qvi_hwpool_pack(
+    const qvi_hwpool_t *hwp,
+    qvi_bbuff_t *buff
+);
+
+/**
+ *
+ */
+int
+qvi_hwpool_unpack(
+    void *buff,
+    qvi_hwpool_t **hwp
 );
 
 #ifdef __cplusplus

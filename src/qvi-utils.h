@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -54,7 +54,7 @@ qvi_path_usable(
  */
 int
 qvi_atoi(
-    const char *str,
+    cstr str,
     int *maybe_val
 );
 

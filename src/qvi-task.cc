@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -27,7 +27,6 @@ struct qvi_task_s {
     int lid = qvi_task_id_invalid;
     /** Process ID */
     pid_t pid = 0;
-    // TODO(skg) Handle to children?
 };
 
 int
@@ -53,8 +52,9 @@ qvi_task_free(
 ) {
     if (!task) return;
     qvi_task_t *itask = *task;
-    if (!itask) return;
+    if (!itask) goto out;
     delete itask;
+out:
     *task = nullptr;
 }
 

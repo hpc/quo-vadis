@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -19,6 +19,7 @@
 #include "qvi-common.h"
 
 #include "qvi-task.h"
+#include "qvi-bbuff.h"
 #include "quo-vadis-mpi.h"
 
 #ifdef __cplusplus
@@ -160,10 +161,10 @@ qvi_mpi_group_create_from_mpi_comm(
 int
 qvi_mpi_group_create_from_split(
     qvi_mpi_t *mpi,
-    const qvi_mpi_group_t *group,
+    const qvi_mpi_group_t *parent,
     int color,
     int key,
-    qvi_mpi_group_t **my_group
+    qvi_mpi_group_t **child
 );
 
 /**
@@ -180,6 +181,36 @@ qvi_mpi_node_barrier(
 int
 qvi_mpi_group_barrier(
     qvi_mpi_group_t *group
+);
+
+/**
+ *
+ */
+pid_t
+qvi_mpi_task_pid_get(
+    qvi_mpi_t *mpi
+);
+
+/**
+ *
+ */
+int
+qvi_mpi_group_gather_bbuffs(
+    qvi_mpi_group_t *group,
+    qvi_bbuff_t *txbuff,
+    int root,
+    qvi_bbuff_t ***rxbuffs
+);
+
+/**
+ *
+ */
+int
+qvi_mpi_group_scatter_bbuffs(
+    qvi_mpi_group_t *group,
+    qvi_bbuff_t **txbuffs,
+    int root,
+    qvi_bbuff_t **rxbuff
 );
 
 #ifdef __cplusplus

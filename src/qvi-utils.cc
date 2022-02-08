@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -37,7 +37,8 @@ static const char *qvi_rc_strerrs[] = {
     "Pop operation error",
     "PMI operation error",
     "Not found",
-    "Split error"
+    "Split error",
+    "Resources unavailable"
 };
 
 const char *
@@ -87,9 +88,11 @@ qvi_path_usable(
 
 int
 qvi_atoi(
-    const char *str,
+    cstr str,
     int *maybe_val
 ) {
+    *maybe_val = 0;
+
     cstr tstr = str;
     // Make certain str contrains only digits.
     while ('\0' != *tstr) {

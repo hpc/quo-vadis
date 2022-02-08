@@ -17,15 +17,13 @@
 #define QVI_LINE_H
 
 #include "qvi-common.h"
+
 #include "qvi-bbuff.h"
 #include "qvi-hwloc.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** Sentinel value last value for device ID lists. */
-const qvi_device_id_t qvi_line_hwpool_devid_last = -1;
 
 typedef struct qvi_line_config_s {
     /** Not sent, initialized elsewhere. */
@@ -36,11 +34,24 @@ typedef struct qvi_line_config_s {
     char *hwtopo_path = nullptr;
 } qvi_line_config_t;
 
+/** Device information struct for line transmission. */
+typedef struct qvi_line_devinfo_s {
+    /** The bitmap encoding CPU affinity. */
+    hwloc_bitmap_t cpuset = nullptr;
+    /** Device type. */
+    qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
+    /** Device ID. */
+    int id = 0;
+} qvi_line_devinfo_t;
+
+/** Hardware pool data structure for line transmission. */
 typedef struct qvi_line_hwpool_s {
     /** The cpuset of this resource pool. */
     hwloc_bitmap_t cpuset = nullptr;
-    /** qv_hw_obj_type_t to array of qvi_device_ids_ts. */
-    int **device_tab = nullptr;
+    /** Number of devinfos. */
+    int ndevinfos = 0;
+    /** Array of device infos. */
+    qvi_line_devinfo_t *devinfos = nullptr;
 } qvi_line_hwpool_t;
 
 /**
@@ -90,6 +101,22 @@ qvi_line_config_unpack(
  *
  */
 int
+qvi_line_devinfo_new(
+        qvi_line_devinfo_t *devinfo
+);
+
+/**
+ *
+ */
+void
+qvi_line_devinfo_free(
+    qvi_line_devinfo_t *devinfo
+);
+
+/**
+ *
+ */
+int
 qvi_line_hwpool_new(
     qvi_line_hwpool_t **hws
 );
@@ -100,15 +127,6 @@ qvi_line_hwpool_new(
 void
 qvi_line_hwpool_free(
     qvi_line_hwpool_t **hws
-);
-
-/**
- * Returns the number of device IDs present, including the sentinel value.
- */
-int
-qvi_line_hwpool_ndevids(
-    qvi_line_hwpool_t *hwp,
-    int devid_index
 );
 
 /**
@@ -126,7 +144,7 @@ qvi_line_hwpool_pack(
 int
 qvi_line_hwpool_unpack(
     void *buff,
-    qvi_line_hwpool_t *hws
+    qvi_line_hwpool_t **hws
 );
 
 #ifdef __cplusplus

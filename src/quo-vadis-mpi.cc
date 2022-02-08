@@ -89,7 +89,6 @@ qv_mpi_context_create(
     );
     if (rc != QV_SUCCESS) {
         ers = "qvi_bind_stack_init() failed";
-        goto out;
     }
 out:
     if (ers) {

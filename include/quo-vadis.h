@@ -54,6 +54,8 @@ enum {
     QV_ERR_PMI,
     QV_ERR_NOT_FOUND,
     QV_ERR_SPLIT,
+    // Resources unavailable.
+    QV_RES_UNAVAILABLE,
     /** Sentinel value. */
     QV_RC_LAST
 };
@@ -127,7 +129,7 @@ int
 qv_scope_split(
     qv_context_t *ctx,
     qv_scope_t *scope,
-    int n,
+    int npieces,
     int group_id,
     qv_scope_t **subscope
 );

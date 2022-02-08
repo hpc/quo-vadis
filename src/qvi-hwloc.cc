@@ -19,6 +19,7 @@
 
 #include "qvi-nvml.h"
 
+// TODO(skg) Change to shared_ptr.
 using qvi_hwloc_dev_list_t = std::vector<qvi_hwloc_device_t *>;
 using qvi_hwloc_dev_id_set_t = std::unordered_set<std::string>;
 
@@ -626,6 +627,15 @@ qvi_hwloc_bitmap_calloc(
     return QV_SUCCESS;
 }
 
+void
+qvi_hwloc_bitmap_free(
+    hwloc_cpuset_t *cpuset
+) {
+    if (!cpuset) return;
+    if (*cpuset) hwloc_bitmap_free(*cpuset);
+    *cpuset = nullptr;
+}
+
 int
 qvi_hwloc_bitmap_copy(
     hwloc_const_cpuset_t src,
@@ -789,7 +799,7 @@ qvi_hwloc_emit_cpubind(
 
     qvi_log_info("[pid={} tid={}] cpubind={}", who, qvi_gettid(), cpusets);
 out:
-    if (cpuset) hwloc_bitmap_free(cpuset);
+    qvi_hwloc_bitmap_free(&cpuset);
     if (cpusets) free(cpusets);
     return rc;
 }
@@ -822,38 +832,51 @@ qvi_hwloc_bitmap_sscanf(
     return QV_SUCCESS;
 }
 
+static int
+get_proc_cpubind(
+    qvi_hwloc_t *hwl,
+    pid_t who,
+    hwloc_cpuset_t cpuset
+) {
+    int rc = hwloc_get_proc_cpubind(
+        hwl->topo,
+        who,
+        cpuset,
+        HWLOC_CPUBIND_PROCESS
+    );
+    if (rc != 0) return QV_ERR_HWLOC;
+    // XXX(skg) In some instances I've noticed that the system's topology cpuset
+    // is a strict subset of a process' cpuset, so protect against that case by
+    // setting the process' cpuset to the system topology's if the above case is
+    // what we are dealing.
+    hwloc_const_cpuset_t tcpuset = qvi_hwloc_topo_get_cpuset(hwl);
+    // If the topology's cpuset is less than the process' cpuset, adjust.
+    rc = hwloc_bitmap_compare(tcpuset, cpuset);
+    if (rc == -1) {
+        return qvi_hwloc_bitmap_copy(tcpuset, cpuset);
+    }
+    // Else just use the one that was gathered above.
+    return QV_SUCCESS;
+}
+
+// TODO(skg) Add another routine to also supports TIDs.
 int
 qvi_hwloc_task_get_cpubind(
     qvi_hwloc_t *hwl,
     pid_t who,
     hwloc_cpuset_t *out_cpuset
 ) {
-    int qrc = QV_SUCCESS, rc = 0;
-
     hwloc_cpuset_t cur_bind = nullptr;
-    qrc = qvi_hwloc_bitmap_calloc(&cur_bind);
-    if (qrc != QV_SUCCESS) return qrc;
+    int rc = qvi_hwloc_bitmap_calloc(&cur_bind);
+    if (rc != QV_SUCCESS) goto out;
 
-    // TODO(skg) Add another routine to also support getting TIDs.
-    rc = hwloc_get_proc_cpubind(
-        hwl->topo,
-        who,
-        cur_bind,
-        HWLOC_CPUBIND_PROCESS
-    );
-    if (rc) {
-        cstr ers = "hwloc_get_proc_cpubind() failed";
-        qvi_log_error("{} with rc={}", ers, rc);
-        qrc = QV_ERR_HWLOC;
-        goto out;
+    rc = get_proc_cpubind(hwl, who, cur_bind);
+out:
+    if (rc != QV_SUCCESS) {
+        qvi_hwloc_bitmap_free(&cur_bind);
     }
     *out_cpuset = cur_bind;
-out:
-    if (qrc != QV_SUCCESS) {
-        if (cur_bind) hwloc_bitmap_free(cur_bind);
-        *out_cpuset = nullptr;
-    }
-    return qrc;
+    return rc;
 }
 
 // TODO(skg) Add support for binding threads, too.
@@ -888,7 +911,7 @@ qvi_hwloc_task_get_cpubind_as_string(
     if (rc != QV_SUCCESS) return rc;
 
     rc = qvi_hwloc_bitmap_asprintf(cpusets, cpuset);
-    hwloc_bitmap_free(cpuset);
+    qvi_hwloc_bitmap_free(&cpuset);
     return rc;
 }
 
@@ -908,7 +931,7 @@ task_obj_xop_by_type_id(
     int rc = obj_get_by_type(hwl, type, type_index, &obj);
     if (rc != QV_SUCCESS) return rc;
 
-    hwloc_cpuset_t cur_bind;
+    hwloc_cpuset_t cur_bind = nullptr;
     rc = qvi_hwloc_task_get_cpubind(hwl, who, &cur_bind);
     if (rc != QV_SUCCESS) return rc;
 
@@ -922,8 +945,7 @@ task_obj_xop_by_type_id(
             break;
         }
     }
-
-    hwloc_bitmap_free(cur_bind);
+    qvi_hwloc_bitmap_free(&cur_bind);
     return QV_SUCCESS;
 }
 
@@ -1030,7 +1052,7 @@ qvi_hwloc_get_obj_in_cpuset_by_depth(
     int index,
     hwloc_obj_t *result_obj
 ) {
-    hwloc_topology_t topo = hwl->topo;
+    const hwloc_topology_t topo = hwl->topo;
 
     bool found = false;
     int i = 0;
@@ -1091,9 +1113,10 @@ qvi_hwloc_device_free(
 ) {
     if (!dev) return;
     qvi_hwloc_device_t *idev = *dev;
-    if (!idev) return;
-    if (idev->cpuset) hwloc_bitmap_free(idev->cpuset);
+    if (!idev) goto out;
+    qvi_hwloc_bitmap_free(&idev->cpuset);
     delete idev;
+out:
     *dev = nullptr;
 }
 
@@ -1192,9 +1215,7 @@ get_devices_in_cpuset(
     }
 
     return get_devices_in_cpuset_from_dev_list(
-        devlist,
-        cpuset,
-        devs
+        devlist, cpuset, devs
     );
 }
 
@@ -1207,12 +1228,15 @@ qvi_hwloc_get_device_in_cpuset(
     qv_device_id_type_t dev_id_type,
     char **dev_id
 ) {
-    int nw = 0;
+    int rc = QV_SUCCESS, nw = 0;
 
     qvi_hwloc_dev_list_t *devs = qvi_new qvi_hwloc_dev_list_t;
-    if (!devs) return QV_ERR_OOR;
+    if (!devs) {
+        rc = QV_ERR_OOR;
+        goto out;
+    }
 
-    int rc = get_devices_in_cpuset(hwl, dev_obj, cpuset, devs);
+    rc = get_devices_in_cpuset(hwl, dev_obj, cpuset, devs);
     if (rc != QV_SUCCESS) {
         goto out;
     }
@@ -1237,6 +1261,160 @@ out:
         *dev_id = nullptr;
     }
     qvi_hwloc_dev_list_free(&devs);
+    return rc;
+}
+
+/**
+ *
+ */
+static int
+split_cpuset_chunk_size(
+    qvi_hwloc_t *hwl,
+    hwloc_const_cpuset_t cpuset,
+    int npieces,
+    int *chunk
+) {
+    int rc = QV_SUCCESS;
+
+    if (npieces <= 0) {
+        rc = QV_ERR_INVLD_ARG;
+        goto out;
+    }
+
+    int npus;
+    rc = qvi_hwloc_get_nobjs_in_cpuset(
+        hwl, QV_HW_OBJ_PU, cpuset, &npus
+    );
+out:
+    if (rc != QV_SUCCESS) *chunk = 0;
+    else *chunk = npus / npieces;
+    return rc;
+}
+
+/**
+ *
+ */
+static int
+split_cpuset_by_range(
+    qvi_hwloc_t *hwl,
+    hwloc_const_cpuset_t cpuset,
+    int base,
+    int extent,
+    hwloc_bitmap_t *result
+) {
+    // Allocate and zero-out a new bitmap that will encode the split.
+    hwloc_bitmap_t iresult = nullptr;
+    int rc = qvi_hwloc_bitmap_calloc(&iresult);
+    if (rc != QV_SUCCESS) goto out;
+    // We use PUs to split resources. Each set bit represents a PU. The number
+    // of bits set represents the number of PUs present on the system. The
+    // least-significant (right-most) bit represents logical ID 0.
+    int pu_depth;
+    rc = qvi_hwloc_obj_type_depth(
+        hwl, QV_HW_OBJ_PU, &pu_depth
+    );
+    if (rc != QV_SUCCESS) goto out;
+    // Calculate split based on given range.
+    for (int i = base; i < base + extent; ++i) {
+        hwloc_obj_t dobj;
+        rc = qvi_hwloc_get_obj_in_cpuset_by_depth(
+            hwl, cpuset, pu_depth, i, &dobj
+        );
+        if (rc != QV_SUCCESS) break;
+
+        rc = hwloc_bitmap_or(iresult, iresult, dobj->cpuset);
+        if (rc != 0) {
+            rc = QV_ERR_HWLOC;
+            break;
+        }
+    }
+out:
+    if (rc != QV_SUCCESS) {
+        qvi_hwloc_bitmap_free(&iresult);
+    }
+    *result = iresult;
+    return rc;
+}
+
+/**
+ * TODO(skg) Maybe we can have a qvi-grouping.cc that implements different
+ * gouping algorithms.
+ */
+int
+qvi_hwloc_split_cpuset_by_group_id(
+    qvi_hwloc_t *hwl,
+    hwloc_const_cpuset_t cpuset,
+    int npieces,
+    int group_id,
+    hwloc_cpuset_t *result
+) {
+    int chunk = 0;
+    int rc = split_cpuset_chunk_size(
+        hwl,
+        cpuset,
+        npieces,
+        &chunk
+    );
+    // This happens when n > npus. We can't support that split.
+    if (chunk == 0) {
+        rc = QV_ERR_SPLIT;
+        goto out;
+    }
+    // Group IDs must be < n: 0, 1, ... , npieces-1.
+    if (group_id >= npieces) {
+        rc = QV_ERR_SPLIT;
+        goto out;
+    }
+
+    rc = split_cpuset_by_range(
+        hwl,
+        cpuset,
+        chunk * group_id,
+        chunk,
+        result
+    );
+out:
+    if (rc != QV_SUCCESS) {
+        qvi_hwloc_bitmap_free(result);
+    }
+    return rc;
+}
+
+int
+qvi_hwloc_get_device_cpuset(
+    qvi_hwloc_t *hwl,
+    qv_hw_obj_type_t dev_obj,
+    int device_id,
+    hwloc_cpuset_t *cpuset
+) {
+    int rc = QV_SUCCESS;
+
+    qvi_hwloc_dev_list_t *devlist = nullptr;
+    hwloc_cpuset_t icpuset = nullptr;
+
+    switch(dev_obj) {
+        case(QV_HW_OBJ_GPU) :
+            devlist = hwl->gpus;
+            break;
+        default:
+            rc = QV_ERR_NOT_SUPPORTED;
+            break;
+    }
+    if (rc != QV_SUCCESS) goto out;
+    // XXX(skg) This isn't the most efficient way of doing this, but the device
+    // lists tend to be small, so just perform a linear search for the given ID.
+    for (const auto &dev : *devlist) {
+        if (dev->visdev_id != device_id) continue;
+        qvi_hwloc_bitmap_calloc(&icpuset);
+        rc = qvi_hwloc_bitmap_copy(dev->cpuset, icpuset);
+        if (rc != QV_SUCCESS) goto out;
+    }
+    if (!icpuset) rc = QV_ERR_NOT_FOUND;
+out:
+    if (rc != QV_SUCCESS) {
+        qvi_hwloc_bitmap_free(cpuset);
+    }
+    *cpuset = icpuset;
     return rc;
 }
 
