@@ -251,6 +251,7 @@ out:
         }
         delete[] txbuffs;
     }
+    qvi_bbuff_free(&rxbuff);
     if (rc != QV_SUCCESS) {
         qvi_hwpool_free(pool);
     }
@@ -310,6 +311,13 @@ qvi_scope_split(
         *child, parent->rmi, group, hwpool
     );
 out:
+    if (hwpools) {
+        for (int i = 0; i < parent->group->size(); ++i) {
+            qvi_hwpool_free(&hwpools[i]);
+        }
+        delete[] hwpools;
+    }
+    qvi_hwloc_bitmap_free(&cpuset);
     if (rc != QV_SUCCESS) {
         qvi_scope_free(child);
         qvi_group_free(&group);
