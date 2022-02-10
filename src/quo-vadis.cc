@@ -22,7 +22,9 @@ int
 qvi_context_create(
     qv_context_t **ctx
 ) {
-    if (!ctx) return QV_ERR_INVLD_ARG;
+    if (!ctx) {
+        return QV_ERR_INVLD_ARG;
+    }
 
     int rc = QV_SUCCESS;
     cstr ers = nullptr;
@@ -72,11 +74,12 @@ qv_bind_push(
     qv_context_t *ctx,
     qv_scope_t *scope
 ) {
-    if (!ctx || !scope) return QV_ERR_INVLD_ARG;
+    if (!ctx || !scope) {
+        return QV_ERR_INVLD_ARG;
+    }
 
     return qvi_bind_push(
-        ctx->bind_stack,
-        qvi_scope_cpuset_get(scope)
+        ctx->bind_stack, qvi_scope_cpuset_get(scope)
     );
 }
 
@@ -84,7 +87,9 @@ int
 qv_bind_pop(
     qv_context_t *ctx
 ) {
-    if (!ctx) return QV_ERR_INVLD_ARG;
+    if (!ctx) {
+        return QV_ERR_INVLD_ARG;
+    }
 
     return qvi_bind_pop(ctx->bind_stack);
 }
@@ -94,12 +99,14 @@ qv_bind_get_as_string(
     qv_context_t *ctx,
     char **str
 ) {
-    if (!ctx || !str) return QV_ERR_INVLD_ARG;
+    if (!ctx || !str) {
+        return QV_ERR_INVLD_ARG;
+    }
 
     hwloc_cpuset_t cpuset = nullptr;
     int rc = qvi_rmi_task_get_cpubind(
         ctx->rmi,
-        qvi_task_pid(ctx->taskman->task()),
+        qvi_task_pid(ctx->zgroup->task()),
         &cpuset
     );
     if (rc != QV_SUCCESS) goto out;
@@ -114,9 +121,11 @@ int
 qv_context_barrier(
     qv_context_t *ctx
 ) {
-    if (!ctx) return QV_ERR_INVLD_ARG;
+    if (!ctx) {
+        return QV_ERR_INVLD_ARG;
+    }
 
-    return ctx->taskman->barrier();
+    return ctx->zgroup->barrier();
 }
 
 int
@@ -124,7 +133,10 @@ qv_scope_free(
     qv_context_t *ctx,
     qv_scope_t *scope
 ) {
-    if (!ctx || !scope) return QV_ERR_INVLD_ARG;
+    if (!ctx || !scope) {
+        return QV_ERR_INVLD_ARG;
+    }
+
     qvi_scope_free(&scope);
     return QV_SUCCESS;
 }
@@ -136,16 +148,11 @@ qv_scope_nobjs(
     qv_hw_obj_type_t obj,
     int *n
 ) {
-    if (!ctx || !scope || !n) return QV_ERR_INVLD_ARG;
+    if (!ctx || !scope || !n) {
+        return QV_ERR_INVLD_ARG;
+    }
 
-    // TODO(skg) We should update how we do this.
-    int rc = qvi_rmi_get_nobjs_in_cpuset(
-        ctx->rmi,
-        obj,
-        qvi_scope_cpuset_get(scope),
-        n
-    );
-    return rc;
+    return qvi_scope_nobjs(scope, obj, n);
 }
 
 int
@@ -154,7 +161,9 @@ qv_scope_taskid(
     qv_scope_t *scope,
     int *taskid
 ) {
-    if (!ctx || !scope || !taskid) return QV_ERR_INVLD_ARG;
+    if (!ctx || !scope || !taskid) {
+        return QV_ERR_INVLD_ARG;
+    }
 
     return qvi_scope_taskid(scope, taskid);
 }
@@ -165,7 +174,9 @@ qv_scope_ntasks(
     qv_scope_t *scope,
     int *ntasks
 ) {
-    if (!ctx || !scope || !ntasks) return QV_ERR_INVLD_ARG;
+    if (!ctx || !scope || !ntasks) {
+        return QV_ERR_INVLD_ARG;
+    }
 
     return qvi_scope_ntasks(scope, ntasks);
 }
@@ -176,12 +187,12 @@ qv_scope_get(
     qv_scope_intrinsic_t iscope,
     qv_scope_t **scope
 ) {
-    if (!ctx || !scope) return QV_ERR_INVLD_ARG;
+    if (!ctx || !scope) {
+        return QV_ERR_INVLD_ARG;
+    }
 
-    return ctx->taskman->scope_create_from_intrinsic(
-        ctx->rmi,
-        iscope,
-        scope
+    return qvi_scope_get(
+        ctx->zgroup, ctx->rmi, iscope, scope
     );
 }
 
@@ -197,22 +208,23 @@ qv_scope_barrier(
 
 // TODO(skg) Make sure to document all the paths that may result in an error.
 // Take a look at the RPC code to get a sense of where all the paths occur.
+// TODO(skg) We also need to harden the RPC code so that failures don't result
+// int hangs.
 int
 qv_scope_split(
     qv_context_t *ctx,
     qv_scope_t *scope,
     int npieces,
-    int group_id,
+    int color,
     qv_scope_t **subscope
 ) {
-    static const cstr epref = "qv_scope_split Error: ";
+    if (!ctx || !scope || !subscope) {
+        return QV_ERR_INVLD_ARG;
+    }
 
+    static const cstr epref = "qv_scope_split Error: ";
     int rc = QV_SUCCESS;
 
-    if (!ctx || !scope || !subscope) {
-        rc = QV_ERR_INVLD_ARG;
-        goto out;
-    }
     if (npieces <= 0 ) {
         qvi_log_error("{} n <= 0 (n = {})", epref, npieces);
         rc = QV_ERR_INVLD_ARG;
@@ -220,19 +232,13 @@ qv_scope_split(
     }
     // TODO(skg) This will have to change because
     // our grouping algorithms will be in this space.
-    if (group_id < 0) {
-        qvi_log_error("{} group_id < 0 (group_id = {})", epref, group_id);
+    if (color < 0) {
+        qvi_log_error("{} group_id < 0 (group_id = {})", epref, color);
         rc = QV_ERR_INVLD_ARG;
         goto out;
     }
-    rc = ctx->taskman->scope_create_from_split(
-        ctx->hwloc,
-        ctx->rmi,
-        scope,
-        npieces,
-        group_id,
-        subscope
-    );
+
+    rc = qvi_scope_split(scope, npieces, color, subscope);
 out:
     if (rc != QV_SUCCESS) {
         qvi_scope_free(subscope);
@@ -255,6 +261,7 @@ qv_scope_split_at(
     if (!ctx || !scope || !subscope) {
         return QV_ERR_INVLD_ARG;
     }
+#if 0
 
     int ntype;
     // TODO(skg) Update how we do this.
@@ -267,6 +274,8 @@ qv_scope_split_at(
     if (qvrc != QV_SUCCESS) return qvrc;
 
     return qv_scope_split(ctx, scope, ntype, group_id, subscope);
+#endif
+    return QV_ERR_NOT_SUPPORTED;
 }
 
 int
@@ -275,19 +284,16 @@ qv_scope_get_device(
     qv_scope_t *scope,
     qv_hw_obj_type_t dev_obj,
     int i,
-    qv_device_id_type_t dev_id_type,
+    qv_device_id_type_t id_type,
     char **dev_id
 ) {
-    if (!ctx || !scope || i < 0 || !dev_id) return QV_ERR_INVLD_ARG;
+    if (!ctx || !scope || i < 0 || !dev_id) {
+        return QV_ERR_INVLD_ARG;
+    }
 
-    // TODO(skg) Update how we do this.
-    return qvi_rmi_get_device_in_cpuset(
-        ctx->rmi,
-        dev_obj,
-        i,
-        qvi_scope_cpuset_get(scope),
-        dev_id_type,
-        dev_id
+    return qvi_scope_get_device(
+        scope, dev_obj, i,
+        id_type, dev_id
     );
 }
 

@@ -81,7 +81,7 @@ typedef enum qvi_rpc_funid_e {
     FID_OBJ_TYPE_DEPTH,
     FID_GET_NOBJS_IN_CPUSET,
     FID_GET_DEVICE_IN_CPUSET,
-    FID_SCOPE_GET_INTRINSIC_SCOPE_HWPOOL,
+    FID_SCOPE_GET_INTRINSIC_HWPOOL,
     FID_SPLIT_HWPOOL_BY_GROUP
 } qvi_rpc_funid_t;
 
@@ -625,7 +625,7 @@ out:
 
 // TODO(skg) Lots of error path cleanup is required.
 static int
-rpc_ssi_scope_get_intrinsic_scope_hwpool(
+rpc_ssi_scope_get_intrinsic_hwpool(
     qvi_rmi_server_t *server,
     qvi_msg_header_t *hdr,
     void *input,
@@ -714,7 +714,7 @@ static const qvi_rpc_fun_ptr_t rpc_dispatch_table[] = {
     rpc_ssi_obj_type_depth,
     rpc_ssi_get_nobjs_in_cpuset,
     rpc_ssi_get_device_in_cpuset,
-    rpc_ssi_scope_get_intrinsic_scope_hwpool,
+    rpc_ssi_scope_get_intrinsic_hwpool,
     rpc_ssi_split_hwpool_by_group
 };
 
@@ -933,35 +933,33 @@ server_populate_base_hwpool(
     const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
     for (int i = 0; devts[i] != QV_HW_OBJ_LAST; ++i) {
         const qv_hw_obj_type_t type = devts[i];
-
+        // Figure out how many devices there are.
         int nobjs = 0;
         rc = qvi_hwloc_get_nobjs_in_cpuset(hwloc, type, cpuset, &nobjs);
         if (rc != QV_SUCCESS) break;
         // Add all items by their ID.
         for (int n = 0; n < nobjs; ++n) {
             char *ids = nullptr;
+            // Get the device's ID as a string.
             rc = qvi_hwloc_get_device_in_cpuset(
-                hwloc,
-                type,
-                n,
-                cpuset,
-                QV_DEVICE_ID_ORDINAL,
-                &ids
+                hwloc, type, n, cpuset,
+                QV_DEVICE_ID_ORDINAL, &ids
             );
             if (rc != QV_SUCCESS) break;
-
+            // Concert the string ordinal to an integer.
             int id = 0;
             rc = qvi_atoi(ids, &id);
             if (rc != QV_SUCCESS) break;
-            // No longer needed.
-            free(ids);
-            // TODO(skg) Get device cpuset
-            // TODO(skg) Remove
-            hwloc_bitmap_t fake;
-            qvi_hwloc_bitmap_calloc(&fake);
-            // End TODO(skg) Remove
+            free(ids); // No longer needed.
+            // Get the device's affinity.
+            hwloc_bitmap_t affinity = nullptr;
+            rc = qvi_hwloc_get_device_affinity(
+                hwloc, type, n, &affinity
+            );
+            if (rc != QV_SUCCESS) break;
+            // Add the device.
             rc = qvi_hwpool_add_device(
-                server->hwpool, type, id, fake
+                server->hwpool, type, id, affinity
             );
             if (rc != QV_SUCCESS) break;
         }
@@ -1156,7 +1154,7 @@ qvi_rmi_task_set_cpubind_from_cpuset(
 }
 
 int
-qvi_rmi_scope_get_intrinsic_scope_hwpool(
+qvi_rmi_scope_get_intrinsic_hwpool(
     qvi_rmi_client_t *client,
     pid_t requestor_pid,
     qv_scope_intrinsic_t iscope,
@@ -1166,7 +1164,7 @@ qvi_rmi_scope_get_intrinsic_scope_hwpool(
 
     int qvrc = rpc_req(
         client->zsock,
-        FID_SCOPE_GET_INTRINSIC_SCOPE_HWPOOL,
+        FID_SCOPE_GET_INTRINSIC_HWPOOL,
         requestor_pid,
         iscope
     );
@@ -1279,6 +1277,20 @@ out:
         return qvrc;
     }
     return rpcrc;
+}
+
+int
+qvi_rmi_split_cpuset_by_group_id(
+    qvi_rmi_client_t *client,
+    hwloc_const_cpuset_t cpuset,
+    int ncolors,
+    int color,
+    hwloc_cpuset_t *result
+) {
+    return qvi_hwloc_split_cpuset_by_group_id(
+        client->config->hwloc, cpuset,
+        ncolors, color, result
+    );
 }
 
 /*

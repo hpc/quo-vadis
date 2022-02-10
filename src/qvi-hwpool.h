@@ -79,7 +79,7 @@ qvi_hwpool_add_device(
     qvi_hwpool_t *rpool,
     qv_hw_obj_type_t type,
     int id,
-    hwloc_const_cpuset_t cpuset
+    hwloc_const_cpuset_t affinity
 );
 
 /**

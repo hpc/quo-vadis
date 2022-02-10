@@ -126,7 +126,7 @@ qvi_rmi_task_set_cpubind_from_cpuset(
  *
  */
 int
-qvi_rmi_scope_get_intrinsic_scope_hwpool(
+qvi_rmi_scope_get_intrinsic_hwpool(
     qvi_rmi_client_t *client,
     pid_t requestor_pid,
     qv_scope_intrinsic_t iscope,
@@ -177,6 +177,18 @@ qvi_rmi_split_hwpool_by_group(
     int n,
     int group_id,
     qvi_hwpool_t **result
+);
+
+/**
+ *
+ */
+int
+qvi_rmi_split_cpuset_by_group_id(
+    qvi_rmi_client_t *client,
+    hwloc_const_cpuset_t cpuset,
+    int ncolors,
+    int color,
+    hwloc_cpuset_t *result
 );
 
 #ifdef __cplusplus

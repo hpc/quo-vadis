@@ -139,8 +139,11 @@ add_library(
     OBJECT
     ../include/quo-vadis-mpi.h
     qvi-mpi.h
-    qvi-taskman-mpi.h
+    qvi-group-mpi.h
+    qvi-zgroup-mpi.h
     qvi-mpi.cc
+    qvi-group-mpi.cc
+    qvi-zgroup-mpi.cc
 )
 
 target_include_directories(
@@ -165,14 +168,14 @@ add_library(
     quo-vadis
     ../include/quo-vadis.h
     qvi-context.h
-    qvi-hwpool.h
     qvi-task.h
+    qvi-hwpool.h
     qvi-group.h
     qvi-scope.h
-    qvi-taskman.h
+    qvi-zgroup.h
     qvi-bind.h
-    qvi-hwpool.cc
     qvi-task.cc
+    qvi-hwpool.cc
     qvi-scope.cc
     qvi-bind.cc
     quo-vadis.cc

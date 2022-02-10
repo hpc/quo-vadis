@@ -58,7 +58,7 @@ struct qvi_hwpool_devinfo_s {
     /** Device ID. */
     int id = 0;
     /** The bitmap encoding CPU affinity. */
-    hwloc_bitmap_t cpuset = nullptr;
+    hwloc_bitmap_t affinity = nullptr;
     /** Constructor */
     qvi_hwpool_devinfo_s(
         qv_hw_obj_type_t t,
@@ -66,15 +66,15 @@ struct qvi_hwpool_devinfo_s {
         hwloc_const_cpuset_t c
     ) : type(t)
       , id(i)
-      , cpuset(nullptr)
+      , affinity(nullptr)
     {
-        (void)qvi_hwloc_bitmap_calloc(&cpuset);
-        (void)qvi_hwloc_bitmap_copy(c, cpuset);
+        (void)qvi_hwloc_bitmap_calloc(&affinity);
+        (void)qvi_hwloc_bitmap_copy(c, affinity);
     }
     /** Destructor */
     ~qvi_hwpool_devinfo_s(void)
     {
-        qvi_hwloc_bitmap_free(&cpuset);
+        qvi_hwloc_bitmap_free(&affinity);
     }
     /** Equality operator. */
     bool
@@ -162,7 +162,7 @@ qvi_hwpool_new_from_line(
             irpool,
             line->devinfos[i].type,
             line->devinfos[i].id,
-            line->devinfos[i].cpuset
+            line->devinfos[i].affinity
         );
         if (rc != QV_SUCCESS) break;
     }
@@ -204,11 +204,11 @@ qvi_hwpool_new_line_from_hwpool(
             iline->devinfos[idx].id = devinfo->id;
             // Initialize and copy cpuset
             rc = qvi_hwloc_bitmap_calloc(
-                &iline->devinfos[idx].cpuset
+                &iline->devinfos[idx].affinity
             );
             if (rc != QV_SUCCESS) break;
             rc = qvi_hwloc_bitmap_copy(
-                devinfo->cpuset, iline->devinfos[idx].cpuset
+                devinfo->affinity, iline->devinfos[idx].affinity
             );
             if (rc != QV_SUCCESS) break;
             idx++;
@@ -253,10 +253,10 @@ qvi_hwpool_add_device(
     qvi_hwpool_t *rpool,
     qv_hw_obj_type_t type,
     int id,
-    hwloc_const_cpuset_t cpuset
+    hwloc_const_cpuset_t affinity
 ) {
     const bool itp = rpool->devinfos->insert(
-        std::make_shared<qvi_hwpool_devinfo_t>(type, id, cpuset)
+        std::make_shared<qvi_hwpool_devinfo_t>(type, id, affinity)
     ).second;
     // insert().second returns whether or not item insertion took place. If
     // true, this is a new, unseen device that we have inserted.
@@ -384,7 +384,7 @@ pool_add_devices(
             if (rc != QV_SUCCESS) break;
             // Get the device affinity.
             hwloc_bitmap_t devaff = nullptr;
-            rc = qvi_hwloc_get_device_cpuset(
+            rc = qvi_hwloc_get_device_affinity(
                 hwloc, type, devid, &devaff
             );
             if (rc != QV_SUCCESS) break;
@@ -462,8 +462,6 @@ qvi_hwpool_split_devices(
     }
 #endif
 #endif
-    for (const auto &devt : *devpool->devinfos) {
-    }
     return rc;
 }
 

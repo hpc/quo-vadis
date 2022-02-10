@@ -165,10 +165,7 @@ group_create_from_mpi_group(
 
     MPI_Comm group_comm;
     int rc = MPI_Comm_create_group(
-        mpi->node_comm,
-        group,
-        0,
-        &group_comm
+        mpi->node_comm, group, 0, &group_comm
     );
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_create_group() failed";
@@ -500,17 +497,15 @@ qvi_mpi_group_create_from_group_id(
     qvi_mpi_group_id_t id,
     qvi_mpi_group_t **group
 ) {
-    qvi_mpi_group_t *tmp_group;
+    qvi_mpi_group_t *tmp_group = nullptr;
     int rc = qvi_mpi_group_new(&tmp_group);
-    if (rc != QV_SUCCESS) return rc;
+    if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_mpi_group_lookup_by_id(mpi, id, tmp_group);
     if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_mpi_group_create_from_mpi_comm(
-        mpi,
-        tmp_group->mpi_comm,
-        group
+        mpi, tmp_group->mpi_comm, group
     );
 out:
     qvi_mpi_group_free(&tmp_group);
@@ -583,10 +578,7 @@ qvi_mpi_group_create_from_split(
 
     MPI_Comm split_comm = MPI_COMM_NULL;
     int rc = MPI_Comm_split(
-        parent->mpi_comm,
-        color,
-        key,
-        &split_comm
+        parent->mpi_comm, color, key, &split_comm
     );
     if (rc != MPI_SUCCESS) {
         qvrc = QV_ERR_MPI;
@@ -594,9 +586,7 @@ qvi_mpi_group_create_from_split(
     }
 
     qvrc = qvi_mpi_group_create_from_mpi_comm(
-        mpi,
-        split_comm,
-        child
+        mpi, split_comm, child
     );
 out:
     if (split_comm != MPI_COMM_NULL) MPI_Comm_free(&split_comm);
@@ -623,8 +613,7 @@ qvi_mpi_group_create_from_mpi_comm(
     }
 
     rc = group_create_from_mpi_comm(
-        node_comm,
-        *new_group
+        node_comm, *new_group
     );
     if (rc != QV_SUCCESS) {
         ers = "group_create_from_mpi_comm() failed";

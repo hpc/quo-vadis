@@ -37,7 +37,7 @@ typedef struct qvi_line_config_s {
 /** Device information struct for line transmission. */
 typedef struct qvi_line_devinfo_s {
     /** The bitmap encoding CPU affinity. */
-    hwloc_bitmap_t cpuset = nullptr;
+    hwloc_bitmap_t affinity = nullptr;
     /** Device type. */
     qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
     /** Device ID. */

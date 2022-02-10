@@ -417,7 +417,7 @@ qvi_bbuff_rmi_pack_item(
     qvi_line_devinfo_t *data
 ) {
     // Pack cpuset.
-    int rc = qvi_bbuff_rmi_pack_item(buff, data->cpuset);
+    int rc = qvi_bbuff_rmi_pack_item(buff, data->affinity);
     if (rc != QV_SUCCESS) return rc;
     // Pack device type.
     rc = qvi_bbuff_rmi_pack_item(buff, data->type);
@@ -669,7 +669,7 @@ qvi_bbuff_rmi_unpack_item(
     size_t bw = 0, total_bw = 0;
 
     int rc = qvi_bbuff_rmi_unpack_item(
-        &di->cpuset, buffpos, &bw
+        &di->affinity, buffpos, &bw
     );
     if (rc != QV_SUCCESS) goto out;
     total_bw += bw;

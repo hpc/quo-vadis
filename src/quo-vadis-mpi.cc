@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -17,8 +17,8 @@
 #include "qvi-common.h"
 
 #include "qvi-context.h"
+#include "qvi-zgroup-mpi.h"
 #include "qvi-utils.h"
-#include "qvi-taskman-mpi.h"
 
 // TODO(skg) This should probably be in a common area because other
 // infrastructure will likely use something similar.
@@ -37,8 +37,6 @@ connect_to_server(
     if (rc != QV_SUCCESS) {
         goto out;
     }
-    // Cache pointer to initialized hwloc instance and topology.
-    ctx->hwloc = qvi_rmi_client_hwloc_get(ctx->rmi);
 out:
     if (url) free(url);
     return rc;
@@ -60,22 +58,22 @@ qv_mpi_context_create(
         ers = "qvi_context_create() failed";
         goto out;
     }
-
-    qvi_taskman_mpi_t *itaskman;
-    rc = qvi_taskman_mpi_new(&itaskman);
+    // Create and initialize context group.
+    qvi_zgroup_mpi_t *izgroup;
+    rc = qvi_zgroup_mpi_new(&izgroup);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_taskman_mpi_new() failed";
+        ers = "qvi_zgroup_mpi_new() failed";
         goto out;
     }
-    // Save taskman instance pointer to context.
-    ictx->taskman = itaskman;
+    // Save zgroup instance pointer to context.
+    ictx->zgroup = izgroup;
 
-    rc = qvi_mpi_init(itaskman->mpi, comm);
+    rc = izgroup->initialize(comm);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_mpi_init failed";
+        ers = "group->initialize() failed";
         goto out;
     }
-
+    // Connect to RMI server.
     rc = connect_to_server(ictx);
     if (rc != QV_SUCCESS) {
         ers = "connect_to_server() failed";
@@ -84,7 +82,7 @@ qv_mpi_context_create(
 
     rc = qvi_bind_stack_init(
         ictx->bind_stack,
-        qvi_mpi_task_get(itaskman->mpi),
+        qvi_mpi_task_get(izgroup->mpi),
         ictx->rmi
     );
     if (rc != QV_SUCCESS) {
@@ -105,7 +103,7 @@ qv_mpi_context_free(
     qv_context_t *ctx
 ) {
     if (!ctx) return QV_ERR_INVLD_ARG;
-    if (ctx->taskman) delete ctx->taskman;
+    if (ctx->zgroup) delete ctx->zgroup;
     qvi_context_free(&ctx);
     return QV_SUCCESS;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -23,10 +23,9 @@
 
 #include "qvi-common.h"
 
-#include "qvi-taskman.h"
-#include "qvi-hwloc.h"
-#include "qvi-bind.h"
 #include "qvi-rmi.h"
+#include "qvi-zgroup.h"
+#include "qvi-bind.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,9 +35,8 @@ extern "C" {
  * The underlying data structure that defines an ultimately opaque QV context.
  */
 struct qv_context_s {
-    qvi_hwloc_t *hwloc = nullptr;
     qvi_rmi_client_t *rmi = nullptr;
-    qvi_taskman_t *taskman = nullptr;
+    qvi_zgroup_t *zgroup = nullptr;
     qvi_bind_stack_t *bind_stack = nullptr;
 };
 

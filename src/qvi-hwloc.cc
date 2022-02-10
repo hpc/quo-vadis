@@ -1344,34 +1344,27 @@ int
 qvi_hwloc_split_cpuset_by_group_id(
     qvi_hwloc_t *hwl,
     hwloc_const_cpuset_t cpuset,
-    int npieces,
-    int group_id,
+    int ncolors,
+    int color,
     hwloc_cpuset_t *result
 ) {
     int chunk = 0;
     int rc = split_cpuset_chunk_size(
-        hwl,
-        cpuset,
-        npieces,
-        &chunk
+        hwl, cpuset, ncolors, &chunk
     );
     // This happens when n > npus. We can't support that split.
     if (chunk == 0) {
         rc = QV_ERR_SPLIT;
         goto out;
     }
-    // Group IDs must be < n: 0, 1, ... , npieces-1.
-    if (group_id >= npieces) {
+    // Group IDs must be < n: 0, 1, ... , ncolors-1.
+    if (color >= ncolors) {
         rc = QV_ERR_SPLIT;
         goto out;
     }
 
     rc = split_cpuset_by_range(
-        hwl,
-        cpuset,
-        chunk * group_id,
-        chunk,
-        result
+        hwl, cpuset, chunk * color, chunk, result
     );
 out:
     if (rc != QV_SUCCESS) {
@@ -1381,7 +1374,7 @@ out:
 }
 
 int
-qvi_hwloc_get_device_cpuset(
+qvi_hwloc_get_device_affinity(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t dev_obj,
     int device_id,

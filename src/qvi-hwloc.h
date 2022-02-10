@@ -323,8 +323,8 @@ int
 qvi_hwloc_split_cpuset_by_group_id(
     qvi_hwloc_t *hwl,
     hwloc_const_cpuset_t cpuset,
-    int npieces,
-    int group_id,
+    int ncolors,
+    int color,
     hwloc_cpuset_t *result
 );
 
@@ -332,7 +332,7 @@ qvi_hwloc_split_cpuset_by_group_id(
  *
  */
 int
-qvi_hwloc_get_device_cpuset(
+qvi_hwloc_get_device_affinity(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t dev_obj,
     int device_id,

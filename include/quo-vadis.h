@@ -195,7 +195,7 @@ qv_scope_get_device(
     qv_scope_t *scope,
     qv_hw_obj_type_t dev_obj,
     int i,
-    qv_device_id_type_t dev_id_type,
+    qv_device_id_type_t id_type,
     char **dev_id
 );
 

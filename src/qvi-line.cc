@@ -108,7 +108,7 @@ qvi_line_devinfo_free(
     qvi_line_devinfo_t *devinfo
 ) {
     if (!devinfo) return;
-    qvi_hwloc_bitmap_free(&devinfo->cpuset);
+    qvi_hwloc_bitmap_free(&devinfo->affinity);
 }
 
 int
