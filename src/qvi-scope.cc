@@ -183,7 +183,9 @@ gather_hwpools(
         std::fill(hwpools, hwpools + group_size, nullptr);
         // Unpack the hwpools.
         for (int i = 0; i < group_size; ++i) {
-            rc = qvi_hwpool_unpack(bbuffs[i], &hwpools[i]);
+            rc = qvi_hwpool_unpack(
+                qvi_bbuff_data(bbuffs[i]), &hwpools[i]
+            );
             if (rc != QV_SUCCESS) break;
         }
     }
@@ -227,6 +229,7 @@ scatter_hwpools(
             rc = QV_ERR_OOR;
             goto out;
         }
+        std::fill(txbuffs, txbuffs + group_size, nullptr);
         // Pack the hwpools.
         for (int i = 0; i < group_size; ++i) {
             rc = qvi_bbuff_new(&txbuffs[i]);
@@ -240,7 +243,7 @@ scatter_hwpools(
     rc = group->scatter(txbuffs, root, &rxbuff);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_hwpool_unpack(rxbuff, pool);
+    rc = qvi_hwpool_unpack(qvi_bbuff_data(rxbuff), pool);
 out:
     if (txbuffs) {
         for (int i = 0; i < group_size; ++i) {
@@ -282,22 +285,19 @@ qvi_scope_split(
     // Initialize initial hwpool with split cpuset.
     rc = qvi_hwpool_init(hwpool, cpuset);
     if (rc != QV_SUCCESS) goto out;
-#if 0
     // Gather hwpools so we can split hardware resources.
     rc = gather_hwpools(
         parent->group, root, hwpool, &hwpools
     );
     if (rc != QV_SUCCESS) goto out;
     // No longer needed, as we have consolidated the pools.
-    //qvi_hwpool_free(&hwpool);
-    // TODO(skg) Uncomment then done with vvv.
+    qvi_hwpool_free(&hwpool);
     // TODO(skg) Do the device split.
     // Scatter result of device split.
     rc = scatter_hwpools(
         parent->group, root, hwpools, &hwpool
     );
     if (rc != QV_SUCCESS) goto out;
-#endif
     // Split underlying group.
     rc = parent->group->split(
         color, parent->group->id(), &group

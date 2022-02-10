@@ -821,6 +821,19 @@ qvi_hwloc_bitmap_asprintf(
     return rc;
 }
 
+void
+qvi_hwloc_debug_cpuset(
+    cstr msg,
+    hwloc_const_cpuset_t cpuset
+) {
+    assert(cpuset);
+    char *cpusets = nullptr;
+    int rc = qvi_hwloc_bitmap_asprintf(&cpusets, cpuset);
+    assert(rc == QV_SUCCESS);
+    qvi_log_debug("{} CPUSET={}", msg, cpusets);
+    free(cpusets);
+}
+
 int
 qvi_hwloc_bitmap_sscanf(
     hwloc_cpuset_t cpuset,

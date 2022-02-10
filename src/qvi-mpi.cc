@@ -815,7 +815,7 @@ qvi_mpi_group_scatter_bbuffs(
         // Copy buffer data into flattened buffer.
         byte *bytepos = txbytes;
         for (int i = 0; i < group_size; ++i) {
-            memmove(bytepos, txbuffs[i], txcounts[i]);
+            memmove(bytepos, qvi_bbuff_data(txbuffs[i]), txcounts[i]);
             bytepos += txcounts[i];
         }
     }
