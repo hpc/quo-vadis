@@ -50,7 +50,7 @@ context_new(
     context **ctx
 ) {
     int rc = QV_SUCCESS;
-    cstr ers = nullptr;
+    cstr_t ers = nullptr;
 
     context *ictx = qvi_new context;
     if (!ictx) {
@@ -91,7 +91,7 @@ closefds(
     // Determine the max number of file descriptors.
     struct rlimit rl;
     if (getrlimit(RLIMIT_NOFILE, &rl) < 0) {
-        static cstr ers = "Cannot determine RLIMIT_NOFILE";
+        static cstr_t ers = "Cannot determine RLIMIT_NOFILE";
         const int err = errno;
         qvi_panic_log_error("{} (rc={}, {})", ers, err, qvi_strerr(err));
     }
@@ -115,7 +115,7 @@ become_session_leader(
 
     pid_t pid = 0;
     if ((pid = fork()) < 0) {
-        static cstr ers = "fork() failed";
+        static cstr_t ers = "fork() failed";
         const int err = errno;
         qvi_panic_log_error("{} (rc={}, {})", ers, err, qvi_strerr(err));
     }
@@ -127,7 +127,7 @@ become_session_leader(
     // Child
     pid_t pgid = setsid();
     if (pgid < 0) {
-        static cstr ers = "setsid() failed";
+        static cstr_t ers = "setsid() failed";
         const int err = errno;
         qvi_panic_log_error("{} (rc={}, {})", ers, err, qvi_strerr(err));
     }
@@ -163,7 +163,7 @@ rmi_start(
 ) {
     qvi_log_debug("Starting RMI");
 
-    cstr ers = nullptr;
+    cstr_t ers = nullptr;
 
     static const bool blocks = true;
     int rc = qvi_rmi_server_start(ctx->rmi, blocks);
@@ -186,19 +186,19 @@ hwtopo_load(
 
     int rc = qvi_hwloc_topology_init(ctx->hwloc, nullptr);
     if (rc != QV_SUCCESS) {
-        static cstr ers = "qvi_hwloc_topology_init() failed";
+        static cstr_t ers = "qvi_hwloc_topology_init() failed";
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
 
     rc = qvi_hwloc_topology_load(ctx->hwloc);
     if (rc != QV_SUCCESS) {
-        static cstr ers = "qvi_hwloc_topology_load() failed";
+        static cstr_t ers = "qvi_hwloc_topology_load() failed";
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
 
     rc = qvi_hwloc_discover_devices(ctx->hwloc);
     if (rc != QV_SUCCESS) {
-        static cstr ers = "qvi_hwloc_discover_devices() failed";
+        static cstr_t ers = "qvi_hwloc_discover_devices() failed";
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
 }
@@ -209,14 +209,14 @@ hwtopo_export(
 ) {
     qvi_log_debug("Publishing hardware information");
 
-    cstr basedir = qvi_tmpdir();
+    cstr_t basedir = qvi_tmpdir();
     int rc = qvi_hwloc_topology_export(
         ctx->hwloc,
         basedir,
         &ctx->rmic->hwtopo_path
     );
     if (rc != QV_SUCCESS) {
-        static cstr ers = "qvi_hwloc_topology_export() failed";
+        static cstr_t ers = "qvi_hwloc_topology_export() failed";
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
 }

@@ -349,7 +349,7 @@ set_general_device_info(
     qvi_hwloc_t *,
     hwloc_obj_t obj,
     hwloc_obj_t pci_obj,
-    cstr pci_bus_id,
+    cstr_t pci_bus_id,
     qvi_hwloc_device_t *device
 ) {
     // Set objx types.
@@ -548,7 +548,7 @@ int
 qvi_hwloc_topology_load(
     qvi_hwloc_t *hwl
 ) {
-    cstr ers = nullptr;
+    cstr_t ers = nullptr;
     // Set flags that influence hwloc's behavior.
     static const unsigned flags = HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM;
     int rc = hwloc_topology_set_flags(hwl->topo, flags);
@@ -687,7 +687,7 @@ topo_fopen(
     *fd = open(path, O_CREAT | O_RDWR, 0644);
     if (*fd == -1) {
         int err = errno;
-        cstr ers = "open() failed";
+        cstr_t ers = "open() failed";
         qvi_log_error("{} {}", ers, qvi_strerr(err));
         return QV_ERR_FILE_IO;
     }
@@ -696,7 +696,7 @@ topo_fopen(
     int rc = fchmod(*fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (rc == -1) {
         int err = errno;
-        cstr ers = "fchmod() failed";
+        cstr_t ers = "fchmod() failed";
         qvi_log_error("{} {}", ers, qvi_strerr(err));
         return QV_ERR_FILE_IO;
     }
@@ -710,7 +710,7 @@ qvi_hwloc_topology_export(
     char **path
 ) {
     int qvrc = QV_SUCCESS, rc = 0, fd = 0;
-    cstr ers = nullptr;
+    cstr_t ers = nullptr;
 
     int err;
     bool usable = qvi_path_usable(base_path, &err);
@@ -823,7 +823,7 @@ qvi_hwloc_bitmap_asprintf(
 
 void
 qvi_hwloc_debug_cpuset(
-    cstr msg,
+    cstr_t msg,
     hwloc_const_cpuset_t cpuset
 ) {
     assert(cpuset);

@@ -43,7 +43,7 @@ qvi_bbuff_new(
     }
 
     ibuff->capacity = ibuff->min_growth;
-    ibuff->data = calloc(ibuff->capacity, sizeof(byte));
+    ibuff->data = calloc(ibuff->capacity, sizeof(byte_t));
     if (!ibuff->data) {
         rc = QV_ERR_OOR;
         goto out;
@@ -93,7 +93,7 @@ qvi_bbuff_append(
     if (req_capacity > buff->capacity) {
         // New capacity.
         const size_t new_capacity = req_capacity + buff->min_growth;
-        void *new_data = calloc(new_capacity, sizeof(byte));
+        void *new_data = calloc(new_capacity, sizeof(byte_t));
         if (!new_data) return QV_ERR_OOR;
         // Memory allocation successful.
         memmove(new_data, buff->data, buff->size);
@@ -101,7 +101,7 @@ qvi_bbuff_append(
         buff->capacity = new_capacity;
         buff->data = new_data;
     }
-    byte *dest = (byte *)buff->data;
+    byte_t *dest = (byte_t *)buff->data;
     dest += buff->size;
     memmove(dest, data, size);
     buff->size += size;

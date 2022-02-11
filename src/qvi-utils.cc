@@ -45,7 +45,7 @@ const char *
 qv_strerr(int ec)
 {
     if (ec < 0 || ec >= QV_RC_LAST) {
-        static const cstr bad = "";
+        static const cstr_t bad = "";
         return bad;
     }
     return qvi_rc_strerrs[ec];
@@ -88,12 +88,12 @@ qvi_path_usable(
 
 int
 qvi_atoi(
-    cstr str,
+    cstr_t str,
     int *maybe_val
 ) {
     *maybe_val = 0;
 
-    cstr tstr = str;
+    cstr_t tstr = str;
     // Make certain str contrains only digits.
     while ('\0' != *tstr) {
         if (!isdigit(*tstr)) return QV_ERR_INVLD_ARG;
@@ -122,7 +122,7 @@ int
 qvi_port(
     int *port
 ) {
-    cstr ports = getenv(QVI_ENV_PORT);
+    cstr_t ports = getenv(QVI_ENV_PORT);
     if (!ports) return QV_ERR_ENV;
     return qvi_atoi(ports, port);
 }
@@ -131,7 +131,7 @@ int
 qvi_url(
     char **url
 ) {
-    static const cstr base = "tcp://127.0.0.1";
+    static const cstr_t base = "tcp://127.0.0.1";
 
     int port;
     int rc = qvi_port(&port);
@@ -146,7 +146,7 @@ qvi_url(
 const char *
 qvi_conn_ers(void)
 {
-    static cstr msg = "Cannot determine connection information. "
+    static cstr_t msg = "Cannot determine connection information. "
                       "Please make sure that the following environment "
                       "variable is set to an unused port number: "
                       QVI_ENV_PORT;
@@ -158,7 +158,7 @@ qvi_tmpdir(void)
 {
     static thread_local char tmpdir[PATH_MAX];
 
-    cstr qvenv = getenv(QVI_ENV_TMPDIR);
+    cstr_t qvenv = getenv(QVI_ENV_TMPDIR);
     if (qvenv) {
         int nw = snprintf(tmpdir, PATH_MAX, "%s", qvenv);
         if (nw < PATH_MAX) return tmpdir;
@@ -168,7 +168,7 @@ qvi_tmpdir(void)
         int nw = snprintf(tmpdir, PATH_MAX, "%s", qvenv);
         if (nw < PATH_MAX) return tmpdir;
     }
-    static cstr tmp = "/tmp";
+    static cstr_t tmp = "/tmp";
     return tmp;
 }
 
@@ -177,7 +177,7 @@ qvi_whoami(void)
 {
     static const int bsize = 128;
     static thread_local char buff[bsize];
-    cstr user = getenv("USER");
+    cstr_t user = getenv("USER");
     if (!user) {
         user = PACKAGE_NAME;
     }

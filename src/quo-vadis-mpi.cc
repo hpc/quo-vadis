@@ -50,7 +50,7 @@ qv_mpi_context_create(
     if (!ctx || comm == MPI_COMM_NULL) return QV_ERR_INVLD_ARG;
 
     int rc = QV_SUCCESS;
-    cstr ers = nullptr;
+    cstr_t ers = nullptr;
     // Create base context.
     qv_context_t *ictx = nullptr;
     rc = qvi_context_create(&ictx);
@@ -103,7 +103,7 @@ qv_mpi_context_free(
     qv_context_t *ctx
 ) {
     if (!ctx) return QV_ERR_INVLD_ARG;
-    if (ctx->zgroup) delete ctx->zgroup;
+    delete ctx->zgroup;
     qvi_context_free(&ctx);
     return QV_SUCCESS;
 }

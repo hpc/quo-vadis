@@ -184,7 +184,7 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
-    cstr
+    cstr_t
 ) {
     picture += "s";
 }
@@ -306,7 +306,7 @@ qvi_bbuff_rmi_pack_item(
 inline int
 qvi_bbuff_rmi_pack_item_impl(
     qvi_bbuff_t *buff,
-    cstr data
+    cstr_t data
 ) {
     return qvi_bbuff_append(buff, data, strlen(data) + 1);
 }
@@ -317,7 +317,7 @@ qvi_bbuff_rmi_pack_item_impl(
 inline int
 qvi_bbuff_rmi_pack_item(
     qvi_bbuff_t *buff,
-    cstr data
+    cstr_t data
 ) {
     return qvi_bbuff_rmi_pack_item_impl(buff, data);
 }
@@ -516,14 +516,14 @@ template<typename T>
 inline int
 qvi_bbuff_rmi_unpack_item(
     T,
-    byte *buffpos,
+    byte_t *buffpos,
     size_t *bytes_written
 );
 
 inline int
 qvi_bbuff_rmi_unpack_item(
     int *i,
-    byte *buffpos,
+    byte_t *buffpos,
     size_t *bytes_written
 ) {
     memmove(i, buffpos, sizeof(*i));
@@ -535,7 +535,7 @@ qvi_bbuff_rmi_unpack_item(
 inline int
 qvi_bbuff_rmi_unpack_item(
     pid_t *i,
-    byte *buffpos,
+    byte_t *buffpos,
     size_t *bytes_written
 ) {
     // Remember we are sending this as an int.
@@ -550,7 +550,7 @@ qvi_bbuff_rmi_unpack_item(
 inline int
 qvi_bbuff_rmi_unpack_item(
     char **s,
-    byte *buffpos,
+    byte_t *buffpos,
     size_t *bytes_written
 ) {
     const int nw = asprintf(s, "%s", buffpos);
@@ -566,7 +566,7 @@ qvi_bbuff_rmi_unpack_item(
 inline int
 qvi_bbuff_rmi_unpack_item(
     qv_scope_intrinsic_t *o,
-    byte *buffpos,
+    byte_t *buffpos,
     size_t *bytes_written
 ) {
     // Remember we are sending this as an int.
@@ -580,7 +580,7 @@ qvi_bbuff_rmi_unpack_item(
 inline int
 qvi_bbuff_rmi_unpack_item(
     qv_device_id_type_t *o,
-    byte *buffpos,
+    byte_t *buffpos,
     size_t *bytes_written
 ) {
     // Remember we are sending this as an int.
@@ -594,7 +594,7 @@ qvi_bbuff_rmi_unpack_item(
 inline int
 qvi_bbuff_rmi_unpack_item(
     qv_hw_obj_type_t *o,
-    byte *buffpos,
+    byte_t *buffpos,
     size_t *bytes_written
 ) {
     // Remember we are sending this as an int.
@@ -608,7 +608,7 @@ qvi_bbuff_rmi_unpack_item(
 inline int
 qvi_bbuff_rmi_unpack_item(
     qvi_bbuff_rmi_bytes_out_t data,
-    byte *buffpos,
+    byte_t *buffpos,
     size_t *bytes_written
 ) {
     size_t *dsize = data.second;
@@ -617,7 +617,7 @@ qvi_bbuff_rmi_unpack_item(
     *bytes_written = sizeof(*dsize);
 
     void **dbuff = data.first;
-    *dbuff = calloc(*dsize, sizeof(byte));
+    *dbuff = calloc(*dsize, sizeof(byte_t));
     if (!*dbuff) {
         return QV_ERR_OOR;
     }
@@ -630,7 +630,7 @@ qvi_bbuff_rmi_unpack_item(
 inline int
 qvi_bbuff_rmi_unpack_item(
     hwloc_cpuset_t *cpuset,
-    byte *buffpos,
+    byte_t *buffpos,
     size_t *bytes_written
 ) {
     int rc = qvi_hwloc_bitmap_calloc(cpuset);
@@ -653,7 +653,7 @@ out:
 inline int
 qvi_bbuff_rmi_unpack_item(
     qvi_bbuff_rmi_zero_msg_t,
-    byte *,
+    byte_t *,
     size_t *bytes_written
 ) {
     *bytes_written = 0;
@@ -663,7 +663,7 @@ qvi_bbuff_rmi_unpack_item(
 inline int
 qvi_bbuff_rmi_unpack_item(
     qvi_line_devinfo_t *di,
-    byte *buffpos,
+    byte_t *buffpos,
     size_t *bytes_written
 ) {
     size_t bw = 0, total_bw = 0;
@@ -699,7 +699,7 @@ out:
 inline int
 qvi_bbuff_rmi_unpack_item(
     qvi_line_hwpool_t **hwp,
-    byte *buffpos,
+    byte_t *buffpos,
     size_t *bytes_written
 ) {
     int rc = QV_SUCCESS;
@@ -749,7 +749,7 @@ out:
 inline int
 qvi_bbuff_rmi_unpack_item(
     qvi_hwpool_t **hwp,
-    byte *buffpos,
+    byte_t *buffpos,
     size_t *bytes_written
 ) {
     qvi_line_hwpool_t *line = nullptr;
@@ -787,11 +787,11 @@ qvi_bbuff_rmi_unpack(
     T arg,
     Types... args
 ) {
-    byte *pos = (byte *)data;
+    byte_t *pos = (byte_t *)data;
     size_t bytes_written;
     int rc = qvi_bbuff_rmi_unpack_item(
         arg,
-        (byte *)data,
+        (byte_t *)data,
         &bytes_written
     );
     if (rc != QV_SUCCESS) return rc;

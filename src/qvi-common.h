@@ -51,10 +51,8 @@
 #include <vector>
 #endif
 
-typedef char const* cstr;
-typedef uint8_t byte;
-// TODO(skg) Consider moving.
-typedef int qvi_device_id_t;
+typedef char const* cstr_t;
+typedef uint8_t byte_t;
 
 /**
  *

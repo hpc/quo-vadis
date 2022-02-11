@@ -54,7 +54,7 @@ qvi_path_usable(
  */
 int
 qvi_atoi(
-    cstr str,
+    cstr_t str,
     int *maybe_val
 );
 

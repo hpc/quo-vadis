@@ -15,9 +15,6 @@ cmake_minimum_required(VERSION 3.19)
 # Set the project name and version
 project(quo-vadis VERSION 0.0.1 LANGUAGES C CXX)
 
-# Use -I instead of -isystem for imported targets.
-set(CMAKE_NO_SYSTEM_FROM_IMPORTED TRUE)
-
 # Append our module path
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 

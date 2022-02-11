@@ -229,9 +229,7 @@ qvi_hwpool_free(
     if (!rpool) return;
     qvi_hwpool_t *irpool = *rpool;
     if (!irpool) goto out;
-    if (irpool->devinfos) {
-        delete irpool->devinfos;
-    }
+    delete irpool->devinfos;
     qvi_hwloc_bitmap_free(&irpool->cpuset);
     qvi_hwloc_bitmap_free(&irpool->obcpuset);
     delete irpool;

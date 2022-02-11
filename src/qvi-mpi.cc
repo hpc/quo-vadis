@@ -112,7 +112,7 @@ group_create_from_mpi_comm(
     MPI_Comm comm,
     qvi_mpi_group_t *new_group
 ) {
-    cstr ers = nullptr;
+    cstr_t ers = nullptr;
 
     new_group->mpi_comm = comm;
 
@@ -159,7 +159,7 @@ group_create_from_mpi_group(
     MPI_Group group,
     qvi_mpi_group_t **maybe_group
 ) {
-    cstr ers = nullptr;
+    cstr_t ers = nullptr;
 
     int qvrc = QV_SUCCESS;
 
@@ -268,6 +268,7 @@ qvi_mpi_free(
             }
         }
         delete impi->group_tab;
+        impi->group_tab = nullptr;
     }
     if (impi->world_comm != MPI_COMM_NULL) {
         MPI_Comm_free(&impi->world_comm);
@@ -293,7 +294,7 @@ create_intrinsic_comms(
     qvi_mpi_t *mpi,
     MPI_Comm comm
 ) {
-    cstr ers = nullptr;
+    cstr_t ers = nullptr;
     // MPI_COMM_SELF duplicate
     int rc = MPI_Comm_dup(
         MPI_COMM_SELF,
@@ -329,7 +330,7 @@ static int
 create_intrinsic_groups(
     qvi_mpi_t *mpi
 ) {
-    cstr ers = nullptr;
+    cstr_t ers = nullptr;
 
     qvi_mpi_group_t self_group, node_group;
     int rc = group_create_from_mpi_comm(
@@ -370,7 +371,7 @@ qvi_mpi_init(
     qvi_mpi_t *mpi,
     MPI_Comm comm
 ) {
-    cstr ers = nullptr;
+    cstr_t ers = nullptr;
     int inited;
     // If MPI isn't initialized, then we can't continue.
     int rc = MPI_Initialized(&inited);
@@ -520,7 +521,7 @@ qvi_mpi_group_create_from_ids(
     const int *group_ids,
     qvi_mpi_group_t **maybe_group
 ) {
-    cstr ers = nullptr;
+    cstr_t ers = nullptr;
     int qvrc = QV_SUCCESS;
 
     MPI_Group new_mpi_group = QVI_MPI_GROUP_NULL;
@@ -599,7 +600,7 @@ qvi_mpi_group_create_from_mpi_comm(
     MPI_Comm comm,
     qvi_mpi_group_t **new_group
 ) {
-    cstr ers = nullptr;
+    cstr_t ers = nullptr;
     MPI_Comm node_comm = MPI_COMM_NULL;
 
     int rc = qvi_mpi_group_new(new_group);
@@ -683,7 +684,7 @@ qvi_mpi_group_gather_bbuffs(
 
     int rc = QV_SUCCESS, mpirc = MPI_SUCCESS;
     int *rxcounts = nullptr, *displs = nullptr;
-    byte *allbytes = nullptr;
+    byte_t *allbytes = nullptr;
     qvi_bbuff_t **bbuffs = nullptr;
 
     if (group_id == root) {
@@ -722,7 +723,7 @@ qvi_mpi_group_gather_bbuffs(
             total_bytes += rxcounts[i];
         }
 
-        allbytes = qvi_new byte[total_bytes];
+        allbytes = qvi_new byte_t[total_bytes];
         if (!allbytes) {
             rc = QV_ERR_OOR;
             goto out;
@@ -747,7 +748,7 @@ qvi_mpi_group_gather_bbuffs(
         }
         std::fill(bbuffs, bbuffs + group_size, nullptr);
 
-        byte *bytepos = allbytes;
+        byte_t *bytepos = allbytes;
         for (int i = 0; i < group_size; ++i) {
             rc = qvi_bbuff_new(&bbuffs[i]);
             if (rc != QV_SUCCESS) break;
@@ -785,7 +786,7 @@ qvi_mpi_group_scatter_bbuffs(
 
     int rc = QV_SUCCESS, mpirc = MPI_SUCCESS, rxcount = 0;
     int *txcounts = nullptr, *displs = nullptr, total_bytes = 0;
-    byte *mybytes = nullptr, *txbytes = nullptr;
+    byte_t *mybytes = nullptr, *txbytes = nullptr;
     qvi_bbuff_t *mybbuff = nullptr;
     // Root sets up relevant Scatterv data structures.
     if (group_id == root) {
@@ -807,13 +808,13 @@ qvi_mpi_group_scatter_bbuffs(
             total_bytes += txcounts[i];
         }
         // A flattened buffer containing all the relevant information.
-        txbytes = qvi_new byte[total_bytes];
+        txbytes = qvi_new byte_t[total_bytes];
         if (!txbytes) {
             rc = QV_ERR_OOR;
             goto out;
         };
         // Copy buffer data into flattened buffer.
-        byte *bytepos = txbytes;
+        byte_t *bytepos = txbytes;
         for (int i = 0; i < group_size; ++i) {
             memmove(bytepos, qvi_bbuff_data(txbuffs[i]), txcounts[i]);
             bytepos += txcounts[i];
@@ -830,7 +831,7 @@ qvi_mpi_group_scatter_bbuffs(
         goto out;
     }
     // Everyone allocates a buffer for their data.
-    mybytes = qvi_new byte[rxcount];
+    mybytes = qvi_new byte_t[rxcount];
     if (!mybytes) {
         rc = QV_ERR_OOR;
         goto out;

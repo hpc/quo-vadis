@@ -27,7 +27,7 @@ qvi_context_create(
     }
 
     int rc = QV_SUCCESS;
-    cstr ers = nullptr;
+    cstr_t ers = nullptr;
 
     qv_context_t *ictx = qvi_new qv_context_t;
     if (!ictx) {
@@ -222,7 +222,7 @@ qv_scope_split(
         return QV_ERR_INVLD_ARG;
     }
 
-    static const cstr epref = "qv_scope_split Error: ";
+    static const cstr_t epref = "qv_scope_split Error: ";
     int rc = QV_SUCCESS;
 
     if (npieces <= 0 ) {

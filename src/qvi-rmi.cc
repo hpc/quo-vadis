@@ -180,7 +180,7 @@ static int
 buffer_append_header(
     qvi_bbuff_t *buff,
     qvi_rpc_funid_t fid,
-    cstr picture
+    cstr_t picture
 ) {
     qvi_msg_header_t hdr;
     hdr.fid = fid;
@@ -202,7 +202,7 @@ data_trim(
     void *msg,
     size_t trim
 ) {
-    byte *new_base = (byte *)msg;
+    byte_t *new_base = (byte_t *)msg;
     new_base += trim;
     return new_base;
 }
@@ -756,7 +756,7 @@ server_rpc_dispatch(
     qvi_bbuff_t *res;
     rc = rpc_dispatch_table[hdr.fid](server, &hdr, body, &res);
     if (rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN) {
-        cstr ers = "RPC dispatch failed";
+        cstr_t ers = "RPC dispatch failed";
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
         goto out;
     }
@@ -815,7 +815,7 @@ qvi_rmi_server_new(
     qvi_rmi_server_t **server
 ) {
     int rc = QV_SUCCESS;
-    cstr ers = nullptr;
+    cstr_t ers = nullptr;
 
     qvi_rmi_server_t *iserver = qvi_new qvi_rmi_server_t;
     if (!iserver) {
@@ -905,7 +905,7 @@ server_start_workers(
     pthread_t worker;
     int rc = pthread_create(&worker, nullptr, server_go, server);
     if (rc != 0) {
-        cstr ers = "pthread_create() failed";
+        cstr_t ers = "pthread_create() failed";
         qvi_log_error("{} with rc={} ({})", ers, rc, qvi_strerr(rc));
         return nullptr;
     }
@@ -987,7 +987,7 @@ qvi_rmi_server_start(
         server
     );
     if (rc != 0) {
-        cstr ers = "pthread_create() failed";
+        cstr_t ers = "pthread_create() failed";
         qvi_log_error("{} with rc={} ({})", ers, rc, qvi_strerr(rc));
         qvrc = QV_ERR_SYS;
     }
@@ -1003,7 +1003,7 @@ qvi_rmi_client_new(
     qvi_rmi_client_t **client
 ) {
     int rc = QV_SUCCESS;
-    cstr ers = nullptr;
+    cstr_t ers = nullptr;
 
     qvi_rmi_client_t *icli = qvi_new qvi_rmi_client_t;
     if (!icli) {
