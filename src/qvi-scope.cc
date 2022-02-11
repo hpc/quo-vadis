@@ -262,6 +262,7 @@ out:
 /**
  * Example placeholder for different splitting algorithms.
  */
+#if 0
 static int
 split_devices_round_robin(
     qv_scope_t *parent,
@@ -270,6 +271,7 @@ split_devices_round_robin(
     std::vector<qvi_hwpool_t *> &hwpools
 ) {
 }
+#endif
 
 // TODO(skg) This is where other split algorithms may either live or take place.
 // NOTE(skg) This call usually takes place in a SPMD context, so the parent
