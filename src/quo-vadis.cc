@@ -275,6 +275,7 @@ qv_scope_split_at(
 
     return qv_scope_split(ctx, scope, ntype, group_id, subscope);
 #endif
+    QVI_UNUSED(type); QVI_UNUSED(group_id);
     return QV_ERR_NOT_SUPPORTED;
 }
 

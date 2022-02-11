@@ -58,7 +58,7 @@ qv_mpi_context_create(
         ers = "qvi_context_create() failed";
         goto out;
     }
-    // Create and initialize context group.
+    // Create and initialize the base group.
     qvi_zgroup_mpi_t *izgroup;
     rc = qvi_zgroup_mpi_new(&izgroup);
     if (rc != QV_SUCCESS) {

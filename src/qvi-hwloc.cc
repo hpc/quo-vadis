@@ -1366,11 +1366,15 @@ qvi_hwloc_split_cpuset_by_group_id(
         hwl, cpuset, ncolors, &chunk
     );
     // This happens when n > npus. We can't support that split.
+    // TODO(skg) Perhaps we can create a NULL result that will result in a NULL
+    // scope?
     if (chunk == 0) {
         rc = QV_ERR_SPLIT;
         goto out;
     }
     // Group IDs must be < n: 0, 1, ... , ncolors-1.
+    // TODO(skg) We could also allow this. That might mean that this processor
+    // should not be considered in the split.
     if (color >= ncolors) {
         rc = QV_ERR_SPLIT;
         goto out;

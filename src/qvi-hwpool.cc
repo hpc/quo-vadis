@@ -222,7 +222,6 @@ out:
     return rc;
 }
 
-// TODO(skg) Add RMI to release resources.
 void
 qvi_hwpool_free(
     qvi_hwpool_t **rpool
@@ -275,6 +274,7 @@ qvi_hwpool_cpuset_get(
     return rpool->cpuset;
 }
 
+#if 0
 /**
  * Returns whether two cpusets are equal.
  */
@@ -313,6 +313,7 @@ cpus_available(
     qvi_hwloc_bitmap_free(&tcpus);
     return rc;
 }
+#endif
 
 /**
  * Example:
@@ -339,6 +340,7 @@ pool_obtain_cpus_by_cpuset(
  * release   0100 0100
  * obcpuset' 0010 0001
  */
+#if 0
 static int
 pool_release_cpus_by_cpuset(
     qvi_hwpool_t *pool,
@@ -351,6 +353,7 @@ pool_release_cpus_by_cpuset(
     );
     return (hwrc == 0 ? QV_SUCCESS : QV_ERR_HWLOC);
 }
+#endif
 
 /**
  * Adds devices to an initialized hardware resource pool.
@@ -433,6 +436,7 @@ out:
 /**
  *
  */
+#if 0
 int
 qvi_hwpool_split_devices(
     qvi_hwpool_t **pools,
@@ -464,6 +468,7 @@ qvi_hwpool_split_devices(
 #endif
     return rc;
 }
+#endif
 
 int
 qvi_hwpool_obtain_split_by_group(

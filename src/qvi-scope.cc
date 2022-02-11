@@ -43,6 +43,7 @@ qvi_scope_new(
     return rc;
 }
 
+// TODO(skg) Add RMI to release resources.
 void
 qvi_scope_free(
     qv_scope_t **scope
@@ -258,7 +259,24 @@ out:
     return rc;
 }
 
+/**
+ * Example placeholder for different splitting algorithms.
+ */
+static int
+split_devices_round_robin(
+    qv_scope_t *parent,
+    int ncolors,
+    const std::vector<int> &colors,
+    std::vector<qvi_hwpool_t *> &hwpools
+) {
+}
+
 // TODO(skg) This is where other split algorithms may either live or take place.
+// NOTE(skg) This call usually takes place in a SPMD context, so the parent
+// scope should be the same across all participants, but the color will likely
+// differ among them. The number of colors should be identical as well. As we
+// improve on the splitting algorithms, we may consider gathering the input
+// data, processing it on a sinlge task, and finally scattering the results.
 int
 qvi_scope_split(
     qv_scope_t *parent,
