@@ -946,7 +946,7 @@ server_populate_base_hwpool(
                 QV_DEVICE_ID_ORDINAL, &ids
             );
             if (rc != QV_SUCCESS) break;
-            // Concert the string ordinal to an integer.
+            // Convert the string ordinal to an integer.
             int id = 0;
             rc = qvi_atoi(ids, &id);
             if (rc != QV_SUCCESS) break;

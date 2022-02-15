@@ -688,7 +688,7 @@ qvi_mpi_group_gather_bbuffs(
     qvi_bbuff_t **bbuffs = nullptr;
 
     if (group_id == root) {
-        rxcounts = qvi_new int[group_size];
+        rxcounts = qvi_new int[group_size]();
         if (!rxcounts) {
             rc = QV_ERR_OOR;
             goto out;
@@ -706,24 +706,19 @@ qvi_mpi_group_gather_bbuffs(
     }
     // Root sets up relevant Gatherv data structures.
     if (group_id == root) {
-        displs = qvi_new int[group_size];
+        displs = qvi_new int[group_size]();
         if (!displs) {
             rc = QV_ERR_OOR;
             goto out;
         };
 
-        int displ = 0;
-        for (int i = 0; i < group_size; ++i) {
-            displs[i] = displ;
-            displ += rxcounts[i];
-        }
-
         int total_bytes = 0;
         for (int i = 0; i < group_size; ++i) {
+            displs[i] = total_bytes;
             total_bytes += rxcounts[i];
         }
 
-        allbytes = qvi_new byte_t[total_bytes];
+        allbytes = qvi_new byte_t[total_bytes]();
         if (!allbytes) {
             rc = QV_ERR_OOR;
             goto out;
@@ -741,13 +736,12 @@ qvi_mpi_group_gather_bbuffs(
     }
     // Root creates new buffers from data gathered from each participant.
     if (group_id == root) {
-        bbuffs = qvi_new qvi_bbuff_t*[group_size];
+        // Zero initialize array of pointers to nullptr.
+        bbuffs = qvi_new qvi_bbuff_t*[group_size]();
         if (!bbuffs) {
             rc = QV_ERR_OOR;
             goto out;
         }
-        std::fill(bbuffs, bbuffs + group_size, nullptr);
-
         byte_t *bytepos = allbytes;
         for (int i = 0; i < group_size; ++i) {
             rc = qvi_bbuff_new(&bbuffs[i]);
@@ -758,9 +752,9 @@ qvi_mpi_group_gather_bbuffs(
         }
     }
 out:
-    if (rxcounts) delete[] rxcounts;
-    if (displs) delete[] displs;
-    if (allbytes) delete[] allbytes;
+    delete[] rxcounts;
+    delete[] displs;
+    delete[] allbytes;
     if (rc != QV_SUCCESS) {
         if (bbuffs) {
             for (int i = 0; i < group_size; ++i) {
@@ -851,10 +845,10 @@ qvi_mpi_group_scatter_bbuffs(
     if (rc != QV_SUCCESS) goto out;
     rc = qvi_bbuff_append(mybbuff, mybytes, rxcount);
 out:
-    if (txcounts) delete[] txcounts;
-    if (displs) delete[] displs;
-    if (txbytes) delete[] txbytes;
-    if (mybytes) delete[] mybytes;
+    delete[] txcounts;
+    delete[] displs;
+    delete[] txbytes;
+    delete[] mybytes;
     if (rc != QV_SUCCESS) {
         qvi_bbuff_free(&mybbuff);
     }
