@@ -935,7 +935,9 @@ server_populate_base_hwpool(
         const qv_hw_obj_type_t type = devts[i];
         // Figure out how many devices there are.
         int nobjs = 0;
-        rc = qvi_hwloc_get_nobjs_in_cpuset(hwloc, type, cpuset, &nobjs);
+        rc = qvi_hwloc_get_nobjs_in_cpuset(
+            hwloc, type, cpuset, &nobjs
+        );
         if (rc != QV_SUCCESS) break;
         // Add all items by their ID.
         for (int n = 0; n < nobjs; ++n) {

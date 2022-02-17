@@ -151,7 +151,60 @@ out:
     return rc;
 }
 
-// TODO(skg) We should have structures around bbuffs and hwpools.
+template<typename TYPE>
+static int
+gather_values(
+    qvi_group_t *group,
+    int root,
+    TYPE invalue,
+    TYPE **outvals
+) {
+    const int group_size = group->size();
+
+    int rc = QV_SUCCESS;
+    qvi_bbuff_t *txbuff = nullptr;
+    qvi_bbuff_t **bbuffs = nullptr;
+    TYPE *ioutvals = nullptr;
+
+    rc = qvi_bbuff_new(&txbuff);
+    if (rc != QV_SUCCESS) goto out;
+
+    rc = qvi_bbuff_append(
+        txbuff, &invalue, sizeof(TYPE)
+    );
+    if (rc != QV_SUCCESS) goto out;
+
+    rc = group->gather(txbuff, root, &bbuffs);
+    if (rc != QV_SUCCESS) goto out;
+
+    if (group->id() == root) {
+        // Notice the use of zero initialization here: the '()'.
+        ioutvals = qvi_new TYPE[group_size]();
+        if (!ioutvals) {
+            rc = QV_ERR_OOR;
+            goto out;
+        }
+        // Unpack the values.
+        for (int i = 0; i < group_size; ++i) {
+            ioutvals[i] = *(TYPE *)qvi_bbuff_data(bbuffs[i]);
+        }
+    }
+out:
+    if (bbuffs) {
+        for (int i = 0; i < group_size; ++i) {
+            qvi_bbuff_free(&bbuffs[i]);
+        }
+        delete[] bbuffs;
+    }
+    qvi_bbuff_free(&txbuff);
+    if (rc != QV_SUCCESS) {
+        delete[] ioutvals;
+        ioutvals = nullptr;
+    }
+    *outvals = ioutvals;
+    return rc;
+}
+
 static int
 gather_hwpools(
     qvi_group_t *group,
@@ -176,12 +229,12 @@ gather_hwpools(
     if (rc != QV_SUCCESS) goto out;
 
     if (group->id() == root) {
-        hwpools = qvi_new qvi_hwpool_t*[group_size];
+        // Notice the use of zero initialization here: the '()'.
+        hwpools = qvi_new qvi_hwpool_t*[group_size]();
         if (!hwpools) {
             rc = QV_ERR_OOR;
             goto out;
         }
-        std::fill(hwpools, hwpools + group_size, nullptr);
         // Unpack the hwpools.
         for (int i = 0; i < group_size; ++i) {
             rc = qvi_hwpool_unpack(
@@ -211,6 +264,58 @@ out:
     return rc;
 }
 
+template<typename TYPE>
+static int
+scatter_values(
+    qvi_group_t *group,
+    int root,
+    TYPE *values,
+    TYPE *value
+) {
+    const int group_size = group->size();
+
+    int rc = QV_SUCCESS;
+    qvi_bbuff_t **txbuffs = nullptr;
+    qvi_bbuff_t *rxbuff = nullptr;
+
+    if (root == group->id()) {
+        // Notice the use of zero initialization here: the '()'.
+        txbuffs = qvi_new qvi_bbuff_t *[group_size]();
+        if (!txbuffs) {
+            rc = QV_ERR_OOR;
+            goto out;
+        }
+        // Pack the values.
+        for (int i = 0; i < group_size; ++i) {
+            rc = qvi_bbuff_new(&txbuffs[i]);
+            if (rc != QV_SUCCESS) goto out;
+            rc = qvi_bbuff_append(
+                txbuffs[i], &values[i], sizeof(TYPE)
+            );
+            if (rc != QV_SUCCESS) break;
+        }
+        if (rc != QV_SUCCESS) goto out;
+    }
+
+    rc = group->scatter(txbuffs, root, &rxbuff);
+    if (rc != QV_SUCCESS) goto out;
+
+    *value = *(TYPE *)qvi_bbuff_data(rxbuff);
+out:
+    if (txbuffs) {
+        for (int i = 0; i < group_size; ++i) {
+            qvi_bbuff_free(&txbuffs[i]);
+        }
+        delete[] txbuffs;
+    }
+    qvi_bbuff_free(&rxbuff);
+    if (rc != QV_SUCCESS) {
+        // If something went wrong, just zero-initialize the value.
+        *value = {};
+    }
+    return rc;
+}
+
 static int
 scatter_hwpools(
     qvi_group_t *group,
@@ -225,12 +330,12 @@ scatter_hwpools(
     qvi_bbuff_t *rxbuff = nullptr;
 
     if (root == group->id()) {
-        txbuffs = qvi_new qvi_bbuff_t *[group_size];
+        // Notice the use of zero initialization here: the '()'.
+        txbuffs = qvi_new qvi_bbuff_t *[group_size]();
         if (!txbuffs) {
             rc = QV_ERR_OOR;
             goto out;
         }
-        std::fill(txbuffs, txbuffs + group_size, nullptr);
         // Pack the hwpools.
         for (int i = 0; i < group_size; ++i) {
             rc = qvi_bbuff_new(&txbuffs[i]);
@@ -267,8 +372,8 @@ static int
 split_devices_round_robin(
     qv_scope_t *parent,
     int ncolors,
-    const std::vector<int> &colors,
-    std::vector<qvi_hwpool_t *> &hwpools
+    int *colors,
+    qvi_hwpool_t **hwpools
 ) {
 }
 #endif
@@ -278,7 +383,7 @@ split_devices_round_robin(
 // scope should be the same across all participants, but the color will likely
 // differ among them. The number of colors should be identical as well. As we
 // improve on the splitting algorithms, we may consider gathering the input
-// data, processing it on a sinlge task, and finally scattering the results.
+// data, processing it on a single task, and finally scattering the results.
 int
 qvi_scope_split(
     qv_scope_t *parent,
@@ -287,12 +392,14 @@ qvi_scope_split(
     qv_scope_t **child
 ) {
     int rc = QV_SUCCESS;
-    const int root = 0;
+    const int rootid = 0;
+    const int myid = parent->group->id();
 
     qvi_group_t *group = nullptr;
-    qvi_hwpool_t *hwpool = nullptr;
-    qvi_hwpool_t **hwpools = nullptr;
-
+    qvi_hwpool_t *hwpool = nullptr, **hwpools = nullptr;
+    // TODO(skg) Perhaps we can have a collection of coloring algorithms, then
+    // pass the result to the split by group. That way the coloring and grouping
+    // are separated.
     hwloc_bitmap_t cpuset = nullptr;
     rc = qvi_rmi_split_cpuset_by_group_id(
         parent->rmi,
@@ -308,7 +415,7 @@ qvi_scope_split(
     if (rc != QV_SUCCESS) goto out;
     // Gather hwpools so we can split hardware resources.
     rc = gather_hwpools(
-        parent->group, root, hwpool, &hwpools
+        parent->group, rootid, hwpool, &hwpools
     );
     if (rc != QV_SUCCESS) goto out;
     // No longer needed, as we have consolidated the pools.
@@ -316,12 +423,12 @@ qvi_scope_split(
     // TODO(skg) Do the device split.
     // Scatter result of device split.
     rc = scatter_hwpools(
-        parent->group, root, hwpools, &hwpool
+        parent->group, rootid, hwpools, &hwpool
     );
     if (rc != QV_SUCCESS) goto out;
     // Split underlying group.
     rc = parent->group->split(
-        color, parent->group->id(), &group
+        color, myid, &group
     );
 
     rc = qvi_scope_new(child);

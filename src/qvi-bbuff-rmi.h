@@ -223,7 +223,7 @@ qvi_bbuff_rmi_get_picture(
     // Base case
 }
 
-template <typename T, typename... Types>
+template<typename T, typename... Types>
 inline void
 qvi_bbuff_rmi_get_picture
 (
@@ -497,7 +497,7 @@ qvi_bbuff_rmi_pack(
     return QV_SUCCESS;
 }
 
-template <typename T, typename... Types>
+template<typename T, typename... Types>
 inline int
 qvi_bbuff_rmi_pack(
     qvi_bbuff_t *buff,
@@ -780,7 +780,7 @@ qvi_bbuff_rmi_unpack(
     return QV_SUCCESS;
 }
 
-template <typename T, typename... Types>
+template<typename T, typename... Types>
 inline int
 qvi_bbuff_rmi_unpack(
     void *data,
