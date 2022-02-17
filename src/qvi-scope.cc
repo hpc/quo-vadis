@@ -288,7 +288,7 @@ scatter_values(
         // Pack the values.
         for (int i = 0; i < group_size; ++i) {
             rc = qvi_bbuff_new(&txbuffs[i]);
-            if (rc != QV_SUCCESS) goto out;
+            if (rc != QV_SUCCESS) break;
             rc = qvi_bbuff_append(
                 txbuffs[i], &values[i], sizeof(TYPE)
             );
@@ -339,7 +339,7 @@ scatter_hwpools(
         // Pack the hwpools.
         for (int i = 0; i < group_size; ++i) {
             rc = qvi_bbuff_new(&txbuffs[i]);
-            if (rc != QV_SUCCESS) goto out;
+            if (rc != QV_SUCCESS) break;
             rc = qvi_hwpool_pack(pools[i], txbuffs[i]);
             if (rc != QV_SUCCESS) break;
         }
