@@ -222,27 +222,23 @@ qv_scope_split(
         return QV_ERR_INVLD_ARG;
     }
 
-    static const cstr_t epref = "qv_scope_split Error: ";
     int rc = QV_SUCCESS;
+    qv_scope_t *isubscope = nullptr;
 
     if (npieces <= 0 ) {
-        qvi_log_error("{} n <= 0 (n = {})", epref, npieces);
-        rc = QV_ERR_INVLD_ARG;
-        goto out;
-    }
-    // TODO(skg) This will have to change because
-    // our grouping algorithms will be in this space.
-    if (color < 0) {
-        qvi_log_error("{} group_id < 0 (group_id = {})", epref, color);
+        qvi_log_error(
+            "qv_scope_split Error: npieces <= 0 (npieces = {})", npieces
+        );
         rc = QV_ERR_INVLD_ARG;
         goto out;
     }
 
-    rc = qvi_scope_split(scope, npieces, color, subscope);
+    rc = qvi_scope_split(scope, npieces, color, &isubscope);
 out:
     if (rc != QV_SUCCESS) {
-        qvi_scope_free(subscope);
+        qvi_scope_free(&isubscope);
     }
+    *subscope = isubscope;
     return rc;
 }
 

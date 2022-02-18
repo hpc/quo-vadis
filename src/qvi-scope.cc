@@ -151,7 +151,7 @@ out:
     return rc;
 }
 
-template<typename TYPE>
+template <typename TYPE>
 static int
 gather_values(
     qvi_group_t *group,
@@ -178,8 +178,7 @@ gather_values(
     if (rc != QV_SUCCESS) goto out;
 
     if (group->id() == root) {
-        // Notice the use of zero initialization here: the '()'.
-        ioutvals = qvi_new TYPE[group_size]();
+        ioutvals = qvi_new TYPE[group_size];
         if (!ioutvals) {
             rc = QV_ERR_OOR;
             goto out;
@@ -264,7 +263,7 @@ out:
     return rc;
 }
 
-template<typename TYPE>
+template <typename TYPE>
 static int
 scatter_values(
     qvi_group_t *group,
@@ -364,78 +363,179 @@ out:
     return rc;
 }
 
-/**
- * Example placeholder for different splitting algorithms.
- */
-#if 0
+template <typename TYPE>
 static int
-split_devices_round_robin(
+bcast_value(
+    qvi_group_t *group,
+    int root,
+    TYPE *value
+) {
+    const int group_size = group->size();
+
+    int rc = QV_SUCCESS;
+    TYPE *values = nullptr;
+
+    if (root == group->id()) {
+        values = qvi_new TYPE[group_size];
+        if (!values) {
+            rc = QV_ERR_OOR;
+            goto out;
+        }
+        for (int i = 0; i < group_size; ++i) {
+            values[i] = *value;
+        }
+    }
+    rc = scatter_values(group, root, values, value);
+out:
+    delete[] values;
+    return rc;
+}
+
+/**
+ * User-defined split.
+ */
+static int
+split_user_defined(
     qv_scope_t *parent,
     int ncolors,
     int *colors,
     qvi_hwpool_t **hwpools
 ) {
-}
-#endif
+    const int group_size = parent->group->size();
 
-// TODO(skg) This is where other split algorithms may either live or take place.
-// NOTE(skg) This call usually takes place in a SPMD context, so the parent
-// scope should be the same across all participants, but the color will likely
-// differ among them. The number of colors should be identical as well. As we
-// improve on the splitting algorithms, we may consider gathering the input
-// data, processing it on a single task, and finally scattering the results.
-int
-qvi_scope_split(
+    int rc = QV_SUCCESS;
+    hwloc_bitmap_t *cpusets = nullptr;
+
+    cpusets = qvi_new hwloc_bitmap_t[group_size]();
+    if (!cpusets) {
+        rc = QV_ERR_OOR;
+        goto out;
+    }
+
+    for (int i = 0; i < group_size; ++i) {
+        rc = qvi_rmi_split_cpuset_by_group_id(
+            parent->rmi,
+            qvi_hwpool_cpuset_get(parent->hwpool),
+            ncolors, colors[i], &cpusets[i]
+        );
+        if (rc != QV_SUCCESS) break;
+        // Reinitialize the hwpool with the new cpuset.
+        rc = qvi_hwpool_init(hwpools[i], cpusets[i]);
+        if (rc != QV_SUCCESS) break;
+    }
+out:
+    for (int i = 0; i < group_size; ++i) {
+        qvi_hwloc_bitmap_free(&cpusets[i]);
+    }
+    delete[] cpusets;
+    return rc;
+}
+
+/**
+ *
+ */
+static int
+split_dispatch(
+    qv_scope_t *parent,
+    int ncolors,
+    int *colors,
+    qvi_hwpool_t **hwpools
+) {
+    const int group_size = parent->group->size();
+
+    int rc = QV_SUCCESS;
+    bool auto_split = false;
+    // Make sure that the supplied colors are consistent and determine the type
+    // of coloring we are using. Positive values denote an explicit coloring
+    // provided by the caller. Negative values are reserved for automatic
+    // coloring algorithms and should be constants defined in quo-vadis.h.
+    std::vector<int> tcolors(colors, colors + group_size);
+    std::sort(tcolors.begin(), tcolors.end());
+    // If all the values are negative and equal, then auto split. If not, then
+    // we were called with an invalid request.
+    if (*tcolors.begin() < 0) {
+        if (*tcolors.begin() != *tcolors.end()) {
+            return QV_ERR_INVLD_ARG;
+        }
+        auto_split = true;
+    }
+    // User-defined splitting.
+    if (!auto_split) {
+        return split_user_defined(
+            parent, ncolors, colors, hwpools
+        );
+    }
+    // Automatic splitting.
+    switch (colors[0]) {
+        case QV_SCOPE_SPLIT_GROUP_AFFINITY_PRESERVING:
+            rc = QV_ERR_NOT_SUPPORTED;
+            break;
+        default:
+            rc = QV_ERR_INVLD_ARG;
+            break;
+    }
+    return rc;
+}
+
+/**
+ * Split the hardware resources based on the provided split parameters:
+ * - ncolors: The number of splits requested.
+ * - color: Either user-supplied (explicitly set) or a value that requests
+ *   us to do the coloring for the callers.
+ * - colorp: color' is potentially a new color assignment determined by one
+ *   of our coloring algorithms. This value can be used to influence the
+ *   group splitting that occurs after this call completes.
+ */
+static int
+split_hardware_resources(
     qv_scope_t *parent,
     int ncolors,
     int color,
-    qv_scope_t **child
+    int *colorp,
+    qvi_hwpool_t **result
 ) {
-    int rc = QV_SUCCESS;
-    const int rootid = 0;
-    const int myid = parent->group->id();
-
-    qvi_group_t *group = nullptr;
-    qvi_hwpool_t *hwpool = nullptr, **hwpools = nullptr;
-    // TODO(skg) Perhaps we can have a collection of coloring algorithms, then
-    // pass the result to the split by group. That way the coloring and grouping
-    // are separated.
-    hwloc_bitmap_t cpuset = nullptr;
-    rc = qvi_rmi_split_cpuset_by_group_id(
-        parent->rmi,
-        qvi_hwpool_cpuset_get(parent->hwpool),
-        ncolors, color, &cpuset
+    int rc = QV_SUCCESS, rc2 = QV_SUCCESS;
+    // Always use 0 as the root because 0 will always exist.
+    const int rootid = 0, myid = parent->group->id();
+    // The number of hardware pools will always match the group size.
+    qvi_hwpool_t **hwpools = nullptr;
+    // Array of colors used for splitting.
+    int *colors = nullptr;
+    // First consolidate the provided information, as this is likely coming from
+    // an SPMD-like context (e.g., splitting a resource shared by MPI
+    // processes).  In most cases it is easiest to have a single process
+    // calculate the split based on global knowledge and then redistribute the
+    // result.
+    rc = gather_values(
+        parent->group, rootid, color, &colors
     );
     if (rc != QV_SUCCESS) goto out;
-    // Now that we have the CPU split, create initial hardware pools.
-    rc = qvi_hwpool_new(&hwpool);
-    if (rc != QV_SUCCESS) goto out;
-    // Initialize initial hwpool with split cpuset.
-    rc = qvi_hwpool_init(hwpool, cpuset);
-    if (rc != QV_SUCCESS) goto out;
-    // Gather hwpools so we can split hardware resources.
+    // Note that the result hwpools are copies, so we can modify them freely.
     rc = gather_hwpools(
-        parent->group, rootid, hwpool, &hwpools
+        parent->group, rootid, parent->hwpool, &hwpools
     );
     if (rc != QV_SUCCESS) goto out;
-    // No longer needed, as we have consolidated the pools.
-    qvi_hwpool_free(&hwpool);
-    // TODO(skg) Do the device split.
-    // Scatter result of device split.
+    // The root does this calculation.
+    if (myid == rootid) {
+        rc2 = split_dispatch(parent, ncolors, colors, hwpools);
+    }
+    // So we avoid hangs in split error paths, share the split rc with everyone.
+    rc = bcast_value(parent->group, rootid, &rc2);
+    if (rc != QV_SUCCESS) goto out;
+    // If the split failed, return the error to all callers.
+    if (rc2 != QV_SUCCESS) {
+        rc = rc2;
+        goto out;
+    }
+    // Scatter split results. Notice that we use colorp here because it could
+    // have changed based on decisions made in the split algorithm.
+    rc = scatter_values(
+        parent->group, rootid, colors, colorp
+    );
+    if (rc != QV_SUCCESS) goto out;
+
     rc = scatter_hwpools(
-        parent->group, rootid, hwpools, &hwpool
-    );
-    if (rc != QV_SUCCESS) goto out;
-    // Split underlying group.
-    rc = parent->group->split(
-        color, myid, &group
-    );
-
-    rc = qvi_scope_new(child);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = scope_init(
-        *child, parent->rmi, group, hwpool
+        parent->group, rootid, hwpools, result
     );
 out:
     if (hwpools) {
@@ -444,12 +544,39 @@ out:
         }
         delete[] hwpools;
     }
-    qvi_hwloc_bitmap_free(&cpuset);
+    delete[] colors;
+    return rc;
+}
+
+int
+qvi_scope_split(
+    qv_scope_t *parent,
+    int ncolors,
+    int color,
+    qv_scope_t **child
+) {
+    int rc = QV_SUCCESS, colorp = 0;
+    qvi_group_t *group = nullptr;
+    qvi_hwpool_t *hwpool = nullptr;
+    // Split the hardware resources based on the provided split parameters.
+    rc = split_hardware_resources(
+        parent, ncolors, color, &colorp, &hwpool
+    );
+    if (rc != QV_SUCCESS) goto out;
+    // Split underlying group. Notice the use of colorp here.
+    rc = parent->group->split(
+        colorp, parent->group->id(), &group
+    );
+    // Create and initialize the new scope.
+    rc = qvi_scope_new(child);
+    if (rc != QV_SUCCESS) goto out;
+
+    rc = scope_init(*child, parent->rmi, group, hwpool);
+out:
     if (rc != QV_SUCCESS) {
         qvi_scope_free(child);
         qvi_group_free(&group);
         qvi_hwpool_free(&hwpool);
-        qvi_hwloc_bitmap_free(&cpuset);
     }
     return rc;
 }

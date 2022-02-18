@@ -34,10 +34,6 @@ connect_to_server(
     }
 
     rc = qvi_rmi_client_connect(ctx->rmi, url);
-    if (rc != QV_SUCCESS) {
-        goto out;
-    }
-out:
     if (url) free(url);
     return rc;
 }
@@ -47,19 +43,21 @@ qv_mpi_context_create(
     qv_context_t **ctx,
     MPI_Comm comm
 ) {
-    if (!ctx || comm == MPI_COMM_NULL) return QV_ERR_INVLD_ARG;
+    if (!ctx || comm == MPI_COMM_NULL) {
+        return QV_ERR_INVLD_ARG;
+    }
 
     int rc = QV_SUCCESS;
     cstr_t ers = nullptr;
-    // Create base context.
     qv_context_t *ictx = nullptr;
+    qvi_zgroup_mpi_t *izgroup = nullptr;
+    // Create base context.
     rc = qvi_context_create(&ictx);
     if (rc != QV_SUCCESS) {
         ers = "qvi_context_create() failed";
         goto out;
     }
     // Create and initialize the base group.
-    qvi_zgroup_mpi_t *izgroup;
     rc = qvi_zgroup_mpi_new(&izgroup);
     if (rc != QV_SUCCESS) {
         ers = "qvi_zgroup_mpi_new() failed";
@@ -70,7 +68,7 @@ qv_mpi_context_create(
 
     rc = izgroup->initialize(comm);
     if (rc != QV_SUCCESS) {
-        ers = "group->initialize() failed";
+        ers = "zgroup->initialize() failed";
         goto out;
     }
     // Connect to RMI server.

@@ -91,7 +91,11 @@ typedef enum qv_hw_obj_type_e {
  * accomplished.
  */
 enum {
-    QV_SCOPE_SPLIT_GROUP_MIN_DISTANCE = -1
+    /**
+     * Split the provided group by attempting to preserve task's current
+     * affinity (at time of the split call) as much as possible.
+     */
+    QV_SCOPE_SPLIT_GROUP_AFFINITY_PRESERVING = -1
 };
 
 /**
