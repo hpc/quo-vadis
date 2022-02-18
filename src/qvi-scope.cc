@@ -453,8 +453,8 @@ split_dispatch(
     std::sort(tcolors.begin(), tcolors.end());
     // If all the values are negative and equal, then auto split. If not, then
     // we were called with an invalid request.
-    if (*tcolors.begin() < 0) {
-        if (*tcolors.begin() != *tcolors.end()) {
+    if (tcolors.front() < 0) {
+        if (tcolors.front() != tcolors.back()) {
             return QV_ERR_INVLD_ARG;
         }
         auto_split = true;
