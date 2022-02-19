@@ -47,72 +47,15 @@
 #include "qvi-hwloc.h"
 #include "qvi-utils.h"
 
-using qvi_devinfos_t = std::unordered_set<
-    std::shared_ptr<qvi_hwpool_devinfo_t>
->;
-
-/** Device information. */
-struct qvi_hwpool_devinfo_s {
-    /** Device type. */
-    qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
-    /** Device ID. */
-    int id = 0;
-    /** The bitmap encoding CPU affinity. */
-    hwloc_bitmap_t affinity = nullptr;
-    /** Constructor */
-    qvi_hwpool_devinfo_s(
-        qv_hw_obj_type_t t,
-        int i,
-        hwloc_const_cpuset_t c
-    ) : type(t)
-      , id(i)
-      , affinity(nullptr)
-    {
-        (void)qvi_hwloc_bitmap_calloc(&affinity);
-        (void)qvi_hwloc_bitmap_copy(c, affinity);
-    }
-    /** Destructor */
-    ~qvi_hwpool_devinfo_s(void)
-    {
-        qvi_hwloc_bitmap_free(&affinity);
-    }
-    /** Equality operator. */
-    bool
-    operator==(const qvi_hwpool_devinfo_t &x) const
-    {
-        return id == x.id && type == x.type;
-    }
-};
-
 struct qvi_hwpool_s {
     /** The cpuset of this resource pool. */
     hwloc_bitmap_t cpuset = nullptr;
     /** Device information. */
-    qvi_devinfos_t *devinfos = nullptr;
+    qvi_hwpool_devinfos_t *devinfos = nullptr;
     // TODO(skg) Add owner to structure?
     /** The obtained cpuset of this resource pool. */
     hwloc_bitmap_t obcpuset = nullptr;
 };
-
-/**
- * Extend namespace std so we can easily add qvi_hwpool_devinfo_ts to
- * unordered_sets.
- */
-namespace std {
-    template <>
-    struct hash<qvi_hwpool_devinfo_t>
-    {
-        size_t
-        operator()(const qvi_hwpool_devinfo_t &x) const
-        {
-            const int a = x.id;
-            const int b = (int)x.type;
-            // Cantor pairing function.
-            const int64_t c = (a + b) * (a + b + 1) / 2 + b;
-            return hash<int64_t>()(c);
-        }
-    };
-}
 
 int
 qvi_hwpool_new(
@@ -126,7 +69,7 @@ qvi_hwpool_new(
         goto out;
     }
 
-    irpool->devinfos = qvi_new qvi_devinfos_t;
+    irpool->devinfos = qvi_new qvi_hwpool_devinfos_t;
     if (!irpool->devinfos) {
         rc = QV_ERR_OOR;
         goto out;
@@ -199,16 +142,16 @@ qvi_hwpool_new_line_from_hwpool(
     }
     do {
         int idx = 0;
-        for (const auto &devinfo : *rpool->devinfos) {
-            iline->devinfos[idx].type = devinfo->type;
-            iline->devinfos[idx].id = devinfo->id;
+        for (const auto &dinfo : *rpool->devinfos) {
+            iline->devinfos[idx].type = dinfo.second->type;
+            iline->devinfos[idx].id = dinfo.second->id;
             // Initialize and copy cpuset
             rc = qvi_hwloc_bitmap_calloc(
                 &iline->devinfos[idx].affinity
             );
             if (rc != QV_SUCCESS) break;
             rc = qvi_hwloc_bitmap_copy(
-                devinfo->affinity, iline->devinfos[idx].affinity
+                dinfo.second->affinity, iline->devinfos[idx].affinity
             );
             if (rc != QV_SUCCESS) break;
             idx++;
@@ -252,15 +195,20 @@ qvi_hwpool_add_device(
     int id,
     hwloc_const_cpuset_t affinity
 ) {
-    const bool itp = rpool->devinfos->insert(
-        std::make_shared<qvi_hwpool_devinfo_t>(type, id, affinity)
-    ).second;
-    // insert().second returns whether or not item insertion took place. If
-    // true, this is a new, unseen device that we have inserted.
-    if (!itp) {
-        qvi_log_error("Duplicate device (ID={}) found of type {}", id, type);
-        return QV_ERR_INTERNAL;
-    }
+    rpool->devinfos->insert(
+        std::make_pair(
+            type,
+            std::make_shared<qvi_devinfo_t>(type, id, affinity)
+        )
+    );
+    return QV_SUCCESS;
+}
+
+int
+qvi_hwpool_release_devices(
+    qvi_hwpool_t *pool
+) {
+    pool->devinfos->clear();
     return QV_SUCCESS;
 }
 
@@ -270,6 +218,13 @@ qvi_hwpool_cpuset_get(
 ) {
     if (!rpool) return nullptr;
     return rpool->cpuset;
+}
+
+const qvi_hwpool_devinfos_t *
+qvi_hwpool_devinfos_get(
+    qvi_hwpool_t *pool
+) {
+    return pool->devinfos;
 }
 
 #if 0
@@ -423,89 +378,6 @@ qvi_hwpool_obtain_by_cpuset(
     // Add devices.
     // // TODO(skg) Acquire devices.
     rc = pool_add_devices(ipool, hwloc);
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_hwpool_free(&ipool);
-    }
-    *opool = ipool;
-    return rc;
-}
-
-/**
- *
- */
-#if 0
-int
-qvi_hwpool_split_devices(
-    qvi_hwpool_t **pools,
-    int npools,
-    qvi_hwloc_t *hwloc,
-    int ncolors,
-    int color
-) {
-    int rc = QV_SUCCESS;
-    // The hardware pools should have a common ancestor, so the device lists
-    // should be itentical. Check in debug mode to make sure. The first pool
-    // will serve as the device pool that we split among all incoming pools.
-    qvi_hwpool_t *devpool = pools[0];
-#if QVI_DEBUG_MODE == 1
-#if 0
-    qvi_device_tab_t *gold = devpool->devinfos;
-    for (int i = 0; i < npools; ++i) {
-        qvi_hwpool_t *pool = pools[i];
-        assert(gold->size() == pool->devinfos->size());
-        for (const auto &devt : *pool->devinfos) {
-            assert(gold->at(devt.first).size() == devt.second.size());
-            for (const auto &devid : devt.second) {
-                const auto &got = gold->at(devt.first).find(devid);
-                assert(got != gold->at(devt.first).end());
-            }
-        }
-    }
-#endif
-#endif
-    return rc;
-}
-#endif
-
-int
-qvi_hwpool_obtain_split_by_group(
-    qvi_hwpool_t *pool,
-    qvi_hwloc_t *hwloc,
-    int npieces,
-    int group_id,
-    qvi_hwpool_t **opool
-) {
-    qvi_hwpool_t *ipool = nullptr;
-
-    hwloc_cpuset_t cpuset = nullptr;
-    int rc = qvi_hwloc_split_cpuset_by_group_id(
-        hwloc,
-        pool->cpuset,
-        npieces,
-        group_id,
-        &cpuset
-    );
-    if (rc != QV_SUCCESS) return rc;
-
-    rc = pool_obtain_cpus_by_cpuset(pool, cpuset);
-    if (rc != QV_SUCCESS) goto out;
-    // We obtained the CPUs, so create the new pool.
-    rc = qvi_hwpool_new(&ipool);
-    if (rc != QV_SUCCESS) goto out;
-    // Initialize the hardware pool.
-    rc = qvi_hwpool_init(ipool, cpuset);
-    if (rc != QV_SUCCESS) goto out;
-    // Split the devices.
-#if 0
-    rc = pool_split_devices(
-        pool,
-        hwloc,
-        npieces,
-        group_id,
-        ipool
-    );
-#endif
 out:
     if (rc != QV_SUCCESS) {
         qvi_hwpool_free(&ipool);

@@ -16,14 +16,12 @@
 #define QVI_HWPOOL_H
 
 #include "qvi-common.h"
+#include "qvi-devinfo.h"
 #include "qvi-line.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-struct qvi_hwpool_devinfo_s;
-typedef struct qvi_hwpool_devinfo_s qvi_hwpool_devinfo_t;
+using qvi_hwpool_devinfos_t = std::multimap<
+    int, std::shared_ptr<qvi_devinfo_t>
+>;
 
 struct qvi_hwpool_s;
 typedef struct qvi_hwpool_s qvi_hwpool_t;
@@ -33,7 +31,7 @@ typedef struct qvi_hwpool_s qvi_hwpool_t;
  */
 int
 qvi_hwpool_new(
-    qvi_hwpool_t **rpool
+    qvi_hwpool_t **pool
 );
 
 /**
@@ -42,7 +40,7 @@ qvi_hwpool_new(
 int
 qvi_hwpool_new_from_line(
     qvi_line_hwpool_t *line,
-    qvi_hwpool_t **rpool
+    qvi_hwpool_t **pool
 );
 
 /**
@@ -50,7 +48,7 @@ qvi_hwpool_new_from_line(
  */
 int
 qvi_hwpool_new_line_from_hwpool(
-    const qvi_hwpool_t *rpool,
+    const qvi_hwpool_t *pool,
     qvi_line_hwpool_t **line
 );
 
@@ -59,7 +57,7 @@ qvi_hwpool_new_line_from_hwpool(
  */
 int
 qvi_hwpool_init(
-    qvi_hwpool_t *rpool,
+    qvi_hwpool_t *pool,
     hwloc_const_bitmap_t cpuset
 );
 
@@ -68,7 +66,7 @@ qvi_hwpool_init(
  */
 void
 qvi_hwpool_free(
-    qvi_hwpool_t **rpool
+    qvi_hwpool_t **pool
 );
 
 /**
@@ -76,7 +74,7 @@ qvi_hwpool_free(
  */
 int
 qvi_hwpool_add_device(
-    qvi_hwpool_t *rpool,
+    qvi_hwpool_t *pool,
     qv_hw_obj_type_t type,
     int id,
     hwloc_const_cpuset_t affinity
@@ -85,9 +83,25 @@ qvi_hwpool_add_device(
 /**
  *
  */
+int
+qvi_hwpool_release_devices(
+    qvi_hwpool_t *pool
+);
+
+/**
+ *
+ */
 hwloc_const_cpuset_t
 qvi_hwpool_cpuset_get(
-    qvi_hwpool_t *rpool
+    qvi_hwpool_t *pool
+);
+
+/**
+ *
+ */
+const qvi_hwpool_devinfos_t *
+qvi_hwpool_devinfos_get(
+    qvi_hwpool_t *pool
 );
 
 /**
@@ -98,18 +112,6 @@ qvi_hwpool_obtain_by_cpuset(
     qvi_hwpool_t *pool,
     qvi_hwloc_t *hwloc,
     hwloc_const_cpuset_t cpuset,
-    qvi_hwpool_t **opool
-);
-
-/**
- * TODO(skg) This will likely go away.
- */
-int
-qvi_hwpool_obtain_split_by_group(
-    qvi_hwpool_t *pool,
-    qvi_hwloc_t *hwloc,
-    int npieces,
-    int group_id,
     qvi_hwpool_t **opool
 );
 
@@ -142,10 +144,6 @@ qvi_hwpool_unpack(
     void *buff,
     qvi_hwpool_t **hwp
 );
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 

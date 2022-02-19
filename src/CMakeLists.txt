@@ -169,6 +169,7 @@ add_library(
     ../include/quo-vadis.h
     qvi-context.h
     qvi-task.h
+    qvi-devinfo.h
     qvi-hwpool.h
     qvi-group.h
     qvi-scope.h

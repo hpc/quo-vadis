@@ -81,8 +81,7 @@ typedef enum qvi_rpc_funid_e {
     FID_OBJ_TYPE_DEPTH,
     FID_GET_NOBJS_IN_CPUSET,
     FID_GET_DEVICE_IN_CPUSET,
-    FID_SCOPE_GET_INTRINSIC_HWPOOL,
-    FID_SPLIT_HWPOOL_BY_GROUP
+    FID_SCOPE_GET_INTRINSIC_HWPOOL
 } qvi_rpc_funid_t;
 
 typedef struct qvi_msg_header_s {
@@ -664,42 +663,6 @@ rpc_ssi_scope_get_intrinsic_hwpool(
     return rpcrc;
 }
 
-// TODO(skg) Lots of work needed.
-static int
-rpc_ssi_split_hwpool_by_group(
-    qvi_rmi_server_t *server,
-    qvi_msg_header_t *hdr,
-    void *input,
-    qvi_bbuff_t **output
-) {
-    qvi_hwpool_t *pool = nullptr;
-    int npieces = 0, group_id = 0;
-    int qvrc = qvi_bbuff_rmi_unpack(
-        input,
-        &pool,
-        &npieces,
-        &group_id
-    );
-    if (qvrc != QV_SUCCESS) return qvrc;
-
-    qvi_hwpool_t *result = nullptr;
-    int rpcrc = qvi_hwpool_obtain_split_by_group(
-        pool,
-        server->config->hwloc,
-        npieces,
-        group_id,
-        &result
-    );
-    if (rpcrc != QV_SUCCESS) return rpcrc;
-
-    qvrc = rpc_pack(output, hdr->fid, rpcrc, result);
-
-    qvi_hwpool_free(&pool);
-    qvi_hwpool_free(&result);
-
-    return qvrc;
-}
-
 /**
  * Maps a given qvi_rpc_funid_t to a given function pointer. Must be kept in
  * sync with qvi_rpc_funid_t.
@@ -714,8 +677,7 @@ static const qvi_rpc_fun_ptr_t rpc_dispatch_table[] = {
     rpc_ssi_obj_type_depth,
     rpc_ssi_get_nobjs_in_cpuset,
     rpc_ssi_get_device_in_cpuset,
-    rpc_ssi_scope_get_intrinsic_hwpool,
-    rpc_ssi_split_hwpool_by_group
+    rpc_ssi_scope_get_intrinsic_hwpool
 };
 
 static int
@@ -1247,37 +1209,6 @@ qvi_rmi_get_device_in_cpuset(
     qvrc = rpc_rep(client->zsock, &rpcrc, dev_id);
     if (qvrc != QV_SUCCESS) return qvrc;
 
-    return rpcrc;
-}
-
-/**
- * TODO(skg) We may not need this call.
- */
-int
-qvi_rmi_split_hwpool_by_group(
-    qvi_rmi_client_t *client,
-    const qvi_hwpool_t *hwpool,
-    int n,
-    int group_id,
-    qvi_hwpool_t **result
-) {
-    // Send request.
-    int qvrc = rpc_req(
-        client->zsock,
-        FID_SPLIT_HWPOOL_BY_GROUP,
-        hwpool,
-        n,
-        group_id
-    );
-    if (qvrc != QV_SUCCESS) goto out;
-
-    // TODO(skg) Maybe in the error paths we can just do a zero rep.
-    int rpcrc;
-    qvrc = rpc_rep(client->zsock, &rpcrc, result);
-out:
-    if (qvrc != QV_SUCCESS) {
-        return qvrc;
-    }
     return rpcrc;
 }
 

@@ -168,18 +168,6 @@ qvi_rmi_get_device_in_cpuset(
 );
 
 /**
- * TODO(skg) We may not need this call.
- */
-int
-qvi_rmi_split_hwpool_by_group(
-    qvi_rmi_client_t *client,
-    const qvi_hwpool_t *hwpool,
-    int n,
-    int group_id,
-    qvi_hwpool_t **result
-);
-
-/**
  *
  */
 int

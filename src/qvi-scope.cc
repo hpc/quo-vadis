@@ -19,6 +19,13 @@
 #include "qvi-rmi.h"
 #include "qvi-hwpool.h"
 
+/** Maps colors (keys) to other IDs. */
+using qvi_scope_color_map_t = std::multimap<int, int>;
+/** Maps colors to device information. */
+using qvi_scope_c2d_map_t = std::multimap<
+    int, const qvi_devinfo_t *
+>;
+
 // Type definition
 struct qv_scope_s {
     /** Pointer to initialized RMI infrastructure. */
@@ -392,6 +399,95 @@ out:
 }
 
 /**
+ * Straightforward device splitting.
+ */
+static int
+split_devices_basic(
+    qv_scope_t *parent,
+    int ncolors,
+    int *colors,
+    qvi_hwpool_t **hwpools
+) {
+    const int group_size = parent->group->size();
+    const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
+    int rc = QV_SUCCESS;
+    // Determine mapping of colors to task IDs. The array index i of colors is
+    // the color requested by task i. Also determine the number of distinct
+    // colors provided in the colors array.
+    qvi_scope_color_map_t cmap;
+    std::set<int> color_set;
+    for (int i = 0; i < group_size; ++i) {
+        cmap.insert(std::make_pair(colors[i], i));
+        color_set.insert(colors[i]);
+    }
+    // Adjust the color set so that the distinct colors provided fall within the
+    // range of the number of splits requested.
+    std::set<int> color_setp;
+    int ncolors_chosen = 0;
+    for (const auto &c : color_set) {
+        if (ncolors_chosen >= ncolors) break;
+        color_setp.insert(c);
+        ncolors_chosen++;
+    }
+    // Release devices from the hardware pools.
+    for (int i = 0; i < group_size; ++i) {
+        rc = qvi_hwpool_release_devices(hwpools[i]);
+        if (rc != QV_SUCCESS) return rc;
+    }
+    // Iterate over the supported device types and split them up round-robin.
+    for (int i = 0; devts[i] != QV_HW_OBJ_LAST; ++i) {
+        // The current device type.
+        const qv_hw_obj_type_t devt = devts[i];
+        // All device infos associated with the parent hardware pool.
+        auto dinfos = qvi_hwpool_devinfos_get(parent->hwpool);
+        // Get the number of devices.
+        const int ndevs = dinfos->count(devt);
+        // Store device infos.
+        std::vector<const qvi_devinfo_t *> devs;
+        for (const auto &dinfo : *dinfos) {
+            // Not the type we are currently dealing with.
+            if (devt != dinfo.first) continue;
+            devs.push_back(dinfo.second.get());
+        }
+        // Max devices per color.
+        // We will likely use this when we update the mapping algorithm to
+        // include device affinity.
+        //const int maxdpc = std::ceil(ndevs / float(color_setp.size()));
+        // Maps colors to device information.
+        qvi_scope_c2d_map_t devmap;
+        int devi = 0;
+        while (devi < ndevs) {
+            for (const auto &c : color_setp) {
+                if (devi >= ndevs) break;
+                devmap.insert(std::make_pair(c, devs[devi++]));
+            }
+        }
+        // Now that we have the mapping of colors to devices, assign devices to
+        // the associated hardware pools.
+        for (int i = 0; i < group_size; ++i) {
+            const int color = colors[i];
+            for (const auto &c2d : devmap) {
+                if (c2d.first != color) continue;
+                //qvi_log_debug(
+                //    "Task={}, Color={} gets TypeID={}, DevID={}",
+                //    i, color, devt, c2d.second->id
+                //);
+                rc = qvi_hwpool_add_device(
+                    hwpools[i],
+                    c2d.second->type,
+                    c2d.second->id,
+                    c2d.second->affinity
+                );
+                if (rc != QV_SUCCESS) break;
+            }
+            if (rc != QV_SUCCESS) break;
+        }
+        if (rc != QV_SUCCESS) break;
+    }
+    return rc;
+}
+
+/**
  * User-defined split.
  */
 static int
@@ -423,6 +519,10 @@ split_user_defined(
         rc = qvi_hwpool_init(hwpools[i], cpusets[i]);
         if (rc != QV_SUCCESS) break;
     }
+    // Use a straightforward device splitting algorithm.
+    rc = split_devices_basic(
+        parent, ncolors, colors, hwpools
+    );
 out:
     for (int i = 0; i < group_size; ++i) {
         qvi_hwloc_bitmap_free(&cpusets[i]);
@@ -452,7 +552,8 @@ split_dispatch(
     std::vector<int> tcolors(colors, colors + group_size);
     std::sort(tcolors.begin(), tcolors.end());
     // If all the values are negative and equal, then auto split. If not, then
-    // we were called with an invalid request.
+    // we were called with an invalid request. Else the values are all positive
+    // and we are going to split based on the input from the caller.
     if (tcolors.front() < 0) {
         if (tcolors.front() != tcolors.back()) {
             return QV_ERR_INVLD_ARG;
@@ -467,7 +568,7 @@ split_dispatch(
     }
     // Automatic splitting.
     switch (colors[0]) {
-        case QV_SCOPE_SPLIT_GROUP_AFFINITY_PRESERVING:
+        case QV_SCOPE_SPLIT_AFFINITY_PRESERVING:
             rc = QV_ERR_NOT_SUPPORTED;
             break;
         default:
@@ -519,7 +620,7 @@ split_hardware_resources(
     if (myid == rootid) {
         rc2 = split_dispatch(parent, ncolors, colors, hwpools);
     }
-    // So we avoid hangs in split error paths, share the split rc with everyone.
+    // To avoid hangs in split error paths, share the split rc with everyone.
     rc = bcast_value(parent->group, rootid, &rc2);
     if (rc != QV_SUCCESS) goto out;
     // If the split failed, return the error to all callers.
@@ -587,13 +688,21 @@ qvi_scope_nobjs(
     qv_hw_obj_type_t obj,
     int *n
 ) {
-    // TODO(skg) We should update how we do this.
-    return qvi_rmi_get_nobjs_in_cpuset(
-        scope->rmi,
-        obj,
-        qvi_hwpool_cpuset_get(scope->hwpool),
-        n
-    );
+    int rc = QV_SUCCESS;
+
+    switch (obj) {
+        case QV_HW_OBJ_GPU: {
+            // Get the number of devices.
+            *n = qvi_hwpool_devinfos_get(scope->hwpool)->count(obj);
+            break;
+        }
+        default:
+            rc = qvi_rmi_get_nobjs_in_cpuset(
+                scope->rmi, obj, qvi_hwpool_cpuset_get(scope->hwpool), n
+            );
+            break;
+    }
+    return rc;
 }
 
 int
