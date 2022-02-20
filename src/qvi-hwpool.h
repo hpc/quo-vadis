@@ -74,9 +74,11 @@ qvi_hwpool_free(
  */
 int
 qvi_hwpool_add_device(
-    qvi_hwpool_t *pool,
+    qvi_hwpool_t *rpool,
     qv_hw_obj_type_t type,
     int id,
+    cstr_t pcibid,
+    cstr_t uuid,
     hwloc_const_cpuset_t affinity
 );
 

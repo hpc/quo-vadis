@@ -152,6 +152,8 @@ int main(int argc, char **argv)
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d]: Local scope has %d GPUs\n", wrank, rank_ngpus);
+    // TODO(skg) Improve this test.
+    emit_gpu_info(ctx, rank_scope, "Rank Scope");
 
     int total_ngpus;
     MPI_Reduce(&rank_ngpus, &total_ngpus, 1, MPI_INT, MPI_SUM, 0, comm);

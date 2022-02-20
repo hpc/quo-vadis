@@ -24,17 +24,30 @@ struct qvi_devinfo_t {
     qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
     /** Device ID. */
     int id = 0;
+    /** The PCI bus ID. */
+    char *pci_bus_id = nullptr;
+    /** UUID */
+    char *uuid = nullptr;
     /** The bitmap encoding CPU affinity. */
     hwloc_bitmap_t affinity = nullptr;
     /** Constructor */
     qvi_devinfo_t(
         qv_hw_obj_type_t t,
         int i,
+        cstr_t pci_bus_id,
+        cstr_t uuid,
         hwloc_const_cpuset_t c
     ) : type(t)
       , id(i)
-      , affinity(nullptr)
     {
+        int nw = asprintf(&this->pci_bus_id, "%s", pci_bus_id);
+        if (nw == -1) {
+            this->pci_bus_id = nullptr;
+        }
+        nw = asprintf(&this->uuid, "%s", uuid);
+        if (nw == -1) {
+            this->uuid = nullptr;
+        }
         (void)qvi_hwloc_bitmap_calloc(&affinity);
         (void)qvi_hwloc_bitmap_copy(c, affinity);
     }
@@ -42,6 +55,8 @@ struct qvi_devinfo_t {
     ~qvi_devinfo_t(void)
     {
         qvi_hwloc_bitmap_free(&affinity);
+        free(pci_bus_id);
+        free(uuid);
     }
     /** Equality operator. */
     bool

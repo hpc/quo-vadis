@@ -23,10 +23,6 @@
 
 #include "hwloc.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  *
  */
@@ -117,10 +113,6 @@ qvi_scope_get_device(
     qv_device_id_type_t id_type,
     char **dev_id
 );
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 

@@ -425,6 +425,12 @@ qvi_bbuff_rmi_pack_item(
     // Pack device ID.
     rc = qvi_bbuff_rmi_pack_item(buff, data->id);
     if (rc != QV_SUCCESS) return rc;
+    // Pack device PCI bus ID.
+    rc = qvi_bbuff_rmi_pack_item(buff, data->pci_bus_id);
+    if (rc != QV_SUCCESS) return rc;
+    // Pack device UUID.
+    rc = qvi_bbuff_rmi_pack_item(buff, data->uuid);
+    if (rc != QV_SUCCESS) return rc;
     return rc;
 }
 
@@ -684,6 +690,20 @@ qvi_bbuff_rmi_unpack_item(
 
     rc = qvi_bbuff_rmi_unpack_item(
         &di->id, buffpos, &bw
+    );
+    if (rc != QV_SUCCESS) goto out;
+    total_bw += bw;
+    buffpos += bw;
+
+    rc = qvi_bbuff_rmi_unpack_item(
+        &di->pci_bus_id, buffpos, &bw
+    );
+    if (rc != QV_SUCCESS) goto out;
+    total_bw += bw;
+    buffpos += bw;
+
+    rc = qvi_bbuff_rmi_unpack_item(
+        &di->uuid, buffpos, &bw
     );
     if (rc != QV_SUCCESS) goto out;
     total_bw += bw;

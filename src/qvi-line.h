@@ -42,6 +42,10 @@ typedef struct qvi_line_devinfo_s {
     qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
     /** Device ID. */
     int id = 0;
+    /** PCI bus ID. */
+    char *pci_bus_id = nullptr;
+    /** UUID */
+    char *uuid = nullptr;
 } qvi_line_devinfo_t;
 
 /** Hardware pool data structure for line transmission. */

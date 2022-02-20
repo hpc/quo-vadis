@@ -476,6 +476,8 @@ split_devices_basic(
                     hwpools[i],
                     c2d.second->type,
                     c2d.second->id,
+                    c2d.second->pci_bus_id,
+                    c2d.second->uuid,
                     c2d.second->affinity
                 );
                 if (rc != QV_SUCCESS) break;
@@ -688,21 +690,13 @@ qvi_scope_nobjs(
     qv_hw_obj_type_t obj,
     int *n
 ) {
-    int rc = QV_SUCCESS;
-
-    switch (obj) {
-        case QV_HW_OBJ_GPU: {
-            // Get the number of devices.
-            *n = qvi_hwpool_devinfos_get(scope->hwpool)->count(obj);
-            break;
-        }
-        default:
-            rc = qvi_rmi_get_nobjs_in_cpuset(
-                scope->rmi, obj, qvi_hwpool_cpuset_get(scope->hwpool), n
-            );
-            break;
+    if (obj == QV_HW_OBJ_GPU) {
+        *n = qvi_hwpool_devinfos_get(scope->hwpool)->count(obj);
+        return QV_SUCCESS;
     }
-    return rc;
+    return qvi_rmi_get_nobjs_in_cpuset(
+        scope->rmi, obj, qvi_hwpool_cpuset_get(scope->hwpool), n
+    );
 }
 
 int
@@ -713,15 +707,43 @@ qvi_scope_get_device(
     qv_device_id_type_t id_type,
     char **dev_id
 ) {
-    // TODO(skg) Update how we do this.
-    return qvi_rmi_get_device_in_cpuset(
-        scope->rmi,
-        dev_obj,
-        i,
-        qvi_hwpool_cpuset_get(scope->hwpool),
-        id_type,
-        dev_id
-    );
+    // Device infos.
+    auto dinfos = qvi_hwpool_devinfos_get(scope->hwpool);
+
+    int rc = QV_SUCCESS, id = 0, nw = 0;
+    qvi_devinfo_t *finfo = nullptr;
+    for (const auto &dinfo : *dinfos) {
+        if (dev_obj != dinfo.first) continue;
+        if (id++ == i) {
+            finfo = dinfo.second.get();
+            break;
+        }
+    }
+    if (!finfo) {
+        rc = QV_ERR_NOT_FOUND;
+        goto out;
+    }
+
+    switch (id_type) {
+        case (QV_DEVICE_ID_UUID):
+            nw = asprintf(dev_id, "%s", finfo->uuid);
+            break;
+        case (QV_DEVICE_ID_PCI_BUS_ID):
+            nw = asprintf(dev_id, "%s", finfo->pci_bus_id);
+            break;
+        case (QV_DEVICE_ID_ORDINAL):
+            nw = asprintf(dev_id, "%d", finfo->id);
+            break;
+        default:
+            rc = QV_ERR_INVLD_ARG;
+            goto out;
+    }
+    if (nw == -1) rc = QV_ERR_OOR;
+out:
+    if (rc != QV_SUCCESS) {
+        *dev_id = nullptr;
+    }
+    return rc;
 }
 
 /*

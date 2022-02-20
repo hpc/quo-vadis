@@ -103,12 +103,15 @@ qvi_line_devinfo_new(
     return rc;
 }
 
+// TODO(skg) Why doesn't this follow our free convention?
 void
 qvi_line_devinfo_free(
     qvi_line_devinfo_t *devinfo
 ) {
     if (!devinfo) return;
     qvi_hwloc_bitmap_free(&devinfo->affinity);
+    free(devinfo->pci_bus_id);
+    free(devinfo->uuid);
 }
 
 int
