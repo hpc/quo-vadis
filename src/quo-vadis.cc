@@ -201,7 +201,9 @@ qv_scope_barrier(
     qv_context_t *ctx,
     qv_scope_t *scope
 ) {
-    if (!ctx || !scope) return QV_ERR_INVLD_ARG;
+    if (!ctx || !scope) {
+        return QV_ERR_INVLD_ARG;
+    }
 
     return qvi_scope_barrier(scope);
 }
@@ -227,13 +229,16 @@ qv_scope_split(
 
     if (npieces <= 0 ) {
         qvi_log_error(
-            "qv_scope_split Error: npieces <= 0 (npieces = {})", npieces
+            "qv_scope_split Error: npieces "
+            "<= 0 (npieces = {})", npieces
         );
         rc = QV_ERR_INVLD_ARG;
         goto out;
     }
 
-    rc = qvi_scope_split(scope, npieces, color, &isubscope);
+    rc = qvi_scope_split(
+        scope, npieces, color, &isubscope
+    );
 out:
     if (rc != QV_SUCCESS) {
         qvi_scope_free(&isubscope);
@@ -242,10 +247,6 @@ out:
     return rc;
 }
 
-/*
- * TODO(skg) This should also be in the server code and retrieved via RPC?
- * TODO(skg) This needs to be fixed. Lots of work needed.
- */
 int
 qv_scope_split_at(
     qv_context_t *ctx,
@@ -257,22 +258,10 @@ qv_scope_split_at(
     if (!ctx || !scope || !subscope) {
         return QV_ERR_INVLD_ARG;
     }
-#if 0
 
-    int ntype;
-    // TODO(skg) Update how we do this.
-    int qvrc = qvi_hwloc_get_nobjs_in_cpuset(
-        ctx->hwloc,
-        type,
-        qvi_scope_cpuset_get(scope),
-        &ntype
+    return qvi_scope_split_at(
+        scope, type, group_id, subscope
     );
-    if (qvrc != QV_SUCCESS) return qvrc;
-
-    return qv_scope_split(ctx, scope, ntype, group_id, subscope);
-#endif
-    QVI_UNUSED(type); QVI_UNUSED(group_id);
-    return QV_ERR_NOT_SUPPORTED;
 }
 
 int

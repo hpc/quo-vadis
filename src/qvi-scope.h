@@ -99,6 +99,17 @@ qvi_scope_split(
  *
  */
 int
+qvi_scope_split_at(
+    qv_scope_t *parent,
+    qv_hw_obj_type_t type,
+    int group_id,
+    qv_scope_t **child
+);
+
+/**
+ *
+ */
+int
 qvi_scope_nobjs(
     qv_scope_t *scope,
     qv_hw_obj_type_t obj,

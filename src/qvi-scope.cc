@@ -429,7 +429,8 @@ split_devices_basic(
         color_setp.insert(c);
         ncolors_chosen++;
     }
-    // Release devices from the hardware pools.
+    // Release devices from the hardware pools because they will be
+    // redistributed in the next step.
     for (int i = 0; i < group_size; ++i) {
         rc = qvi_hwpool_release_devices(hwpools[i]);
         if (rc != QV_SUCCESS) return rc;
@@ -468,10 +469,6 @@ split_devices_basic(
             const int color = colors[i];
             for (const auto &c2d : devmap) {
                 if (c2d.first != color) continue;
-                //qvi_log_debug(
-                //    "Task={}, Color={} gets TypeID={}, DevID={}",
-                //    i, color, devt, c2d.second->id
-                //);
                 rc = qvi_hwpool_add_device(
                     hwpools[i],
                     c2d.second->type,
@@ -661,6 +658,7 @@ qvi_scope_split(
     int rc = QV_SUCCESS, colorp = 0;
     qvi_group_t *group = nullptr;
     qvi_hwpool_t *hwpool = nullptr;
+    qv_scope_t *ichild = nullptr;
     // Split the hardware resources based on the provided split parameters.
     rc = split_hardware_resources(
         parent, ncolors, color, &colorp, &hwpool
@@ -671,16 +669,39 @@ qvi_scope_split(
         colorp, parent->group->id(), &group
     );
     // Create and initialize the new scope.
-    rc = qvi_scope_new(child);
+    rc = qvi_scope_new(&ichild);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = scope_init(*child, parent->rmi, group, hwpool);
+    rc = scope_init(ichild, parent->rmi, group, hwpool);
 out:
     if (rc != QV_SUCCESS) {
-        qvi_scope_free(child);
+        qvi_scope_free(&ichild);
         qvi_group_free(&group);
         qvi_hwpool_free(&hwpool);
     }
+    *child = ichild;
+    return rc;
+}
+
+int
+qvi_scope_split_at(
+    qv_scope_t *parent,
+    qv_hw_obj_type_t type,
+    int group_id,
+    qv_scope_t **child
+) {
+    int rc = QV_SUCCESS, nobj = 0;
+    qv_scope_t *ichild = nullptr;
+
+    rc = qvi_scope_nobjs(parent, type, &nobj);
+    if (rc != QV_SUCCESS) goto out;
+
+    rc = qvi_scope_split(parent, nobj, group_id, &ichild);
+out:
+    if (rc != QV_SUCCESS) {
+        qvi_scope_free(&ichild);
+    }
+    *child = ichild;
     return rc;
 }
 
