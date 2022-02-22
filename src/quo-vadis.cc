@@ -208,8 +208,6 @@ qv_scope_barrier(
     return qvi_scope_barrier(scope);
 }
 
-// TODO(skg) Make sure to document all the paths that may result in an error.
-// Take a look at the RPC code to get a sense of where all the paths occur.
 // TODO(skg) We also need to harden the RPC code so that failures don't result
 // int hangs.
 int

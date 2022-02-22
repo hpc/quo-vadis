@@ -183,18 +183,18 @@ main(
 
     scope_report(ctx, wrank, base_scope, "base_scope");
 
-    int n_cores;
+    int n_numa;
     rc = qv_scope_nobjs(
         ctx,
         base_scope,
         QV_HW_OBJ_NUMANODE,
-        &n_cores
+        &n_numa
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of NUMA in base_scope is %d\n", wrank, n_cores);
+    printf("[%d] Number of NUMA in base_scope is %d\n", wrank, n_numa);
 
     qv_scope_t *sub_scope;
     rc = qv_scope_split(
@@ -213,13 +213,13 @@ main(
         ctx,
         sub_scope,
         QV_HW_OBJ_NUMANODE,
-        &n_cores
+        &n_numa
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of NUMA in sub_scope is %d\n", wrank, n_cores);
+    printf("[%d] Number of NUMA in sub_scope is %d\n", wrank, n_numa);
 
     scope_report(ctx, wrank, sub_scope, "sub_scope");
 
@@ -251,13 +251,13 @@ main(
         ctx,
         sub_sub_scope,
         QV_HW_OBJ_NUMANODE,
-        &n_cores
+        &n_numa
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of NUMA in sub_sub_scope is %d\n", wrank, n_cores);
+    printf("[%d] Number of NUMA in sub_sub_scope is %d\n", wrank, n_numa);
 
     rc = qv_scope_free(ctx, base_scope);
     if (rc != QV_SUCCESS) {

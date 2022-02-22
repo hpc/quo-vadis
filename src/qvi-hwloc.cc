@@ -1365,6 +1365,7 @@ qvi_hwloc_split_cpuset_by_group_id(
     int rc = split_cpuset_chunk_size(
         hwl, cpuset, ncolors, &chunk
     );
+    if (rc != QV_SUCCESS) goto out;
     // This happens when n > npus. We can't support that split.
     // TODO(skg) Perhaps we can create an empty cpuset that denotes no
     // resources?

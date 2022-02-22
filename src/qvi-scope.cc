@@ -86,6 +86,7 @@ hwloc_const_cpuset_t
 qvi_scope_cpuset_get(
     qv_scope_t *scope
 ) {
+    if (!scope) return nullptr;
     return qvi_hwpool_cpuset_get(scope->hwpool);
 }
 
@@ -93,6 +94,7 @@ const qvi_hwpool_t *
 qvi_scope_hwpool_get(
     qv_scope_t *scope
 ) {
+    if (!scope) return nullptr;
     return scope->hwpool;
 }
 
@@ -517,6 +519,9 @@ split_user_defined(
         // Reinitialize the hwpool with the new cpuset.
         rc = qvi_hwpool_init(hwpools[i], cpusets[i]);
         if (rc != QV_SUCCESS) break;
+    }
+    if (rc != QV_SUCCESS) {
+       goto out;
     }
     // Use a straightforward device splitting algorithm.
     rc = split_devices_basic(
