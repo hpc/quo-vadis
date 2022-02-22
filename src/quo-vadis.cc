@@ -17,6 +17,7 @@
 
 #include "qvi-context.h"
 #include "qvi-scope.h"
+#include "qvi-utils.h"
 
 int
 qvi_context_create(
@@ -60,6 +61,22 @@ qvi_context_free(
     delete ictx;
 out:
     *ctx = nullptr;
+}
+
+int
+qvi_context_connect_to_server(
+    qv_context_t *ctx
+) {
+    char *url = nullptr;
+    int rc = qvi_url(&url);
+    if (rc != QV_SUCCESS) {
+        qvi_log_error("{}", qvi_conn_ers());
+        return rc;
+    }
+
+    rc = qvi_rmi_client_connect(ctx->rmi, url);
+    if (url) free(url);
+    return rc;
 }
 
 int

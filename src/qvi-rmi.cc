@@ -188,7 +188,9 @@ buffer_append_header(
     const int bcap = sizeof(hdr.picture);
     const int nw = snprintf(hdr.picture, bcap, "%s", picture);
     if (nw >= bcap) {
-        // TODO(skg) Please report a bug.
+        qvi_log_error(
+            "Debug picture buffer too small. Please submit a bug report."
+        );
         return QV_ERR_INTERNAL;
     }
 #else

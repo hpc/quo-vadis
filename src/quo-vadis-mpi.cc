@@ -20,24 +20,6 @@
 #include "qvi-zgroup-mpi.h"
 #include "qvi-utils.h"
 
-// TODO(skg) This should probably be in a common area because other
-// infrastructure will likely use something similar.
-static int
-connect_to_server(
-    qv_context_t *ctx
-) {
-    char *url = nullptr;
-    int rc = qvi_url(&url);
-    if (rc != QV_SUCCESS) {
-        qvi_log_error("{}", qvi_conn_ers());
-        return rc;
-    }
-
-    rc = qvi_rmi_client_connect(ctx->rmi, url);
-    if (url) free(url);
-    return rc;
-}
-
 int
 qv_mpi_context_create(
     qv_context_t **ctx,
@@ -48,19 +30,16 @@ qv_mpi_context_create(
     }
 
     int rc = QV_SUCCESS;
-    cstr_t ers = nullptr;
     qv_context_t *ictx = nullptr;
     qvi_zgroup_mpi_t *izgroup = nullptr;
     // Create base context.
     rc = qvi_context_create(&ictx);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_context_create() failed";
         goto out;
     }
     // Create and initialize the base group.
     rc = qvi_zgroup_mpi_new(&izgroup);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_zgroup_mpi_new() failed";
         goto out;
     }
     // Save zgroup instance pointer to context.
@@ -68,13 +47,11 @@ qv_mpi_context_create(
 
     rc = izgroup->initialize(comm);
     if (rc != QV_SUCCESS) {
-        ers = "zgroup->initialize() failed";
         goto out;
     }
     // Connect to RMI server.
-    rc = connect_to_server(ictx);
+    rc = qvi_context_connect_to_server(ictx);
     if (rc != QV_SUCCESS) {
-        ers = "connect_to_server() failed";
         goto out;
     }
 
@@ -83,12 +60,8 @@ qv_mpi_context_create(
         qvi_mpi_task_get(izgroup->mpi),
         ictx->rmi
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_bind_stack_init() failed";
-    }
 out:
-    if (ers) {
-        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+    if (rc != QV_SUCCESS) {
         (void)qv_mpi_context_free(ictx);
         ictx = nullptr;
     }

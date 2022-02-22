@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -70,6 +70,14 @@ qvi_context_create(
 void
 qvi_context_free(
     qv_context_t **ctx
+);
+
+/**
+ *
+ */
+int
+qvi_context_connect_to_server(
+    qv_context_t *ctx
 );
 
 #endif

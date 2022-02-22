@@ -19,7 +19,6 @@
 
 #include "qvi-nvml.h"
 
-// TODO(skg) Change to shared_ptr.
 using qvi_hwloc_dev_list_t = std::vector<qvi_hwloc_device_t *>;
 using qvi_hwloc_dev_id_set_t = std::unordered_set<std::string>;
 
@@ -1349,10 +1348,6 @@ out:
     return rc;
 }
 
-/**
- * TODO(skg) Maybe we can have a qvi-grouping.cc that implements different
- * gouping algorithms.
- */
 int
 qvi_hwloc_split_cpuset_by_group_id(
     qvi_hwloc_t *hwl,
