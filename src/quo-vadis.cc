@@ -27,28 +27,21 @@ qvi_context_create(
     }
 
     int rc = QV_SUCCESS;
-    cstr_t ers = nullptr;
 
     qv_context_t *ictx = qvi_new qv_context_t;
     if (!ictx) {
-        ers = "memory allocation failed";
         rc = QV_ERR_OOR;
         goto out;
     }
 
     rc = qvi_rmi_client_new(&ictx->rmi);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rmi_client_new() failed";
         goto out;
     }
 
     rc = qvi_bind_stack_new(&ictx->bind_stack);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_bind_stack_new() failed";
-    }
 out:
-    if (ers) {
-        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+    if (rc != QV_SUCCESS) {
         qvi_context_free(&ictx);
     }
     *ctx = ictx;
@@ -208,8 +201,6 @@ qv_scope_barrier(
     return qvi_scope_barrier(scope);
 }
 
-// TODO(skg) We also need to harden the RPC code so that failures don't result
-// int hangs.
 int
 qv_scope_split(
     qv_context_t *ctx,
