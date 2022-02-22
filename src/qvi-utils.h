@@ -93,6 +93,15 @@ qvi_file_size(
     size_t *size
 );
 
+/**
+ * Cantor pairing function.
+ */
+int64_t
+qvi_cantor_pairing(
+    int a,
+    int b
+);
+
 #ifdef __cplusplus
 }
 #endif

@@ -198,6 +198,14 @@ qvi_file_size(
     return QV_SUCCESS;
 }
 
+int64_t
+qvi_cantor_pairing(
+    int a,
+    int b
+) {
+    return (a + b) * (a + b + 1) / 2 + b;
+}
+
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
  */

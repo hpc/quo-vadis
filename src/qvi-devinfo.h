@@ -17,6 +17,7 @@
 
 #include "qvi-common.h"
 #include "qvi-hwloc.h"
+#include "qvi-utils.h"
 
 /** Device information. */
 struct qvi_devinfo_t {
@@ -79,8 +80,7 @@ namespace std {
         {
             const int a = x.id;
             const int b = (int)x.type;
-            // Cantor pairing function.
-            const int64_t c = (a + b) * (a + b + 1) / 2 + b;
+            const int64_t c = qvi_cantor_pairing(a, b);
             return hash<int64_t>()(c);
         }
     };
