@@ -369,6 +369,10 @@ set_visdev_id(
         device->visdev_id = id;
         return QV_SUCCESS;
     }
+    if (sscanf(device->name, "rsmi%d", &id) == 1) {
+        device->visdev_id = id;
+        return QV_SUCCESS;
+    }
     if (sscanf(device->name, "opencl%dd%d", &id2, &id) == 2) {
         device->visdev_id = id;
         return QV_SUCCESS;
@@ -416,34 +420,40 @@ set_gpu_device_info(
     hwloc_obj_t obj,
     qvi_hwloc_device_t *device
 ) {
-    int id = -1;
-    if (sscanf(device->name, "rsmi%d", &id) == 1) {
+    int id = QVI_HWLOC_DEVICE_INVISIBLE_ID;
+    //
+    if (sscanf(obj->name, "rsmi%d", &id) == 1) {
         device->smi = id;
         int nw = snprintf(
             device->uuid, QVI_HWLOC_UUID_BUFF_SIZE, "%s",
             hwloc_obj_get_info_by_name(obj, "AMDUUID")
         );
-        if (nw >= QVI_HWLOC_UUID_BUFF_SIZE) return QV_ERR_INTERNAL;
+        if (nw >= QVI_HWLOC_UUID_BUFF_SIZE) {
+            return QV_ERR_INTERNAL;
+        }
 #if 0
         int hrc = hwloc_rsmi_get_device_cpuset(
             hwl->topo,
             amd_idx++,
             dev->cpuset
         );
-        return QV_SUCCESS;
 #endif
+        return QV_SUCCESS;
     }
+    //
     if (sscanf(obj->name, "nvml%d", &id) == 1) {
         device->smi = id;
         int nw = snprintf(
             device->uuid, QVI_HWLOC_UUID_BUFF_SIZE, "%s",
             hwloc_obj_get_info_by_name(obj, "NVIDIAUUID")
         );
-        if (nw >= QVI_HWLOC_UUID_BUFF_SIZE) return QV_ERR_INTERNAL;
+        if (nw >= QVI_HWLOC_UUID_BUFF_SIZE) {
+            return QV_ERR_INTERNAL;
+        }
         return qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
-                hwl,
-                device->pci_bus_id,
-                device->cpuset
+            hwl,
+            device->pci_bus_id,
+            device->cpuset
         );
     }
     return QV_SUCCESS;
