@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2021 Triad National Security, LLC
+# Copyright (c) 2020-2022 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -36,7 +36,6 @@ endif()
 
 find_package(PCIAccess REQUIRED)
 
-# TODO(skg) Add option to turn this off even if found.
 if(CUDAToolkit_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
     list(APPEND QVI_HWLOC_GPU_FLAGS "--with-cuda=${CUDAToolkit_TARGET_DIR}")
     list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-cuda=yes")
@@ -44,6 +43,19 @@ if(CUDAToolkit_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
 else()
     list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-cuda=no")
     list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-nvml=no")
+endif()
+
+if(ROCM_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
+    list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-rsmi")
+    set(
+      QVI_HWLOC_CPPFLAGS
+      "-I${ROCM_SMI_INCLUDE_DIR} -I${ROCM_OPENCL_INCLUDE_DIR}"
+    )
+    set(QVI_HWLOC_LDFLAGS "-L${ROCM_HOME}/lib")
+    list(APPEND QVI_HWLOC_CONFIG_VARS "CPPFLAGS=${QVI_HWLOC_CPPFLAGS}")
+    list(APPEND QVI_HWLOC_CONFIG_VARS "LDFLAGS=${QVI_HWLOC_LDFLAGS}")
+else()
+    list(APPEND QVI_HWLOC_GPU_FLAGS "--disable-rsmi")
 endif()
 
 message(STATUS "hwloc configure variables are:")

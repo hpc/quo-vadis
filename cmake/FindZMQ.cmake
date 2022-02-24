@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2021 Triad National Security, LLC
+# Copyright (c) 2020-2022 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -34,8 +34,8 @@ mark_as_advanced(
     ZMQ_LIBRARY
 )
 
-set(ZMQ_LIBRARIES ${ZMQ_LIBRARY} )
-set(ZMQ_INCLUDE_DIRS ${ZMQ_INCLUDE_DIR} )
+set(ZMQ_LIBRARIES ${ZMQ_LIBRARY})
+set(ZMQ_INCLUDE_DIRS ${ZMQ_INCLUDE_DIR})
 
 add_library(
     zmq

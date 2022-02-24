@@ -13,7 +13,6 @@
 ################################################################################
 add_library(
     qvi-core
-    OBJECT
     qvi-common.h
     qvi-macros.h
     qvi-log.h
@@ -49,7 +48,6 @@ target_link_libraries(
 ################################################################################
 add_library(
     qvi-hwloc
-    OBJECT
     qvi-hwloc.h
     qvi-nvml.h
     qvi-rsmi.h
@@ -80,15 +78,23 @@ target_link_libraries(
 )
 endif()
 
+if(ROCM_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
+target_link_libraries(
+    qvi-hwloc
+    ROCm
+)
+endif()
+
 ################################################################################
 ################################################################################
 add_library(
     qvi-rmi
-    OBJECT
     qvi-line.h
+    qvi-hwpool.h
     qvi-rmi.h
     qvi-bbuff-rmi.h
     qvi-line.cc
+    qvi-hwpool.cc
     qvi-rmi.cc
 )
 
@@ -107,36 +113,11 @@ target_link_libraries(
     zmq
 )
 
-# TODO(skg) Add qvi-pmi
-################################################################################
-################################################################################
-#add_library(
-#    qvi-pmi
-#    OBJECT
-#    qvi-pmi.h
-#    qvi-pmi.cc
-#)
-#
-#target_include_directories(
-#    qvi-pmi
-#    PUBLIC
-#      $<INSTALL_INTERFACE:include>
-#      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
-#      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
-#)
-#
-#target_link_libraries(
-#    qvi-pmi
-#    qvi-core
-#    pmix
-#)
-
 ################################################################################
 ################################################################################
 if (MPI_FOUND)
 add_library(
     qvi-mpi
-    OBJECT
     ../include/quo-vadis-mpi.h
     qvi-mpi.h
     qvi-group-mpi.h
@@ -170,13 +151,11 @@ add_library(
     qvi-context.h
     qvi-task.h
     qvi-devinfo.h
-    qvi-hwpool.h
     qvi-group.h
     qvi-scope.h
     qvi-zgroup.h
     qvi-bind.h
     qvi-task.cc
-    qvi-hwpool.cc
     qvi-scope.cc
     qvi-bind.cc
     quo-vadis.cc

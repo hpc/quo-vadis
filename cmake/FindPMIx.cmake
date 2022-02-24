@@ -1,5 +1,5 @@
 #
-# Copyright (c)      2020 Triad National Security, LLC
+# Copyright (c) 2020-2022 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c)      2020 Lawrence Livermore National Security, LLC
@@ -8,7 +8,6 @@
 # This file is part of the quo-vadis project. See the LICENSE file at the
 # top-level directory of this distribution.
 #
-
 
 find_path(
     PMIX_INCLUDE_DIR
@@ -35,8 +34,8 @@ mark_as_advanced(
     PMIX_LIBRARY
 )
 
-set(PMIX_LIBRARIES ${PMIX_LIBRARY} )
-set(PMIX_INCLUDE_DIRS ${PMIX_INCLUDE_DIR} )
+set(PMIX_LIBRARIES ${PMIX_LIBRARY})
+set(PMIX_INCLUDE_DIRS ${PMIX_INCLUDE_DIR})
 
 add_library(
     pmix

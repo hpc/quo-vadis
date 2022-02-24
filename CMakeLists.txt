@@ -15,9 +15,6 @@ cmake_minimum_required(VERSION 3.19)
 # Set the project name and version
 project(quo-vadis VERSION 0.0.1 LANGUAGES C CXX)
 
-# Append our module path
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-
 # Specify the C standard
 set(CMAKE_C_STANDARD 11)
 set(C_STANDARD_REQUIRED TRUE)
@@ -26,8 +23,28 @@ set(C_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_STANDARD 11)
 set(CXX_STANDARD_REQUIRED TRUE)
 
+################################################################################
+# RPATH Settings (Always RPATH)
+# Note: See CMAKE_SKIP_RPATH to disable this behavior.
+################################################################################
+# From: https://gitlab.kitware.com/cmake/
+# community/-/wikis/doc/cmake/RPATH-handling
+# Don't skip the full RPATH for the build tree.
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+# When building, don't use the install RPATH already
+# (but later on when installing).
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+# Add the automatically determined parts of the RPATH which
+# point to directories outside the build tree to the install RPATH.
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+# Set the RPATH to be used when installing.
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+
 # Project Generator Info
 message(STATUS "Generator used is ${CMAKE_GENERATOR}")
+
+# Generate a compile_commands.json file (for development tools).
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Testing
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
@@ -38,6 +55,9 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
+
+# Append our module path
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 ################################################################################
 # ZeroMQ Support ###############################################################
@@ -70,25 +90,17 @@ endif()
 if(NOT QV_DISABLE_GPU_SUPPORT)
     # TODO(skg) Set minimum required version?
     find_package(CUDAToolkit)
+    find_package(ROCm)
 endif()
 
 # Specify default build type
 include(cmake/build-type.cmake)
 
-# Generate a compile_commands.json file (for development tools)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 # Check include files
 include(cmake/CheckIncludes.cmake)
+
 # Add generated configuration file
 configure_file(config.h.in include/${PROJECT_NAME}/config.h)
-# Install the generated configuration file
-install(
-    FILES
-      ${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/config.h
-    DESTINATION
-      include/${PROJECT_NAME}
-)
 
 # Check datatype sizes
 include(cmake/CheckTypes.cmake)
@@ -117,6 +129,7 @@ set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt)
 include(CPack)
 
 # pkg-config
+# TODO(skg) We need to have one for each type: e.g., MPI
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/pkg-config.pc.in"
     "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc"
