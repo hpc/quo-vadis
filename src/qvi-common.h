@@ -56,30 +56,6 @@
 typedef char const* cstr_t;
 typedef uint8_t byte_t;
 
-/**
- *
- */
-int
-qvi_context_create(
-    qv_context_t **ctx
-);
-
-/**
- *
- */
-void
-qvi_context_free(
-    qv_context_t **ctx
-);
-
-/**
- *
- */
-int
-qvi_context_connect_to_server(
-    qv_context_t *ctx
-);
-
 #endif
 
 /*
