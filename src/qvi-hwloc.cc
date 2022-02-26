@@ -913,6 +913,23 @@ qvi_hwloc_bitmap_asprintf(
     return rc;
 }
 
+int
+qvi_hwloc_bitmap_list_asprintf(
+    char **result,
+    hwloc_const_cpuset_t cpuset
+) {
+    int rc = QV_SUCCESS;
+    // Caller is responsible for freeing returned resources.
+    char *iresult = nullptr;
+    (void)hwloc_bitmap_list_asprintf(&iresult, cpuset);
+    if (!iresult) {
+        qvi_log_error("hwloc_bitmap_list_asprintf() failed");
+        rc = QV_ERR_OOR;
+    }
+    *result = iresult;
+    return rc;
+}
+
 void
 qvi_hwloc_cpuset_debug(
     cstr_t msg,

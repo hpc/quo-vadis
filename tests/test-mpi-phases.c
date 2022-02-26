@@ -108,9 +108,9 @@ main(
     }
 
     char *binds;
-    rc = qv_bind_get_as_string(ctx, &binds);
+    rc = qv_bind_get_list_as_string(ctx, &binds);
     if (rc != QV_SUCCESS) {
-        ers = "qv_bind_get_as_string() failed";
+        ers = "qv_bind_get_list_as_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Base scope w/%d cores, running on %s\n",
@@ -155,9 +155,9 @@ main(
 
     /* Where did I end up? */
     char *binds1;
-    rc = qv_bind_get_as_string(ctx, &binds1);
+    rc = qv_bind_get_list_as_string(ctx, &binds1);
     if (rc != QV_SUCCESS) {
-        ers = "qv_bind_get_as_string() failed";
+        ers = "qv_bind_get_list_as_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("=> [%d] Split: got %d cores, running on %s\n",
@@ -201,9 +201,9 @@ main(
     }
 
     char *binds2;
-    rc = qv_bind_get_as_string(ctx, &binds2);
+    rc = qv_bind_get_list_as_string(ctx, &binds2);
     if (rc != QV_SUCCESS) {
-        ers = "qv_bind_get_as_string() failed";
+        ers = "qv_bind_get_list_as_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Popped up to %s\n", wrank, binds2);
@@ -275,12 +275,12 @@ main(
 
     /* Where did I end up? */
     char *binds3;
-    rc = qv_bind_get_as_string(ctx, &binds3);
+    rc = qv_bind_get_list_as_string(ctx, &binds3);
     if (rc != QV_SUCCESS) {
-        ers = "qv_bind_get_as_string() failed";
+        ers = "qv_bind_get_list_as_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("=> [%d] Split@: got %d NUMAs, running on %s\n",
+    printf("=> [%d] Split@NUMA: got %d NUMAs, running on %s\n",
        wrank, my_nnumas, binds3);
     free(binds3);
 
