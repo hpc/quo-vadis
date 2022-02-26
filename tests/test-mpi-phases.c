@@ -44,6 +44,8 @@ do_pthread_things(int rank, int ncores)
   return 0;
 }
 
+
+
 int
 main(
     int argc,
@@ -154,15 +156,14 @@ main(
     }
 
     /* Where did I end up? */
-    char *binds1;
-    rc = qv_bind_get_list_as_string(ctx, &binds1);
+    rc = qv_bind_get_list_as_string(ctx, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("=> [%d] Split: got %d cores, running on %s\n",
-       wrank, ncores, binds1);
-    free(binds1);
+       wrank, ncores, binds);
+    free(binds);
 
 #if 1
     /* Launch one thread per core */
@@ -200,14 +201,13 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    char *binds2;
-    rc = qv_bind_get_list_as_string(ctx, &binds2);
+    rc = qv_bind_get_list_as_string(ctx, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Popped up to %s\n", wrank, binds2);
-    free(binds2);
+    printf("[%d] Popped up to %s\n", wrank, binds);
+    free(binds);
 
     /***************************************
      * Phase 2: One master per resource,
@@ -274,15 +274,14 @@ main(
     }
 
     /* Where did I end up? */
-    char *binds3;
-    rc = qv_bind_get_list_as_string(ctx, &binds3);
+    rc = qv_bind_get_list_as_string(ctx, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("=> [%d] Split@NUMA: got %d NUMAs, running on %s\n",
-       wrank, my_nnumas, binds3);
-    free(binds3);
+       wrank, my_nnumas, binds);
+    free(binds);
 
 
     int npus;
@@ -314,7 +313,87 @@ main(
         ers = "qv_bind_pop() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+
+    rc = qv_bind_get_list_as_string(ctx, &binds);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_get_list_as_string() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    printf("[%d] Popped up to %s\n", wrank, binds);
+    free(binds);
+
 #endif
+
+    /***************************************
+     * Phase 3: 
+     *   GPU work! 
+     ***************************************/
+
+    int my_gpu_id;
+    qv_scope_t *gpu_scope;
+
+    /* Get the number of GPUs so that we can
+       specify the color/groupid of split_at */
+    rc = qv_scope_nobjs(ctx, base_scope,
+			QV_HW_OBJ_GPU, &ngpus);
+    if (rc != QV_SUCCESS) {
+      ers = "qv_scope_nobjs() failed";
+      panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    /* Split at GPUs */
+    rc = qv_scope_split_at(
+        ctx,
+        base_scope,
+        QV_HW_OBJ_GPU,
+        wrank % ngpus,          // color or group id
+        &gpu_scope
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_split_at() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    /* Allow selecting a leader per NUMA */
+    rc = qv_scope_taskid(
+        ctx,
+        gpu_scope,
+        &my_gpu_id
+    );
+
+    rc = qv_bind_push(ctx, gpu_scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_push() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    int my_ngpus;
+    rc = qv_scope_nobjs(ctx,
+            gpu_scope,
+            QV_HW_OBJ_GPU,
+            &my_ngpus);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_nobjs() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    /* Where did I end up? */
+    rc = qv_bind_get_list_as_string(ctx, &binds);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_get_list_as_string() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    printf("=> [%d] Split@GPU: got %d GPUs, running on %s\n",
+       wrank, my_ngpus, binds);
+    free(binds);
+    
+    for (i=0; i<my_ngpus; i++) {
+      qv_scope_get_device(ctx, gpu_scope, QV_HW_OBJ_GPU,
+			  i, QV_DEVICE_ID_PCI_BUS_ID, &gpu);
+      printf("   [%d] GPU %d PCI Bus ID = %s\n", wrank, i, gpu);
+      free(gpu);
+    }
+
 
     /***************************************
      * Clean up
