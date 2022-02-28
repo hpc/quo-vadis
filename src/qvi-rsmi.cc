@@ -15,6 +15,7 @@
 #include "qvi-hwloc.h"
 
 #ifdef ROCM_FOUND
+#include "rocm_smi/rocm_smi.h"
 #include "hwloc/rsmi.h"
 #endif
 
@@ -39,13 +40,24 @@ qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
         );
     }
     // Else get the real thing.
-    int hrc = hwloc_rsmi_get_device_cpuset(
+    int rc = QV_SUCCESS, hrc = 0;
+
+    rsmi_status_t rsmi_rc = rsmi_init(0);
+    if (rsmi_rc != RSMI_STATUS_SUCCESS) {
+        qvi_log_error("rsmi_init() failed");
+        rc = QV_ERR_HWLOC;
+        goto out;
+    }
+
+    hrc = hwloc_rsmi_get_device_cpuset(
         qvi_hwloc_topo_get(hwl), devid, cpuset
     );
     if (hrc != 0) {
-        return QV_ERR_HWLOC;
+        rc = QV_ERR_HWLOC;
     }
-    return QV_SUCCESS;
+out:
+    rsmi_shut_down();
+    return rc;
 #endif
 }
 
