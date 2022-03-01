@@ -54,7 +54,6 @@ mpiexec -n 2 build/tests/test-mpi-scopes
 ## External Software Dependencies
 * ZeroMQ (https://github.com/zeromq/libzmq)
 * An MPI-3 implementation (https://www.open-mpi.org, https://www.mpich.org)
-* OpenPMIx (https://github.com/openpmix/openpmix)
 
 ## Packaging for Developers
 ```shell
