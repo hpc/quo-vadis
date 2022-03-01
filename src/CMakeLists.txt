@@ -51,8 +51,10 @@ add_library(
     qvi-hwloc.h
     qvi-nvml.h
     qvi-rsmi.h
+    qvi-rsmi.h
     qvi-hwloc.cc
     qvi-nvml.cc
+    qvi-rsmi.cc
 )
 
 target_include_directories(

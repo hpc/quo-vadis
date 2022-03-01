@@ -40,6 +40,31 @@ struct qv_context_s {
     qvi_bind_stack_t *bind_stack = nullptr;
 };
 
+/**
+ *
+ */
+int
+qvi_context_create(
+    qv_context_t **ctx
+);
+
+/**
+ *
+ */
+void
+qvi_context_free(
+    qv_context_t **ctx
+);
+
+/**
+ *
+ */
+int
+qvi_context_connect_to_server(
+    qv_context_t *ctx
+);
+
+
 #ifdef __cplusplus
 }
 #endif

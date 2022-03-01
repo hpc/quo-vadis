@@ -1,5 +1,5 @@
 /*
- * Copyright (c)      2021 Triad National Security, LLC
+ * Copyright (c)      2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c)      2021 Lawrence Livermore National Security, LLC
@@ -19,14 +19,12 @@
 #include "qvi-common.h"
 #include "qvi-hwloc.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
-#ifdef __cplusplus
-}
-#endif
+int
+qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
+    qvi_hwloc_t *hwl,
+    uint32_t devid,
+    hwloc_cpuset_t cpuset
+);
 
 #endif
 

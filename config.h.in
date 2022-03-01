@@ -61,6 +61,7 @@
 
 #cmakedefine QV_DISABLE_GPU_SUPPORT
 #cmakedefine CUDAToolkit_FOUND
+#cmakedefine ROCM_FOUND
 
 #endif
 

@@ -18,6 +18,7 @@
 #include "qvi-utils.h"
 
 #include "qvi-nvml.h"
+#include "qvi-rsmi.h"
 
 /** Device list type. */
 using qvi_hwloc_dev_list_t = std::vector<qvi_hwloc_device_t *>;
@@ -402,14 +403,22 @@ set_general_device_info(
     device->vendor_id = pci_obj->attr->pcidev.vendor_id;
     // Save device name.
     int nw = snprintf(
-        device->name, QVI_HWLOC_DEV_NAME_BUFF_SIZE, "%s", obj->name
+        device->name,
+        QVI_HWLOC_DEV_NAME_BUFF_SIZE,
+        "%s", obj->name
     );
-    if (nw >= QVI_HWLOC_DEV_NAME_BUFF_SIZE) return QV_ERR_INTERNAL;
+    if (nw >= QVI_HWLOC_DEV_NAME_BUFF_SIZE) {
+        return QV_ERR_INTERNAL;
+    }
     // Set the PCI bus ID.
     nw = snprintf(
-        device->pci_bus_id, QVI_HWLOC_PCI_BUS_ID_BUFF_SIZE, "%s", pci_bus_id
+        device->pci_bus_id,
+        QVI_HWLOC_PCI_BUS_ID_BUFF_SIZE,
+        "%s", pci_bus_id
     );
-    if (nw >= QVI_HWLOC_PCI_BUS_ID_BUFF_SIZE) return QV_ERR_INTERNAL;
+    if (nw >= QVI_HWLOC_PCI_BUS_ID_BUFF_SIZE) {
+        return QV_ERR_INTERNAL;
+    }
     // Set visible device ID, if applicable.
     return set_visdev_id(device);
 }
@@ -431,14 +440,11 @@ set_gpu_device_info(
         if (nw >= QVI_HWLOC_UUID_BUFF_SIZE) {
             return QV_ERR_INTERNAL;
         }
-#if 0
-        int hrc = hwloc_rsmi_get_device_cpuset(
-            hwl->topo,
-            amd_idx++,
-            dev->cpuset
+        return qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
+            hwl,
+            device->smi,
+            device->cpuset
         );
-#endif
-        return QV_SUCCESS;
     }
     //
     if (sscanf(obj->name, "nvml%d", &id) == 1) {
