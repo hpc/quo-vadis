@@ -233,6 +233,15 @@ qv_bind_get_as_string(
  *
  */
 int
+qv_bind_get_list_as_string(
+    qv_context_t *ctx,
+    char **str
+);
+
+/**
+ *
+ */
+int
 qv_context_barrier(
     qv_context_t *ctx
 );

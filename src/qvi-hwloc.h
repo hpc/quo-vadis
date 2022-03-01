@@ -154,6 +154,15 @@ qvi_hwloc_bitmap_asprintf(
 /**
  *
  */
+int
+qvi_hwloc_bitmap_list_asprintf(
+    char **result,
+    hwloc_const_cpuset_t cpuset
+);
+
+/**
+ *
+ */
 void
 qvi_hwloc_cpuset_debug(
     cstr_t msg,
