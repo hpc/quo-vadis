@@ -346,6 +346,7 @@ main(
         ctx,
         base_scope,
         QV_HW_OBJ_GPU,
+        // TODO Fix if no GPUs; Crashes with 0
         wrank % ngpus,          // color or group id
         &gpu_scope
     );

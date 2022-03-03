@@ -524,7 +524,7 @@ qvi_mpi_group_create_from_ids(
     cstr_t ers = nullptr;
     int qvrc = QV_SUCCESS;
 
-    MPI_Group new_mpi_group = QVI_MPI_GROUP_NULL;
+    MPI_Group new_mpi_group = MPI_GROUP_NULL;
     int rc = MPI_Group_incl(
         group->mpi_group,
         num_group_ids,
