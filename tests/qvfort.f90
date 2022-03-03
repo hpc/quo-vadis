@@ -40,6 +40,8 @@ program qvfort
     call qv_scope_nobjs(ctx, scope_user, QV_HW_OBJ_CORE, n_cores, info)
     print *, 'n_cores', n_cores
 
+    call qv_scope_free(ctx, scope_user, info)
+
     call qv_mpi_context_free(ctx, info)
 
     call mpi_finalize(info)
