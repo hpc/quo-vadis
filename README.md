@@ -21,6 +21,12 @@ disable it. For example,
 cmake -DQV_DISABLE_GPU_SUPPORT=ON ..
 ```
 
+When available Fortran support is enabled by default. Define
+`QV_DISABLE_FORTRAN_SUPPORT=ON` to disable it. For example,
+```shell
+cmake -DQV_DISABLE_FORTRAN_SUPPORT=ON ..
+```
+
 ## Testing
 Depending on the type of generator used perform either of the following:
 ```shell

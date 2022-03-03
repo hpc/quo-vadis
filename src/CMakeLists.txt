@@ -143,40 +143,6 @@ target_link_libraries(
     qvi-core
     ${MPI_C_LIBRARIES}
 )
-
-################################################################################
-if(QV_FORTRAN_HAPPY AND MPI_Fortran_FOUND)
-add_library(
-    quo_vadis_mpif
-    quo-vadis-mpif.f90
-)
-
-# TODO(skg) The flags need work.
-target_include_directories(
-    quo_vadis_mpif
-    PUBLIC
-      ${MPI_Fortran_MODULE_DIR}
-      $<INSTALL_INTERFACE:src>
-      $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/src>
-      $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
-)
-
-target_link_libraries(
-    quo_vadis_mpif
-    quo-vadis-mpi
-    quo_vadisf
-    ${MPI_Fortran_LIBRARIES}
-    ${MPI_Fortran_LINK_FLAGS}
-)
-
-install(
-    FILES
-      quo_vadis_mpif.mod
-    DESTINATION
-      include
-)
-endif(QV_FORTRAN_HAPPY AND MPI_Fortran_FOUND)
-################################################################################
 endif(MPI_FOUND)
 
 ################################################################################
@@ -260,20 +226,5 @@ target_link_libraries(
 )
 
 install(TARGETS quo-vadisd DESTINATION bin)
-
-################################################################################
-# Fortran
-################################################################################
-if(QV_FORTRAN_HAPPY)
-add_library(
-    quo_vadisf
-    quo-vadisf.f90
-)
-
-target_link_libraries(
-    quo_vadisf
-    quo-vadis
-)
-endif(QV_FORTRAN_HAPPY)
 
 # vim: ts=4 sts=4 sw=4 expandtab
