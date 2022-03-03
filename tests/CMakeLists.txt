@@ -70,8 +70,11 @@ target_link_libraries(
     test-mpi-phases
     quo-vadis-mpi
 )
+endif(MPI_FOUND)
+
 ################################################################################
-if(NOT MPI_Fortran_COMPILER STREQUAL "")
+################################################################################
+if(MPI_Fortran_FOUND)
 add_executable(
     test-qvfort
     qvfort.f90
@@ -81,10 +84,7 @@ target_link_libraries(
     test-qvfort
     quo_vadis_mpif
 )
-
-endif(NOT MPI_Fortran_COMPILER STREQUAL "")
-################################################################################
-endif(MPI_FOUND)
+endif(MPI_Fortran_FOUND)
 
 ################################################################################
 ################################################################################
