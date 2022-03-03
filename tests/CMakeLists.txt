@@ -74,17 +74,17 @@ endif(MPI_FOUND)
 
 ################################################################################
 ################################################################################
-if(MPI_Fortran_FOUND)
+if(QV_FORTRAN_HAPPY AND MPI_Fortran_FOUND)
 add_executable(
-    test-qvfort
-    qvfort.f90
+    test-mpi-qvfort
+    test-mpi-qvfort.f90
 )
 
 target_link_libraries(
-    test-qvfort
+    test-mpi-qvfort
     quo_vadis_mpif
 )
-endif(MPI_Fortran_FOUND)
+endif(QV_FORTRAN_HAPPY AND MPI_Fortran_FOUND)
 
 ################################################################################
 ################################################################################

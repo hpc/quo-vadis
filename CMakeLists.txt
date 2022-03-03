@@ -25,7 +25,6 @@ set(CXX_STANDARD_REQUIRED TRUE)
 
 # Setup Fortran support.
 include(cmake/QVFortranSupport.cmake)
-SetupFortranSupport()
 
 ################################################################################
 # RPATH Settings (Always RPATH)

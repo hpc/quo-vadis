@@ -12,27 +12,25 @@ option(
     OFF
 )
 
-function(SetupFortranSupport)
-    message(CHECK_START "Determining desired Fortran support level")
+message(CHECK_START "Determining desired Fortran support level")
 
-    set(QV_FORTRAN_HAPPY FALSE)
-    if(NOT QV_DISABLE_FORTRAN_SUPPORT)
-        message(CHECK_PASS "enabled")
-        # Enable Fortran support.
-        enable_language(Fortran)
-        # Make sure that we can support Fortran C interfaces.
-        include(FortranCInterface)
-        FortranCInterface_VERIFY()
-        # Make sure we found a Fortran compiler.
-        if(CMAKE_Fortran_COMPILER STREQUAL "")
-            return()
-        else()
-            set(QV_FORTRAN_HAPPY TRUE)
-        endif()
-        set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
+set(QV_FORTRAN_HAPPY FALSE)
+if(NOT QV_DISABLE_FORTRAN_SUPPORT)
+    message(CHECK_PASS "enabled")
+    # Enable Fortran support.
+    enable_language(Fortran)
+    # Make sure that we can support Fortran C interfaces.
+    include(FortranCInterface)
+    FortranCInterface_VERIFY()
+    # Make sure we found a Fortran compiler.
+    if(CMAKE_Fortran_COMPILER STREQUAL "")
+        return()
     else()
-        message(CHECK_PASS "disabled")
-    endif(NOT QV_DISABLE_FORTRAN_SUPPORT)
-endfunction(SetupFortranSupport)
+        set(QV_FORTRAN_HAPPY TRUE)
+    endif()
+    set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
+else()
+    message(CHECK_PASS "disabled")
+endif(NOT QV_DISABLE_FORTRAN_SUPPORT)
 
 # vim: ts=4 sts=4 sw=4 expandtab
