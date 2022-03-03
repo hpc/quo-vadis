@@ -45,7 +45,7 @@ target_link_libraries(
 
 install(
     FILES
-      quo_vadis_mpif.mod
+      "${CMAKE_Fortran_MODULE_DIRECTORY}/quo_vadis_mpif.mod"
     DESTINATION
       include
 )
