@@ -25,25 +25,56 @@ program qvfort
     integer machine_comm
 
     call mpi_init(info)
+    if (info .ne. MPI_SUCCESS) then
+        error stop
+    end if
+
     call mpi_comm_rank(MPI_COMM_WORLD, cwrank, info)
+    if (info .ne. MPI_SUCCESS) then
+        error stop
+    end if
 
     call qv_mpi_context_create(ctx, MPI_COMM_WORLD, info)
+    if (info .ne. QV_SUCCESS) then
+        error stop
+    end if
 
     call qv_scope_get(ctx, QV_SCOPE_USER, scope_user, info)
+    if (info .ne. QV_SUCCESS) then
+        error stop
+    end if
 
     call qv_scope_ntasks(ctx, scope_user, ntasks, info)
+    if (info .ne. QV_SUCCESS) then
+        error stop
+    end if
     print *, 'ntasks', ntasks
 
     call qv_scope_taskid(ctx, scope_user, taskid, info)
+    if (info .ne. QV_SUCCESS) then
+        error stop
+    end if
     print *, 'taskid', taskid
 
     call qv_scope_nobjs(ctx, scope_user, QV_HW_OBJ_CORE, n_cores, info)
+    if (info .ne. QV_SUCCESS) then
+        error stop
+    end if
     print *, 'n_cores', n_cores
 
     call qv_scope_free(ctx, scope_user, info)
+    if (info .ne. QV_SUCCESS) then
+        error stop
+    end if
 
     call qv_mpi_context_free(ctx, info)
+    if (info .ne. QV_SUCCESS) then
+        error stop
+    end if
 
     call mpi_finalize(info)
+    if (info .ne. MPI_SUCCESS) then
+        error stop
+    end if
 
 end program qvfort
