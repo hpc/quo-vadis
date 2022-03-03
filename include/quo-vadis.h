@@ -86,6 +86,14 @@ typedef enum qv_hw_obj_type_e {
 } qv_hw_obj_type_t;
 
 /**
+ * Binding string representaiton formats.
+ */
+typedef enum qv_bind_string_format_s {
+    QV_BIND_STRING_AS_BITMAP = 0,
+    QV_BIND_STRING_AS_LIST
+} qv_bind_string_format_t;
+
+/**
  * Automatic grouping options for qv_scope_split(). The following values can be
  * used instead of group_id to influence how automatic task grouping is
  * accomplished.
@@ -224,17 +232,9 @@ qv_bind_pop(
  *
  */
 int
-qv_bind_get_as_string(
+qv_bind_string(
     qv_context_t *ctx,
-    char **str
-);
-
-/**
- *
- */
-int
-qv_bind_get_list_as_string(
-    qv_context_t *ctx,
+    qv_bind_string_format_t format,
     char **str
 );
 

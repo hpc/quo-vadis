@@ -105,8 +105,9 @@ qv_bind_pop(
 }
 
 int
-qv_bind_get_as_string(
+qv_bind_string(
     qv_context_t *ctx,
+    qv_bind_string_format_t format,
     char **str
 ) {
     if (!ctx || !str) {
@@ -121,30 +122,16 @@ qv_bind_get_as_string(
     );
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_hwloc_bitmap_asprintf(str, cpuset);
-out:
-    hwloc_bitmap_free(cpuset);
-    return rc;
-}
-
-int
-qv_bind_get_list_as_string(
-    qv_context_t *ctx,
-    char **str
-) {
-    if (!ctx || !str) {
-        return QV_ERR_INVLD_ARG;
+    switch (format) {
+        case QV_BIND_STRING_AS_BITMAP:
+            rc = qvi_hwloc_bitmap_asprintf(str, cpuset);
+            break;
+        case QV_BIND_STRING_AS_LIST:
+            rc = qvi_hwloc_bitmap_list_asprintf(str, cpuset);
+            break;
+        default:
+            rc = QV_ERR_INVLD_ARG;
     }
-
-    hwloc_cpuset_t cpuset = nullptr;
-    int rc = qvi_rmi_task_get_cpubind(
-        ctx->rmi,
-        qvi_task_pid(ctx->zgroup->task()),
-        &cpuset
-    );
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_hwloc_bitmap_list_asprintf(str, cpuset);
 out:
     hwloc_bitmap_free(cpuset);
     return rc;

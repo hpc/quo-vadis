@@ -85,9 +85,9 @@ change_bind(
     }
 
     char *bind1s;
-    rc = qv_bind_get_as_string(ctx, &bind1s);
+    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &bind1s);
     if (rc != QV_SUCCESS) {
-        ers = "qv_bind_get_as_string() failed";
+        ers = "qv_bind_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] New cpubind is     %s\n", wrank, bind1s);
@@ -100,9 +100,9 @@ change_bind(
     }
 
     char *bind2s;
-    rc = qv_bind_get_as_string(ctx, &bind2s);
+    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &bind2s);
     if (rc != QV_SUCCESS) {
-        ers = "qv_bind_get_as_string() failed";
+        ers = "qv_bind_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Popped cpubind is  %s\n", wrank, bind2s);
@@ -224,9 +224,9 @@ main(
     scope_report(ctx, wrank, sub_scope, "sub_scope");
 
     char *binds;
-    rc = qv_bind_get_as_string(ctx, &binds);
+    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
-        ers = "qv_bind_get_as_string() failed";
+        ers = "qv_bind_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Current cpubind is %s\n", wrank, binds);

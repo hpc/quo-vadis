@@ -110,7 +110,7 @@ main(
     }
 
     char *binds;
-    rc = qv_bind_get_list_as_string(ctx, &binds);
+    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -156,7 +156,7 @@ main(
     }
 
     /* Where did I end up? */
-    rc = qv_bind_get_list_as_string(ctx, &binds);
+    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -201,7 +201,7 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_bind_get_list_as_string(ctx, &binds);
+    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -274,7 +274,7 @@ main(
     }
 
     /* Where did I end up? */
-    rc = qv_bind_get_list_as_string(ctx, &binds);
+    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -314,7 +314,7 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_bind_get_list_as_string(ctx, &binds);
+    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -379,7 +379,7 @@ main(
     }
 
     /* Where did I end up? */
-    rc = qv_bind_get_list_as_string(ctx, &binds);
+    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
