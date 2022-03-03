@@ -117,7 +117,6 @@ module quo_vadisf
       parameter (QV_DEVICE_ID_PCI_BUS_ID = 1)
       parameter (QV_DEVICE_ID_ORDINAL = 2)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 interface
       integer(c_int) &
       function qv_scope_get_c(ctx, iscope, scope) &
@@ -130,7 +129,6 @@ interface
       end function qv_scope_get_c
 end interface
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 interface
       integer(c_int) &
       function qv_scope_free_c(ctx, scope) &
@@ -142,7 +140,6 @@ interface
       end function qv_scope_free_c
 end interface
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 interface
       integer(c_int) &
       function qv_scope_split_c(&
@@ -159,7 +156,6 @@ interface
       end function qv_scope_split_c
 end interface
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 interface
       integer(c_int) &
       function qv_scope_split_at_c(&
@@ -176,7 +172,6 @@ interface
       end function qv_scope_split_at_c
 end interface
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 interface
       integer(c_int) &
       function qv_scope_nobjs_c(ctx, scope, obj, n) &
@@ -190,7 +185,6 @@ interface
       end function qv_scope_nobjs_c
 end interface
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 interface
       integer(c_int) &
       function qv_scope_taskid_c(ctx, scope, taskid) &
@@ -203,7 +197,6 @@ interface
       end function qv_scope_taskid_c
 end interface
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 interface
       integer(c_int) &
       function qv_scope_ntasks_c(ctx, scope, ntasks) &
@@ -216,7 +209,6 @@ interface
       end function qv_scope_ntasks_c
 end interface
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 interface
       integer(c_int) &
       function qv_scope_barrier_c(ctx, scope) &
@@ -230,7 +222,6 @@ end interface
 
 ! TODO(skg) Add qv_scope_get_device()
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 interface
       integer(c_int) &
       function qv_bind_push_c(ctx, scope) &
@@ -242,7 +233,6 @@ interface
       end function qv_bind_push_c
 end interface
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 interface
       integer(c_int) &
       function qv_bind_pop_c(ctx) &
@@ -255,7 +245,6 @@ end interface
 
 ! TODO(skg) Add qv_bind_get_as_string()
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 interface
       integer(c_int) &
       function qv_context_barrier_c(ctx) &
@@ -267,7 +256,7 @@ interface
 end interface
 
 contains
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
       subroutine qv_scope_get(ctx, iscope, scope, info)
           use, intrinsic :: iso_c_binding, only: c_ptr, c_int
           implicit none
@@ -277,7 +266,7 @@ contains
           integer(c_int), intent(out) :: info
           info = qv_scope_get_c(ctx, iscope, scope)
       end subroutine qv_scope_get
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
       subroutine qv_scope_free(ctx, scope, info)
           use, intrinsic :: iso_c_binding, only: c_ptr, c_int
           implicit none
@@ -286,7 +275,7 @@ contains
           integer(c_int), intent(out) :: info
           info = qv_scope_free_c(ctx, scope)
       end subroutine qv_scope_free
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
       subroutine qv_scope_split( &
               ctx, scope, npieces, group_id, subscope, info &
       )
@@ -303,7 +292,6 @@ contains
           )
       end subroutine qv_scope_split
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine qv_scope_split_at(&
           ctx, scope, obj_type, group_id, subscope, info &
       )
@@ -320,7 +308,6 @@ contains
           )
       end subroutine qv_scope_split_at
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine qv_scope_nobjs(ctx, scope, obj, n, info)
           use, intrinsic :: iso_c_binding, only: c_ptr, c_int
           implicit none
@@ -332,7 +319,6 @@ contains
           info = qv_scope_nobjs_c(ctx, scope, obj, n)
       end subroutine qv_scope_nobjs
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine qv_scope_taskid(ctx, scope, taskid, info)
           use, intrinsic :: iso_c_binding, only: c_ptr, c_int
           implicit none
@@ -343,7 +329,6 @@ contains
           info = qv_scope_taskid_c(ctx, scope, taskid)
       end subroutine qv_scope_taskid
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine qv_scope_ntasks(ctx, scope, ntasks, info)
           use, intrinsic :: iso_c_binding, only: c_ptr, c_int
           implicit none
@@ -354,7 +339,6 @@ contains
           info = qv_scope_ntasks_c(ctx, scope, ntasks)
       end subroutine qv_scope_ntasks
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine qv_scope_barrier(ctx, scope, info)
           use, intrinsic :: iso_c_binding, only: c_ptr, c_int
           implicit none
@@ -366,7 +350,6 @@ contains
 
       ! TODO(skg) Add qv_scope_get_device()
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine qv_bind_push(ctx, scope, info)
           use, intrinsic :: iso_c_binding, only: c_ptr, c_int
           implicit none
@@ -376,7 +359,6 @@ contains
           info = qv_bind_push_c(ctx, scope)
       end subroutine qv_bind_push
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine qv_bind_pop(ctx, info)
           use, intrinsic :: iso_c_binding, only: c_ptr, c_int
           implicit none
@@ -387,7 +369,6 @@ contains
 
       ! TODO(skg) Add qv_bind_get_as_string()
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       subroutine qv_context_barrier(ctx, info)
           use, intrinsic :: iso_c_binding, only: c_ptr, c_int
           implicit none

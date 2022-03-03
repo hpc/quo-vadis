@@ -10,7 +10,7 @@ module quo_vadis_mpif
       use, intrinsic :: iso_c_binding
       use quo_vadisf
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 interface
       integer(c_int) &
       function qv_mpi_context_create_c(ctx, comm) &
@@ -22,7 +22,7 @@ interface
       end function qv_mpi_context_create_c
 end interface
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 interface
       integer(c_int) &
       function qv_mpi_context_free_c(ctx) &
@@ -34,7 +34,7 @@ interface
 end interface
 
 contains
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
       subroutine qv_mpi_context_create(ctx, comm, info)
           use, intrinsic :: iso_c_binding, only: c_ptr, c_int
           implicit none
@@ -44,7 +44,7 @@ contains
           info = qv_mpi_context_create_c(ctx, comm)
       end subroutine qv_mpi_context_create
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
       subroutine qv_mpi_context_free(ctx, info)
           use, intrinsic :: iso_c_binding, only: c_ptr, c_int
           implicit none

@@ -22,7 +22,6 @@ program qvfort
     integer(c_int) ntasks, taskid, n_cores
     integer(c_int) cwrank
     type(c_ptr) ctx, scope_user
-    integer machine_comm
 
     call mpi_init(info)
     if (info .ne. MPI_SUCCESS) then
@@ -60,7 +59,7 @@ program qvfort
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
-    print *, 'n_cores', n_cores
+    print *, 'ncores', n_cores
 
     call qv_scope_free(ctx, scope_user, info)
     if (info .ne. QV_SUCCESS) then

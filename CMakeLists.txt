@@ -23,19 +23,9 @@ set(C_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_STANDARD 11)
 set(CXX_STANDARD_REQUIRED TRUE)
 
-# Enable Fortran support
-enable_language(Fortran)
-# Make sure that we can support Fortran C interfaces.
-include(FortranCInterface)
-FortranCInterface_VERIFY()
-
-# TODO(skg) Add option to disable Fortran support.
-if(CMAKE_Fortran_COMPILER STREQUAL "")
-    set(FORTRAN_FOUND FALSE)
-else()
-    set(FORTRAN_FOUND TRUE)
-endif()
-set(CMAKE_Fortran_MODULE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/src")
+# Setup Fortran support.
+include(cmake/QVFortranSupport.cmake)
+SetupFortranSupport()
 
 ################################################################################
 # RPATH Settings (Always RPATH)
