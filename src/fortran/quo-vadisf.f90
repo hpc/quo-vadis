@@ -100,6 +100,15 @@ module quo_vadisf
       parameter (QV_HW_OBJ_LAST = 11)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      ! Binding string representaiton formats.
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      integer(c_int) QV_BIND_STRING_AS_BITMAP
+      integer(c_int) QV_BIND_STRING_AS_LIST
+
+      parameter (QV_BIND_STRING_AS_BITMAP = 0)
+      parameter (QV_BIND_STRING_AS_LIST = 1)
+
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Automatic grouping options for qv_scope_split().
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       integer(c_int) QV_SCOPE_SPLIT_AFFINITY_PRESERVING
@@ -116,6 +125,16 @@ module quo_vadisf
       parameter (QV_DEVICE_ID_UUID = 0)
       parameter (QV_DEVICE_ID_PCI_BUS_ID = 1)
       parameter (QV_DEVICE_ID_ORDINAL = 2)
+
+interface
+    pure function qvi_strlen_c(s) &
+        bind(c, name="strlen")
+        use, intrinsic :: iso_c_binding
+        implicit none
+        type(c_ptr), intent(in), value :: s
+        integer(c_size_t) qvi_strlen_c
+    end
+end interface
 
 interface
       integer(c_int) &
@@ -220,7 +239,22 @@ interface
       end function qv_scope_barrier_c
 end interface
 
-! TODO(skg) Add qv_scope_get_device()
+interface
+      integer(c_int) &
+      function qv_scope_get_device_c( &
+          ctx, scope, dev_obj, i, id_type, dev_id &
+      ) &
+          bind(c, name='qv_scope_get_device')
+          use, intrinsic :: iso_c_binding, only: c_ptr, c_int
+          implicit none
+          type(c_ptr), value :: ctx
+          type(c_ptr), value :: scope
+          integer(c_int), value :: dev_obj
+          integer(c_int), value :: i
+          integer(c_int), value :: id_type
+          type(c_ptr), intent(out) :: dev_id
+      end function qv_scope_get_device_c
+end interface
 
 interface
       integer(c_int) &
@@ -243,7 +277,17 @@ interface
       end function qv_bind_pop_c
 end interface
 
-! TODO(skg) Add qv_bind_get_as_string()
+interface
+      integer(c_int) &
+      function qv_bind_string_c(ctx, sformat, str) &
+          bind(c, name='qv_bind_string')
+          use, intrinsic :: iso_c_binding, only: c_ptr, c_int
+          implicit none
+          type(c_ptr), value :: ctx
+          integer(c_int), value :: sformat
+          type(c_ptr), intent(out) :: str
+      end function qv_bind_string_c
+end interface
 
 interface
       integer(c_int) &
@@ -256,6 +300,12 @@ interface
 end interface
 
 contains
+
+      subroutine qvi_free_c(p) &
+          bind(c, name="free")
+          use, intrinsic :: iso_c_binding
+          type(c_ptr), intent(in), value :: p
+      end subroutine qvi_free_c
 
       subroutine qv_scope_get(ctx, iscope, scope, info)
           use, intrinsic :: iso_c_binding, only: c_ptr, c_int
@@ -348,7 +398,33 @@ contains
           info = qv_scope_barrier_c(ctx, scope)
       end subroutine qv_scope_barrier
 
-      ! TODO(skg) Add qv_scope_get_device()
+      subroutine qv_scope_get_device( &
+          ctx, scope, dev_obj, i, id_type, dev_id, info &
+      )
+          use, intrinsic :: iso_c_binding, only: c_ptr, c_int
+          implicit none
+          type(c_ptr), value :: ctx
+          type(c_ptr), value :: scope
+          integer(c_int), value :: dev_obj
+          integer(c_int), value :: i
+          integer(c_int), value :: id_type
+          character(len=:),allocatable, intent(out) :: dev_id(:)
+          integer(c_int), intent(out) :: info
+
+          type(c_ptr) :: cstr
+          integer(c_size_t) :: string_shape(1)
+          character,pointer,dimension(:) :: fstrp
+
+          info = qv_scope_get_device_c( &
+            ctx, scope, dev_obj, i, id_type, cstr &
+          )
+          ! Now deal with the string
+          string_shape(1) = qvi_strlen_c(cstr)
+          call c_f_pointer(cstr, fstrp, string_shape)
+          allocate(character(qvi_strlen_c(cstr)) :: dev_id(1))
+          dev_id = fstrp
+          call qvi_free_c(cstr)
+      end subroutine qv_scope_get_device
 
       subroutine qv_bind_push(ctx, scope, info)
           use, intrinsic :: iso_c_binding, only: c_ptr, c_int
@@ -367,7 +443,26 @@ contains
           info = qv_bind_pop_c(ctx)
       end subroutine qv_bind_pop
 
-      ! TODO(skg) Add qv_bind_get_as_string()
+      subroutine qv_bind_string(ctx, sformat, fstr, info)
+          use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_size_t
+          implicit none
+          type(c_ptr), value :: ctx
+          integer(c_int), value :: sformat
+          character(len=:),allocatable, intent(out) :: fstr(:)
+          integer(c_int), intent(out) :: info
+
+          type(c_ptr) :: cstr
+          integer(c_size_t) :: string_shape(1)
+          character,pointer,dimension(:) :: fstrp
+
+          info = qv_bind_string_c(ctx, sformat, cstr)
+          ! Now deal with the string
+          string_shape(1) = qvi_strlen_c(cstr)
+          call c_f_pointer(cstr, fstrp, string_shape)
+          allocate(character(qvi_strlen_c(cstr)) :: fstr(1))
+          fstr = fstrp
+          call qvi_free_c(cstr)
+      end subroutine
 
       subroutine qv_context_barrier(ctx, info)
           use, intrinsic :: iso_c_binding, only: c_ptr, c_int

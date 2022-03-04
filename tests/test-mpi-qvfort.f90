@@ -19,9 +19,11 @@ program qvfort
 
 
     integer(c_int) info
-    integer(c_int) ntasks, taskid, n_cores
+    integer(c_int) ntasks, taskid, n_cores, n_gpu
     integer(c_int) cwrank
     type(c_ptr) ctx, scope_user
+    character(len=:),allocatable :: bstr(:)
+    character(len=:),allocatable :: dev_pci(:)
 
     call mpi_init(info)
     if (info .ne. MPI_SUCCESS) then
@@ -60,6 +62,28 @@ program qvfort
         error stop
     end if
     print *, 'ncores', n_cores
+
+    call qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, bstr, info)
+    if (info .ne. QV_SUCCESS) then
+        error stop
+    end if
+    print *, 'bstr ', bstr
+    deallocate(bstr)
+
+    call qv_scope_nobjs(ctx, scope_user, QV_HW_OBJ_GPU, n_gpu, info)
+    if (info .ne. QV_SUCCESS) then
+        error stop
+    end if
+    print *, 'ngpu', n_gpu
+
+    if (n_gpu .gt. 0) then
+        call qv_scope_get_device(ctx, scope_user, QV_HW_OBJ_GPU, 0, QV_DEVICE_ID_PCI_BUS_ID, dev_pci, info)
+        if (info .ne. QV_SUCCESS) then
+            error stop
+        end if
+        print *, 'dev_pci ', dev_pci
+        deallocate(dev_pci)
+    end if
 
     call qv_scope_free(ctx, scope_user, info)
     if (info .ne. QV_SUCCESS) then
