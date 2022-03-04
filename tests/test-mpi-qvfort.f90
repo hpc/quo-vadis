@@ -18,7 +18,7 @@ program qvfort
     implicit none
 
 
-    integer(c_int) info
+    integer(c_int) info, n
     integer(c_int) ntasks, taskid, n_cores, n_gpu
     integer(c_int) cwrank
     type(c_ptr) ctx, scope_user
@@ -76,14 +76,17 @@ program qvfort
     end if
     print *, 'ngpu', n_gpu
 
-    if (n_gpu .gt. 0) then
-        call qv_scope_get_device(ctx, scope_user, QV_HW_OBJ_GPU, 0, QV_DEVICE_ID_PCI_BUS_ID, dev_pci, info)
+    do n = 0, n_gpu - 1
+        call qv_scope_get_device( &
+            ctx, scope_user, QV_HW_OBJ_GPU, n, &
+            QV_DEVICE_ID_PCI_BUS_ID, dev_pci, info &
+        )
         if (info .ne. QV_SUCCESS) then
             error stop
         end if
-        print *, 'dev_pci ', dev_pci
+        print *, 'dev_pci ', n, dev_pci
         deallocate(dev_pci)
-    end if
+    end do
 
     call qv_scope_free(ctx, scope_user, info)
     if (info .ne. QV_SUCCESS) then
@@ -101,3 +104,5 @@ program qvfort
     end if
 
 end program qvfort
+
+! vim: ft=fortran ts=4 sts=4 sw=4 expandtab
