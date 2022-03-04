@@ -24,6 +24,7 @@ program qvfort
     type(c_ptr) ctx, scope_user
     character(len=:),allocatable :: bstr(:)
     character(len=:),allocatable :: dev_pci(:)
+    character, pointer, dimension(:) :: strerr
 
     call mpi_init(info)
     if (info .ne. MPI_SUCCESS) then
@@ -87,6 +88,14 @@ program qvfort
         print *, 'dev_pci ', n, dev_pci
         deallocate(dev_pci)
     end do
+
+    print *, 'testing qv_strerr'
+    strerr => qv_strerr(QV_SUCCESS)
+    print *, 'success is ', strerr
+
+    strerr => qv_strerr(QV_ERR_OOR)
+    print *, 'err oor is ', strerr
+
 
     call qv_scope_free(ctx, scope_user, info)
     if (info .ne. QV_SUCCESS) then

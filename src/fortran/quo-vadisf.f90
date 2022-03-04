@@ -299,13 +299,40 @@ interface
     end function qv_context_barrier_c
 end interface
 
-contains
+interface
+    type(c_ptr) &
+    function qv_strerr_c(ec) &
+        bind(c, name='qv_strerr')
+        use, intrinsic :: iso_c_binding, only: c_ptr, c_int
+        implicit none
+        integer(c_int), value :: ec
+    end function qv_strerr_c
+end interface
 
-    subroutine qvi_free_c(p) &
+interface
+    subroutine qvif_free_c(p) &
         bind(c, name="free")
         use, intrinsic :: iso_c_binding
         type(c_ptr), intent(in), value :: p
-    end subroutine qvi_free_c
+    end subroutine qvif_free_c
+end interface
+
+contains
+
+    function qv_strerr(ec) result(fstrp)
+        use, intrinsic :: iso_c_binding, only: c_ptr, c_int
+        implicit none
+        integer(c_int), value :: ec
+        character, pointer, dimension(:) :: fstrp
+
+        type(c_ptr) :: cstr
+        integer(c_size_t) :: string_shape(1)
+
+        cstr = qv_strerr_c(ec)
+        ! Now deal with the string
+        string_shape(1) = qvif_strlen_c(cstr)
+        call c_f_pointer(cstr, fstrp, string_shape)
+    end function qv_strerr
 
     subroutine qv_scope_get(ctx, iscope, scope, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
@@ -408,22 +435,22 @@ contains
         integer(c_int), value :: dev_obj
         integer(c_int), value :: i
         integer(c_int), value :: id_type
-        character(len=:),allocatable, intent(out) :: dev_id(:)
+        character(len=:), allocatable, intent(out) :: dev_id(:)
         integer(c_int), intent(out) :: info
 
         type(c_ptr) :: cstr
         integer(c_size_t) :: string_shape(1)
-        character,pointer,dimension(:) :: fstrp
+        character, pointer, dimension(:) :: fstrp
 
         info = qv_scope_get_device_c( &
             ctx, scope, dev_obj, i, id_type, cstr &
-            )
+        )
         ! Now deal with the string
         string_shape(1) = qvif_strlen_c(cstr)
         call c_f_pointer(cstr, fstrp, string_shape)
         allocate(character(qvif_strlen_c(cstr)) :: dev_id(1))
         dev_id = fstrp
-        call qvi_free_c(cstr)
+        call qvif_free_c(cstr)
     end subroutine qv_scope_get_device
 
     subroutine qv_bind_push(ctx, scope, info)
@@ -448,12 +475,12 @@ contains
         implicit none
         type(c_ptr), value :: ctx
         integer(c_int), value :: sformat
-        character(len=:),allocatable, intent(out) :: fstr(:)
+        character(len=:), allocatable, intent(out) :: fstr(:)
         integer(c_int), intent(out) :: info
 
         type(c_ptr) :: cstr
         integer(c_size_t) :: string_shape(1)
-        character,pointer,dimension(:) :: fstrp
+        character, pointer, dimension(:) :: fstrp
 
         info = qv_bind_string_c(ctx, sformat, cstr)
         ! Now deal with the string
@@ -461,7 +488,7 @@ contains
         call c_f_pointer(cstr, fstrp, string_shape)
         allocate(character(qvif_strlen_c(cstr)) :: fstr(1))
         fstr = fstrp
-        call qvi_free_c(cstr)
+        call qvif_free_c(cstr)
     end subroutine
 
     subroutine qv_context_barrier(ctx, info)
