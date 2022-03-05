@@ -96,7 +96,6 @@ program qvfort
     strerr => qv_strerr(QV_ERR_OOR)
     print *, 'err oor is ', strerr
 
-
     call qv_scope_free(ctx, scope_user, info)
     if (info .ne. QV_SUCCESS) then
         error stop

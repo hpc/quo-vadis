@@ -1,10 +1,11 @@
-prefix=${CMAKE_INSTALL_PREFIX}
-includedir=${PKG_CONFIG_INCLUDEDIR}
-libdir=${PKG_CONFIG_LIBDIR}
+prefix=@CMAKE_INSTALL_PREFIX@
+includedir=@CMAKE_INSTALL_PREFIX@/include
+libdir=@CMAKE_INSTALL_PREFIX@/lib
 
-Name: ${PROJECT_NAME}
-Description: ${PROJECT_DESCRIPTION}
-Version: ${PROJECT_VERSION}
-Requires: ${PKG_CONFIG_REQUIRES}
-Libs: ${PKG_CONFIG_LIBS}
-Cflags: ${PKG_CONFIG_CFLAGS}
+Name: @PROJECT_NAME@
+Description: A coordination layer to dynamically map runtime components to
+hardware resources.
+Version: @PROJECT_VERSION@
+Libs: -L${libdir} -lquo-vadis-mpi
+Libs.private:
+Cflags: -I${includedir}

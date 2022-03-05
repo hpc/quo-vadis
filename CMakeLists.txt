@@ -132,15 +132,4 @@ set(CPACK_SOURCE_IGNORE_FILES "/\.cache/;/\.git/;/\.*.swp$;/build/")
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt)
 include(CPack)
 
-# pkg-config
-# TODO(skg) We need to have one for each type: e.g., MPI
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/pkg-config.pc.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc"
-)
-install(
-    FILES "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc"
-    DESTINATION lib/pkgconfig
-)
-
 # vim: ts=4 sts=4 sw=4 expandtab
