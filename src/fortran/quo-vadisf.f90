@@ -439,6 +439,7 @@ contains
         integer(c_int), intent(out) :: info
 
         type(c_ptr) :: cstr
+        integer :: strlen
         integer(c_size_t) :: string_shape(1)
         character, pointer, dimension(:) :: fstrp
 
@@ -446,9 +447,10 @@ contains
             ctx, scope, dev_obj, i, id_type, cstr &
         )
         ! Now deal with the string
-        string_shape(1) = qvif_strlen_c(cstr)
+        strlen = qvif_strlen_c(cstr)
+        string_shape(1) = strlen
         call c_f_pointer(cstr, fstrp, string_shape)
-        allocate(character(qvif_strlen_c(cstr)) :: dev_id(1))
+        allocate(character(strlen) :: dev_id(1))
         dev_id = fstrp
         call qvif_free_c(cstr)
     end subroutine qv_scope_get_device
@@ -479,14 +481,16 @@ contains
         integer(c_int), intent(out) :: info
 
         type(c_ptr) :: cstr
+        integer :: strlen
         integer(c_size_t) :: string_shape(1)
         character, pointer, dimension(:) :: fstrp
 
         info = qv_bind_string_c(ctx, sformat, cstr)
         ! Now deal with the string
-        string_shape(1) = qvif_strlen_c(cstr)
+        strlen = qvif_strlen_c(cstr)
+        string_shape(1) = strlen
         call c_f_pointer(cstr, fstrp, string_shape)
-        allocate(character(qvif_strlen_c(cstr)) :: fstr(1))
+        allocate(character(strlen) :: fstr(1))
         fstr = fstrp
         call qvif_free_c(cstr)
     end subroutine

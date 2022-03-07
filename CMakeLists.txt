@@ -13,7 +13,12 @@
 cmake_minimum_required(VERSION 3.19)
 
 # Set the project name and version
-project(quo-vadis VERSION 0.0.1 LANGUAGES C CXX)
+project(
+    quo-vadis
+    VERSION 0.0.1
+    DESCRIPTION "Infrastructure for dynamic computer resource arbitration."
+    LANGUAGES C CXX
+)
 
 # Specify the C standard
 set(CMAKE_C_STANDARD 11)
@@ -97,23 +102,23 @@ if(NOT QV_DISABLE_GPU_SUPPORT)
 endif()
 
 # Specify default build type
-include(cmake/build-type.cmake)
+include(cmake/QVBuildType.cmake)
 
 # Check include files
-include(cmake/CheckIncludes.cmake)
+include(cmake/QVCheckIncludes.cmake)
 
 # Add generated configuration file
 configure_file(config.h.in include/${PROJECT_NAME}/config.h)
 
 # Check datatype sizes
-include(cmake/CheckTypes.cmake)
+include(cmake/QVCheckTypes.cmake)
 
 # TODO(skg) Improve
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
 
 # Internal, third-party packages
-include(cmake/spdlog.cmake)
-include(cmake/hwloc.cmake)
+include(cmake/QVSpdLog.cmake)
+include(cmake/QVhwloc.cmake)
 
 # Add our source
 add_subdirectory(include)

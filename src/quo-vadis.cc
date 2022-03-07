@@ -236,26 +236,15 @@ qv_scope_split(
     int color,
     qv_scope_t **subscope
 ) {
-    if (!ctx || !scope || !subscope) {
+    if (!ctx || !scope || (npieces <= 0) | !subscope) {
         return QV_ERR_INVLD_ARG;
     }
 
-    int rc = QV_SUCCESS;
     qv_scope_t *isubscope = nullptr;
-
-    if (npieces <= 0 ) {
-        qvi_log_error(
-            "qv_scope_split Error: npieces "
-            "<= 0 (npieces = {})", npieces
-        );
-        rc = QV_ERR_INVLD_ARG;
-        goto out;
-    }
-
-    rc = qvi_scope_split(
+    int rc = qvi_scope_split(
         scope, npieces, color, &isubscope
     );
-out:
+
     if (rc != QV_SUCCESS) {
         qvi_scope_free(&isubscope);
     }
@@ -289,7 +278,7 @@ qv_scope_get_device(
     qv_device_id_type_t id_type,
     char **dev_id
 ) {
-    if (!ctx || !scope || i < 0 || !dev_id) {
+    if (!ctx || !scope || (i < 0) || !dev_id) {
         return QV_ERR_INVLD_ARG;
     }
 

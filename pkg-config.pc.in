@@ -3,7 +3,7 @@ includedir=@CMAKE_INSTALL_PREFIX@/include
 libdir=@CMAKE_INSTALL_PREFIX@/lib
 
 Name: @PROJECT_NAME@
-Description: A coordination layer to dynamically map runtime components to
+Description: @PROJECT_DESCRIPTION@
 hardware resources.
 Version: @PROJECT_VERSION@
 Libs: -L${libdir} -lquo-vadis-mpi
