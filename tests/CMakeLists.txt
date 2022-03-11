@@ -84,6 +84,12 @@ target_link_libraries(
     test-mpi-qvfort
     quo_vadis_mpif
 )
+
+set_target_properties(
+  test-mpi-qvfort
+  PROPERTIES LINKER_LANGUAGE Fortran
+)
+
 endif(QV_FORTRAN_HAPPY AND MPI_Fortran_FOUND)
 
 ################################################################################
