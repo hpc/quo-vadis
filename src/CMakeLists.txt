@@ -44,6 +44,8 @@ target_link_libraries(
       spdlog
 )
 
+install(TARGETS qvi-core DESTINATION lib)
+
 ################################################################################
 ################################################################################
 add_library(
@@ -87,6 +89,8 @@ target_link_libraries(
 )
 endif()
 
+install(TARGETS qvi-hwloc DESTINATION lib)
+
 ################################################################################
 ################################################################################
 add_library(
@@ -113,7 +117,9 @@ target_link_libraries(
     qvi-core
     qvi-hwloc
     zmq
-)
+    )
+
+install(TARGETS qvi-rmi DESTINATION lib)
 
 ################################################################################
 ################################################################################
@@ -143,6 +149,9 @@ target_link_libraries(
     qvi-core
     ${MPI_C_LIBRARIES}
 )
+
+install(TARGETS qvi-mpi DESTINATION lib)
+
 endif(MPI_FOUND)
 
 ################################################################################
@@ -179,6 +188,8 @@ target_link_libraries(
     qvi-rmi
 )
 
+install(TARGETS quo-vadis DESTINATION lib)
+
 ################################################################################
 ################################################################################
 if (MPI_FOUND)
@@ -205,18 +216,28 @@ target_link_libraries(
 
 install(TARGETS quo-vadis-mpi DESTINATION lib)
 
+endif(MPI_FOUND)
+
+################################################################################
+################################################################################
+
 # pkg-config
+
+set (QV_PKG_LIBRARIES "-lquo-vadis")
+if (MPI_FOUND)
+  set(QV_PKG_LIBRARIES "-lquo-vadis-mpi -lqvi-mpi -lquo-vadis")
+endif(MPI_FOUND)
+
 configure_file(
     "${CMAKE_SOURCE_DIR}/pkg-config.pc.in"
-    "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpi.pc"
+    "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc"
     @ONLY
 )
 install(
-    FILES "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpi.pc"
+    FILES "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc"
     DESTINATION lib/pkgconfig
 )
 
-endif(MPI_FOUND)
 
 ################################################################################
 ################################################################################

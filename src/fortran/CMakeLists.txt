@@ -20,6 +20,8 @@ target_link_libraries(
     quo_vadisf
     quo-vadis
 )
+
+install(TARGETS quo_vadisf DESTINATION lib)
 endif(QV_FORTRAN_HAPPY)
 
 ################################################################################
@@ -46,9 +48,29 @@ target_link_libraries(
 install(
     FILES
       "${CMAKE_Fortran_MODULE_DIRECTORY}/quo_vadis_mpif.mod"
+      "${CMAKE_Fortran_MODULE_DIRECTORY}/quo_vadisf.mod"
     DESTINATION
       include
 )
+
+install(TARGETS quo_vadis_mpif DESTINATION lib)
+
+# pkg-config
+set (QV_PKG_LIBRARIES "-lquo_vadisf -lquo-vadis")
+if (MPI_FOUND)
+  set(QV_PKG_LIBRARIES "-lquo_vadis_mpif -lquo-vadis-mpi -lqvi-mpi -lquo_vadisf -lquo-vadis")
+endif(MPI_FOUND)
+
+configure_file(
+    "${CMAKE_SOURCE_DIR}/pkg-config.pc.in"
+    "${CMAKE_BINARY_DIR}/${PROJECT_NAME}f.pc"
+    @ONLY
+)
+install(
+    FILES "${CMAKE_BINARY_DIR}/${PROJECT_NAME}f.pc"
+    DESTINATION lib/pkgconfig
+)
+
 endif(QV_FORTRAN_HAPPY AND MPI_Fortran_FOUND)
 
 # vim: ts=4 sts=4 sw=4 expandtab
