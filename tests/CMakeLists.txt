@@ -82,7 +82,7 @@ add_executable(
 
 target_link_libraries(
     test-mpi-qvfort
-    quo_vadis_mpif
+    quo-vadis-mpif
 )
 
 set_target_properties(

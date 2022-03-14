@@ -28,19 +28,19 @@ endif(QV_FORTRAN_HAPPY)
 ################################################################################
 if(QV_FORTRAN_HAPPY AND MPI_Fortran_FOUND)
 add_library(
-    quo_vadis_mpif
+    quo-vadis-mpif
     SHARED
     quo-vadis-mpif.f90
 )
 
 target_include_directories(
-    quo_vadis_mpif
+    quo-vadis-mpif
     PUBLIC
       ${MPI_Fortran_MODULE_DIR}
 )
 
 target_link_libraries(
-    quo_vadis_mpif
+    quo-vadis-mpif
     quo-vadisf
     quo-vadis-mpi
     ${MPI_Fortran_LIBRARIES}
@@ -49,13 +49,14 @@ target_link_libraries(
 
 install(
     TARGETS
-      quo_vadis_mpif
+      quo-vadis-mpif
     DESTINATION
       lib
 )
 
 install(
     FILES
+      "${CMAKE_Fortran_MODULE_DIRECTORY}/quo_vadisf.mod"
       "${CMAKE_Fortran_MODULE_DIRECTORY}/quo_vadis_mpif.mod"
     DESTINATION
       include
