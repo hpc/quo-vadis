@@ -20,6 +20,25 @@
 #include "qvi-zgroup-mpi.h"
 #include "qvi-utils.h"
 
+/**
+ * Simply a wrapper for our Fortran interface to C interface.
+ * in a header at this point, since it is only used by our Fortran module.
+ */
+#ifdef __cplusplus
+extern "C" {
+#endif
+int
+qv_mpi_context_create_f2c(
+    qv_context_t **ctx,
+    MPI_Fint comm
+) {
+    MPI_Comm c_comm = MPI_Comm_f2c(comm);
+    return qv_mpi_context_create(ctx, c_comm);
+}
+#ifdef __cplusplus
+}
+#endif
+
 int
 qv_mpi_context_create(
     qv_context_t **ctx,
