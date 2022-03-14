@@ -58,7 +58,7 @@ install(
     FILES
       "${CMAKE_Fortran_MODULE_DIRECTORY}/quo_vadis_mpif.mod"
     DESTINATION
-      lib
+      include
 )
 endif(QV_FORTRAN_HAPPY AND MPI_Fortran_FOUND)
 
