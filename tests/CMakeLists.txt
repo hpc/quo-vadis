@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2021 Triad National Security, LLC
+# Copyright (c) 2020-2022 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -19,7 +19,7 @@ add_executable(
 
 target_link_libraries(
     test-hwloc
-    quo-vadis
+    test-quo-vadis
 )
 
 add_test(
@@ -86,8 +86,8 @@ target_link_libraries(
 )
 
 set_target_properties(
-  test-mpi-qvfort
-  PROPERTIES LINKER_LANGUAGE Fortran
+    test-mpi-qvfort
+    PROPERTIES LINKER_LANGUAGE Fortran
 )
 
 endif(QV_FORTRAN_HAPPY AND MPI_Fortran_FOUND)
@@ -101,7 +101,7 @@ add_executable(
 
 target_link_libraries(
     test-rmi
-    quo-vadis
+    test-quo-vadis
 )
 
 add_test(
@@ -126,7 +126,7 @@ add_executable(
 
 target_link_libraries(
     test-scopes
-    quo-vadis
+    test-quo-vadis
 )
 
 add_test(
@@ -149,7 +149,6 @@ target_link_libraries(
 ################################################################################
 ################################################################################
 # Use the C linker to test for C/C++ linkage problems.
-# TODO(skg) Add test-pmi
 set_target_properties(
     test-hwloc
     test-mpi

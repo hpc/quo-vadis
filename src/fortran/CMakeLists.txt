@@ -12,13 +12,16 @@
 ################################################################################
 if(QV_FORTRAN_HAPPY)
 add_library(
-    quo_vadisf
+    quo-vadisf
+    OBJECT
     quo-vadisf.f90
 )
 
-target_link_libraries(
-    quo_vadisf
-    quo-vadis
+set_property(
+    TARGET
+      quo-vadisf
+    PROPERTY
+      POSITION_INDEPENDENT_CODE ON
 )
 endif(QV_FORTRAN_HAPPY)
 
@@ -26,6 +29,7 @@ endif(QV_FORTRAN_HAPPY)
 if(QV_FORTRAN_HAPPY AND MPI_Fortran_FOUND)
 add_library(
     quo_vadis_mpif
+    SHARED
     quo-vadis-mpif.f90
 )
 
@@ -37,17 +41,24 @@ target_include_directories(
 
 target_link_libraries(
     quo_vadis_mpif
+    quo-vadisf
     quo-vadis-mpi
-    quo_vadisf
     ${MPI_Fortran_LIBRARIES}
     ${MPI_Fortran_LINK_FLAGS}
+)
+
+install(
+    TARGETS
+      quo_vadis_mpif
+    DESTINATION
+      lib
 )
 
 install(
     FILES
       "${CMAKE_Fortran_MODULE_DIRECTORY}/quo_vadis_mpif.mod"
     DESTINATION
-      include
+      lib
 )
 endif(QV_FORTRAN_HAPPY AND MPI_Fortran_FOUND)
 

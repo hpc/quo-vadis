@@ -14,7 +14,7 @@ include(ExternalProject)
 
 set(QVI_HWLOC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/hwloc-2.5.0.tar.gz)
 set(QVI_HWLOC_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/hwloc)
-set(QVI_HWLOC_STATIC_LIB ${QVI_HWLOC_PREFIX}/lib/libhwloc.a)
+set(QVI_HWLOC_SHARED_LIB ${QVI_HWLOC_PREFIX}/lib/libhwloc.so)
 set(QVI_HWLOC_INCLUDES ${QVI_HWLOC_PREFIX}/include)
 set(QVI_HWLOC_PKG_CONFIG ${QVI_HWLOC_PREFIX}/lib/pkgconfig)
 # A list of configure variables.
@@ -82,9 +82,8 @@ ExternalProject_Add(
       ${QVI_HWLOC_CONFIG_VARS}
       --prefix=${QVI_HWLOC_PREFIX}
       --with-hwloc-symbol-prefix=quo_vadis_internal_
-      --enable-static=no
+      --enable-shared=yes
       --enable-plugins=no
-      --enable-shared=no
       --enable-libxml2=no
       --enable-cairo=no
       --enable-gl=no
@@ -94,17 +93,49 @@ ExternalProject_Add(
       ${QVI_HWLOC_GPU_FLAGS}
     BUILD_COMMAND ${QVI_HWLOC_BUILD_COMMAND}
     INSTALL_COMMAND ${QVI_HWLOC_BUILD_COMMAND} install
-    BUILD_BYPRODUCTS ${QVI_HWLOC_STATIC_LIB}
+    BUILD_BYPRODUCTS ${QVI_HWLOC_SHARED_LIB}
 )
 
-add_library(hwloc STATIC IMPORTED GLOBAL)
+add_library(hwloc SHARED IMPORTED GLOBAL)
 add_dependencies(hwloc libhwloc)
 
 set_target_properties(
     hwloc
     PROPERTIES
-      IMPORTED_LOCATION ${QVI_HWLOC_STATIC_LIB}
+      IMPORTED_LOCATION ${QVI_HWLOC_SHARED_LIB}
       INTERFACE_INCLUDE_DIRECTORIES ${QVI_HWLOC_INCLUDES}
+)
+
+target_link_libraries(
+    hwloc
+    INTERFACE
+      pciaccess
+)
+
+if(CUDAToolkit_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
+target_link_libraries(
+    hwloc
+    INTERFACE
+      CUDA::cudart
+      CUDA::nvml
+)
+endif()
+
+if(ROCM_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
+target_link_libraries(
+    hwloc
+    INTERFACE
+      ROCm
+)
+endif()
+
+# Note: the library version string will change as we update hwloc.
+install(
+    FILES
+      "${QVI_HWLOC_SHARED_LIB}"
+      "${QVI_HWLOC_SHARED_LIB}.15"
+      "${QVI_HWLOC_SHARED_LIB}.15.5.0"
+    DESTINATION lib
 )
 
 # vim: ts=4 sts=4 sw=4 expandtab
