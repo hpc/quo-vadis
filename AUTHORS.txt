@@ -6,6 +6,7 @@ individuals who have committed code to the quo-vadis repository.
 
 Username          Name                        Affiliation(s)
 ----------------  --------------------------- -------------------------
+andreapiacentini  Andrea Piacentini
 eleon             Edgar A. Leon               LLNL
 samuelkgutierrez  Samuel K. Gutierrez         LANL
 

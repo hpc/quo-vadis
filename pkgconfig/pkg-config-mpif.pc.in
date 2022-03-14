@@ -4,8 +4,7 @@ libdir=@CMAKE_INSTALL_PREFIX@/lib
 
 Name: @PROJECT_NAME@
 Description: @PROJECT_DESCRIPTION@
-hardware resources.
 Version: @PROJECT_VERSION@
-Libs: -L${libdir} -lquo-vadis-mpi
+Libs: -L${libdir} -lquo-vadis-mpif
 Libs.private:
 Cflags: -I${includedir}

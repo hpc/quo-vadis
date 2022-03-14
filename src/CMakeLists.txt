@@ -132,13 +132,21 @@ install(TARGETS quo-vadis-mpi DESTINATION lib)
 
 # pkg-config
 configure_file(
-    "${CMAKE_SOURCE_DIR}/pkg-config.pc.in"
+    "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config-mpi.pc.in"
     "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpi.pc"
     @ONLY
 )
 
+configure_file(
+    "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config-mpif.pc.in"
+    "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpif.pc"
+    @ONLY
+)
+
 install(
-    FILES "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpi.pc"
+    FILES
+      "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpi.pc"
+      "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpif.pc"
     DESTINATION lib/pkgconfig
 )
 endif(MPI_FOUND)
