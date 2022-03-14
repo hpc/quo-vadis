@@ -21,7 +21,7 @@
 #include "qvi-utils.h"
 
 /**
- * Simply a wrapper for our Fortran interface to C interface.
+ * Simply a wrapper for our Fortran interface to C interface. No need to expose
  * in a header at this point, since it is only used by our Fortran module.
  */
 #ifdef __cplusplus
