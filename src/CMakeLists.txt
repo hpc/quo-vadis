@@ -131,22 +131,16 @@ target_link_libraries(
 install(TARGETS quo-vadis-mpi DESTINATION lib)
 
 # pkg-config
+set (QV_PKG_LIBRARIES "-lquo-vadis-mpi")
 configure_file(
     "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config-mpi.pc.in"
     "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpi.pc"
     @ONLY
 )
 
-configure_file(
-    "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config-mpif.pc.in"
-    "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpif.pc"
-    @ONLY
-)
-
 install(
     FILES
       "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpi.pc"
-      "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpif.pc"
     DESTINATION lib/pkgconfig
 )
 endif(MPI_FOUND)

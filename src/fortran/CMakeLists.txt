@@ -47,6 +47,21 @@ target_link_libraries(
     ${MPI_Fortran_LINK_FLAGS}
 )
 
+# pkg-config
+set(QV_PKG_LIBRARIES "-lquo-vadis-mpif")
+configure_file(
+    "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config-mpi.pc.in"
+    "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpif.pc"
+    @ONLY
+)
+
+install(
+    FILES
+      "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpif.pc"
+    DESTINATION
+      lib/pkgconfig
+)
+
 install(
     TARGETS
       quo-vadis-mpif

@@ -5,6 +5,6 @@ libdir=@CMAKE_INSTALL_PREFIX@/lib
 Name: @PROJECT_NAME@
 Description: @PROJECT_DESCRIPTION@
 Version: @PROJECT_VERSION@
-Libs: -L${libdir} -lquo-vadis-mpi
+Libs: -L${libdir} @QV_PKG_LIBRARIES@
 Libs.private:
 Cflags: -I${includedir}
