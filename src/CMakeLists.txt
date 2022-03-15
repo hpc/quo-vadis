@@ -12,7 +12,7 @@
 ################################################################################
 ################################################################################
 add_library(
-    quo-vadis
+    quo-vadis-obj
     OBJECT
     ../include/quo-vadis.h
     qvi-common.h
@@ -50,7 +50,7 @@ add_library(
 )
 
 set_target_properties(
-    quo-vadis
+    quo-vadis-obj
     PROPERTIES
       INTERFACE_LINK_LIBRARIES "spdlog;hwloc;zmq"
       POSITION_INDEPENDENT_CODE ON
@@ -58,19 +58,19 @@ set_target_properties(
 
 # For parallel build correctness explicitly add dependencies.
 add_dependencies(
-    quo-vadis
+    quo-vadis-obj
     spdlog
     hwloc
 )
 
 target_compile_options(
-    quo-vadis
+    quo-vadis-obj
     PUBLIC
       -DSPDLOG_COMPILED_LIB
 )
 
 target_include_directories(
-    quo-vadis
+    quo-vadis-obj
     PUBLIC
       $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
@@ -81,22 +81,22 @@ target_include_directories(
 )
 
 ################################################################################
-# Convenience test library for internal regression testing.
+# Library for usage without MPI or for internal regression testing
 ################################################################################
 add_library(
-    test-quo-vadis
+    quo-vadis
     SHARED
 )
 
 target_include_directories(
-    test-quo-vadis
+    quo-vadis
     PUBLIC
-      $<TARGET_PROPERTY:quo-vadis,INCLUDE_DIRECTORIES>
+      $<TARGET_PROPERTY:quo-vadis-obj,INCLUDE_DIRECTORIES>
 )
 
 target_link_libraries(
-    test-quo-vadis
     quo-vadis
+    quo-vadis-obj
 )
 
 ################################################################################
@@ -118,32 +118,55 @@ add_library(
 target_include_directories(
     quo-vadis-mpi
     PUBLIC
-      $<TARGET_PROPERTY:quo-vadis,INCLUDE_DIRECTORIES>
+      $<TARGET_PROPERTY:quo-vadis-obj,INCLUDE_DIRECTORIES>
       ${MPI_C_INCLUDE_DIRS}
 )
 
 target_link_libraries(
     quo-vadis-mpi
-    quo-vadis
+    quo-vadis-obj
     ${MPI_C_LIBRARIES}
 )
 
 install(TARGETS quo-vadis-mpi DESTINATION lib)
 
-# pkg-config
-set (QV_PKG_LIBRARIES "-lquo-vadis-mpi")
-configure_file(
-    "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config-mpi.pc.in"
-    "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpi.pc"
-    @ONLY
-)
+else()
 
-install(
-    FILES
-      "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpi.pc"
-    DESTINATION lib/pkgconfig
-)
+install(TARGETS quo-vadis DESTINATION lib)
+
 endif(MPI_FOUND)
+
+################################################################################
+################################################################################
+
+# pkg-config
+if (MPI_FOUND)
+  set (QV_PKG_LIBRARIES "-lquo-vadis-mpi")
+  configure_file(
+      "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config.pc.in"
+      "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpi.pc"
+      @ONLY
+  )
+
+  install(
+      FILES
+        "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpi.pc"
+      DESTINATION lib/pkgconfig
+  )
+else()
+  set (QV_PKG_LIBRARIES "-lquo-vadis")
+  configure_file(
+      "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config.pc.in"
+      "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc"
+      @ONLY
+  )
+
+  install(
+      FILES
+        "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc"
+      DESTINATION lib/pkgconfig
+  )
+endif (MPI_FOUND)
 
 ################################################################################
 ################################################################################
@@ -154,7 +177,7 @@ add_executable(
 
 target_link_libraries(
     quo-vadisd
-    quo-vadis
+    quo-vadis-obj
 )
 
 install(TARGETS quo-vadisd DESTINATION bin)

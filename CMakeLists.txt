@@ -81,7 +81,17 @@ find_package(ZMQ REQUIRED)
 # find_package(PMIx REQUIRED)
 # MPI support
 # TODO(skg) Make sure that we are at least at MPI-3
-find_package(MPI REQUIRED)
+option(QV_DISABLE_MPI_SUPPORT "Unconditionally disable MPI support" OFF)
+message(CHECK_START "Determining MPI support status")
+if(NOT QV_DISABLE_MPI_SUPPORT)
+    message(CHECK_PASS "enabled")
+else()
+    message(CHECK_PASS "disabled")
+endif()
+
+if(NOT QV_DISABLE_MPI_SUPPORT)
+    find_package(MPI)
+endif()
 
 ################################################################################
 # GPU Support ##################################################################

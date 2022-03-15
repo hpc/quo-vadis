@@ -19,7 +19,7 @@ add_executable(
 
 target_link_libraries(
     test-hwloc
-    test-quo-vadis
+    quo-vadis
 )
 
 add_test(
@@ -70,6 +70,16 @@ target_link_libraries(
     test-mpi-phases
     quo-vadis-mpi
 )
+
+add_executable(
+    test-mpi-getdev
+    test-mpi-getdev.c
+)
+
+target_link_libraries(
+    test-mpi-getdev
+    quo-vadis-mpi
+)
 endif(MPI_FOUND)
 
 ################################################################################
@@ -101,7 +111,7 @@ add_executable(
 
 target_link_libraries(
     test-rmi
-    test-quo-vadis
+    quo-vadis
 )
 
 add_test(
@@ -126,7 +136,7 @@ add_executable(
 
 target_link_libraries(
     test-scopes
-    test-quo-vadis
+    quo-vadis
 )
 
 add_test(
@@ -136,28 +146,23 @@ add_test(
 
 ################################################################################
 ################################################################################
-add_executable(
-    test-mpi-getdev
-    test-mpi-getdev.c
-)
-
-target_link_libraries(
-    test-mpi-getdev
-    quo-vadis-mpi
-)
-
-################################################################################
-################################################################################
 # Use the C linker to test for C/C++ linkage problems.
+# TODO(skg) Add test-pmi
 set_target_properties(
     test-hwloc
+    test-scopes
+    PROPERTIES LINKER_LANGUAGE C
+)
+
+if (MPI_FOUND)
+set_target_properties(
     test-mpi
     test-mpi-init
     test-mpi-getdev
     test-mpi-scopes
-    test-scopes
     PROPERTIES LINKER_LANGUAGE C
 )
+endif (MPI_FOUND)
 
 # Set test timeout
 set_tests_properties(
