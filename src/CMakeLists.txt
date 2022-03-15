@@ -141,31 +141,33 @@ endif(MPI_FOUND)
 
 # pkg-config
 if (MPI_FOUND)
-  set (QV_PKG_LIBRARIES "-lquo-vadis-mpi")
-  configure_file(
-      "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config.pc.in"
+set(QV_PKG_LIBRARIES "-lquo-vadis-mpi")
+configure_file(
+    "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config.pc.in"
+    "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpi.pc"
+    @ONLY
+)
+
+install(
+    FILES
       "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpi.pc"
-      @ONLY
-  )
-
-  install(
-      FILES
-        "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpi.pc"
-      DESTINATION lib/pkgconfig
-  )
+    DESTINATION
+      lib/pkgconfig
+)
 else()
-  set (QV_PKG_LIBRARIES "-lquo-vadis")
-  configure_file(
-      "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config.pc.in"
-      "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc"
-      @ONLY
-  )
+set(QV_PKG_LIBRARIES "-lquo-vadis")
+configure_file(
+    "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config.pc.in"
+    "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc"
+    @ONLY
+)
 
-  install(
-      FILES
-        "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc"
-      DESTINATION lib/pkgconfig
-  )
+install(
+    FILES
+      "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc"
+    DESTINATION
+      lib/pkgconfig
+)
 endif (MPI_FOUND)
 
 ################################################################################

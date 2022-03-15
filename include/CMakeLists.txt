@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2021 Triad National Security, LLC
+# Copyright (c) 2020-2022 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -18,12 +18,12 @@ install(
 )
 
 if (MPI_FOUND)
-  install(
+install(
     FILES
       quo-vadis-mpi.h
     DESTINATION
       include
-  )
+)
 endif(MPI_FOUND)
 
 # vim: ts=4 sts=4 sw=4 expandtab

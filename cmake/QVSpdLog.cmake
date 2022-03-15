@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2021 Triad National Security, LLC
+# Copyright (c) 2020-2022 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -26,6 +26,7 @@ ExternalProject_Add(
     PREFIX ${QVI_SPDLOG_PREFIX}
     CMAKE_ARGS
       -DCMAKE_CXX_COMPILER:FILEPATH=${CMAKE_CXX_COMPILER}
+      -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
       -DCMAKE_INSTALL_PREFIX:PATH=${QVI_SPDLOG_PREFIX}
       -DCMAKE_POSITION_INDEPENDENT_CODE=YES
       -DSPDLOG_BUILD_EXAMPLE:BOOL=NO

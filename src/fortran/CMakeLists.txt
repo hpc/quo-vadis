@@ -66,9 +66,7 @@ install(
     DESTINATION
       include
 )
-
 else()
-
 add_library(
     quo-vadisf
     SHARED
@@ -94,45 +92,43 @@ install(
     DESTINATION
       lib
 )
-
 endif(MPI_Fortran_FOUND)
 
 ################################################################################
 ################################################################################
 # pkg-config
 if(MPI_Fortran_FOUND)
-  set(QV_PKG_LIBRARIES "-lquo-vadis-mpif")
-  configure_file(
+set(QV_PKG_LIBRARIES "-lquo-vadis-mpif")
+configure_file(
     "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config.pc.in"
     "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpif.pc"
     @ONLY
-  )
+)
 
-  install(
+install(
     FILES
       "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-mpif.pc"
     DESTINATION
       lib/pkgconfig
-  )
+)
 else()
-  set(QV_PKG_LIBRARIES "-lquo-vadisf")
-  configure_file(
+set(QV_PKG_LIBRARIES "-lquo-vadisf")
+configure_file(
     "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config.pc.in"
     "${CMAKE_BINARY_DIR}/${PROJECT_NAME}f.pc"
     @ONLY
-  )
+)
 
-  install(
+install(
     FILES
       "${CMAKE_BINARY_DIR}/${PROJECT_NAME}f.pc"
     DESTINATION
       lib/pkgconfig
-  )
+)
 endif(MPI_Fortran_FOUND)
 
 ################################################################################
 ################################################################################
 endif(QV_FORTRAN_HAPPY)
-
 
 # vim: ts=4 sts=4 sw=4 expandtab

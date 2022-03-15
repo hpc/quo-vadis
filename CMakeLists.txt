@@ -75,12 +75,7 @@ find_package(ZMQ REQUIRED)
 ################################################################################
 # Goup Support #################################################################
 ################################################################################
-# TODO(skg) At this point both are 'required', but this isn't necessary: we only
-# need one or the other.
-# PMIx support
-# find_package(PMIx REQUIRED)
 # MPI support
-# TODO(skg) Make sure that we are at least at MPI-3
 option(QV_DISABLE_MPI_SUPPORT "Unconditionally disable MPI support" OFF)
 message(CHECK_START "Determining MPI support status")
 if(NOT QV_DISABLE_MPI_SUPPORT)
@@ -90,6 +85,7 @@ else()
 endif()
 
 if(NOT QV_DISABLE_MPI_SUPPORT)
+    # TODO(skg) Make sure that we are at least at MPI-3
     find_package(MPI)
 endif()
 

@@ -34,6 +34,12 @@ else()
     set(QVI_HWLOC_BUILD_COMMAND "make")
 endif()
 
+set(QVI_HWLOC_EXTRA_CONFIG_FLAGS "--enable-silent-rules=yes")
+# If the top-level build is verbose, also enable verbose make output here.
+if(CMAKE_VERBOSE_MAKEFILE)
+    set(QVI_HWLOC_EXTRA_CONFIG_FLAGS "--enable-silent-rules=no")
+endif()
+
 find_package(PCIAccess REQUIRED)
 
 if(CUDAToolkit_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
@@ -82,6 +88,7 @@ ExternalProject_Add(
       ${QVI_HWLOC_CONFIG_VARS}
       --prefix=${QVI_HWLOC_PREFIX}
       --with-hwloc-symbol-prefix=quo_vadis_internal_
+      --enable-static=yes
       --enable-shared=no
       --with-pic=yes
       --enable-plugins=no
@@ -91,6 +98,7 @@ ExternalProject_Add(
       --enable-opencl=no
       --enable-pci=yes
       --enable-libudev=no
+      ${QVI_HWLOC_EXTRA_CONFIG_FLAGS}
       ${QVI_HWLOC_GPU_FLAGS}
     BUILD_COMMAND ${QVI_HWLOC_BUILD_COMMAND}
     INSTALL_COMMAND ${QVI_HWLOC_BUILD_COMMAND} install
@@ -114,20 +122,20 @@ target_link_libraries(
 )
 
 if(CUDAToolkit_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
-target_link_libraries(
-    hwloc
-    INTERFACE
-      CUDA::cudart
-      CUDA::nvml
-)
+    target_link_libraries(
+        hwloc
+        INTERFACE
+          CUDA::cudart
+          CUDA::nvml
+    )
 endif()
 
 if(ROCM_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
-target_link_libraries(
-    hwloc
-    INTERFACE
-      ROCm
-)
+    target_link_libraries(
+        hwloc
+        INTERFACE
+          ROCm
+    )
 endif()
 
 # vim: ts=4 sts=4 sw=4 expandtab
