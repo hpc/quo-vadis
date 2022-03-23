@@ -52,6 +52,16 @@ target_link_libraries(
 )
 
 add_executable(
+    test-mpi-api
+    test-mpi-api.c
+)
+
+target_link_libraries(
+    test-mpi-api
+    quo-vadis-mpi
+)
+
+add_executable(
     test-mpi-scopes
     test-mpi-scopes.c
 )
@@ -158,6 +168,7 @@ if (MPI_FOUND)
 set_target_properties(
     test-mpi
     test-mpi-init
+    test-mpi-api
     test-mpi-getdev
     test-mpi-scopes
     PROPERTIES LINKER_LANGUAGE C

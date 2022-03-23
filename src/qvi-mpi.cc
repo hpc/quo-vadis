@@ -856,6 +856,16 @@ out:
     return rc;
 }
 
+int
+qvi_mpi_group_comm_dup(
+    qvi_mpi_group_t *group,
+    MPI_Comm *comm
+) {
+    int rc = MPI_Comm_dup(group->mpi_comm, comm);
+    if (rc != MPI_SUCCESS) return QV_ERR_MPI;
+    return QV_SUCCESS;
+}
+
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
  */

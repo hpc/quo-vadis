@@ -44,6 +44,17 @@ qv_mpi_context_free(
     qv_context_t *ctx
 );
 
+/**
+ * Returns a duplicate of the underlying MPI communicator associated with the
+ * provided scope. The provided communicator must be freed by MPI_Comm_free().
+ */
+int
+qv_mpi_scope_comm_dup(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    MPI_Comm *comm
+);
+
 #ifdef __cplusplus
 }
 #endif

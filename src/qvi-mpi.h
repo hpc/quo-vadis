@@ -212,6 +212,15 @@ qvi_mpi_group_scatter_bbuffs(
     qvi_bbuff_t **rxbuff
 );
 
+/**
+ *
+ */
+int
+qvi_mpi_group_comm_dup(
+    qvi_mpi_group_t *group,
+    MPI_Comm *comm
+);
+
 #ifdef __cplusplus
 }
 #endif

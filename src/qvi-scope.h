@@ -53,6 +53,14 @@ qvi_scope_get(
 /**
  *
  */
+qvi_group_t *
+qvi_scope_group_get(
+    qv_scope_t *scope
+);
+
+/**
+ *
+ */
 hwloc_const_cpuset_t
 qvi_scope_cpuset_get(
     qv_scope_t *scope

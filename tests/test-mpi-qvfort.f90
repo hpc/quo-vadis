@@ -20,7 +20,7 @@ program qvfort
 
     integer(c_int) info, n
     integer(c_int) ntasks, taskid, n_cores, n_gpu
-    integer(c_int) cwrank
+    integer cwrank, cwsize, scope_comm, scope_comm_size
     type(c_ptr) ctx, scope_user
     character(len=:),allocatable :: bstr(:)
     character(len=:),allocatable :: dev_pci(:)
@@ -36,6 +36,15 @@ program qvfort
         error stop
     end if
 
+    call mpi_comm_size(MPI_COMM_WORLD, cwsize, info)
+    if (info .ne. MPI_SUCCESS) then
+        error stop
+    end if
+
+    if (cwrank .eq. 0) then
+        print *, 'cwsize', cwsize
+    end if
+
     call qv_mpi_context_create(ctx, MPI_COMM_WORLD, info)
     if (info .ne. QV_SUCCESS) then
         error stop
@@ -43,6 +52,24 @@ program qvfort
 
     call qv_scope_get(ctx, QV_SCOPE_USER, scope_user, info)
     if (info .ne. QV_SUCCESS) then
+        error stop
+    end if
+
+    call qv_mpi_scope_comm_dup(ctx, scope_user, scope_comm, info)
+    if (info .ne. QV_SUCCESS) then
+        error stop
+    end if
+
+    call mpi_comm_size(scope_comm, scope_comm_size, info)
+    if (info .ne. MPI_SUCCESS) then
+        error stop
+    end if
+
+    if (cwrank .eq. 0) then
+        print *, 'scope_comm_size', scope_comm_size
+    end if
+
+    if (scope_comm_size .ne. cwsize) then
         error stop
     end if
 
@@ -103,6 +130,11 @@ program qvfort
 
     call qv_mpi_context_free(ctx, info)
     if (info .ne. QV_SUCCESS) then
+        error stop
+    end if
+
+    call mpi_comm_free(scope_comm, info)
+    if (info .ne. MPI_SUCCESS) then
         error stop
     end if
 

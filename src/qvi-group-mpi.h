@@ -67,6 +67,13 @@ struct qvi_group_mpi_s : public qvi_group_s {
         int root,
         qvi_bbuff_t **rxbuff
     );
+    /**
+     * Returns a duplicate of the underlying MPI group communicator.
+     */
+    int
+    comm_dup(
+        MPI_Comm *comm
+    );
 };
 typedef qvi_group_mpi_s qvi_group_mpi_t;
 

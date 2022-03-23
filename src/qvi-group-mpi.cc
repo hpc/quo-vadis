@@ -109,6 +109,13 @@ qvi_group_mpi_s::scatter(
     );
 }
 
+int
+qvi_group_mpi_s::comm_dup(
+    MPI_Comm *comm
+) {
+    return qvi_mpi_group_comm_dup(mpi_group, comm);
+}
+
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
  */

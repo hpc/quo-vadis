@@ -18,15 +18,18 @@
 
 #include "qvi-context.h"
 #include "qvi-zgroup-mpi.h"
+#include "qvi-group-mpi.h"
+#include "qvi-scope.h"
 #include "qvi-utils.h"
 
 /**
  * Simply a wrapper for our Fortran interface to C interface. No need to expose
- * in a header at this point, since it is only used by our Fortran module.
+ * in a header at this point, since they are only used by our Fortran module.
  */
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 int
 qv_mpi_context_create_f2c(
     qv_context_t **ctx,
@@ -34,6 +37,18 @@ qv_mpi_context_create_f2c(
 ) {
     MPI_Comm c_comm = MPI_Comm_f2c(comm);
     return qv_mpi_context_create(ctx, c_comm);
+}
+
+int
+qv_mpi_scope_comm_dup_f2c(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    MPI_Fint *comm
+) {
+    MPI_Comm c_comm = MPI_COMM_NULL;
+    int rc = qv_mpi_scope_comm_dup(ctx, scope, &c_comm);
+    *comm = MPI_Comm_c2f(c_comm);
+    return rc;
 }
 #ifdef __cplusplus
 }
@@ -96,6 +111,22 @@ qv_mpi_context_free(
     delete ctx->zgroup;
     qvi_context_free(&ctx);
     return QV_SUCCESS;
+}
+
+int
+qv_mpi_scope_comm_dup(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    MPI_Comm *comm
+) {
+    if (!ctx || !scope || !comm) {
+        return QV_ERR_INVLD_ARG;
+    }
+
+    qvi_group_mpi_t *mpi_group = dynamic_cast<qvi_group_mpi_t *>(
+        qvi_scope_group_get(scope)
+    );
+    return mpi_group->comm_dup(comm);
 }
 
 /*

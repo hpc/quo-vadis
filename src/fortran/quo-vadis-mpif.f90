@@ -23,6 +23,18 @@ end interface
 
 interface
     integer(c_int) &
+    function qv_mpi_scope_comm_dup_c(ctx, scope, comm) &
+        bind(c, name='qv_mpi_scope_comm_dup_f2c')
+        use, intrinsic :: iso_c_binding, only: c_ptr, c_int
+        implicit none
+        type(c_ptr), value :: ctx
+        type(c_ptr), value :: scope
+        integer, intent(out) :: comm
+    end function qv_mpi_scope_comm_dup_c
+end interface
+
+interface
+    integer(c_int) &
     function qv_mpi_context_free_c(ctx) &
         bind(c, name='qv_mpi_context_free')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
@@ -41,6 +53,16 @@ contains
         integer(c_int), intent(out) :: info
         info = qv_mpi_context_create_c(ctx, comm)
     end subroutine qv_mpi_context_create
+
+    subroutine qv_mpi_scope_comm_dup(ctx, scope, comm, info)
+        use, intrinsic :: iso_c_binding, only: c_ptr, c_int
+        implicit none
+        type(c_ptr), value :: ctx
+        type(c_ptr), value :: scope
+        integer, intent(out) :: comm
+        integer(c_int), intent(out) :: info
+        info =  qv_mpi_scope_comm_dup_c(ctx, scope, comm)
+    end subroutine qv_mpi_scope_comm_dup
 
     subroutine qv_mpi_context_free(ctx, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int

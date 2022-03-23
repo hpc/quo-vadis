@@ -160,6 +160,14 @@ out:
     return rc;
 }
 
+qvi_group_t *
+qvi_scope_group_get(
+    qv_scope_t *scope
+) {
+    if (!scope) return nullptr;
+    return scope->group;
+}
+
 template <typename TYPE>
 static int
 gather_values(
