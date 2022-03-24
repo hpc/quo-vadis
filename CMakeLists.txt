@@ -28,6 +28,9 @@ set(C_STANDARD_REQUIRED TRUE)
 set(CMAKE_CXX_STANDARD 11)
 set(CXX_STANDARD_REQUIRED TRUE)
 
+# Append our module path
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+
 # Setup Fortran support.
 include(cmake/QVFortranSupport.cmake)
 
@@ -59,13 +62,12 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     include(CTest)
 endif()
 
-# Pthread support
+################################################################################
+# Pthread support ##############################################################
+################################################################################
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
-
-# Append our module path
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 ################################################################################
 # ZeroMQ Support ###############################################################
@@ -75,6 +77,7 @@ find_package(ZMQ REQUIRED)
 ################################################################################
 # Goup Support #################################################################
 ################################################################################
+
 # MPI support
 option(QV_DISABLE_MPI_SUPPORT "Unconditionally disable MPI support" OFF)
 message(CHECK_START "Determining MPI support status")
@@ -87,6 +90,18 @@ endif()
 if(NOT QV_DISABLE_MPI_SUPPORT)
     # TODO(skg) Make sure that we are at least at MPI-3
     find_package(MPI)
+endif()
+
+# OpenMP support
+option(QV_DISABLE_OMP_SUPPORT "Unconditionally disable OpenMP support" OFF)
+message(CHECK_START "Determining OpenMP support status")
+if(NOT QV_DISABLE_OMP_SUPPORT)
+    message(CHECK_PASS "enabled")
+else()
+    message(CHECK_PASS "disabled")
+endif()
+if(NOT QV_DISABLE_OMP_SUPPORT)
+    find_package(OpenMP)
 endif()
 
 ################################################################################
