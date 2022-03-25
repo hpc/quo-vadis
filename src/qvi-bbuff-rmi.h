@@ -743,7 +743,7 @@ qvi_bbuff_rmi_unpack_item(
     total_bw += bw;
     buffpos += bw;
     // Unpack devinfos.
-    ihwp->devinfos = qvi_new qvi_line_devinfo_t[ihwp->ndevinfos]; 
+    ihwp->devinfos = qvi_new qvi_line_devinfo_t[ihwp->ndevinfos]();
     if (!ihwp->devinfos) {
         rc = QV_ERR_OOR;
         goto out;

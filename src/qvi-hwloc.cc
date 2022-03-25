@@ -192,31 +192,31 @@ qvi_hwloc_new(
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_hwloc_t *ihwl = qvi_new qvi_hwloc_t;
+    qvi_hwloc_t *ihwl = qvi_new qvi_hwloc_t();
     if (!ihwl) {
         rc = QV_ERR_OOR;
         goto out;
     }
 
-    ihwl->device_ids = qvi_new qvi_hwloc_dev_id_set_t;
+    ihwl->device_ids = qvi_new qvi_hwloc_dev_id_set_t();
     if (!ihwl->device_ids) {
         rc = QV_ERR_OOR;
         goto out;
     }
 
-    ihwl->devices = qvi_new qvi_hwloc_dev_list_t;
+    ihwl->devices = qvi_new qvi_hwloc_dev_list_t();
     if (!ihwl->devices) {
         rc = QV_ERR_OOR;
         goto out;
     }
 
-    ihwl->gpus = qvi_new qvi_hwloc_dev_list_t;
+    ihwl->gpus = qvi_new qvi_hwloc_dev_list_t();
     if (!ihwl->gpus) {
         rc = QV_ERR_OOR;
         goto out;
     }
 
-    ihwl->nics = qvi_new qvi_hwloc_dev_list_t;
+    ihwl->nics = qvi_new qvi_hwloc_dev_list_t();
     if (!ihwl->nics) {
         rc = QV_ERR_OOR;
         goto out;
@@ -526,7 +526,7 @@ discover_gpu_devices(
 ) {
     // This will maintain a mapping of PCI bus ID to device pointers.
     qvi_hwloc_dev_map_t *devmap = nullptr;
-    devmap = qvi_new qvi_hwloc_dev_map_t;
+    devmap = qvi_new qvi_hwloc_dev_map_t();
     if (!devmap) {
         return QV_ERR_OOR;
     }
@@ -1217,7 +1217,7 @@ qvi_hwloc_device_new(
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_hwloc_device_t *idev = qvi_new qvi_hwloc_device_t;
+    qvi_hwloc_device_t *idev = qvi_new qvi_hwloc_device_t();
     if (!idev) {
         rc = QV_ERR_OOR;
         goto out;
@@ -1359,7 +1359,7 @@ qvi_hwloc_get_device_in_cpuset(
 ) {
     int rc = QV_SUCCESS, nw = 0;
 
-    qvi_hwloc_dev_list_t *devs = qvi_new qvi_hwloc_dev_list_t;
+    qvi_hwloc_dev_list_t *devs = qvi_new qvi_hwloc_dev_list_t();
     if (!devs) {
         rc = QV_ERR_OOR;
         goto out;

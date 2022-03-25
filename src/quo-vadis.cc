@@ -29,7 +29,7 @@ qvi_context_create(
 
     int rc = QV_SUCCESS;
 
-    qv_context_t *ictx = qvi_new qv_context_t;
+    qv_context_t *ictx = qvi_new qv_context_t();
     if (!ictx) {
         rc = QV_ERR_OOR;
         goto out;

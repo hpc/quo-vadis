@@ -52,7 +52,7 @@ context_new(
     int rc = QV_SUCCESS;
     cstr_t ers = nullptr;
 
-    context *ictx = qvi_new context;
+    context *ictx = qvi_new context();
     if (!ictx) {
         ers = "memory allocation failed";
         rc = QV_ERR_OOR;

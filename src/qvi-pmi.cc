@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -37,7 +37,7 @@ qvi_pmi_new(
 
     int rc = QV_SUCCESS;
 
-    qvi_pmi_t *ipmi = qvi_new qvi_pmi_t;
+    qvi_pmi_t *ipmi = qvi_new qvi_pmi_t();
     if (!ipmi) {
         qvi_log_error("memory allocation failed");
         rc = QV_ERR_OOR;

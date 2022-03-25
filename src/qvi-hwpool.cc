@@ -63,13 +63,13 @@ qvi_hwpool_new(
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_hwpool_t *irpool = qvi_new qvi_hwpool_t;
+    qvi_hwpool_t *irpool = qvi_new qvi_hwpool_t();
     if (!irpool) {
         rc = QV_ERR_OOR;
         goto out;
     }
 
-    irpool->devinfos = qvi_new qvi_hwpool_devinfos_t;
+    irpool->devinfos = qvi_new qvi_hwpool_devinfos_t();
     if (!irpool->devinfos) {
         rc = QV_ERR_OOR;
         goto out;
@@ -137,7 +137,7 @@ qvi_hwpool_new_line_from_hwpool(
     if (rc != QV_SUCCESS) goto out;
     // Initialize and fill in the device information.
     iline->ndevinfos = ndevinfos;
-    iline->devinfos = qvi_new qvi_line_devinfo_t[ndevinfos];
+    iline->devinfos = qvi_new qvi_line_devinfo_t[ndevinfos]();
     if (!iline->devinfos) {
         rc = QV_ERR_OOR;
         goto out;

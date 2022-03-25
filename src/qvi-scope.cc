@@ -42,7 +42,7 @@ qvi_scope_new(
 ) {
     int rc = QV_SUCCESS;
 
-    qv_scope_t *iscope = qvi_new qv_scope_t;
+    qv_scope_t *iscope = qvi_new qv_scope_t();
     if (!scope) rc = QV_ERR_OOR;
     // hwpool and group will be initialized in qvi_scope_init().
     if (rc != QV_SUCCESS) qvi_scope_free(&iscope);
@@ -195,7 +195,7 @@ gather_values(
     if (rc != QV_SUCCESS) goto out;
 
     if (group->id() == root) {
-        ioutvals = qvi_new TYPE[group_size];
+        ioutvals = qvi_new TYPE[group_size]();
         if (!ioutvals) {
             rc = QV_ERR_OOR;
             goto out;
@@ -393,7 +393,7 @@ bcast_value(
     TYPE *values = nullptr;
 
     if (root == group->id()) {
-        values = qvi_new TYPE[group_size];
+        values = qvi_new TYPE[group_size]();
         if (!values) {
             rc = QV_ERR_OOR;
             goto out;

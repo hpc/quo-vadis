@@ -24,7 +24,7 @@ qvi_line_config_new(
     qvi_line_config_t **config
 ) {
     int rc = QV_SUCCESS;
-    qvi_line_config_t *ic = qvi_new qvi_line_config_t;
+    qvi_line_config_t *ic = qvi_new qvi_line_config_t();
     if (!ic) rc = QV_ERR_OOR;
     // Do minimal initialization here because other routines will do the rest.
     if (rc != QV_SUCCESS) {
@@ -100,7 +100,7 @@ qvi_line_devinfo_new(
 ) {
     int rc = QV_SUCCESS;
 
-    devinfo = qvi_new qvi_line_devinfo_t;
+    devinfo = qvi_new qvi_line_devinfo_t();
     if (!devinfo) rc = QV_ERR_OOR;
     // Do minimal initialization here because other routines will do the rest.
     if (rc != QV_SUCCESS) {
@@ -125,7 +125,7 @@ qvi_line_hwpool_new(
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_line_hwpool_t *ihwp = qvi_new qvi_line_hwpool_t;
+    qvi_line_hwpool_t *ihwp = qvi_new qvi_line_hwpool_t();
     if (!ihwp) rc = QV_ERR_OOR;
     // Do minimal initialization here because other routines will do the rest.
     if (rc != QV_SUCCESS) qvi_line_hwpool_free(&ihwp);

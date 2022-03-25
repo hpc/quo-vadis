@@ -36,7 +36,7 @@ qvi_bbuff_new(
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_bbuff_t *ibuff = qvi_new qvi_bbuff_t;
+    qvi_bbuff_t *ibuff = qvi_new qvi_bbuff_t();
     if (!ibuff) {
         rc = QV_ERR_OOR;
         goto out;

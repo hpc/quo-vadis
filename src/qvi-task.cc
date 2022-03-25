@@ -35,7 +35,7 @@ qvi_task_new(
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_task_t *itask = qvi_new qvi_task_t;
+    qvi_task_t *itask = qvi_new qvi_task_t();
     if (!itask) {
         rc = QV_ERR_OOR;
     }

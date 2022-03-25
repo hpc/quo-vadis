@@ -782,7 +782,7 @@ qvi_rmi_server_new(
     int rc = QV_SUCCESS;
     cstr_t ers = nullptr;
 
-    qvi_rmi_server_t *iserver = qvi_new qvi_rmi_server_t;
+    qvi_rmi_server_t *iserver = qvi_new qvi_rmi_server_t();
     if (!iserver) {
         ers = "memory allocation failed";
         rc = QV_ERR_OOR;
@@ -986,7 +986,7 @@ qvi_rmi_client_new(
     int rc = QV_SUCCESS;
     cstr_t ers = nullptr;
 
-    qvi_rmi_client_t *icli = qvi_new qvi_rmi_client_t;
+    qvi_rmi_client_t *icli = qvi_new qvi_rmi_client_t();
     if (!icli) {
         ers = "memory allocation failed";
         rc = QV_ERR_OOR;

@@ -34,13 +34,13 @@ qvi_bind_stack_new(
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_bind_stack_t *ibstack = qvi_new qvi_bind_stack_t;
+    qvi_bind_stack_t *ibstack = qvi_new qvi_bind_stack_t();
     if (!ibstack) {
         rc = QV_ERR_OOR;
         goto out;
     }
 
-    ibstack->stack = qvi_new qvi_bitmap_stack_t;
+    ibstack->stack = qvi_new qvi_bitmap_stack_t();
     if (!ibstack->stack) {
         rc = QV_ERR_OOR;
         goto out;

@@ -227,7 +227,7 @@ qvi_mpi_new(
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_mpi_t *impi = qvi_new qvi_mpi_t;
+    qvi_mpi_t *impi = qvi_new qvi_mpi_t();
     if (!impi) {
         rc = QV_ERR_OOR;
         goto out;
@@ -236,7 +236,7 @@ qvi_mpi_new(
     rc = qvi_task_new(&impi->task);
     if (rc != QV_SUCCESS) goto out;
     // Groups
-    impi->group_tab = qvi_new qvi_mpi_group_tab_t;
+    impi->group_tab = qvi_new qvi_mpi_group_tab_t();
     if (!impi->group_tab) {
         rc = QV_ERR_OOR;
         goto out;
@@ -445,7 +445,7 @@ qvi_mpi_group_new(
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_mpi_group_t *igroup = qvi_new qvi_mpi_group_t;
+    qvi_mpi_group_t *igroup = qvi_new qvi_mpi_group_t();
     if (!igroup) rc = QV_ERR_OOR;
 
     *group = igroup;
@@ -784,13 +784,13 @@ qvi_mpi_group_scatter_bbuffs(
     qvi_bbuff_t *mybbuff = nullptr;
     // Root sets up relevant Scatterv data structures.
     if (group_id == root) {
-        txcounts = qvi_new int[group_size];
+        txcounts = qvi_new int[group_size]();
         if (!txcounts) {
             rc = QV_ERR_OOR;
             goto out;
         }
 
-        displs = qvi_new int[group_size];
+        displs = qvi_new int[group_size]();
         if (!displs) {
             rc = QV_ERR_OOR;
             goto out;
@@ -802,7 +802,7 @@ qvi_mpi_group_scatter_bbuffs(
             total_bytes += txcounts[i];
         }
         // A flattened buffer containing all the relevant information.
-        txbytes = qvi_new byte_t[total_bytes];
+        txbytes = qvi_new byte_t[total_bytes]();
         if (!txbytes) {
             rc = QV_ERR_OOR;
             goto out;
@@ -825,7 +825,7 @@ qvi_mpi_group_scatter_bbuffs(
         goto out;
     }
     // Everyone allocates a buffer for their data.
-    mybytes = qvi_new byte_t[rxcount];
+    mybytes = qvi_new byte_t[rxcount]();
     if (!mybytes) {
         rc = QV_ERR_OOR;
         goto out;

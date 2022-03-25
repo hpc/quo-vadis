@@ -49,7 +49,7 @@ qvi_zgroup_mpi_s::group_create_intrinsic(
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_group_mpi_t *igroup = qvi_new qvi_group_mpi_t;
+    qvi_group_mpi_t *igroup = qvi_new qvi_group_mpi_t();
     if (!igroup) {
         rc = QV_ERR_OOR;
         goto out;
@@ -101,7 +101,7 @@ qvi_zgroup_mpi_new(
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_zgroup_mpi_t *izgroup = qvi_new qvi_zgroup_mpi_t;
+    qvi_zgroup_mpi_t *izgroup = qvi_new qvi_zgroup_mpi_t();
     if (!izgroup) {
         rc = QV_ERR_OOR;
         goto out;
