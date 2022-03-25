@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -18,8 +18,8 @@
 
 #include "spdlog/sinks/stdout_sinks.h"
 #include "spdlog/sinks/syslog_sink.h"
-#include <spdlog/common.h>
-#include <spdlog/spdlog.h>
+#include "spdlog/common.h"
+#include "spdlog/spdlog.h"
 
 qvi_logger::qvi_logger(void)
 {
