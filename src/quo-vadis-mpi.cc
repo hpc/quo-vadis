@@ -15,9 +15,11 @@
 
 #include "qvi-common.h"
 
+#include "quo-vadis-mpi.h"
+
 #include "qvi-context.h"
-#include "qvi-zgroup-mpi.h"
 #include "qvi-group-mpi.h"
+#include "qvi-zgroup-mpi.h"
 #include "qvi-scope.h"
 #include "qvi-utils.h"
 

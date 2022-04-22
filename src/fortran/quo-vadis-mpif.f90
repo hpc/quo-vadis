@@ -19,9 +19,7 @@ interface
         type(c_ptr), intent(out) :: ctx
         integer, value :: comm
     end function qv_mpi_context_create_c
-end interface
 
-interface
     integer(c_int) &
     function qv_mpi_scope_comm_dup_c(ctx, scope, comm) &
         bind(c, name='qv_mpi_scope_comm_dup_f2c')
@@ -31,9 +29,7 @@ interface
         type(c_ptr), value :: scope
         integer, intent(out) :: comm
     end function qv_mpi_scope_comm_dup_c
-end interface
 
-interface
     integer(c_int) &
     function qv_mpi_context_free_c(ctx) &
         bind(c, name='qv_mpi_context_free')

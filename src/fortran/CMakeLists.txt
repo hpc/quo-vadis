@@ -24,13 +24,6 @@ if(QV_FORTRAN_HAPPY)
           POSITION_INDEPENDENT_CODE ON
     )
 
-    install(
-        FILES
-          "${CMAKE_Fortran_MODULE_DIRECTORY}/quo_vadisf.mod"
-        DESTINATION
-          include
-    )
-
     ############################################################################
     if(MPI_Fortran_FOUND)
         add_library(
@@ -81,48 +74,89 @@ if(QV_FORTRAN_HAPPY)
             DESTINATION
               lib/pkgconfig
         )
-    else()
-        add_library(
-            quo-vadisf
-            SHARED
-        )
+    endif()
 
-        target_include_directories(
-            quo-vadisf
-            PUBLIC
-              $<TARGET_PROPERTY:quo-vadisf-core,INCLUDE_DIRECTORIES>
-        )
+    ############################################################################
+    add_library(
+        quo-vadisf
+        SHARED
+    )
 
-        target_link_libraries(
-            quo-vadisf
-            quo-vadisf-core
-            quo-vadis-core
-            ${MPI_Fortran_LIBRARIES}
-            ${MPI_Fortran_LINK_FLAGS}
-        )
+    target_include_directories(
+        quo-vadisf
+        PUBLIC
+          $<TARGET_PROPERTY:quo-vadisf-core,INCLUDE_DIRECTORIES>
+    )
 
-        install(
-            TARGETS
-              quo-vadisf
-            DESTINATION
-              lib
-        )
+    target_link_libraries(
+        quo-vadisf
+        quo-vadisf-core
+        quo-vadis-core
+        ${MPI_Fortran_LIBRARIES}
+        ${MPI_Fortran_LINK_FLAGS}
+    )
 
-        # pkg-config ###########################################################
-        set(QV_PKG_LIBRARIES "-lquo-vadisf")
-        configure_file(
-            "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config.pc.in"
-            "${CMAKE_BINARY_DIR}/${PROJECT_NAME}f.pc"
-            @ONLY
-        )
+    install(
+        TARGETS
+          quo-vadisf
+        DESTINATION
+          lib
+    )
 
-        install(
-            FILES
-              "${CMAKE_BINARY_DIR}/${PROJECT_NAME}f.pc"
-            DESTINATION
-              lib/pkgconfig
-        )
-    endif(MPI_Fortran_FOUND)
-endif(QV_FORTRAN_HAPPY)
+    install(
+        FILES
+          "${CMAKE_Fortran_MODULE_DIRECTORY}/quo_vadisf.mod"
+        DESTINATION
+          include
+    )
+
+    ############################################################################
+    add_library(
+        quo-vadis-processf
+        SHARED
+        quo-vadis-processf.f90
+    )
+
+    target_include_directories(
+        quo-vadis-processf
+        PUBLIC
+          $<TARGET_PROPERTY:quo-vadisf-core,INCLUDE_DIRECTORIES>
+    )
+
+    target_link_libraries(
+        quo-vadis-processf
+        quo-vadisf-core
+        quo-vadis
+    )
+
+    install(
+        TARGETS
+          quo-vadis-processf
+        DESTINATION
+          lib
+    )
+
+    install(
+        FILES
+          "${CMAKE_Fortran_MODULE_DIRECTORY}/quo_vadis_processf.mod"
+        DESTINATION
+          include
+    )
+
+    # pkg-config ###########################################################
+    set(QV_PKG_LIBRARIES "-lquo-vadisf")
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config.pc.in"
+        "${CMAKE_BINARY_DIR}/${PROJECT_NAME}f.pc"
+        @ONLY
+    )
+
+    install(
+        FILES
+          "${CMAKE_BINARY_DIR}/${PROJECT_NAME}f.pc"
+        DESTINATION
+          lib/pkgconfig
+    )
+endif()
 
 # vim: ts=4 sts=4 sw=4 expandtab

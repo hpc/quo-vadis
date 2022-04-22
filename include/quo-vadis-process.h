@@ -19,10 +19,8 @@
 extern "C" {
 #endif
 
-// TODO(skg) Add Fortran interfaces.
-
 /**
- *
+ * Creates a process context.
  */
 int
 qv_process_context_create(

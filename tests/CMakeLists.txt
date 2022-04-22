@@ -52,85 +52,101 @@ add_test(
 ################################################################################
 # TODO(skg) Add MPI tests.
 if(MPI_FOUND)
-add_executable(
-    test-mpi
-    test-mpi.c
-)
+    add_executable(
+        test-mpi
+        test-mpi.c
+    )
 
-target_link_libraries(
-    test-mpi
-    quo-vadis-mpi
-)
+    target_link_libraries(
+        test-mpi
+        quo-vadis-mpi
+    )
 
-add_executable(
-    test-mpi-init
-    test-mpi-init.c
-)
+    add_executable(
+        test-mpi-init
+        test-mpi-init.c
+    )
 
-target_link_libraries(
-    test-mpi-init
-    quo-vadis-mpi
-)
+    target_link_libraries(
+        test-mpi-init
+        quo-vadis-mpi
+    )
 
-add_executable(
-    test-mpi-api
-    test-mpi-api.c
-)
+    add_executable(
+        test-mpi-api
+        test-mpi-api.c
+    )
 
-target_link_libraries(
-    test-mpi-api
-    quo-vadis-mpi
-)
+    target_link_libraries(
+        test-mpi-api
+        quo-vadis-mpi
+    )
 
-add_executable(
-    test-mpi-scopes
-    test-mpi-scopes.c
-)
+    add_executable(
+        test-mpi-scopes
+        test-mpi-scopes.c
+    )
 
-target_link_libraries(
-    test-mpi-scopes
-    quo-vadis-mpi
-)
+    target_link_libraries(
+        test-mpi-scopes
+        quo-vadis-mpi
+    )
 
-add_executable(
-    test-mpi-phases
-    test-mpi-phases.c
-)
+    add_executable(
+        test-mpi-phases
+        test-mpi-phases.c
+    )
 
-target_link_libraries(
-    test-mpi-phases
-    quo-vadis-mpi
-)
+    target_link_libraries(
+        test-mpi-phases
+        quo-vadis-mpi
+    )
 
-add_executable(
-    test-mpi-getdev
-    test-mpi-getdev.c
-)
+    add_executable(
+        test-mpi-getdev
+        test-mpi-getdev.c
+    )
 
-target_link_libraries(
-    test-mpi-getdev
-    quo-vadis-mpi
-)
+    target_link_libraries(
+        test-mpi-getdev
+        quo-vadis-mpi
+    )
 endif()
 
 ################################################################################
 ################################################################################
-if(QV_FORTRAN_HAPPY AND MPI_Fortran_FOUND)
-add_executable(
-    test-mpi-qvfort
-    test-mpi-qvfort.f90
-)
+if(QV_FORTRAN_HAPPY)
+    add_executable(
+        test-process-fortapi
+        test-process-fortapi.f90
+    )
 
-target_link_libraries(
-    test-mpi-qvfort
-    quo-vadis-mpif
-)
+    target_link_libraries(
+        test-process-fortapi
+        quo-vadis-processf
+    )
 
-set_target_properties(
-    test-mpi-qvfort
-    PROPERTIES LINKER_LANGUAGE Fortran
-)
+    set_target_properties(
+        test-process-fortapi
+        PROPERTIES LINKER_LANGUAGE Fortran
+    )
 
+    if(MPI_Fortran_FOUND)
+        add_executable(
+            test-mpi-fortapi
+            test-mpi-fortapi.f90
+        )
+
+        target_link_libraries(
+            test-mpi-fortapi
+            quo-vadis-mpif
+        )
+
+        set_target_properties(
+            test-mpi-fortapi
+            PROPERTIES LINKER_LANGUAGE Fortran
+        )
+    endif()
 endif()
 
 ################################################################################

@@ -134,9 +134,7 @@ interface
         type(c_ptr), intent(in), value :: s
         integer(c_size_t) qvif_strlen_c
     end
-end interface
 
-interface
     integer(c_int) &
     function qv_scope_get_c(ctx, iscope, scope) &
         bind(c, name='qv_scope_get')
@@ -146,9 +144,7 @@ interface
         integer(c_int), value :: iscope
         type(c_ptr), intent(out) :: scope
     end function qv_scope_get_c
-end interface
 
-interface
     integer(c_int) &
     function qv_scope_free_c(ctx, scope) &
         bind(c, name='qv_scope_free')
@@ -157,9 +153,7 @@ interface
         type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
     end function qv_scope_free_c
-end interface
 
-interface
     integer(c_int) &
     function qv_scope_split_c( &
         ctx, scope, npieces, group_id, subscope &
@@ -173,9 +167,7 @@ interface
         integer(c_int), value :: group_id
         type(c_ptr), intent(out) :: subscope
     end function qv_scope_split_c
-end interface
 
-interface
     integer(c_int) &
     function qv_scope_split_at_c( &
         ctx, scope, obj_type, group_id, subscope &
@@ -189,9 +181,7 @@ interface
         integer(c_int), value :: group_id
         type(c_ptr), intent(out) :: subscope
     end function qv_scope_split_at_c
-end interface
 
-interface
     integer(c_int) &
     function qv_scope_nobjs_c(ctx, scope, obj, n) &
         bind(c, name='qv_scope_nobjs')
@@ -202,9 +192,7 @@ interface
         integer(c_int), value :: obj
         integer(c_int), intent(out) :: n
     end function qv_scope_nobjs_c
-end interface
 
-interface
     integer(c_int) &
     function qv_scope_taskid_c(ctx, scope, taskid) &
         bind(c, name='qv_scope_taskid')
@@ -214,9 +202,7 @@ interface
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: taskid
     end function qv_scope_taskid_c
-end interface
 
-interface
     integer(c_int) &
     function qv_scope_ntasks_c(ctx, scope, ntasks) &
         bind(c, name='qv_scope_ntasks')
@@ -226,9 +212,7 @@ interface
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: ntasks
     end function qv_scope_ntasks_c
-end interface
 
-interface
     integer(c_int) &
     function qv_scope_barrier_c(ctx, scope) &
         bind(c, name='qv_scope_barrier')
@@ -237,9 +221,7 @@ interface
         type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
     end function qv_scope_barrier_c
-end interface
 
-interface
     integer(c_int) &
     function qv_scope_get_device_id_c( &
         ctx, scope, dev_obj, i, id_type, dev_id &
@@ -254,9 +236,7 @@ interface
         integer(c_int), value :: id_type
         type(c_ptr), intent(out) :: dev_id
     end function qv_scope_get_device_id_c
-end interface
 
-interface
       integer(c_int) &
       function qv_bind_push_c(ctx, scope) &
           bind(c, name='qv_bind_push')
@@ -265,9 +245,7 @@ interface
           type(c_ptr), value :: ctx
           type(c_ptr), value :: scope
       end function qv_bind_push_c
-end interface
 
-interface
     integer(c_int) &
     function qv_bind_pop_c(ctx) &
         bind(c, name='qv_bind_pop')
@@ -275,9 +253,7 @@ interface
         implicit none
         type(c_ptr), value :: ctx
     end function qv_bind_pop_c
-end interface
 
-interface
     integer(c_int) &
     function qv_bind_string_c(ctx, sformat, str) &
         bind(c, name='qv_bind_string')
@@ -287,9 +263,7 @@ interface
         integer(c_int), value :: sformat
         type(c_ptr), intent(out) :: str
     end function qv_bind_string_c
-end interface
 
-interface
     integer(c_int) &
     function qv_context_barrier_c(ctx) &
         bind(c, name='qv_context_barrier')
@@ -297,9 +271,7 @@ interface
         implicit none
         type(c_ptr), value :: ctx
     end function qv_context_barrier_c
-end interface
 
-interface
     type(c_ptr) &
     function qv_strerr_c(ec) &
         bind(c, name='qv_strerr')
@@ -307,9 +279,7 @@ interface
         implicit none
         integer(c_int), value :: ec
     end function qv_strerr_c
-end interface
 
-interface
     subroutine qvif_free_c(p) &
         bind(c, name="free")
         use, intrinsic :: iso_c_binding
