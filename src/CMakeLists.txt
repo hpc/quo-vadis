@@ -81,11 +81,19 @@ target_include_directories(
 )
 
 ################################################################################
-# Library for usage without MPI or for internal regression testing
+# Base library
 ################################################################################
 add_library(
     quo-vadis
     SHARED
+    ../include/quo-vadis-process.h
+    qvi-process.h
+    qvi-group-process.h
+    qvi-zgroup-process.h
+    qvi-process.cc
+    qvi-group-process.cc
+    qvi-zgroup-process.cc
+    quo-vadis-process.cc
 )
 
 target_include_directories(
@@ -149,29 +157,29 @@ if(MPI_FOUND)
         DESTINATION
           lib/pkgconfig
     )
-else()
-    install(
-        TARGETS
-          quo-vadis
-        DESTINATION
-          lib
-    )
+endif()
 
-    # pkg-config ###############################################################
-    set(QV_PKG_LIBRARIES "-lquo-vadis")
-    configure_file(
-        "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config.pc.in"
-        "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc"
-        @ONLY
-    )
+install(
+    TARGETS
+      quo-vadis
+    DESTINATION
+      lib
+)
 
-    install(
-        FILES
-          "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc"
-        DESTINATION
-          lib/pkgconfig
-    )
-endif(MPI_FOUND)
+# pkg-config ###############################################################
+set(QV_PKG_LIBRARIES "-lquo-vadis")
+configure_file(
+    "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config.pc.in"
+    "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc"
+    @ONLY
+)
+
+install(
+    FILES
+      "${CMAKE_BINARY_DIR}/${PROJECT_NAME}.pc"
+    DESTINATION
+      lib/pkgconfig
+)
 
 ################################################################################
 ################################################################################

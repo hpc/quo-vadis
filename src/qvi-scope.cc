@@ -72,9 +72,7 @@ scope_init(
     qvi_group_t *group,
     qvi_hwpool_t *hwpool
 ) {
-    assert(rmi);
-    assert(group);
-    assert(hwpool);
+    assert(rmi && group && hwpool);
     if (!rmi || !hwpool || !scope) return QV_ERR_INTERNAL;
     scope->rmi = rmi;
     scope->group = group;
@@ -518,7 +516,7 @@ split_user_defined(
     }
 
     for (int i = 0; i < group_size; ++i) {
-        rc = qvi_rmi_split_cpuset_by_group_id(
+        rc = qvi_rmi_split_cpuset_by_color(
             parent->rmi,
             qvi_hwpool_cpuset_get(parent->hwpool),
             ncolors, colors[i], &cpusets[i]
@@ -719,6 +717,50 @@ out:
 }
 
 int
+qvi_scope_create(
+    qv_scope_t *scope,
+    qv_hw_obj_type_t type,
+    int nobjs,
+    qv_scope_create_hint_t hint,
+    qv_scope_t **subscope
+) {
+    // TODO(skg) Implement use of hints.
+    QVI_UNUSED(hint);
+
+    qv_scope_t *isubscope = nullptr;
+    hwloc_bitmap_t cpuset = nullptr;
+    qvi_hwpool_t *hwpool = nullptr;
+
+    int rc = qvi_rmi_get_cpuset_for_nobjs(
+        scope->rmi,
+        qvi_hwpool_cpuset_get(scope->hwpool),
+        type, nobjs, &cpuset
+    );
+    if (rc != QV_SUCCESS) {
+        goto out;
+    }
+    // Now that we have the desired cpuset, create
+    // a corresponding hardware and subscope.
+    rc = qvi_hwpool_new(&hwpool);
+    if (rc != QV_SUCCESS) {
+        goto out;
+    }
+
+    rc = qvi_hwpool_init(hwpool, cpuset);
+    if (rc != QV_SUCCESS) {
+        goto out;
+    }
+out:
+    if (rc != QV_SUCCESS) {
+        qvi_hwloc_bitmap_free(&cpuset);
+        qvi_hwpool_free(&hwpool);
+        qvi_scope_free(&isubscope);
+    }
+    *subscope = isubscope;
+    return rc;
+}
+
+int
 qvi_scope_nobjs(
     qv_scope_t *scope,
     qv_hw_obj_type_t obj,
@@ -734,7 +776,7 @@ qvi_scope_nobjs(
 }
 
 int
-qvi_scope_get_device(
+qvi_scope_get_device_id(
     qv_scope_t *scope,
     qv_hw_obj_type_t dev_obj,
     int i,

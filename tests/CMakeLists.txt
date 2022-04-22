@@ -27,10 +27,31 @@ add_test(
     test-hwloc
 )
 
+add_executable(
+    test-process-scopes
+    test-process-scopes.c
+)
+
+
+target_link_libraries(
+    test-process-scopes
+    quo-vadis
+)
+
+add_test(
+    NAME
+      process-context
+    COMMAND
+      bash -c "export QV_PORT=\"55999\"                   && \
+      ( sleep 5 && killall -9 quo-vadisd              & ) && \
+      ( ${CMAKE_CURRENT_BINARY_DIR}/../src/quo-vadisd & ) && \
+        ${CMAKE_CURRENT_BINARY_DIR}/test-process-scopes"
+)
+
 ################################################################################
 ################################################################################
 # TODO(skg) Add MPI tests.
-if (MPI_FOUND)
+if(MPI_FOUND)
 add_executable(
     test-mpi
     test-mpi.c
@@ -90,7 +111,7 @@ target_link_libraries(
     test-mpi-getdev
     quo-vadis-mpi
 )
-endif(MPI_FOUND)
+endif()
 
 ################################################################################
 ################################################################################
@@ -110,7 +131,7 @@ set_target_properties(
     PROPERTIES LINKER_LANGUAGE Fortran
 )
 
-endif(QV_FORTRAN_HAPPY AND MPI_Fortran_FOUND)
+endif()
 
 ################################################################################
 ################################################################################
@@ -128,13 +149,13 @@ add_test(
     NAME
       rmi
     COMMAND
-      bash -c "export URL=\"tcp://127.0.0.1:55995\"    && \
-      (sleep 5 && killall -9 test-rmi               &) && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -s &) && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &) && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &) && \
-      (${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c &) && \
-       ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c"
+      bash -c "export URL=\"tcp://127.0.0.1:55995\"      && \
+      ( sleep 5 && killall -9 test-rmi               & ) && \
+      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -s & ) && \
+      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
+      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
+      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
+        ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c"
 )
 
 ################################################################################
@@ -164,7 +185,7 @@ set_target_properties(
     PROPERTIES LINKER_LANGUAGE C
 )
 
-if (MPI_FOUND)
+if(MPI_FOUND)
 set_target_properties(
     test-mpi
     test-mpi-init
@@ -173,13 +194,14 @@ set_target_properties(
     test-mpi-scopes
     PROPERTIES LINKER_LANGUAGE C
 )
-endif (MPI_FOUND)
+endif()
 
 # Set test timeout
 set_tests_properties(
     hwloc
     rmi
     scopes
+    process-context
     PROPERTIES TIMEOUT 10
 )
 

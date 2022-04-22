@@ -65,7 +65,7 @@ qvi_group_mpi_s::split(
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_group_mpi_t *ichild = new qvi_group_mpi_t;
+    qvi_group_mpi_t *ichild = qvi_new qvi_group_mpi_t();
     if (!ichild) {
         rc = QV_ERR_OOR;
         goto out;

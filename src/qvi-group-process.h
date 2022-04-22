@@ -2,37 +2,37 @@
  * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
- *                         All rights reserved.
- *
  * This file is part of the quo-vadis project. See the LICENSE file at the
  * top-level directory of this distribution.
  */
 
 /**
- * @file qvi-group-mpi.h
+ * @file qvi-group-process.h
  *
  */
 
-#ifndef QVI_GROUP_MPI_H
-#define QVI_GROUP_MPI_H
+#ifndef QVI_GROUP_PROCESS_H
+#define QVI_GROUP_PROCESS_H
 
 #include "qvi-group.h"
-#include "qvi-mpi.h"
+#include "qvi-process.h"
 
-struct qvi_group_mpi_s : public qvi_group_s {
-    /** Initialized qvi_mpi_t instance embedded in MPI group instances. */
-    qvi_mpi_t *mpi = nullptr;
+struct qvi_group_process_s : public qvi_group_s {
+    /**
+     * Initialized qvi_process_t instance
+     * embedded in process group instances.
+     */
+    qvi_process_t *proc = nullptr;
     /** Underlying group instance. */
-    qvi_mpi_group_t *mpi_group = nullptr;
+    qvi_process_group_t *proc_group = nullptr;
     /** Base constructor that does minimal work. */
-    qvi_group_mpi_s(void) = default;
+    qvi_group_process_s(void) = default;
     /** Virtual destructor. */
-    virtual ~qvi_group_mpi_s(void);
+    virtual ~qvi_group_process_s(void);
     /** The real 'constructor' that can possibly fail. */
     virtual int create(void);
     /** Initializes the instance. */
-    int initialize(qvi_mpi_t *mpi);
+    int initialize(qvi_process_t *proc);
     /** The caller's group ID. */
     virtual int id(void);
     /** The number of members in this group. */
@@ -67,15 +67,8 @@ struct qvi_group_mpi_s : public qvi_group_s {
         int root,
         qvi_bbuff_t **rxbuff
     );
-    /**
-     * Returns a duplicate of the underlying MPI group communicator.
-     */
-    int
-    comm_dup(
-        MPI_Comm *comm
-    );
 };
-typedef qvi_group_mpi_s qvi_group_mpi_t;
+typedef qvi_group_process_s qvi_group_process_t;
 
 #endif
 

@@ -25,7 +25,7 @@ struct qvi_bbuff_s {
     void *data = nullptr;
     /** Buffer constants. */
     enum {
-        /** Minimum growth for resizes, etc. */
+        /** Minimum growth in bytes for resizes, etc. */
         min_growth = 256
     } constants;
 };

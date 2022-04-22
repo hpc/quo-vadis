@@ -186,7 +186,7 @@ main(
     int i, dev;
     char *gpu;
     for (i=0; i<ngpus; i++) {
-        qv_scope_get_device(ctx, sub_scope, QV_HW_OBJ_GPU, i, QV_DEVICE_ID_PCI_BUS_ID, &gpu);
+        qv_scope_get_device_id(ctx, sub_scope, QV_HW_OBJ_GPU, i, QV_DEVICE_ID_PCI_BUS_ID, &gpu);
         printf("GPU %d PCI Bus ID = %s\n", i, gpu);
         //cudaDeviceGetByPCIBusId(&dev, gpu);
         //cudaSetDevice(dev);
@@ -389,7 +389,7 @@ main(
     free(binds);
     
     for (i=0; i<my_ngpus; i++) {
-      qv_scope_get_device(ctx, gpu_scope, QV_HW_OBJ_GPU,
+      qv_scope_get_device_id(ctx, gpu_scope, QV_HW_OBJ_GPU,
 			  i, QV_DEVICE_ID_PCI_BUS_ID, &gpu);
       printf("   [%d] GPU %d PCI Bus ID = %s\n", wrank, i, gpu);
       free(gpu);

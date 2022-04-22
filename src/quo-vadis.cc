@@ -211,9 +211,15 @@ qv_scope_get(
         return QV_ERR_INVLD_ARG;
     }
 
-    return qvi_scope_get(
-        ctx->zgroup, ctx->rmi, iscope, scope
+    qv_scope_t *scopei = nullptr;
+    int rc = qvi_scope_get(
+        ctx->zgroup, ctx->rmi, iscope, &scopei
     );
+    if (rc != QV_SUCCESS) {
+        qvi_scope_free(&scopei);
+    }
+    *scope = scopei;
+    return rc;
 }
 
 int
@@ -244,7 +250,6 @@ qv_scope_split(
     int rc = qvi_scope_split(
         scope, npieces, color, &isubscope
     );
-
     if (rc != QV_SUCCESS) {
         qvi_scope_free(&isubscope);
     }
@@ -264,27 +269,56 @@ qv_scope_split_at(
         return QV_ERR_INVLD_ARG;
     }
 
-    return qvi_scope_split_at(
-        scope, type, group_id, subscope
+    qv_scope_t *isubscope = nullptr;
+    int rc = qvi_scope_split_at(
+        scope, type, group_id, &isubscope
     );
+    if (rc != QV_SUCCESS) {
+        qvi_scope_free(&isubscope);
+    }
+    *subscope = isubscope;
+    return rc;
 }
 
 int
-qv_scope_get_device(
+qv_scope_create(
     qv_context_t *ctx,
     qv_scope_t *scope,
-    qv_hw_obj_type_t dev_obj,
-    int i,
-    qv_device_id_type_t id_type,
-    char **dev_id
+    qv_hw_obj_type_t type,
+    int nobjs,
+    qv_scope_create_hint_t hint,
+    qv_scope_t **subscope
 ) {
-    if (!ctx || !scope || (i < 0) || !dev_id) {
+    if (!ctx || !scope || (nobjs < 0) || !subscope) {
         return QV_ERR_INVLD_ARG;
     }
 
-    return qvi_scope_get_device(
-        scope, dev_obj, i,
-        id_type, dev_id
+    qv_scope_t *isubscope = nullptr;
+    int rc = qvi_scope_create(
+        scope, type, nobjs, hint, subscope
+    );
+    if (rc != QV_SUCCESS) {
+        qvi_scope_free(&isubscope);
+    }
+    *subscope = isubscope;
+    return rc;
+}
+
+int
+qv_scope_get_device_id(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    qv_hw_obj_type_t dev_obj,
+    int dev_index,
+    qv_device_id_type_t id_type,
+    char **dev_id
+) {
+    if (!ctx || !scope || (dev_index < 0) || !dev_id) {
+        return QV_ERR_INVLD_ARG;
+    }
+
+    return qvi_scope_get_device_id(
+        scope, dev_obj, dev_index, id_type, dev_id
     );
 }
 

@@ -13,17 +13,18 @@
 install(
     FILES
       quo-vadis.h
+      quo-vadis-process.h
     DESTINATION
       include
 )
 
-if (MPI_FOUND)
+if(MPI_FOUND)
 install(
     FILES
       quo-vadis-mpi.h
     DESTINATION
       include
 )
-endif(MPI_FOUND)
+endif()
 
 # vim: ts=4 sts=4 sw=4 expandtab

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -28,7 +28,8 @@ extern "C" {
 #define QUO_VADIS_MPI 1
 
 /**
- *
+ * Creates a context containing the MPI processes contained within the provided
+ * communicator.
  */
 int
 qv_mpi_context_create(
@@ -37,7 +38,7 @@ qv_mpi_context_create(
 );
 
 /**
- *
+ * Frees resources associated with a context created by qv_mpi_context_create().
  */
 int
 qv_mpi_context_free(
@@ -46,7 +47,7 @@ qv_mpi_context_free(
 
 /**
  * Returns a duplicate of the underlying MPI communicator associated with the
- * provided scope. The provided communicator must be freed by MPI_Comm_free().
+ * provided scope. The returned communicator must be freed by MPI_Comm_free().
  */
 int
 qv_mpi_scope_comm_dup(

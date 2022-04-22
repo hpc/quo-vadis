@@ -2,36 +2,34 @@
  * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
- *                         All rights reserved.
- *
  * This file is part of the quo-vadis project. See the LICENSE file at the
  * top-level directory of this distribution.
  */
 
 /**
- * @file qvi-zgroup-mpi.h
+ * @file qvi-zgroup-process.h
  *
- * MPI context group used for bootstrapping operations.
+ * Process context 'group' used for bootstrapping operations.
+ * In actuality, a process is a standalone member of its group.
  */
 
-#ifndef QVI_ZGROUP_MPI_H
-#define QVI_ZGROUP_MPI_H
+#ifndef QVI_ZGROUP_PROCESS_H
+#define QVI_ZGROUP_PROCESS_H
 
 #include "qvi-zgroup.h"
-#include "qvi-mpi.h"
+#include "qvi-process.h"
 
-struct qvi_zgroup_mpi_s : public qvi_zgroup_s {
-    /** Internal qvi_mpi instance maintained by this zgroup. */
-    qvi_mpi_t *mpi = nullptr;
+struct qvi_zgroup_process_s : public qvi_zgroup_s {
+    /** Internal qvi_process_t instance maintained by this zgroup. */
+    qvi_process_t *zproc = nullptr;
     /** Base constructor that does minimal work. */
-    qvi_zgroup_mpi_s(void) = default;
+    qvi_zgroup_process_s(void) = default;
     /** Virtual destructor. */
-    virtual ~qvi_zgroup_mpi_s(void);
+    virtual ~qvi_zgroup_process_s(void);
     /** The real 'constructor' that can possibly fail. */
     virtual int create(void);
-    /** Initializes the MPI group. */
-    int initialize(MPI_Comm comm);
+    /** Initializes the process group. */
+    int initialize(void);
     /** Returns a pointer to the caller's task information. */
     virtual qvi_task_t *task(void);
     /** Creates an intrinsic group from an intrinsic identifier. */
@@ -42,7 +40,7 @@ struct qvi_zgroup_mpi_s : public qvi_zgroup_s {
     /** Node-local task barrier. */
     virtual int barrier(void);
 };
-typedef qvi_zgroup_mpi_s qvi_zgroup_mpi_t;
+typedef qvi_zgroup_process_s qvi_zgroup_process_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -52,16 +50,16 @@ extern "C" {
  *
  */
 int
-qvi_zgroup_mpi_new(
-    qvi_zgroup_mpi_t **zgroup
+qvi_zgroup_process_new(
+    qvi_zgroup_process_t **zgroup
 );
 
 /**
  *
  */
 void
-qvi_zgroup_mpi_free(
-    qvi_zgroup_mpi_t **zgroup
+qvi_zgroup_process_free(
+    qvi_zgroup_process_t **zgroup
 );
 
 #ifdef __cplusplus

@@ -350,6 +350,18 @@ qvi_hwloc_split_cpuset_by_group_id(
  *
  */
 int
+qvi_hwloc_get_cpuset_for_nobjs(
+    qvi_hwloc_t *hwl,
+    hwloc_const_cpuset_t cpuset,
+    qv_hw_obj_type_t obj_type,
+    int nobjs,
+    hwloc_cpuset_t *result
+);
+
+/**
+ *
+ */
+int
 qvi_hwloc_get_device_affinity(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t dev_obj,

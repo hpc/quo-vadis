@@ -13,7 +13,6 @@
  * @file quo-vadis-mpi.cc
  */
 
-
 #include "qvi-common.h"
 
 #include "qvi-context.h"
@@ -50,6 +49,7 @@ qv_mpi_scope_comm_dup_f2c(
     *comm = MPI_Comm_c2f(c_comm);
     return rc;
 }
+
 #ifdef __cplusplus
 }
 #endif

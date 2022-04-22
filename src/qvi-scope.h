@@ -118,6 +118,18 @@ qvi_scope_split_at(
  *
  */
 int
+qvi_scope_create(
+    qv_scope_t *scope,
+    qv_hw_obj_type_t type,
+    int nobjs,
+    qv_scope_create_hint_t hint,
+    qv_scope_t **subscope
+);
+
+/**
+ *
+ */
+int
 qvi_scope_nobjs(
     qv_scope_t *scope,
     qv_hw_obj_type_t obj,
@@ -125,7 +137,7 @@ qvi_scope_nobjs(
 );
 
 int
-qvi_scope_get_device(
+qvi_scope_get_device_id(
     qv_scope_t *scope,
     qv_hw_obj_type_t dev_obj,
     int i,

@@ -10,10 +10,10 @@
  */
 
 /**
- * @file test-scopes-mpi.c
+ * @file test-process-scopes.c
  */
 
-#include "quo-vadis-mpi.h"
+#include "quo-vadis-process.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -32,7 +32,7 @@ do {                                                                           \
 static void
 scope_report(
     qv_context_t *ctx,
-    int wrank,
+    int pid,
     qv_scope_t *scope,
     const char *scope_name
 ) {
@@ -52,8 +52,8 @@ scope_report(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    printf("[%d] %s taskid is %d\n", wrank, scope_name, taskid);
-    printf("[%d] %s ntasks is %d\n", wrank, scope_name, ntasks);
+    printf("[%d] %s taskid is %d\n", pid, scope_name, taskid);
+    printf("[%d] %s ntasks is %d\n", pid, scope_name, ntasks);
 
     rc = qv_scope_barrier(ctx, scope);
     if (rc != QV_SUCCESS) {
@@ -65,13 +65,13 @@ scope_report(
 static void
 change_bind(
     qv_context_t *ctx,
-    int wrank,
+    int pid,
     qv_scope_t *scope
 ) {
     char const *ers = NULL;
 
     if (getenv("HWLOC_XMLFILE")) {
-        if (wrank == 0) {
+        if (pid == 0) {
             printf("*** Using synthetic topology. "
                    "Skipping change_bind tests. ***\n");
         }
@@ -90,7 +90,7 @@ change_bind(
         ers = "qv_bind_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] New cpubind is     %s\n", wrank, bind1s);
+    printf("[%d] New cpubind is     %s\n", pid, bind1s);
     free(bind1s);
 
     rc = qv_bind_pop(ctx);
@@ -105,7 +105,7 @@ change_bind(
         ers = "qv_bind_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Popped cpubind is  %s\n", wrank, bind2s);
+    printf("[%d] Popped cpubind is  %s\n", pid, bind2s);
     free(bind2s);
     // TODO(skg) Add test to make popped is same as original.
     rc = qv_scope_barrier(ctx, scope);
@@ -121,38 +121,18 @@ main(
     char **argv
 ) {
     char const *ers = NULL;
-    MPI_Comm comm = MPI_COMM_WORLD;
+    int rc = QV_SUCCESS;
 
-    int rc = MPI_Init(&argc, &argv);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Init() failed";
-        panic("%s (rc=%d)", ers, rc);
-    }
+    int pid = getpid();
 
-    int wsize;
-    rc = MPI_Comm_size(comm, &wsize);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_size() failed";
-        panic("%s (rc=%d)", ers, rc);
-    }
-
-    int wrank;
-    rc = MPI_Comm_rank(comm, &wrank);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_rank() failed";
-        panic("%s (rc=%d)", ers, rc);
-    }
-
-    setbuf(stdout, NULL);
-
-    qv_context_t *ctx;
-    rc = qv_mpi_context_create(&ctx, comm);
+    qv_context_t *ctx = NULL;
+    rc = qv_process_context_create(&ctx);
     if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_context_create() failed";
+        ers = "qv_process_context_create() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    qv_scope_t *self_scope;
+    qv_scope_t *self_scope = NULL;
     rc = qv_scope_get(
         ctx,
         QV_SCOPE_PROCESS,
@@ -162,7 +142,7 @@ main(
         ers = "qv_scope_get(QV_SCOPE_PROCESS) failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    scope_report(ctx, wrank, self_scope, "self_scope");
+    scope_report(ctx, pid, self_scope, "self_scope");
 
     rc = qv_scope_free(ctx, self_scope);
     if (rc != QV_SUCCESS) {
@@ -181,7 +161,7 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    scope_report(ctx, wrank, base_scope, "base_scope");
+    scope_report(ctx, pid, base_scope, "base_scope");
 
     int n_numa;
     rc = qv_scope_nobjs(
@@ -194,14 +174,14 @@ main(
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of NUMA in base_scope is %d\n", wrank, n_numa);
+    printf("[%d] Number of NUMA in base_scope is %d\n", pid, n_numa);
 
     qv_scope_t *sub_scope;
     rc = qv_scope_split(
         ctx,
         base_scope,
         2,
-        wrank,
+        0,
         &sub_scope
     );
     if (rc != QV_SUCCESS) {
@@ -219,9 +199,9 @@ main(
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of NUMA in sub_scope is %d\n", wrank, n_numa);
+    printf("[%d] Number of NUMA in sub_scope is %d\n", pid, n_numa);
 
-    scope_report(ctx, wrank, sub_scope, "sub_scope");
+    scope_report(ctx, pid, sub_scope, "sub_scope");
 
     char *binds;
     rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
@@ -229,17 +209,17 @@ main(
         ers = "qv_bind_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Current cpubind is %s\n", wrank, binds);
+    printf("[%d] Current cpubind is %s\n", pid, binds);
     free(binds);
 
-    change_bind(ctx, wrank, sub_scope);
+    change_bind(ctx, pid, sub_scope);
 
     qv_scope_t *sub_sub_scope;
     rc = qv_scope_split(
         ctx,
         sub_scope,
         2,
-        wrank,
+        0,
         &sub_sub_scope
     );
     if (rc != QV_SUCCESS) {
@@ -257,7 +237,7 @@ main(
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of NUMA in sub_sub_scope is %d\n", wrank, n_numa);
+    printf("[%d] Number of NUMA in sub_sub_scope is %d\n", pid, n_numa);
 
     rc = qv_scope_free(ctx, base_scope);
     if (rc != QV_SUCCESS) {
@@ -283,11 +263,10 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 out:
-    if (qv_mpi_context_free(ctx) != QV_SUCCESS) {
-        ers = "qv_mpi_context_free() failed";
+    if (qv_process_context_free(ctx) != QV_SUCCESS) {
+        ers = "qv_process_context_free() failed";
         panic("%s", ers);
     }
-    MPI_Finalize();
     return EXIT_SUCCESS;
 }
 

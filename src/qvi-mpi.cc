@@ -239,7 +239,6 @@ qvi_mpi_new(
     impi->group_tab = qvi_new qvi_mpi_group_tab_t();
     if (!impi->group_tab) {
         rc = QV_ERR_OOR;
-        goto out;
     }
 out:
     if (rc != QV_SUCCESS) {

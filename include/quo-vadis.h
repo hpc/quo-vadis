@@ -32,7 +32,9 @@ struct qv_scope_s;
 typedef struct qv_scope_s qv_scope_t;
 
 /* If this changes, please update the order and contents of qvi_rc_strerrs. */
-/** Return codes. */
+/**
+ * Return codes.
+ */
 enum {
     QV_SUCCESS = 0,
     QV_SUCCESS_ALREADY_DONE,
@@ -54,13 +56,15 @@ enum {
     QV_ERR_PMI,
     QV_ERR_NOT_FOUND,
     QV_ERR_SPLIT,
-    // Resources unavailable.
+    /** Resources unavailable. */
     QV_RES_UNAVAILABLE,
     /** Sentinel value. */
     QV_RC_LAST
 };
 
-/** Intrinsic scopes. */
+/**
+ * Intrinsic scope types.
+ */
 typedef enum qv_scope_intrinsic_e {
     QV_SCOPE_SYSTEM = 0,
     QV_SCOPE_USER,
@@ -68,6 +72,9 @@ typedef enum qv_scope_intrinsic_e {
     QV_SCOPE_PROCESS
 } qv_scope_intrinsic_t;
 
+/**
+ * Hardware object types.
+ */
 typedef enum qv_hw_obj_type_e {
     QV_HW_OBJ_MACHINE = 0,
     QV_HW_OBJ_PACKAGE,
@@ -108,6 +115,15 @@ enum {
 
 /**
  *
+ */
+typedef enum qv_scope_create_hint_s {
+    // TODO(skg) Enumerate all actual values.
+    // TODO(skg) Add to Fortran interface.
+    QV_SCOPE_CREATE_CLOSE = 0
+} qv_scope_create_hint_t;
+
+/**
+ * Device identifier types.
  */
 typedef enum qv_device_id_type_e {
     QV_DEVICE_ID_UUID = 0,
@@ -161,6 +177,20 @@ qv_scope_split_at(
 /**
  *
  */
+// TODO(skg) Add to Fortran interface.
+int
+qv_scope_create(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    qv_hw_obj_type_t type,
+    int nobjs,
+    qv_scope_create_hint_t hint,
+    qv_scope_t **subscope
+);
+
+/**
+ *
+ */
 int
 qv_scope_nobjs(
     qv_context_t *ctx,
@@ -202,11 +232,11 @@ qv_scope_barrier(
  *
  */
 int
-qv_scope_get_device(
+qv_scope_get_device_id(
     qv_context_t *ctx,
     qv_scope_t *scope,
     qv_hw_obj_type_t dev_obj,
-    int i,
+    int dev_index,
     qv_device_id_type_t id_type,
     char **dev_id
 );

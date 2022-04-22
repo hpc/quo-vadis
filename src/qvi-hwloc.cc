@@ -1465,6 +1465,47 @@ out:
     return rc;
 }
 
+// TODO(skg) Merge with split_cpuset_by_range().
+int
+qvi_hwloc_get_cpuset_for_nobjs(
+    qvi_hwloc_t *hwl,
+    hwloc_const_cpuset_t cpuset,
+    qv_hw_obj_type_t obj_type,
+    int nobjs,
+    hwloc_cpuset_t *result
+) {
+    hwloc_bitmap_t iresult = nullptr;
+    int rc = qvi_hwloc_bitmap_calloc(&iresult);
+    if (rc != QV_SUCCESS) goto out;
+    // Get the target object's depth.
+    int obj_depth;
+    rc = qvi_hwloc_obj_type_depth(
+        hwl, obj_type, &obj_depth
+    );
+    if (rc != QV_SUCCESS) goto out;
+    // Calculate cpuset based on number of desired objects.
+    for (int i = 0; i < nobjs; ++i) {
+        hwloc_obj_t dobj;
+        rc = qvi_hwloc_get_obj_in_cpuset_by_depth(
+            hwl, cpuset, obj_depth, i, &dobj
+        );
+        if (rc != QV_SUCCESS) break;
+
+        rc = hwloc_bitmap_or(iresult, iresult, dobj->cpuset);
+        if (rc != 0) {
+            rc = QV_ERR_HWLOC;
+            break;
+        }
+    }
+out:
+    if (rc != QV_SUCCESS) {
+        qvi_hwloc_bitmap_free(&iresult);
+    }
+    *result = iresult;
+    return rc;
+}
+
+// TODO(skg) Rename to qvi_hwloc_split_cpuset_by_color().
 int
 qvi_hwloc_split_cpuset_by_group_id(
     qvi_hwloc_t *hwl,
