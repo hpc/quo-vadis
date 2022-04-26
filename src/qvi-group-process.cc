@@ -55,13 +55,9 @@ qvi_group_process_s::barrier(void)
 }
 
 int
-qvi_group_process_s::split(
-    int,
-    int,
+qvi_group_process_s::self(
     qvi_group_t **child
 ) {
-    // NOTE: The concept of coloring with a provided
-    // key doesn't apply here, so ignore.
     int rc = QV_SUCCESS;
 
     qvi_group_process_t *ichild = qvi_new qvi_group_process_t();
@@ -84,6 +80,19 @@ out:
     }
     *child = ichild;
     return rc;
+}
+
+int
+qvi_group_process_s::split(
+    int,
+    int,
+    qvi_group_t **child
+) {
+    // NOTE: The concept of coloring with a provided key doesn't apply here, so
+    // ignore.  Also, because this is in the context of a process, the concept
+    // of splitting doesn't really apply here, so just create another process
+    // group, self will suffice.
+    return self(child);
 }
 
 int

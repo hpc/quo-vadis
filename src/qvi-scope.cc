@@ -44,7 +44,7 @@ qvi_scope_new(
 
     qv_scope_t *iscope = qvi_new qv_scope_t();
     if (!scope) rc = QV_ERR_OOR;
-    // hwpool and group will be initialized in qvi_scope_init().
+    // hwpool and group will be initialized in scope_init().
     if (rc != QV_SUCCESS) qvi_scope_free(&iscope);
     *scope = iscope;
     return rc;
@@ -718,29 +718,30 @@ out:
 
 int
 qvi_scope_create(
-    qv_scope_t *scope,
+    qv_scope_t *parent,
     qv_hw_obj_type_t type,
     int nobjs,
     qv_scope_create_hint_t hint,
-    qv_scope_t **subscope
+    qv_scope_t **child
 ) {
     // TODO(skg) Implement use of hints.
     QVI_UNUSED(hint);
 
-    qv_scope_t *isubscope = nullptr;
-    hwloc_bitmap_t cpuset = nullptr;
+    qvi_group_t *group = nullptr;
     qvi_hwpool_t *hwpool = nullptr;
-
+    qv_scope_t *ichild = nullptr;
+    hwloc_bitmap_t cpuset = nullptr;
+    // TODO(skg) We need to acquire these resources.
     int rc = qvi_rmi_get_cpuset_for_nobjs(
-        scope->rmi,
-        qvi_hwpool_cpuset_get(scope->hwpool),
+        parent->rmi,
+        qvi_hwpool_cpuset_get(parent->hwpool),
         type, nobjs, &cpuset
     );
     if (rc != QV_SUCCESS) {
         goto out;
     }
-    // Now that we have the desired cpuset, create
-    // a corresponding hardware and subscope.
+    // Now that we have the desired cpuset,
+    // create a corresponding hardware pool.
     rc = qvi_hwpool_new(&hwpool);
     if (rc != QV_SUCCESS) {
         goto out;
@@ -750,13 +751,20 @@ qvi_scope_create(
     if (rc != QV_SUCCESS) {
         goto out;
     }
+    // Create underlying group. Notice the use of self here.
+    rc = parent->group->self(&group);
+    // Create and initialize the new scope.
+    rc = qvi_scope_new(&ichild);
+    if (rc != QV_SUCCESS) goto out;
+
+    rc = scope_init(ichild, parent->rmi, group, hwpool);
 out:
+    qvi_hwloc_bitmap_free(&cpuset);
     if (rc != QV_SUCCESS) {
-        qvi_hwloc_bitmap_free(&cpuset);
         qvi_hwpool_free(&hwpool);
-        qvi_scope_free(&isubscope);
+        qvi_scope_free(&ichild);
     }
-    *subscope = isubscope;
+    *child = ichild;
     return rc;
 }
 

@@ -119,11 +119,11 @@ qvi_scope_split_at(
  */
 int
 qvi_scope_create(
-    qv_scope_t *scope,
+    qv_scope_t *parent,
     qv_hw_obj_type_t type,
     int nobjs,
     qv_scope_create_hint_t hint,
-    qv_scope_t **subscope
+    qv_scope_t **child
 );
 
 /**

@@ -223,6 +223,38 @@ main(
 
     scope_report(ctx, wrank, sub_scope, "sub_scope");
 
+    if (wrank == 0) {
+        qv_scope_t *create_scope;
+        rc = qv_scope_create(
+            ctx, sub_scope, QV_HW_OBJ_CORE, 1, 0, &create_scope
+        );
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_create() failed";
+            panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
+
+        int n_core;
+        rc = qv_scope_nobjs(
+            ctx,
+            create_scope,
+            QV_HW_OBJ_CORE,
+            &n_core
+        );
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_nobjs() failed";
+            panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
+        printf("[%d] Number of cores in create_scope is %d\n", wrank, n_core);
+
+        scope_report(ctx, wrank, create_scope, "create_scope");
+
+        rc = qv_scope_free(ctx, create_scope);
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_free() failed";
+            panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
+    }
+
     char *binds;
     rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {

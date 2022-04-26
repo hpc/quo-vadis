@@ -280,6 +280,7 @@ qv_scope_split_at(
     return rc;
 }
 
+// TODO(skg) Add Fortran interface.
 int
 qv_scope_create(
     qv_context_t *ctx,
@@ -295,7 +296,7 @@ qv_scope_create(
 
     qv_scope_t *isubscope = nullptr;
     int rc = qvi_scope_create(
-        scope, type, nobjs, hint, subscope
+        scope, type, nobjs, hint, &isubscope
     );
     if (rc != QV_SUCCESS) {
         qvi_scope_free(&isubscope);

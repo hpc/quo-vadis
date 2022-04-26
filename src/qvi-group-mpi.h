@@ -40,6 +40,14 @@ struct qvi_group_mpi_s : public qvi_group_s {
     /** Group barrier. */
     virtual int barrier(void);
     /**
+     * Creates a new self group with a single member: the caller.
+     * Returns the appropriate newly created child group to the caller.
+     */
+    virtual int
+    self(
+        qvi_group_s **child
+    );
+    /**
      * Creates new groups by splitting this group based on color, key.
      * Returns the appropriate newly created child group to the caller.
      */
