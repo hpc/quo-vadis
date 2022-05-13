@@ -40,12 +40,13 @@ if(CMAKE_VERBOSE_MAKEFILE)
     set(QVI_HWLOC_EXTRA_CONFIG_FLAGS "--enable-silent-rules=no")
 endif()
 
-find_package(PCIAccess REQUIRED)
+set(PCIACCESS_NEEDED FALSE)
 
 if(CUDAToolkit_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
     list(APPEND QVI_HWLOC_GPU_FLAGS "--with-cuda=${CUDAToolkit_TARGET_DIR}")
     list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-cuda=yes")
     list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-nvml=yes")
+    set(PCIACCESS_NEEDED TRUE)
 else()
     list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-cuda=no")
     list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-nvml=no")
@@ -60,8 +61,16 @@ if(ROCM_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
     set(QVI_HWLOC_LDFLAGS "-L${ROCM_HOME}/lib")
     list(APPEND QVI_HWLOC_CONFIG_VARS "CPPFLAGS=${QVI_HWLOC_CPPFLAGS}")
     list(APPEND QVI_HWLOC_CONFIG_VARS "LDFLAGS=${QVI_HWLOC_LDFLAGS}")
+    set(PCIACCESS_NEEDED TRUE)
 else()
     list(APPEND QVI_HWLOC_GPU_FLAGS "--disable-rsmi")
+endif()
+
+if(PCIACCESS_NEEDED)
+    find_package(PCIAccess REQUIRED)
+    list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-pci=yes")
+else()
+    list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-pci=no")
 endif()
 
 message(STATUS "hwloc configure variables are:")
@@ -96,7 +105,6 @@ ExternalProject_Add(
       --enable-cairo=no
       --enable-gl=no
       --enable-opencl=no
-      --enable-pci=yes
       --enable-libudev=no
       ${QVI_HWLOC_EXTRA_CONFIG_FLAGS}
       ${QVI_HWLOC_GPU_FLAGS}
@@ -115,11 +123,13 @@ set_target_properties(
       INTERFACE_INCLUDE_DIRECTORIES ${QVI_HWLOC_INCLUDES}
 )
 
-target_link_libraries(
-    hwloc
-    INTERFACE
-      pciaccess
-)
+if(PCIACCESS_NEEDED)
+    target_link_libraries(
+        hwloc
+        INTERFACE
+          pciaccess
+    )
+endif()
 
 if(CUDAToolkit_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
     target_link_libraries(
