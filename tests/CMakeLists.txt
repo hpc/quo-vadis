@@ -13,6 +13,16 @@
 ################################################################################
 ################################################################################
 add_executable(
+    test-threads
+    test-threads.c
+)
+
+target_link_libraries(
+    test-threads
+    quo-vadis
+)
+  
+add_executable(
     test-hwloc
     test-hwloc.c
 )
