@@ -27,10 +27,7 @@ extern "C" {
  *
  */
 int
-qvi_thread_mgmt_toto(
-		     
-);
-
+qvi_thread_mgmt_toto(void);
 
 #ifdef __cplusplus
 }

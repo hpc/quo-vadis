@@ -14,19 +14,14 @@
  */
 
 #include "qvi-common.h"
-#include "qvi-hwloc.h"
-#include "qvi-utils.h"
-
+#include "qvi-thread-mgmt.h"
 
 int
-qvi_thread_mgmt_toto(
-                     
-)
+qvi_thread_mgmt_toto(void)
 {
   qvi_log_info("Coucou");
   return QV_SUCCESS;
 }
-
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
