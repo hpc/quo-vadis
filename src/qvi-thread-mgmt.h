@@ -31,7 +31,6 @@ qvi_thread_mgmt_toto(
 		     
 );
 
-
 #ifdef __cplusplus
 }
 #endif
