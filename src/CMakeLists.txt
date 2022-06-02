@@ -34,7 +34,6 @@ add_library(
     qvi-scope.h
     qvi-zgroup.h
     qvi-bind.h
-    qvi-thread-mgmt.h
     qvi-log.cc
     qvi-utils.cc
     qvi-bbuff.cc
@@ -47,7 +46,6 @@ add_library(
     qvi-task.cc
     qvi-scope.cc
     qvi-bind.cc
-    qvi-thread-mgmt.cc
     quo-vadis.cc
 )
 
@@ -96,6 +94,14 @@ add_library(
     qvi-group-process.cc
     qvi-zgroup-process.cc
     quo-vadis-process.cc
+    ../include/quo-vadis-thread.h
+    qvi-thread.h
+    qvi-group-thread.h
+    qvi-zgroup-thread.h
+    qvi-thread.cc
+    qvi-group-thread.cc
+    qvi-zgroup-thread.cc
+    quo-vadis-thread.cc
 )
 
 target_include_directories(
