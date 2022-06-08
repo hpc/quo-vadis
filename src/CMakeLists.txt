@@ -104,6 +104,14 @@ target_include_directories(
       $<TARGET_PROPERTY:quo-vadis-core,INCLUDE_DIRECTORIES>
 )
 
+if(OPENMP_FOUND)
+target_compile_options(
+    quo-vadis
+    PUBLIC
+     ${OpenMP_C_FLAGS}
+)
+endif()
+
 target_link_libraries(
     quo-vadis
     quo-vadis-core
