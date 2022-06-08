@@ -631,7 +631,7 @@ qvi_mpi_group_create_from_mpi_comm(
         node_comm, *new_group
     );
     if (rc != QV_SUCCESS) {
-        ers = "group_create_from_mpi_comm() failed";
+        ers = "group_init_from_mpi_comm() failed";
         goto out;
     }
 
