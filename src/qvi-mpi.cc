@@ -31,9 +31,7 @@ struct qvi_mpi_group_s {
     int id = 0;
     /** Size of group */
     int size = 0;
-    /* Underlying MPI group */
-    MPI_Group mpi_group = MPI_GROUP_NULL;
-    /* Underlying MPI communicator from MPI group */
+    /** MPI communicator */
     MPI_Comm mpi_comm = MPI_COMM_NULL;
 };
 
@@ -121,10 +119,10 @@ mpi_comm_to_new_node_comm(
 }
 
 /**
- * Creates a QV group from an MPI communicator.
+ * Initializes a QV group from an MPI communicator.
  */
 static int
-group_create_from_mpi_comm(
+group_init_from_mpi_comm(
     MPI_Comm comm,
     qvi_mpi_group_t *new_group
 ) {
@@ -132,30 +130,21 @@ group_create_from_mpi_comm(
 
     new_group->mpi_comm = comm;
 
-    int rc = MPI_Comm_group(
+    int rc = MPI_Comm_rank(
+	    new_group->mpi_comm,
+            &new_group->id
+    );
+    if (rc != MPI_SUCCESS) {
+        ers = "MPI_Comm_rank() failed";
+        goto out;
+    }
+
+    rc = MPI_Comm_size(
         new_group->mpi_comm,
-        &new_group->mpi_group
-    );
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_group() failed";
-        goto out;
-    }
-
-    rc = MPI_Group_rank(
-        new_group->mpi_group,
-        &new_group->id
-    );
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Group_rank() failed";
-        goto out;
-    }
-
-    rc = MPI_Group_size(
-        new_group->mpi_group,
         &new_group->size
     );
     if (rc != MPI_SUCCESS) {
-        ers = "MPI_Group_size() failed";
+        ers = "MPI_Comm_size() failed";
         goto out;
     }
 out:
@@ -199,14 +188,16 @@ group_create_from_mpi_group(
         ers = "qvi_mpi_group_new() failed";
         goto out;
     }
-    qvrc = group_create_from_mpi_comm(
+
+    qvrc = group_init_from_mpi_comm(
         group_comm,
         *maybe_group
     );
     if (qvrc != QV_SUCCESS) {
-        ers = "group_create_from_mpi_comm() failed";
+        ers = "group_init_from_mpi_comm() failed";
         goto out;
     }
+
 out:
     if (ers) {
         qvi_log_error(ers);
@@ -273,10 +264,6 @@ qvi_mpi_free(
     if (!impi) goto out;
     if (impi->group_tab) {
         for (auto &i : *impi->group_tab) {
-            auto &mpi_group = i.second.mpi_group;
-            if (mpi_group != MPI_GROUP_NULL) {
-                MPI_Group_free(&mpi_group);
-            }
             auto &mpi_comm = i.second.mpi_comm;
             if (mpi_comm != MPI_COMM_NULL) {
                 MPI_Comm_free(&mpi_comm);
@@ -348,7 +335,7 @@ create_intrinsic_groups(
     cstr_t ers = nullptr;
 
     qvi_mpi_group_t self_group, node_group;
-    int rc = group_create_from_mpi_comm(
+    int rc = group_init_from_mpi_comm(
         mpi->self_comm,
         &self_group
     );
@@ -356,7 +343,7 @@ create_intrinsic_groups(
         ers = "group_create_from_mpi_comm(self_comm) failed";
         goto out;
     }
-    rc = group_create_from_mpi_comm(
+    rc = group_init_from_mpi_comm(
         mpi->node_comm,
         &node_group
     );
@@ -540,8 +527,20 @@ qvi_mpi_group_create_from_ids(
     int qvrc = QV_SUCCESS;
 
     MPI_Group new_mpi_group = MPI_GROUP_NULL;
-    int rc = MPI_Group_incl(
-        group->mpi_group,
+    MPI_Group old_mpi_group = MPI_GROUP_NULL;
+    
+    int rc = MPI_Comm_group(
+	group->mpi_comm,
+	&old_mpi_group
+    );
+    if (rc != MPI_SUCCESS) {
+        ers = "MPI_Comm_group() failed";
+        qvrc = QV_ERR_MPI;
+        goto out;
+    }
+    
+    rc = MPI_Group_incl(
+        old_mpi_group,
         num_group_ids,
         group_ids,
         &new_mpi_group
@@ -628,7 +627,7 @@ qvi_mpi_group_create_from_mpi_comm(
         goto out;
     }
 
-    rc = group_create_from_mpi_comm(
+    rc = group_init_from_mpi_comm(
         node_comm, *new_group
     );
     if (rc != QV_SUCCESS) {
