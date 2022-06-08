@@ -14,7 +14,6 @@
  */
 
 #include "qvi-macros.h"
-#include "qvi-thread-mgmt.h"
 
 #include "quo-vadis.h"
 
@@ -27,8 +26,6 @@ main(
      char *argv[]
 ){
   fprintf(stdout,"# Starting test\n");
-  
-  qvi_thread_mgmt_toto();
   
   return EXIT_SUCCESS;
 }
