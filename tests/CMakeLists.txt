@@ -123,6 +123,17 @@ if(MPI_FOUND)
     )
 endif()
 
+if (OPENMP_FOUND)
+    add_executable(
+        test-openmp
+        test-openmp.c
+    )
+    target_link_libraries(
+        test-openmp
+        OpenMP::OpenMP_C
+    )
+endif()
+
 ################################################################################
 ################################################################################
 if(QV_FORTRAN_HAPPY)

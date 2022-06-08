@@ -35,6 +35,8 @@
 
 /** Set by find_package(MPI) */
 #cmakedefine MPI_FOUND
+/** Set by find_package(OpenMP) */
+#cmakedefine OPENMP_FOUND
 
 #cmakedefine HAVE_ERRNO_H 1
 #cmakedefine HAVE_INTTYPES_H 1
