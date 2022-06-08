@@ -81,8 +81,13 @@ qv_thread_mgmt_toto(
    void
 ){
 
+#ifdef _OPENMP
+#warning "OPENMP support ON"
+  fprintf(stdout,"Hello from OpenMP support\n");
+#else
+#warning "OPENMP support OFF"
   fprintf(stdout,"Hello\n");
-  
+#endif
   return QV_SUCCESS;
 }
 

@@ -17,11 +17,19 @@ add_executable(
     test-threads.c
 )
 
+if (OPENMP_FOUND)
 target_link_libraries(
     test-threads
     quo-vadis
+    OpenMP::OpenMP_C
 )
-  
+else()
+ target_link_libraries(
+    test-threads
+    quo-vadis
+)
+endif()
+
 add_executable(
     test-hwloc
     test-hwloc.c
