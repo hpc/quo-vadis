@@ -110,7 +110,7 @@ target_include_directories(
       $<TARGET_PROPERTY:quo-vadis-core,INCLUDE_DIRECTORIES>
 )
 
-if(OPENMP_FOUND)
+if(OpenMP_C_FOUND)
 target_compile_options(
     quo-vadis
     PUBLIC
