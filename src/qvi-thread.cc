@@ -26,6 +26,11 @@ struct qvi_thread_group_s {
     int id = 0;
     /** Size of group */
     int size = 0;
+#ifndef _OPENMP
+    pthread_mutex_t lock;
+    pthread_cond_t cond;
+    int entered = 0;
+#endif
 };
 
 struct qvi_thread_s {
@@ -124,7 +129,7 @@ qvi_thread_node_barrier(
     qvi_thread_t *
 ) {
   
-    // Nothing to do since thread groups contain a single member.
+    
     return QV_SUCCESS;
 }
 
@@ -179,9 +184,16 @@ qvi_thread_group_create(
     if (rc != QV_SUCCESS) goto out;
 
     igroup->tabid = gtid;
+#ifdef _OPENMP
+    igroup->id   = omp_get_thread_num();
+    igroup->size = omp_get_num_threads();
+#else
     igroup->id = 0;
     igroup->size = 1;
-
+    pthread_mutex_init(&igroup->lock,NULL);
+    pthread_cond_init(&igroup->cond,NULL);
+#endif
+    
     th->group_tab->insert({gtid, *igroup});
 out:
     if (rc != QV_SUCCESS) {
@@ -207,9 +219,16 @@ qvi_thread_group_size(
 
 int
 qvi_thread_group_barrier(
-    qvi_thread_group_t *
+    qvi_thread_group_t *group
 ) {
-    // Nothing to do since thread groups contain a single member.
+#ifndef _OPENMP
+    pthread_mutex_lock(&group->lock);  
+    if ( ++(group->entered) == group->size)
+      pthread_cond_broadcast(&group->cond);
+    else 
+      pthread_cond_wait(&group->cond,&group->lock);
+    pthread_mutex_unlock(&group->lock);
+#endif
     return QV_SUCCESS;
 }
 
