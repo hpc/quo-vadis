@@ -124,7 +124,7 @@ main(
      int argc,
      char *argv[]
 ){
-  fprintf(stdout,"# Starting test\n");
+   fprintf(stdout,"# Starting test\n");
 
    char const *ers = NULL;
    int rc = QV_SUCCESS;
@@ -164,7 +164,6 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    
   return EXIT_SUCCESS;
 }
 
