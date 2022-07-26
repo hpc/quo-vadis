@@ -149,15 +149,13 @@ qvi_hwloc_obj_type_depth(
     qv_hw_obj_type_t type,
     int *depth
 ) {
+    *depth = HWLOC_TYPE_DEPTH_UNKNOWN;
+
     qvi_hwloc_objx_t objx;
-    int rc = obj_type_from_external(type, &objx);
+    const int rc = obj_type_from_external(type, &objx);
     if (rc != QV_SUCCESS) return rc;
 
-    int d = hwloc_get_type_depth(hwloc->topo, objx.objtype);
-    if (d == HWLOC_TYPE_DEPTH_UNKNOWN) {
-        *depth = 0;
-    }
-    *depth = d;
+    *depth = hwloc_get_type_depth(hwloc->topo, objx.objtype);
     return QV_SUCCESS;
 }
 
