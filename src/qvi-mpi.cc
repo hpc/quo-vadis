@@ -113,7 +113,7 @@ mpi_comm_to_new_node_comm(
         info,
         node_comm
      );
-     MPI_Info_free(&info); 
+     MPI_Info_free(&info);
      */
     return rc;
 }
@@ -538,7 +538,7 @@ qvi_mpi_group_create_from_ids(
         qvrc = QV_ERR_MPI;
         goto out;
     }
-    
+
     rc = MPI_Group_incl(
         old_mpi_group,
         num_group_ids,
@@ -631,7 +631,7 @@ qvi_mpi_group_create_from_mpi_comm(
         node_comm, *new_group
     );
     if (rc != QV_SUCCESS) {
-        ers = "group_create_from_mpi_comm() failed";
+        ers = "group_init_from_mpi_comm() failed";
         goto out;
     }
 
