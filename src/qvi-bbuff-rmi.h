@@ -216,6 +216,15 @@ qvi_bbuff_rmi_pack_type_picture(
     picture += "z";
 }
 
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
+    qv_task_type_t
+) {
+    picture += "i";
+}
+
 inline void
 qvi_bbuff_rmi_get_picture(
     std::string &
@@ -515,6 +524,19 @@ qvi_bbuff_rmi_pack(
     return qvi_bbuff_rmi_pack(buff, args...);
 }
 
+
+/**
+ * Packs qv_task_type_t as an int.
+ */
+inline int
+qvi_bbuff_rmi_pack_item(
+    qvi_bbuff_t *buff,
+    qv_task_type_t data
+) {
+    const int dai = (int)data;
+    return qvi_bbuff_append(buff, &dai, sizeof(dai));
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Unpack
 ////////////////////////////////////////////////////////////////////////////////
@@ -529,6 +551,17 @@ qvi_bbuff_rmi_unpack_item(
 inline int
 qvi_bbuff_rmi_unpack_item(
     int *i,
+    byte_t *buffpos,
+    size_t *bytes_written
+) {
+    memmove(i, buffpos, sizeof(*i));
+    *bytes_written = sizeof(*i);
+    return QV_SUCCESS;
+}
+
+inline int
+qvi_bbuff_rmi_unpack_item(
+    qv_task_type_t *i,
     byte_t *buffpos,
     size_t *bytes_written
 ) {

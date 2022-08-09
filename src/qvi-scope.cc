@@ -139,6 +139,7 @@ qvi_scope_get(
     // Get the requested intrinsic hardware pool.
     rc = qvi_rmi_scope_get_intrinsic_hwpool(
         rmi,
+	qvi_task_type(zgroup->task()),
         qvi_task_pid(zgroup->task()),
         iscope,
         &hwpool

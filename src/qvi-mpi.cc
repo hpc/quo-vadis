@@ -422,7 +422,9 @@ qvi_mpi_init(
         goto out;
     }
     // Task initialization
-    rc = qvi_task_init(mpi->task, getpid(), world_id, node_id);
+    /* GM : this is an issue for thread-based MPI implementations */
+    /* QV_TASK_TYPE_PROCESS could (should?) be replaced with QV_TASK_TYPE_THREAD */
+    rc = qvi_task_init(mpi->task, QV_TASK_TYPE_PROCESS, getpid(), world_id, node_id);
     if (rc != QV_SUCCESS) {
         ers = "qvi_task_init() failed";
     }

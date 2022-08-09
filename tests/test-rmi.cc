@@ -126,7 +126,7 @@ client(
         goto out;
     }
 
-    rc = qvi_rmi_task_get_cpubind(client, mypid, &bitmap);
+    rc = qvi_rmi_task_get_cpubind(client, QV_TASK_TYPE_PROCESS, mypid, &bitmap);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_task_get_cpubind() failed";
         goto out;

@@ -117,6 +117,7 @@ qv_bind_string(
     hwloc_cpuset_t cpuset = nullptr;
     int rc = qvi_rmi_task_get_cpubind(
         ctx->rmi,
+	qvi_task_type(ctx->zgroup->task()),
         qvi_task_pid(ctx->zgroup->task()),
         &cpuset
     );

@@ -114,7 +114,7 @@ if(OpenMP_C_FOUND)
 target_compile_options(
     quo-vadis
     PUBLIC
-     ${OpenMP_C_FLAGS}
+    ${OpenMP_C_FLAGS}
 )
 endif()
 

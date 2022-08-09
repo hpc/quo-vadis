@@ -883,10 +883,11 @@ qvi_hwloc_get_nobjs_by_type(
 int
 qvi_hwloc_emit_cpubind(
    qvi_hwloc_t *hwl,
+   qv_task_type_t type,
    pid_t who
 ) {
     hwloc_cpuset_t cpuset = nullptr;
-    int rc = qvi_hwloc_task_get_cpubind(hwl, who, &cpuset);
+    int rc = qvi_hwloc_task_get_cpubind(hwl, type, who,  &cpuset);
     if (rc != QV_SUCCESS) return rc;
 
     char *cpusets = nullptr;
@@ -961,14 +962,20 @@ qvi_hwloc_bitmap_sscanf(
 static int
 get_proc_cpubind(
     qvi_hwloc_t *hwl,
+    qv_task_type_t type,
     pid_t who,
     hwloc_cpuset_t cpuset
 ) {
+#ifdef __linux__
+    int flag = (type == QV_TASK_TYPE_THREAD ) ? HWLOC_CPUBIND_THREAD : HWLOC_CPUBIND_PROCESS;
+#else
+    int flag = HWLOC_CPUBIND_PROCESS;		 
+#endif		
     int rc = hwloc_get_proc_cpubind(
         hwl->topo,
         who,
         cpuset,
-        HWLOC_CPUBIND_PROCESS
+        flag
     );
     if (rc != 0) return QV_ERR_HWLOC;
     // XXX(skg) In some instances I've noticed that the system's topology cpuset
@@ -989,6 +996,7 @@ get_proc_cpubind(
 int
 qvi_hwloc_task_get_cpubind(
     qvi_hwloc_t *hwl,
+    qv_task_type_t type,
     pid_t who,
     hwloc_cpuset_t *out_cpuset
 ) {
@@ -996,7 +1004,7 @@ qvi_hwloc_task_get_cpubind(
     int rc = qvi_hwloc_bitmap_calloc(&cur_bind);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = get_proc_cpubind(hwl, who, cur_bind);
+    rc = get_proc_cpubind(hwl, type, who, cur_bind);
 out:
     if (rc != QV_SUCCESS) {
         qvi_hwloc_bitmap_free(&cur_bind);
@@ -1005,20 +1013,24 @@ out:
     return rc;
 }
 
-// TODO(skg) Add support for binding threads, too.
 int
 qvi_hwloc_task_set_cpubind_from_cpuset(
     qvi_hwloc_t *hwl,
+    qv_task_type_t type,
     pid_t who,
     hwloc_const_cpuset_t cpuset
 ) {
     int qvrc = QV_SUCCESS;
-
+#ifdef __linux__
+    int flag = (type == QV_TASK_TYPE_THREAD ) ? HWLOC_CPUBIND_THREAD : HWLOC_CPUBIND_PROCESS;
+#else
+    int flag = HWLOC_CPUBIND_PROCESS;		 
+#endif
     int rc = hwloc_set_proc_cpubind(
         hwl->topo,
         who,
         cpuset,
-        HWLOC_CPUBIND_PROCESS
+	flag
     );
     if (rc == -1) {
         qvrc = QV_ERR_NOT_SUPPORTED;
@@ -1029,11 +1041,12 @@ qvi_hwloc_task_set_cpubind_from_cpuset(
 int
 qvi_hwloc_task_get_cpubind_as_string(
     qvi_hwloc_t *hwl,
+    qv_task_type_t type,
     pid_t who,
     char **cpusets
 ) {
     hwloc_cpuset_t cpuset;
-    int rc = qvi_hwloc_task_get_cpubind(hwl, who, &cpuset);
+    int rc = qvi_hwloc_task_get_cpubind(hwl, type, who, &cpuset);
     if (rc != QV_SUCCESS) return rc;
 
     rc = qvi_hwloc_bitmap_asprintf(cpusets, cpuset);
@@ -1048,6 +1061,7 @@ static inline int
 task_obj_xop_by_type_id(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t type,
+    qv_task_type_t task_type,
     pid_t who,
     int type_index,
     qvi_hwloc_task_xop_obj_t opid,
@@ -1058,7 +1072,7 @@ task_obj_xop_by_type_id(
     if (rc != QV_SUCCESS) return rc;
 
     hwloc_cpuset_t cur_bind = nullptr;
-    rc = qvi_hwloc_task_get_cpubind(hwl, who, &cur_bind);
+    rc = qvi_hwloc_task_get_cpubind(hwl, task_type, who, &cur_bind);
     if (rc != QV_SUCCESS) return rc;
 
     switch (opid) {
@@ -1079,6 +1093,7 @@ int
 qvi_hwloc_task_intersects_obj_by_type_id(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t type,
+    qv_task_type_t task_type,
     pid_t who,
     int type_index,
     int *result
@@ -1086,6 +1101,7 @@ qvi_hwloc_task_intersects_obj_by_type_id(
     return task_obj_xop_by_type_id(
         hwl,
         type,
+	task_type,  
         who,
         type_index,
         QVI_HWLOC_TASK_INTERSECTS_OBJ,
@@ -1097,6 +1113,7 @@ int
 qvi_hwloc_task_isincluded_in_obj_by_type_id(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t type,
+    qv_task_type_t task_type,
     pid_t who,
     int type_index,
     int *result
@@ -1104,6 +1121,7 @@ qvi_hwloc_task_isincluded_in_obj_by_type_id(
     return task_obj_xop_by_type_id(
         hwl,
         type,
+	task_type,  
         who,
         type_index,
         QVI_HWLOC_TASK_ISINCLUDED_IN_OBJ,

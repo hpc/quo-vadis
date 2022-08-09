@@ -99,6 +99,7 @@ echo_task_intersections(
             rc = qvi_hwloc_task_intersects_obj_by_type_id(
                 hwl,
                 nts[i].type,
+		QV_TASK_TYPE_PROCESS,
                 me,
                 objid,
                 &intersects
@@ -213,6 +214,7 @@ main(void)
 
     rc = qvi_hwloc_task_get_cpubind(
         hwl,
+	QV_TASK_TYPE_PROCESS,
         getpid(),
         &bitmap
     );

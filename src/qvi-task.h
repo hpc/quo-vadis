@@ -47,9 +47,18 @@ qvi_task_free(
 int
 qvi_task_init(
     qvi_task_t *task,
+    qv_task_type_t type,
     pid_t pid,
     int64_t gid,
     int lid
+);
+
+/**
+ *
+ */
+qv_task_type_t
+qvi_task_type(
+    qvi_task_t *task
 );
 
 /**

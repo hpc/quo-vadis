@@ -108,7 +108,7 @@ qvi_process_init(
     // For now these are always fixed.
     const int world_id = 0, node_id = 0;
     return qvi_task_init(
-        proc->task, getpid(), world_id, node_id
+	proc->task, QV_TASK_TYPE_PROCESS, getpid(), world_id, node_id
     );
 }
 

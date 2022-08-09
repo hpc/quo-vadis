@@ -15,6 +15,16 @@
 #include "qvi-thread.h"
 #include "qvi-utils.h"
 
+#define NEED_SYSCALL
+
+#ifdef NEED_SYSCALL
+#include <sys/syscall.h>
+#endif
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif 
+
 using qvi_thread_group_tab_t = std::unordered_map<
     qvi_thread_group_id_t, qvi_thread_group_t
 >;
@@ -26,11 +36,8 @@ struct qvi_thread_group_s {
     int id = 0;
     /** Size of group */
     int size = 0;
-#ifndef _OPENMP
-    pthread_mutex_t lock;
-    pthread_cond_t cond;
-    int entered = 0;
-#endif
+    /** Barrier object */  
+    pthread_barrier_t barrier;
 };
 
 struct qvi_thread_s {
@@ -111,9 +118,14 @@ qvi_thread_init(
     qvi_thread_t *th
 ) {
     // For now these are always fixed.
-    const int world_id = 0, node_id = 0;
+    const int world_id = 0, node_id = 0;    
+#ifdef NEED_SYSCALL
+  pid_t tid  = syscall(SYS_gettid);
+#else
+  pid_t tid  = gettid();
+#endif
     return qvi_task_init(
-        th->task, getpid(), world_id, node_id
+	th->task, QV_TASK_TYPE_THREAD, tid, world_id, node_id
     );
 }
 
@@ -128,8 +140,8 @@ int
 qvi_thread_node_barrier(
     qvi_thread_t *
 ) {
-  
-    
+#ifdef _OPENMP
+#endif
     return QV_SUCCESS;
 }
 
@@ -164,6 +176,9 @@ qvi_thread_group_free(
     if (!thgrp) return;
     qvi_thread_group_t *ithgrp = *thgrp;
     if (!ithgrp) goto out;
+
+    pthread_barrier_destroy(&ithgrp->barrier);
+
     delete ithgrp;
 out:
     *thgrp = nullptr;
@@ -188,13 +203,11 @@ qvi_thread_group_create(
     igroup->id   = omp_get_thread_num();
     igroup->size = omp_get_num_threads();
 #else
-    igroup->id = 0;
-    igroup->size = 1;
-    pthread_mutex_init(&igroup->lock,NULL);
-    pthread_cond_init(&igroup->cond,NULL);
-#endif
-    
+    igroup->id   = 0;
+    igroup->size = 1;    
+#endif    
     th->group_tab->insert({gtid, *igroup});
+    pthread_barrier_init(&igroup->barrier,NULL,igroup->size);
 out:
     if (rc != QV_SUCCESS) {
         qvi_thread_group_free(&igroup);
@@ -221,14 +234,8 @@ int
 qvi_thread_group_barrier(
     qvi_thread_group_t *group
 ) {
-#ifndef _OPENMP
-    pthread_mutex_lock(&group->lock);  
-    if ( ++(group->entered) == group->size)
-      pthread_cond_broadcast(&group->cond);
-    else 
-      pthread_cond_wait(&group->cond,&group->lock);
-    pthread_mutex_unlock(&group->lock);
-#endif
+    pthread_barrier_wait(&group->barrier);
+
     return QV_SUCCESS;
 }
 

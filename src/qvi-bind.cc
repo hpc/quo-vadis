@@ -84,6 +84,7 @@ qvi_bind_stack_init(
     hwloc_cpuset_t current_bind = nullptr;
     int rc = qvi_rmi_task_get_cpubind(
         rmi,
+	qvi_task_type(task),
         qvi_task_pid(task),
         &current_bind
     );
@@ -114,6 +115,7 @@ qvi_bind_push(
     // Change policy
     rc = qvi_rmi_task_set_cpubind_from_cpuset(
         bstack->rmi,
+	qvi_task_type(bstack->task),
         qvi_task_pid(bstack->task),
         bitmap_copy
     );
@@ -139,6 +141,7 @@ qvi_bind_pop(
 
     return qvi_rmi_task_set_cpubind_from_cpuset(
         bstack->rmi,
+	qvi_task_type(bstack->task),
         qvi_task_pid(bstack->task),
         bstack->stack->top()
     );

@@ -21,11 +21,13 @@ static const int qvi_task_id_invalid = -1;
 
 // Type definition
 struct qvi_task_s {
+    /** Task type (OS Process or OS Thread) */
+    qv_task_type_t type;
     /** Global task ID */
     int64_t gid = qvi_task_id_invalid;
     /** Node-local task ID */
     int lid = qvi_task_id_invalid;
-    /** Process ID */
+    /** Process ID or Thread ID*/
     pid_t pid = 0;
 };
 
@@ -61,14 +63,23 @@ out:
 int
 qvi_task_init(
     qvi_task_t *task,
+    qv_task_type_t type,
     pid_t pid,
     int64_t gid,
     int lid
 ) {
-    task->pid = pid;
-    task->gid = gid;
-    task->lid = lid;
+    task->type = type;
+    task->pid  = pid;
+    task->gid  = gid;
+    task->lid  = lid;
     return QV_SUCCESS;
+}
+
+qv_task_type_t
+qvi_task_type(
+    qvi_task_t *task
+) {
+    return task->type;
 }
 
 pid_t
