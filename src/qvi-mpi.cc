@@ -131,7 +131,7 @@ group_init_from_mpi_comm(
     new_group->mpi_comm = comm;
 
     int rc = MPI_Comm_rank(
-        new_group->mpi_comm,
+	    new_group->mpi_comm,
             &new_group->id
     );
     if (rc != MPI_SUCCESS) {
@@ -530,10 +530,10 @@ qvi_mpi_group_create_from_ids(
 
     MPI_Group new_mpi_group = MPI_GROUP_NULL;
     MPI_Group old_mpi_group = MPI_GROUP_NULL;
-
+    
     int rc = MPI_Comm_group(
-        group->mpi_comm,
-        &old_mpi_group
+	group->mpi_comm,
+	&old_mpi_group
     );
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_group() failed";
