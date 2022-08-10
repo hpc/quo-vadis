@@ -5,6 +5,9 @@
  * Copyright (c)      2020 Lawrence Livermore National Security, LLC
  *                         All rights reserved.
  *
+ * Copyright © Inria 2022.  All rights reserved.                                                                     
+ * Copyright © Bordeaux INP 2022. All rights reserved.
+ *
  * This file is part of the quo-vadis project. See the LICENSE file at the
  * top-level directory of this distribution.
  */

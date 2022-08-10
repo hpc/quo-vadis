@@ -5,6 +5,9 @@
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
  *                         All rights reserved.
  *
+ * Copyright © Inria 2022.  All rights reserved. 
+ * Copyright © Bordeaux INP 2022. All rights reserved.
+ *
  * This file is part of the quo-vadis project. See the LICENSE file at the
  * top-level directory of this distribution.
  */
@@ -136,7 +139,7 @@ typedef enum qv_device_id_type_e {
  */
 typedef enum qv_task_type_e {
   QV_TASK_TYPE_PROCESS = 0,
-  QV_TASK_TYPE_THREAD
+  QV_TASK_TYPE_THREAD,
 } qv_task_type_t;
   
 /**
