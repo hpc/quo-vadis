@@ -14,13 +14,6 @@
 
 #include "qvi-thread.h"
 #include "qvi-utils.h"
-
-#define NEED_SYSCALL
-
-#ifdef NEED_SYSCALL
-#include <sys/syscall.h>
-#endif
-
 #ifdef _OPENMP
 #include <omp.h>
 #endif 
@@ -119,11 +112,8 @@ qvi_thread_init(
 ) {
     // For now these are always fixed.
     const int world_id = 0, node_id = 0;    
-#ifdef NEED_SYSCALL
-  pid_t tid  = syscall(SYS_gettid);
-#else
-  pid_t tid  = gettid();
-#endif
+    pid_t tid  = qvi_gettid();
+
     return qvi_task_init(
 	th->task, QV_TASK_TYPE_THREAD, tid, world_id, node_id
     );

@@ -82,7 +82,9 @@ main(
     int task_lid = qvi_task_lid(task);
 
     printf(
-        "Hello from gid=%" PRId64
+	"Hello from %s ",
+	qvi_task_type(task) == QV_TASK_TYPE_PROCESS ? "process" : "thread"
+	"gid=%" PRId64
         " (lid=%d, nsize=%d, node_gid=%d) of wsize=%d\n",
         task_gid,
         task_lid,
