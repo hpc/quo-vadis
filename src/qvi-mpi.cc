@@ -368,10 +368,13 @@ out:
     return rc;
 }
 
+//GM: process_type is used to allow thread-based MPI-implementations
+//to pass this information.  
 int
 qvi_mpi_init(
     qvi_mpi_t *mpi,
-    MPI_Comm comm
+    MPI_Comm comm,
+    qv_task_type_t process_type
 ) {
     cstr_t ers = nullptr;
     int inited;
@@ -422,9 +425,7 @@ qvi_mpi_init(
         goto out;
     }
     // Task initialization
-    /* GM : this is an issue for thread-based MPI implementations */
-    /* QV_TASK_TYPE_PROCESS could (should?) be replaced with QV_TASK_TYPE_THREAD */
-    rc = qvi_task_init(mpi->task, QV_TASK_TYPE_PROCESS, getpid(), world_id, node_id);
+    rc = qvi_task_init(mpi->task, process_type, getpid(), world_id, node_id);
     if (rc != QV_SUCCESS) {
         ers = "qvi_task_init() failed";
     }

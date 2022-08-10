@@ -112,10 +112,8 @@ qvi_thread_init(
 ) {
     // For now these are always fixed.
     const int world_id = 0, node_id = 0;    
-    pid_t tid  = qvi_gettid();
-
     return qvi_task_init(
-	th->task, QV_TASK_TYPE_THREAD, tid, world_id, node_id
+	th->task, QV_TASK_TYPE_THREAD, qvi_gettid(), world_id, node_id
     );
 }
 
