@@ -27,7 +27,7 @@ extern "C" {
 #endif
 
 // Type definitions.
-typedef uint64_t qvi_mpi_group_id_t;
+typedef qvi_group_id_t qvi_mpi_group_id_t;
 
 // Forward declarations.
 struct qvi_mpi_s;

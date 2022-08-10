@@ -49,7 +49,7 @@ struct qvi_mpi_s {
     /** Node communicator */
     MPI_Comm node_comm = MPI_COMM_NULL;
     /** Maintains the next available group ID value */
-    qvi_mpi_group_id_t group_next_id = QVI_MPI_GROUP_INTRINSIC_END;
+    //qvi_mpi_group_id_t group_next_id = QVI_MPI_GROUP_INTRINSIC_END;
     /** Group table (ID to internal structure mapping) */
     qvi_mpi_group_tab_t *group_tab = nullptr;
 };
@@ -73,12 +73,17 @@ next_group_tab_id(
     qvi_mpi_t *mpi,
     qvi_mpi_group_id_t *gid
 ) {
+  /*
     if (mpi->group_next_id == UINT64_MAX) {
         qvi_log_error("qvi_mpi_group ID space exhausted");
         return QV_ERR_OOR;
     }
     *gid = mpi->group_next_id++;
     return QV_SUCCESS;
+  */
+  QVI_UNUSED(mpi);
+
+  return qv_next_group_id(gid);
 }
 
 /**
@@ -369,12 +374,13 @@ out:
 }
 
 //GM: process_type is used to allow thread-based MPI-implementations
-//to pass this information.  
+//to pass this information. Default value is QV_TASK_TYPE_PROCESS
+// (since most MPI implementations are OS process-based).
 int
 qvi_mpi_init(
     qvi_mpi_t *mpi,
     MPI_Comm comm,
-    qv_task_type_t process_type
+    qv_task_type_t process_type = QV_TASK_TYPE_PROCESS
 ) {
     cstr_t ers = nullptr;
     int inited;

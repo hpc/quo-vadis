@@ -37,7 +37,7 @@ struct qvi_thread_s {
     /** Task associated with this thread */
     qvi_task_t *task = nullptr;
     /** Maintains the next available group ID value */
-    qvi_thread_group_id_t group_next_id = 0;
+    //qvi_thread_group_id_t group_next_id = 0;
     /** Group table (ID to internal structure mapping) */
     qvi_thread_group_tab_t *group_tab = nullptr;
 };
@@ -51,12 +51,17 @@ next_group_tab_id(
     qvi_thread_t *th,
     qvi_thread_group_id_t *gid
 ) {
+  /*
     if (th->group_next_id == UINT64_MAX) {
         qvi_log_error("qvi_thread_group ID space exhausted");
         return QV_ERR_OOR;
     }
     *gid = th->group_next_id++;
     return QV_SUCCESS;
+  */
+  QVI_UNUSED(th);
+   
+  return qv_next_group_id(gid);
 }
 
 int

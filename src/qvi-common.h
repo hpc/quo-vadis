@@ -58,6 +58,9 @@ typedef uint8_t byte_t;
 
 #endif
 
+// Type definition
+typedef uint64_t qvi_group_id_t;
+
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
  */

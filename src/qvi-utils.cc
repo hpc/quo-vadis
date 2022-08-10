@@ -41,6 +41,22 @@ static const char *qvi_rc_strerrs[] = {
     "Resources unavailable"
 };
 
+
+// This value has to be in sync with QVI_MPI_GROUP_INTRINSIC_END
+// (see qvi-mpi.h) 
+static qvi_group_id_t min_group_next_id = 3;
+
+int 
+qv_next_group_id(qvi_group_id_t *gid)
+{
+  if (min_group_next_id == UINT64_MAX) {
+        qvi_log_error("qvi group ID space exhausted");
+        return QV_ERR_OOR;
+    }
+  *gid = min_group_next_id++;
+  return QV_SUCCESS;
+}  
+
 const char *
 qv_strerr(int ec)
 {
