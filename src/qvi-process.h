@@ -22,6 +22,9 @@
 extern "C" {
 #endif
 
+// Type definitions.
+typedef uint64_t qvi_process_group_id_t;
+
 // Forward declarations.
 struct qvi_process_s;
 typedef struct qvi_process_s qvi_process_t;

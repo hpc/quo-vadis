@@ -24,15 +24,6 @@ if(QV_FORTRAN_HAPPY)
           POSITION_INDEPENDENT_CODE ON
     )
 
-    if(OpenMP_Fortran_FOUND)
-        set_target_properties(
-              quo-vadisf-core
-            PROPERTIES
-              COMPILE_FLAGS ${OpenMP_Fortran_FLAGS}
-              LINK_FLAGS ${OpenMP_Fortran_FLAGS}
-        )
-    endif()
-
     ############################################################################
     if(MPI_Fortran_FOUND)
         add_library(
@@ -101,6 +92,8 @@ if(QV_FORTRAN_HAPPY)
         quo-vadisf
         quo-vadisf-core
         quo-vadis-core
+        ${MPI_Fortran_LIBRARIES}
+        ${MPI_Fortran_LINK_FLAGS}
     )
 
     install(

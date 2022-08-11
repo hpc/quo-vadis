@@ -19,7 +19,6 @@
 #include "qvi-common.h"
 
 #include "qvi-task.h"
-#include "qvi-group.h"
 #include "qvi-bbuff.h"
 #include "quo-vadis-mpi.h"
 
@@ -28,7 +27,7 @@ extern "C" {
 #endif
 
 // Type definitions.
-typedef qvi_group_id_t qvi_mpi_group_id_t;
+typedef uint64_t qvi_mpi_group_id_t;
 
 // Forward declarations.
 struct qvi_mpi_s;
@@ -70,8 +69,7 @@ qvi_mpi_free(
 int
 qvi_mpi_init(
     qvi_mpi_t *mpi,
-    MPI_Comm comm,
-    qv_task_type_t process_type
+    MPI_Comm comm
 );
 
 /**

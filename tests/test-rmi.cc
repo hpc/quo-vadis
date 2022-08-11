@@ -110,10 +110,9 @@ client(
     printf("# [%d] Starting Client (%s)\n", getpid(), url);
 
     char const *ers = NULL;
-    qvi_task_id_t who = { QV_TASK_TYPE_PROCESS, getpid()};
+    pid_t mypid = getpid();
     hwloc_bitmap_t bitmap = NULL;
 
-    
     qvi_rmi_client_t *client = NULL;
     int rc = qvi_rmi_client_new(&client);
     if (rc != QV_SUCCESS) {
@@ -127,14 +126,14 @@ client(
         goto out;
     }
 
-    rc = qvi_rmi_task_get_cpubind(client, who, &bitmap);
+    rc = qvi_rmi_task_get_cpubind(client, mypid, &bitmap);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_task_get_cpubind() failed";
         goto out;
     }
     char *res;
     qvi_hwloc_bitmap_asprintf(&res, bitmap);
-    printf("# [%d] cpubind = %s\n", qvi_task_id_get_pid(who), res);
+    printf("# [%d] cpubind = %s\n", mypid, res);
     hwloc_bitmap_free(bitmap);
     free(res);
 out:

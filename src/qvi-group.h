@@ -18,7 +18,6 @@
 
 #include "qvi-bbuff.h"
 
-#ifdef __cplusplus
 /**
  * Virtual base group class.
  */
@@ -72,38 +71,22 @@ struct qvi_group_s {
         qvi_bbuff_t **rxbuff
     ) = 0;
 };
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// Forward declarations.
-struct qvi_group_s;
-typedef struct qvi_group_s qvi_group_t;
-
-/** Group ID. */
-typedef uint64_t qvi_group_id_t;
+typedef qvi_group_s qvi_group_t;
 
 /**
  *
  */
-void
+inline void
 qvi_group_free(
     qvi_group_t **group
-);
-
-/**
- *
- */
-int
-qvi_group_next_id(
-    qvi_group_id_t *gid
-);
-
-#ifdef __cplusplus
+) {
+    if (!group) return;
+    qvi_group_t *igroup = *group;
+    if (!igroup) goto out;
+    delete igroup;
+out:
+    *group = nullptr;
 }
-#endif
 
 #endif
 

@@ -452,8 +452,7 @@ rpc_ssi_task_get_cpubind(
     void *input,
     qvi_bbuff_t **output
 ) {
-    qvi_task_id_t who;
-
+    pid_t who = 0;
     int qvrc = qvi_bbuff_rmi_unpack(input, &who);
     if (qvrc != QV_SUCCESS) return qvrc;
 
@@ -477,9 +476,8 @@ rpc_ssi_task_set_cpubind_from_cpuset(
     void *input,
     qvi_bbuff_t **output
 ) {
-    qvi_task_id_t who;
+    pid_t who = 0;
     hwloc_cpuset_t cpuset = nullptr;
-
     int qvrc = qvi_bbuff_rmi_unpack(input, &who, &cpuset);
     if (qvrc != QV_SUCCESS) return qvrc;
 
@@ -602,13 +600,13 @@ get_intrinsic_scope_user(
 static int
 get_intrinsic_scope_proc(
     qvi_rmi_server_t *server,
-    qvi_task_id_t who,
+    pid_t requestor,
     qvi_hwpool_t **hwpool
 ) {
     hwloc_cpuset_t cpuset = nullptr;
     int rc = qvi_hwloc_task_get_cpubind(
         server->config->hwloc,
-        who,
+        requestor,
         &cpuset
     );
     if (rc != QV_SUCCESS) goto out;
@@ -635,10 +633,10 @@ rpc_ssi_scope_get_intrinsic_hwpool(
     void *input,
     qvi_bbuff_t **output
 ) {
-    // Get requestor task id (type and pid)  and intrinsic scope as integers from client request.
-    qvi_task_id_t requestor;
+    // Get requestor PID, intrinsic scope as integers from client request.
+    pid_t pid;
     qv_scope_intrinsic_t iscope;
-    int rc = qvi_bbuff_rmi_unpack(input, &requestor, &iscope);
+    int rc = qvi_bbuff_rmi_unpack(input, &pid, &iscope);
     if (rc != QV_SUCCESS) return rc;
 
     int rpcrc = QV_SUCCESS;
@@ -648,11 +646,11 @@ rpc_ssi_scope_get_intrinsic_hwpool(
         case QV_SCOPE_SYSTEM:
         case QV_SCOPE_USER:
         case QV_SCOPE_JOB: {
-           rpcrc = get_intrinsic_scope_user(server, qvi_task_id_get_pid(requestor), &hwpool);
+            rpcrc = get_intrinsic_scope_user(server, pid, &hwpool);
             break;
         }
         case QV_SCOPE_PROCESS:
-        rpcrc = get_intrinsic_scope_proc(server, requestor, &hwpool);
+            rpcrc = get_intrinsic_scope_proc(server, pid, &hwpool);
             break;
         default:
             rpcrc = QV_ERR_INVLD_ARG;
@@ -1094,7 +1092,7 @@ qvi_rmi_client_hwloc_get(
 int
 qvi_rmi_task_get_cpubind(
     qvi_rmi_client_t *client,
-    qvi_task_id_t who,
+    pid_t who,
     hwloc_cpuset_t *cpuset
 ) {
     int qvrc = rpc_req(
@@ -1118,7 +1116,7 @@ qvi_rmi_task_get_cpubind(
 int
 qvi_rmi_task_set_cpubind_from_cpuset(
     qvi_rmi_client_t *client,
-    qvi_task_id_t who,
+    pid_t who,
     hwloc_const_cpuset_t cpuset
 ) {
     int qvrc = rpc_req(
@@ -1139,7 +1137,7 @@ qvi_rmi_task_set_cpubind_from_cpuset(
 int
 qvi_rmi_scope_get_intrinsic_hwpool(
     qvi_rmi_client_t *client,
-    qvi_task_id_t who,
+    pid_t requestor_pid,
     qv_scope_intrinsic_t iscope,
     qvi_hwpool_t **hwpool
 ) {
@@ -1148,7 +1146,7 @@ qvi_rmi_scope_get_intrinsic_hwpool(
     int qvrc = rpc_req(
         client->zsock,
         FID_SCOPE_GET_INTRINSIC_HWPOOL,
-        who,
+        requestor_pid,
         iscope
     );
     if (qvrc != QV_SUCCESS) return qvrc;

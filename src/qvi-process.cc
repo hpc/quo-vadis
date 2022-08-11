@@ -13,11 +13,7 @@
 #include "qvi-common.h"
 
 #include "qvi-process.h"
-#include "qvi-group.h"
 #include "qvi-utils.h"
-
-// Type definitions.
-typedef qvi_group_id_t qvi_process_group_id_t;
 
 using qvi_process_group_tab_t = std::unordered_map<
     qvi_process_group_id_t, qvi_process_group_t
@@ -36,18 +32,26 @@ struct qvi_process_s {
     /** Task associated with this MPI process */
     qvi_task_t *task = nullptr;
     /** Maintains the next available group ID value */
+    qvi_process_group_id_t group_next_id = 0;
+    /** Group table (ID to internal structure mapping) */
     qvi_process_group_tab_t *group_tab = nullptr;
 };
 
 /**
  * Returns the next available group ID.
+ * TODO(skg) Merge with MPI's. Extract type, add this to common code.
  */
 static int
 next_group_tab_id(
-    qvi_process_t *,
+    qvi_process_t *process,
     qvi_process_group_id_t *gid
 ) {
-    return qvi_group_next_id(gid);
+    if (process->group_next_id == UINT64_MAX) {
+        qvi_log_error("qvi_process_group ID space exhausted");
+        return QV_ERR_OOR;
+    }
+    *gid = process->group_next_id++;
+    return QV_SUCCESS;
 }
 
 int
@@ -104,7 +108,7 @@ qvi_process_init(
     // For now these are always fixed.
     const int world_id = 0, node_id = 0;
     return qvi_task_init(
-        proc->task, QV_TASK_TYPE_PROCESS, getpid(), world_id, node_id
+        proc->task, getpid(), world_id, node_id
     );
 }
 
@@ -165,8 +169,8 @@ qvi_process_group_create(
     qvi_process_group_t **group
 ) {
     qvi_process_group_t *igroup = nullptr;
-    qvi_process_group_id_t gtid;
 
+    qvi_process_group_id_t gtid;
     int rc = next_group_tab_id(proc, &gtid);
     if (rc != QV_SUCCESS) goto out;
 
@@ -174,8 +178,8 @@ qvi_process_group_create(
     if (rc != QV_SUCCESS) goto out;
 
     igroup->tabid = gtid;
-    igroup->id    = 0;
-    igroup->size  = 1;
+    igroup->id = 0;
+    igroup->size = 1;
 
     proc->group_tab->insert({gtid, *igroup});
 out:

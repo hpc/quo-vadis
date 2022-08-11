@@ -46,7 +46,6 @@ add_library(
     qvi-task.cc
     qvi-scope.cc
     qvi-bind.cc
-    qvi-group.cc
     quo-vadis.cc
 )
 
@@ -95,14 +94,6 @@ add_library(
     qvi-group-process.cc
     qvi-zgroup-process.cc
     quo-vadis-process.cc
-    ../include/quo-vadis-thread.h
-    qvi-thread.h
-    qvi-group-thread.h
-    qvi-zgroup-thread.h
-    qvi-thread.cc
-    qvi-group-thread.cc
-    qvi-zgroup-thread.cc
-    quo-vadis-thread.cc
 )
 
 target_include_directories(
@@ -112,12 +103,11 @@ target_include_directories(
 )
 
 if(OpenMP_C_FOUND)
-    set_target_properties(
-        quo-vadis
-        PROPERTIES
-          COMPILE_FLAGS ${OpenMP_C_FLAGS}
-          LINK_FLAGS ${OpenMP_C_FLAGS}
-    )
+target_compile_options(
+    quo-vadis
+    PUBLIC
+     ${OpenMP_C_FLAGS}
+)
 endif()
 
 target_link_libraries(

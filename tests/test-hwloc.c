@@ -80,7 +80,7 @@ echo_task_intersections(
     char *bitmap_str
 ) {
     const int num_nts = sizeof(nts) / sizeof(hw_name_type_t);
-    const qvi_task_id_t me = {.type = QV_TASK_TYPE_PROCESS, .who = getpid()};
+    const pid_t me = getpid();
 
     printf("\n# Task Intersection Overview ------------\n");
     for (int i = 0; i < num_nts; ++i) {
@@ -130,7 +130,7 @@ echo_gpu_info(
 ) {
     printf("\n# Discovered GPU Devices --------------\n");
 
-    int ngpus = 0;
+    unsigned ngpus = 0;
     int rc = qvi_hwloc_get_nobjs_in_cpuset(
         hwl,
         QV_HW_OBJ_GPU,
@@ -174,7 +174,6 @@ main(void)
     char *binds = NULL;
     qvi_hwloc_t *hwl;
     hwloc_bitmap_t bitmap = NULL;
-    qvi_task_id_t who = {.type = QV_TASK_TYPE_PROCESS, .who = getpid()};
 
     int rc = qvi_hwloc_new(&hwl);
     if (rc != QV_SUCCESS) {
@@ -214,7 +213,7 @@ main(void)
 
     rc = qvi_hwloc_task_get_cpubind(
         hwl,
-        who,
+        getpid(),
         &bitmap
     );
     if (rc != QV_SUCCESS) {

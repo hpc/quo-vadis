@@ -17,36 +17,20 @@ add_executable(
     test-threads.c
 )
 
-if (OPENMP_FOUND)
 target_link_libraries(
     test-threads
     quo-vadis
-    OpenMP::OpenMP_C
 )
-else()
- target_link_libraries(
-    test-threads
-    quo-vadis
-)
-endif()
-
+  
 add_executable(
     test-hwloc
     test-hwloc.c
 )
 
-if (OPENMP_FOUND)
-target_link_libraries(
-    test-hwloc
-    quo-vadis
-    OpenMP::OpenMP_C
-)
-else()
 target_link_libraries(
     test-hwloc
     quo-vadis
 )
-endif()
 
 add_test(
     hwloc
@@ -58,18 +42,11 @@ add_executable(
     test-process-scopes.c
 )
 
-if (OPENMP_FOUND)
-target_link_libraries(
-    test-process-scopes
-    quo-vadis
-    OpenMP::OpenMP_C
-)
-else()
+
 target_link_libraries(
     test-process-scopes
     quo-vadis
 )
-endif()
 
 add_test(
     NAME
@@ -165,24 +142,16 @@ if(QV_FORTRAN_HAPPY)
         test-process-fortapi.f90
     )
 
-   if(OPENMP_FOUND)
-      target_link_libraries(
-         test-process-fortapi
-         quo-vadis-processf
-         OpenMP::OpenMP_Fortran
-      )
-   else()
-      target_link_libraries(
+    target_link_libraries(
         test-process-fortapi
         quo-vadis-processf
-      )
-    endif()
+    )
 
     set_target_properties(
         test-process-fortapi
         PROPERTIES LINKER_LANGUAGE Fortran
     )
-  
+
     if(MPI_Fortran_FOUND)
         add_executable(
             test-mpi-fortapi
@@ -208,18 +177,10 @@ add_executable(
     test-rmi.cc
 )
 
-if (OPENMP_FOUND)
-target_link_libraries(
-    test-rmi
-    quo-vadis
-    OpenMP::OpenMP_C
-)
-else()
 target_link_libraries(
     test-rmi
     quo-vadis
 )
-endif()
 
 add_test(
     NAME
