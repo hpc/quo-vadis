@@ -1,6 +1,8 @@
 /*
  * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
+ * Copyright (c) 2022      Inria. All rights reserved.
+ * Copyright (c) 2022      Bordeaux INP. All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
  * top-level directory of this distribution.
@@ -14,9 +16,10 @@
 
 #include "qvi-thread.h"
 #include "qvi-utils.h"
-#ifdef _OPENMP
+
+#ifdef OPENMP_FOUND
 #include <omp.h>
-#endif 
+#endif
 
 using qvi_thread_group_tab_t = std::unordered_map<
     qvi_thread_group_id_t, qvi_thread_group_t
@@ -29,7 +32,7 @@ struct qvi_thread_group_s {
     int id = 0;
     /** Size of group */
     int size = 0;
-    /** Barrier object */  
+    /** Barrier object */
     pthread_barrier_t barrier;
 };
 
@@ -60,7 +63,7 @@ next_group_tab_id(
     return QV_SUCCESS;
   */
   QVI_UNUSED(th);
-   
+
   return qv_next_group_id(gid);
 }
 
@@ -116,7 +119,7 @@ qvi_thread_init(
     qvi_thread_t *th
 ) {
     // For now these are always fixed.
-    const int world_id = 0, node_id = 0;    
+    const int world_id = 0, node_id = 0;
     return qvi_task_init(
 	th->task, QV_TASK_TYPE_THREAD, qvi_gettid(), world_id, node_id
     );
@@ -133,7 +136,7 @@ int
 qvi_thread_node_barrier(
     qvi_thread_t *
 ) {
-#ifdef _OPENMP
+#ifdef OPENMP_FOUND
 #endif
     return QV_SUCCESS;
 }
@@ -192,13 +195,13 @@ qvi_thread_group_create(
     if (rc != QV_SUCCESS) goto out;
 
     igroup->tabid = gtid;
-#ifdef _OPENMP
+#ifdef OPENMP_FOUND
     igroup->id   = omp_get_thread_num();
     igroup->size = omp_get_num_threads();
 #else
     igroup->id   = 0;
-    igroup->size = 1;    
-#endif    
+    igroup->size = 1;
+#endif
     th->group_tab->insert({gtid, *igroup});
     pthread_barrier_init(&igroup->barrier,NULL,igroup->size);
 out:

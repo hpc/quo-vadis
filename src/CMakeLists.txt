@@ -111,11 +111,12 @@ target_include_directories(
 )
 
 if(OpenMP_C_FOUND)
-target_compile_options(
-    quo-vadis
-    PUBLIC
-    ${OpenMP_C_FLAGS}
-)
+    set_target_properties(
+        quo-vadis
+        PROPERTIES
+          COMPILE_FLAGS ${OpenMP_C_FLAGS}
+          LINK_FLAGS ${OpenMP_C_FLAGS}
+    )
 endif()
 
 target_link_libraries(
