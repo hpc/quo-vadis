@@ -882,18 +882,18 @@ qvi_hwloc_get_nobjs_by_type(
 
 int
 qvi_hwloc_emit_cpubind(
-   qvi_hwloc_t *hwl,
-   pid_t who
+   qvi_hwloc_t  *hwl,
+   qvi_task_id_t task_id
 ) {
     hwloc_cpuset_t cpuset = nullptr;
-    int rc = qvi_hwloc_task_get_cpubind(hwl, who, &cpuset);
+    int rc = qvi_hwloc_task_get_cpubind(hwl, task_id, &cpuset);
     if (rc != QV_SUCCESS) return rc;
 
     char *cpusets = nullptr;
     rc = qvi_hwloc_bitmap_asprintf(&cpusets, cpuset);
     if (rc != QV_SUCCESS) goto out;
 
-    qvi_log_info("[pid={} tid={}] cpubind={}", who, qvi_gettid(), cpusets);
+    qvi_log_info("[pid={} tid={}] cpubind={}", qvi_task_id_get_pid(task_id), qvi_gettid(), cpusets);
 out:
     qvi_hwloc_bitmap_free(&cpuset);
     if (cpusets) free(cpusets);
@@ -961,14 +961,19 @@ qvi_hwloc_bitmap_sscanf(
 static int
 get_proc_cpubind(
     qvi_hwloc_t *hwl,
-    pid_t who,
+    qvi_task_id_t task_id,
     hwloc_cpuset_t cpuset
 ) {
+#ifdef __linux__
+    int flag = (task_id.type == QV_TASK_TYPE_THREAD ) ? HWLOC_CPUBIND_THREAD : HWLOC_CPUBIND_PROCESS;
+#else
+    int flag = HWLOC_CPUBIND_PROCESS;
+#endif
     int rc = hwloc_get_proc_cpubind(
         hwl->topo,
-        who,
+        task_id.who,
         cpuset,
-        HWLOC_CPUBIND_PROCESS
+        flag
     );
     if (rc != 0) return QV_ERR_HWLOC;
     // XXX(skg) In some instances I've noticed that the system's topology cpuset
@@ -989,14 +994,14 @@ get_proc_cpubind(
 int
 qvi_hwloc_task_get_cpubind(
     qvi_hwloc_t *hwl,
-    pid_t who,
+    qvi_task_id_t task_id,
     hwloc_cpuset_t *out_cpuset
 ) {
     hwloc_cpuset_t cur_bind = nullptr;
     int rc = qvi_hwloc_bitmap_calloc(&cur_bind);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = get_proc_cpubind(hwl, who, cur_bind);
+    rc = get_proc_cpubind(hwl, task_id, cur_bind);
 out:
     if (rc != QV_SUCCESS) {
         qvi_hwloc_bitmap_free(&cur_bind);
@@ -1005,20 +1010,23 @@ out:
     return rc;
 }
 
-// TODO(skg) Add support for binding threads, too.
 int
 qvi_hwloc_task_set_cpubind_from_cpuset(
     qvi_hwloc_t *hwl,
-    pid_t who,
+    qvi_task_id_t task_id,
     hwloc_const_cpuset_t cpuset
 ) {
     int qvrc = QV_SUCCESS;
-
+#ifdef __linux__
+    int flag = (qvi_task_id_get_type(task_id) == QV_TASK_TYPE_THREAD ) ? HWLOC_CPUBIND_THREAD : HWLOC_CPUBIND_PROCESS;
+#else
+    int flag = HWLOC_CPUBIND_PROCESS;
+#endif
     int rc = hwloc_set_proc_cpubind(
         hwl->topo,
-        who,
+        qvi_task_id_get_pid(task_id),
         cpuset,
-        HWLOC_CPUBIND_PROCESS
+    flag
     );
     if (rc == -1) {
         qvrc = QV_ERR_NOT_SUPPORTED;
@@ -1029,11 +1037,11 @@ qvi_hwloc_task_set_cpubind_from_cpuset(
 int
 qvi_hwloc_task_get_cpubind_as_string(
     qvi_hwloc_t *hwl,
-    pid_t who,
+    qvi_task_id_t task_id,
     char **cpusets
 ) {
     hwloc_cpuset_t cpuset;
-    int rc = qvi_hwloc_task_get_cpubind(hwl, who, &cpuset);
+    int rc = qvi_hwloc_task_get_cpubind(hwl, task_id, &cpuset);
     if (rc != QV_SUCCESS) return rc;
 
     rc = qvi_hwloc_bitmap_asprintf(cpusets, cpuset);
@@ -1048,7 +1056,7 @@ static inline int
 task_obj_xop_by_type_id(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t type,
-    pid_t who,
+    qvi_task_id_t task_id,
     int type_index,
     qvi_hwloc_task_xop_obj_t opid,
     int *result
@@ -1058,7 +1066,7 @@ task_obj_xop_by_type_id(
     if (rc != QV_SUCCESS) return rc;
 
     hwloc_cpuset_t cur_bind = nullptr;
-    rc = qvi_hwloc_task_get_cpubind(hwl, who, &cur_bind);
+    rc = qvi_hwloc_task_get_cpubind(hwl, task_id, &cur_bind);
     if (rc != QV_SUCCESS) return rc;
 
     switch (opid) {
@@ -1079,14 +1087,14 @@ int
 qvi_hwloc_task_intersects_obj_by_type_id(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t type,
-    pid_t who,
+    qvi_task_id_t task_id,
     int type_index,
     int *result
 ) {
     return task_obj_xop_by_type_id(
         hwl,
         type,
-        who,
+    task_id,
         type_index,
         QVI_HWLOC_TASK_INTERSECTS_OBJ,
         result
@@ -1097,14 +1105,14 @@ int
 qvi_hwloc_task_isincluded_in_obj_by_type_id(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t type,
-    pid_t who,
+    qvi_task_id_t task_id,
     int type_index,
     int *result
 ) {
     return task_obj_xop_by_type_id(
         hwl,
         type,
-        who,
+        task_id,
         type_index,
         QVI_HWLOC_TASK_ISINCLUDED_IN_OBJ,
         result

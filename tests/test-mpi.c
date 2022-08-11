@@ -57,7 +57,10 @@ main(
         goto out;
     }
 
-    rc = qvi_mpi_init(mpi, comm);
+    /* QV_TASK_TYPE_PROCESS indicates that the MPI implementation */
+    /* uses OS processes as MPI Processes. */
+    /* QV_TASK_TYPE_THREAD may be used otherwise */
+    rc = qvi_mpi_init(mpi, comm, QV_TASK_TYPE_PROCESS);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_init() failed";
         goto out;
@@ -82,8 +85,9 @@ main(
     int task_lid = qvi_task_lid(task);
 
     printf(
-        "Hello from gid=%" PRId64
+        "Hello from %s gid=%" PRId64
         " (lid=%d, nsize=%d, node_gid=%d) of wsize=%d\n",
+        qvi_task_type(task) == QV_TASK_TYPE_PROCESS ? "process" : "thread",
         task_gid,
         task_lid,
         nsize,
