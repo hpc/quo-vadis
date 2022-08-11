@@ -8,8 +8,8 @@ Username          Name                        Affiliation(s)
 ----------------  --------------------------- -------------------------
 andreapiacentini  Andrea Piacentini
 eleon             Edgar A. Leon               LLNL
+GuillaumeMercier  Guillaume Mercier	          Bordeaux-INP, Inria
 samuelkgutierrez  Samuel K. Gutierrez         LANL
-GuillaumeMercier  Guillaume Mercier	      Bordeaux-INP & Inria 
 
 Affiliation Abbreviations
 -------------------------
