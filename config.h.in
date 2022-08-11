@@ -35,6 +35,10 @@
 
 /** Set by find_package(MPI) */
 #cmakedefine MPI_FOUND
+/**
+ * When defined assume that MPI processes are built atop threads, not OS processes.
+ */
+#cmakedefine MPI_PROCESSES_ARE_THREADS
 /** Set by find_package(OpenMP) */
 #cmakedefine OPENMP_FOUND
 

@@ -33,7 +33,7 @@ int
 qvi_zgroup_mpi_s::initialize(
     MPI_Comm comm
 ) {
-    return qvi_mpi_init(mpi, comm, qvi_task_type(qvi_mpi_task_get(mpi)));
+    return qvi_mpi_init(mpi, comm);
 }
 
 qvi_task_t *

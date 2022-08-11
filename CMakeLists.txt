@@ -80,6 +80,12 @@ find_package(ZMQ REQUIRED)
 
 # MPI support
 option(QV_DISABLE_MPI_SUPPORT "Unconditionally disable MPI support" OFF)
+option(
+    QV_MPI_PROCESSES_ARE_THREADS
+    "Enable when the MPI library implements MPI processes as threads"
+    OFF
+)
+
 message(CHECK_START "Determining MPI support status")
 if(NOT QV_DISABLE_MPI_SUPPORT)
     message(CHECK_PASS "enabled")
@@ -90,6 +96,16 @@ endif()
 if(NOT QV_DISABLE_MPI_SUPPORT)
     # TODO(skg) Make sure that we are at least at MPI-3
     find_package(MPI)
+    # By default we assume MPI processes are implemented as OS processes.
+    message(CHECK_START "Determining underlying MPI process type")
+    # TODO(skg) Document this flag.
+    set(MPI_PROCESSES_ARE_THREADS FALSE)
+    if(QV_MPI_PROCESSES_ARE_THREADS)
+        set(MPI_PROCESSES_ARE_THREADS TRUE)
+        message(CHECK_PASS "threads")
+    else()
+        message(CHECK_PASS "OS processes")
+    endif()
 endif()
 
 # OpenMP support

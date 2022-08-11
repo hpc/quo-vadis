@@ -959,21 +959,28 @@ qvi_hwloc_bitmap_sscanf(
 }
 
 static int
+get_task_cpubind_flags(
+    qvi_task_type_t task_type
+) {
+#ifdef __linux__
+    if (task_type == QV_TASK_TYPE_THREAD) return HWLOC_CPUBIND_THREAD;
+    return HWLOC_CPUBIND_PROCESS;
+#else
+    return HWLOC_CPUBIND_PROCESS;
+#endif
+}
+
+static int
 get_proc_cpubind(
     qvi_hwloc_t *hwl,
     qvi_task_id_t task_id,
     hwloc_cpuset_t cpuset
 ) {
-#ifdef __linux__
-    int flag = (task_id.type == QV_TASK_TYPE_THREAD ) ? HWLOC_CPUBIND_THREAD : HWLOC_CPUBIND_PROCESS;
-#else
-    int flag = HWLOC_CPUBIND_PROCESS;
-#endif
     int rc = hwloc_get_proc_cpubind(
         hwl->topo,
         task_id.who,
         cpuset,
-        flag
+        get_task_cpubind_flags(task_id.type)
     );
     if (rc != 0) return QV_ERR_HWLOC;
     // XXX(skg) In some instances I've noticed that the system's topology cpuset
@@ -990,7 +997,6 @@ get_proc_cpubind(
     return QV_SUCCESS;
 }
 
-// TODO(skg) Add another routine to also supports TIDs.
 int
 qvi_hwloc_task_get_cpubind(
     qvi_hwloc_t *hwl,
@@ -1017,16 +1023,11 @@ qvi_hwloc_task_set_cpubind_from_cpuset(
     hwloc_const_cpuset_t cpuset
 ) {
     int qvrc = QV_SUCCESS;
-#ifdef __linux__
-    int flag = (qvi_task_id_get_type(task_id) == QV_TASK_TYPE_THREAD ) ? HWLOC_CPUBIND_THREAD : HWLOC_CPUBIND_PROCESS;
-#else
-    int flag = HWLOC_CPUBIND_PROCESS;
-#endif
     int rc = hwloc_set_proc_cpubind(
         hwl->topo,
         qvi_task_id_get_pid(task_id),
         cpuset,
-    flag
+        get_task_cpubind_flags(task_id.type)
     );
     if (rc == -1) {
         qvrc = QV_ERR_NOT_SUPPORTED;

@@ -70,8 +70,7 @@ qvi_mpi_free(
 int
 qvi_mpi_init(
     qvi_mpi_t *mpi,
-    MPI_Comm comm,
-    qvi_task_type_t process_type
+    MPI_Comm comm
 );
 
 /**
