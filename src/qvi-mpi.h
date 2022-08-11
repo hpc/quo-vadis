@@ -71,7 +71,7 @@ int
 qvi_mpi_init(
     qvi_mpi_t *mpi,
     MPI_Comm comm,
-    qv_task_type_t process_type
+    qvi_task_type_t process_type
 );
 
 /**

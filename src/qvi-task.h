@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -25,9 +25,17 @@ extern "C" {
 struct qvi_task_s;
 typedef struct qvi_task_s qvi_task_t;
 
+/**
+ * Task types.
+ */
+typedef enum qvi_task_type_e {
+    QV_TASK_TYPE_PROCESS = 0,
+    QV_TASK_TYPE_THREAD
+} qvi_task_type_t;
+
 typedef struct qvi_task_id_s {
     /** Task type (OS Process or OS Thread) */
-    qv_task_type_t type;
+    qvi_task_type_t type;
     /** Process ID or Thread ID */
     pid_t who;
 } qvi_task_id_t;
@@ -54,7 +62,7 @@ qvi_task_free(
 int
 qvi_task_init(
     qvi_task_t *task,
-    qv_task_type_t type,
+    qvi_task_type_t type,
     pid_t who,
     int64_t gid,
     int lid
@@ -71,7 +79,7 @@ qvi_task_task_id(
 /**
  *
  */
-qv_task_type_t
+qvi_task_type_t
 qvi_task_type(
     qvi_task_t *task
 );
@@ -103,7 +111,7 @@ qvi_task_lid(
 /**
  *
  */
-qv_task_type_t
+qvi_task_type_t
 qvi_task_id_get_type(
     qvi_task_id_t task_id
 );

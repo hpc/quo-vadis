@@ -174,7 +174,7 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
-    qv_task_type_t
+    qvi_task_type_t
 ) {
     picture += "i";
 }
@@ -183,7 +183,7 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
-    qv_task_type_t *
+    qvi_task_type_t *
 ) {
     picture += "i";
 }
@@ -341,12 +341,12 @@ qvi_bbuff_rmi_pack_item(
 #endif
 
 /**
- * Packs qv_task_type_t as an int.
+ * Packs qvi_task_type_t as an int.
  */
 inline int
 qvi_bbuff_rmi_pack_item(
     qvi_bbuff_t *buff,
-    qv_task_type_t data
+    qvi_task_type_t data
 ) {
     const int dai = (int)data;
     return qvi_bbuff_append(buff, &dai, sizeof(dai));
@@ -615,7 +615,7 @@ qvi_bbuff_rmi_unpack_item(
 
 inline int
 qvi_bbuff_rmi_unpack_item(
-    qv_task_type_t *o,
+    qvi_task_type_t *o,
     byte_t *buffpos,
     size_t *bytes_written
 ) {
@@ -623,7 +623,7 @@ qvi_bbuff_rmi_unpack_item(
     int oai = 0;
     memmove(&oai, buffpos, sizeof(oai));
     *bytes_written = sizeof(oai);
-    *o = (qv_task_type_t)oai;
+    *o = (qvi_task_type_t)oai;
     return QV_SUCCESS;
 }
 

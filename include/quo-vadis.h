@@ -138,14 +138,6 @@ typedef enum qv_device_id_type_e {
 } qv_device_id_type_t;
 
 /**
- * Task types.
- */
-typedef enum qv_task_type_e {
-    QV_TASK_TYPE_PROCESS = 0,
-    QV_TASK_TYPE_THREAD
-} qv_task_type_t;
-
-/**
  *
  */
 int

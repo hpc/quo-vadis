@@ -60,7 +60,7 @@ out:
 int
 qvi_task_init(
     qvi_task_t *task,
-    qv_task_type_t type,
+    qvi_task_type_t type,
     pid_t who,
     int64_t gid,
     int lid
@@ -79,7 +79,7 @@ qvi_task_task_id(
     return task->task_id;
 }
 
-qv_task_type_t
+qvi_task_type_t
 qvi_task_type(
     qvi_task_t *task
 ) {
@@ -107,7 +107,7 @@ qvi_task_lid(
     return task->lid;
 }
 
-qv_task_type_t
+qvi_task_type_t
 qvi_task_id_get_type(
     qvi_task_id_t task_id
 ){

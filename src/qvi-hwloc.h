@@ -18,8 +18,8 @@
 
 #include "qvi-common.h"
 #include "qvi-task.h"
-#include "hwloc.h"
 
+#include "hwloc.h"
 
 #ifdef __cplusplus
 extern "C" {

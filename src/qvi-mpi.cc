@@ -368,7 +368,7 @@ int
 qvi_mpi_init(
     qvi_mpi_t *mpi,
     MPI_Comm comm,
-    qv_task_type_t process_type = QV_TASK_TYPE_PROCESS
+    qvi_task_type_t process_type = QV_TASK_TYPE_PROCESS
 ) {
     cstr_t ers = nullptr;
     int inited;
