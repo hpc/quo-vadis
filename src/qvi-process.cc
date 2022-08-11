@@ -36,29 +36,17 @@ struct qvi_process_s {
     /** Task associated with this MPI process */
     qvi_task_t *task = nullptr;
     /** Maintains the next available group ID value */
-    //qvi_process_group_id_t group_next_id = 0;
-    /** Group table (ID to internal structure mapping) */
     qvi_process_group_tab_t *group_tab = nullptr;
 };
 
 /**
  * Returns the next available group ID.
- * TODO(skg) Merge with MPI's. Extract type, add this to common code.
  */
 static int
 next_group_tab_id(
-    qvi_process_t  *process,
+    qvi_process_t *,
     qvi_process_group_id_t *gid
 ) {
-  /*
-    if (process->group_next_id == UINT64_MAX) {
-        qvi_log_error("qvi_process_group ID space exhausted");
-        return QV_ERR_OOR;
-    }
-    *gid = process->group_next_id++;
-    return QV_SUCCESS;*/
-    QVI_UNUSED(process);
-
     return qvi_group_next_id(gid);
 }
 

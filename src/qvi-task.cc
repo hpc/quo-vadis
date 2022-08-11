@@ -22,14 +22,10 @@ static const int qvi_task_id_invalid = -1;
 struct qvi_task_s {
     /** Task id */
     qvi_task_id_t task_id;
-    /** Task type (OS Process or OS Thread) */
-    //qv_task_type_t type;
     /** Global task ID */
     int64_t gid = qvi_task_id_invalid;
     /** Node-local task ID */
     int lid = qvi_task_id_invalid;
-    /** Process ID or Thread ID*/
-    //pid_t pid = 0;
 };
 
 int
@@ -81,8 +77,8 @@ qvi_task_task_id(
     qvi_task_t *task
 ) {
     return task->task_id;
-}		 
-  
+}
+
 qv_task_type_t
 qvi_task_type(
     qvi_task_t *task
@@ -115,16 +111,15 @@ qv_task_type_t
 qvi_task_id_get_type(
     qvi_task_id_t task_id
 ){
-  return task_id.type;
+    return task_id.type;
 }
 
 pid_t
 qvi_task_id_get_pid(
     qvi_task_id_t task_id
 ){
-  return task_id.who;
+    return task_id.who;
 }
-
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab

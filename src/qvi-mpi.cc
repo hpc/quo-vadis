@@ -48,8 +48,6 @@ struct qvi_mpi_s {
     MPI_Comm world_comm = MPI_COMM_NULL;
     /** Node communicator */
     MPI_Comm node_comm = MPI_COMM_NULL;
-    /** Maintains the next available group ID value */
-    //qvi_mpi_group_id_t group_next_id = QVI_MPI_GROUP_INTRINSIC_END;
     /** Group table (ID to internal structure mapping) */
     qvi_mpi_group_tab_t *group_tab = nullptr;
 };
@@ -70,19 +68,9 @@ cp_mpi_group(
  */
 static int
 next_group_tab_id(
-    qvi_mpi_t *mpi,
+    qvi_mpi_t *,
     qvi_mpi_group_id_t *gid
 ) {
-  /*
-    if (mpi->group_next_id == UINT64_MAX) {
-        qvi_log_error("qvi_mpi_group ID space exhausted");
-        return QV_ERR_OOR;
-    }
-    *gid = mpi->group_next_id++;
-    return QV_SUCCESS;
-  */
-    QVI_UNUSED(mpi);
-
     return qvi_group_next_id(gid);
 }
 
