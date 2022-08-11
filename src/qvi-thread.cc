@@ -15,11 +15,15 @@
 #include "qvi-common.h"
 
 #include "qvi-thread.h"
+#include "qvi-group.h"
 #include "qvi-utils.h"
 
 #ifdef OPENMP_FOUND
 #include <omp.h>
 #endif
+
+// Type definitions.
+typedef qvi_group_id_t qvi_thread_group_id_t;
 
 using qvi_thread_group_tab_t = std::unordered_map<
     qvi_thread_group_id_t, qvi_thread_group_t
@@ -62,9 +66,9 @@ next_group_tab_id(
     *gid = th->group_next_id++;
     return QV_SUCCESS;
   */
-  QVI_UNUSED(th);
+    QVI_UNUSED(th);
 
-  return qv_next_group_id(gid);
+    return qvi_group_next_id(gid);
 }
 
 int

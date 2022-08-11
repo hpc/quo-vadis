@@ -25,12 +25,6 @@ extern "C" {
 /**
  *
  */
-int 
-qv_next_group_id(qvi_group_id_t *gid);
- 
-/**
- *
- */
 char *
 qvi_strerr(int ec);
 

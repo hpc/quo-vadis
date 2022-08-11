@@ -19,6 +19,7 @@
 #include "qvi-common.h"
 
 #include "qvi-task.h"
+#include "qvi-group.h"
 #include "qvi-bbuff.h"
 #include "quo-vadis-mpi.h"
 

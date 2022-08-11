@@ -13,7 +13,11 @@
 #include "qvi-common.h"
 
 #include "qvi-process.h"
+#include "qvi-group.h"
 #include "qvi-utils.h"
+
+// Type definitions.
+typedef qvi_group_id_t qvi_process_group_id_t;
 
 using qvi_process_group_tab_t = std::unordered_map<
     qvi_process_group_id_t, qvi_process_group_t
@@ -53,9 +57,9 @@ next_group_tab_id(
     }
     *gid = process->group_next_id++;
     return QV_SUCCESS;*/
-  QVI_UNUSED(process);
+    QVI_UNUSED(process);
   
-  return qv_next_group_id(gid);
+    return qvi_group_next_id(gid);
 }
 
 int

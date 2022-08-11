@@ -46,6 +46,7 @@ add_library(
     qvi-task.cc
     qvi-scope.cc
     qvi-bind.cc
+    qvi-group.cc
     quo-vadis.cc
 )
 

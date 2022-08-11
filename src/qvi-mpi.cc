@@ -81,9 +81,9 @@ next_group_tab_id(
     *gid = mpi->group_next_id++;
     return QV_SUCCESS;
   */
-  QVI_UNUSED(mpi);
+    QVI_UNUSED(mpi);
 
-  return qv_next_group_id(gid);
+    return qvi_group_next_id(gid);
 }
 
 /**
@@ -136,8 +136,8 @@ group_init_from_mpi_comm(
     new_group->mpi_comm = comm;
 
     int rc = MPI_Comm_rank(
-	    new_group->mpi_comm,
-            &new_group->id
+        new_group->mpi_comm,
+        &new_group->id
     );
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_rank() failed";
@@ -539,8 +539,8 @@ qvi_mpi_group_create_from_ids(
     MPI_Group old_mpi_group = MPI_GROUP_NULL;
     
     int rc = MPI_Comm_group(
-	group->mpi_comm,
-	&old_mpi_group
+        group->mpi_comm,
+        &old_mpi_group
     );
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_group() failed";

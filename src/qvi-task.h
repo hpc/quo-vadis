@@ -24,7 +24,14 @@ extern "C" {
 
 struct qvi_task_s;
 typedef struct qvi_task_s qvi_task_t;
-  
+
+typedef struct qvi_task_id_s {
+    /** Task type (OS Process or OS Thread) */
+    qv_task_type_t type;
+    /** Process ID or Thread ID */
+    pid_t who;
+} qvi_task_id_t;
+
 /**
  *
  */
