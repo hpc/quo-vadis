@@ -18,6 +18,7 @@
  * h = qvi_line_hwpool_t *
  * i = int
  * s = char *
+ * t = qv_task_type_t, qvi_task_id_t
  * z = qvi_bbuff_rmi_zero_msg_t
  */
 
@@ -220,9 +221,36 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
+    qvi_task_id_t
+) {
+    picture += "t";
+}
+
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
+    qvi_task_id_t *
+) {
+    picture += "t";
+}
+
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
     qv_task_type_t
 ) {
-    picture += "i";
+    picture += "t";
+}
+
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
+    qv_task_type_t *
+) {
+    picture += "t";
 }
 
 inline void
@@ -311,6 +339,32 @@ qvi_bbuff_rmi_pack_item(
     return qvi_bbuff_append(buff, &dai, sizeof(dai));
 }
 #endif
+
+/**
+ * Packs qv_task_type_t as an int.
+ */
+inline int
+qvi_bbuff_rmi_pack_item(
+    qvi_bbuff_t *buff,
+    qv_task_type_t data
+) {
+    const int dai = (int)data;
+    return qvi_bbuff_append(buff, &dai, sizeof(dai));
+}
+
+/**
+ * Packs qvi_task_id_t as an int.
+ */
+/*
+inline int
+qvi_bbuff_rmi_pack_item(
+    qvi_bbuff_t *buff,
+    qvi_task_id_t data
+) {
+    const int dai = (int)data;
+    return qvi_bbuff_append(buff, &dai, sizeof(dai));
+}
+*/
 
 inline int
 qvi_bbuff_rmi_pack_item_impl(
@@ -483,6 +537,23 @@ qvi_bbuff_rmi_pack_item_impl(
 }
 
 /**
+ * Packs qvi_task_id_t 
+ */
+inline int
+qvi_bbuff_rmi_pack_item_impl(
+    qvi_bbuff_t *buff,
+    qvi_task_id_t  data
+) {
+    // Pack task type.
+    int rc = qvi_bbuff_rmi_pack_item(buff, data.type);
+    if (rc != QV_SUCCESS) return rc;
+    // Pack pid
+    rc = qvi_bbuff_rmi_pack_item(buff, data.who);
+    if (rc != QV_SUCCESS) return rc;
+    return rc;
+}
+
+/**
  * Packs const qvi_hwpool_t *
  */
 inline int
@@ -500,6 +571,17 @@ inline int
 qvi_bbuff_rmi_pack_item(
     qvi_bbuff_t *buff,
     qvi_hwpool_t *data
+) {
+    return qvi_bbuff_rmi_pack_item_impl(buff, data);
+}
+
+/**
+ * Packs qvi_task_id_t 
+ */
+inline int
+qvi_bbuff_rmi_pack_item(
+    qvi_bbuff_t *buff,
+    qvi_task_id_t data
 ) {
     return qvi_bbuff_rmi_pack_item_impl(buff, data);
 }
@@ -524,18 +606,6 @@ qvi_bbuff_rmi_pack(
     return qvi_bbuff_rmi_pack(buff, args...);
 }
 
-
-/**
- * Packs qv_task_type_t as an int.
- */
-inline int
-qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
-    qv_task_type_t data
-) {
-    const int dai = (int)data;
-    return qvi_bbuff_append(buff, &dai, sizeof(dai));
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Unpack
@@ -820,6 +890,35 @@ out:
         *bytes_written = 0;
         qvi_hwpool_free(hwp);
     }
+    return rc;
+}
+
+inline int
+qvi_bbuff_rmi_unpack_item(
+    qvi_task_id_t *taski,
+    byte_t *buffpos,
+    size_t *bytes_written
+) {
+    size_t bw = 0, total_bw = 0;
+
+    int rc = qvi_bbuff_rmi_unpack_item(
+        &taski->type, buffpos, &bw
+    );
+    if (rc != QV_SUCCESS) goto out;
+    total_bw += bw;
+    buffpos += bw;
+
+    rc = qvi_bbuff_rmi_unpack_item(
+        &taski->who, buffpos, &bw
+    );
+    if (rc != QV_SUCCESS) goto out;
+    total_bw += bw;
+    buffpos += bw;
+out:
+    if (rc != QV_SUCCESS) {
+        total_bw = 0;
+    }
+    *bytes_written = total_bw;
     return rc;
 }
 

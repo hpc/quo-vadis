@@ -56,7 +56,7 @@ main(
         ers = "qvi_mpi_new() failed";
         goto out;
     }
-
+    
     /* QV_TASK_TYPE_PROCESS indicates that the MPI implementation */
     /* uses OS processes as MPI Processes. */
     /* QV_TASK_TYPE_THREAD may be used otherwise */

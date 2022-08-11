@@ -141,7 +141,7 @@ typedef enum qv_task_type_e {
   QV_TASK_TYPE_PROCESS = 0,
   QV_TASK_TYPE_THREAD,
 } qv_task_type_t;
-  
+
 /**
  *
  */

@@ -24,7 +24,7 @@ extern "C" {
 
 struct qvi_task_s;
 typedef struct qvi_task_s qvi_task_t;
-
+  
 /**
  *
  */
@@ -48,11 +48,19 @@ int
 qvi_task_init(
     qvi_task_t *task,
     qv_task_type_t type,
-    pid_t pid,
+    pid_t who,
     int64_t gid,
     int lid
 );
 
+/**
+ *
+ */
+qvi_task_id_t
+qvi_task_task_id(
+    qvi_task_t *task
+);   
+  
 /**
  *
  */
@@ -85,6 +93,22 @@ qvi_task_lid(
     qvi_task_t *task
 );
 
+/**
+ *
+ */
+qv_task_type_t
+qvi_task_id_get_type(
+    qvi_task_id_t task_id
+);
+
+/**
+ *
+ */  
+pid_t
+qvi_task_id_get_pid(
+    qvi_task_id_t task_id
+);  
+  
 #ifdef __cplusplus
 }
 #endif

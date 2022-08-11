@@ -80,7 +80,7 @@ echo_task_intersections(
     char *bitmap_str
 ) {
     const int num_nts = sizeof(nts) / sizeof(hw_name_type_t);
-    const pid_t me = getpid();
+    const qvi_task_id_t me = {.type = QV_TASK_TYPE_PROCESS, .who = getpid()};
 
     printf("\n# Task Intersection Overview ------------\n");
     for (int i = 0; i < num_nts; ++i) {
@@ -99,7 +99,6 @@ echo_task_intersections(
             rc = qvi_hwloc_task_intersects_obj_by_type_id(
                 hwl,
                 nts[i].type,
-		QV_TASK_TYPE_PROCESS,
                 me,
                 objid,
                 &intersects
@@ -175,7 +174,8 @@ main(void)
     char *binds = NULL;
     qvi_hwloc_t *hwl;
     hwloc_bitmap_t bitmap = NULL;
-
+    qvi_task_id_t who = {.type = QV_TASK_TYPE_PROCESS, .who = getpid()};
+    
     int rc = qvi_hwloc_new(&hwl);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_new() failed";
@@ -211,11 +211,10 @@ main(void)
         ers = "echo_gpu_info() failed";
         goto out;
     }
-
+    
     rc = qvi_hwloc_task_get_cpubind(
         hwl,
-	QV_TASK_TYPE_PROCESS,
-        getpid(),
+	who,
         &bitmap
     );
     if (rc != QV_SUCCESS) {

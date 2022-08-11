@@ -19,16 +19,17 @@
 
 static const int qvi_task_id_invalid = -1;
 
-// Type definition
 struct qvi_task_s {
+    /** Task id */
+    qvi_task_id_t task_id;
     /** Task type (OS Process or OS Thread) */
-    qv_task_type_t type;
+    //qv_task_type_t type;
     /** Global task ID */
     int64_t gid = qvi_task_id_invalid;
     /** Node-local task ID */
     int lid = qvi_task_id_invalid;
     /** Process ID or Thread ID*/
-    pid_t pid = 0;
+    //pid_t pid = 0;
 };
 
 int
@@ -64,29 +65,36 @@ int
 qvi_task_init(
     qvi_task_t *task,
     qv_task_type_t type,
-    pid_t pid,
+    pid_t who,
     int64_t gid,
     int lid
 ) {
-    task->type = type;
-    task->pid  = pid;
-    task->gid  = gid;
-    task->lid  = lid;
+    task->task_id.type = type;
+    task->task_id.who  = who;
+    task->gid          = gid;
+    task->lid          = lid;
     return QV_SUCCESS;
 }
 
+qvi_task_id_t
+qvi_task_task_id(
+    qvi_task_t *task
+) {
+    return task->task_id;
+}		 
+  
 qv_task_type_t
 qvi_task_type(
     qvi_task_t *task
 ) {
-    return task->type;
+    return qvi_task_id_get_type(task->task_id);
 }
 
 pid_t
 qvi_task_pid(
     qvi_task_t *task
 ) {
-    return task->pid;
+    return qvi_task_id_get_pid(task->task_id);
 }
 
 int64_t
@@ -102,6 +110,21 @@ qvi_task_lid(
 ) {
     return task->lid;
 }
+
+qv_task_type_t
+qvi_task_id_get_type(
+    qvi_task_id_t task_id
+){
+  return task_id.type;
+}
+
+pid_t
+qvi_task_id_get_pid(
+    qvi_task_id_t task_id
+){
+  return task_id.who;
+}
+
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab

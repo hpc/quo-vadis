@@ -56,10 +56,17 @@
 typedef char const* cstr_t;
 typedef uint8_t byte_t;
 
-#endif
-
-// Type definition
+// Types definitions
 typedef uint64_t qvi_group_id_t;
+
+typedef struct qvi_task_id_s {
+    /** Task type (OS Process or OS Thread) */
+    qv_task_type_t type;
+    /** Process ID or Thread ID*/
+    pid_t who;
+} qvi_task_id_t;
+
+#endif
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab

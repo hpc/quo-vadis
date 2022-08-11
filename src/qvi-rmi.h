@@ -108,8 +108,7 @@ qvi_rmi_client_hwloc_get(
 int
 qvi_rmi_task_get_cpubind(
     qvi_rmi_client_t *client,
-    qv_task_type_t type,
-    pid_t who,
+    qvi_task_id_t task_id,
     hwloc_cpuset_t *cpuset
 );
 
@@ -119,8 +118,7 @@ qvi_rmi_task_get_cpubind(
 int
 qvi_rmi_task_set_cpubind_from_cpuset(
     qvi_rmi_client_t *client,
-    qv_task_type_t type,
-    pid_t who,
+    qvi_task_id_t task_id,
     hwloc_const_cpuset_t cpuset
 );
 
@@ -130,8 +128,7 @@ qvi_rmi_task_set_cpubind_from_cpuset(
 int
 qvi_rmi_scope_get_intrinsic_hwpool(
     qvi_rmi_client_t *client,
-    qv_task_type_t type,
-    pid_t requestor_pid,
+    qvi_task_id_t task_id,
     qv_scope_intrinsic_t iscope,
     qvi_hwpool_t **hwpool
 );
