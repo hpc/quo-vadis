@@ -967,8 +967,8 @@ get_proc_cpubind(
 #ifdef __linux__
     int flag = (task_id.type == QV_TASK_TYPE_THREAD ) ? HWLOC_CPUBIND_THREAD : HWLOC_CPUBIND_PROCESS;
 #else
-    int flag = HWLOC_CPUBIND_PROCESS;		 
-#endif		
+    int flag = HWLOC_CPUBIND_PROCESS;
+#endif
     int rc = hwloc_get_proc_cpubind(
         hwl->topo,
         task_id.who,
@@ -1020,13 +1020,13 @@ qvi_hwloc_task_set_cpubind_from_cpuset(
 #ifdef __linux__
     int flag = (qvi_task_id_get_type(task_id) == QV_TASK_TYPE_THREAD ) ? HWLOC_CPUBIND_THREAD : HWLOC_CPUBIND_PROCESS;
 #else
-    int flag = HWLOC_CPUBIND_PROCESS;		 
+    int flag = HWLOC_CPUBIND_PROCESS;
 #endif
     int rc = hwloc_set_proc_cpubind(
         hwl->topo,
         qvi_task_id_get_pid(task_id),
         cpuset,
-	flag
+    flag
     );
     if (rc == -1) {
         qvrc = QV_ERR_NOT_SUPPORTED;
@@ -1094,7 +1094,7 @@ qvi_hwloc_task_intersects_obj_by_type_id(
     return task_obj_xop_by_type_id(
         hwl,
         type,
-	task_id,  
+    task_id,
         type_index,
         QVI_HWLOC_TASK_INTERSECTS_OBJ,
         result
@@ -1112,7 +1112,7 @@ qvi_hwloc_task_isincluded_in_obj_by_type_id(
     return task_obj_xop_by_type_id(
         hwl,
         type,
-	task_id,  
+        task_id,
         type_index,
         QVI_HWLOC_TASK_ISINCLUDED_IN_OBJ,
         result

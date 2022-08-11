@@ -66,8 +66,8 @@ qvi_task_init(
 qvi_task_id_t
 qvi_task_task_id(
     qvi_task_t *task
-);   
-  
+);
+
 /**
  *
  */
@@ -110,12 +110,12 @@ qvi_task_id_get_type(
 
 /**
  *
- */  
+ */
 pid_t
 qvi_task_id_get_pid(
     qvi_task_id_t task_id
-);  
-  
+);
+
 #ifdef __cplusplus
 }
 #endif

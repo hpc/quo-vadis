@@ -537,7 +537,7 @@ qvi_mpi_group_create_from_ids(
 
     MPI_Group new_mpi_group = MPI_GROUP_NULL;
     MPI_Group old_mpi_group = MPI_GROUP_NULL;
-    
+
     int rc = MPI_Comm_group(
         group->mpi_comm,
         &old_mpi_group

@@ -25,7 +25,7 @@ using qvi_process_group_tab_t = std::unordered_map<
 
 struct qvi_process_group_s {
     /** ID used for table lookups */
-    qvi_process_group_id_t tabid = 0; 
+    qvi_process_group_id_t tabid = 0;
     /** ID (rank) in group */
     int id = 0;
     /** Size of group */
@@ -36,7 +36,7 @@ struct qvi_process_s {
     /** Task associated with this MPI process */
     qvi_task_t *task = nullptr;
     /** Maintains the next available group ID value */
-    //qvi_process_group_id_t group_next_id = 0; 
+    //qvi_process_group_id_t group_next_id = 0;
     /** Group table (ID to internal structure mapping) */
     qvi_process_group_tab_t *group_tab = nullptr;
 };
@@ -58,7 +58,7 @@ next_group_tab_id(
     *gid = process->group_next_id++;
     return QV_SUCCESS;*/
     QVI_UNUSED(process);
-  
+
     return qvi_group_next_id(gid);
 }
 
@@ -116,7 +116,7 @@ qvi_process_init(
     // For now these are always fixed.
     const int world_id = 0, node_id = 0;
     return qvi_task_init(
-	proc->task, QV_TASK_TYPE_PROCESS, getpid(), world_id, node_id
+        proc->task, QV_TASK_TYPE_PROCESS, getpid(), world_id, node_id
     );
 }
 
@@ -178,7 +178,7 @@ qvi_process_group_create(
 ) {
     qvi_process_group_t *igroup = nullptr;
     qvi_process_group_id_t gtid;
-    
+
     int rc = next_group_tab_id(proc, &gtid);
     if (rc != QV_SUCCESS) goto out;
 
