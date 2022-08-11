@@ -1,8 +1,11 @@
 /*
- * Copyright (c) 2021-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c)      2021 Lawrence Livermore National Security, LLC
+ * Copyright (c) 2022      Inria.
+ *                         All rights reserved.
+ *
+ * Copyright (c) 2022      Bordeaux INP.
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -10,31 +13,38 @@
  */
 
 /**
- * @file qvi-group.h
+ * @file qvi-group-thread.h
+ *
  */
 
-#ifndef QVI_GROUP_H
-#define QVI_GROUP_H
+#ifndef QVI_GROUP_THREAD_H
+#define QVI_GROUP_THREAD_H
 
-#include "qvi-bbuff.h"
+#include "qvi-group.h"
+#include "qvi-thread.h"
 
-#ifdef __cplusplus
-/**
- * Virtual base group class.
- */
-struct qvi_group_s {
+struct qvi_group_thread_s : public qvi_group_s {
+    /**
+     * Initialized qvi_thread_t instance
+     * embedded in thread group instances.
+     */
+    qvi_thread_t *th = nullptr;
+    /** Underlying group instance. */
+    qvi_thread_group_t *th_group = nullptr;
     /** Base constructor that does minimal work. */
-    qvi_group_s(void) = default;
+    qvi_group_thread_s(void) = default;
     /** Virtual destructor. */
-    virtual ~qvi_group_s(void) = default;
+    virtual ~qvi_group_thread_s(void);
     /** The real 'constructor' that can possibly fail. */
-    virtual int create(void) = 0;
+    virtual int create(void);
+    /** Initializes the instance. */
+    int initialize(qvi_thread_t *th);
     /** The caller's group ID. */
-    virtual int id(void) = 0;
+    virtual int id(void);
     /** The number of members in this group. */
-    virtual int size(void) = 0;
+    virtual int size(void);
     /** Group barrier. */
-    virtual int barrier(void) = 0;
+    virtual int barrier(void);
     /**
      * Creates a new self group with a single member: the caller.
      * Returns the appropriate newly created child group to the caller.
@@ -42,7 +52,7 @@ struct qvi_group_s {
     virtual int
     self(
         qvi_group_s **child
-    ) = 0;
+    );
     /**
      * Creates new groups by splitting this group based on color, key.
      * Returns the appropriate newly created child group to the caller.
@@ -52,7 +62,7 @@ struct qvi_group_s {
         int color,
         int key,
         qvi_group_s **child
-    ) = 0;
+    );
     /**
      * Gathers bbuffs to specified root.
      */
@@ -61,7 +71,7 @@ struct qvi_group_s {
         qvi_bbuff_t *txbuff,
         int root,
         qvi_bbuff_t ***rxbuffs
-    ) = 0;
+    );
     /**
      * Scatters bbuffs from specified root.
      */
@@ -70,40 +80,9 @@ struct qvi_group_s {
         qvi_bbuff_t **txbuffs,
         int root,
         qvi_bbuff_t **rxbuff
-    ) = 0;
+    );
 };
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// Forward declarations.
-struct qvi_group_s;
-typedef struct qvi_group_s qvi_group_t;
-
-/** Group ID. */
-typedef uint64_t qvi_group_id_t;
-
-/**
- *
- */
-void
-qvi_group_free(
-    qvi_group_t **group
-);
-
-/**
- *
- */
-int
-qvi_group_next_id(
-    qvi_group_id_t *gid
-);
-
-#ifdef __cplusplus
-}
-#endif
+typedef qvi_group_thread_s qvi_group_thread_t;
 
 #endif
 

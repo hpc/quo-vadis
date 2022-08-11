@@ -19,14 +19,13 @@
 
 static const int qvi_task_id_invalid = -1;
 
-// Type definition
 struct qvi_task_s {
+    /** Task id */
+    qvi_task_id_t task_id;
     /** Global task ID */
     int64_t gid = qvi_task_id_invalid;
     /** Node-local task ID */
     int lid = qvi_task_id_invalid;
-    /** Process ID */
-    pid_t pid = 0;
 };
 
 int
@@ -61,21 +60,37 @@ out:
 int
 qvi_task_init(
     qvi_task_t *task,
-    pid_t pid,
+    qv_task_type_t type,
+    pid_t who,
     int64_t gid,
     int lid
 ) {
-    task->pid = pid;
-    task->gid = gid;
-    task->lid = lid;
+    task->task_id.type = type;
+    task->task_id.who  = who;
+    task->gid          = gid;
+    task->lid          = lid;
     return QV_SUCCESS;
+}
+
+qvi_task_id_t
+qvi_task_task_id(
+    qvi_task_t *task
+) {
+    return task->task_id;
+}
+
+qv_task_type_t
+qvi_task_type(
+    qvi_task_t *task
+) {
+    return qvi_task_id_get_type(task->task_id);
 }
 
 pid_t
 qvi_task_pid(
     qvi_task_t *task
 ) {
-    return task->pid;
+    return qvi_task_id_get_pid(task->task_id);
 }
 
 int64_t
@@ -90,6 +105,20 @@ qvi_task_lid(
     qvi_task_t *task
 ) {
     return task->lid;
+}
+
+qv_task_type_t
+qvi_task_id_get_type(
+    qvi_task_id_t task_id
+){
+    return task_id.type;
+}
+
+pid_t
+qvi_task_id_get_pid(
+    qvi_task_id_t task_id
+){
+    return task_id.who;
 }
 
 /*

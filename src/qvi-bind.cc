@@ -84,7 +84,7 @@ qvi_bind_stack_init(
     hwloc_cpuset_t current_bind = nullptr;
     int rc = qvi_rmi_task_get_cpubind(
         rmi,
-        qvi_task_pid(task),
+        qvi_task_task_id(task),
         &current_bind
     );
     if (rc != QV_SUCCESS) goto out;
@@ -114,7 +114,7 @@ qvi_bind_push(
     // Change policy
     rc = qvi_rmi_task_set_cpubind_from_cpuset(
         bstack->rmi,
-        qvi_task_pid(bstack->task),
+        qvi_task_task_id(bstack->task),
         bitmap_copy
     );
     if (rc != QV_SUCCESS) {
@@ -139,7 +139,7 @@ qvi_bind_pop(
 
     return qvi_rmi_task_set_cpubind_from_cpuset(
         bstack->rmi,
-        qvi_task_pid(bstack->task),
+        qvi_task_task_id(bstack->task),
         bstack->stack->top()
     );
 }

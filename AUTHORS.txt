@@ -8,9 +8,11 @@ Username          Name                        Affiliation(s)
 ----------------  --------------------------- -------------------------
 andreapiacentini  Andrea Piacentini
 eleon             Edgar A. Leon               LLNL
+GuillaumeMercier  Guillaume Mercier	          Bordeaux-INP, Inria
 samuelkgutierrez  Samuel K. Gutierrez         LANL
 
 Affiliation Abbreviations
 -------------------------
-LANL = Los Alamos National Laboratory
-LLNL = Lawrence Livermore National Laboratory
+Inria = National Institute for Research in Digital Science and Technology
+LANL  = Los Alamos National Laboratory
+LLNL  = Lawrence Livermore National Laboratory

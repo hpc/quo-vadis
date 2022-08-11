@@ -2,221 +2,256 @@
  * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
+ * Copyright (c) 2022      Inria.
+ *                         All rights reserved.
+ *
+ * Copyright (c) 2022      Bordeaux INP.
+ *                         All rights reserved.
+ *
  * This file is part of the quo-vadis project. See the LICENSE file at the
  * top-level directory of this distribution.
  */
 
 /**
- * @file qvi-process.cc
+ * @file qvi-thread.cc
  */
 
 #include "qvi-common.h"
 
-#include "qvi-process.h"
+#include "qvi-thread.h"
 #include "qvi-group.h"
 #include "qvi-utils.h"
 
-// Type definitions.
-typedef qvi_group_id_t qvi_process_group_id_t;
+#ifdef OPENMP_FOUND
+#include <omp.h>
+#endif
 
-using qvi_process_group_tab_t = std::unordered_map<
-    qvi_process_group_id_t, qvi_process_group_t
+// Type definitions.
+typedef qvi_group_id_t qvi_thread_group_id_t;
+
+using qvi_thread_group_tab_t = std::unordered_map<
+    qvi_thread_group_id_t, qvi_thread_group_t
 >;
 
-struct qvi_process_group_s {
+struct qvi_thread_group_s {
     /** ID used for table lookups */
-    qvi_process_group_id_t tabid = 0;
+    qvi_thread_group_id_t tabid = 0;
     /** ID (rank) in group */
     int id = 0;
     /** Size of group */
     int size = 0;
+    /** Barrier object */
+    pthread_barrier_t barrier;
 };
 
-struct qvi_process_s {
-    /** Task associated with this MPI process */
+struct qvi_thread_s {
+    /** Task associated with this thread */
     qvi_task_t *task = nullptr;
     /** Maintains the next available group ID value */
-    qvi_process_group_tab_t *group_tab = nullptr;
+    //qvi_thread_group_id_t group_next_id = 0;
+    /** Group table (ID to internal structure mapping) */
+    qvi_thread_group_tab_t *group_tab = nullptr;
 };
 
 /**
  * Returns the next available group ID.
+ * TODO(skg) Merge with MPI's. Extract type, add this to common code.
  */
 static int
 next_group_tab_id(
-    qvi_process_t *,
-    qvi_process_group_id_t *gid
+    qvi_thread_t *th,
+    qvi_thread_group_id_t *gid
 ) {
+  /*
+    if (th->group_next_id == UINT64_MAX) {
+        qvi_log_error("qvi_thread_group ID space exhausted");
+        return QV_ERR_OOR;
+    }
+    *gid = th->group_next_id++;
+    return QV_SUCCESS;
+  */
+    QVI_UNUSED(th);
+
     return qvi_group_next_id(gid);
 }
 
 int
-qvi_process_new(
-    qvi_process_t **proc
+qvi_thread_new(
+    qvi_thread_t **th
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_process_t *iproc = qvi_new qvi_process_t();
-    if (!iproc) {
+    qvi_thread_t *ith = qvi_new qvi_thread_t();
+    if (!ith) {
         rc = QV_ERR_OOR;
         goto out;
     }
     // Task
-    rc = qvi_task_new(&iproc->task);
+    rc = qvi_task_new(&ith->task);
     if (rc != QV_SUCCESS) goto out;
     // Groups
-    iproc->group_tab = qvi_new qvi_process_group_tab_t();
-    if (!iproc->group_tab) {
+    ith->group_tab = qvi_new qvi_thread_group_tab_t();
+    if (!ith->group_tab) {
         rc = QV_ERR_OOR;
     }
 out:
     if (rc != QV_SUCCESS) {
-        qvi_process_free(&iproc);
+        qvi_thread_free(&ith);
     }
-    *proc = iproc;
+    *th = ith;
     return rc;
 }
 
 void
-qvi_process_free(
-    qvi_process_t **proc
+qvi_thread_free(
+    qvi_thread_t **th
 ) {
-    if (!proc) return;
-    qvi_process_t *iproc = *proc;
-    if (!iproc) goto out;
-    if (iproc->group_tab) {
-        delete iproc->group_tab;
-        iproc->group_tab = nullptr;
+    if (!th) return;
+    qvi_thread_t *ith = *th;
+    if (!ith) goto out;
+    if (ith->group_tab) {
+        delete ith->group_tab;
+        ith->group_tab = nullptr;
     }
-    qvi_task_free(&iproc->task);
-    delete iproc;
+    qvi_task_free(&ith->task);
+    delete ith;
 out:
-    *proc = nullptr;
+    *th = nullptr;
 }
 
 /**
  *
  */
 int
-qvi_process_init(
-    qvi_process_t *proc
+qvi_thread_init(
+    qvi_thread_t *th
 ) {
     // For now these are always fixed.
     const int world_id = 0, node_id = 0;
     return qvi_task_init(
-        proc->task, QV_TASK_TYPE_PROCESS, getpid(), world_id, node_id
+        th->task, QV_TASK_TYPE_THREAD, qvi_gettid(), world_id, node_id
     );
 }
 
 int
-qvi_process_finalize(
-    qvi_process_t *
+qvi_thread_finalize(
+    qvi_thread_t *
 ) {
     return QV_SUCCESS;
 }
 
 int
-qvi_process_node_barrier(
-    qvi_process_t *
+qvi_thread_node_barrier(
+    qvi_thread_t *
 ) {
-    // Nothing to do since process groups contain a single member.
+#ifdef OPENMP_FOUND
+#endif
     return QV_SUCCESS;
 }
 
 qvi_task_t *
-qvi_process_task_get(
-    qvi_process_t *proc
+qvi_thread_task_get(
+    qvi_thread_t *th
 ) {
-    return proc->task;
+    return th->task;
 }
 
 int
-qvi_process_group_new(
-    qvi_process_group_t **procgrp
+qvi_thread_group_new(
+    qvi_thread_group_t **thgrp
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_process_group_t *iprocgrp = qvi_new qvi_process_group_t();
-    if (!iprocgrp) {
+    qvi_thread_group_t *ithgrp = qvi_new qvi_thread_group_t();
+    if (!ithgrp) {
         rc = QV_ERR_OOR;
     }
     if (rc != QV_SUCCESS) {
-        qvi_process_group_free(&iprocgrp);
+        qvi_thread_group_free(&ithgrp);
     }
-    *procgrp = iprocgrp;
+    *thgrp = ithgrp;
     return rc;
 }
 
 void
-qvi_process_group_free(
-    qvi_process_group_t **procgrp
+qvi_thread_group_free(
+    qvi_thread_group_t **thgrp
 ) {
-    if (!procgrp) return;
-    qvi_process_group_t *iprocgrp = *procgrp;
-    if (!iprocgrp) goto out;
-    delete iprocgrp;
+    if (!thgrp) return;
+    qvi_thread_group_t *ithgrp = *thgrp;
+    if (!ithgrp) goto out;
+
+    pthread_barrier_destroy(&ithgrp->barrier);
+
+    delete ithgrp;
 out:
-    *procgrp = nullptr;
+    *thgrp = nullptr;
 }
 
 int
-qvi_process_group_create(
-    qvi_process_t *proc,
-    qvi_process_group_t **group
+qvi_thread_group_create(
+    qvi_thread_t *th,
+    qvi_thread_group_t **group
 ) {
-    qvi_process_group_t *igroup = nullptr;
-    qvi_process_group_id_t gtid;
+    qvi_thread_group_t *igroup = nullptr;
 
-    int rc = next_group_tab_id(proc, &gtid);
+    qvi_thread_group_id_t gtid;
+    int rc = next_group_tab_id(th, &gtid);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_process_group_new(&igroup);
+    rc = qvi_thread_group_new(&igroup);
     if (rc != QV_SUCCESS) goto out;
 
     igroup->tabid = gtid;
-    igroup->id    = 0;
-    igroup->size  = 1;
-
-    proc->group_tab->insert({gtid, *igroup});
+#ifdef OPENMP_FOUND
+    igroup->id   = omp_get_thread_num();
+    igroup->size = omp_get_num_threads();
+#else
+    igroup->id   = 0;
+    igroup->size = 1;
+#endif
+    th->group_tab->insert({gtid, *igroup});
+    pthread_barrier_init(&igroup->barrier,NULL,igroup->size);
 out:
     if (rc != QV_SUCCESS) {
-        qvi_process_group_free(&igroup);
+        qvi_thread_group_free(&igroup);
     }
     *group = igroup;
     return QV_SUCCESS;
 }
 
 int
-qvi_process_group_id(
-    const qvi_process_group_t *group
+qvi_thread_group_id(
+    const qvi_thread_group_t *group
 ) {
     return group->id;
 }
 
 int
-qvi_process_group_size(
-    const qvi_process_group_t *group
+qvi_thread_group_size(
+    const qvi_thread_group_t *group
 ) {
     return group->size;
 }
 
 int
-qvi_process_group_barrier(
-    qvi_process_group_t *
+qvi_thread_group_barrier(
+    qvi_thread_group_t *group
 ) {
-    // Nothing to do since process groups contain a single member.
+    pthread_barrier_wait(&group->barrier);
+
     return QV_SUCCESS;
 }
 
 int
-qvi_process_group_gather_bbuffs(
-    qvi_process_group_t *group,
+qvi_thread_group_gather_bbuffs(
+    qvi_thread_group_t *group,
     qvi_bbuff_t *txbuff,
     int root,
     qvi_bbuff_t ***rxbuffs
 ) {
-    const int group_size = qvi_process_group_size(group);
-    // Make sure that we are dealing with a valid process group.
+    const int group_size = qvi_thread_group_size(group);
+    // Make sure that we are dealing with a valid thread group.
     assert(root == 0 && group_size == 1);
     if (root != 0 || group_size != 1) {
         return QV_ERR_INTERNAL;
@@ -263,14 +298,14 @@ out:
 }
 
 int
-qvi_process_group_scatter_bbuffs(
-    qvi_process_group_t *group,
+qvi_thread_group_scatter_bbuffs(
+    qvi_thread_group_t *group,
     qvi_bbuff_t **txbuffs,
     int root,
     qvi_bbuff_t **rxbuff
 ) {
-    const int group_size = qvi_process_group_size(group);
-    // Make sure that we are dealing with a valid process group.
+    const int group_size = qvi_thread_group_size(group);
+    // Make sure that we are dealing with a valid thread group.
     assert(root == 0 && group_size == 1);
     if (root != 0 || group_size != 1) {
         return QV_ERR_INTERNAL;
