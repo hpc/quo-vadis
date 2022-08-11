@@ -110,14 +110,14 @@ qvi_task_lid(
 qvi_task_type_t
 qvi_task_id_get_type(
     qvi_task_id_t task_id
-){
+) {
     return task_id.type;
 }
 
 pid_t
 qvi_task_id_get_pid(
     qvi_task_id_t task_id
-){
+) {
     return task_id.who;
 }
 

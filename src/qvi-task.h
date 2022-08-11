@@ -26,13 +26,16 @@ struct qvi_task_s;
 typedef struct qvi_task_s qvi_task_t;
 
 /**
- * Task types.
+ * Supported task types.
  */
 typedef enum qvi_task_type_e {
     QV_TASK_TYPE_PROCESS = 0,
     QV_TASK_TYPE_THREAD
 } qvi_task_type_t;
 
+/**
+ * Task identification.
+ */
 typedef struct qvi_task_id_s {
     /** Task type (OS Process or OS Thread) */
     qvi_task_type_t type;
