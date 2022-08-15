@@ -172,7 +172,7 @@ main(
 	 panic("%s (rc=%s)", ers, qv_strerr(rc));
        }
      
-     fprintf(stdout,"Entering barrier ...\n");
+     fprintf(stdout,"Entering context barrier ...\n");
 
      rc = qv_context_barrier(ctx);
      if (rc != QV_SUCCESS) {
@@ -180,6 +180,8 @@ main(
        panic("%s (rc=%s)", ers, qv_strerr(rc));
      }
 
+     fprintf(stdout,"Freeing context ...\n");
+     
      rc = qv_thread_context_free(ctx);
      if (rc != QV_SUCCESS) {
        ers = "qv_thread_context_free failed";
