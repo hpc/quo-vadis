@@ -82,6 +82,14 @@ qvi_thread_task_get(
 /**
  *
  */
+pthread_barrier_t *
+qvi_thread_barrier_get(
+    qvi_thread_t *th 
+);
+
+/**
+ *
+ */
 int
 qvi_thread_group_size(
     const qvi_thread_group_t *group

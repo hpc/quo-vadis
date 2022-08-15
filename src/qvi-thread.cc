@@ -39,18 +39,18 @@ struct qvi_thread_group_s {
     /** ID (rank) in group */
     int id = 0;
     /** Size of group */
-    int size = 0;
+     int size = 0;
     /** Barrier object */
-    pthread_barrier_t barrier;
+    pthread_barrier_t *barrier;
 };
 
 struct qvi_thread_s {
     /** Task associated with this thread */
     qvi_task_t *task = nullptr;
-    /** Maintains the next available group ID value */
-    //qvi_thread_group_id_t group_next_id = 0;
     /** Group table (ID to internal structure mapping) */
     qvi_thread_group_tab_t *group_tab = nullptr;
+    /** Barrier object */
+    pthread_barrier_t *barrier;
 };
 
 /**
@@ -108,7 +108,16 @@ qvi_thread_free(
 ) {
     if (!th) return;
     qvi_thread_t *ith = *th;
+
     if (!ith) goto out;
+
+#pragma omp single
+    {
+      fprintf(stdout,"|||||||||||||||||||  barrier destroy @ %p\n",qvi_thread_barrier_get(ith));
+      pthread_barrier_destroy(qvi_thread_barrier_get(ith));
+      free(qvi_thread_barrier_get(ith));
+    }
+    
     if (ith->group_tab) {
         delete ith->group_tab;
         ith->group_tab = nullptr;
@@ -126,8 +135,23 @@ int
 qvi_thread_init(
     qvi_thread_t *th
 ) {
+    pthread_barrier_t *barrier = NULL;
     // For now these are always fixed.
     const int world_id = 0, node_id = 0;
+    fprintf(stdout,">>>>>>>>>>>>>>>>>>>> qvi_thread_init for thread %i\n",qvi_gettid());
+
+#pragma omp single copyprivate(barrier)
+    barrier = (pthread_barrier_t *)malloc(sizeof(pthread_barrier_t));
+      
+    th->barrier = barrier;
+
+#pragma omp single
+    {
+      /* FIXME I need to get the right size for the barrier*/
+      pthread_barrier_init(th->barrier,NULL,omp_get_num_threads());
+      fprintf(stdout,"||||||||||||||||||| barrier init  thread %i\n",qvi_gettid());
+    }
+    
     return qvi_task_init(
         th->task, QV_TASK_TYPE_THREAD, qvi_gettid(), world_id, node_id
     );
@@ -142,10 +166,10 @@ qvi_thread_finalize(
 
 int
 qvi_thread_node_barrier(
-    qvi_thread_t *
+    qvi_thread_t *th
 ) {
-#ifdef OPENMP_FOUND
-#endif
+    fprintf(stdout,"||||||||||||||||||| barrier wait  thread %i\n",qvi_gettid());
+    pthread_barrier_wait(th->barrier);
     return QV_SUCCESS;
 }
 
@@ -156,6 +180,14 @@ qvi_thread_task_get(
     return th->task;
 }
 
+pthread_barrier_t *
+qvi_thread_barrier_get(
+    qvi_thread_t *th
+)
+{
+    return th->barrier;
+}
+  
 int
 qvi_thread_group_new(
     qvi_thread_group_t **thgrp
@@ -177,12 +209,17 @@ void
 qvi_thread_group_free(
     qvi_thread_group_t **thgrp
 ) {
-    if (!thgrp) return;
+     if (!thgrp) return;
     qvi_thread_group_t *ithgrp = *thgrp;
     if (!ithgrp) goto out;
 
-    pthread_barrier_destroy(&ithgrp->barrier);
-
+#pragma omp single
+    {
+      fprintf(stdout,">>>>> barrier destroy for thread %i @ %p\n",ithgrp->id,ithgrp->barrier);
+      pthread_barrier_destroy(ithgrp->barrier);
+      free(ithgrp->barrier);
+    }
+    
     delete ithgrp;
 out:
     *thgrp = nullptr;
@@ -194,27 +231,49 @@ qvi_thread_group_create(
     qvi_thread_group_t **group
 ) {
     qvi_thread_group_t *igroup = nullptr;
-
     qvi_thread_group_id_t gtid;
-    int rc = next_group_tab_id(th, &gtid);
+    int rc;
+    pthread_barrier_t *barrier;
+    
+    //#pragma omp single copyprivate(gtid, rc)
+    rc = next_group_tab_id(th, &gtid);
     if (rc != QV_SUCCESS) goto out;
 
+    //#pragma omp single copyprivate(igroup, rc)    
     rc = qvi_thread_group_new(&igroup);
     if (rc != QV_SUCCESS) goto out;
-
+    
     igroup->tabid = gtid;
+
 #ifdef OPENMP_FOUND
     igroup->id   = omp_get_thread_num();
     igroup->size = omp_get_num_threads();
+    fprintf(stdout,">>>>> init group for thread %i (%i) out of %i | group addr %p (gtid %i)\n",
+	    igroup->id,omp_get_thread_num(),igroup->size,igroup,gtid);
 #else
     igroup->id   = 0;
     igroup->size = 1;
 #endif
+    
+#pragma omp single copyprivate(barrier)    
+    barrier = (pthread_barrier_t *)malloc(sizeof(pthread_barrier_t));
+    
+    igroup->barrier = barrier;
+
+#pragma omp single        
+    {
+      pthread_barrier_init(igroup->barrier,NULL,igroup->size);
+      fprintf(stdout,">>>>> barrier init done for thread %i @%p (size %i)\n",igroup->id,igroup->barrier,igroup->size);
+    }
+    fprintf(stdout,">>>>> barrier object thread %i @%p (size %i)\n",igroup->id,igroup->barrier,igroup->size);
+    
+    //#pragma omp single
     th->group_tab->insert({gtid, *igroup});
-    pthread_barrier_init(&igroup->barrier,NULL,igroup->size);
+    
 out:
     if (rc != QV_SUCCESS) {
-        qvi_thread_group_free(&igroup);
+#pragma omp single
+      qvi_thread_group_free(&igroup);
     }
     *group = igroup;
     return QV_SUCCESS;
@@ -238,8 +297,10 @@ int
 qvi_thread_group_barrier(
     qvi_thread_group_t *group
 ) {
-    pthread_barrier_wait(&group->barrier);
 
+    fprintf(stdout,">>>>> Barrier wait for thread %i @ %p\n",group->id,group->barrier);
+    pthread_barrier_wait(group->barrier);
+  
     return QV_SUCCESS;
 }
 
