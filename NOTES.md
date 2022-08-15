@@ -30,3 +30,28 @@ Splitting
   tasks. Guillaume has some ideas. See: MPIX_Get_hw_resource_min(),
   MPIX_Get_hw_domain_neighbours(), MPIX_Get_hw_topo_group(). Also, see
   https://www.mpi-forum.org/docs/mpi-4.0/mpi40-report.pdf
+
+Threading
+=========
+* Two cases:
+    * 1. Spawn threads, register
+        Use-case
+        - Main thread running
+        - qv_thread_context_create()
+            - Setup zgroup with initial group size, etc.
+        - Other operations: group split, etc.
+            - Set up what the underlying structures would look like, etc.
+        - Spawn (look at pthread_create interface, be similar).
+            - Run until completion, maybe keep thread pool around, or just have
+              multiple instances.
+    * 2. Register threads (for Pthreads especially): in the thread-specific
+         interface (for now).
+
+Example:
+    Spwaning a bunch of threads
+        - Register threads, resuling in the thread_comm-like structure
+          (internally keep some unique ID to structure?)
+        - qv_thread_context_create(&ctx, with returned structure reference (think
+          MPI_Comm))
+        - Create a zgroup will just follow because we know the shape of the thread
+          group, etc.
