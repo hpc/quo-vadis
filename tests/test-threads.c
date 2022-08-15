@@ -285,7 +285,7 @@ main(
      }
 
      fprintf(stdout,"[%i] Freeing context ...\n",pid);
-     
+
      rc = qv_thread_context_free(ctx);
      if (rc != QV_SUCCESS) {
        ers = "qv_thread_context_free failed";
