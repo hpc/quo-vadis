@@ -155,13 +155,13 @@ int
 qvi_thread_init(
     qvi_thread_t *th
 ) {
+    pthread_barrier_t *barrier = NULL;
     // For now these are always fixed.
     const int world_id = 0, node_id = 0;
     pthread_barrier_t *barrier = nullptr;
       
 #pragma omp single copyprivate(barrier)
     barrier = qvi_new pthread_barrier_t();
-
     th->barrier = barrier;
 
 #ifdef OPENMP_FOUND
@@ -207,6 +207,7 @@ qvi_thread_task_get(
 ) {
     return th->task;
 }
+
 
 /**
  *
@@ -274,6 +275,7 @@ qvi_thread_group_create_size(
     rc = next_group_tab_id(th, &gtid);
     if (rc != QV_SUCCESS) goto out;
 
+    //#pragma omp single copyprivate(igroup, rc)    
     rc = qvi_thread_group_new(&igroup);
     if (rc != QV_SUCCESS) goto out;
 
@@ -286,6 +288,7 @@ qvi_thread_group_create_size(
 #endif
     igroup->sdata->size = size;
     
+
 #pragma omp single        
     pthread_barrier_init(&(igroup->sdata->barrier),NULL,igroup->sdata->size);
     
