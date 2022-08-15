@@ -77,6 +77,7 @@ cp_thread_group(
     memmove(dst, src, sizeof(*src));
 }
 
+
 /**
  *
  */
@@ -155,6 +156,7 @@ int
 qvi_thread_init(
     qvi_thread_t *th
 ) {
+    qvi_thread_group_t group;
     pthread_barrier_t *barrier = NULL;
     // For now these are always fixed.
     const int world_id = 0, node_id = 0;
@@ -288,7 +290,6 @@ qvi_thread_group_create_size(
 #endif
     igroup->sdata->size = size;
     
-
 #pragma omp single        
     pthread_barrier_init(&(igroup->sdata->barrier),NULL,igroup->sdata->size);
     
