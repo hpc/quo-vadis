@@ -27,7 +27,11 @@
 #include <string.h>
 #include <unistd.h>
 
-
+#ifdef _OPENMP
+#include <omp.h>
+#warning "Using OpenMP support"
+#endif
+  
 #define panic(vargs...)                                                        \
 do {                                                                           \
     fprintf(stderr, "\n%s@%d: ", __func__, __LINE__);                          \
@@ -128,47 +132,64 @@ main(
      int argc,
      char *argv[]
 ){
-   fprintf(stdout,"# Starting test\n");
-
    char const *ers = NULL;
    int rc = QV_SUCCESS;
-
    int pid = getpid();
-
    qv_context_t *ctx = NULL;
+   qv_scope_t *base_scope = NULL;
+   
+   fprintf(stdout,"# Starting test\n");
 
-   rc = qv_thread_context_create(&ctx);
-   if (rc != QV_SUCCESS) {
-        ers = "qv_process_context_create() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+#pragma omp parallel private(ctx, base_scope)
+   {
+     rc = qv_thread_context_create(&ctx);
+     if (rc != QV_SUCCESS) {
+       ers = "qv_process_context_create() failed";
+       panic("%s (rc=%s)", ers, qv_strerr(rc));
+     }     
+     
+     fprintf(stdout,"ctx addr is %p\n",ctx);
 
-    qv_scope_t *base_scope;
-    rc = qv_scope_get(
-        ctx,
-        QV_SCOPE_USER,
-        &base_scope
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_get() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+     rc = qv_scope_get(
+		       ctx,
+		       QV_SCOPE_USER,
+		       &base_scope
+		       );
+     if (rc != QV_SUCCESS) {
+       ers = "qv_scope_get() failed";
+       panic("%s (rc=%s)", ers, qv_strerr(rc));
+     }
+     
+     fprintf(stdout,"Entering scope report ...\n");
+     
+     scope_report(ctx, pid, base_scope, "base_scope");
+     
+     fprintf(stdout,"Entering scope free ...\n");
 
-    scope_report(ctx, pid, base_scope, "base_scope");
+     rc = qv_scope_free(ctx, base_scope);
+       if (rc != QV_SUCCESS) {
+	 ers = "qv_scope_free() failed";
+	 panic("%s (rc=%s)", ers, qv_strerr(rc));
+       }
+     
+     fprintf(stdout,"Entering context barrier ...\n");
 
-    rc = qv_scope_free(ctx, base_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+     rc = qv_context_barrier(ctx);
+     if (rc != QV_SUCCESS) {
+       ers = "qv_context_barrier() failed";
+       panic("%s (rc=%s)", ers, qv_strerr(rc));
+     }
 
-    rc = qv_context_barrier(ctx);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_context_barrier() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-  return EXIT_SUCCESS;
+     fprintf(stdout,"Freeing context ...\n");
+     
+     rc = qv_thread_context_free(ctx);
+     if (rc != QV_SUCCESS) {
+       ers = "qv_thread_context_free failed";
+       panic("%s (rc=%s)", ers, qv_strerr(rc));
+     }
+     
+   }   
+   return EXIT_SUCCESS;
 }
 
 /*

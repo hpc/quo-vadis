@@ -52,13 +52,16 @@ qvi_zgroup_thread_s::group_create_intrinsic(
     // NOTE: the provided scope doesn't affect how
     // we create the thread group, so we ignore it.
     int rc = QV_SUCCESS;
+    qvi_group_thread_t *igroup = NULL;
 
-    qvi_group_thread_t *igroup = qvi_new qvi_group_thread_t();
+    igroup = qvi_new qvi_group_thread_t();
     if (!igroup) {
         rc = QV_ERR_OOR;
         goto out;
     }
 
+    fprintf(stdout,">>>>>>>>> group_create_intrinsic : igroup %p\n",igroup);
+    
     rc = igroup->initialize(zth);
     if (rc != QV_SUCCESS) goto out;
 
@@ -77,6 +80,7 @@ out:
 int
 qvi_zgroup_thread_s::barrier(void)
 {
+    fprintf(stdout,"|||||||||||||||||||||| Zgroup barrier\n");
     return qvi_thread_node_barrier(zth);
 }
 
@@ -107,6 +111,7 @@ qvi_zgroup_thread_free(
 ) {
     if (!zgroup) return;
     qvi_zgroup_thread_t *izgroup = *zgroup;
+
     if (!izgroup) goto out;
     delete izgroup;
 out:

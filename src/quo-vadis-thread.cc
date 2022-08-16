@@ -42,23 +42,29 @@ qv_thread_context_create(
     int rc = QV_SUCCESS;
     qv_context_t *ictx = nullptr;
     qvi_zgroup_thread_t *izgroup = nullptr;
+
     // Create base context.
+    //#pragma omp single copyprivate(ictx)    
     rc = qvi_context_create(&ictx);
     if (rc != QV_SUCCESS) {
         goto out;
     }
+
     // Create and initialize the base group.
+    //#pragma omp single copyprivate(izgroup)    
     rc = qvi_zgroup_thread_new(&izgroup);
     if (rc != QV_SUCCESS) {
         goto out;
     }
+
     // Save zgroup instance pointer to context.
     ictx->zgroup = izgroup;
-
+    
     rc = izgroup->initialize();
     if (rc != QV_SUCCESS) {
         goto out;
     }
+
     // Connect to RMI server.
     rc = qvi_context_connect_to_server(ictx);
     if (rc != QV_SUCCESS) {
@@ -78,22 +84,6 @@ out:
     *ctx = ictx;
     return rc;
 }
-
-int
-qv_thread_mgmt_toto(
-   void
-){
-
-#ifdef _OPENMP
-  fprintf(stdout,"Hello from OpenMP support\n");
-#else
-  pthread_t tid;
-  tid = pthread_self();
-  fprintf(stdout,"Hello from %p\n",tid);
-#endif
-  return QV_SUCCESS;
-}
-
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
