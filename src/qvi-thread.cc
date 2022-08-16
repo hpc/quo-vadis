@@ -78,6 +78,7 @@ cp_thread_group(
 }
 
 
+
 /**
  *
  */
@@ -156,8 +157,6 @@ int
 qvi_thread_init(
     qvi_thread_t *th
 ) {
-    qvi_thread_group_t group;
-    pthread_barrier_t *barrier = NULL;
     // For now these are always fixed.
     const int world_id = 0, node_id = 0;
     pthread_barrier_t *barrier = nullptr;
@@ -277,7 +276,6 @@ qvi_thread_group_create_size(
     rc = next_group_tab_id(th, &gtid);
     if (rc != QV_SUCCESS) goto out;
 
-    //#pragma omp single copyprivate(igroup, rc)    
     rc = qvi_thread_group_new(&igroup);
     if (rc != QV_SUCCESS) goto out;
 
