@@ -59,7 +59,7 @@ qvi_zgroup_thread_s::group_create_intrinsic(
         rc = QV_ERR_OOR;
         goto out;
     }
-    
+
     rc = igroup->initialize(zth);
     if (rc != QV_SUCCESS) goto out;
 

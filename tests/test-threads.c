@@ -271,12 +271,12 @@ main(
      fprintf(stdout,"[%i] Entering self scope free ...\n",pid);
 
      rc = qv_scope_free(ctx, self_scope);
-       if (rc != QV_SUCCESS) {
+     if (rc != QV_SUCCESS) {
 	 ers = "qv_scope_free() failed";
 	 panic("%s (rc=%s)", ers, qv_strerr(rc));
-       }
+     }
      
-       fprintf(stdout,"[%i] Entering context barrier ...\n",pid);
+     fprintf(stdout,"[%i] Entering context barrier ...\n",pid);
 
      rc = qv_context_barrier(ctx);
      if (rc != QV_SUCCESS) {
