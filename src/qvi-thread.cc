@@ -78,7 +78,6 @@ cp_thread_group(
 }
 
 
-
 /**
  *
  */
@@ -208,7 +207,6 @@ qvi_thread_task_get(
 ) {
     return th->task;
 }
-
 
 /**
  *
@@ -350,22 +348,8 @@ qvi_thread_group_lookup_by_id(
  *
  */
 int
-qvi_thread_group_lookup_by_id(
-    qvi_thread_t *th,
-    qvi_thread_group_id_t id,
-    qvi_thread_group_t *group
-) {
-    auto got = th->group_tab->find(id);
-    if (got == th->group_tab->end()) {
-        return QV_ERR_NOT_FOUND;
-    }
-    cp_thread_group(&got->second, group);
-    return QV_SUCCESS;
-}
-
-int
 qvi_thread_group_id(
-    const qvi_thread_group_shared_t *group
+    const qvi_thread_group_t *group
 ) {
     return group->id;
 }
@@ -375,7 +359,7 @@ qvi_thread_group_id(
  */
 int
 qvi_thread_group_size(
-    const qvi_thread_group_shared_t *group
+    const qvi_thread_group_t *group
 ) {
     return group->sdata->size;
 }
@@ -385,7 +369,7 @@ qvi_thread_group_size(
  */
 int
 qvi_thread_group_barrier(
-    qvi_thread_group_shared_t *group
+    qvi_thread_group_t *group
 ) {
     pthread_barrier_wait(&(group->sdata->barrier));  
     return QV_SUCCESS;
@@ -446,7 +430,7 @@ qvi_thread_group_create_from_split(
  */
 int
 qvi_thread_group_gather_bbuffs(
-    qvi_thread_group_shared_t *group,
+    qvi_thread_group_t *group,
     qvi_bbuff_t *txbuff,
     int root,
     qvi_bbuff_t ***rxbuffs,
@@ -497,7 +481,7 @@ out:
  */
 int
 qvi_thread_group_scatter_bbuffs(
-    qvi_thread_group_shared_t *group,
+    qvi_thread_group_t *group,
     qvi_bbuff_t **txbuffs,
     int root,
     qvi_bbuff_t **rxbuff
