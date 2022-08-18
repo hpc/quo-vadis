@@ -60,6 +60,8 @@ qvi_zgroup_thread_s::group_create_intrinsic(
         goto out;
     }
 
+    fprintf(stdout,">>>>>>>>> group_create_intrinsic : igroup %p\n",igroup);
+    
     rc = igroup->initialize(zth);
     if (rc != QV_SUCCESS) goto out;
 
@@ -78,6 +80,7 @@ out:
 int
 qvi_zgroup_thread_s::barrier(void)
 {
+    fprintf(stdout,"|||||||||||||||||||||| Zgroup barrier\n");
     return qvi_thread_node_barrier(zth);
 }
 

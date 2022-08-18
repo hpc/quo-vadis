@@ -37,6 +37,7 @@ using qvi_thread_group_tab_t = std::unordered_map<
 // We need to have one structure for fields
 // shared by all threads included in another
 // with fields specific to each thread 
+
 struct qvi_thread_group_shared_s {
     /** UNUSED : ID (rank) in group */
     int id = -1;
@@ -68,6 +69,7 @@ struct qvi_thread_s {
 
 /**
  * Copies contents of internal structure from src to dst.
+ *
  */
 static void
 cp_thread_group(
@@ -78,9 +80,6 @@ cp_thread_group(
 }
 
 
-/**
- *
- */
 static int
 next_group_tab_id(
     qvi_thread_t *th,
@@ -162,6 +161,7 @@ qvi_thread_init(
       
 #pragma omp single copyprivate(barrier)
     barrier = qvi_new pthread_barrier_t();
+    
     th->barrier = barrier;
 
 #ifdef OPENMP_FOUND
@@ -213,7 +213,7 @@ qvi_thread_task_get(
  */
 int
 qvi_thread_group_new(
-    qvi_thread_group_t **thgrp
+    qvi_thread_group_shared_t **thgrp
 ) {
     int rc = QV_SUCCESS;
     qvi_thread_group_t *ithgrp = qvi_new qvi_thread_group_t(); 
@@ -223,9 +223,9 @@ qvi_thread_group_new(
         rc = QV_ERR_OOR;
     }
     if (rc != QV_SUCCESS) {
-        qvi_thread_group_free(&ithgrp);
+        qvi_thread_group_free(&sdata);
     }
-
+    
 #pragma omp single copyprivate(sdata)
     sdata = qvi_new qvi_thread_group_shared_t();
 
@@ -240,10 +240,10 @@ qvi_thread_group_new(
  */
 void
 qvi_thread_group_free(
-    qvi_thread_group_t **thgrp
+    qvi_thread_group_shared_t **thgrp
 ) {
-    if (!thgrp) return;
-    qvi_thread_group_t *ithgrp = *thgrp;
+     if (!thgrp) return;
+    qvi_thread_group_shared_t *ithgrp = *thgrp;
     if (!ithgrp) goto out;
 
 #pragma omp single
@@ -348,8 +348,22 @@ qvi_thread_group_lookup_by_id(
  *
  */
 int
+qvi_thread_group_lookup_by_id(
+    qvi_thread_t *th,
+    qvi_thread_group_id_t id,
+    qvi_thread_group_t *group
+) {
+    auto got = th->group_tab->find(id);
+    if (got == th->group_tab->end()) {
+        return QV_ERR_NOT_FOUND;
+    }
+    cp_thread_group(&got->second, group);
+    return QV_SUCCESS;
+}
+
+int
 qvi_thread_group_id(
-    const qvi_thread_group_t *group
+    const qvi_thread_group_shared_t *group
 ) {
     return group->id;
 }
@@ -359,7 +373,7 @@ qvi_thread_group_id(
  */
 int
 qvi_thread_group_size(
-    const qvi_thread_group_t *group
+    const qvi_thread_group_shared_t *group
 ) {
     return group->sdata->size;
 }
@@ -369,7 +383,7 @@ qvi_thread_group_size(
  */
 int
 qvi_thread_group_barrier(
-    qvi_thread_group_t *group
+    qvi_thread_group_shared_t *group
 ) {
     pthread_barrier_wait(&(group->sdata->barrier));  
     return QV_SUCCESS;
@@ -430,7 +444,7 @@ qvi_thread_group_create_from_split(
  */
 int
 qvi_thread_group_gather_bbuffs(
-    qvi_thread_group_t *group,
+    qvi_thread_group_shared_t *group,
     qvi_bbuff_t *txbuff,
     int root,
     qvi_bbuff_t ***rxbuffs,
@@ -481,7 +495,7 @@ out:
  */
 int
 qvi_thread_group_scatter_bbuffs(
-    qvi_thread_group_t *group,
+    qvi_thread_group_shared_t *group,
     qvi_bbuff_t **txbuffs,
     int root,
     qvi_bbuff_t **rxbuff
