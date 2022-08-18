@@ -78,6 +78,7 @@ out:
 int
 qvi_zgroup_thread_s::barrier(void)
 {
+    fprintf(stdout,"|||||||||||||||||||||| Zgroup barrier\n");
     return qvi_thread_node_barrier(zth);
 }
 

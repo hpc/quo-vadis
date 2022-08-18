@@ -242,9 +242,9 @@ main(
 
      qv_scope_t *sub_scope;
      rc = qv_scope_split(
-	 ctx,
+	       ctx,
          self_scope,
-	 omp_get_num_threads(),
+	       omp_get_num_threads(),
          omp_get_thread_num() % 2,
          &sub_scope
      );
@@ -271,12 +271,13 @@ main(
      fprintf(stdout,"[%i] Entering self scope free ...\n",pid);
 
      rc = qv_scope_free(ctx, self_scope);
-       if (rc != QV_SUCCESS) {
-	 ers = "qv_scope_free() failed";
-	 panic("%s (rc=%s)", ers, qv_strerr(rc));
-       }
-     
-       fprintf(stdout,"[%i] Entering context barrier ...\n",pid);
+
+     if (rc != QV_SUCCESS) {
+	     ers = "qv_scope_free() failed";
+	     panic("%s (rc=%s)", ers, qv_strerr(rc));
+     }
+    
+     fprintf(stdout,"[%i] Entering context barrier ...\n",pid);
 
      rc = qv_context_barrier(ctx);
      if (rc != QV_SUCCESS) {
@@ -285,7 +286,7 @@ main(
      }
 
      fprintf(stdout,"[%i] Freeing context ...\n",pid);
-     
+
      rc = qv_thread_context_free(ctx);
      if (rc != QV_SUCCESS) {
        ers = "qv_thread_context_free failed";

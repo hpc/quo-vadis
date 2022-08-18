@@ -33,7 +33,6 @@ using qvi_thread_group_tab_t = std::unordered_map<
     qvi_thread_group_id_t, qvi_thread_group_t
 >;
 
-
 // We need to have one structure for fields
 // shared by all threads included in another
 // with fields specific to each thread 
@@ -78,8 +77,8 @@ cp_thread_group(
 }
 
 /**
- *
- */
+*
+*/
 static int
 next_group_tab_id(
     qvi_thread_t *th,
@@ -161,9 +160,8 @@ qvi_thread_init(
       
 #pragma omp single copyprivate(barrier)
     barrier = qvi_new pthread_barrier_t();
-
     th->barrier = barrier;
-
+    
 #ifdef OPENMP_FOUND
     /* GM: since all spawned threads are in the zgroup */
     /* using omp_get_num_threads is OK */
@@ -172,7 +170,7 @@ qvi_thread_init(
 #else
       /* pthread_barrier_init(th->barrier,NULL, ???); */
 #endif
-    
+  
     return qvi_task_init(
         th->task, QV_TASK_TYPE_THREAD, qvi_gettid(), world_id, node_id
     );
@@ -224,7 +222,7 @@ qvi_thread_group_new(
         rc = QV_ERR_OOR;
     }
     if (rc != QV_SUCCESS) {
-        qvi_thread_group_free(&ithgrp);
+        qvi_thread_group_free(&sdata);
     }
 
 #pragma omp single copyprivate(sdata)
@@ -243,7 +241,7 @@ void
 qvi_thread_group_free(
     qvi_thread_group_t **thgrp
 ) {
-     if (!thgrp) return;
+    if (!thgrp) return;
     qvi_thread_group_t *ithgrp = *thgrp;
     if (!ithgrp) goto out;
 
@@ -281,9 +279,9 @@ qvi_thread_group_create_size(
     igroup->sdata->tabid = gtid;
 
 #ifdef OPENMP_FOUND
-    igroup->id          = omp_get_thread_num();
+    igroup->id = omp_get_thread_num();
 #else
-    igroup->id          = 0;
+    igroup->id = 0;
 #endif
     igroup->sdata->size = size;
     
@@ -293,7 +291,7 @@ qvi_thread_group_create_size(
     //Insert the whole group structure or just the shared part??
 #pragma omp single
     th->group_tab->insert({gtid, *igroup});
-    
+
 out:
     if (rc != QV_SUCCESS) {
       qvi_thread_group_free(&igroup);
@@ -348,6 +346,20 @@ qvi_thread_group_lookup_by_id(
 /**
  *
  */
+int
+qvi_thread_group_lookup_by_id(
+    qvi_thread_t *th,
+    qvi_thread_group_id_t id,
+    qvi_thread_group_t *group
+) {
+    auto got = th->group_tab->find(id);
+    if (got == th->group_tab->end()) {
+        return QV_ERR_NOT_FOUND;
+    }
+    cp_thread_group(&got->second, group);
+    return QV_SUCCESS;
+}
+
 int
 qvi_thread_group_id(
     const qvi_thread_group_t *group
