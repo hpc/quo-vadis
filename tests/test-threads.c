@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/syscall.h>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -102,7 +103,7 @@ change_bind(
         ers = "qv_bind_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] New cpubind is     %s\n", pid, bind1s);
+    printf("[%d][%i] New cpubind is  %s\n", pid, omp_get_thread_num() ,bind1s);
     free(bind1s);
 
     rc = qv_bind_pop(ctx);
@@ -110,7 +111,7 @@ change_bind(
         ers = "qv_bind_pop() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
+    
     char *bind2s;
     rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &bind2s);
     if (rc != QV_SUCCESS) {
@@ -119,6 +120,7 @@ change_bind(
     }
     printf("[%d] Popped cpubind is  %s\n", pid, bind2s);
     free(bind2s);
+
     // TODO(skg) Add test to make popped is same as original.
     rc = qv_scope_barrier(ctx, scope);
     if (rc != QV_SUCCESS) {
@@ -134,22 +136,23 @@ main(
 ){
    char const *ers = NULL;
    int rc = QV_SUCCESS;
-   int pid = getpid();
-   qv_context_t *ctx = NULL;
-   qv_scope_t *base_scope = NULL;
    
    fprintf(stdout,"# Starting test\n");
 
-#pragma omp parallel private(ctx, base_scope)
-   {
+#pragma omp parallel private(ers, rc) //num_threads(4)
+   {    
+     int pid = syscall(SYS_gettid);
+     int n_cores;
+     int n_pus;
+ 
+     qv_context_t *ctx;
      rc = qv_thread_context_create(&ctx);
      if (rc != QV_SUCCESS) {
        ers = "qv_process_context_create() failed";
        panic("%s (rc=%s)", ers, qv_strerr(rc));
      }     
      
-     fprintf(stdout,"ctx addr is %p\n",ctx);
-
+     qv_scope_t *base_scope;
      rc = qv_scope_get(
 		       ctx,
 		       QV_SCOPE_USER,
@@ -159,20 +162,121 @@ main(
        ers = "qv_scope_get() failed";
        panic("%s (rc=%s)", ers, qv_strerr(rc));
      }
-     
-     fprintf(stdout,"Entering scope report ...\n");
-     
      scope_report(ctx, pid, base_scope, "base_scope");
-     
-     fprintf(stdout,"Entering scope free ...\n");
+
+     rc = qv_scope_nobjs(
+         ctx,
+         base_scope,
+         QV_HW_OBJ_CORE,
+         &n_cores
+     );
+     if (rc != QV_SUCCESS) {
+         ers = "qv_scope_nobjs() failed";
+         panic("%s (rc=%s)", ers, qv_strerr(rc));
+     }
+     printf("[%d] Number of CORES in base_scope is %d\n", pid, n_cores);
+
+     rc = qv_scope_nobjs(
+         ctx,
+         base_scope,
+         QV_HW_OBJ_PU,
+         &n_pus
+     );
+     if (rc != QV_SUCCESS) {
+         ers = "qv_scope_nobjs() failed";
+         panic("%s (rc=%s)", ers, qv_strerr(rc));
+     }
+     printf("[%d] Number of PUS   in base_scope is %d\n", pid, n_pus);
 
      rc = qv_scope_free(ctx, base_scope);
+     if (rc != QV_SUCCESS) {
+         ers = "qv_scope_free() failed";
+         panic("%s (rc=%s)", ers, qv_strerr(rc));
+     }
+     
+     qv_scope_t *self_scope;
+     rc = qv_scope_get(
+         ctx,
+         QV_SCOPE_PROCESS,
+         &self_scope
+     );
+     if (rc != QV_SUCCESS) {
+         ers = "qv_scope_get(QV_SCOPE_PROCESS) failed";
+         panic("%s (rc=%s)", ers, qv_strerr(rc));
+     } 
+     scope_report(ctx, pid, self_scope, "self_scope");
+    
+     rc = qv_scope_nobjs(
+         ctx,
+         self_scope,
+         QV_HW_OBJ_CORE,
+         &n_cores
+     );
+     if (rc != QV_SUCCESS) {
+         ers = "qv_scope_nobjs() failed";
+         panic("%s (rc=%s)", ers, qv_strerr(rc));
+     }
+     printf("[%d] Number of CORES in self_scope is %d\n", pid, n_cores);
+    
+     rc = qv_scope_nobjs(
+         ctx,
+         self_scope,
+         QV_HW_OBJ_PU,
+         &n_pus
+     );
+     if (rc != QV_SUCCESS) {
+         ers = "qv_scope_nobjs() failed";
+         panic("%s (rc=%s)", ers, qv_strerr(rc));
+     }
+     printf("[%d] Number of PUS   in self_scope is %d\n", pid, n_pus);
+     
+     char *binds;
+     rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
+     if (rc != QV_SUCCESS) {
+         ers = "qv_bind_string() failed";
+         panic("%s (rc=%s)", ers, qv_strerr(rc));
+     }
+     printf("[%d] Current cpubind is %s\n", pid, binds);
+     free(binds);
+
+
+     qv_scope_t *sub_scope;
+     rc = qv_scope_split(
+	 ctx,
+         self_scope,
+	 omp_get_num_threads(),
+         omp_get_thread_num() % 2,
+         &sub_scope
+     );
+     if (rc != QV_SUCCESS) {
+         ers = "qv_scope_split() failed";
+         panic("%s (rc=%s)", ers, qv_strerr(rc));
+     }
+     
+     fprintf(stdout,"[%i] Changing binding ...\n",pid);
+     //change_bind(ctx, pid, sub_scope);
+     rc = qv_scope_barrier(ctx, sub_scope);
+     if (rc != QV_SUCCESS) {
+       ers = "qv_scope_barrier() failed";
+       panic("%s (rc=%s)", ers, qv_strerr(rc));
+     }
+
+     fprintf(stdout,"[%i] Entering sub scope free ...\n",pid);
+     rc = qv_scope_free(ctx, sub_scope);
+     if (rc != QV_SUCCESS) {
+         ers = "qv_scope_free() failed";
+         panic("%s (rc=%s)", ers, qv_strerr(rc));
+     }
+     
+     fprintf(stdout,"[%i] Entering self scope free ...\n",pid);
+
+     rc = qv_scope_free(ctx, self_scope);
        if (rc != QV_SUCCESS) {
 	 ers = "qv_scope_free() failed";
 	 panic("%s (rc=%s)", ers, qv_strerr(rc));
        }
      
-     fprintf(stdout,"Entering context barrier ...\n");
+       fprintf(stdout,"[%i] Entering context barrier ...\n",pid);
 
      rc = qv_context_barrier(ctx);
      if (rc != QV_SUCCESS) {
@@ -180,7 +284,7 @@ main(
        panic("%s (rc=%s)", ers, qv_strerr(rc));
      }
 
-     fprintf(stdout,"Freeing context ...\n");
+     fprintf(stdout,"[%i] Freeing context ...\n",pid);
      
      rc = qv_thread_context_free(ctx);
      if (rc != QV_SUCCESS) {

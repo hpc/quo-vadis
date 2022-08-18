@@ -88,7 +88,7 @@ qvi_thread_task_get(
  */
 int
 qvi_thread_group_size(
-    const qvi_thread_group_shared_t *group
+    const qvi_thread_group_t *group
 );
 
 /**
@@ -96,7 +96,7 @@ qvi_thread_group_size(
  */
 int
 qvi_thread_group_new(
-    qvi_thread_group_shared_t **group
+    qvi_thread_group_t **group
 );
 
 /**
@@ -104,7 +104,7 @@ qvi_thread_group_new(
  */
 void
 qvi_thread_group_free(
-    qvi_thread_group_shared_t **group
+    qvi_thread_group_t **group
 );
 
 /**
@@ -112,7 +112,7 @@ qvi_thread_group_free(
  */
 int
 qvi_thread_group_id(
-    const qvi_thread_group_shared_t *group
+    const qvi_thread_group_t *group
 );
 
 /**
@@ -121,7 +121,16 @@ qvi_thread_group_id(
 int
 qvi_thread_group_create(
     qvi_thread_t *proc,
-    qvi_thread_group_shared_t **group
+    qvi_thread_group_t **group
+);
+
+/**
+ *
+ */
+int
+qvi_thread_group_create_single(
+    qvi_thread_t *proc,
+    qvi_thread_group_t **group
 );
 
 /**
@@ -129,7 +138,19 @@ qvi_thread_group_create(
  */
 int
 qvi_thread_group_barrier(
-    qvi_thread_group_shared_t *group
+    qvi_thread_group_t *group
+);
+
+/**
+ *
+ */
+int
+qvi_thread_group_create_from_split(
+    qvi_thread_t *th,
+    const qvi_thread_group_t *parent,
+    int color,
+    int key,
+    qvi_thread_group_t **child
 );
 
 /**
@@ -137,10 +158,11 @@ qvi_thread_group_barrier(
  */
 int
 qvi_thread_group_gather_bbuffs(
-    qvi_thread_group_shared_t *group,
+    qvi_thread_group_t *group,
     qvi_bbuff_t *txbuff,
     int root,
-    qvi_bbuff_t ***rxbuffs
+    qvi_bbuff_t ***rxbuffs,
+    int *shared_alloc
 );
 
 /**
@@ -148,7 +170,7 @@ qvi_thread_group_gather_bbuffs(
  */
 int
 qvi_thread_group_scatter_bbuffs(
-    qvi_thread_group_shared_t *group,
+    qvi_thread_group_t *group,
     qvi_bbuff_t **txbuffs,
     int root,
     qvi_bbuff_t **rxbuff

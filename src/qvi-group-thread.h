@@ -30,7 +30,7 @@ struct qvi_group_thread_s : public qvi_group_s {
      */
     qvi_thread_t *th = nullptr;
     /** Underlying group instance. */
-    qvi_thread_group_shared_t *th_group = nullptr;
+    qvi_thread_group_t *th_group = nullptr;
     /** Base constructor that does minimal work. */
     qvi_group_thread_s(void) = default;
     /** Virtual destructor. */
@@ -70,7 +70,8 @@ struct qvi_group_thread_s : public qvi_group_s {
     gather(
         qvi_bbuff_t *txbuff,
         int root,
-        qvi_bbuff_t ***rxbuffs
+        qvi_bbuff_t ***rxbuffs,
+	int *shared
     );
     /**
      * Scatters bbuffs from specified root.

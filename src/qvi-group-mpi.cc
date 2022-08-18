@@ -118,10 +118,11 @@ int
 qvi_group_mpi_s::gather(
     qvi_bbuff_t *txbuff,
     int root,
-    qvi_bbuff_t ***rxbuffs
+    qvi_bbuff_t ***rxbuffs,
+    int *shared
 ) {
     return qvi_mpi_group_gather_bbuffs(
-        mpi_group, txbuff, root, rxbuffs
+        mpi_group, txbuff, root, rxbuffs, shared
     );
 }
 

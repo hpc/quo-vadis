@@ -99,10 +99,11 @@ int
 qvi_group_process_s::gather(
     qvi_bbuff_t *txbuff,
     int root,
-    qvi_bbuff_t ***rxbuffs
+    qvi_bbuff_t ***rxbuffs,
+    int *shared
 ) {
     return qvi_process_group_gather_bbuffs(
-        proc_group, txbuff, root, rxbuffs
+        proc_group, txbuff, root, rxbuffs, shared
     );
 }
 
