@@ -199,7 +199,8 @@ qvi_mpi_group_gather_bbuffs(
     qvi_mpi_group_t *group,
     qvi_bbuff_t *txbuff,
     int root,
-    qvi_bbuff_t ***rxbuffs
+    qvi_bbuff_t ***rxbuffs,
+    int *shared_alloc
 );
 
 /**

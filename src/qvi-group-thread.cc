@@ -74,9 +74,9 @@ qvi_group_thread_s::self(
     // Initialize the child with the parent's thread instance.
     rc = ichild->initialize(th);
     if (rc != QV_SUCCESS) goto out;
-    // Because this is in the context of a thread, the concept of splitting
-    // doesn't really apply here, so just create another thread group.
-    rc = qvi_thread_group_create(
+
+    // Create a group containing a single thread 
+    rc = qvi_thread_group_create_single(
         th, &ichild->th_group
     );
 out:
@@ -90,25 +90,43 @@ out:
 
 int
 qvi_group_thread_s::split(
-    int,
-    int,
+    int color,
+    int key,
     qvi_group_t **child
 ) {
-    // NOTE: The concept of coloring with a provided key doesn't apply here, so
-    // ignore.  Also, because this is in the context of a thread, the concept
-    // of splitting doesn't really apply here, so just create another thread
-    // group, self will suffice.
-    return self(child);
+    int rc = QV_SUCCESS;
+    
+    qvi_group_thread_t *ichild = qvi_new qvi_group_thread_t();
+    if (!ichild) {
+        rc = QV_ERR_OOR;
+        goto out;
+    }
+    // Initialize the child with the parent's MPI instance.
+    rc = ichild->initialize(th);
+    if (rc != QV_SUCCESS) goto out;
+   
+    rc = qvi_thread_group_create_from_split(
+        th, th_group, color,
+	key, &ichild->th_group
+    );
+out:
+    if (rc != QV_SUCCESS) {
+        delete ichild;
+        ichild = nullptr;
+    }
+    *child = ichild;
+    return rc;
 }
 
 int
 qvi_group_thread_s::gather(
     qvi_bbuff_t *txbuff,
     int root,
-    qvi_bbuff_t ***rxbuffs
+    qvi_bbuff_t ***rxbuffs,
+    int *shared
 ) {
     return qvi_thread_group_gather_bbuffs(
-        th_group, txbuff, root, rxbuffs
+       th_group, txbuff, root, rxbuffs, shared
     );
 }
 

@@ -37,7 +37,7 @@ using qvi_thread_group_tab_t = std::unordered_map<
 // We need to have one structure for fields
 // shared by all threads included in another
 // with fields specific to each thread 
-struct qvi_thread_group_s {
+struct qvi_thread_group_shared_s {
     /** UNUSED : ID (rank) in group */
     int id = -1;
     /** ID used for table lookups */
@@ -48,13 +48,13 @@ struct qvi_thread_group_s {
     pthread_barrier_t barrier;
 };
 
-struct qvi_thread_group_shared_s {
+struct qvi_thread_group_s {
     /** ID (rank) in group */
     /** This ID is unique to each thread */
     int id = 0;
     /** shared data between threads in the group*/
     /** ALL threads point to the same region */
-    qvi_thread_group_t *sdata = nullptr;
+    qvi_thread_group_shared_t *sdata = nullptr;
 };
 
 struct qvi_thread_s {
@@ -77,7 +77,9 @@ cp_thread_group(
     memmove(dst, src, sizeof(*src));
 }
 
-
+/**
+ *
+ */
 static int
 next_group_tab_id(
     qvi_thread_t *th,
@@ -88,6 +90,9 @@ next_group_tab_id(
     return qvi_group_next_id(gid);
 }
 
+/**
+ *
+ */
 int
 qvi_thread_new(
     qvi_thread_t **th
@@ -115,6 +120,9 @@ out:
     return rc;
 }
 
+/**
+ *
+ */
 void
 qvi_thread_free(
     qvi_thread_t **th
@@ -126,7 +134,6 @@ qvi_thread_free(
 
 #pragma omp single
     {
-      fprintf(stdout,"|||||||||||||||||||  barrier destroy @ %p\n",ith->barrier);
       pthread_barrier_destroy(ith->barrier);
       delete ith->barrier;
     }
@@ -157,23 +164,23 @@ qvi_thread_init(
 
     th->barrier = barrier;
 
-#pragma omp single
-    {
 #ifdef OPENMP_FOUND
-      /* GM: since all spawned threads are in the zgroup */
-      /* using omp_get_num_threads is OK */
-      pthread_barrier_init(th->barrier,NULL,omp_get_num_threads());
+    /* GM: since all spawned threads are in the zgroup */
+    /* using omp_get_num_threads is OK */
+#pragma omp single
+     pthread_barrier_init(th->barrier,NULL,omp_get_num_threads());
 #else
       /* pthread_barrier_init(th->barrier,NULL, ???); */
 #endif
-      fprintf(stdout,"||||||||||||||||||| barrier init  thread %i\n",qvi_gettid());
-    }
     
     return qvi_task_init(
         th->task, QV_TASK_TYPE_THREAD, qvi_gettid(), world_id, node_id
     );
 }
 
+/**
+ *
+ */
 int
 qvi_thread_finalize(
     qvi_thread_t *
@@ -181,15 +188,20 @@ qvi_thread_finalize(
     return QV_SUCCESS;
 }
 
+/**
+ *
+ */
 int
 qvi_thread_node_barrier(
     qvi_thread_t *th
 ) {
-    fprintf(stdout,"||||||||||||||||||| barrier wait  thread %i\n",qvi_gettid());
     pthread_barrier_wait(th->barrier);
     return QV_SUCCESS;
 }
 
+/**
+ *
+ */
 qvi_task_t *
 qvi_thread_task_get(
     qvi_thread_t *th
@@ -197,41 +209,46 @@ qvi_thread_task_get(
     return th->task;
 }
 
+/**
+ *
+ */
 int
 qvi_thread_group_new(
-    qvi_thread_group_shared_t **thgrp
+    qvi_thread_group_t **thgrp
 ) {
     int rc = QV_SUCCESS;
-    qvi_thread_group_shared_t *sdata = qvi_new qvi_thread_group_shared_t();
-    qvi_thread_group_t *ithgrp = nullptr; 
+    qvi_thread_group_t *ithgrp = qvi_new qvi_thread_group_t(); 
+    qvi_thread_group_shared_t *sdata = nullptr;
 
-    if (!sdata) {
+    if (!ithgrp) {
         rc = QV_ERR_OOR;
     }
     if (rc != QV_SUCCESS) {
-        qvi_thread_group_free(&sdata);
+        qvi_thread_group_free(&ithgrp);
     }
 
-#pragma omp single copyprivate(ithgrp)
-    ithgrp = qvi_new qvi_thread_group_t();
+#pragma omp single copyprivate(sdata)
+    sdata = qvi_new qvi_thread_group_shared_t();
 
-    sdata->sdata = ithgrp;
+    ithgrp->sdata = sdata;
     
-    *thgrp = sdata;
+    *thgrp = ithgrp;
     return rc;
 }
 
+/**
+ *
+ */
 void
 qvi_thread_group_free(
-    qvi_thread_group_shared_t **thgrp
+    qvi_thread_group_t **thgrp
 ) {
      if (!thgrp) return;
-    qvi_thread_group_shared_t *ithgrp = *thgrp;
+    qvi_thread_group_t *ithgrp = *thgrp;
     if (!ithgrp) goto out;
 
 #pragma omp single
     {
-      fprintf(stdout,">>>>> barrier destroy for thread %i @ %p\n",ithgrp->id,&(ithgrp->sdata->barrier));
       pthread_barrier_destroy(&(ithgrp->sdata->barrier));
       delete ithgrp->sdata;
     }
@@ -241,12 +258,16 @@ out:
     *thgrp = nullptr;
 }
 
-int
-qvi_thread_group_create(
+/**
+ *
+ */
+static int
+qvi_thread_group_create_size(
     qvi_thread_t *th,
-    qvi_thread_group_shared_t **group
+    qvi_thread_group_t **group,
+    int size
 ) {
-    qvi_thread_group_shared_t *igroup = nullptr;
+    qvi_thread_group_t *igroup = nullptr;
     qvi_thread_group_id_t gtid;
     int rc;
     
@@ -261,24 +282,17 @@ qvi_thread_group_create(
 
 #ifdef OPENMP_FOUND
     igroup->id          = omp_get_thread_num();
-    igroup->sdata->size = omp_get_num_threads();
-    fprintf(stdout,">>>>> init group for thread %i (%i) out of %i | shared group addr %p (gtid %i)\n",
-	    igroup->id,omp_get_thread_num(),igroup->sdata->size,igroup->sdata,gtid);
 #else
     igroup->id          = 0;
-    igroup->sdata->size = 1;
 #endif
+    igroup->sdata->size = size;
     
 #pragma omp single        
-    {
-      pthread_barrier_init(&(igroup->sdata->barrier),NULL,igroup->sdata->size);
-      fprintf(stdout,">>>>> barrier init done for thread %i @%p (size %i)\n",
-	      igroup->id,&(igroup->sdata->barrier),igroup->sdata->size);
-    }
-    fprintf(stdout,">>>>> barrier object thread %i @%p (size %i)\n",igroup->id,&(igroup->sdata->barrier),igroup->sdata->size);
+    pthread_barrier_init(&(igroup->sdata->barrier),NULL,igroup->sdata->size);
     
+    //Insert the whole group structure or just the shared part??
 #pragma omp single
-    th->group_tab->insert({gtid, *(igroup->sdata)});
+    th->group_tab->insert({gtid, *igroup});
     
 out:
     if (rc != QV_SUCCESS) {
@@ -288,6 +302,35 @@ out:
     return QV_SUCCESS;
 }
 
+/**
+ *
+ */
+int
+qvi_thread_group_create(
+    qvi_thread_t *th,
+    qvi_thread_group_t **group
+) {
+#ifdef OPENMP_FOUND
+    return qvi_thread_group_create_size(th, group, omp_get_num_threads());
+#else
+    return qvi_thread_group_create_size(th, group, 1);
+#endif
+}
+
+/**
+ *
+ */
+int
+qvi_thread_group_create_single(
+    qvi_thread_t *th,
+    qvi_thread_group_t **group
+) {
+    return qvi_thread_group_create_size(th, group, 1);
+}
+
+/**
+ *
+ */
 int
 qvi_thread_group_lookup_by_id(
     qvi_thread_t *th,
@@ -302,74 +345,124 @@ qvi_thread_group_lookup_by_id(
     return QV_SUCCESS;
 }
 
+/**
+ *
+ */
 int
 qvi_thread_group_id(
-    const qvi_thread_group_shared_t *group
+    const qvi_thread_group_t *group
 ) {
     return group->id;
 }
 
+/**
+ *
+ */
 int
 qvi_thread_group_size(
-    const qvi_thread_group_shared_t *group
+    const qvi_thread_group_t *group
 ) {
     return group->sdata->size;
 }
 
+/**
+ *
+ */
 int
 qvi_thread_group_barrier(
-    qvi_thread_group_shared_t *group
+    qvi_thread_group_t *group
 ) {
-
-    fprintf(stdout,">>>>> Barrier wait for thread %i @ %p\n",group->id,&(group->sdata->barrier));
-    pthread_barrier_wait(&(group->sdata->barrier));
-  
+    pthread_barrier_wait(&(group->sdata->barrier));  
     return QV_SUCCESS;
 }
 
+/**
+ *
+ */
+int
+qvi_thread_group_create_from_split(
+    qvi_thread_t *th,
+    const qvi_thread_group_t *parent,
+    int color,
+    int key,
+    qvi_thread_group_t **child
+) {
+    int rc = QV_SUCCESS;
+    //cstr_t ers = nullptr;
+    qvi_thread_group_t *new_group = nullptr;
+    //qvi_thread_group_id_t gtid;
+    
+    //rc = qvi_thread_group_new(new_group);
+    //if (rc != QV_SUCCESS) return rc;
+
+    /*
+    rc = group_init(
+        node_comm, *new_group
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "group_init_from_mpi_comm() failed";
+        goto out;
+    }
+    */
+    // init with
+    rc = qvi_thread_group_create_size(th, &new_group, 2);
+    if (rc != QV_SUCCESS) return rc;
+    
+    //#pragma omp single copyprivate(gtid)
+    //rc = next_group_tab_id(th, &gtid);
+    //if (rc != QV_SUCCESS) return rc;
+
+    //Insert the whole group structure or just the shared part??
+    //#pragma omp single
+    //th->group_tab->insert({gtid, *new_group});
+
+    /*    
+ out:
+    if (ers) {
+        qvi_thread_group_free(new_group);
+    }
+    */
+    
+    return rc;
+}
+
+/**
+ *
+ */
 int
 qvi_thread_group_gather_bbuffs(
-    qvi_thread_group_shared_t *group,
+    qvi_thread_group_t *group,
     qvi_bbuff_t *txbuff,
     int root,
-    qvi_bbuff_t ***rxbuffs
+    qvi_bbuff_t ***rxbuffs,
+    int *shared_alloc
 ) {
-    const int group_size = qvi_thread_group_size(group);
-    // Make sure that we are dealing with a valid thread group.
-    assert(root == 0 && group_size == 1);
-    if (root != 0 || group_size != 1) {
-        return QV_ERR_INTERNAL;
-    }
-
+    QVI_UNUSED(root);
+    const int send_count = (int)qvi_bbuff_size(txbuff);
+    const int group_size = group->sdata->size;
+    const int group_id   = group->id;
     int rc = QV_SUCCESS;
-    int *rxcounts = nullptr;
-    byte_t *bytepos = nullptr;
-    // Zero initialize array of pointers to nullptr.
-    qvi_bbuff_t **bbuffs = qvi_new qvi_bbuff_t *[group_size]();
+    qvi_bbuff_t **bbuffs = nullptr;
+  // Zero initialize array of pointers to nullptr.
+#pragma omp single copyprivate(bbuffs) //shared bbuffs allocation
+    bbuffs = qvi_new qvi_bbuff_t *[group_size]();
     if (!bbuffs) {
         rc = QV_ERR_OOR;
         goto out;
     }
 
-    rxcounts = qvi_new int[group_size]();
-    if (!rxcounts) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-    rxcounts[0] = qvi_bbuff_size(txbuff);
-
-    bytepos = (byte_t *)qvi_bbuff_data(txbuff);
-    for (int i = 0; i < group_size; ++i) {
-        rc = qvi_bbuff_new(&bbuffs[i]);
-        if (rc != QV_SUCCESS) break;
-        rc = qvi_bbuff_append(bbuffs[i], bytepos, rxcounts[i]);
-        if (rc != QV_SUCCESS) break;
-        bytepos += rxcounts[i];
-    }
-out:
-    delete[] rxcounts;
+    rc = qvi_bbuff_new(&bbuffs[group_id]);
+    if (rc != QV_SUCCESS) goto out;
+    
+    rc = qvi_bbuff_append(bbuffs[group_id], qvi_bbuff_data(txbuff), send_count);
+    if (rc != QV_SUCCESS) goto out;
+    
+#pragma omp barrier // Need to ensure that all threads have contributed to bbuffs
+    
+out:    
     if (rc != QV_SUCCESS) {
-        if (bbuffs) {
+#pragma omp single
+        if (bbuffs) {	  
             for (int i = 0; i < group_size; ++i) {
                 qvi_bbuff_free(&bbuffs[i]);
             }
@@ -377,34 +470,50 @@ out:
         }
         bbuffs = nullptr;
     }
-    *rxbuffs = bbuffs;
+    *rxbuffs = bbuffs;    
+    *shared_alloc = 1;
+    //for(int i = 0 ; i < group_size ; i++)
+    //fprintf(stdout,"===== [%i] bbuff[%i] à %p\n",group_id,i,bbuffs[i]);    
     return rc;
 }
 
+/**
+ *
+ */
 int
 qvi_thread_group_scatter_bbuffs(
-    qvi_thread_group_shared_t *group,
+    qvi_thread_group_t *group,
     qvi_bbuff_t **txbuffs,
     int root,
     qvi_bbuff_t **rxbuff
 ) {
-    const int group_size = qvi_thread_group_size(group);
-    // Make sure that we are dealing with a valid thread group.
-    assert(root == 0 && group_size == 1);
-    if (root != 0 || group_size != 1) {
-        return QV_ERR_INTERNAL;
-    }
-    // There should always be only one at the root (us).
-    qvi_bbuff_t *inbuff = txbuffs[root];
-    const size_t data_size = qvi_bbuff_size(inbuff);
-    const void *data = qvi_bbuff_data(inbuff);
+    QVI_UNUSED(root);
+    const int group_id = group->id;
+    qvi_bbuff_t  ***tmp = nullptr;
 
+    /* GM: Oh man, that is UGLY */
+    /* Surely, some nice OpenMP magic will fix this mess */
+#pragma omp single copyprivate(tmp)
+    tmp = qvi_new qvi_bbuff_t**();    
+#pragma omp master
+    *tmp = txbuffs;  
+#pragma omp barrier
+    
+    //fprintf(stdout,">>>>>>>>>>>>>>>>>>>>>>> SCATTER [%i] toto @ %p txbuffs @ %p\n",group_id,*tmp,(*tmp)[group_id]);
+    
+    qvi_bbuff_t *inbuff = (*tmp)[group_id];
+    size_t data_size = qvi_bbuff_size(inbuff);
+    void *data = qvi_bbuff_data(inbuff);
+    
     qvi_bbuff_t *mybbuff = nullptr;
     int rc = qvi_bbuff_new(&mybbuff);
     if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_bbuff_append(mybbuff, data, data_size);
 out:
+#pragma omp single
+    delete tmp;
+
     if (rc != QV_SUCCESS) {
         qvi_bbuff_free(&mybbuff);
     }
