@@ -443,7 +443,7 @@ qvi_thread_group_gather_bbuffs(
     const int group_id   = group->id;
     int rc = QV_SUCCESS;
     qvi_bbuff_t **bbuffs = nullptr;
-  // Zero initialize array of pointers to nullptr.
+    // Zero initialize array of pointers to nullptr.
 #pragma omp single copyprivate(bbuffs) //shared bbuffs allocation
     bbuffs = qvi_new qvi_bbuff_t *[group_size]();
     if (!bbuffs) {
