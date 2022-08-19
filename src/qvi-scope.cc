@@ -175,7 +175,7 @@ gather_values(
     TYPE **outvals
 ) {
     const int group_size = group->size();
-
+    int shared = 0;
     int rc = QV_SUCCESS;
     qvi_bbuff_t *txbuff = nullptr;
     qvi_bbuff_t **bbuffs = nullptr;
@@ -189,7 +189,7 @@ gather_values(
     );
     if (rc != QV_SUCCESS) goto out;
 
-    rc = group->gather(txbuff, root, &bbuffs);
+    rc = group->gather(txbuff, root, &bbuffs, &shared);
     if (rc != QV_SUCCESS) goto out;
 
     if (group->id() == root) {
@@ -204,12 +204,13 @@ gather_values(
         }
     }
 out:
-    if (bbuffs) {
+    if ( !shared || (shared && (group->id() == root)))
+      if (bbuffs) {
         for (int i = 0; i < group_size; ++i) {
             qvi_bbuff_free(&bbuffs[i]);
         }
         delete[] bbuffs;
-    }
+      }
     qvi_bbuff_free(&txbuff);
     if (rc != QV_SUCCESS) {
         delete[] ioutvals;
@@ -228,6 +229,7 @@ gather_hwpools(
 ) {
     const int group_size = group->size();
 
+    int shared = 0;
     int rc = QV_SUCCESS;
     qvi_bbuff_t *txbuff = nullptr;
     qvi_bbuff_t **bbuffs = nullptr;
@@ -239,7 +241,7 @@ gather_hwpools(
     rc = qvi_hwpool_pack(txpool, txbuff);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = group->gather(txbuff, root, &bbuffs);
+    rc = group->gather(txbuff, root, &bbuffs, &shared);
     if (rc != QV_SUCCESS) goto out;
 
     if (group->id() == root) {
@@ -258,12 +260,13 @@ gather_hwpools(
         }
     }
 out:
-    if (bbuffs) {
+    if ( !shared || (shared && (group->id() == root)))
+      if (bbuffs) {
         for (int i = 0; i < group_size; ++i) {
             qvi_bbuff_free(&bbuffs[i]);
         }
         delete[] bbuffs;
-    }
+      }
     qvi_bbuff_free(&txbuff);
     if (rc != QV_SUCCESS) {
         if (hwpools) {

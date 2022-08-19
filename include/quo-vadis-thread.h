@@ -36,13 +36,6 @@ qv_thread_context_free(
     qv_context_t *ctx
 );
 
-
-int
-qv_thread_mgmt_toto(
-    void
-);
-
-
   
 #ifdef __cplusplus
 }

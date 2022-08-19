@@ -64,7 +64,8 @@ struct qvi_group_mpi_s : public qvi_group_s {
     gather(
         qvi_bbuff_t *txbuff,
         int root,
-        qvi_bbuff_t ***rxbuffs
+        qvi_bbuff_t ***rxbuffs,
+	int *shared
     );
     /**
      * Scatters bbuffs from specified root.

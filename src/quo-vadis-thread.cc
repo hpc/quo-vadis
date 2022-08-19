@@ -44,14 +44,12 @@ qv_thread_context_create(
     qvi_zgroup_thread_t *izgroup = nullptr;
 
     // Create base context.
-    //#pragma omp single copyprivate(ictx)    
     rc = qvi_context_create(&ictx);
     if (rc != QV_SUCCESS) {
         goto out;
     }
 
     // Create and initialize the base group.
-    //#pragma omp single copyprivate(izgroup)    
     rc = qvi_zgroup_thread_new(&izgroup);
     if (rc != QV_SUCCESS) {
         goto out;
