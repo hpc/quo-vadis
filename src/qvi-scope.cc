@@ -204,13 +204,14 @@ gather_values(
         }
     }
 out:
-    if ( !shared || (shared && (group->id() == root)))
-      if (bbuffs) {
-        for (int i = 0; i < group_size; ++i) {
-            qvi_bbuff_free(&bbuffs[i]);
+    if (!shared || (shared && (group->id() == root))) {
+        if (bbuffs) {
+            for (int i = 0; i < group_size; ++i) {
+                qvi_bbuff_free(&bbuffs[i]);
+            }
+            delete[] bbuffs;
         }
-        delete[] bbuffs;
-      }
+    }
     qvi_bbuff_free(&txbuff);
     if (rc != QV_SUCCESS) {
         delete[] ioutvals;
@@ -260,13 +261,14 @@ gather_hwpools(
         }
     }
 out:
-    if ( !shared || (shared && (group->id() == root)))
-      if (bbuffs) {
-        for (int i = 0; i < group_size; ++i) {
-            qvi_bbuff_free(&bbuffs[i]);
+    if (!shared || (shared && (group->id() == root))) {
+        if (bbuffs) {
+            for (int i = 0; i < group_size; ++i) {
+                qvi_bbuff_free(&bbuffs[i]);
+            }
+            delete[] bbuffs;
         }
-        delete[] bbuffs;
-      }
+    }
     qvi_bbuff_free(&txbuff);
     if (rc != QV_SUCCESS) {
         if (hwpools) {

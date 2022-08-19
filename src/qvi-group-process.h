@@ -65,7 +65,7 @@ struct qvi_group_process_s : public qvi_group_s {
         qvi_bbuff_t *txbuff,
         int root,
         qvi_bbuff_t ***rxbuffs,
-	int *shared	
+        int *shared
     );
     /**
      * Scatters bbuffs from specified root.
