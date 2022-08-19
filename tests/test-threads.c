@@ -239,36 +239,26 @@ main(
      printf("[%d] Current cpubind is %s\n", pid, binds);
      free(binds);
 
-
      qv_scope_t *sub_scope;
      rc = qv_scope_split(
 	 ctx,
          self_scope,
-	 omp_get_num_threads(),
-         omp_get_thread_num() % 2,
+	 2,                        // npieces
+         omp_get_thread_num() %2,  // group id
          &sub_scope
      );
      if (rc != QV_SUCCESS) {
          ers = "qv_scope_split() failed";
          panic("%s (rc=%s)", ers, qv_strerr(rc));
      }
-     
-     fprintf(stdout,"[%i] Changing binding ...\n",pid);
-     //change_bind(ctx, pid, sub_scope);
-     rc = qv_scope_barrier(ctx, sub_scope);
-     if (rc != QV_SUCCESS) {
-       ers = "qv_scope_barrier() failed";
-       panic("%s (rc=%s)", ers, qv_strerr(rc));
-     }
 
-     fprintf(stdout,"[%i] Entering sub scope free ...\n",pid);
+     change_bind(ctx, pid, sub_scope);
+
      rc = qv_scope_free(ctx, sub_scope);
      if (rc != QV_SUCCESS) {
          ers = "qv_scope_free() failed";
          panic("%s (rc=%s)", ers, qv_strerr(rc));
      }
-     
-     fprintf(stdout,"[%i] Entering self scope free ...\n",pid);
 
      rc = qv_scope_free(ctx, self_scope);
        if (rc != QV_SUCCESS) {
@@ -276,16 +266,12 @@ main(
 	 panic("%s (rc=%s)", ers, qv_strerr(rc));
        }
      
-       fprintf(stdout,"[%i] Entering context barrier ...\n",pid);
-
      rc = qv_context_barrier(ctx);
      if (rc != QV_SUCCESS) {
        ers = "qv_context_barrier() failed";
        panic("%s (rc=%s)", ers, qv_strerr(rc));
      }
 
-     fprintf(stdout,"[%i] Freeing context ...\n",pid);
-     
      rc = qv_thread_context_free(ctx);
      if (rc != QV_SUCCESS) {
        ers = "qv_thread_context_free failed";
