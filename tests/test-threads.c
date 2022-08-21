@@ -103,7 +103,7 @@ change_bind(
         ers = "qv_bind_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d][%i] New cpubind is  %s\n", pid, omp_get_thread_num() ,bind1s);
+    printf("[%d] New cpubind is  %s\n", pid,bind1s);
     free(bind1s);
 
     rc = qv_bind_pop(ctx);
@@ -251,7 +251,8 @@ main(
          ers = "qv_scope_split() failed";
          panic("%s (rc=%s)", ers, qv_strerr(rc));
      }
-
+     scope_report(ctx, pid, sub_scope, "sub_scope");
+     
      change_bind(ctx, pid, sub_scope);
 
      rc = qv_scope_free(ctx, sub_scope);
