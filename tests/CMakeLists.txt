@@ -39,7 +39,7 @@ add_test(
     threads
     test-threads
 )
-  
+
 if (OPENMP_FOUND)
 target_link_libraries(
     test-hwloc
@@ -149,8 +149,8 @@ if(MPI_FOUND)
         test-mpi-getdev
         quo-vadis-mpi
     )
-################" HYBRID TESTS #####################
-####################################################  
+################ HYBRID TESTS ######################
+####################################################
 if(OPENMP_FOUND)
     add_executable(
         test-mpi-threads
@@ -159,11 +159,11 @@ if(OPENMP_FOUND)
 
     target_link_libraries(
         test-mpi-threads
-	quo-vadis
-	quo-vadis-mpi
-	OpenMP::OpenMP_C
-    )  
-endif()  
+        quo-vadis
+        quo-vadis-mpi
+        OpenMP::OpenMP_C
+    )
+endif()
 endif()
 
 if (OPENMP_FOUND)
@@ -202,7 +202,7 @@ if(QV_FORTRAN_HAPPY)
         test-process-fortapi
         PROPERTIES LINKER_LANGUAGE Fortran
     )
-  
+
     if(MPI_Fortran_FOUND)
         add_executable(
             test-mpi-fortapi
