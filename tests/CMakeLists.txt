@@ -35,6 +35,11 @@ add_executable(
     test-hwloc.c
 )
 
+add_test(
+    threads
+    test-threads
+)
+  
 if (OPENMP_FOUND)
 target_link_libraries(
     test-hwloc
@@ -144,6 +149,21 @@ if(MPI_FOUND)
         test-mpi-getdev
         quo-vadis-mpi
     )
+################" HYBRID TESTS #####################
+####################################################  
+if(OPENMP_FOUND)
+    add_executable(
+        test-mpi-threads
+        test-mpi-threads.c
+    )
+
+    target_link_libraries(
+        test-mpi-threads
+	quo-vadis
+	quo-vadis-mpi
+	OpenMP::OpenMP_C
+    )  
+endif()  
 endif()
 
 if (OPENMP_FOUND)
@@ -270,10 +290,18 @@ set_target_properties(
     test-mpi-scopes
     PROPERTIES LINKER_LANGUAGE C
 )
+
+if (OPENMP_FOUND)
+set_target_properties(
+    test-mpi-threads
+    PROPERTIES LINKER_LANGUAGE C
+)
+endif()
 endif()
 
 # Set test timeout
 set_tests_properties(
+    threads
     hwloc
     rmi
     scopes
