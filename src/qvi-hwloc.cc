@@ -217,7 +217,6 @@ qvi_hwloc_new(
     ihwl->nics = qvi_new qvi_hwloc_dev_list_t();
     if (!ihwl->nics) {
         rc = QV_ERR_OOR;
-        goto out;
     }
 out:
     if (rc != QV_SUCCESS) qvi_hwloc_free(&ihwl);
@@ -893,7 +892,12 @@ qvi_hwloc_emit_cpubind(
     rc = qvi_hwloc_bitmap_asprintf(&cpusets, cpuset);
     if (rc != QV_SUCCESS) goto out;
 
-    qvi_log_info("[pid={} tid={}] cpubind={}", qvi_task_id_get_pid(task_id), qvi_gettid(), cpusets);
+    qvi_log_info(
+        "[pid={} tid={}] cpubind={}",
+        qvi_task_id_get_pid(task_id),
+        qvi_gettid(),
+        cpusets
+    );
 out:
     qvi_hwloc_bitmap_free(&cpuset);
     if (cpusets) free(cpusets);
@@ -1095,7 +1099,7 @@ qvi_hwloc_task_intersects_obj_by_type_id(
     return task_obj_xop_by_type_id(
         hwl,
         type,
-    task_id,
+        task_id,
         type_index,
         QVI_HWLOC_TASK_INTERSECTS_OBJ,
         result

@@ -587,7 +587,7 @@ rpc_ssi_get_device_in_cpuset(
 static int
 get_intrinsic_scope_user(
     qvi_rmi_server_t *server,
-    pid_t,
+    qvi_task_id_t,
     qvi_hwpool_t **hwpool
 ) {
     // TODO(skg) Is the cpuset the best way to do this?
@@ -635,7 +635,8 @@ rpc_ssi_scope_get_intrinsic_hwpool(
     void *input,
     qvi_bbuff_t **output
 ) {
-    // Get requestor task id (type and pid)  and intrinsic scope as integers from client request.
+    // Get requestor task id (type and pid) and intrinsic scope as integers
+    // from client request.
     qvi_task_id_t requestor;
     qv_scope_intrinsic_t iscope;
     int rc = qvi_bbuff_rmi_unpack(input, &requestor, &iscope);
@@ -647,12 +648,11 @@ rpc_ssi_scope_get_intrinsic_hwpool(
     switch (iscope) {
         case QV_SCOPE_SYSTEM:
         case QV_SCOPE_USER:
-        case QV_SCOPE_JOB: {
-           rpcrc = get_intrinsic_scope_user(server, qvi_task_id_get_pid(requestor), &hwpool);
+        case QV_SCOPE_JOB:
+            rpcrc = get_intrinsic_scope_user(server, requestor, &hwpool);
             break;
-        }
         case QV_SCOPE_PROCESS:
-        rpcrc = get_intrinsic_scope_proc(server, requestor, &hwpool);
+            rpcrc = get_intrinsic_scope_proc(server, requestor, &hwpool);
             break;
         default:
             rpcrc = QV_ERR_INVLD_ARG;
