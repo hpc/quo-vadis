@@ -13,68 +13,56 @@
 ################################################################################
 ################################################################################
 add_executable(
-    test-threads
-    test-threads.c
-)
-
-if (OPENMP_FOUND)
-target_link_libraries(
-    test-threads
-    quo-vadis
-    OpenMP::OpenMP_C
-)
-else()
- target_link_libraries(
-    test-threads
-    quo-vadis
-)
-endif()
-
-add_executable(
     test-hwloc
     test-hwloc.c
 )
 
-add_test(
-    threads
-    test-threads
-)
-
-if (OPENMP_FOUND)
-target_link_libraries(
-    test-hwloc
-    quo-vadis
-    OpenMP::OpenMP_C
-)
-else()
 target_link_libraries(
     test-hwloc
     quo-vadis
 )
-endif()
 
 add_test(
     hwloc
     test-hwloc
 )
 
+################################################################################
+################################################################################
+add_executable(
+    test-rmi
+    test-rmi.cc
+)
+
+target_link_libraries(
+    test-rmi
+    quo-vadis
+)
+
+add_test(
+    NAME
+      rmi
+    COMMAND
+      bash -c "export URL=\"tcp://127.0.0.1:55995\"      && \
+      ( sleep 5 && killall -9 test-rmi               & ) && \
+      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -s & ) && \
+      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
+      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
+      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
+        ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c"
+)
+
+################################################################################
+################################################################################
 add_executable(
     test-process-scopes
     test-process-scopes.c
 )
 
-if (OPENMP_FOUND)
-target_link_libraries(
-    test-process-scopes
-    quo-vadis
-    OpenMP::OpenMP_C
-)
-else()
 target_link_libraries(
     test-process-scopes
     quo-vadis
 )
-endif()
 
 add_test(
     NAME
@@ -85,6 +73,31 @@ add_test(
       ( ${CMAKE_CURRENT_BINARY_DIR}/../src/quo-vadisd & ) && \
         ${CMAKE_CURRENT_BINARY_DIR}/test-process-scopes"
 )
+
+################################################################################
+################################################################################
+if (OPENMP_FOUND)
+    add_executable(
+        test-threads
+        test-threads.c
+    )
+
+    target_link_libraries(
+        test-threads
+        quo-vadis
+        OpenMP::OpenMP_C
+    )
+
+    add_test(
+        NAME
+          threads
+        COMMAND
+          bash -c "export QV_PORT=\"55999\"                   && \
+          ( sleep 5 && killall -9 quo-vadisd              & ) && \
+          ( ${CMAKE_CURRENT_BINARY_DIR}/../src/quo-vadisd & ) && \
+            ${CMAKE_CURRENT_BINARY_DIR}/test-threads"
+    )
+endif()
 
 ################################################################################
 ################################################################################
@@ -149,21 +162,21 @@ if(MPI_FOUND)
         test-mpi-getdev
         quo-vadis-mpi
     )
-################ HYBRID TESTS ######################
-####################################################
-if(OPENMP_FOUND)
-    add_executable(
-        test-mpi-threads
-        test-mpi-threads.c
-    )
+################################# HYBRID TESTS #################################
+################################################################################
+    if(OPENMP_FOUND)
+        add_executable(
+            test-mpi-threads
+            test-mpi-threads.c
+        )
 
-    target_link_libraries(
-        test-mpi-threads
-        quo-vadis
-        quo-vadis-mpi
-        OpenMP::OpenMP_C
-    )
-endif()
+        target_link_libraries(
+            test-mpi-threads
+            quo-vadis
+            quo-vadis-mpi
+            OpenMP::OpenMP_C
+        )
+    endif()
 endif()
 
 if (OPENMP_FOUND)
@@ -185,22 +198,23 @@ if(QV_FORTRAN_HAPPY)
         test-process-fortapi.f90
     )
 
-   if(OPENMP_FOUND)
-      target_link_libraries(
-         test-process-fortapi
-         quo-vadis-processf
-         OpenMP::OpenMP_Fortran
-      )
-   else()
-      target_link_libraries(
+    target_link_libraries(
         test-process-fortapi
         quo-vadis-processf
-      )
-    endif()
+    )
 
     set_target_properties(
         test-process-fortapi
         PROPERTIES LINKER_LANGUAGE Fortran
+    )
+    add_test(
+        NAME
+          process-fortapi
+        COMMAND
+          bash -c "export QV_PORT=\"55999\"                   && \
+          ( sleep 5 && killall -9 quo-vadisd              & ) && \
+          ( ${CMAKE_CURRENT_BINARY_DIR}/../src/quo-vadisd & ) && \
+            ${CMAKE_CURRENT_BINARY_DIR}/test-process-fortapi"
     )
 
     if(MPI_Fortran_FOUND)
@@ -220,39 +234,6 @@ if(QV_FORTRAN_HAPPY)
         )
     endif()
 endif()
-
-################################################################################
-################################################################################
-add_executable(
-    test-rmi
-    test-rmi.cc
-)
-
-if (OPENMP_FOUND)
-target_link_libraries(
-    test-rmi
-    quo-vadis
-    OpenMP::OpenMP_C
-)
-else()
-target_link_libraries(
-    test-rmi
-    quo-vadis
-)
-endif()
-
-add_test(
-    NAME
-      rmi
-    COMMAND
-      bash -c "export URL=\"tcp://127.0.0.1:55995\"      && \
-      ( sleep 5 && killall -9 test-rmi               & ) && \
-      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -s & ) && \
-      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
-      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
-      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
-        ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c"
-)
 
 ################################################################################
 ################################################################################
@@ -282,30 +263,30 @@ set_target_properties(
 )
 
 if(MPI_FOUND)
-set_target_properties(
-    test-mpi
-    test-mpi-init
-    test-mpi-api
-    test-mpi-getdev
-    test-mpi-scopes
-    PROPERTIES LINKER_LANGUAGE C
-)
+    set_target_properties(
+        test-mpi
+        test-mpi-init
+        test-mpi-api
+        test-mpi-getdev
+        test-mpi-scopes
+        PROPERTIES LINKER_LANGUAGE C
+    )
 
-if (OPENMP_FOUND)
-set_target_properties(
-    test-mpi-threads
-    PROPERTIES LINKER_LANGUAGE C
-)
-endif()
+    if (OPENMP_FOUND)
+        set_target_properties(
+            test-mpi-threads
+            PROPERTIES LINKER_LANGUAGE C
+        )
+    endif()
 endif()
 
 # Set test timeout
 set_tests_properties(
-    threads
     hwloc
     rmi
     scopes
     process-context
+    threads
     PROPERTIES TIMEOUT 10
 )
 

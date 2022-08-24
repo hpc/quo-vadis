@@ -170,5 +170,4 @@ qvi_line_hwpool_unpack(
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
- *
  */
