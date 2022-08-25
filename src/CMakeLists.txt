@@ -14,40 +14,40 @@
 add_library(
     quo-vadis-core
     OBJECT
-    ../include/quo-vadis.h
-    qvi-common.h
-    qvi-macros.h
-    qvi-log.h
-    qvi-utils.h
-    qvi-bbuff.h
-    qvi-hwloc.h
-    qvi-nvml.h
-    qvi-rsmi.h
-    qvi-line.h
-    qvi-hwpool.h
-    qvi-rmi.h
-    qvi-bbuff-rmi.h
-    qvi-context.h
-    qvi-task.h
-    qvi-devinfo.h
-    qvi-group.h
-    qvi-scope.h
-    qvi-zgroup.h
-    qvi-bind.h
-    qvi-log.cc
-    qvi-utils.cc
-    qvi-bbuff.cc
-    qvi-hwloc.cc
-    qvi-nvml.cc
-    qvi-rsmi.cc
-    qvi-line.cc
-    qvi-hwpool.cc
-    qvi-rmi.cc
-    qvi-task.cc
-    qvi-scope.cc
-    qvi-bind.cc
-    qvi-group.cc
-    quo-vadis.cc
+      ../include/quo-vadis.h
+      qvi-common.h
+      qvi-macros.h
+      qvi-log.h
+      qvi-utils.h
+      qvi-bbuff.h
+      qvi-hwloc.h
+      qvi-nvml.h
+      qvi-rsmi.h
+      qvi-line.h
+      qvi-hwpool.h
+      qvi-rmi.h
+      qvi-bbuff-rmi.h
+      qvi-context.h
+      qvi-task.h
+      qvi-devinfo.h
+      qvi-group.h
+      qvi-scope.h
+      qvi-zgroup.h
+      qvi-bind.h
+      qvi-log.cc
+      qvi-utils.cc
+      qvi-bbuff.cc
+      qvi-hwloc.cc
+      qvi-nvml.cc
+      qvi-rsmi.cc
+      qvi-line.cc
+      qvi-hwpool.cc
+      qvi-rmi.cc
+      qvi-task.cc
+      qvi-scope.cc
+      qvi-bind.cc
+      qvi-group.cc
+      quo-vadis.cc
 )
 
 set_target_properties(
@@ -87,22 +87,22 @@ target_include_directories(
 add_library(
     quo-vadis
     SHARED
-    ../include/quo-vadis-process.h
-    qvi-process.h
-    qvi-group-process.h
-    qvi-zgroup-process.h
-    qvi-process.cc
-    qvi-group-process.cc
-    qvi-zgroup-process.cc
-    quo-vadis-process.cc
-    ../include/quo-vadis-thread.h
-    qvi-thread.h
-    qvi-group-thread.h
-    qvi-zgroup-thread.h
-    qvi-thread.cc
-    qvi-group-thread.cc
-    qvi-zgroup-thread.cc
-    quo-vadis-thread.cc
+      ../include/quo-vadis-process.h
+      qvi-process.h
+      qvi-group-process.h
+      qvi-zgroup-process.h
+      qvi-process.cc
+      qvi-group-process.cc
+      qvi-zgroup-process.cc
+      quo-vadis-process.cc
+      ../include/quo-vadis-thread.h
+      qvi-thread.h
+      qvi-group-thread.h
+      qvi-zgroup-thread.h
+      qvi-thread.cc
+      qvi-group-thread.cc
+      qvi-zgroup-thread.cc
+      quo-vadis-thread.cc
 )
 
 target_include_directories(
@@ -131,14 +131,14 @@ if(MPI_FOUND)
     add_library(
         quo-vadis-mpi
         SHARED
-        ../include/quo-vadis-mpi.h
-        qvi-mpi.h
-        qvi-group-mpi.h
-        qvi-zgroup-mpi.h
-        qvi-mpi.cc
-        qvi-group-mpi.cc
-        qvi-zgroup-mpi.cc
-        quo-vadis-mpi.cc
+          ../include/quo-vadis-mpi.h
+          qvi-mpi.h
+          qvi-group-mpi.h
+          qvi-zgroup-mpi.h
+          qvi-mpi.cc
+          qvi-group-mpi.cc
+          qvi-zgroup-mpi.cc
+          quo-vadis-mpi.cc
     )
 
     target_include_directories(

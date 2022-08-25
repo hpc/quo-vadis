@@ -79,6 +79,7 @@ find_package(ZMQ REQUIRED)
 ################################################################################
 
 # MPI support
+################################################################################
 option(QV_DISABLE_MPI_SUPPORT "Unconditionally disable MPI support" OFF)
 option(
     QV_MPI_PROCESSES_ARE_THREADS
@@ -120,6 +121,7 @@ if(NOT QV_DISABLE_MPI_SUPPORT)
 endif()
 
 # OpenMP support
+################################################################################
 option(QV_DISABLE_OMP_SUPPORT "Unconditionally disable OpenMP support" OFF)
 message(CHECK_START "Determining OpenMP support status")
 if(NOT QV_DISABLE_OMP_SUPPORT)
@@ -178,10 +180,14 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
 endif()
 
 # CPack
-# TODO(skg) Add more, improve.
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
+# Name the output source packages as quo-vadis-version.*
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}")
 set(CPACK_SOURCE_GENERATOR "TBZ2;TGZ;ZIP")
-set(CPACK_SOURCE_IGNORE_FILES "/\.cache/;/\.git/;/\.*.swp$;/build/")
+set(
+    CPACK_SOURCE_IGNORE_FILES
+    "/\.cache/;/\.git/;/\.*.swp$;/build/;cscope.*;/\.gitignore;core.*"
+)
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt)
 include(CPack)
 

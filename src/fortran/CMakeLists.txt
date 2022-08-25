@@ -14,7 +14,7 @@ if(QV_FORTRAN_HAPPY)
     add_library(
         quo-vadisf-core
         OBJECT
-        quo-vadisf.f90
+          quo-vadisf.f90
     )
 
     set_property(
@@ -26,7 +26,7 @@ if(QV_FORTRAN_HAPPY)
 
     if(OpenMP_Fortran_FOUND)
         set_target_properties(
-              quo-vadisf-core
+            quo-vadisf-core
             PROPERTIES
               COMPILE_FLAGS ${OpenMP_Fortran_FLAGS}
               LINK_FLAGS ${OpenMP_Fortran_FLAGS}
@@ -38,7 +38,7 @@ if(QV_FORTRAN_HAPPY)
         add_library(
             quo-vadis-mpif
             SHARED
-            quo-vadis-mpif.f90
+              quo-vadis-mpif.f90
         )
 
         target_include_directories(
@@ -121,7 +121,7 @@ if(QV_FORTRAN_HAPPY)
     add_library(
         quo-vadis-processf
         SHARED
-        quo-vadis-processf.f90
+          quo-vadis-processf.f90
     )
 
     target_include_directories(
