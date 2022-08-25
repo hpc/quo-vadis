@@ -94,16 +94,29 @@ else()
 endif()
 
 if(NOT QV_DISABLE_MPI_SUPPORT)
-    # TODO(skg) Make sure that we are at least at MPI-3
     find_package(MPI)
-    # By default we assume MPI processes are implemented as OS processes.
-    message(CHECK_START "Determining underlying MPI process type")
-    set(MPI_PROCESSES_ARE_THREADS FALSE)
-    if(QV_MPI_PROCESSES_ARE_THREADS)
-        set(MPI_PROCESSES_ARE_THREADS TRUE)
-        message(CHECK_PASS "threads")
+    if (NOT MPI_FOUND)
+        message(STATUS "MPI not found. Please set MPI_HOME")
     else()
-        message(CHECK_PASS "OS processes")
+        # The MPI library needs to be at least MPI-3.
+        set(QV_MPI_VER_MIN "3.0")
+        set(QV_MPI_VER "${MPI_C_VERSION_MAJOR}.${MPI_C_VERSION_MINOR}")
+        message(STATUS "MPI version detected ${QV_MPI_VER}")
+        if (${QV_MPI_VER} VERSION_LESS ${QV_MPI_VER_MIN})
+            message(
+                FATAL_ERROR
+                "Minimum MPI version not met: ${QV_MPI_VER} < ${QV_MPI_VER_MIN}"
+            )
+        endif()
+        # By default we assume MPI processes are implemented as OS processes.
+        message(CHECK_START "Determining underlying MPI process type")
+        set(MPI_PROCESSES_ARE_THREADS FALSE)
+        if(QV_MPI_PROCESSES_ARE_THREADS)
+            set(MPI_PROCESSES_ARE_THREADS TRUE)
+            message(CHECK_PASS "threads")
+        else()
+            message(CHECK_PASS "OS processes")
+        endif()
     endif()
 endif()
 
