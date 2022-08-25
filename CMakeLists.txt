@@ -101,7 +101,6 @@ if(NOT QV_DISABLE_MPI_SUPPORT)
         # The MPI library needs to be at least MPI-3.
         set(QV_MPI_VER_MIN "3.0")
         set(QV_MPI_VER "${MPI_C_VERSION_MAJOR}.${MPI_C_VERSION_MINOR}")
-        message(STATUS "MPI version detected ${QV_MPI_VER}")
         if (${QV_MPI_VER} VERSION_LESS ${QV_MPI_VER_MIN})
             message(
                 FATAL_ERROR
