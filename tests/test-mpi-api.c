@@ -54,6 +54,17 @@ main(
         panic("%s (rc=%d)", ers, rc);
     }
 
+    int vmajor, vminor, vpatch;
+    rc = qv_version(&vmajor, &vminor, &vpatch);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_version() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    if (wrank == 0) {
+        printf("QV Version: %d.%d.%d\n", vmajor, vminor, vpatch);
+    }
+
     qv_context_t *ctx = NULL;
     rc = qv_mpi_context_create(&ctx, comm);
     if (rc != QV_SUCCESS) {

@@ -136,6 +136,16 @@ interface
     end
 
     integer(c_int) &
+    function qv_version_c(major, minor, patch) &
+        bind(c, name='qv_version')
+        use, intrinsic :: iso_c_binding, only: c_int
+        implicit none
+        integer(c_int), intent(out) :: major
+        integer(c_int), intent(out) :: minor
+        integer(c_int), intent(out) :: patch
+    end function qv_version_c
+
+    integer(c_int) &
     function qv_scope_get_c(ctx, iscope, scope) &
         bind(c, name='qv_scope_get')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
@@ -303,6 +313,16 @@ contains
         string_shape(1) = qvif_strlen_c(cstr)
         call c_f_pointer(cstr, fstrp, string_shape)
     end function qv_strerr
+
+    subroutine qv_version(major, minor, patch, info)
+        use, intrinsic :: iso_c_binding, only: c_int
+        implicit none
+        integer(c_int), intent(out) :: major
+        integer(c_int), intent(out) :: minor
+        integer(c_int), intent(out) :: patch
+        integer(c_int), intent(out) :: info
+        info = qv_version_c(major, minor, patch)
+    end subroutine qv_version
 
     subroutine qv_scope_get(ctx, iscope, scope, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int

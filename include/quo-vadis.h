@@ -138,6 +138,24 @@ typedef enum qv_device_id_type_e {
 } qv_device_id_type_t;
 
 /**
+ * Version query routine.
+ *
+ * @param[out] major Major version.
+ *
+ * @param[out] minor Minor version.
+ *
+ * @param[out] patch Patch version.
+ *
+ * @retval QV_SUCCESS if the operation completed successfully.
+ */
+int
+qv_version(
+    int *major,
+    int *minor,
+    int *patch
+);
+
+/**
  *
  */
 int

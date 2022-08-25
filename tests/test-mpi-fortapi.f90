@@ -20,6 +20,7 @@ program mpi_fortapi
 
     integer(c_int) info, n
     integer(c_int) ntasks, taskid, n_cores, n_gpu
+    integer(c_int) vmajor, vminor, vpatch
     integer cwrank, cwsize, scope_comm, scope_comm_size
     type(c_ptr) ctx, scope_user
     character(len=:),allocatable :: bstr(:)
@@ -42,6 +43,13 @@ program mpi_fortapi
     end if
 
     if (cwrank .eq. 0) then
+        call qv_version(vmajor, vminor, vpatch, info)
+        if (info .ne. QV_SUCCESS) then
+            error stop
+        end if
+        print *, 'qv_version_major', vmajor
+        print *, 'qv_version_minor', vminor
+        print *, 'qv_version_patch', vpatch
         print *, 'cwsize', cwsize
     end if
 
