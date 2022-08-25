@@ -3,7 +3,7 @@
 **This project is under active development and is currently not stable.**
 
 A next-generation, machine-independent coordination layer to arbitrate access
-among multiple runtime components and map workers efficiently to heterogeneous
+among multiple runtime components and map tasks efficiently to heterogeneous
 architectures.
 
 ## Building
@@ -15,17 +15,19 @@ Or, using [ninja](https://ninja-build.org/), perform the following:
 mkdir build && cd build && cmake -G Ninja .. && ninja
 ```
 
-GPU device support is enabled by default. Define `QV_DISABLE_GPU_SUPPORT=ON` to
-disable it. For example,
+### Build Options
+Below is a table of build options for quo-vadis. Options can be specified in a
+variety of ways using `cmake` or `ccmake`. For example,
 ```shell
-cmake -DQV_DISABLE_GPU_SUPPORT=ON ..
+cmake -DQV_DISABLE_GPU_SUPPORT=ON -DQV_DISABLE_FORTRAN_SUPPORT=ON ..
 ```
 
-When available Fortran support is enabled by default. Define
-`QV_DISABLE_FORTRAN_SUPPORT=ON` to disable it. For example,
-```shell
-cmake -DQV_DISABLE_FORTRAN_SUPPORT=ON ..
-```
+| Option                       | Default | Comment                             |
+| QV_DISABLE_FORTRAN_SUPPORT   | OFF     | Disable Fortran support             |
+| QV_DISABLE_GPU_SUPPORT       | OFF     | Disable MPI support                 |
+| QV_DISABLE_MPI_SUPPORT       | OFF     | Disable MPI support                 |
+| QV_DISABLE_OMP_SUPPORT       | OFF     | Disable OpenMP support              |
+| QV_MPI_PROCESSES_ARE_THREADS | FALSE   | Affirm MPI processes are threads    |
 
 ## Testing
 Depending on the type of generator used perform either of the following:

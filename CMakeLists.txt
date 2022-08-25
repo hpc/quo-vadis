@@ -98,7 +98,6 @@ if(NOT QV_DISABLE_MPI_SUPPORT)
     find_package(MPI)
     # By default we assume MPI processes are implemented as OS processes.
     message(CHECK_START "Determining underlying MPI process type")
-    # TODO(skg) Document this flag.
     set(MPI_PROCESSES_ARE_THREADS FALSE)
     if(QV_MPI_PROCESSES_ARE_THREADS)
         set(MPI_PROCESSES_ARE_THREADS TRUE)
