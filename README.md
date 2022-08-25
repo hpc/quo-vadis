@@ -31,9 +31,8 @@ cmake -DQV_DISABLE_GPU_SUPPORT=ON -DQV_DISABLE_FORTRAN_SUPPORT=ON ..
 | QV_MPI_PROCESSES_ARE_THREADS | FALSE   | Affirm MPI processes are threads    |
 
 ## Testing
-Depending on the type of generator used perform either of the following:
 ```shell
-make test # Or ninja test for ninja builds
+ctest
 ```
 
 ## Environment Variables
