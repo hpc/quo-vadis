@@ -33,7 +33,7 @@ struct qvi_process_group_s {
 };
 
 struct qvi_process_s {
-    /** Task associated with this MPI process */
+    /** Task associated with this process */
     qvi_task_t *task = nullptr;
     /** Maintains the next available group ID value */
     qvi_process_group_tab_t *group_tab = nullptr;

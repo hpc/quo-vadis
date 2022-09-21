@@ -247,14 +247,14 @@ interface
         type(c_ptr), intent(out) :: dev_id
     end function qv_scope_get_device_id_c
 
-      integer(c_int) &
-      function qv_bind_push_c(ctx, scope) &
-          bind(c, name='qv_bind_push')
-          use, intrinsic :: iso_c_binding, only: c_ptr, c_int
-          implicit none
-          type(c_ptr), value :: ctx
-          type(c_ptr), value :: scope
-      end function qv_bind_push_c
+    integer(c_int) &
+    function qv_bind_push_c(ctx, scope) &
+        bind(c, name='qv_bind_push')
+        use, intrinsic :: iso_c_binding, only: c_ptr, c_int
+        implicit none
+        type(c_ptr), value :: ctx
+        type(c_ptr), value :: scope
+    end function qv_bind_push_c
 
     integer(c_int) &
     function qv_bind_pop_c(ctx) &
