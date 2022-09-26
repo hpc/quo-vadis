@@ -509,9 +509,9 @@ split_user_defined(
     int *colors,
     qvi_hwpool_t **hwpools
 ) {
-    const int group_size = parent->group->size();
-
     int rc = QV_SUCCESS;
+
+    const int group_size = parent->group->size();
     hwloc_bitmap_t *cpusets = nullptr;
 
     cpusets = qvi_new hwloc_bitmap_t[group_size]();

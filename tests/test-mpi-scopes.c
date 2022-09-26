@@ -29,6 +29,19 @@ do {                                                                           \
     exit(EXIT_FAILURE);                                                        \
 } while (0)
 
+static int
+get_group_id(
+    int taskid,
+    int ntask,
+    int npieces
+) {
+    if (npieces != 2) {
+        panic("This test requires npieces=2");
+    }
+    const int nchunk = (ntask + (ntask % npieces)) / npieces;
+    return taskid / nchunk;
+}
+
 static void
 scope_report(
     qv_context_t *ctx,
@@ -183,25 +196,56 @@ main(
 
     scope_report(ctx, wrank, base_scope, "base_scope");
 
+    int base_scope_ntasks;
+    rc = qv_scope_ntasks(
+        ctx,
+        base_scope,
+        &base_scope_ntasks
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_ntasks() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    int base_scope_id;
+    rc = qv_scope_taskid(
+        ctx,
+        base_scope,
+        &base_scope_id
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_taskid() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
     int n_numa;
     rc = qv_scope_nobjs(
         ctx,
         base_scope,
-        QV_HW_OBJ_NUMANODE,
+        QV_HW_OBJ_PU,
         &n_numa
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of NUMA in base_scope is %d\n", wrank, n_numa);
+    printf("[%d] Number of PUs in base_scope is %d\n", wrank, n_numa);
+
+
+    const int npieces = 2;
+    const int gid = get_group_id(
+        base_scope_id,
+        base_scope_ntasks,
+        npieces
+    );
+    printf("[%d] base GID is %d\n", wrank, gid);
 
     qv_scope_t *sub_scope;
     rc = qv_scope_split(
         ctx,
         base_scope,
-        2,
-        wrank,
+        npieces,
+        gid,
         &sub_scope
     );
     if (rc != QV_SUCCESS) {
@@ -209,24 +253,29 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
+    scope_report(ctx, wrank, base_scope, "base_scope");
+    change_bind(ctx, wrank, base_scope);
+
     rc = qv_scope_nobjs(
         ctx,
         sub_scope,
-        QV_HW_OBJ_NUMANODE,
+        QV_HW_OBJ_PU,
         &n_numa
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of NUMA in sub_scope is %d\n", wrank, n_numa);
+    printf("[%d] Number of PUs in sub_scope is %d\n", wrank, n_numa);
 
     scope_report(ctx, wrank, sub_scope, "sub_scope");
+    change_bind(ctx, wrank, sub_scope);
 
-    if (wrank == 0) {
+    if (base_scope_id == 0) {
         qv_scope_t *create_scope;
         rc = qv_scope_create(
-            ctx, sub_scope, QV_HW_OBJ_CORE, 1, 0, &create_scope
+            ctx, sub_scope, QV_HW_OBJ_CORE,
+            1, 0, &create_scope
         );
         if (rc != QV_SUCCESS) {
             ers = "qv_scope_create() failed";
@@ -237,14 +286,14 @@ main(
         rc = qv_scope_nobjs(
             ctx,
             create_scope,
-            QV_HW_OBJ_CORE,
+            QV_HW_OBJ_PU,
             &n_core
         );
         if (rc != QV_SUCCESS) {
             ers = "qv_scope_nobjs() failed";
             panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
-        printf("[%d] Number of cores in create_scope is %d\n", wrank, n_core);
+        printf("[%d] Number of PUs in create_scope is %d\n", wrank, n_core);
 
         scope_report(ctx, wrank, create_scope, "create_scope");
 
@@ -255,23 +304,12 @@ main(
         }
     }
 
-    char *binds;
-    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_string() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    printf("[%d] Current cpubind is %s\n", wrank, binds);
-    free(binds);
-
-    change_bind(ctx, wrank, sub_scope);
-
     qv_scope_t *sub_sub_scope;
     rc = qv_scope_split(
         ctx,
         sub_scope,
-        2,
-        wrank,
+        npieces,
+        gid,
         &sub_sub_scope
     );
     if (rc != QV_SUCCESS) {
@@ -282,14 +320,14 @@ main(
     rc = qv_scope_nobjs(
         ctx,
         sub_sub_scope,
-        QV_HW_OBJ_NUMANODE,
+        QV_HW_OBJ_PU,
         &n_numa
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of NUMA in sub_sub_scope is %d\n", wrank, n_numa);
+    printf("[%d] Number of PUs in sub_sub_scope is %d\n", wrank, n_numa);
 
     rc = qv_scope_free(ctx, base_scope);
     if (rc != QV_SUCCESS) {

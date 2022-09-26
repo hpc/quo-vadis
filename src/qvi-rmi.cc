@@ -1241,7 +1241,7 @@ qvi_rmi_split_cpuset_by_color(
 ) {
     // TODO(skg) At some point we will acquire the resources
     // for improved splitting and resource distribution.
-    return qvi_hwloc_split_cpuset_by_group_id(
+    return qvi_hwloc_split_cpuset_by_color(
         client->config->hwloc, cpuset,
         ncolors, color, result
     );

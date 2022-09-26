@@ -339,7 +339,7 @@ qvi_hwloc_get_device_in_cpuset(
  *
  */
 int
-qvi_hwloc_split_cpuset_by_group_id(
+qvi_hwloc_split_cpuset_by_color(
     qvi_hwloc_t *hwl,
     hwloc_const_cpuset_t cpuset,
     int ncolors,

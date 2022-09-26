@@ -1426,8 +1426,12 @@ split_cpuset_chunk_size(
         hwl, QV_HW_OBJ_PU, cpuset, &npus
     );
 out:
-    if (rc != QV_SUCCESS) *chunk = 0;
-    else *chunk = npus / npieces;
+    if (rc != QV_SUCCESS) {
+        *chunk = 0;
+    }
+    else {
+        *chunk = npus / npieces;
+    }
     return rc;
 }
 
@@ -1516,9 +1520,8 @@ out:
     return rc;
 }
 
-// TODO(skg) Rename to qvi_hwloc_split_cpuset_by_color().
 int
-qvi_hwloc_split_cpuset_by_group_id(
+qvi_hwloc_split_cpuset_by_color(
     qvi_hwloc_t *hwl,
     hwloc_const_cpuset_t cpuset,
     int ncolors,
