@@ -218,18 +218,18 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int n_numa;
+    int n_pu;
     rc = qv_scope_nobjs(
         ctx,
         base_scope,
         QV_HW_OBJ_PU,
-        &n_numa
+        &n_pu
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of PUs in base_scope is %d\n", wrank, n_numa);
+    printf("[%d] Number of PUs in base_scope is %d\n", wrank, n_pu);
 
 
     const int npieces = 2;
@@ -260,13 +260,13 @@ main(
         ctx,
         sub_scope,
         QV_HW_OBJ_PU,
-        &n_numa
+        &n_pu
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of PUs in sub_scope is %d\n", wrank, n_numa);
+    printf("[%d] Number of PUs in sub_scope is %d\n", wrank, n_pu);
 
     scope_report(ctx, wrank, sub_scope, "sub_scope");
     change_bind(ctx, wrank, sub_scope);
@@ -321,13 +321,13 @@ main(
         ctx,
         sub_sub_scope,
         QV_HW_OBJ_PU,
-        &n_numa
+        &n_pu
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of PUs in sub_sub_scope is %d\n", wrank, n_numa);
+    printf("[%d] Number of PUs in sub_sub_scope is %d\n", wrank, n_pu);
 
     rc = qv_scope_free(ctx, base_scope);
     if (rc != QV_SUCCESS) {
