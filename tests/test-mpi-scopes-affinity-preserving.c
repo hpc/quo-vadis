@@ -1,8 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
- *                         All rights reserved.
- *
- * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
+ * Copyright (c) 2022      Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -10,7 +7,7 @@
  */
 
 /**
- * @file test-scopes-mpi.c
+ * @file test-mpi-scopes-affinity-preserving.c
  */
 
 #include "quo-vadis-mpi.h"
@@ -19,6 +16,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <signal.h>
 
 #define panic(vargs...)                                                        \
 do {                                                                           \
@@ -28,19 +26,6 @@ do {                                                                           \
     fflush(stderr);                                                            \
     exit(EXIT_FAILURE);                                                        \
 } while (0)
-
-static int
-get_group_id(
-    int taskid,
-    int ntask,
-    int npieces
-) {
-    if (npieces != 2) {
-        panic("This test requires npieces=2");
-    }
-    const int nchunk = (ntask + (ntask % npieces)) / npieces;
-    return taskid / nchunk;
-}
 
 static void
 scope_report(
@@ -142,6 +127,10 @@ main(
         panic("%s (rc=%d)", ers, rc);
     }
 
+    signal(SIGSEGV, SIG_DFL);
+    signal(SIGABRT, SIG_DFL);
+    setbuf(stdout, NULL);
+
     int wsize;
     rc = MPI_Comm_size(comm, &wsize);
     if (rc != MPI_SUCCESS) {
@@ -156,30 +145,10 @@ main(
         panic("%s (rc=%d)", ers, rc);
     }
 
-    setbuf(stdout, NULL);
-
     qv_context_t *ctx;
     rc = qv_mpi_context_create(&ctx, comm);
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_context_create() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    qv_scope_t *self_scope;
-    rc = qv_scope_get(
-        ctx,
-        QV_SCOPE_PROCESS,
-        &self_scope
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_get(QV_SCOPE_PROCESS) failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    scope_report(ctx, wrank, self_scope, "self_scope");
-
-    rc = qv_scope_free(ctx, self_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -232,19 +201,12 @@ main(
     printf("[%d] Number of PUs in base_scope is %d\n", wrank, n_pu);
 
     const int npieces = 2;
-    const int gid = get_group_id(
-        base_scope_id,
-        base_scope_ntasks,
-        npieces
-    );
-    printf("[%d] base GID is %d\n", wrank, gid);
-
     qv_scope_t *sub_scope;
     rc = qv_scope_split(
         ctx,
         base_scope,
         npieces,
-        gid,
+        QV_SCOPE_SPLIT_AFFINITY_PRESERVING,
         &sub_scope
     );
     if (rc != QV_SUCCESS) {
@@ -252,8 +214,8 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    scope_report(ctx, wrank, base_scope, "base_scope");
-    change_bind(ctx, wrank, base_scope);
+    scope_report(ctx, wrank, sub_scope, "sub_scope");
+    change_bind(ctx, wrank, sub_scope);
 
     rc = qv_scope_nobjs(
         ctx,
@@ -267,67 +229,6 @@ main(
     }
     printf("[%d] Number of PUs in sub_scope is %d\n", wrank, n_pu);
 
-    scope_report(ctx, wrank, sub_scope, "sub_scope");
-    change_bind(ctx, wrank, sub_scope);
-
-    if (base_scope_id == 0) {
-        qv_scope_t *create_scope;
-        rc = qv_scope_create(
-            ctx, sub_scope, QV_HW_OBJ_CORE,
-            1, 0, &create_scope
-        );
-        if (rc != QV_SUCCESS) {
-            ers = "qv_scope_create() failed";
-            panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
-
-        int n_core;
-        rc = qv_scope_nobjs(
-            ctx,
-            create_scope,
-            QV_HW_OBJ_PU,
-            &n_core
-        );
-        if (rc != QV_SUCCESS) {
-            ers = "qv_scope_nobjs() failed";
-            panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
-        printf("[%d] Number of PUs in create_scope is %d\n", wrank, n_core);
-
-        scope_report(ctx, wrank, create_scope, "create_scope");
-
-        rc = qv_scope_free(ctx, create_scope);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_scope_free() failed";
-            panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
-    }
-
-    qv_scope_t *sub_sub_scope;
-    rc = qv_scope_split(
-        ctx,
-        sub_scope,
-        npieces,
-        gid,
-        &sub_sub_scope
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_split() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    rc = qv_scope_nobjs(
-        ctx,
-        sub_sub_scope,
-        QV_HW_OBJ_PU,
-        &n_pu
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    printf("[%d] Number of PUs in sub_sub_scope is %d\n", wrank, n_pu);
-
     rc = qv_scope_free(ctx, base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
@@ -335,12 +236,6 @@ main(
     }
 
     rc = qv_scope_free(ctx, sub_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    rc = qv_scope_free(ctx, sub_sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));

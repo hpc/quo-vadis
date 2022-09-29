@@ -144,6 +144,16 @@ if(MPI_FOUND)
     )
 
     add_executable(
+        test-mpi-scopes-affinity-preserving
+        test-mpi-scopes-affinity-preserving.c
+    )
+
+    target_link_libraries(
+        test-mpi-scopes-affinity-preserving
+        quo-vadis-mpi
+    )
+
+    add_executable(
         test-mpi-phases
         test-mpi-phases.c
     )

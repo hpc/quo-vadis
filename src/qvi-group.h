@@ -17,6 +17,7 @@
 #define QVI_GROUP_H
 
 #include "qvi-bbuff.h"
+#include "qvi-task.h"
 
 #ifdef __cplusplus
 /**
@@ -29,11 +30,13 @@ struct qvi_group_s {
     virtual ~qvi_group_s(void) = default;
     /** The real 'constructor' that can possibly fail. */
     virtual int create(void) = 0;
-    /** The caller's group ID. */
+    /** Returns the caller's task_id. */
+    virtual qvi_task_id_t task_id(void) = 0;
+    /** Returns the caller's group ID. */
     virtual int id(void) = 0;
-    /** The number of members in this group. */
+    /** Returns the number of members in this group. */
     virtual int size(void) = 0;
-    /** Group barrier. */
+    /** Performs node-local group barrier. */
     virtual int barrier(void) = 0;
     /**
      * Creates a new self group with a single member: the caller.

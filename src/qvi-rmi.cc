@@ -1265,5 +1265,4 @@ qvi_rmi_get_cpuset_for_nobjs(
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
- *
  */

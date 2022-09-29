@@ -37,7 +37,7 @@ typedef enum qvi_task_type_e {
  * Task identification.
  */
 typedef struct qvi_task_id_s {
-    /** Task type (OS Process or OS Thread) */
+    /** Task type (OS process or OS thread) */
     qvi_task_type_t type;
     /** Process ID or Thread ID */
     pid_t who;

@@ -33,11 +33,13 @@ struct qvi_group_process_s : public qvi_group_s {
     virtual int create(void);
     /** Initializes the instance. */
     int initialize(qvi_process_t *proc);
-    /** The caller's group ID. */
+    /** Returns the caller's task_id. */
+    virtual qvi_task_id_t task_id(void);
+    /** Returns the caller's group ID. */
     virtual int id(void);
-    /** The number of members in this group. */
+    /** Returns the number of members in this group. */
     virtual int size(void);
-    /** Group barrier. */
+    /** Performs node-local group barrier. */
     virtual int barrier(void);
     /**
      * Creates a new self group with a single member: the caller.

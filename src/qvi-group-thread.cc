@@ -1,5 +1,5 @@
 /*
- * Copyright (c)      2022 Triad National Security, LLC
+ * Copyright (c) 2022      Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2022      Inria.
@@ -14,7 +14,6 @@
 
 /**
  * @file qvi-group-thread.cc
- *
  */
 
 #include "qvi-common.h"
@@ -40,6 +39,12 @@ qvi_group_thread_s::initialize(
 
     this->th = th;
     return QV_SUCCESS;
+}
+
+qvi_task_id_t
+qvi_group_thread_s::task_id(void)
+{
+    return qvi_task_task_id(qvi_thread_task_get(th));
 }
 
 int
@@ -75,7 +80,7 @@ qvi_group_thread_s::self(
     rc = ichild->initialize(th);
     if (rc != QV_SUCCESS) goto out;
 
-    // Create a group containing a single thread 
+    // Create a group containing a single thread
     rc = qvi_thread_group_create_single(
         th, &ichild->th_group
     );
@@ -95,7 +100,7 @@ qvi_group_thread_s::split(
     qvi_group_t **child
 ) {
     int rc = QV_SUCCESS;
-    
+
     qvi_group_thread_t *ichild = qvi_new qvi_group_thread_t();
     if (!ichild) {
         rc = QV_ERR_OOR;
@@ -104,10 +109,10 @@ qvi_group_thread_s::split(
     // Initialize the child with the parent's MPI instance.
     rc = ichild->initialize(th);
     if (rc != QV_SUCCESS) goto out;
-   
+
     rc = qvi_thread_group_create_from_split(
         th, th_group, color,
-	key, &ichild->th_group
+        key, &ichild->th_group
     );
 out:
     if (rc != QV_SUCCESS) {

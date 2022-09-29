@@ -39,11 +39,13 @@ struct qvi_group_thread_s : public qvi_group_s {
     virtual int create(void);
     /** Initializes the instance. */
     int initialize(qvi_thread_t *th);
-    /** The caller's group ID. */
+    /** Returns the caller's task_id. */
+    virtual qvi_task_id_t task_id(void);
+    /** Returns the caller's group ID. */
     virtual int id(void);
-    /** The number of members in this group. */
+    /** Returns the number of members in this group. */
     virtual int size(void);
-    /** Group barrier. */
+    /** Performs node-local group barrier. */
     virtual int barrier(void);
     /**
      * Creates a new self group with a single member: the caller.
@@ -71,7 +73,7 @@ struct qvi_group_thread_s : public qvi_group_s {
         qvi_bbuff_t *txbuff,
         int root,
         qvi_bbuff_t ***rxbuffs,
-	int *shared
+        int *shared
     );
     /**
      * Scatters bbuffs from specified root.

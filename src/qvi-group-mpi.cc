@@ -11,7 +11,6 @@
 
 /**
  * @file qvi-group-mpi.cc
- *
  */
 
 #include "qvi-common.h"
@@ -37,6 +36,12 @@ qvi_group_mpi_s::initialize(
 
     this->mpi = mpi;
     return QV_SUCCESS;
+}
+
+qvi_task_id_t
+qvi_group_mpi_s::task_id(void)
+{
+    return qvi_task_task_id(qvi_mpi_task_get(mpi));
 }
 
 int

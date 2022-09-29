@@ -15,12 +15,11 @@
 
 #include "qvi-common.h"
 #include "qvi-task.h"
-#include "qvi-log.h"
 
 static const int qvi_task_id_invalid = -1;
 
 struct qvi_task_s {
-    /** Task id */
+    /** Task ID */
     qvi_task_id_t task_id;
     /** Global task ID */
     int64_t gid = qvi_task_id_invalid;
@@ -67,8 +66,8 @@ qvi_task_init(
 ) {
     task->task_id.type = type;
     task->task_id.who  = who;
-    task->gid          = gid;
-    task->lid          = lid;
+    task->gid = gid;
+    task->lid = lid;
     return QV_SUCCESS;
 }
 
