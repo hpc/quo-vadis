@@ -515,20 +515,13 @@ split_user_defined(
     qvi_hwpool_t **hwpools
 ) {
     int rc = QV_SUCCESS;
-
     const int group_size = parent->group->size();
-    hwloc_bitmap_t *cpusets = nullptr;
-
-    cpusets = qvi_new hwloc_bitmap_t[group_size]();
-    if (!cpusets) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
+    hwloc_const_cpuset_t base_cpuset = qvi_hwpool_cpuset_get(parent->hwpool);
+    std::vector<hwloc_bitmap_t> cpusets(group_size);
 
     for (int i = 0; i < group_size; ++i) {
         rc = qvi_rmi_split_cpuset_by_color(
-            parent->rmi,
-            qvi_hwpool_cpuset_get(parent->hwpool),
+            parent->rmi, base_cpuset,
             ncolors, colors[i], &cpusets[i]
         );
         if (rc != QV_SUCCESS) break;
@@ -536,18 +529,15 @@ split_user_defined(
         rc = qvi_hwpool_init(hwpools[i], cpusets[i]);
         if (rc != QV_SUCCESS) break;
     }
-    if (rc != QV_SUCCESS) {
-       goto out;
-    }
+    if (rc != QV_SUCCESS) goto out;
     // Use a straightforward device splitting algorithm.
     rc = split_devices_basic(
         parent, ncolors, colors, hwpools
     );
 out:
-    for (int i = 0; i < group_size; ++i) {
-        qvi_hwloc_bitmap_free(&cpusets[i]);
+    for (auto &cpuset : cpusets) {
+        qvi_hwloc_bitmap_free(&cpuset);
     }
-    delete[] cpusets;
     return rc;
 }
 
@@ -587,14 +577,22 @@ max_fit(
     unsigned space_left,
     unsigned max_chunk
 ) {
-    if (max_chunk <= space_left) {
-        return max_chunk;
-    }
     unsigned result = max_chunk;
     while (result > space_left) {
         result--;
     }
     return result;
+}
+
+/**
+ * Returns the max i per k.
+ */
+static unsigned
+maxiperk(
+    unsigned i,
+    unsigned k
+) {
+    return std::ceil(i / float(k));
 }
 
 /**
@@ -618,24 +616,18 @@ map_disjoint_affinity(
 
         for (const auto &tid : color_affinity_map.at(color)) {
             // Already mapped (potentially by some other mapper).
-            if (mapped_task_ids.find(tid) != mapped_task_ids.end()) {
-                continue;
-            }
+            if (mapped_task_ids.find(tid) != mapped_task_ids.end()) continue;
             // Set the task's potentially new color.
             colors[tid] = color;
             // Reinitialize the hwpool with the appropriate cpuset.
             rc = qvi_hwpool_init(hwpools[tid], cpusets[color]);
-            if (rc != QV_SUCCESS) {
-                return rc;
-            }
+            if (rc != QV_SUCCESS) return rc;
             // Successfully mapped this task ID.  Note that insert().second
             // returns whether or not item insertion took place.
             const bool itp = mapped_task_ids.insert(tid).second;
             // Make sure that this task has only been mapped once. If this ever
             // happens, then this is an internal bug that we need to deal with.
-            if (!itp) {
-                return QV_ERR_INTERNAL;
-            }
+            if (!itp) return QV_ERR_INTERNAL;
         }
     }
     return rc;
@@ -656,7 +648,7 @@ map_packed(
 ) {
     int rc = QV_SUCCESS;
     // Max hardware pools per color.
-    const int maxhpc = std::ceil(nhwpools / float(ncolors));
+    const int maxhpc = maxiperk(nhwpools,  ncolors);
     // Keeps track of the next tid to map.
     unsigned tid = 0;
     // Number of tasks that have already been mapped to a resource.
@@ -665,24 +657,18 @@ map_packed(
         const unsigned nmap = max_fit(nhwpools - nmapped, maxhpc);
         for (unsigned i = 0; i < nmap; ++i, ++tid, ++nmapped) {
             // Already mapped (potentially by some other mapper).
-            if (mapped_task_ids.find(tid) != mapped_task_ids.end()) {
-                continue;
-            }
+            if (mapped_task_ids.find(tid) != mapped_task_ids.end()) continue;
             // Set the task's potentially new color.
             colors[tid] = color;
             // Reinitialize the hwpool with the appropriate cpuset.
             rc = qvi_hwpool_init(hwpools[tid], cpusets[color]);
-            if (rc != QV_SUCCESS) {
-                return rc;
-            }
+            if (rc != QV_SUCCESS) return rc;
             // Successfully mapped this task ID.  Note that insert().second
             // returns whether or not item insertion took place.
             const bool itp = mapped_task_ids.insert(tid).second;
             // Make sure that this task has only been mapped once. If this ever
             // happens, then this is an internal bug that we need to deal with.
-            if (!itp) {
-                return QV_ERR_INTERNAL;
-            }
+            if (!itp) return QV_ERR_INTERNAL;
         }
     }
     return rc;
@@ -690,18 +676,19 @@ map_packed(
 
 /**
  * Makes the provided shared affinity map disjoint with regard to affinity. That
- * is, for colors with shared affinity we remove sharing by assigning a shared
- * ID to a single color round robin; unshared IDs remain in place.
+ * is, for colors with shared affinity we remove sharing by assigning a
+ * previously shared ID to a single color round robin; unshared IDs remain in
+ * place.
  */
 static int
-shared_affinity_map_make_disjoint(
+make_shared_affinity_map_disjoint(
     qvi_scope_set_map_t &color_affinity_map,
     const std::set<int> &interids
 ) {
     const unsigned ninter = interids.size();
     const unsigned ncolor = color_affinity_map.size();
-    // Max IDs per color.
-    const unsigned maxipc = std::ceil(ninter / float(ncolor));
+    // Max intersecting IDs per color.
+    const unsigned maxipc = maxiperk(ninter, ncolor);
 
     qvi_scope_set_map_t dmap;
     // First remove all IDs that intersect from the provided set map.
@@ -733,6 +720,25 @@ shared_affinity_map_make_disjoint(
     return QV_SUCCESS;
 }
 
+static int
+get_task_affinities_by_taskid(
+    qv_scope_t *scope,
+    qvi_task_id_t *taskids,
+    std::vector<hwloc_cpuset_t> &task_affinities
+) {
+    int rc = QV_SUCCESS;
+    const unsigned group_size = scope->group->size();
+
+    task_affinities.resize(group_size);
+    for (unsigned tid = 0; tid < group_size; ++tid) {
+        rc = qvi_rmi_task_get_cpubind(
+            scope->rmi, taskids[tid], &task_affinities[tid]
+        );
+        if (rc != QV_SUCCESS) break;
+    }
+    return rc;
+}
+
 /**
  * Affinity preserving split.
  */
@@ -745,30 +751,28 @@ split_affinity_preserving(
     qvi_hwpool_t **hwpools
 ) {
     int rc = QV_SUCCESS;
+    // The group size: number of members.
+    const unsigned group_size = parent->group->size();
     // A pointer the our parent's hwloc instance.
     qvi_hwloc_t *hwl = qvi_rmi_client_hwloc_get(parent->rmi);
     // The cpuset that we are going to split.
     hwloc_const_cpuset_t base_cpuset = qvi_hwpool_cpuset_get(parent->hwpool);
-    // The group size: number of members.
-    const unsigned group_size = parent->group->size();
-    // Cached vector of affinities for every task in the parent group.
-    std::vector<hwloc_cpuset_t> task_affinities(group_size);
     // Maps cpuset IDs (colors) to hardware pool IDs with shared affinity.
     qvi_scope_set_map_t color_affinity_map;
     // Stores the task IDs who share affinity with a split resource.
     std::set<int> affinity_intersection;
     // cpusets with straightforward splitting: one for each color.
     std::vector<hwloc_bitmap_t> cpusets(ncolors);
+    // Set of task IDs that have been mapped to a color.
+    std::set<int> mapped_task_ids;
 
     // Cache the current affinities for each task in the parent group.
-    for (unsigned tid = 0; tid < group_size; ++tid) {
-        rc = qvi_rmi_task_get_cpubind(
-            parent->rmi, taskids[tid], &task_affinities[tid]
-        );
-        if (rc != QV_SUCCESS) {
-           goto out;
-        }
-    }
+    // Cached vector of affinities for all tasks in the parent group.
+    std::vector<hwloc_cpuset_t> task_affinities;
+    rc = get_task_affinities_by_taskid(
+        parent, taskids, task_affinities
+    );
+    if (rc != QV_SUCCESS) goto out;
     // Perform a straightforward splitting of the provided cpuset. Notice that
     // we do not go through the RMI for this because this is just an local,
     // temporary splitting that is ultimately fed to another splitting
@@ -778,9 +782,7 @@ split_affinity_preserving(
             hwl, base_cpuset, ncolors,
             color, &cpusets[color]
         );
-        if (rc != QV_SUCCESS) {
-           goto out;
-        }
+        if (rc != QV_SUCCESS) goto out;
     }
     // Determine the task IDs that have shared affinity within each cpuset.
     for (int color = 0; color < ncolors; ++color) {
@@ -798,62 +800,38 @@ split_affinity_preserving(
         color_affinity_map,
         affinity_intersection
     );
-    if (rc != QV_SUCCESS) {
-       goto out;
-    }
+    if (rc != QV_SUCCESS) goto out;
+    // Now make a mapping decision based on the intersection size.
     // Completely disjoint sets.
     if (affinity_intersection.size() == 0) {
-        // Set of task IDs that have been mapped to a color.
-        std::set<int> mapped_task_ids;
         rc = map_disjoint_affinity(
             group_size, hwpools, ncolors, colors,
             cpusets, color_affinity_map, mapped_task_ids
         );
-        if (rc != QV_SUCCESS) {
-           goto out;
-        }
-        // Make sure that we mapped all the tasks. If not, this is a bug.
-        if (mapped_task_ids.size() != group_size) {
-            rc = QV_ERR_INTERNAL;
-            goto out;
-        }
+        if (rc != QV_SUCCESS) goto out;
     }
     // All tasks overlap. Really no hope of doing anything fancy.
     // Note that we typically see this in the *no task is bound case*.
     else if (affinity_intersection.size() == group_size) {
-        // Set of task IDs that have been mapped to a color.
-        std::set<int> mapped_task_ids;
         rc = map_packed(
             group_size, hwpools,
             ncolors, colors,
             cpusets, mapped_task_ids
         );
-        if (rc != QV_SUCCESS) {
-           goto out;
-        }
-        // Make sure that we mapped all the tasks. If not, this is a bug.
-        if (mapped_task_ids.size() != group_size) {
-            rc = QV_ERR_INTERNAL;
-            goto out;
-        }
+        if (rc != QV_SUCCESS) goto out;
     }
     // Only a strict subset of tasks share a resource.
     else {
-        rc = shared_affinity_map_make_disjoint(
+        rc = make_shared_affinity_map_disjoint(
             color_affinity_map, affinity_intersection
         );
-        if (rc != QV_SUCCESS) {
-           goto out;
-        }
-        // Set of task IDs that have been mapped to a color.
-        std::set<int> mapped_task_ids;
+        if (rc != QV_SUCCESS) goto out;
+
         rc = map_disjoint_affinity(
             group_size, hwpools, ncolors, colors,
             cpusets, color_affinity_map, mapped_task_ids
         );
-        if (rc != QV_SUCCESS) {
-           goto out;
-        }
+        if (rc != QV_SUCCESS) goto out;
         // TODO(skg) Maybe we can map spread? Perhaps the algorithm can have a
         // priority queue based on the number of available slots.
         rc = map_packed(
@@ -861,14 +839,12 @@ split_affinity_preserving(
             ncolors, colors,
             cpusets, mapped_task_ids
         );
-        if (rc != QV_SUCCESS) {
-           goto out;
-        }
-        // Make sure that we mapped all the tasks. If not, this is a bug.
-        if (mapped_task_ids.size() != group_size) {
-            rc = QV_ERR_INTERNAL;
-            goto out;
-        }
+        if (rc != QV_SUCCESS) goto out;
+    }
+    // Make sure that we mapped all the tasks. If not, this is a bug.
+    if (mapped_task_ids.size() != group_size) {
+        rc = QV_ERR_INTERNAL;
+        goto out;
     }
     // TODO(skg) Implement using device affinity.
     // For now use a straightforward device splitting algorithm.
@@ -967,6 +943,7 @@ split_hardware_resources(
     qvi_task_id_t *taskids = nullptr;
     // Array of colors used for splitting.
     int *colors = nullptr;
+
     // First consolidate the provided information, as this is likely coming from
     // an SPMD-like context (e.g., splitting a resource shared by MPI
     // processes).  In most cases it is easiest to have a single process
