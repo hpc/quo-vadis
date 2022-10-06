@@ -19,16 +19,13 @@
 #include "qvi-rmi.h"
 #include "qvi-hwpool.h"
 
-/**
- * Maintains a mapping between IDs to a set of other identifiers.
- */
+/** Maintains a mapping between IDs to a set of other identifiers.  */
 using qvi_scope_set_map_t = std::map<
     int, std::set<int>
 >;
 
 /** Maps colors to device information. */
-// TODO(skg) Why is this a multimap?
-using qvi_scope_c2d_map_t = std::multimap<
+using qvi_scope_dinfo_map_t = std::multimap<
     int, const qvi_devinfo_t *
 >;
 
@@ -41,6 +38,96 @@ struct qv_scope_s {
     /** Hardware resource pool. */
     qvi_hwpool_t *hwpool = nullptr;
 };
+
+typedef struct qvi_scope_split_s {
+    /** Size of the group be split. */
+    unsigned group_size = 0;
+    /** The number of pieces in the split. */
+    unsigned split_size = 0;
+    /** The color assignment (sub-group membership) of each member. */
+    std::vector<int> colors = {};
+    /**
+     * Vector of task IDs, one for each member of the group. Note that the
+     * number of task IDs will always match the group size and that their array
+     * index corresponds to a task ID. It is handy to have the task IDs for
+     * splitting so we can query task characteristics during a splitting.
+     */
+    std::vector<qvi_task_id_t> taskids = {};
+    /**
+     * Vector of hardware pools, one for each member of the group. Note that the
+     * number of hardware pools will always match the group size and that their
+     * array index corresponds to a task ID: 0 ... group_size - 1.
+     */
+    std::vector<qvi_hwpool_t *> hwpools = {};
+    /** Set of task IDs that have been mapped to a color. */
+    std::set<int> mapped_tids;
+
+    /** Default constructor. */
+    qvi_scope_split_s(void) = delete;
+
+    /** Constructor. */
+    qvi_scope_split_s(
+        unsigned group_size,
+        unsigned split_size
+    ) : group_size(group_size)
+      , split_size(split_size)
+    {
+        // Nothing to do here.
+    }
+
+    /** Destructor. */
+   ~qvi_scope_split_s(void)
+    {
+        for (auto hwpool : hwpools) {
+            qvi_hwpool_free(&hwpool);
+        }
+    }
+} qvi_scope_split_t;
+
+/**
+ * Returns the largest number that will fit in the space available.
+ */
+static unsigned
+max_fit(
+    unsigned space_left,
+    unsigned max_chunk
+) {
+    unsigned result = max_chunk;
+    while (result > space_left) {
+        result--;
+    }
+    return result;
+}
+
+/**
+ * Returns the max i per k.
+ */
+static unsigned
+maxiperk(
+    unsigned i,
+    unsigned k
+) {
+    return std::ceil(i / float(k));
+}
+
+static int
+get_task_affinities_by_taskid(
+    qv_scope_t *scope,
+    const std::vector<qvi_task_id_t> &taskids,
+    std::vector<hwloc_cpuset_t> &task_affinities
+) {
+    int rc = QV_SUCCESS;
+    const unsigned group_size = scope->group->size();
+
+    task_affinities.resize(group_size);
+    for (unsigned tid = 0; tid < group_size; ++tid) {
+        rc = qvi_rmi_task_get_cpubind(
+            scope->rmi, taskids[tid], &task_affinities[tid]
+        );
+        if (rc != QV_SUCCESS) break;
+    }
+    return rc;
+}
 
 int
 qvi_scope_new(
@@ -178,14 +265,13 @@ gather_values(
     qvi_group_t *group,
     int root,
     TYPE invalue,
-    TYPE **outvals
+    std::vector<TYPE> &outvals
 ) {
-    const int group_size = group->size();
-    int shared = 0;
     int rc = QV_SUCCESS;
+    const unsigned group_size = group->size();
+    int shared = 0;
     qvi_bbuff_t *txbuff = nullptr;
     qvi_bbuff_t **bbuffs = nullptr;
-    TYPE *ioutvals = nullptr;
 
     rc = qvi_bbuff_new(&txbuff);
     if (rc != QV_SUCCESS) goto out;
@@ -199,31 +285,22 @@ gather_values(
     if (rc != QV_SUCCESS) goto out;
 
     if (group->id() == root) {
-        ioutvals = qvi_new TYPE[group_size]();
-        if (!ioutvals) {
-            rc = QV_ERR_OOR;
-            goto out;
-        }
+        outvals.resize(group_size);
         // Unpack the values.
-        for (int i = 0; i < group_size; ++i) {
-            ioutvals[i] = *(TYPE *)qvi_bbuff_data(bbuffs[i]);
+        for (unsigned i = 0; i < group_size; ++i) {
+            outvals[i] = *(TYPE *)qvi_bbuff_data(bbuffs[i]);
         }
     }
 out:
     if (!shared || (shared && (group->id() == root))) {
         if (bbuffs) {
-            for (int i = 0; i < group_size; ++i) {
+            for (unsigned i = 0; i < group_size; ++i) {
                 qvi_bbuff_free(&bbuffs[i]);
             }
             delete[] bbuffs;
         }
     }
     qvi_bbuff_free(&txbuff);
-    if (rc != QV_SUCCESS) {
-        delete[] ioutvals;
-        ioutvals = nullptr;
-    }
-    *outvals = ioutvals;
     return rc;
 }
 
@@ -232,15 +309,13 @@ gather_hwpools(
     qvi_group_t *group,
     int root,
     qvi_hwpool_t *txpool,
-    qvi_hwpool_t ***rxpools
+    std::vector<qvi_hwpool_t *> &rxpools
 ) {
-    const int group_size = group->size();
-
-    int shared = 0;
     int rc = QV_SUCCESS;
+    const unsigned group_size = group->size();
+    int shared = 0;
     qvi_bbuff_t *txbuff = nullptr;
     qvi_bbuff_t **bbuffs = nullptr;
-    qvi_hwpool_t **hwpools = nullptr;
 
     rc = qvi_bbuff_new(&txbuff);
     if (rc != QV_SUCCESS) goto out;
@@ -252,16 +327,11 @@ gather_hwpools(
     if (rc != QV_SUCCESS) goto out;
 
     if (group->id() == root) {
-        // Notice the use of zero initialization here: the '()'.
-        hwpools = qvi_new qvi_hwpool_t*[group_size]();
-        if (!hwpools) {
-            rc = QV_ERR_OOR;
-            goto out;
-        }
+        rxpools.resize(group_size);
         // Unpack the hwpools.
-        for (int i = 0; i < group_size; ++i) {
+        for (unsigned i = 0; i < group_size; ++i) {
             rc = qvi_hwpool_unpack(
-                qvi_bbuff_data(bbuffs[i]), &hwpools[i]
+                qvi_bbuff_data(bbuffs[i]), &rxpools[i]
             );
             if (rc != QV_SUCCESS) break;
         }
@@ -269,23 +339,13 @@ gather_hwpools(
 out:
     if (!shared || (shared && (group->id() == root))) {
         if (bbuffs) {
-            for (int i = 0; i < group_size; ++i) {
+            for (unsigned i = 0; i < group_size; ++i) {
                 qvi_bbuff_free(&bbuffs[i]);
             }
             delete[] bbuffs;
         }
     }
     qvi_bbuff_free(&txbuff);
-    if (rc != QV_SUCCESS) {
-        if (hwpools) {
-            for (int i = 0; i < group_size; ++i) {
-                qvi_hwpool_free(&hwpools[i]);
-            }
-            delete[] hwpools;
-            hwpools = nullptr;
-        }
-    }
-    *rxpools = hwpools;
     return rc;
 }
 
@@ -294,10 +354,10 @@ static int
 scatter_values(
     qvi_group_t *group,
     int root,
-    TYPE *values,
+    const std::vector<TYPE> &values,
     TYPE *value
 ) {
-    const int group_size = group->size();
+    const unsigned group_size = group->size();
 
     int rc = QV_SUCCESS;
     qvi_bbuff_t **txbuffs = nullptr;
@@ -311,7 +371,7 @@ scatter_values(
             goto out;
         }
         // Pack the values.
-        for (int i = 0; i < group_size; ++i) {
+        for (unsigned i = 0; i < group_size; ++i) {
             rc = qvi_bbuff_new(&txbuffs[i]);
             if (rc != QV_SUCCESS) break;
             rc = qvi_bbuff_append(
@@ -328,7 +388,7 @@ scatter_values(
     *value = *(TYPE *)qvi_bbuff_data(rxbuff);
 out:
     if (txbuffs) {
-        for (int i = 0; i < group_size; ++i) {
+        for (unsigned i = 0; i < group_size; ++i) {
             qvi_bbuff_free(&txbuffs[i]);
         }
         delete[] txbuffs;
@@ -345,24 +405,18 @@ static int
 scatter_hwpools(
     qvi_group_t *group,
     int root,
-    qvi_hwpool_t **pools,
+    const std::vector<qvi_hwpool_t *> &pools,
     qvi_hwpool_t **pool
 ) {
-    const int group_size = group->size();
-
     int rc = QV_SUCCESS;
-    qvi_bbuff_t **txbuffs = nullptr;
+    const unsigned group_size = group->size();
+    std::vector<qvi_bbuff_t *> txbuffs;
     qvi_bbuff_t *rxbuff = nullptr;
 
     if (root == group->id()) {
-        // Notice the use of zero initialization here: the '()'.
-        txbuffs = qvi_new qvi_bbuff_t *[group_size]();
-        if (!txbuffs) {
-            rc = QV_ERR_OOR;
-            goto out;
-        }
+        txbuffs.resize(group_size);
         // Pack the hwpools.
-        for (int i = 0; i < group_size; ++i) {
+        for (unsigned i = 0; i < group_size; ++i) {
             rc = qvi_bbuff_new(&txbuffs[i]);
             if (rc != QV_SUCCESS) break;
             rc = qvi_hwpool_pack(pools[i], txbuffs[i]);
@@ -371,16 +425,13 @@ scatter_hwpools(
         if (rc != QV_SUCCESS) goto out;
     }
 
-    rc = group->scatter(txbuffs, root, &rxbuff);
+    rc = group->scatter(txbuffs.data(), root, &rxbuff);
     if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_hwpool_unpack(qvi_bbuff_data(rxbuff), pool);
 out:
-    if (txbuffs) {
-        for (int i = 0; i < group_size; ++i) {
-            qvi_bbuff_free(&txbuffs[i]);
-        }
-        delete[] txbuffs;
+    for (auto txbuff : txbuffs) {
+        qvi_bbuff_free(&txbuff);
     }
     qvi_bbuff_free(&rxbuff);
     if (rc != QV_SUCCESS) {
@@ -396,25 +447,16 @@ bcast_value(
     int root,
     TYPE *value
 ) {
-    const int group_size = group->size();
-
-    int rc = QV_SUCCESS;
-    TYPE *values = nullptr;
+    const unsigned group_size = group->size();
+    std::vector<TYPE> values;
 
     if (root == group->id()) {
-        values = qvi_new TYPE[group_size]();
-        if (!values) {
-            rc = QV_ERR_OOR;
-            goto out;
-        }
-        for (int i = 0; i < group_size; ++i) {
+        values.resize(group_size);
+        for (unsigned i = 0; i < group_size; ++i) {
             values[i] = *value;
         }
     }
-    rc = scatter_values(group, root, values, value);
-out:
-    delete[] values;
-    return rc;
+    return scatter_values(group, root, values, value);
 }
 
 /**
@@ -423,9 +465,7 @@ out:
 static int
 split_devices_basic(
     qv_scope_t *parent,
-    int ncolors,
-    int *colors,
-    qvi_hwpool_t **hwpools
+    qvi_scope_split_t &split
 ) {
     const int group_size = parent->group->size();
     const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
@@ -435,21 +475,21 @@ split_devices_basic(
     // colors provided in the colors array.
     std::set<int> color_set;
     for (int i = 0; i < group_size; ++i) {
-        color_set.insert(colors[i]);
+        color_set.insert(split.colors[i]);
     }
     // Adjust the color set so that the distinct colors provided fall within the
     // range of the number of splits requested.
     std::set<int> color_setp;
-    int ncolors_chosen = 0;
+    unsigned ncolors_chosen = 0;
     for (const auto &c : color_set) {
-        if (ncolors_chosen >= ncolors) break;
+        if (ncolors_chosen >= split.split_size) break;
         color_setp.insert(c);
         ncolors_chosen++;
     }
     // Release devices from the hardware pools because they will be
     // redistributed in the next step.
     for (int i = 0; i < group_size; ++i) {
-        rc = qvi_hwpool_release_devices(hwpools[i]);
+        rc = qvi_hwpool_release_devices(split.hwpools[i]);
         if (rc != QV_SUCCESS) return rc;
     }
     // Iterate over the supported device types and split them up round-robin.
@@ -470,9 +510,9 @@ split_devices_basic(
         // Max devices per color.
         // We will likely use this when we update the mapping algorithm to
         // include device affinity.
-        //const int maxdpc = std::ceil(ndevs / float(color_setp.size()));
+        //const unsigned maxdpc = maxiperk(ndevs, color_setp.size());
         // Maps colors to device information.
-        qvi_scope_c2d_map_t devmap;
+        qvi_scope_dinfo_map_t devmap;
         int devi = 0;
         while (devi < ndevs) {
             for (const auto &c : color_setp) {
@@ -483,11 +523,11 @@ split_devices_basic(
         // Now that we have the mapping of colors to devices, assign devices to
         // the associated hardware pools.
         for (int i = 0; i < group_size; ++i) {
-            const int color = colors[i];
+            const int color = split.colors[i];
             for (const auto &c2d : devmap) {
                 if (c2d.first != color) continue;
                 rc = qvi_hwpool_add_device(
-                    hwpools[i],
+                    split.hwpools[i],
                     c2d.second->type,
                     c2d.second->id,
                     c2d.second->pci_bus_id,
@@ -509,31 +549,31 @@ split_devices_basic(
 static int
 split_user_defined(
     qv_scope_t *parent,
-    int ncolors,
-    int *colors,
-    qvi_task_id_t *,
-    qvi_hwpool_t **hwpools
+    qvi_scope_split_t &split
 ) {
     int rc = QV_SUCCESS;
-    const int group_size = parent->group->size();
+    const unsigned group_size = split.group_size;
+    // A pointer the our parent's hwloc instance.
+    qvi_hwloc_t *hwloc = qvi_rmi_client_hwloc_get(parent->rmi);
     hwloc_const_cpuset_t base_cpuset = qvi_hwpool_cpuset_get(parent->hwpool);
     std::vector<hwloc_bitmap_t> cpusets(group_size);
 
-    for (int i = 0; i < group_size; ++i) {
-        rc = qvi_rmi_split_cpuset_by_color(
-            parent->rmi, base_cpuset,
-            ncolors, colors[i], &cpusets[i]
+    for (unsigned i = 0; i < group_size; ++i) {
+        rc = qvi_hwloc_split_cpuset_by_color(
+            hwloc,
+            base_cpuset,
+            split.split_size,
+            split.colors[i],
+            &cpusets[i]
         );
         if (rc != QV_SUCCESS) break;
         // Reinitialize the hwpool with the new cpuset.
-        rc = qvi_hwpool_init(hwpools[i], cpusets[i]);
+        rc = qvi_hwpool_init(split.hwpools[i], cpusets[i]);
         if (rc != QV_SUCCESS) break;
     }
     if (rc != QV_SUCCESS) goto out;
     // Use a straightforward device splitting algorithm.
-    rc = split_devices_basic(
-        parent, ncolors, colors, hwpools
-    );
+    rc = split_devices_basic(parent, split);
 out:
     for (auto &cpuset : cpusets) {
         qvi_hwloc_bitmap_free(&cpuset);
@@ -570,61 +610,33 @@ k_set_intersection(
 }
 
 /**
- * Returns the largest number that will fit in the space available.
- */
-static unsigned
-max_fit(
-    unsigned space_left,
-    unsigned max_chunk
-) {
-    unsigned result = max_chunk;
-    while (result > space_left) {
-        result--;
-    }
-    return result;
-}
-
-/**
- * Returns the max i per k.
- */
-static unsigned
-maxiperk(
-    unsigned i,
-    unsigned k
-) {
-    return std::ceil(i / float(k));
-}
-
-/**
  * Maps task hardware pools to colors and cpusets with shared affinities.
  */
 static int
 map_disjoint_affinity(
-    int nhwpools,
-    qvi_hwpool_t **hwpools,
-    int ncolors,
-    int *colors,
+    qvi_scope_split_t &split,
     const std::vector<hwloc_bitmap_t> &cpusets,
-    const qvi_scope_set_map_t &color_affinity_map,
-    std::set<int> &mapped_task_ids
+    const qvi_scope_set_map_t &color_affinity_map
 ) {
     int rc = QV_SUCCESS;
 
-    for (int color = 0; color < ncolors; ++color) {
+    for (unsigned color = 0; color < split.split_size; ++color) {
         // We are done.
-        if (mapped_task_ids.size() == (unsigned)nhwpools) break;
+        if (split.mapped_tids.size() == split.group_size) break;
 
         for (const auto &tid : color_affinity_map.at(color)) {
             // Already mapped (potentially by some other mapper).
-            if (mapped_task_ids.find(tid) != mapped_task_ids.end()) continue;
+            if (split.mapped_tids.find(tid) != split.mapped_tids.end()) {
+                continue;
+            }
             // Set the task's potentially new color.
-            colors[tid] = color;
+            split.colors[tid] = color;
             // Reinitialize the hwpool with the appropriate cpuset.
-            rc = qvi_hwpool_init(hwpools[tid], cpusets[color]);
+            rc = qvi_hwpool_init(split.hwpools[tid], cpusets[color]);
             if (rc != QV_SUCCESS) return rc;
             // Successfully mapped this task ID.  Note that insert().second
             // returns whether or not item insertion took place.
-            const bool itp = mapped_task_ids.insert(tid).second;
+            const bool itp = split.mapped_tids.insert(tid).second;
             // Make sure that this task has only been mapped once. If this ever
             // happens, then this is an internal bug that we need to deal with.
             if (!itp) return QV_ERR_INTERNAL;
@@ -639,33 +651,34 @@ map_disjoint_affinity(
  */
 static int
 map_packed(
-    int nhwpools,
-    qvi_hwpool_t **hwpools,
-    int ncolors,
-    int *colors,
-    const std::vector<hwloc_bitmap_t> &cpusets,
-    std::set<int> &mapped_task_ids
+    qvi_scope_split_t &split,
+    const std::vector<hwloc_bitmap_t> &cpusets
 ) {
     int rc = QV_SUCCESS;
-    // Max hardware pools per color.
-    const int maxhpc = maxiperk(nhwpools,  ncolors);
-    // Keeps track of the next tid to map.
+    const unsigned group_size = split.group_size;
+    const unsigned split_size = split.split_size;
+    // Max tasks per color.
+    const int maxtpc = maxiperk(group_size,  split_size);
+    // Keeps track of the next task ID to map.
     unsigned tid = 0;
     // Number of tasks that have already been mapped to a resource.
-    unsigned nmapped = mapped_task_ids.size();
-    for (int color = 0; color < ncolors; ++color) {
-        const unsigned nmap = max_fit(nhwpools - nmapped, maxhpc);
+    unsigned nmapped = split.mapped_tids.size();
+    for (unsigned color = 0; color < split.split_size; ++color) {
+        // Number of tasks to map.
+        const unsigned nmap = max_fit(group_size - nmapped, maxtpc);
         for (unsigned i = 0; i < nmap; ++i, ++tid, ++nmapped) {
             // Already mapped (potentially by some other mapper).
-            if (mapped_task_ids.find(tid) != mapped_task_ids.end()) continue;
+            if (split.mapped_tids.find(tid) != split.mapped_tids.end()) {
+                continue;
+            }
             // Set the task's potentially new color.
-            colors[tid] = color;
+            split.colors[tid] = color;
             // Reinitialize the hwpool with the appropriate cpuset.
-            rc = qvi_hwpool_init(hwpools[tid], cpusets[color]);
+            rc = qvi_hwpool_init(split.hwpools[tid], cpusets[color]);
             if (rc != QV_SUCCESS) return rc;
             // Successfully mapped this task ID.  Note that insert().second
             // returns whether or not item insertion took place.
-            const bool itp = mapped_task_ids.insert(tid).second;
+            const bool itp = split.mapped_tids.insert(tid).second;
             // Make sure that this task has only been mapped once. If this ever
             // happens, then this is an internal bug that we need to deal with.
             if (!itp) return QV_ERR_INTERNAL;
@@ -720,72 +733,52 @@ make_shared_affinity_map_disjoint(
     return QV_SUCCESS;
 }
 
-static int
-get_task_affinities_by_taskid(
-    qv_scope_t *scope,
-    qvi_task_id_t *taskids,
-    std::vector<hwloc_cpuset_t> &task_affinities
-) {
-    int rc = QV_SUCCESS;
-    const unsigned group_size = scope->group->size();
-
-    task_affinities.resize(group_size);
-    for (unsigned tid = 0; tid < group_size; ++tid) {
-        rc = qvi_rmi_task_get_cpubind(
-            scope->rmi, taskids[tid], &task_affinities[tid]
-        );
-        if (rc != QV_SUCCESS) break;
-    }
-    return rc;
-}
-
 /**
  * Affinity preserving split.
  */
 static int
 split_affinity_preserving(
     qv_scope_t *parent,
-    int ncolors,
-    int *colors,
-    qvi_task_id_t *taskids,
-    qvi_hwpool_t **hwpools
+    qvi_scope_split_t &split
 ) {
     int rc = QV_SUCCESS;
     // The group size: number of members.
-    const unsigned group_size = parent->group->size();
+    const unsigned group_size = split.group_size;
     // A pointer the our parent's hwloc instance.
-    qvi_hwloc_t *hwl = qvi_rmi_client_hwloc_get(parent->rmi);
+    qvi_hwloc_t *hwloc = qvi_rmi_client_hwloc_get(parent->rmi);
     // The cpuset that we are going to split.
     hwloc_const_cpuset_t base_cpuset = qvi_hwpool_cpuset_get(parent->hwpool);
     // Maps cpuset IDs (colors) to hardware pool IDs with shared affinity.
     qvi_scope_set_map_t color_affinity_map;
-    // Stores the task IDs who share affinity with a split resource.
+    // Stores the task IDs that all share affinity with a split resource.
     std::set<int> affinity_intersection;
     // cpusets with straightforward splitting: one for each color.
-    std::vector<hwloc_bitmap_t> cpusets(ncolors);
-    // Set of task IDs that have been mapped to a color.
-    std::set<int> mapped_task_ids;
+    std::vector<hwloc_bitmap_t> cpusets(split.split_size);
 
     // Cache the current affinities for each task in the parent group.
     // Cached vector of affinities for all tasks in the parent group.
     std::vector<hwloc_cpuset_t> task_affinities;
     rc = get_task_affinities_by_taskid(
-        parent, taskids, task_affinities
+        parent, split.taskids, task_affinities
     );
     if (rc != QV_SUCCESS) goto out;
     // Perform a straightforward splitting of the provided cpuset. Notice that
     // we do not go through the RMI for this because this is just an local,
     // temporary splitting that is ultimately fed to another splitting
-    // algorithm.
-    for (int color = 0; color < ncolors; ++color) {
+    // algorithm. TODO(skg) Should we keep track of split resources? What
+    // useful information does this provide us going through the RMI?
+    for (unsigned color = 0; color < split.split_size; ++color) {
         rc = qvi_hwloc_split_cpuset_by_color(
-            hwl, base_cpuset, ncolors,
-            color, &cpusets[color]
+            hwloc,
+            base_cpuset,
+            split.split_size,
+            color,
+            &cpusets[color]
         );
         if (rc != QV_SUCCESS) goto out;
     }
     // Determine the task IDs that have shared affinity within each cpuset.
-    for (int color = 0; color < ncolors; ++color) {
+    for (unsigned color = 0; color < split.split_size; ++color) {
         for (unsigned tid = 0; tid < group_size; ++tid) {
             const int intersects = hwloc_bitmap_intersects(
                 task_affinities[tid], cpusets[color]
@@ -796,31 +789,24 @@ split_affinity_preserving(
         }
     }
     // Calculate k-set intersection.
-    rc = k_set_intersection(
-        color_affinity_map,
-        affinity_intersection
-    );
+    rc = k_set_intersection(color_affinity_map, affinity_intersection);
     if (rc != QV_SUCCESS) goto out;
     // Now make a mapping decision based on the intersection size.
     // Completely disjoint sets.
     if (affinity_intersection.size() == 0) {
         rc = map_disjoint_affinity(
-            group_size, hwpools, ncolors, colors,
-            cpusets, color_affinity_map, mapped_task_ids
+            split, cpusets, color_affinity_map
         );
         if (rc != QV_SUCCESS) goto out;
     }
     // All tasks overlap. Really no hope of doing anything fancy.
     // Note that we typically see this in the *no task is bound case*.
     else if (affinity_intersection.size() == group_size) {
-        rc = map_packed(
-            group_size, hwpools,
-            ncolors, colors,
-            cpusets, mapped_task_ids
-        );
+        rc = map_packed(split, cpusets);
         if (rc != QV_SUCCESS) goto out;
     }
-    // Only a strict subset of tasks share a resource.
+    // Only a strict subset of tasks share a resource. First favor mapping
+    // tasks with affinity to a particular resource, then map the rest.
     else {
         rc = make_shared_affinity_map_disjoint(
             color_affinity_map, affinity_intersection
@@ -828,29 +814,22 @@ split_affinity_preserving(
         if (rc != QV_SUCCESS) goto out;
 
         rc = map_disjoint_affinity(
-            group_size, hwpools, ncolors, colors,
-            cpusets, color_affinity_map, mapped_task_ids
+            split, cpusets, color_affinity_map
         );
         if (rc != QV_SUCCESS) goto out;
         // TODO(skg) Maybe we can map spread? Perhaps the algorithm can have a
-        // priority queue based on the number of available slots.
-        rc = map_packed(
-            group_size, hwpools,
-            ncolors, colors,
-            cpusets, mapped_task_ids
-        );
+        // priority queue based on the number of available slots?
+        rc = map_packed(split, cpusets);
         if (rc != QV_SUCCESS) goto out;
     }
     // Make sure that we mapped all the tasks. If not, this is a bug.
-    if (mapped_task_ids.size() != group_size) {
+    if (split.mapped_tids.size() != group_size) {
         rc = QV_ERR_INTERNAL;
         goto out;
     }
     // TODO(skg) Implement using device affinity.
     // For now use a straightforward device splitting algorithm.
-    rc = split_devices_basic(
-        parent, ncolors, colors, hwpools
-    );
+    rc = split_devices_basic(parent, split);
 out:
     for (auto &cpuset : cpusets) {
         qvi_hwloc_bitmap_free(&cpuset);
@@ -867,20 +846,15 @@ out:
 static int
 split_dispatch(
     qv_scope_t *parent,
-    int ncolors,
-    int *colors,
-    qvi_task_id_t *taskids,
-    qvi_hwpool_t **hwpools
+    qvi_scope_split_t &split
 ) {
-    const int group_size = parent->group->size();
-
     int rc = QV_SUCCESS;
     bool auto_split = false;
     // Make sure that the supplied colors are consistent and determine the type
     // of coloring we are using. Positive values denote an explicit coloring
     // provided by the caller. Negative values are reserved for automatic
     // coloring algorithms and should be constants defined in quo-vadis.h.
-    std::vector<int> tcolors(colors, colors + group_size);
+    std::vector<int> tcolors(split.colors);
     std::sort(tcolors.begin(), tcolors.end());
     // If all the values are negative and equal, then auto split. If not, then
     // we were called with an invalid request. Else the values are all positive
@@ -893,16 +867,12 @@ split_dispatch(
     }
     // User-defined splitting.
     if (!auto_split) {
-        return split_user_defined(
-            parent, ncolors, colors, taskids, hwpools
-        );
+        return split_user_defined(parent, split);
     }
     // Automatic splitting.
-    switch (colors[0]) {
+    switch (split.colors[0]) {
         case QV_SCOPE_SPLIT_AFFINITY_PRESERVING:
-            return split_affinity_preserving(
-                parent, ncolors, colors, taskids, hwpools
-            );
+            return split_affinity_preserving(parent, split);
         default:
             rc = QV_ERR_INVLD_ARG;
             break;
@@ -931,18 +901,8 @@ split_hardware_resources(
     // Always use 0 as the root because 0 will always exist.
     const int rootid = 0, myid = parent->group->id();
     const qvi_task_id_t task_id = parent->group->task_id();
-    // Array of hardware pools, one for each member of the group. Note that the
-    // number of hardware pools will always match the group size and that their
-    // array index corresponds to a task ID in the parent group.
-    qvi_hwpool_t **hwpools = nullptr;
-    // Array of task IDs, one for each member of the group. Note that the number
-    // of task IDs will always match the group size and that their array index
-    // corresponds to a task ID in the parent group. It is handy to have the
-    // task IDs for splitting so we can query task characteristics during a
-    // splitting.
-    qvi_task_id_t *taskids = nullptr;
-    // Array of colors used for splitting.
-    int *colors = nullptr;
+    // Container for information relevant to resource splitting.
+    qvi_scope_split_t split(parent->group->size(), ncolors);
 
     // First consolidate the provided information, as this is likely coming from
     // an SPMD-like context (e.g., splitting a resource shared by MPI
@@ -950,23 +910,36 @@ split_hardware_resources(
     // calculate the split based on global knowledge and then redistribute the
     // result.
     rc = gather_values(
-        parent->group, rootid, task_id, &taskids
+        parent->group,
+        rootid,
+        task_id,
+        split.taskids
     );
     if (rc != QV_SUCCESS) goto out;
 
     rc = gather_values(
-        parent->group, rootid, color, &colors
+        parent->group,
+        rootid,
+        color,
+        split.colors
     );
     if (rc != QV_SUCCESS) goto out;
     // Note that the result hwpools are copies, so we can modify them freely.
     rc = gather_hwpools(
-        parent->group, rootid, parent->hwpool, &hwpools
+        parent->group,
+        rootid,
+        parent->hwpool,
+        split.hwpools
     );
     if (rc != QV_SUCCESS) goto out;
     // The root does this calculation.
     if (myid == rootid) {
-        rc2 = split_dispatch(parent, ncolors, colors, taskids, hwpools);
+        rc2 = split_dispatch(parent, split);
     }
+    // Wait for the split information. Explicitly barrier here in case the
+    // underlying bcast implementation polls heavily for completion.
+    rc = parent->group->barrier();
+    if (rc != QV_SUCCESS) goto out;
     // To avoid hangs in split error paths, share the split rc with everyone.
     rc = bcast_value(parent->group, rootid, &rc2);
     if (rc != QV_SUCCESS) goto out;
@@ -980,22 +953,14 @@ split_hardware_resources(
     // that we don't scatter taskids because we don't need to share those
     // values.
     rc = scatter_values(
-        parent->group, rootid, colors, colorp
+        parent->group, rootid, split.colors, colorp
     );
     if (rc != QV_SUCCESS) goto out;
 
     rc = scatter_hwpools(
-        parent->group, rootid, hwpools, result
+        parent->group, rootid, split.hwpools, result
     );
 out:
-    if (hwpools) {
-        for (int i = 0; i < parent->group->size(); ++i) {
-            qvi_hwpool_free(&hwpools[i]);
-        }
-        delete[] hwpools;
-    }
-    delete[] colors;
-    delete[] taskids;
     return rc;
 }
 

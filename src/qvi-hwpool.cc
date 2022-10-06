@@ -247,6 +247,7 @@ const qvi_hwpool_devinfos_t *
 qvi_hwpool_devinfos_get(
     qvi_hwpool_t *pool
 ) {
+    if (!pool) return nullptr;
     return pool->devinfos;
 }
 

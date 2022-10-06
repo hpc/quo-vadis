@@ -113,8 +113,8 @@ typedef enum qv_bind_string_format_s {
  */
 enum {
     /**
-     * Split the provided group by attempting to preserve task's current
-     * affinity (at time of the split call) as much as possible.
+     * Split the provided group by attempting to preserve tasks' current
+     * affinities (at time of the split call) as much as possible.
      */
     QV_SCOPE_SPLIT_AFFINITY_PRESERVING = -1
 };

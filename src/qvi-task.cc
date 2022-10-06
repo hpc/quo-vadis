@@ -20,7 +20,7 @@ static const int qvi_task_id_invalid = -1;
 
 struct qvi_task_s {
     /** Task ID */
-    qvi_task_id_t task_id;
+    qvi_task_id_t task_id = {};
     /** Global task ID */
     int64_t gid = qvi_task_id_invalid;
     /** Node-local task ID */
