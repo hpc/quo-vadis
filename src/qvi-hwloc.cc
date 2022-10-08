@@ -170,7 +170,7 @@ obj_get_by_type(
     int rc = obj_type_from_external(type, &objx);
     if (rc != QV_SUCCESS) return rc;
 
-    const unsigned tiau = (unsigned)type_index;
+    const uint_t tiau = (uint_t)type_index;
     *out_obj = hwloc_get_obj_by_type(hwloc->topo, objx.objtype, tiau);
     if (!*out_obj) {
         // There are a couple of reasons why target_obj may be NULL. If this
@@ -645,7 +645,7 @@ qvi_hwloc_topology_load(
 ) {
     cstr_t ers = nullptr;
     // Set flags that influence hwloc's behavior.
-    static const unsigned flags = HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM;
+    static const uint_t flags = HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM;
     int rc = hwloc_topology_set_flags(hwl->topo, flags);
     if (rc != 0) {
         ers = "hwloc_topology_set_flags() failed";

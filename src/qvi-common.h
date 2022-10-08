@@ -53,8 +53,9 @@
 #include <vector>
 #endif
 
-typedef char const* cstr_t;
 typedef uint8_t byte_t;
+typedef char const* cstr_t;
+typedef unsigned uint_t;
 
 #endif
 

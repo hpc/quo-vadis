@@ -53,9 +53,7 @@ qvi_context_create(
     }
 
     rc = qvi_rmi_client_new(&ictx->rmi);
-    if (rc != QV_SUCCESS) {
-        goto out;
-    }
+    if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_bind_stack_new(&ictx->bind_stack);
 out:
