@@ -20,23 +20,6 @@
 #include "qvi-utils.h"
 
 int
-qv_version(
-    int *major,
-    int *minor,
-    int *patch
-) {
-    if (!major || !minor || !patch) {
-        return QV_ERR_INVLD_ARG;
-    }
-
-    *major = PACKAGE_VERSION_MAJOR;
-    *minor = PACKAGE_VERSION_MINOR;
-    *patch = PACKAGE_VERSION_PATCH;
-
-    return QV_SUCCESS;
-}
-
-int
 qvi_context_create(
     qv_context_t **ctx
 ) {
@@ -92,6 +75,23 @@ qvi_context_connect_to_server(
     rc = qvi_rmi_client_connect(ctx->rmi, url);
     if (url) free(url);
     return rc;
+}
+
+int
+qv_version(
+    int *major,
+    int *minor,
+    int *patch
+) {
+    if (!major || !minor || !patch) {
+        return QV_ERR_INVLD_ARG;
+    }
+
+    *major = PACKAGE_VERSION_MAJOR;
+    *minor = PACKAGE_VERSION_MINOR;
+    *patch = PACKAGE_VERSION_PATCH;
+
+    return QV_SUCCESS;
 }
 
 int

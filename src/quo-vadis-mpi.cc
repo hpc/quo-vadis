@@ -32,7 +32,7 @@ extern "C" {
 #endif
 
 int
-qv_mpi_context_create_f2c(
+qvi_mpi_context_create_f2c(
     qv_context_t **ctx,
     MPI_Fint comm
 ) {
@@ -41,7 +41,7 @@ qv_mpi_context_create_f2c(
 }
 
 int
-qv_mpi_scope_comm_dup_f2c(
+qvi_mpi_scope_comm_dup_f2c(
     qv_context_t *ctx,
     qv_scope_t *scope,
     MPI_Fint *comm

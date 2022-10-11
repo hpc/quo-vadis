@@ -13,7 +13,7 @@ module quo_vadis_mpif
 interface
     integer(c_int) &
     function qv_mpi_context_create_c(ctx, comm) &
-        bind(c, name='qv_mpi_context_create_f2c')
+        bind(c, name='qvi_mpi_context_create_f2c')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), intent(out) :: ctx
@@ -22,7 +22,7 @@ interface
 
     integer(c_int) &
     function qv_mpi_scope_comm_dup_c(ctx, scope, comm) &
-        bind(c, name='qv_mpi_scope_comm_dup_f2c')
+        bind(c, name='qvi_mpi_scope_comm_dup_f2c')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: ctx
