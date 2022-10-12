@@ -44,7 +44,7 @@ qv_thread_context_create(
     qvi_zgroup_thread_t *izgroup = nullptr;
 
     // Create base context.
-    rc = qvi_context_create(&ictx);
+    rc = qvi_context_new(&ictx);
     if (rc != QV_SUCCESS) {
         goto out;
     }

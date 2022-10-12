@@ -43,6 +43,7 @@ add_library(
       qvi-line.cc
       qvi-hwpool.cc
       qvi-rmi.cc
+      qvi-context.cc
       qvi-task.cc
       qvi-scope.cc
       qvi-bind.cc

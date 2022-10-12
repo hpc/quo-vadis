@@ -69,7 +69,7 @@ qv_mpi_context_create(
     qv_context_t *ictx = nullptr;
     qvi_zgroup_mpi_t *izgroup = nullptr;
     // Create base context.
-    rc = qvi_context_create(&ictx);
+    rc = qvi_context_new(&ictx);
     if (rc != QV_SUCCESS) {
         goto out;
     }

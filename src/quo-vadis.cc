@@ -20,64 +20,6 @@
 #include "qvi-utils.h"
 
 int
-qvi_context_create(
-    qv_context_t **ctx
-) {
-    if (!ctx) {
-        return QV_ERR_INVLD_ARG;
-    }
-
-    int rc = QV_SUCCESS;
-
-    qv_context_t *ictx = qvi_new qv_context_t();
-    if (!ictx) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-
-    rc = qvi_rmi_client_new(&ictx->rmi);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_bind_stack_new(&ictx->bind_stack);
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_context_free(&ictx);
-    }
-    *ctx = ictx;
-    return rc;
-}
-
-void
-qvi_context_free(
-    qv_context_t **ctx
-) {
-    if (!ctx) return;
-    qv_context_t *ictx = *ctx;
-    if (!ictx) goto out;
-    qvi_bind_stack_free(&ictx->bind_stack);
-    qvi_rmi_client_free(&ictx->rmi);
-    delete ictx;
-out:
-    *ctx = nullptr;
-}
-
-int
-qvi_context_connect_to_server(
-    qv_context_t *ctx
-) {
-    char *url = nullptr;
-    int rc = qvi_url(&url);
-    if (rc != QV_SUCCESS) {
-        qvi_log_error("{}", qvi_conn_ers());
-        return rc;
-    }
-
-    rc = qvi_rmi_client_connect(ctx->rmi, url);
-    if (url) free(url);
-    return rc;
-}
-
-int
 qv_version(
     int *major,
     int *minor,

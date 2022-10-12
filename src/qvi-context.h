@@ -44,7 +44,7 @@ struct qv_context_s {
  *
  */
 int
-qvi_context_create(
+qvi_context_new(
     qv_context_t **ctx
 );
 
@@ -63,7 +63,6 @@ int
 qvi_context_connect_to_server(
     qv_context_t *ctx
 );
-
 
 #ifdef __cplusplus
 }
