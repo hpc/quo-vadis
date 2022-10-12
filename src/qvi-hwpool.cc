@@ -331,17 +331,14 @@ pool_release_cpus_by_cpuset(
 }
 #endif
 
-/**
- * Adds devices to an initialized hardware resource pool.
- */
-static int
-pool_add_devices(
+int
+qvi_hwpool_add_devices_with_affinity(
     qvi_hwpool_t *pool,
     qvi_hwloc_t *hwloc
 ) {
-    const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
     int rc = QV_SUCCESS;
     // Iterate over the supported device types.
+    const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
     for (int i = 0; devts[i] != QV_HW_OBJ_LAST; ++i) {
         const qv_hw_obj_type_t type = devts[i];
         int nobjs = 0;
@@ -413,9 +410,9 @@ qvi_hwpool_obtain_by_cpuset(
     // Initialize the hardware pool.
     rc = qvi_hwpool_init(ipool, cpuset);
     if (rc != QV_SUCCESS) goto out;
-    // Add devices.
+    // Add devices with affinity to the new hardware pool.
     // // TODO(skg) Acquire devices.
-    rc = pool_add_devices(ipool, hwloc);
+    rc = qvi_hwpool_add_devices_with_affinity(ipool, hwloc);
 out:
     if (rc != QV_SUCCESS) {
         qvi_hwpool_free(&ipool);

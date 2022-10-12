@@ -83,6 +83,16 @@ qvi_hwpool_add_device(
 );
 
 /**
+ * Adds all devices with affinity to the provided,
+ * initialized hardware resource pool.
+ */
+int
+qvi_hwpool_add_devices_with_affinity(
+    qvi_hwpool_t *pool,
+    qvi_hwloc_t *hwloc
+);
+
+/**
  *
  */
 int

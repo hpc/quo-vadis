@@ -40,9 +40,9 @@ struct qv_scope_s {
 };
 
 struct qvi_scope_split_t {
-    /** A pointer to the parent scope. */
+    /** A pointer to the parent scope: the scope that is getting split. */
     qv_scope_t *parent_scope = nullptr;
-    /** Size of the group be split. */
+    /** Size of the group to be split. */
     uint_t group_size = 0;
     /** The number of pieces in the split. */
     uint_t split_size = 0;
@@ -473,6 +473,7 @@ bcast_value(
 /**
  * Straightforward user-defined device splitting.
  */
+// TODO(skg) Plenty of opportunity for optimization.
 static int
 split_devices_user_defined(
     qv_scope_t *parent,
@@ -480,7 +481,6 @@ split_devices_user_defined(
 ) {
     int rc = QV_SUCCESS;
     const uint_t group_size = split.group_size;
-    const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
     // Determine mapping of colors to task IDs. The array index i of colors is
     // the color requested by task i. Also determine the number of distinct
     // colors provided in the colors array.
@@ -504,6 +504,7 @@ split_devices_user_defined(
         if (rc != QV_SUCCESS) return rc;
     }
     // Iterate over the supported device types and split them up round-robin.
+    const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
     for (int i = 0; devts[i] != QV_HW_OBJ_LAST; ++i) {
         // The current device type.
         const qv_hw_obj_type_t devt = devts[i];
@@ -553,6 +554,63 @@ split_devices_user_defined(
     }
     return rc;
 }
+
+/**
+ * Affinity preserving device splitting.
+ */
+#if 0
+static int
+split_devices_affinity_preserving(
+    qv_scope_t *parent,
+    qvi_scope_split_t &split
+) {
+    int rc = QV_SUCCESS;
+    const uint_t group_size = split.group_size;
+    // Release devices from the hardware pools because they will be
+    // redistributed in the next step.
+    for (uint_t i = 0; i < group_size; ++i) {
+        rc = qvi_hwpool_release_devices(split.hwpools[i]);
+        if (rc != QV_SUCCESS) return rc;
+    }
+    // Iterate over the supported device types and split them up round-robin.
+    const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
+    for (int i = 0; devts[i] != QV_HW_OBJ_LAST; ++i) {
+        // The current device type.
+        const qv_hw_obj_type_t devt = devts[i];
+        // All device infos associated with the parent hardware pool.
+        auto dinfos = qvi_hwpool_devinfos_get(parent->hwpool);
+        // Get the number of devices.
+        const int ndevs = dinfos->count(devt);
+        // Store device infos.
+        std::vector<const qvi_devinfo_t *> devs;
+        for (const auto &dinfo : *dinfos) {
+            // Not the type we are currently dealing with.
+            if (devt != dinfo.first) continue;
+            devs.push_back(dinfo.second.get());
+        }
+        // Now that we have the mapping of colors to devices, assign devices to
+        // the associated hardware pools.
+        for (uint_t i = 0; i < group_size; ++i) {
+            const int color = split.colors[i];
+            for (const auto &c2d : devmap) {
+                if (c2d.first != color) continue;
+                rc = qvi_hwpool_add_device(
+                    split.hwpools[i],
+                    c2d.second->type,
+                    c2d.second->id,
+                    c2d.second->pci_bus_id,
+                    c2d.second->uuid,
+                    c2d.second->affinity
+                );
+                if (rc != QV_SUCCESS) break;
+            }
+            if (rc != QV_SUCCESS) break;
+        }
+        if (rc != QV_SUCCESS) break;
+    }
+    return rc;
+}
+#endif
 
 /**
  * User-defined split.
@@ -837,6 +895,7 @@ split_affinity_preserving(
     }
     // TODO(skg) Implement using device affinity.
     // For now use a straightforward device splitting algorithm.
+    //rc = split_devices_affinity_preserving(parent, split);
     rc = split_devices_user_defined(parent, split);
 out:
     for (auto &cpuset : cpusets) {

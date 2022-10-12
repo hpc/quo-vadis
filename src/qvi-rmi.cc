@@ -897,58 +897,9 @@ server_populate_base_hwpool(
     int rc = qvi_hwpool_init(server->hwpool, cpuset);
     if (rc != QV_SUCCESS) return rc;
     // Add all the discovered devices.
-    const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
-    for (int i = 0; devts[i] != QV_HW_OBJ_LAST; ++i) {
-        const qv_hw_obj_type_t type = devts[i];
-        // Figure out how many devices there are.
-        int nobjs = 0;
-        rc = qvi_hwloc_get_nobjs_in_cpuset(
-            hwloc, type, cpuset, &nobjs
-        );
-        if (rc != QV_SUCCESS) break;
-        // Add all items by their ID.
-        for (int n = 0; n < nobjs; ++n) {
-            char *ids = nullptr, *pcibid = nullptr, *uuids = nullptr;
-            // Get the device's ID as a string.
-            rc = qvi_hwloc_get_device_in_cpuset(
-                hwloc, type, n, cpuset,
-                QV_DEVICE_ID_ORDINAL, &ids
-            );
-            if (rc != QV_SUCCESS) break;
-            // Convert the string ordinal to an integer.
-            int id = 0;
-            rc = qvi_atoi(ids, &id);
-            if (rc != QV_SUCCESS) break;
-            // PCI Bus ID
-            rc = qvi_hwloc_get_device_in_cpuset(
-                hwloc, type, n, cpuset,
-                QV_DEVICE_ID_PCI_BUS_ID, &pcibid
-            );
-            if (rc != QV_SUCCESS) break;
-            // UUID
-            rc = qvi_hwloc_get_device_in_cpuset(
-                hwloc, type, n, cpuset,
-                QV_DEVICE_ID_UUID, &uuids
-            );
-            if (rc != QV_SUCCESS) break;
-            // Get the device's affinity.
-            hwloc_bitmap_t affinity = nullptr;
-            rc = qvi_hwloc_get_device_affinity(
-                hwloc, type, n, &affinity
-            );
-            if (rc != QV_SUCCESS) break;
-            // Add the device.
-            rc = qvi_hwpool_add_device(
-                server->hwpool, type, id, pcibid, uuids, affinity
-            );
-            if (rc != QV_SUCCESS) break;
-            free(ids);
-            free(pcibid);
-            free(uuids);
-        }
-        if (rc != QV_SUCCESS) break;
-    }
-    return rc;
+    return qvi_hwpool_add_devices_with_affinity(
+        server->hwpool, hwloc
+    );
 }
 
 int
