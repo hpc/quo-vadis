@@ -39,7 +39,7 @@ struct qv_scope_s {
     qvi_hwpool_t *hwpool = nullptr;
 };
 
-typedef struct qvi_scope_split_s {
+struct qvi_scope_split_t {
     /** A pointer to the parent scope. */
     qv_scope_t *parent_scope = nullptr;
     /** Size of the group be split. */
@@ -69,12 +69,12 @@ typedef struct qvi_scope_split_s {
     /**
      * Default constructor.
      */
-    qvi_scope_split_s(void) = delete;
+    qvi_scope_split_t(void) = delete;
 
     /**
      * Constructor.
      */
-    qvi_scope_split_s(
+    qvi_scope_split_t(
         qv_scope_t *scope,
         uint_t split_size
     ) : parent_scope(scope)
@@ -87,7 +87,7 @@ typedef struct qvi_scope_split_s {
     /**
      * Destructor.
      */
-   ~qvi_scope_split_s(void)
+   ~qvi_scope_split_t(void)
     {
         for (auto &hwpool : hwpools) {
             qvi_hwpool_free(&hwpool);
@@ -98,7 +98,7 @@ typedef struct qvi_scope_split_s {
     }
 
     /**
-     * Populates task affinity tables.
+     * Populates task affinity tables using RMI.
      */
     int
     query_task_affinities(void)
@@ -117,7 +117,7 @@ typedef struct qvi_scope_split_s {
         return rc;
     }
 
-} qvi_scope_split_t;
+};
 
 /**
  * Returns the largest number that will fit in the space available.
@@ -375,23 +375,18 @@ scatter_values(
     const std::vector<TYPE> &values,
     TYPE *value
 ) {
-    const uint_t group_size = group->size();
-
     int rc = QV_SUCCESS;
-    qvi_bbuff_t **txbuffs = nullptr;
+    const uint_t group_size = group->size();
+    std::vector<qvi_bbuff_t *> txbuffs;
     qvi_bbuff_t *rxbuff = nullptr;
 
     if (root == group->id()) {
-        // Notice the use of zero initialization here: the '()'.
-        txbuffs = qvi_new qvi_bbuff_t *[group_size]();
-        if (!txbuffs) {
-            rc = QV_ERR_OOR;
-            goto out;
-        }
+        txbuffs.resize(group_size);
         // Pack the values.
         for (uint_t i = 0; i < group_size; ++i) {
             rc = qvi_bbuff_new(&txbuffs[i]);
             if (rc != QV_SUCCESS) break;
+
             rc = qvi_bbuff_append(
                 txbuffs[i], &values[i], sizeof(TYPE)
             );
@@ -400,16 +395,13 @@ scatter_values(
         if (rc != QV_SUCCESS) goto out;
     }
 
-    rc = group->scatter(txbuffs, root, &rxbuff);
+    rc = group->scatter(txbuffs.data(), root, &rxbuff);
     if (rc != QV_SUCCESS) goto out;
 
     *value = *(TYPE *)qvi_bbuff_data(rxbuff);
 out:
-    if (txbuffs) {
-        for (uint_t i = 0; i < group_size; ++i) {
-            qvi_bbuff_free(&txbuffs[i]);
-        }
-        delete[] txbuffs;
+    for (auto &buff : txbuffs) {
+        qvi_bbuff_free(&buff);
     }
     qvi_bbuff_free(&rxbuff);
     if (rc != QV_SUCCESS) {
@@ -437,6 +429,7 @@ scatter_hwpools(
         for (uint_t i = 0; i < group_size; ++i) {
             rc = qvi_bbuff_new(&txbuffs[i]);
             if (rc != QV_SUCCESS) break;
+
             rc = qvi_hwpool_pack(pools[i], txbuffs[i]);
             if (rc != QV_SUCCESS) break;
         }
@@ -448,8 +441,8 @@ scatter_hwpools(
 
     rc = qvi_hwpool_unpack(qvi_bbuff_data(rxbuff), pool);
 out:
-    for (auto txbuff : txbuffs) {
-        qvi_bbuff_free(&txbuff);
+    for (auto &buff : txbuffs) {
+        qvi_bbuff_free(&buff);
     }
     qvi_bbuff_free(&rxbuff);
     if (rc != QV_SUCCESS) {
@@ -478,21 +471,21 @@ bcast_value(
 }
 
 /**
- * Straightforward device splitting.
+ * Straightforward user-defined device splitting.
  */
 static int
-split_devices_basic(
+split_devices_user_defined(
     qv_scope_t *parent,
     qvi_scope_split_t &split
 ) {
     int rc = QV_SUCCESS;
-    const int group_size = parent->group->size();
+    const uint_t group_size = split.group_size;
     const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
     // Determine mapping of colors to task IDs. The array index i of colors is
     // the color requested by task i. Also determine the number of distinct
     // colors provided in the colors array.
     std::set<int> color_set;
-    for (int i = 0; i < group_size; ++i) {
+    for (uint_t i = 0; i < group_size; ++i) {
         color_set.insert(split.colors[i]);
     }
     // Adjust the color set so that the distinct colors provided fall within the
@@ -506,7 +499,7 @@ split_devices_basic(
     }
     // Release devices from the hardware pools because they will be
     // redistributed in the next step.
-    for (int i = 0; i < group_size; ++i) {
+    for (uint_t i = 0; i < group_size; ++i) {
         rc = qvi_hwpool_release_devices(split.hwpools[i]);
         if (rc != QV_SUCCESS) return rc;
     }
@@ -540,7 +533,7 @@ split_devices_basic(
         }
         // Now that we have the mapping of colors to devices, assign devices to
         // the associated hardware pools.
-        for (int i = 0; i < group_size; ++i) {
+        for (uint_t i = 0; i < group_size; ++i) {
             const int color = split.colors[i];
             for (const auto &c2d : devmap) {
                 if (c2d.first != color) continue;
@@ -590,8 +583,8 @@ split_user_defined(
         if (rc != QV_SUCCESS) break;
     }
     if (rc != QV_SUCCESS) goto out;
-    // Use a straightforward device splitting algorithm.
-    rc = split_devices_basic(parent, split);
+    // Use a straightforward device splitting algorithm based on user's request.
+    rc = split_devices_user_defined(parent, split);
 out:
     for (auto &cpuset : cpusets) {
         qvi_hwloc_bitmap_free(&cpuset);
@@ -776,8 +769,9 @@ split_affinity_preserving(
     // Perform a straightforward splitting of the provided cpuset. Notice that
     // we do not go through the RMI for this because this is just an local,
     // temporary splitting that is ultimately fed to another splitting
-    // algorithm. TODO(skg) Should we keep track of split resources? What
-    // useful information does this provide us going through the RMI?
+    // algorithm.
+    // TODO(skg) Should we keep track of split resources? What useful
+    // information does this provide us going through the RMI?
     for (uint_t color = 0; color < split.split_size; ++color) {
         rc = qvi_hwloc_split_cpuset_by_color(
             hwloc,
@@ -843,7 +837,7 @@ split_affinity_preserving(
     }
     // TODO(skg) Implement using device affinity.
     // For now use a straightforward device splitting algorithm.
-    rc = split_devices_basic(parent, split);
+    rc = split_devices_user_defined(parent, split);
 out:
     for (auto &cpuset : cpusets) {
         qvi_hwloc_bitmap_free(&cpuset);

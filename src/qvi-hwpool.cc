@@ -79,7 +79,6 @@ qvi_hwpool_new(
     if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_hwloc_bitmap_calloc(&irpool->obcpuset);
-    if (rc != QV_SUCCESS) goto out;
 out:
     if (rc != QV_SUCCESS) {
         qvi_hwpool_free(&irpool);
