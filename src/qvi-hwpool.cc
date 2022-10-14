@@ -383,10 +383,10 @@ qvi_hwpool_add_devices_with_affinity(
             );
             if (rc != QV_SUCCESS) break;
             //
-            qvi_hwloc_bitmap_free(&devaff);
             free(devids);
             free(pcibid);
             free(uuids);
+            qvi_hwloc_bitmap_free(&devaff);
         }
         if (rc != QV_SUCCESS) break;
     }
@@ -411,7 +411,7 @@ qvi_hwpool_obtain_by_cpuset(
     rc = qvi_hwpool_init(ipool, cpuset);
     if (rc != QV_SUCCESS) goto out;
     // Add devices with affinity to the new hardware pool.
-    // // TODO(skg) Acquire devices.
+    // TODO(skg) Acquire devices.
     rc = qvi_hwpool_add_devices_with_affinity(ipool, hwloc);
 out:
     if (rc != QV_SUCCESS) {
