@@ -31,6 +31,7 @@ add_library(
       qvi-task.h
       qvi-devinfo.h
       qvi-group.h
+      qvi-map.h
       qvi-scope.h
       qvi-zgroup.h
       qvi-bind.h
@@ -45,9 +46,10 @@ add_library(
       qvi-rmi.cc
       qvi-context.cc
       qvi-task.cc
+      qvi-group.cc
+      qvi-map.cc
       qvi-scope.cc
       qvi-bind.cc
-      qvi-group.cc
       quo-vadis.cc
 )
 
