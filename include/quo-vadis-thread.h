@@ -36,6 +36,21 @@ qv_thread_context_free(
     qv_context_t *ctx
 );
 
+int
+qv_thread_layout_init(
+    qv_layout_t *layout,
+    qv_policy_t policy,
+    qv_hw_obj_type_t obj_type,
+    int stride
+);
+  
+int
+qv_thread_layout_apply(
+    qv_context_t *parent_ctx,
+    qv_scope_t *parent_scope,
+    qv_layout_t thread_layout
+);
+
   
 #ifdef __cplusplus
 }

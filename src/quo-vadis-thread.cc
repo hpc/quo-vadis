@@ -20,6 +20,11 @@
 #include "qvi-context.h"
 #include "qvi-zgroup-thread.h"
 #include "qvi-group-thread.h"
+#include "qvi-scope.h"
+
+#ifdef OPENMP_FOUND
+#include <omp.h>
+#endif
 
 int
 qv_thread_context_free(
@@ -82,6 +87,122 @@ out:
     *ctx = ictx;
     return rc;
 }
+
+int
+qv_thread_layout_init(
+    qv_layout_t *layout,		      
+    qv_policy_t policy,
+    qv_hw_obj_type_t obj_type,
+    int stride
+)
+{
+  int rc = QV_SUCCESS;
+  layout->policy   = policy;
+  layout->obj_type = obj_type;
+  layout->stride   = stride;
+  return rc;
+}
+
+static hwloc_obj_type_t
+qv_thread_convert_obj_type(
+    qv_hw_obj_type_t obj_type
+)
+{
+  hwloc_obj_type_t type;
+  
+  if(obj_type == QV_HW_OBJ_PU)
+    type = HWLOC_OBJ_PU;
+  else if(obj_type == QV_HW_OBJ_CORE)
+    type = HWLOC_OBJ_CORE;
+  else if(obj_type == QV_HW_OBJ_PACKAGE)
+    type = HWLOC_OBJ_PACKAGE;
+  else if (obj_type == QV_HW_OBJ_MACHINE)
+    type = HWLOC_OBJ_MACHINE;
+
+  return type;
+}
+
+int
+qv_thread_layout_apply(
+    qv_context_t *parent_ctx,
+    qv_scope_t *parent_scope,
+    qv_layout_t thread_layout
+)
+{
+  int rc = QV_SUCCESS;
+  hwloc_topology_t hwloc_topology;
+  hwloc_obj_type_t obj_type = qv_thread_convert_obj_type(thread_layout.obj_type);
+  hwloc_const_cpuset_t cpuset = qvi_scope_cpuset_get(parent_scope);
+#ifdef OPENMP_FOUND
+  int thr_idx = omp_get_thread_num();
+  int num_thr = omp_get_num_threads();
+#endif
+
+  /* local topology structure is better than querying the server */
+  /* in case of fine-grain parallelism */
+
+  rc = hwloc_topology_init(&hwloc_topology);
+      //topology_export_xmlbuffer() server side
+      //set_xmlbuffer()  here    
+  rc = hwloc_topology_load(hwloc_topology);
+  
+  int nb_objs = hwloc_get_nbobjs_inside_cpuset_by_type(hwloc_topology,cpuset,obj_type);
+  
+  /* FIXME : what should we do in oversubscribing case ?? */
+
+  if(nb_objs < num_thr)    
+    {
+      if (!thr_idx)
+	fprintf(stdout,"====> Oversubscribing \n");
+    }
+  else {
+    if (!thr_idx)
+      fprintf(stdout,"====> Resource number is ok\n");
+  }
+
+  
+  switch(thread_layout.policy)
+    {
+    case QV_POLICY_PACKED:
+      //case QV_POLICY_COMPACT:
+      //case QV_POLICY_CLOSE:
+      {
+	hwloc_obj_t obj = hwloc_get_obj_inside_cpuset_by_type(hwloc_topology,
+							      cpuset,
+							      obj_type,
+							      (thr_idx+thr_idx*thread_layout.stride)%nb_objs);
+
+	
+	hwloc_set_cpubind(hwloc_topology,obj->cpuset,HWLOC_CPUBIND_THREAD);	
+	fprintf(stdout,"[OMP TH #%i] === bound on resrc #%i\n",thr_idx,obj->logical_index);
+	/* perform sanity check here : get_proc_cpubind + obj from cpuset + logical idx and compare */
+	break;
+      }
+    case QV_POLICY_SPREAD:
+      {
+	break;
+      }
+    case QV_POLICY_DISTRIBUTE:
+      //case QV_POLICY_ALTERNATE:
+      //case QV_POLICY_CORESFIRST:
+      {
+	break;
+      }
+    case QV_POLICY_SCATTER:
+      {
+	break;
+      }
+    case QV_POLICY_CHOOSE:
+      {
+	break;
+      }      
+    }
+  
+  return rc;
+}
+
+
+
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
