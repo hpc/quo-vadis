@@ -252,9 +252,6 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    scope_report(ctx, wrank, base_scope, "base_scope");
-    change_bind(ctx, wrank, base_scope);
-
     rc = qv_scope_nobjs(
         ctx,
         sub_scope,

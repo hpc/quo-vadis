@@ -11,13 +11,14 @@
  */
 
 #include "qvi-map.h"
+#include "qvi-devinfo.h"
 
 /**
  * Performs a k-set intersection of the sets included in the provided set map.
  */
 static int
 k_set_intersection(
-    const qvi_map_id_to_uids_t &smap,
+    const qvi_map_shaffinity_t &smap,
     std::set<int> &result
 ) {
     result.clear();
@@ -43,47 +44,49 @@ k_set_intersection(
 
 /**
  * Makes the provided shared affinity map disjoint with regard to affinity. That
- * is, for colors with shared affinity we remove sharing by assigning a
- * previously shared ID to a single color round robin; unshared IDs remain in
+ * is, for consumers with shared affinity we remove sharing by assigning a
+ * previously shared ID to a single resource round robin; unshared IDs remain in
  * place.
  */
 static int
 make_shared_affinity_map_disjoint(
-    qvi_map_id_to_uids_t &color_affinity_map,
+    qvi_map_shaffinity_t &samap,
     const std::set<int> &interids
 ) {
+    // Number of intersecting consumer IDs.
     const uint_t ninter = interids.size();
-    const uint_t ncolor = color_affinity_map.size();
-    // Max intersecting IDs per color.
-    const uint_t maxipc = qvi_map_maxiperk(ninter, ncolor);
+    // Number of resources.
+    const uint_t nres = samap.size();
+    // Max intersecting consumer IDs per resource.
+    const uint_t maxcpr = qvi_map_maxiperk(ninter, nres);
 
-    qvi_map_id_to_uids_t dmap;
+    qvi_map_shaffinity_t dmap;
     // First remove all IDs that intersect from the provided set map.
-    for (const auto &mi: color_affinity_map) {
-        const int color = mi.first;
+    for (const auto &mi: samap) {
+        const int rid = mi.first;
         std::set_difference(
             mi.second.cbegin(),
             mi.second.cend(),
             interids.cbegin(),
             interids.cend(),
-            std::inserter(dmap[color], dmap[color].begin())
+            std::inserter(dmap[rid], dmap[rid].begin())
         );
     }
     // Copy IDs into a set we can modify.
     std::set<int> coii(interids);
-    // Assign disjoint IDs to relevant colors.
-    for (const auto &mi: color_affinity_map) {
-        const int color = mi.first;
+    // Assign disjoint IDs to relevant resources.
+    for (const auto &mi: samap) {
+        const int rid = mi.first;
         uint_t nids = 0;
-        for (const auto &id : mi.second) {
-            if (coii.find(id) == coii.end()) continue;
-            dmap[color].insert(id);
-            coii.erase(id);
-            if (++nids == maxipc || coii.empty()) break;
+        for (const auto &cid : mi.second) {
+            if (coii.find(cid) == coii.end()) continue;
+            dmap[rid].insert(cid);
+            coii.erase(cid);
+            if (++nids == maxcpr || coii.empty()) break;
         }
     }
     // Update the provided set map.
-    color_affinity_map = dmap;
+    samap = dmap;
     return QV_SUCCESS;
 }
 
@@ -107,28 +110,47 @@ qvi_map_maxiperk(
     return std::ceil(i / float(k));
 }
 
+/**
+ * Returns the number of consumer IDs that have already been mapped.
+ */
+uint_t
+qvi_map_nfids_mapped(
+    const qvi_map_t &map
+) {
+    return map.size();
+}
+
+bool
+qvi_map_fid_mapped(
+    const qvi_map_t &map,
+    int cid
+) {
+    return map.find(cid) != map.end();
+}
+
 int
 qvi_map_packed(
-    qvi_map_t &map
+    qvi_map_t &map,
+    uint_t nfids,
+    const std::vector<hwloc_cpuset_t> &tres
 ) {
     int rc = QV_SUCCESS;
-    const uint_t group_size = map.nids();
-    const uint_t split_size = map.ncolors();
-    // Max tasks per color.
-    const uint_t maxtpc = qvi_map_maxiperk(group_size, split_size);
-    // Keeps track of the next ID to map.
-    uint_t id = 0;
-    // Number of entities that have already been mapped to a resource.
-    uint_t nmapped = map.nmapped();
-    for (uint_t color = 0; color < split_size; ++color) {
-        // Number of entities to map.
-        const uint_t nmap = qvi_map_maxfit(group_size - nmapped, maxtpc);
-        for (uint_t i = 0; i < nmap; ++i, ++id, ++nmapped) {
+    const uint_t ntres = tres.size();
+    // Max consumers per resource.
+    const uint_t maxcpr = qvi_map_maxiperk(nfids, ntres);
+    // Keeps track of the next consumer ID to map.
+    uint_t fid = 0;
+    // Number of consumers mapped to a resource.
+    uint_t nmapped = qvi_map_nfids_mapped(map);
+    for (uint_t tid = 0; tid < ntres; ++tid) {
+        // Number of consumer IDs to map.
+        const uint_t nmap = qvi_map_maxfit(nfids - nmapped, maxcpr);
+        for (uint_t i = 0; i < nmap; ++i, ++fid) {
             // Already mapped (potentially by some other mapper).
-            if (map.id_mapped(id)) continue;
-
-            rc = map.map_id_to_color(id, color);
-            if (rc != QV_SUCCESS) return rc;
+            if (qvi_map_fid_mapped(map, fid)) continue;
+            // Else map the consumer to the resource ID.
+            map.insert(std::make_pair(fid, tid));
+            nmapped += 1;
         }
     }
     return rc;
@@ -137,74 +159,76 @@ qvi_map_packed(
 int
 qvi_map_disjoint_affinity(
     qvi_map_t &map,
-    const qvi_map_id_to_uids_t &disjoint_affinity_map
+    const qvi_map_shaffinity_t &damap
 ) {
-    int rc = QV_SUCCESS;
-
-    for (uint_t color = 0; color < map.ncolors(); ++color) {
-        // We are done.
-        if (map.complete()) break;
-
-        for (const auto &id : disjoint_affinity_map.at(color)) {
+    // The disjoint affinity map maps resource IDs (To IDs)
+    // to a set of consumer IDs (From IDs) with shared affinity.
+    for (auto &tidfids : damap) {
+        const int tid = tidfids.first;
+        for (const auto &fid : damap.at(tid)) {
             // Already mapped (potentially by some other mapper).
-            if (map.id_mapped(id)) continue;
-            // Map the ID to its color.
-            rc = map.map_id_to_color(id, color);
-            if (rc != QV_SUCCESS) return rc;
+            if (qvi_map_fid_mapped(map, fid)) continue;
+            // Map the consumer ID to its resource ID.
+            map.insert(std::make_pair(fid, tid));
         }
     }
-    return rc;
+    return QV_SUCCESS;
 }
 
 int
 qvi_map_affinity_preserving(
     qvi_map_t &map,
-    const std::vector<hwloc_cpuset_t> &affinities
+    const std::vector<hwloc_cpuset_t> &faffs,
+    const std::vector<hwloc_cpuset_t> &tores
 ) {
     int rc = QV_SUCCESS;
-    // Maps cpuset IDs (colors) to IDs with shared affinity.
-    qvi_map_id_to_uids_t color_affinity_map;
-    // Stores the IDs that all share affinity with a split resource.
+    // Number of consumers.
+    const uint_t ncon = faffs.size();
+    // Number of resource we are mapping to.
+    const uint_t nres = tores.size();
+    // Maps resource IDs to consumer IDs with shared affinity.
+    qvi_map_shaffinity_t res_affinity_map;
+    // Stores the consumer IDs that all share affinity with a split resource.
     std::set<int> affinity_intersection;
 
-    // Determine the IDs that have shared affinity within each cpuset.
-    for (uint_t color = 0; color < map.ncolors(); ++color) {
-        for (uint_t id = 0; id < map.nids(); ++id) {
+    // Determine the consumer IDs that have shared affinity with the resources.
+    for (uint_t cid = 0; cid < ncon; ++cid) {
+        for (uint_t rid = 0; rid < nres; ++rid) {
             const int intersects = hwloc_bitmap_intersects(
-                affinities.at(id), map.cpusetat(color)
+                faffs.at(cid), tores.at(rid)
             );
             if (intersects) {
-                color_affinity_map[color].insert(id);
+                res_affinity_map[rid].insert(cid);
             }
         }
     }
     // Calculate k-set intersection.
-    rc = k_set_intersection(color_affinity_map, affinity_intersection);
+    rc = k_set_intersection(res_affinity_map, affinity_intersection);
     if (rc != QV_SUCCESS) goto out;
     // Now make a mapping decision based on the intersection size.
     // Completely disjoint sets.
     if (affinity_intersection.size() == 0) {
-        rc = qvi_map_disjoint_affinity(map, color_affinity_map);
+        rc = qvi_map_disjoint_affinity(map, res_affinity_map);
         if (rc != QV_SUCCESS) goto out;
     }
-    // All entities overlap. Really no hope of doing anything fancy.
+    // All consumers overlap. Really no hope of doing anything fancy.
     // Note that we typically see this in the *no task is bound case*.
-    else if (affinity_intersection.size() == map.nids()) {
-        rc = qvi_map_packed(map);
+    else if (affinity_intersection.size() == ncon) {
+        rc = qvi_map_packed(map, ncon, tores);
         if (rc != QV_SUCCESS) goto out;
     }
-    // Only a strict subset of tasks share a resource. First favor mapping
-    // tasks with affinity to a particular resource, then map the rest.
+    // Only a strict subset of consumers share a resource. First favor mapping
+    // consumers with affinity to a particular resource, then map the rest.
     else {
         rc = make_shared_affinity_map_disjoint(
-            color_affinity_map, affinity_intersection
+            res_affinity_map, affinity_intersection
         );
         if (rc != QV_SUCCESS) goto out;
 
-        rc = qvi_map_disjoint_affinity(map, color_affinity_map);
+        rc = qvi_map_disjoint_affinity(map, res_affinity_map);
         if (rc != QV_SUCCESS) goto out;
 
-        rc = qvi_map_packed(map);
+        rc = qvi_map_packed(map, ncon, tores);
         if (rc != QV_SUCCESS) goto out;
     }
 out:
@@ -213,6 +237,26 @@ out:
         map.clear();
     }
     return rc;
+}
+
+hwloc_const_cpuset_t
+qvi_map_cpuset_at(
+    const qvi_map_t &map,
+    const std::vector<hwloc_cpuset_t> &cpusets,
+    int fid
+) {
+    return cpusets.at(map.at(fid));
+}
+
+std::vector<int>
+qvi_map_flatten(
+    const qvi_map_t &map
+) {
+    std::vector<int> result(map.size());
+    for (const auto &mi : map) {
+        result[mi.first] = mi.second;
+    }
+    return result;
 }
 
 /*

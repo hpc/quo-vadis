@@ -603,6 +603,33 @@ qvi_scope_group_get(
     return scope->group;
 }
 
+static int
+apply_mapping(
+    const qvi_map_t &map,
+    const std::vector<hwloc_cpuset_t> cpusets,
+    std::vector<qvi_hwpool_t *> &hwpools,
+    std::vector<int> &colors
+) {
+    int rc = QV_SUCCESS;
+    const uint_t npools = hwpools.size();
+
+    for (uint_t pid = 0; pid < npools; ++pid) {
+        rc = qvi_hwpool_init(
+            hwpools.at(pid),
+            qvi_map_cpuset_at(map, cpusets, pid)
+        );
+        if (rc != QV_SUCCESS) goto out;
+    }
+
+    colors = qvi_map_flatten(map);
+out:
+    if (rc != QV_SUCCESS) {
+        // Invalidate colors
+        colors.clear();
+    }
+    return rc;
+}
+
 /**
  * Straightforward user-defined device splitting.
  */
@@ -693,6 +720,7 @@ split_devices_user_defined(
  * Affinity preserving device splitting.
  */
 // TODO(skg) Move lots of logic to map
+// XXX(skg) Broken, FIXME
 static int
 split_devices_affinity_preserving(
     qvi_global_scope_data_t &gsd,
@@ -744,14 +772,16 @@ split_devices_affinity_preserving(
             devaffs.push_back(dev->affinity);
         }
         qvi_map_t map;
-        map.initialize(gcd.colors, devaffs);
 
-        qvi_map_affinity_preserving(map, gsd.task_affinities);
+        rc = qvi_map_affinity_preserving(
+            map, devaffs, gsd.task_affinities
+        );
+        if (rc != QV_SUCCESS) return rc;
 #if 0
-        qvi_log_debug("N Dev nmapped {}", map.nmapped());
+        qvi_log_debug("N Dev nmapped {}", qvi_map_nfids_mapped(map));
         for (uint_t i = 0; i < ndevs; ++i) {
-            if (map.id_mapped(i)) {
-                qvi_log_debug("dev {} mapped to task {}", i, map.mapped_color(i));
+            if (qvi_map_fid_mapped(map, i)) {
+                qvi_log_debug("dev {} mapped to task {}", i, map.at(i));
             }
             else {
                 qvi_log_debug("id not mapped {}", i);
@@ -793,7 +823,6 @@ split_devices_affinity_preserving(
 /**
  * User-defined split.
  */
-// TODO(skg) Move lots of logic to map.
 static int
 split_user_defined(
     qvi_global_scope_data_t &gsd,
@@ -841,15 +870,13 @@ split_affinity_preserving(
     hwloc_const_cpuset_t base_cpuset = gsd.base_cpuset();
     // cpusets with straightforward splitting: one for each color.
     std::vector<hwloc_bitmap_t> cpusets(gcd.ncolors);
-    // The ID to resource map.
+    // Maintains the mapping between task IDs and resource IDs.
     qvi_map_t map;
 
     // Perform a straightforward splitting of the provided cpuset. Notice that
     // we do not go through the RMI for this because this is just an local,
     // temporary splitting that is ultimately fed to another splitting
     // algorithm.
-    // TODO(skg) Should we keep track of split resources? What useful
-    // information does this provide us going through the RMI?
     for (uint_t color = 0; color < gcd.ncolors; ++color) {
         rc = qvi_hwloc_split_cpuset_by_color(
             gsd.hwloc, base_cpuset, gcd.ncolors, color, &cpusets[color]
@@ -857,25 +884,22 @@ split_affinity_preserving(
         if (rc != QV_SUCCESS) goto out;
     }
 
-    // Initialize the map.
-    rc = map.initialize(gcd.colors, cpusets);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_map_affinity_preserving(map, gsd.task_affinities);
+    rc = qvi_map_affinity_preserving(
+        map, gsd.task_affinities, cpusets
+    );
     if (rc != QV_SUCCESS) goto out;
 
     // Make sure that we mapped all the tasks. If not, this is a bug.
-    if (map.nmapped() != group_size) {
+    if (qvi_map_nfids_mapped(map) != group_size) {
         rc = QV_ERR_INTERNAL;
         goto out;
     }
-    // TODO(skg) Add function to reinitialize the hwpool with the new cpuset.
-    for (uint_t tid = 0; tid < group_size; ++tid) {
-        rc = qvi_hwpool_init(gsd.hwpools[tid], map.mapped_cpuset(tid));
-        if (rc != QV_SUCCESS) goto out;
-        // TODO(skg) Improve
-        gcd.colors[tid] = map.mapped_color(tid);
-    }
+
+    // Update the hardware pools to reflect the new mapping.
+    rc = apply_mapping(
+        map, cpusets, gsd.hwpools, gcd.colors
+    );
+    if (rc != QV_SUCCESS) goto out;
 
     rc = split_devices_affinity_preserving(gsd, gcd);
 out:
