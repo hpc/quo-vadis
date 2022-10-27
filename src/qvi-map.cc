@@ -132,7 +132,7 @@ int
 qvi_map_packed(
     qvi_map_t &map,
     uint_t nfids,
-    const std::vector<hwloc_cpuset_t> &tres
+    const qvi_map_cpusets_t &tres
 ) {
     int rc = QV_SUCCESS;
     const uint_t ntres = tres.size();
@@ -178,8 +178,8 @@ qvi_map_disjoint_affinity(
 int
 qvi_map_affinity_preserving(
     qvi_map_t &map,
-    const std::vector<hwloc_cpuset_t> &faffs,
-    const std::vector<hwloc_cpuset_t> &tores
+    const qvi_map_cpusets_t &faffs,
+    const qvi_map_cpusets_t &tores
 ) {
     int rc = QV_SUCCESS;
     // Number of consumers.
@@ -242,7 +242,7 @@ out:
 hwloc_const_cpuset_t
 qvi_map_cpuset_at(
     const qvi_map_t &map,
-    const std::vector<hwloc_cpuset_t> &cpusets,
+    const qvi_map_cpusets_t &cpusets,
     int fid
 ) {
     return cpusets.at(map.at(fid));

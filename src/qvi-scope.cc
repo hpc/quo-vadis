@@ -301,7 +301,7 @@ struct qvi_global_scope_data_t : public qvi_global_data_t {
     /**
      * Vector of queried task affinities.
      */
-    std::vector<hwloc_cpuset_t> task_affinities = {};
+    qvi_map_cpusets_t task_affinities = {};
 
 private:
     /**
@@ -606,7 +606,7 @@ qvi_scope_group_get(
 static int
 apply_mapping(
     const qvi_map_t &map,
-    const std::vector<hwloc_cpuset_t> cpusets,
+    const qvi_map_cpusets_t cpusets,
     std::vector<qvi_hwpool_t *> &hwpools,
     std::vector<int> &colors
 ) {
@@ -719,46 +719,25 @@ split_devices_user_defined(
 /**
  * Affinity preserving device splitting.
  */
-// TODO(skg) Move lots of logic to map
-// XXX(skg) Broken, FIXME
 static int
 split_devices_affinity_preserving(
     qvi_global_scope_data_t &gsd,
-    qvi_global_color_data_t &gcd
+    qvi_global_color_data_t &
 ) {
     int rc = QV_SUCCESS;
-    const uint_t group_size = gsd.group_size;
-    // Determine mapping of colors to task IDs. The array index i of colors is
-    // the color requested by task i. Also determine the number of distinct
-    // colors provided in the colors array.
-    std::set<int> color_set;
-    for (uint_t i = 0; i < group_size; ++i) {
-        color_set.insert(gcd.colors[i]);
-    }
-    // Adjust the color set so that the distinct colors provided fall within the
-    // range of the number of splits requested.
-    std::set<int> color_setp;
-    uint_t ncolors_chosen = 0;
-    for (const auto &c : color_set) {
-        if (ncolors_chosen >= gcd.ncolors) break;
-        color_setp.insert(c);
-        ncolors_chosen++;
-    }
     // Release devices from the hardware pools because they will be
     // redistributed in the next step.
-    for (uint_t i = 0; i < group_size; ++i) {
-        rc = qvi_hwpool_release_devices(gsd.hwpools[i]);
+    for (const auto &hwpool : gsd.hwpools) {
+        rc = qvi_hwpool_release_devices(hwpool);
         if (rc != QV_SUCCESS) return rc;
     }
-    // Iterate over the supported device types and split them up round-robin.
+    // Iterate over the supported device types and split them up.
     const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
     for (int i = 0; devts[i] != QV_HW_OBJ_LAST; ++i) {
         // The current device type.
         const qv_hw_obj_type_t devt = devts[i];
         // All device infos associated with the parent hardware pool.
         auto dinfos = gsd.devinfos();
-        // Get the number of devices.
-        const uint_t ndevs = dinfos->count(devt);
         // Store device infos.
         std::vector<const qvi_devinfo_t *> devs;
         for (const auto &dinfo : *dinfos) {
@@ -767,12 +746,12 @@ split_devices_affinity_preserving(
             devs.push_back(dinfo.second.get());
         }
         // Store device affinities.
-        std::vector<hwloc_cpuset_t> devaffs;
+        qvi_map_cpusets_t devaffs;
         for (auto &dev : devs) {
             devaffs.push_back(dev->affinity);
         }
-        qvi_map_t map;
 
+        qvi_map_t map;
         rc = qvi_map_affinity_preserving(
             map, devaffs, gsd.task_affinities
         );
@@ -788,34 +767,21 @@ split_devices_affinity_preserving(
             }
         }
 #endif
-        // Maps colors to device information.
-        id_devinfo_multimap_t devmap;
-        uint_t devi = 0;
-        while (devi < ndevs) {
-            for (const auto &c : color_setp) {
-                if (devi >= ndevs) break;
-                devmap.insert(std::make_pair(c, devs[devi++]));
-            }
-        }
-        // Now that we have the mapping of colors to devices, assign devices to
-        // the associated hardware pools.
-        for (uint_t i = 0; i < group_size; ++i) {
-            const int color = gcd.colors[i];
-            for (const auto &c2d : devmap) {
-                if (c2d.first != color) continue;
-                rc = qvi_hwpool_add_device(
-                    gsd.hwpools[i],
-                    c2d.second->type,
-                    c2d.second->id,
-                    c2d.second->pci_bus_id,
-                    c2d.second->uuid,
-                    c2d.second->affinity
-                );
-                if (rc != QV_SUCCESS) break;
-            }
+        // Now that we have the mapping, assign
+        // devices to the associated hardware pools.
+        for (const auto &mi : map) {
+            const int devid = mi.first;
+            const int pooli = mi.second;
+            rc = qvi_hwpool_add_device(
+                gsd.hwpools[pooli],
+                devs[devid]->type,
+                devs[devid]->id,
+                devs[devid]->pci_bus_id,
+                devs[devid]->uuid,
+                devs[devid]->affinity
+            );
             if (rc != QV_SUCCESS) break;
         }
-        if (rc != QV_SUCCESS) break;
     }
     return rc;
 }
@@ -830,7 +796,7 @@ split_user_defined(
 ) {
     int rc = QV_SUCCESS;
     hwloc_const_cpuset_t base_cpuset = gsd.base_cpuset();
-    std::vector<hwloc_bitmap_t> cpusets(gsd.group_size);
+    qvi_map_cpusets_t cpusets(gsd.group_size);
 
     for (uint_t i = 0; i < gsd.group_size; ++i) {
         rc = qvi_hwloc_split_cpuset_by_color(
@@ -869,10 +835,9 @@ split_affinity_preserving(
     // The cpuset that we are going to split.
     hwloc_const_cpuset_t base_cpuset = gsd.base_cpuset();
     // cpusets with straightforward splitting: one for each color.
-    std::vector<hwloc_bitmap_t> cpusets(gcd.ncolors);
+    qvi_map_cpusets_t cpusets(gcd.ncolors);
     // Maintains the mapping between task IDs and resource IDs.
     qvi_map_t map;
-
     // Perform a straightforward splitting of the provided cpuset. Notice that
     // we do not go through the RMI for this because this is just an local,
     // temporary splitting that is ultimately fed to another splitting
@@ -883,24 +848,22 @@ split_affinity_preserving(
         );
         if (rc != QV_SUCCESS) goto out;
     }
-
+    // Map tasks based on their affinity to resources encoded by the cpusets.
     rc = qvi_map_affinity_preserving(
         map, gsd.task_affinities, cpusets
     );
     if (rc != QV_SUCCESS) goto out;
-
     // Make sure that we mapped all the tasks. If not, this is a bug.
     if (qvi_map_nfids_mapped(map) != group_size) {
         rc = QV_ERR_INTERNAL;
         goto out;
     }
-
     // Update the hardware pools to reflect the new mapping.
     rc = apply_mapping(
         map, cpusets, gsd.hwpools, gcd.colors
     );
     if (rc != QV_SUCCESS) goto out;
-
+    // Finally, split the devices.
     rc = split_devices_affinity_preserving(gsd, gcd);
 out:
     for (auto &cpuset : cpusets) {
@@ -1082,7 +1045,7 @@ qvi_scope_create(
     qvi_group_t *group = nullptr;
     qvi_hwpool_t *hwpool = nullptr;
     qv_scope_t *ichild = nullptr;
-    hwloc_bitmap_t cpuset = nullptr;
+    hwloc_cpuset_t cpuset = nullptr;
     // TODO(skg) We need to acquire these resources.
     int rc = qvi_rmi_get_cpuset_for_nobjs(
         parent->rmi,

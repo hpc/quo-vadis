@@ -129,7 +129,8 @@ int main(int argc, char **argv)
             ctx,
             base_scope,
             wsize,        // Number of workers
-            wrank,        // My group color
+            //wrank,        // My group color
+            QV_SCOPE_SPLIT_AFFINITY_PRESERVING,
             &rank_scope
     );
     if (rc != QV_SUCCESS) {

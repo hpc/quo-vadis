@@ -28,6 +28,11 @@ using qvi_map_t = std::map<int, int>;
 using qvi_map_shaffinity_t = std::map<int, std::set<int>>;
 
 /**
+ * Vector of cpusets.
+ */
+using qvi_map_cpusets_t = std::vector<hwloc_cpuset_t>;
+
+/**
  * Returns the number of From IDs that have already been mapped.
  */
 uint_t
@@ -52,7 +57,7 @@ int
 qvi_map_packed(
     qvi_map_t &map,
     uint_t nfids,
-    const std::vector<hwloc_cpuset_t> &tres
+    const qvi_map_cpusets_t &tres
 );
 
 int
@@ -67,8 +72,8 @@ qvi_map_disjoint_affinity(
 int
 qvi_map_affinity_preserving(
     qvi_map_t &map,
-    const std::vector<hwloc_cpuset_t> &faffs,
-    const std::vector<hwloc_cpuset_t> &tores
+    const qvi_map_cpusets_t &faffs,
+    const qvi_map_cpusets_t &tores
 );
 
 /**
@@ -77,7 +82,7 @@ qvi_map_affinity_preserving(
 hwloc_const_cpuset_t
 qvi_map_cpuset_at(
     const qvi_map_t &map,
-    const std::vector<hwloc_cpuset_t> &cpusets,
+    const qvi_map_cpusets_t &cpusets,
     int fid
 );
 
