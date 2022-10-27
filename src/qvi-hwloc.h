@@ -35,6 +35,11 @@ typedef struct qvi_hwloc_s qvi_hwloc_t;
 struct qvi_hwloc_device_s;
 typedef struct qvi_hwloc_device_s qvi_hwloc_device_t;
 
+hwloc_topology_t
+qvi_hwloc_get_topo_obj(
+     qvi_hwloc_t *hwl
+);
+
 /**
  *
  */

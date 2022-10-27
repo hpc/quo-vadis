@@ -130,26 +130,16 @@ qv_thread_layout_apply(
 )
 {
   int rc = QV_SUCCESS;
-  hwloc_topology_t hwloc_topology;
+  hwloc_topology_t hwloc_topology = qvi_hwloc_get_topo_obj(qvi_rmi_client_hwloc_get(parent_ctx->rmi));
   hwloc_obj_type_t obj_type = qv_thread_convert_obj_type(thread_layout.obj_type);
   hwloc_const_cpuset_t cpuset = qvi_scope_cpuset_get(parent_scope);
 #ifdef OPENMP_FOUND
   int thr_idx = omp_get_thread_num();
   int num_thr = omp_get_num_threads();
 #endif
-
-  /* local topology structure is better than querying the server */
-  /* in case of fine-grain parallelism */
-
-  rc = hwloc_topology_init(&hwloc_topology);
-      //topology_export_xmlbuffer() server side
-      //set_xmlbuffer()  here    
-  rc = hwloc_topology_load(hwloc_topology);
-  
+    
   int nb_objs = hwloc_get_nbobjs_inside_cpuset_by_type(hwloc_topology,cpuset,obj_type);
-  
   /* FIXME : what should we do in oversubscribing case ?? */
-
   if(nb_objs < num_thr)    
     {
       if (!thr_idx)
