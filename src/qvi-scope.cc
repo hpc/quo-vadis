@@ -782,6 +782,7 @@ split_devices_affinity_preserving(
             );
             if (rc != QV_SUCCESS) break;
         }
+        if (rc != QV_SUCCESS) break;
     }
     return rc;
 }
