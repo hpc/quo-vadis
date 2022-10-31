@@ -33,6 +33,14 @@ using qvi_map_shaffinity_t = std::map<int, std::set<int>>;
 using qvi_map_cpusets_t = std::vector<hwloc_cpuset_t>;
 
 /**
+ * Prints debug output.
+ */
+void
+qvi_map_debug_dump(
+    const qvi_map_t &map
+);
+
+/**
  * Returns the number of From IDs that have already been mapped.
  */
 uint_t

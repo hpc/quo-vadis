@@ -571,8 +571,8 @@ qvi_global_split_devices_user_defined(
     // the color requested by task i. Also determine the number of distinct
     // colors provided in the colors array.
     std::set<int> color_set;
-    for (uint_t i = 0; i < group_size; ++i) {
-        color_set.insert(gsplit.colors[i]);
+    for (const auto &color : gsplit.colors) {
+        color_set.insert(color);
     }
     // Adjust the color set so that the distinct colors provided fall within the
     // range of the number of splits requested.
@@ -583,13 +583,13 @@ qvi_global_split_devices_user_defined(
         color_setp.insert(c);
         ncolors_chosen++;
     }
+    // Cache all device infos associated with the parent hardware pool.
+    auto dinfos = qvi_hwpool_devinfos_get(scope->hwpool);
     // Iterate over the supported device types and split them up round-robin.
     const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
     for (int i = 0; devts[i] != QV_HW_OBJ_LAST; ++i) {
         // The current device type.
         const qv_hw_obj_type_t devt = devts[i];
-        // All device infos associated with the parent hardware pool.
-        auto dinfos = qvi_hwpool_devinfos_get(scope->hwpool);
         // Get the number of devices.
         const int ndevs = dinfos->count(devt);
         // Store device infos.
@@ -672,15 +672,7 @@ qvi_global_split_devices_affinity_preserving(
         );
         if (rc != QV_SUCCESS) return rc;
 #if 0
-        qvi_log_debug("N Dev nmapped {}", qvi_map_nfids_mapped(map));
-        for (uint_t i = 0; i < ndevs; ++i) {
-            if (qvi_map_fid_mapped(map, i)) {
-                qvi_log_debug("dev {} mapped to task {}", i, map.at(i));
-            }
-            else {
-                qvi_log_debug("id not mapped {}", i);
-            }
-        }
+        qvi_map_debug_dump(map);
 #endif
         // Now that we have the mapping, assign
         // devices to the associated hardware pools.

@@ -110,9 +110,6 @@ qvi_map_maxiperk(
     return std::ceil(i / float(k));
 }
 
-/**
- * Returns the number of consumer IDs that have already been mapped.
- */
 uint_t
 qvi_map_nfids_mapped(
     const qvi_map_t &map
@@ -257,6 +254,16 @@ qvi_map_flatten(
         result[mi.first] = mi.second;
     }
     return result;
+}
+
+void
+qvi_map_debug_dump(
+    const qvi_map_t &map
+) {
+    qvi_log_debug(" # nfids_mapped={}", qvi_map_nfids_mapped(map));
+    for (const auto &mi : map) {
+        qvi_log_debug(" # fid={} mapped to tid={}", mi.first, mi.second);
+    }
 }
 
 /*
