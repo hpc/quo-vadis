@@ -88,9 +88,9 @@ typedef struct qvi_hwloc_s {
  */
 hwloc_topology_t
 qvi_hwloc_get_topo_obj(
-   qvi_hwloc_t *hwl
+    qvi_hwloc_t *hwl
 ) {
-  return hwl->topo;
+    return hwl->topo;
 }
 
 /**
