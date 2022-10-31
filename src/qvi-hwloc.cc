@@ -86,6 +86,16 @@ typedef struct qvi_hwloc_s {
 /**
  *
  */
+hwloc_topology_t
+qvi_hwloc_get_topo_obj(
+   qvi_hwloc_t *hwl
+) {
+  return hwl->topo;
+}
+
+/**
+ *
+ */
 static bool
 dev_list_compare_by_visdev_id(
     const qvi_hwloc_device_t *a,

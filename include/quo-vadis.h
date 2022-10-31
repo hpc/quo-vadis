@@ -36,7 +36,7 @@ typedef struct qv_context_s qv_context_t;
 /** Opaque quo-vadis scope. */
 struct qv_scope_s;
 typedef struct qv_scope_s qv_scope_t;
-
+  
 /* If this changes, please update the order and contents of qvi_rc_strerrs. */
 /**
  * Return codes.
