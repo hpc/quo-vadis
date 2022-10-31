@@ -130,15 +130,17 @@ qv_thread_layout_apply(
 )
 {
   int rc = QV_SUCCESS;
-  hwloc_topology_t hwloc_topology = qvi_hwloc_get_topo_obj(qvi_rmi_client_hwloc_get(parent_ctx->rmi));
+  qvi_hwloc_t *hwl = qvi_rmi_client_hwloc_get(parent_ctx->rmi);
+  hwloc_topology_t hwloc_topology = qvi_hwloc_get_topo_obj(hwl);
   hwloc_obj_type_t obj_type = qv_thread_convert_obj_type(thread_layout.obj_type);
   hwloc_const_cpuset_t cpuset = qvi_scope_cpuset_get(parent_scope);
 #ifdef OPENMP_FOUND
   int thr_idx = omp_get_thread_num();
   int num_thr = omp_get_num_threads();
-#endif
-    
-  int nb_objs = hwloc_get_nbobjs_inside_cpuset_by_type(hwloc_topology,cpuset,obj_type);
+#endif 
+  int nb_objs = 0; 
+  rc = qvi_hwloc_get_nobjs_in_cpuset(hwl,thread_layout.obj_type,cpuset, &nb_objs);
+  
   /* FIXME : what should we do in oversubscribing case ?? */
   if(nb_objs < num_thr)    
     {
@@ -150,7 +152,6 @@ qv_thread_layout_apply(
       fprintf(stdout,"====> Resource number is ok\n");
   }
 
-  
   switch(thread_layout.policy)
     {
     case QV_POLICY_PACKED:
@@ -161,7 +162,7 @@ qv_thread_layout_apply(
 							      cpuset,
 							      obj_type,
 							      (thr_idx+thr_idx*thread_layout.stride)%nb_objs);
-
+	
 	
 	hwloc_set_cpubind(hwloc_topology,obj->cpuset,HWLOC_CPUBIND_THREAD);	
 	fprintf(stdout,"[OMP TH #%i] === bound on resrc #%i\n",thr_idx,obj->logical_index);

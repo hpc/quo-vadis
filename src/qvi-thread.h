@@ -35,6 +35,35 @@ typedef struct qvi_thread_group_s qvi_thread_group_t;
 struct qvi_thread_s;
 typedef struct qvi_thread_s qvi_thread_t;
 
+/**                                                                                                   
+ * Mapping policies types.                                                                          
+ */
+/*
+typedef enum qv_policy_s {
+  QV_POLICY_PACKED     = 1,
+  QV_POLICY_COMPACT    = 1,
+  QV_POLICY_CLOSE      = 1,
+  QV_POLICY_SPREAD     = 2,
+  QV_POLICY_DISTRIBUTE = 3,
+  QV_POLICY_ALTERNATE  = 3,
+  QV_POLICY_CORESFIRST = 3,
+  QV_POLICY_SCATTER    = 4,
+  QV_POLICY_CHOOSE     = 5,
+} qv_policy_t;
+*/
+  
+/**                                                                                                   
+ * Layout for fine-grain binding                                                                     
+ * with default behaviour                                                                             
+ */
+/*
+typedef struct qv_layout_s {
+  qv_policy_t policy;
+  qv_hw_obj_type_t obj_type;
+  int stride;
+} qv_layout_t;
+*/
+  
 /**
  *
  */

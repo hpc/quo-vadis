@@ -232,105 +232,37 @@ main(
 	omp_set_num_threads(n_pu);
 	printf("[%d] Spawing OpenMP Parallel Section with %d threads\n", wrank, n_pu);
 
+	qv_layout_t thread_layout;
+	
+	/* Bind to PUs w/o stride */
+	qv_thread_layout_init(&thread_layout,QV_POLICY_PACKED,QV_HW_OBJ_PU,0);
+	
 #pragma omp parallel private(ers, rc) 
-        {
-	 int tid = omp_get_thread_num();
-	  int n_cores;
-	  int n_pus;
+	{
+	  int tid = omp_get_thread_num();
+	  printf("[%d][%d] Binding to PUS \n", wrank, tid); 
+	  rc = qv_thread_layout_apply(
+	     mpi_ctx,
+	     mpi_numa_scope,
+	     thread_layout
+	  );
+	}
 
-	  
-	  qv_context_t *omp_ctx;
-	  rc = qv_thread_context_create(&omp_ctx);
-	  if (rc != QV_SUCCESS) {
-	    ers = "qv_process_context_create() failed";
-	    panic("%s (rc=%s)", ers, qv_strerr(rc));
-	  }
-	  
-	  qv_scope_t *omp_self_scope;
-	  rc = qv_scope_get(
-              omp_ctx,
-              QV_SCOPE_JOB, // should be mpi_num_scope instead. PROCESS semantics not right here -> JOB
-              &omp_self_scope
-          );
-	  if (rc != QV_SUCCESS) {
-	    ers = "qv_scope_get(QV_SCOPE_PROCESS) failed";
-	    panic("%s (rc=%s)", ers, qv_strerr(rc));
-	  }
-	  scope_report(omp_ctx, wrank, omp_self_scope, "omp_self_scope");
-	  
-	  rc = qv_scope_nobjs(
-              omp_ctx,
-              omp_self_scope,
-              QV_HW_OBJ_CORE,
-              &n_cores
-          );
-	  if (rc != QV_SUCCESS) {
-	    ers = "qv_scope_nobjs() failed";
-	    panic("%s (rc=%s)", ers, qv_strerr(rc));
-	  }
-	  printf("[%d][%d] Number of CORES in omp_self_scope is %d\n", wrank, tid, n_cores);
-	  
-	  rc = qv_scope_nobjs(
-              omp_ctx,
-              omp_self_scope,
-              QV_HW_OBJ_PU,
-              &n_pus
-          );
-	  if (rc != QV_SUCCESS) {
-	    ers = "qv_scope_nobjs() failed";
-	    panic("%s (rc=%s)", ers, qv_strerr(rc));
-	  }
-	  printf("[%d][%d] Number of PUS   in omp_self_scope is %d\n", wrank, tid, n_pus);
-
-	  char *binds;
-	  rc = qv_bind_string(omp_ctx, QV_BIND_STRING_AS_LIST, &binds);
-	  if (rc != QV_SUCCESS) {
-	    ers = "qv_bind_string() failed";
-	    panic("%s (rc=%s)", ers, qv_strerr(rc));
-	  }
-	  printf("[%d][%d] Current cpubind is %s\n", wrank, tid, binds);
-	  free(binds);
-	  
-	  qv_scope_t *omp_sub_scope;
-	  rc = qv_scope_split(
-			      omp_ctx,
-			      omp_self_scope,
-			      omp_get_num_threads(),
-			      omp_get_thread_num(),
-			      &omp_sub_scope
-			      );
-	  if (rc != QV_SUCCESS) {
-	    ers = "qv_scope_split() failed";
-	    panic("%s (rc=%s)", ers, qv_strerr(rc));
-	  }
-	  scope_report(omp_ctx, wrank, omp_sub_scope, "omp_sub_scope");
-	  
-	  change_bind(omp_ctx, wrank, omp_sub_scope);
-	  
-	  rc = qv_scope_free(omp_ctx, omp_sub_scope);
-	  if (rc != QV_SUCCESS) {
-	    ers = "qv_scope_free() failed";
-	    panic("%s (rc=%s)", ers, qv_strerr(rc));
-	  }
-	  
-	  rc = qv_scope_free(omp_ctx, omp_self_scope);
-	  if (rc != QV_SUCCESS) {
-	    ers = "qv_scope_free() failed";
-	    panic("%s (rc=%s)", ers, qv_strerr(rc));
-	  }
-	  
-	  rc = qv_context_barrier(omp_ctx);
-	  if (rc != QV_SUCCESS) {
-	    ers = "qv_context_barrier() failed";
-	    panic("%s (rc=%s)", ers, qv_strerr(rc));
-	  }
-	  
-	  rc = qv_thread_context_free(omp_ctx);
-	  if (rc != QV_SUCCESS) {
-	    ers = "qv_thread_context_free failed";
-	    panic("%s (rc=%s)", ers, qv_strerr(rc));
-	  }
-	} 
+	omp_set_num_threads(n_pu/4);
+	printf("[%d] Spawing OpenMP Parallel Section with %d threads\n", wrank, n_pu/4);
+	
+	/* Bind to cores with a stride of 1 */	
+	qv_thread_layout_init(&thread_layout,QV_POLICY_PACKED,QV_HW_OBJ_CORE,1);	
+#pragma omp parallel private(ers, rc) 
+	{
+	  int tid = omp_get_thread_num();
+	  printf("[%d][%d] Binding to CORES \n", wrank, tid); 
+	  rc = qv_thread_layout_apply(
+	     mpi_ctx,
+	     mpi_numa_scope,
+	     thread_layout
+	  );
+	}
       }
     else
       {
