@@ -20,6 +20,9 @@
 #include <string.h>
 #include <unistd.h>
 
+#define USE_AFFINITY_PRESERVING 1
+
+
 #define panic(vargs...)                                                        \
 do {                                                                           \
     fprintf(stderr, "\n%s@%d: ", __func__, __LINE__);                          \
@@ -109,6 +112,9 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
+    if (wrank == 0)
+      printf("\n===Phase 1: Regular split===\n"); 
+
     char *binds;
     rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
@@ -125,7 +131,11 @@ main(
         ctx,
         base_scope,
         wsize,        // Number of workers
-        wrank,        // My group color
+#ifdef USE_AFFINITY_PRESERVING
+	QV_SCOPE_SPLIT_AFFINITY_PRESERVING,
+#else
+	wrank,        // My group color
+#endif 
         &sub_scope
     );
     if (rc != QV_SUCCESS) {
@@ -209,6 +219,13 @@ main(
     printf("[%d] Popped up to %s\n", wrank, binds);
     free(binds);
 
+    /* Keep printouts separate for each phase */ 
+    rc = qv_context_barrier(ctx);
+    if (rc != QV_SUCCESS) {
+      ers = "qv_context_barrier() failed";
+      panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
     /***************************************
      * Phase 2: One master per resource,
      *          others sleep, ay.
@@ -220,6 +237,9 @@ main(
        we could ask for a leader of each subscope.
        However, this does not guarantee a NUMA split.
        Thus, we use qv_scope_split_at. */
+    if (wrank == 0)
+      printf("\n===Phase 2: NUMA split===\n"); 
+
 #if 1
     int nnumas, my_numa_id;
     qv_scope_t *numa_scope;
@@ -229,7 +249,7 @@ main(
     rc = qv_scope_nobjs(
         ctx,
         base_scope,
-    QV_HW_OBJ_NUMANODE,
+	QV_HW_OBJ_NUMANODE,
         &nnumas
     );
     if (rc != QV_SUCCESS) {
@@ -242,7 +262,11 @@ main(
         ctx,
         base_scope,
         QV_HW_OBJ_NUMANODE,
-        wrank % nnumas,          // color or group id
+#ifdef USE_AFFINITY_PRESERVING
+	QV_SCOPE_SPLIT_AFFINITY_PRESERVING,
+#else
+	wrank % nnumas,          // color or group id
+#endif 
         &numa_scope
     );
     if (rc != QV_SUCCESS) {
@@ -257,6 +281,9 @@ main(
         &my_numa_id
     );
 
+    printf("[%d]: #NUMAs=%d numa_scope_id=%d\n",
+	   wrank, nnumas, my_numa_id); 
+    
     rc = qv_bind_push(ctx, numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
@@ -322,13 +349,21 @@ main(
     printf("[%d] Popped up to %s\n", wrank, binds);
     free(binds);
 
+    /* Keep printouts separate for each phase */ 
+    rc = qv_context_barrier(ctx);
+    if (rc != QV_SUCCESS) {
+      ers = "qv_context_barrier() failed";
+      panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
 #endif
 
     /***************************************
      * Phase 3: 
      *   GPU work! 
      ***************************************/
-
+    if (wrank == 0)
+      printf("\n===Phase 3: GPU split===\n"); 
+    
     int my_gpu_id;
     qv_scope_t *gpu_scope;
 
@@ -347,7 +382,11 @@ main(
         base_scope,
         QV_HW_OBJ_GPU,
         // TODO Fix if no GPUs; Crashes with 0
-        wrank % ngpus,          // color or group id
+#ifdef USE_AFFINITY_PRESERVING
+	QV_SCOPE_SPLIT_AFFINITY_PRESERVING,
+#else
+	wrank % ngpus,          // color or group id
+#endif 
         &gpu_scope
     );
     if (rc != QV_SUCCESS) {
