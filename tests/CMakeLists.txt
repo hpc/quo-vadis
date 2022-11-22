@@ -164,6 +164,16 @@ if(MPI_FOUND)
     )
 
     add_executable(
+        test-mpi-scope-create
+        test-mpi-scope-create.c
+    )
+
+    target_link_libraries(
+        test-mpi-scope-create
+        quo-vadis-mpi
+    )
+
+    add_executable(
         test-mpi-getdev
         test-mpi-getdev.c
     )
