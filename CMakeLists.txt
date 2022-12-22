@@ -31,6 +31,10 @@ set(CXX_STANDARD_REQUIRED TRUE)
 # Append our module path
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
+if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
+    cmake_policy(SET CMP0135 NEW)
+endif()
+
 # Setup Fortran support.
 include(cmake/QVFortranSupport.cmake)
 

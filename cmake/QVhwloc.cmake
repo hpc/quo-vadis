@@ -91,7 +91,6 @@ ExternalProject_Add(
     libhwloc
     URL file://${QVI_HWLOC_DIR}
     URL_MD5 "e9cb9230bcdf450b0948f255d505503f"
-    DOWNLOAD_EXTRACT_TIMESTAMP FALSE
     PREFIX ${QVI_HWLOC_PREFIX}
     CONFIGURE_COMMAND
       <SOURCE_DIR>/configure
