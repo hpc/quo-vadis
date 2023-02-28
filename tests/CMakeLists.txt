@@ -56,6 +56,7 @@ add_test(
 ################################################################################
 add_executable(
     test-process-scopes
+    qvi-test-common.h
     test-process-scopes.c
 )
 
@@ -289,7 +290,6 @@ add_test(
 ################################################################################
 ################################################################################
 # Use the C linker to test for C/C++ linkage problems.
-# TODO(skg) Add test-pmi
 set_target_properties(
     test-hwloc
     test-scopes
