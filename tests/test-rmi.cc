@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -13,16 +13,12 @@
  * @file test-rmi.cc
  */
 
+
+#include "quo-vadis.h"
 #include "qvi-utils.h"
 #include "qvi-hwloc.h"
 #include "qvi-rmi.h"
-
-#include "quo-vadis.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
+#include "qvi-test-common.h"
 
 static int
 server(

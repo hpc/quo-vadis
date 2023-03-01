@@ -82,15 +82,26 @@ main(
         qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
+    int wscope_rank = 0;
+    rc = MPI_Comm_rank(wscope_comm, &wscope_rank);
+    if (rc != MPI_SUCCESS) {
+        ers = "MPI_Comm_rank() failed";
+        qvi_test_panic("%s (rc=%d)", ers, rc);
+    }
+
     if (wscope_size != wsize) {
         ers = "MPI communicator size mismatch!";
         qvi_test_panic("%s", ers);
     }
 
+    if (wscope_rank != wrank) {
+        ers = "MPI communicator rank mismatch!";
+        qvi_test_panic("%s", ers);
+    }
+
     qv_scope_t *sub_scope = NULL;
     rc = qv_scope_split(
-        ctx, world_scope, wsize,
-        wrank, &sub_scope
+        ctx, world_scope, wsize, wrank, &sub_scope
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split() failed";
@@ -154,6 +165,7 @@ main(
     }
 
     MPI_Finalize();
+
     return EXIT_SUCCESS;
 }
 

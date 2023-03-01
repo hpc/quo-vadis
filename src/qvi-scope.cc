@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -375,17 +375,27 @@ qvi_global_split_scatter(
 }
 
 /**
- * Returns the cpuset. Note that the cpuset will be shared among the group
- * members, but other resources may be distributed differently. For example,
- * some hardware pools may have GPUs, while others may not.
+ * Returns a copy of the global cpuset. Note that the cpuset will be shared
+ * among the group members, but other resources may be distributed differently.
+ * For example, some hardware pools may have GPUs, while others may not.
  */
-static hwloc_const_cpuset_t
+static int
 qvi_global_split_get_cpuset(
-    const qvi_global_split_t &gsplit
+    const qvi_global_split_t &gsplit,
+    hwloc_cpuset_t *result
 ) {
     // This shouldn't happen.
-    if (gsplit.hwpools.size() == 0) return nullptr;
-    return qvi_hwpool_cpuset_get(gsplit.hwpools[0]);
+    if (gsplit.hwpools.size() == 0) {
+        *result = nullptr;
+        return QV_ERR_INTERNAL;
+    }
+
+    int rc = qvi_hwloc_bitmap_calloc(result);
+    if (rc != QV_SUCCESS) return rc;
+
+    return qvi_hwloc_bitmap_copy(
+        qvi_hwpool_cpuset_get(gsplit.hwpools[0]), *result
+    );
 }
 
 int
@@ -704,9 +714,12 @@ qvi_global_split_user_defined(
 ) {
     int rc = QV_SUCCESS;
     const uint_t group_size = scope->group->size();
-    qvi_hwloc_t *hwloc = qvi_rmi_client_hwloc_get(scope->rmi);
-    hwloc_const_cpuset_t base_cpuset = qvi_global_split_get_cpuset(gsplit);
+    qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc_get(scope->rmi);
     qvi_map_cpusets_t cpusets(group_size);
+    // Get the base cpuset.
+    hwloc_cpuset_t base_cpuset = nullptr;
+    rc = qvi_global_split_get_cpuset(gsplit, &base_cpuset);
+    if (rc != QV_SUCCESS) goto out;
 
     for (uint_t i = 0; i < group_size; ++i) {
         rc = qvi_hwloc_split_cpuset_by_color(
@@ -728,6 +741,7 @@ out:
     for (auto &cpuset : cpusets) {
         qvi_hwloc_bitmap_free(&cpuset);
     }
+    qvi_hwloc_bitmap_free(&base_cpuset);
     return rc;
 }
 
@@ -742,14 +756,16 @@ qvi_global_split_affinity_preserving(
     int rc = QV_SUCCESS;
     // The group size: number of members.
     const uint_t group_size = scope->group->size();
-    //
-    qvi_hwloc_t *hwloc = qvi_rmi_client_hwloc_get(scope->rmi);
-    // The cpuset that we are going to split.
-    hwloc_const_cpuset_t base_cpuset = qvi_global_split_get_cpuset(gsplit);
+    // Pointer to my hwloc instance.
+    qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc_get(scope->rmi);
     // cpusets with straightforward splitting: one for each color.
     qvi_map_cpusets_t cpusets(gsplit.size);
     // Maintains the mapping between task IDs and resource IDs.
     qvi_map_t map;
+    // The cpuset that we are going to split.
+    hwloc_cpuset_t base_cpuset = nullptr;
+    rc = qvi_global_split_get_cpuset(gsplit, &base_cpuset);
+    if (rc != QV_SUCCESS) goto out;
     // Perform a straightforward splitting of the provided cpuset. Notice that
     // we do not go through the RMI for this because this is just an local,
     // temporary splitting that is ultimately fed to another splitting
@@ -781,6 +797,7 @@ out:
     for (auto &cpuset : cpusets) {
         qvi_hwloc_bitmap_free(&cpuset);
     }
+    qvi_hwloc_bitmap_free(&base_cpuset);
     return rc;
 }
 

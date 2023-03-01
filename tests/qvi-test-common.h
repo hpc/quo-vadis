@@ -28,8 +28,11 @@ do {                                                                           \
     fprintf(stderr, __VA_ARGS__);                                              \
     fprintf(stderr, "\n");                                                     \
     fflush(stderr);                                                            \
-    abort();                                                                   \
+    exit(EXIT_FAILURE);                                                        \
 } while (0)
+
+// We assume that the quo-vadis.h is included before us.
+#ifdef QUO_VADIS
 
 static inline void
 qvi_test_scope_report(
@@ -69,6 +72,122 @@ qvi_test_scope_report(
     }
 }
 
+/**
+ * A verbose version of qv_bind_push().
+ */
+static inline void
+qvi_test_bind_push(
+    qv_context_t *ctx,
+    qv_scope_t *scope
+) {
+    char const *ers = NULL;
+
+    const int pid = getpid();
+
+    int taskid;
+    int rc = qv_scope_taskid(ctx, scope, &taskid);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_taskid() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    if (getenv("HWLOC_XMLFILE")) {
+        if (taskid == 0) {
+            printf("*** Using synthetic topology. "
+                   "Skipping change_bind tests. ***\n");
+        }
+        return;
+    }
+
+    // Get current binding.
+    char *bind0s;
+    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &bind0s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    printf("[%d] Current cpubind before qv_bind_push() is %s\n", pid, bind0s);
+
+    // Change binding.
+    rc = qv_bind_push(ctx, scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_push() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    // Get new, current binding.
+    char *bind1s;
+    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &bind1s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    printf("[%d] New cpubind after qv_bind_push() is      %s\n", pid, bind1s);
+
+    free(bind0s);
+    free(bind1s);
+}
+
+/**
+ * A verbose version of qv_bind_pop().
+ */
+static inline void
+qvi_test_bind_pop(
+    qv_context_t *ctx,
+    qv_scope_t *scope
+) {
+    char const *ers = NULL;
+
+    const int pid = getpid();
+
+    int taskid;
+    int rc = qv_scope_taskid(ctx, scope, &taskid);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_taskid() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    if (getenv("HWLOC_XMLFILE")) {
+        if (taskid == 0) {
+            printf("*** Using synthetic topology. "
+                   "Skipping change_bind tests. ***\n");
+        }
+        return;
+    }
+
+    // Get current binding.
+    char *bind0s;
+    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &bind0s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    printf("[%d] Current cpubind before qv_bind_pop() is  %s\n", pid, bind0s);
+
+    // Change binding.
+    rc = qv_bind_pop(ctx);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_push() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    // Get new, current binding.
+    char *bind1s;
+    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &bind1s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    printf("[%d] New cpubind after qv_bind_pop() is       %s\n", pid, bind1s);
+
+    free(bind0s);
+    free(bind1s);
+}
+
+/**
+ * Collective call over the provided scope that tests pushing and popping of
+ * binding policies.
+ */
 static inline void
 qvi_test_change_bind(
     qv_context_t *ctx,
@@ -147,6 +266,13 @@ qvi_test_change_bind(
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
+
+#endif // #ifdef QUO_VADIS
+
+// We assume that the infrastructure-specific headers are included before us.
+#ifdef QUO_VADIS_MPI
+
+#endif // #ifdef QUO_VADIS_MPI
 
 #endif
 
