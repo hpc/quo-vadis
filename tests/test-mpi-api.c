@@ -1,5 +1,5 @@
 /*
- * Copyright (c)      2022 Triad National Security, LLC
+ * Copyright (c) 2022-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -11,20 +11,7 @@
  */
 
 #include "quo-vadis-mpi.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-
-#define panic(vargs...)                                                        \
-do {                                                                           \
-    fprintf(stderr, "\n%s@%d: ", __func__, __LINE__);                          \
-    fprintf(stderr, vargs);                                                    \
-    fprintf(stderr, "\n");                                                     \
-    fflush(stderr);                                                            \
-    exit(EXIT_FAILURE);                                                        \
-} while (0)
+#include "qvi-test-common.h"
 
 int
 main(
@@ -37,28 +24,28 @@ main(
     int rc = MPI_Init(&argc, &argv);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Init() failed";
-        panic("%s (rc=%d)", ers, rc);
+        qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
     int wsize = 0;
     rc = MPI_Comm_size(comm, &wsize);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_size() failed";
-        panic("%s (rc=%d)", ers, rc);
+        qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
     int wrank = 0;
     rc = MPI_Comm_rank(comm, &wrank);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_rank() failed";
-        panic("%s (rc=%d)", ers, rc);
+        qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
     int vmajor, vminor, vpatch;
     rc = qv_version(&vmajor, &vminor, &vpatch);
     if (rc != QV_SUCCESS) {
         ers = "qv_version() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     if (wrank == 0) {
@@ -69,7 +56,7 @@ main(
     rc = qv_mpi_context_create(&ctx, comm);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     qv_scope_t *world_scope = NULL;
@@ -78,26 +65,26 @@ main(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_get() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     MPI_Comm wscope_comm = MPI_COMM_NULL;
     rc = qv_mpi_scope_comm_dup(ctx, world_scope, &wscope_comm);
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_scope_comm_dup() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int wscope_size = 0;
     rc = MPI_Comm_size(wscope_comm, &wscope_size);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_size() failed";
-        panic("%s (rc=%d)", ers, rc);
+        qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
     if (wscope_size != wsize) {
         ers = "MPI communicator size mismatch!";
-        panic("%s", ers);
+        qvi_test_panic("%s", ers);
     }
 
     qv_scope_t *sub_scope = NULL;
@@ -107,21 +94,21 @@ main(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     MPI_Comm split_wscope_comm = MPI_COMM_NULL;
     rc = qv_mpi_scope_comm_dup(ctx, sub_scope, &split_wscope_comm);
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_scope_comm_dup() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int split_wscope_size = 0;
     rc = MPI_Comm_size(split_wscope_comm, &split_wscope_size);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_size() failed";
-        panic("%s (rc=%d)", ers, rc);
+        qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
     if (wrank == 0) {
@@ -136,13 +123,13 @@ main(
     rc = qv_scope_free(ctx, sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = qv_scope_free(ctx, world_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = qv_mpi_context_free(ctx);
@@ -153,16 +140,19 @@ main(
     rc = MPI_Comm_free(&wscope_comm);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_free() failed";
-        panic("%s (rc=%d)", ers, rc);
+        qvi_test_panic("%s (rc=%d)", ers, rc);
     }
+
     rc = MPI_Comm_free(&split_wscope_comm);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_free() failed";
-        panic("%s (rc=%d)", ers, rc);
+        qvi_test_panic("%s (rc=%d)", ers, rc);
     }
+
     if (wrank == 0) {
         printf("Succcess!\n");
     }
+
     MPI_Finalize();
     return EXIT_SUCCESS;
 }

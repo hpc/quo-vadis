@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -18,13 +18,7 @@
 #include "qvi-utils.h"
 
 #include "quo-vadis.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-
-// TODO(skg) Cleanup: this is a mess.
+#include "qvi-test-common.h"
 
 int
 main(
@@ -39,41 +33,42 @@ main(
     int rc = MPI_Init(&argc, &argv);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Init() failed";
-        fprintf(stderr, "%s\n", ers);
-        return EXIT_FAILURE;
+        qvi_test_panic("%s (rc=%d)", ers, rc);
     }
+
     int wsize;
     rc = MPI_Comm_size(comm, &wsize);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_size() failed";
-        fprintf(stderr, "%s\n", ers);
-        return EXIT_FAILURE;
+        qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
     qvi_mpi_t *mpi = NULL;
     rc = qvi_mpi_new(&mpi);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_new() failed";
-        goto out;
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = qvi_mpi_init(mpi, comm);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_init() failed";
-        goto out;
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     qvi_mpi_group_t *node_group;
     rc = qvi_mpi_group_new(&node_group);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_group_new() failed";
-        goto out;
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+
     rc = qvi_mpi_group_lookup_by_id(mpi, QVI_MPI_GROUP_NODE, node_group);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_group_lookup_by_id() failed";
-        goto out;
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+
     int nsize = qvi_mpi_group_size(node_group);
     int group_id = qvi_mpi_group_id(node_group);
 
@@ -85,11 +80,7 @@ main(
         "Hello from %s gid=%" PRId64
         " (lid=%d, nsize=%d, node_gid=%d) of wsize=%d\n",
         qvi_task_type(task) == QV_TASK_TYPE_PROCESS ? "process" : "thread",
-        task_gid,
-        task_lid,
-        nsize,
-        group_id,
-        wsize
+        task_gid, task_lid, nsize, group_id, wsize
     );
 
     qvi_mpi_group_t *node_even_group = NULL;
@@ -97,27 +88,25 @@ main(
     evens = calloc(n_evens, sizeof(*evens));
     if (!evens) {
         ers = "calloc() failed";
-        goto out;
+        qvi_test_panic("%s", ers);
     }
+
     for (int r = 0, i = 0; r < wsize; ++r) {
         if (r % 2 == 0) evens[i++] = r;
     }
+
     rc = qvi_mpi_group_create_from_ids(
-        mpi,
-        node_group,
-        n_evens,
-        evens,
-        &node_even_group
+        mpi, node_group, n_evens, evens, &node_even_group
     );
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_group_create_from_ids() failed";
-        goto out;
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+
     if (node_even_group) {
         printf(
             "GID=%" PRId64 " Task %d says hello from node even group!\n",
-            task_gid,
-            task_lid
+            task_gid, task_lid
         );
     }
 
@@ -125,33 +114,30 @@ main(
     rc = qvi_mpi_group_create_from_mpi_comm(mpi, comm, &world_group);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_group_create_from_mpi_comm() failed";
-        goto out;
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+
     int world_group_id = qvi_mpi_group_id(world_group);
     int world_group_size = qvi_mpi_group_size(world_group);
     printf(
         "GID=%" PRId64 " World group task %d of %d says hello!\n",
-        task_gid,
-        world_group_id,
-        world_group_size
+        task_gid, world_group_id, world_group_size
     );
 
     rc = qvi_mpi_finalize(mpi);
     if (rc != QV_SUCCESS) {
         ers = "qvi_mpi_finalize() failed";
-        goto out;
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-out:
+
     qvi_mpi_group_free(&node_even_group);
     qvi_mpi_group_free(&node_group);
     qvi_mpi_group_free(&world_group);
     qvi_mpi_free(&mpi);
     if (evens) free(evens);
+
     MPI_Finalize();
-    if (ers) {
-        fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
-        return EXIT_FAILURE;
-    }
+
     return EXIT_SUCCESS;
 }
 

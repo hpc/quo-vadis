@@ -1,17 +1,6 @@
 #include "qvi-macros.h"
 #include "quo-vadis-mpi.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-
-#define panic(vargs...)                                                        \
-do {                                                                           \
-    fprintf(stderr, "\n%s@%d: ", __func__, __LINE__);                          \
-    fprintf(stderr, vargs);                                                    \
-    fprintf(stderr, "\n");                                                     \
-    fflush(stderr);                                                            \
-    exit(EXIT_FAILURE);                                                        \
-} while (0)
+#include "qvi-test-common.h"
 
 typedef struct device_name_type_s {
     char const *name;
@@ -24,6 +13,7 @@ static const device_name_type_t devnts[] = {
     {QVI_STRINGIFY(QV_DEVICE_ID_ORDINAL),    QV_DEVICE_ID_ORDINAL}
 };
 
+// TODO(skg) Merge with others
 static void
 emit_gpu_info(
     qv_context_t *ctx,
@@ -35,7 +25,7 @@ emit_gpu_info(
     int rc = qv_scope_nobjs(ctx, scope, QV_HW_OBJ_GPU, &ngpus);
     if (rc != QV_SUCCESS) {
         const char *ers = "qv_scope_nobjs() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     if (ngpus == 0) {
@@ -45,7 +35,7 @@ emit_gpu_info(
 
     printf("\n# Discovered GPU Devices in %s\n", scope_name);
     const unsigned ndevids = sizeof(devnts) / sizeof(device_name_type_t);
-    for (unsigned i = 0; i < ngpus; ++i) {
+    for (int i = 0; i < ngpus; ++i) {
         for (unsigned j = 0; j < ndevids; ++j) {
             char *devids = NULL;
             int rc = qv_scope_get_device_id(
@@ -58,7 +48,7 @@ emit_gpu_info(
             );
             if (rc != QV_SUCCESS) {
                 const char *ers = "qv_scope_get_device_id() failed";
-                panic("%s (rc=%s)", ers, qv_strerr(rc));
+                qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
             }
             printf("# Device %u %s = %s\n", i, devnts[j].name, devids);
             free(devids);
@@ -67,29 +57,32 @@ emit_gpu_info(
     printf("# -----------------------------------------------------------\n");
 }
 
-int main(int argc, char **argv)
-{
+int
+main(
+    int argc,
+    char **argv
+) {
     char const *ers = NULL;
     MPI_Comm comm = MPI_COMM_WORLD;
 
     int rc = MPI_Init(&argc, &argv);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Init() failed";
-        panic("%s (rc=%d)", ers, rc);
+        qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
     int wsize;
     rc = MPI_Comm_size(comm, &wsize);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_size() failed";
-        panic("%s (rc=%d)", ers, rc);
+        qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
     int wrank;
     rc = MPI_Comm_rank(comm, &wrank);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_rank() failed";
-        panic("%s (rc=%d)", ers, rc);
+        qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
     /* Create a QV context */
@@ -97,7 +90,7 @@ int main(int argc, char **argv)
     rc = qv_mpi_context_create(&ctx, comm);
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_context_create() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     /* Get base scope: RM-given resources */
@@ -105,7 +98,7 @@ int main(int argc, char **argv)
     rc = qv_scope_get(ctx, QV_SCOPE_USER, &base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_get() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     if (wrank == 0) {
@@ -117,7 +110,7 @@ int main(int argc, char **argv)
     rc = qv_scope_nobjs(ctx, base_scope, QV_HW_OBJ_GPU, &ngpus);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     if (wrank == 0) {
         printf("[%d]: Base scope has %d GPUs\n", wrank, ngpus);
@@ -135,14 +128,14 @@ int main(int argc, char **argv)
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     /* Move to my subscope */
     rc = qv_bind_push(ctx, rank_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     /* Get num GPUs */
@@ -150,7 +143,7 @@ int main(int argc, char **argv)
     rc = qv_scope_nobjs(ctx, rank_scope, QV_HW_OBJ_GPU, &rank_ngpus);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d]: Local scope has %d GPUs\n", wrank, rank_ngpus);
     // TODO(skg) Improve this test.
@@ -172,9 +165,10 @@ int main(int argc, char **argv)
     qv_scope_free(ctx, rank_scope);
     qv_scope_free(ctx, base_scope);
     qv_mpi_context_free(ctx);
+
     MPI_Finalize();
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 /*

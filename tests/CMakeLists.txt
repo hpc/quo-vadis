@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2022 Triad National Security, LLC
+# Copyright (c) 2020-2023 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -14,6 +14,7 @@
 ################################################################################
 add_executable(
     test-hwloc
+    qvi-test-common.h
     test-hwloc.c
 )
 
@@ -106,6 +107,7 @@ endif()
 if(MPI_FOUND)
     add_executable(
         test-mpi
+        qvi-test-common.h
         test-mpi.c
     )
 
@@ -116,6 +118,7 @@ if(MPI_FOUND)
 
     add_executable(
         test-mpi-init
+        qvi-test-common.h
         test-mpi-init.c
     )
 
@@ -126,6 +129,7 @@ if(MPI_FOUND)
 
     add_executable(
         test-mpi-api
+        qvi-test-common.h
         test-mpi-api.c
     )
 
@@ -136,6 +140,7 @@ if(MPI_FOUND)
 
     add_executable(
         test-mpi-scopes
+        qvi-test-common.h
         test-mpi-scopes.c
     )
 
@@ -146,6 +151,7 @@ if(MPI_FOUND)
 
     add_executable(
         test-mpi-scopes-affinity-preserving
+        qvi-test-common.h
         test-mpi-scopes-affinity-preserving.c
     )
 
@@ -156,6 +162,7 @@ if(MPI_FOUND)
 
     add_executable(
         test-mpi-phases
+        qvi-test-common.h
         test-mpi-phases.c
     )
 
@@ -166,6 +173,7 @@ if(MPI_FOUND)
 
     add_executable(
         test-mpi-scope-create
+        qvi-test-common.h
         test-mpi-scope-create.c
     )
 
@@ -176,6 +184,7 @@ if(MPI_FOUND)
 
     add_executable(
         test-mpi-getdev
+        qvi-test-common.h
         test-mpi-getdev.c
     )
 
@@ -188,6 +197,7 @@ if(MPI_FOUND)
     if(OPENMP_FOUND)
         add_executable(
             test-mpi-threads
+            qvi-test-common.h
             test-mpi-threads.c
         )
 
@@ -200,6 +210,7 @@ if(MPI_FOUND)
 
         add_executable(
             test-mpi-threads-layout
+            qvi-test-common.h
             test-mpi-threads-layout.c
         )
 

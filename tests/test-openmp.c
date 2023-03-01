@@ -1,5 +1,5 @@
 /*
- * Copyright (c)      2022 Triad National Security, LLC
+ * Copyright (c) 2022-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -17,10 +17,8 @@
 #include <omp.h>
 
 int
-main(
-     int argc,
-     char *argv[]
-){
+main(void)
+{
     printf("# Starting OpenMP test\n");
 
     printf("# OpenMP Test Max Threads=%d\n ", omp_get_max_threads());

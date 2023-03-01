@@ -22,10 +22,10 @@
 #include <string.h>
 #include <unistd.h>
 
-#define qvi_test_panic(vargs...)                                               \
+#define qvi_test_panic(...)                                                    \
 do {                                                                           \
     fprintf(stderr, "\n%s@%d: ", __func__, __LINE__);                          \
-    fprintf(stderr, vargs);                                                    \
+    fprintf(stderr, __VA_ARGS__);                                              \
     fprintf(stderr, "\n");                                                     \
     fflush(stderr);                                                            \
     abort();                                                                   \
@@ -34,11 +34,12 @@ do {                                                                           \
 static inline void
 qvi_test_scope_report(
     qv_context_t *ctx,
-    int pid,
     qv_scope_t *scope,
     const char *const scope_name
 ) {
     char const *ers = NULL;
+
+    const int pid = getpid();
 
     int taskid;
     int rc = qv_scope_taskid(ctx, scope, &taskid);
@@ -71,13 +72,21 @@ qvi_test_scope_report(
 static inline void
 qvi_test_change_bind(
     qv_context_t *ctx,
-    int pid,
     qv_scope_t *scope
 ) {
     char const *ers = NULL;
 
+    const int pid = getpid();
+
+    int taskid;
+    int rc = qv_scope_taskid(ctx, scope, &taskid);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_taskid() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
     if (getenv("HWLOC_XMLFILE")) {
-        if (pid == 0) {
+        if (taskid == 0) {
             printf("*** Using synthetic topology. "
                    "Skipping change_bind tests. ***\n");
         }
@@ -86,7 +95,7 @@ qvi_test_change_bind(
 
     // Get current binding.
     char *bind0s;
-    int rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &bind0s);
+    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &bind0s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -138,7 +147,6 @@ qvi_test_change_bind(
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
-
 
 #endif
 
