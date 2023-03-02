@@ -1,4 +1,6 @@
 # Modified from git/git
+name: Check Whitespace
+
 on:
   workflow_call:
 
