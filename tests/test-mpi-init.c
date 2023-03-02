@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Triad National Security, LLC
+ * Copyright (c) 2020-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -14,11 +14,7 @@
  */
 
 #include "quo-vadis-mpi.h"
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
+#include "qvi-test-common.h"
 
 int
 main(
@@ -31,34 +27,42 @@ main(
     int rc = MPI_Init(&argc, &argv);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Init() failed";
-        fprintf(stderr, "%s\n", ers);
-        return EXIT_FAILURE;
+        qvi_test_panic("%s (rc=%d)", ers, rc);
     }
+
     int wsize;
     rc = MPI_Comm_size(comm, &wsize);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_size() failed";
-        fprintf(stderr, "%s\n", ers);
-        return EXIT_FAILURE;
+        qvi_test_panic("%s (rc=%d)", ers, rc);
+    }
+
+    int wrank = 0;
+    rc = MPI_Comm_rank(comm, &wrank);
+    if (rc != MPI_SUCCESS) {
+        ers = "MPI_Comm_rank() failed";
+        qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
     qv_context_t *ctx = NULL;
     rc = qv_mpi_context_create(&ctx, comm);
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_context_create() failed";
-        goto out;
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-out:
     rc = qv_mpi_context_free(ctx);
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_context_free() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+
     MPI_Finalize();
-    if (ers) {
-        fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
-        return EXIT_FAILURE;
+
+    if (wrank == 0) {
+        printf("Succcess!\n");
     }
+
     return EXIT_SUCCESS;
 }
 
