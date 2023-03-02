@@ -2,7 +2,7 @@ on:
   workflow_call:
 
 jobs:
-  Build:
+  Test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -27,13 +27,13 @@ jobs:
         -DCMAKE_C_FLAGS="-Wall -Wextra -Wpedantic -Werror" \
         -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror"
 
-    - name: Build
+    - name: Build Code
       run: |
         cmake \
         --build ${{github.workspace}}/build \
         --config ${{matrix.build-type}} -j
 
-    - name: Test
+    - name: Run ctest Tests
       working-directory: ${{github.workspace}}/build
       run: ctest -C ${{matrix.build-type}} --output-on-failure
 
