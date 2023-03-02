@@ -58,7 +58,7 @@ jobs:
             echo "${dash} ${sha} ${etc}"
             ;;
           esac
-        done <<< $(git log --check --pretty=format:"---% h% s" "${baseSha}..")
+        done <<< $(git log --check --pretty=format:"---% h% s" ${baseSha})
 
         if test ${#problems[*]} -gt 0
         then
