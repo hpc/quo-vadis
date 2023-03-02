@@ -34,7 +34,7 @@ jobs:
         -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
         -DCMAKE_C_FLAGS="$c_compile_flags" \
         -DCMAKE_CXX_FLAGS="$c_compile_flags" \
-        "$cmake_exe_link_flags"
+        $cmake_exe_link_flags
 
     - name: Build Code
       run: |
