@@ -6,10 +6,6 @@ on:
   pull_request:
     branches: [ "master" ]
 
-env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Debug
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -17,6 +13,8 @@ jobs:
     strategy:
       max-parallel: 2
       fail-fast: true
+      matrix:
+        build-type: [Debug, Release]
 
     steps:
     - uses: actions/checkout@v3
@@ -28,14 +26,14 @@ jobs:
 
     - name: Configure CMake
       run: |
-        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.build-type}}
 
     - name: Build
       # Build your program with the given configuration
       run: |
-        cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} -j
+        cmake --build ${{github.workspace}}/build --config ${{matrix.build-type}} -j
 
     - name: Test
       working-directory: ${{github.workspace}}/build
       # Execute tests defined by the CMake configuration.
-      run: ctest -C ${{env.BUILD_TYPE}} --output-on-failure
+      run: ctest -C ${{matrix.build-type}} --output-on-failure
