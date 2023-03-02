@@ -7,45 +7,8 @@ on:
     branches: [ "master" ]
 
 jobs:
-  check-whitespace:
+  Style:
     uses: ./.github/workflows/check-whitespace.yml
-  build:
-     # Require check-whitespace to pass before we run rest of QA.
-    needs: [check-whitespace]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      max-parallel: 2
-      fail-fast: true
-      matrix:
-        build-type: [Debug, Release]
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Install Dependencies
-      run: |
-        sudo apt update
-        sudo apt install libczmq-dev libmpich-dev
-
-    - name: Configure CMake
-      run: |
-        cmake \
-        -B ${{github.workspace}}/build \
-        -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
-        -DCMAKE_C_FLAGS="-Wall -Wextra -Wpedantic -Werror" \
-        -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -Werror"
-
-    - name: Build
-      run: |
-        cmake \
-        --build ${{github.workspace}}/build \
-        --config ${{matrix.build-type}} -j
-
-    - name: Test
-      working-directory: ${{github.workspace}}/build
-      run: ctest -C ${{matrix.build-type}} --output-on-failure
-
-    - name: Test Packaging
-      working-directory: ${{github.workspace}}/build
-      run: make package_source
+  Build:
+    uses: ./.github/workflows/build.yml
+    needs: Style

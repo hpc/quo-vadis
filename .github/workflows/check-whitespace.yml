@@ -1,16 +1,14 @@
 # Modified from git/git
-
-name: check-whitespace
+on:
+  workflow_call:
 
 # Get the repository with all commits to ensure that we can analyze
 # all of the commits contributed via the Pull Request.
 # Process `git log --check` output to extract just the check errors.
 # Exit with failure upon white-space issues.
 
-on: [workflow_call]  # Allow this workflow to be called from other workflows.
-
 jobs:
-  check-whitespace:
+  Whitespace:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
