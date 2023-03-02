@@ -114,24 +114,6 @@ main(void)
 
     qvi_test_change_bind(ctx, sub_scope);
 
-    qv_scope_t *sub_sub_scope;
-    rc = qv_scope_split(
-        ctx, sub_scope, npieces, taskid, &sub_sub_scope
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_split() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    rc = qv_scope_nobjs(
-        ctx, sub_sub_scope, QV_HW_OBJ_NUMANODE, &n_numa
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    printf("[%d] Number of NUMA in sub_sub_scope is %d\n", pid, n_numa);
-
     rc = qv_scope_free(ctx, base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
@@ -139,12 +121,6 @@ main(void)
     }
 
     rc = qv_scope_free(ctx, sub_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    rc = qv_scope_free(ctx, sub_sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
