@@ -201,6 +201,8 @@ qvi_hwloc_new(
     int rc = QV_SUCCESS;
 
     qvi_hwloc_t *ihwl = qvi_new qvi_hwloc_t();
+    // TODO(skg) FIXME
+    ihwl = qvi_new qvi_hwloc_t();
     if (!ihwl) {
         rc = QV_ERR_OOR;
         goto out;
