@@ -107,7 +107,7 @@ dev_list_compare_by_visdev_id(
 /**
  *
  */
-int
+static inline int
 obj_type_from_external(
     qv_hw_obj_type_t external,
     qvi_hwloc_objx_t *objx

@@ -22,7 +22,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install libczmq-dev
+        sudo apt install libczmq-dev libmpich-dev
 
     - name: Configure CMake
       run: |
