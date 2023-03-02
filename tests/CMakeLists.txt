@@ -68,7 +68,7 @@ target_link_libraries(
 
 add_test(
     NAME
-      process-context
+      process-scopes
     COMMAND
       bash -c "export QV_PORT=\"55999\"                   && \
       ( sleep 5 && killall -9 quo-vadisd              & ) && \
@@ -315,7 +315,7 @@ endif()
 set_tests_properties(
     hwloc
     rmi
-    process-context
+    process-scopes
     threads
     PROPERTIES TIMEOUT 10
 )
