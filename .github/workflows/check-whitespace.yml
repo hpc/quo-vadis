@@ -1,5 +1,6 @@
 # Modified from git/git
-name: check-whitespace
+on:
+  workflow_call:
 
 # Get the repository with all commits to ensure that we can analyze
 # all of the commits contributed via the Pull Request.

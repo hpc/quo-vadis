@@ -1,4 +1,5 @@
-name: build-and-test
+on:
+  workflow_call:
 
 jobs:
   build-and-test:
