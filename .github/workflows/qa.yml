@@ -8,7 +8,7 @@ on:
 
 jobs:
   check-whitespace:
-    uses; ./.github/workflows/check-whitespace.yml
+    uses: ./.github/workflows/check-whitespace.yml
   build:
      # Require check-whitespace to pass before we run rest of QA.
     needs: [check-whitespace]
