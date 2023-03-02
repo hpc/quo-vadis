@@ -42,4 +42,4 @@ jobs:
 
     - name: Test Packaging
       working-directory: ${{github.workspace}}/build
-      run: cpack -C ./CPackSourceConfig.cmake
+      run: make package_source
