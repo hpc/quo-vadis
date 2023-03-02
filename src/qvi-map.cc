@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022      Triad National Security, LLC
+ * Copyright (c) 2022-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -260,10 +260,14 @@ void
 qvi_map_debug_dump(
     const qvi_map_t &map
 ) {
+#if QVI_DEBUG_MODE == 0
+    QVI_UNUSED(map);
+#else
     qvi_log_debug(" # nfids_mapped={}", qvi_map_nfids_mapped(map));
     for (const auto &mi : map) {
         qvi_log_debug(" # fid={} mapped to tid={}", mi.first, mi.second);
     }
+#endif
 }
 
 /*
