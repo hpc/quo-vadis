@@ -1,4 +1,4 @@
-# From git/git
+# Modified from git/git
 
 name: check-whitespace
 
@@ -7,15 +7,7 @@ name: check-whitespace
 # Process `git log --check` output to extract just the check errors.
 # Exit with failure upon white-space issues.
 
-on:
-  pull_request:
-    types: [opened, synchronize]
-
-# Avoid unnecessary builds. Unlike the main CI jobs, these are not
-# ci-configurable (but could be).
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+on: [workflow_call]  # Allow this workflow to be called from other workflows.
 
 jobs:
   check-whitespace:

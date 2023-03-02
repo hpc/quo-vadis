@@ -7,7 +7,11 @@ on:
     branches: [ "master" ]
 
 jobs:
+  check-whitespace:
+    uses; ./.github/workflows/check-whitespace.yml
   build:
+     # Require check-whitespace to pass before we run rest of QA.
+    needs: [check-whitespace]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
