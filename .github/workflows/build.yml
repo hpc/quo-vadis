@@ -23,7 +23,7 @@ jobs:
       run: |
         c_compile_flags="-Wall -Wextra -Wpedantic -Werror"
         cmake_exe_link_flags=""
-        if [[ ${{ matrix.build-type }} -eq 'Debug' }} ]]; then
+        if [[ ${{ matrix.build-type }} -eq 'Debug' ]]; then
           asan_cflags="-fsanitize=address -fno-omit-frame-pointer"
           c_compile_flags="$c_compile_flags $asan_cflags"
           cmake_exe_link_flags="-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address"
