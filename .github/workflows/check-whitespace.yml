@@ -88,6 +88,7 @@ jobs:
           do
             echo "${i}" >>$GITHUB_STEP_SUMMARY
           done
+          echo $GITHUB_STEP_SUMMARY
 
           exit 2
         fi
