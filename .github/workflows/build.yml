@@ -1,0 +1,51 @@
+on:
+  workflow_call:
+
+jobs:
+  Test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      max-parallel: 2
+      fail-fast: true
+      matrix:
+        build-type: [Debug, Release]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install Dependencies
+      run: |
+        sudo apt update
+        sudo apt install libczmq-dev libmpich-dev
+
+    - name: Configure CMake
+      run: |
+        c_compile_flags="-Wall -Wextra -Wpedantic -Werror"
+        cmake_exe_link_flags=""
+        if [[ ${{ matrix.build-type }} == Debug ]]; then
+          echo "Adding sanitizer flags..."
+          asan_cflags="-fsanitize=address -fno-omit-frame-pointer"
+          c_compile_flags="$c_compile_flags $asan_cflags"
+          cmake_exe_link_flags="-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address"
+        fi
+        cmake \
+        -B ${{github.workspace}}/build \
+        -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
+        -DCMAKE_C_FLAGS="$c_compile_flags" \
+        -DCMAKE_CXX_FLAGS="$c_compile_flags" \
+        $cmake_exe_link_flags
+
+    - name: Build Code
+      run: |
+        cmake \
+        --build ${{github.workspace}}/build \
+        --config ${{matrix.build-type}} -j
+
+    - name: Run Tests
+      working-directory: ${{github.workspace}}/build
+      run: ctest -C ${{matrix.build-type}} --output-on-failure
+
+    - name: Test Packaging
+      working-directory: ${{github.workspace}}/build
+      run: make package_source
