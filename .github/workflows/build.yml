@@ -33,7 +33,7 @@ jobs:
         --build ${{github.workspace}}/build \
         --config ${{matrix.build-type}} -j
 
-    - name: Run ctest Tests
+    - name: Run Tests
       working-directory: ${{github.workspace}}/build
       run: ctest -C ${{matrix.build-type}} --output-on-failure
 
