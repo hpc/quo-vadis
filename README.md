@@ -1,3 +1,6 @@
+[![QA](https://github.com/hpc/quo-vadis/actions/workflows/qa.yml/badge.svg)
+](https://github.com/hpc/quo-vadis/actions/workflows/qa.yml)
+
 # quo-vadis
 
 **This project is under active development and is currently not stable.**
