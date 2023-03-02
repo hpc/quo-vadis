@@ -1,6 +1,4 @@
 # Modified from git/git
-name: Check Whitespace
-
 on:
   workflow_call:
 
@@ -10,7 +8,7 @@ on:
 # Exit with failure upon white-space issues.
 
 jobs:
-  check-whitespace:
+  Whitespace:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
