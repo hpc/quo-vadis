@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright © Inria 2022.  All rights reserved.
@@ -106,20 +106,20 @@ qv_thread_layout_init(
 static hwloc_obj_type_t
 qv_thread_convert_obj_type(
     qv_hw_obj_type_t obj_type
-)
-{
-  hwloc_obj_type_t type;
-  
-  if(obj_type == QV_HW_OBJ_PU)
-    type = HWLOC_OBJ_PU;
-  else if(obj_type == QV_HW_OBJ_CORE)
-    type = HWLOC_OBJ_CORE;
-  else if(obj_type == QV_HW_OBJ_PACKAGE)
-    type = HWLOC_OBJ_PACKAGE;
-  else if (obj_type == QV_HW_OBJ_MACHINE)
-    type = HWLOC_OBJ_MACHINE;
+) {
+    // TODO(skg) FIXME
+    hwloc_obj_type_t type = HWLOC_OBJ_MACHINE;
 
-  return type;
+    if(obj_type == QV_HW_OBJ_PU)
+        type = HWLOC_OBJ_PU;
+    else if(obj_type == QV_HW_OBJ_CORE)
+        type = HWLOC_OBJ_CORE;
+    else if(obj_type == QV_HW_OBJ_PACKAGE)
+        type = HWLOC_OBJ_PACKAGE;
+    else if (obj_type == QV_HW_OBJ_MACHINE)
+        type = HWLOC_OBJ_MACHINE;
+
+    return type;
 }
 
 int
