@@ -103,7 +103,6 @@ endif()
 
 ################################################################################
 ################################################################################
-# TODO(skg) Add MPI tests.
 if(MPI_FOUND)
     add_executable(
         test-mpi
@@ -136,6 +135,20 @@ if(MPI_FOUND)
     target_link_libraries(
         test-mpi-api
         quo-vadis-mpi
+    )
+
+    # TODO(skg) Automate adding MPI tests.
+    add_test(
+        NAME
+          mpi-api
+        COMMAND
+          bash -c "export QV_PORT=\"55999\"                   && \
+          ( sleep 5 && killall -9 quo-vadisd              & ) && \
+          ( ${CMAKE_CURRENT_BINARY_DIR}/../src/quo-vadisd & ) && \
+            ${MPIEXEC_EXECUTABLE} \
+            ${MPIEXEC_NUMPROC_FLAG} \
+            ${MPIEXEC_MAX_NUMPROCS} \
+            ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-api"
     )
 
     add_executable(
