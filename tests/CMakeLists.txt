@@ -324,13 +324,24 @@ if(MPI_FOUND)
     endif()
 endif()
 
-# Set test timeout
+# Set core test properties.
 set_tests_properties(
     hwloc
     rmi
     process-scopes
+    process-fortapi
     threads
-    PROPERTIES TIMEOUT 10
+    PROPERTIES
+      TIMEOUT 10
+      LABELS "core"
+)
+
+# Set mpi test properties.
+set_tests_properties(
+    mpi-api
+    PROPERTIES
+      TIMEOUT 10
+      LABELS "mpi"
 )
 
 # vim: ts=4 sts=4 sw=4 expandtab

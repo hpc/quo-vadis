@@ -9,6 +9,6 @@ on:
 jobs:
   Style:
     uses: ./.github/workflows/check-whitespace.yml
-  Build:
+  Substance:
     uses: ./.github/workflows/build.yml
     needs: Style
