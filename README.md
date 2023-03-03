@@ -38,12 +38,12 @@ cmake -DQV_DISABLE_GPU_SUPPORT=ON -DQV_DISABLE_FORTRAN_SUPPORT=ON ..
 Below is a table of build options for quo-vadis developers. Options can be
 specified in a variety of ways using `cmake` or `ccmake`. For example,
 ```shell
-cmake -DQV_SANITIZE=all ..
+cmake -DQV_SANITIZE=address ..
 ```
 
-| Option                       | Default | Comment                             |
-| ---------------------------- | ------- | ----------------------------------- |
-| QV_SANITIZE                  | none    | Enable use of sanitizers            |
+| Option              | Default | Comment                                      |
+| ------------------- | ------- | -------------------------------------------- |
+| QV_SANITIZE         | none    | Available: address;thread;undefined          |
 
 
 ## Testing

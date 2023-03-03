@@ -25,7 +25,7 @@ jobs:
         san_flags=""
         if [[ ${{ matrix.build-type }} == Debug ]]; then
           echo "Enabling sanitizers"
-          san_flags="-DQV_SANITIZE=all"
+          san_flags="-DQV_SANITIZE=address"
         fi
         cmake \
         -B ${{github.workspace}}/build \
