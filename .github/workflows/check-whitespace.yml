@@ -71,7 +71,7 @@ jobs:
           echo "" >>$GITHUB_STEP_SUMMARY
           echo "Run these commands to correct the problem:" >>$GITHUB_STEP_SUMMARY
           echo "1. \`git rebase --whitespace=fix ${goodparent}\`" >>$GITHUB_STEP_SUMMARY
-          echo "1. \`git push --force\`" >>$GITHUB_STEP_SUMMARY
+          echo "2. \`git push --force\`" >>$GITHUB_STEP_SUMMARY
           echo " " >>$GITHUB_STEP_SUMMARY
           echo "Errors:" >>$GITHUB_STEP_SUMMARY
           for i in "${problems[@]}"
