@@ -159,6 +159,9 @@ endif()
 # Specify default build type
 include(cmake/QVBuildType.cmake)
 
+# Specify sanitizers
+include(cmake/QVSanitize.cmake)
+
 # Check include files
 include(cmake/QVCheckIncludes.cmake)
 

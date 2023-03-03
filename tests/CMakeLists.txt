@@ -90,6 +90,16 @@ if (OPENMP_FOUND)
         OpenMP::OpenMP_C
     )
 
+    add_executable(
+        test-openmp
+        test-openmp.c
+    )
+
+    target_link_libraries(
+        test-openmp
+        OpenMP::OpenMP_C
+    )
+
     add_test(
         NAME
           threads
@@ -98,6 +108,15 @@ if (OPENMP_FOUND)
           ( sleep 5 && killall -9 quo-vadisd              & ) && \
           ( ${CMAKE_CURRENT_BINARY_DIR}/../src/quo-vadisd & ) && \
             ${CMAKE_CURRENT_BINARY_DIR}/test-threads"
+    )
+
+    # Set threads test properties.
+    # TODO(skg) ASAN detects a leak sometimes, so remove from core for now.
+    set_tests_properties(
+        threads
+        PROPERTIES
+          TIMEOUT 10
+          LABELS "threads"
     )
 endif()
 
@@ -135,20 +154,6 @@ if(MPI_FOUND)
     target_link_libraries(
         test-mpi-api
         quo-vadis-mpi
-    )
-
-    # TODO(skg) Automate adding MPI tests.
-    add_test(
-        NAME
-          mpi-api
-        COMMAND
-          bash -c "export QV_PORT=\"55999\"                   && \
-          ( sleep 5 && killall -9 quo-vadisd              & ) && \
-          ( ${CMAKE_CURRENT_BINARY_DIR}/../src/quo-vadisd & ) && \
-            ${MPIEXEC_EXECUTABLE} \
-            ${MPIEXEC_NUMPROC_FLAG} \
-            ${MPIEXEC_MAX_NUMPROCS} \
-            ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-api"
     )
 
     add_executable(
@@ -205,6 +210,29 @@ if(MPI_FOUND)
         test-mpi-getdev
         quo-vadis-mpi
     )
+
+    # TODO(skg) Automate adding MPI tests.
+    add_test(
+        NAME
+          mpi-api
+        COMMAND
+          bash -c "export QV_PORT=\"55999\"                   && \
+          ( sleep 5 && killall -9 quo-vadisd              & ) && \
+          ( ${CMAKE_CURRENT_BINARY_DIR}/../src/quo-vadisd & ) && \
+            ${MPIEXEC_EXECUTABLE} \
+            ${MPIEXEC_NUMPROC_FLAG} \
+            ${MPIEXEC_MAX_NUMPROCS} \
+            ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-api"
+    )
+
+    # Set mpi test properties.
+    set_tests_properties(
+        mpi-api
+        PROPERTIES
+          TIMEOUT 10
+          LABELS "mpi"
+    )
+
 ################################# HYBRID TESTS #################################
 ################################################################################
     if(OPENMP_FOUND)
@@ -238,17 +266,6 @@ if(MPI_FOUND)
     endif()
 endif()
 
-if (OPENMP_FOUND)
-    add_executable(
-        test-openmp
-        test-openmp.c
-    )
-    target_link_libraries(
-        test-openmp
-        OpenMP::OpenMP_C
-    )
-endif()
-
 ################################################################################
 ################################################################################
 if(QV_FORTRAN_HAPPY)
@@ -274,6 +291,14 @@ if(QV_FORTRAN_HAPPY)
           ( sleep 5 && killall -9 quo-vadisd              & ) && \
           ( ${CMAKE_CURRENT_BINARY_DIR}/../src/quo-vadisd & ) && \
             ${CMAKE_CURRENT_BINARY_DIR}/test-process-fortapi"
+    )
+
+    # Set fortran test properties.
+    set_tests_properties(
+        process-fortapi
+        PROPERTIES
+          TIMEOUT 10
+          LABELS "fortran"
     )
 
     if(MPI_Fortran_FOUND)
@@ -329,19 +354,9 @@ set_tests_properties(
     hwloc
     rmi
     process-scopes
-    process-fortapi
-    threads
     PROPERTIES
       TIMEOUT 10
       LABELS "core"
-)
-
-# Set mpi test properties.
-set_tests_properties(
-    mpi-api
-    PROPERTIES
-      TIMEOUT 10
-      LABELS "mpi"
 )
 
 # vim: ts=4 sts=4 sw=4 expandtab

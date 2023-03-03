@@ -22,19 +22,17 @@ jobs:
     - name: Configure CMake
       run: |
         c_compile_flags="-Wall -Wextra -Wpedantic -Werror"
-        cmake_exe_link_flags=""
+        san_flags=""
         if [[ ${{ matrix.build-type }} == Debug ]]; then
-          echo "Adding sanitizer flags..."
-          asan_cflags="-fsanitize=address -fno-omit-frame-pointer"
-          c_compile_flags="$c_compile_flags $asan_cflags"
-          cmake_exe_link_flags="-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address"
+          echo "Enabling sanitizers"
+          san_flags="-DQV_SANITIZE=all"
         fi
         cmake \
         -B ${{github.workspace}}/build \
         -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
         -DCMAKE_C_FLAGS="$c_compile_flags" \
         -DCMAKE_CXX_FLAGS="$c_compile_flags" \
-        $cmake_exe_link_flags
+        $san_flags
 
     - name: Build Code
       run: |
