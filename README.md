@@ -33,9 +33,24 @@ cmake -DQV_DISABLE_GPU_SUPPORT=ON -DQV_DISABLE_FORTRAN_SUPPORT=ON ..
 | QV_DISABLE_OMP_SUPPORT       | OFF     | Disable OpenMP support              |
 | QV_MPI_PROCESSES_ARE_THREADS | FALSE   | Affirm MPI processes are threads    |
 
+
+### Developer Build Options
+Below is a table of build options for quo-vadis developers. Options can be
+specified in a variety of ways using `cmake` or `ccmake`. For example,
+```shell
+cmake -DQV_SANITIZE=all ..
+```
+
+| Option                       | Default | Comment                             |
+| ---------------------------- | ------- | ----------------------------------- |
+| QV_SANITIZE                  | none    | Enable use of sanitizers            |
+
+
 ## Testing
 ```shell
 ctest
+# Or target a specific suite of tests
+ctest -L core
 ```
 
 ## Environment Variables
