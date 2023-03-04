@@ -87,33 +87,41 @@ target_include_directories(
 ################################################################################
 # Base library
 ################################################################################
-add_library(
-    quo-vadis
-    SHARED
-      ../include/quo-vadis-process.h
-      qvi-process.h
-      qvi-group-process.h
-      qvi-zgroup-process.h
-      qvi-process.cc
-      qvi-group-process.cc
-      qvi-zgroup-process.cc
-      quo-vadis-process.cc
+set(
+    QUO_VADIS_SOURCE
+    ../include/quo-vadis-process.h
+    qvi-process.h
+    qvi-group-process.h
+    qvi-zgroup-process.h
+    qvi-process.cc
+    qvi-group-process.cc
+    qvi-zgroup-process.cc
+    quo-vadis-process.cc
 )
 
 # TODO(skg) We need to fix this. OpenMP builds versus Pthread.
 if(OpenMP_C_FOUND)
-    add_library(
-        quo-vadis
-        SHARED
-          qvi-thread.h
-          qvi-zgroup-thread.h
-          qvi-group-thread.h
-          ../include/quo-vadis-thread.h
-          qvi-thread.cc
-          qvi-zgroup-thread.cc
-          qvi-group-thread.cc
-          quo-vadis-thread.cc
-    )
+set(
+    QUO_VADIS_SOURCE
+    ${QUO_VADIS_SOURCE}
+    qvi-thread.h
+    qvi-zgroup-thread.h
+    qvi-group-thread.h
+    ../include/quo-vadis-thread.h
+    qvi-thread.cc
+    qvi-zgroup-thread.cc
+    qvi-group-thread.cc
+    quo-vadis-thread.cc
+)
+endif()
+
+add_library(
+    quo-vadis
+    SHARED
+      ${QUO_VADIS_SOURCE}
+)
+
+if(OpenMP_C_FOUND)
     set_target_properties(
         quo-vadis
         PROPERTIES
