@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2022 Triad National Security, LLC
+# Copyright (c) 2020-2023 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -98,23 +98,22 @@ add_library(
       qvi-group-process.cc
       qvi-zgroup-process.cc
       quo-vadis-process.cc
-      ../include/quo-vadis-thread.h
-      qvi-thread.h
-      qvi-group-thread.h
-      qvi-zgroup-thread.h
-      qvi-thread.cc
-      qvi-group-thread.cc
-      qvi-zgroup-thread.cc
-      quo-vadis-thread.cc
 )
 
-target_include_directories(
-    quo-vadis
-    PUBLIC
-      $<TARGET_PROPERTY:quo-vadis-core,INCLUDE_DIRECTORIES>
-)
-
+# TODO(skg) We need to fix this. OpenMP builds versus Pthread.
 if(OpenMP_C_FOUND)
+    add_library(
+        quo-vadis
+        SHARED
+          qvi-thread.h
+          qvi-zgroup-thread.h
+          qvi-group-thread.h
+          ../include/quo-vadis-thread.h
+          qvi-thread.cc
+          qvi-zgroup-thread.cc
+          qvi-group-thread.cc
+          quo-vadis-thread.cc
+    )
     set_target_properties(
         quo-vadis
         PROPERTIES
@@ -122,6 +121,12 @@ if(OpenMP_C_FOUND)
           LINK_FLAGS ${OpenMP_C_FLAGS}
     )
 endif()
+
+target_include_directories(
+    quo-vadis
+    PUBLIC
+      $<TARGET_PROPERTY:quo-vadis-core,INCLUDE_DIRECTORIES>
+)
 
 target_link_libraries(
     quo-vadis

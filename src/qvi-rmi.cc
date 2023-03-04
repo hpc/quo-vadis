@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -34,18 +34,6 @@
 
 #define ZINPROC_ADDR "inproc://qvi-rmi-workers"
 
-#define qvi_zerr_msg(ers, err_no)                                              \
-do {                                                                           \
-    int erno = (err_no);                                                       \
-    qvi_log_error("{} with errno={} ({})", (ers), erno, qvi_strerr(erno));     \
-} while (0)
-
-#define qvi_zwrn_msg(ers, err_no)                                              \
-do {                                                                           \
-    int erno = (err_no);                                                       \
-    qvi_log_warn("{} with errno={} ({})", (ers), erno, qvi_strerr(erno));      \
-} while (0)
-
 struct qvi_rmi_server_s {
     /** Server configuration */
     qvi_line_config_t *config = nullptr;
@@ -53,8 +41,6 @@ struct qvi_rmi_server_s {
     qvi_hwpool_t *hwpool = nullptr;
     /** ZMQ context */
     void *zctx = nullptr;
-    /** Router (client-facing) socket */
-    void *zrouter = nullptr;
     /** Loopback socket for managerial messages */
     void *zlo = nullptr;
     /** The worker thread */
@@ -105,6 +91,24 @@ typedef int (*qvi_rpc_fun_ptr_t)(
     void *,
     qvi_bbuff_t **
 );
+
+static void
+qvi_zerr_msg(
+    cstr_t ers,
+    int err_no
+) {
+    int erno = (err_no);
+    qvi_log_error("{} with errno={} ({})", ers, erno, qvi_strerr(erno));
+}
+
+static void
+qvi_zwrn_msg(
+    cstr_t ers,
+    int err_no
+) {
+    int erno = (err_no);
+    qvi_log_warn("{} with errno={} ({})", (ers), erno, qvi_strerr(erno));
+}
 
 static void
 zctx_destroy(
@@ -172,8 +176,11 @@ msg_free_byte_buffer_cb(
     void *,
     void *hint
 ) {
+    static std::mutex mutex;
+    mutex.lock();
     qvi_bbuff_t *buff = (qvi_bbuff_t *)hint;
     qvi_bbuff_free(&buff);
+    mutex.unlock();
 }
 
 static int
@@ -686,27 +693,6 @@ static const qvi_rpc_fun_ptr_t rpc_dispatch_table[] = {
 };
 
 static int
-server_open_clichans(
-    qvi_rmi_server_t *server
-) {
-    server->zrouter = zsocket_create_and_bind(
-        server->zctx,
-        ZMQ_ROUTER,
-        server->config->url
-    );
-    if (!server->zrouter) return QV_ERR_MSG;
-
-    server->zlo = zsocket_create_and_connect(
-        server->zctx,
-        ZMQ_REQ,
-        server->config->url
-    );
-    if (!server->zlo) return QV_ERR_MSG;
-
-    return QV_SUCCESS;
-}
-
-static int
 server_rpc_dispatch(
     qvi_rmi_server_t *server,
     zmq_msg_t *msg_in,
@@ -744,15 +730,14 @@ server_go(
     void *data
 ) {
     qvi_rmi_server_t *server = (qvi_rmi_server_t *)data;
+
     void *zworksock = zsocket_create_and_connect(
-        server->zctx,
-        ZMQ_REP,
-        ZINPROC_ADDR
+        server->zctx, ZMQ_REP, ZINPROC_ADDR
     );
     if (!zworksock) return nullptr;
 
     int rc, bsent, bsentt = 0;
-    bool active = true;
+    volatile bool active = true;
     do {
         zmq_msg_t mrx, mtx;
         rc = zmsg_recv(zworksock, &mrx);
@@ -833,16 +818,20 @@ qvi_rmi_server_free(
     if (!server) return;
     qvi_rmi_server_t *iserver = *server;
     if (!iserver) goto out;
+
     send_server_shutdown_msg(iserver);
+
     zsocket_close(&iserver->zlo);
-    zsocket_close(&iserver->zrouter);
     zctx_destroy(&iserver->zctx);
+
     unlink(iserver->config->hwtopo_path);
     qvi_hwpool_free(&iserver->hwpool);
     qvi_line_config_free(&iserver->config);
+
     if (!iserver->blocks) {
         pthread_join(iserver->worker_thread, nullptr);
     }
+
     delete iserver;
 out:
     *server = nullptr;
@@ -854,34 +843,6 @@ qvi_rmi_server_config(
     qvi_line_config_t *config
 ) {
     return qvi_line_config_cp(config, server->config);
-}
-
-static void *
-server_start_workers(
-    void *data
-) {
-    qvi_rmi_server_t *server = (qvi_rmi_server_t *)data;
-
-    void *zdealer = zsocket_create_and_bind(
-        server->zctx,
-        ZMQ_DEALER,
-        ZINPROC_ADDR
-    );
-    if (!zdealer) return nullptr;
-
-    pthread_t worker;
-    int rc = pthread_create(&worker, nullptr, server_go, server);
-    if (rc != 0) {
-        cstr_t ers = "pthread_create() failed";
-        qvi_log_error("{} with rc={} ({})", ers, rc, qvi_strerr(rc));
-        return nullptr;
-    }
-    // The zmq_proxy() function always returns -1 and errno set to ETERM.
-    zmq_proxy(server->zrouter, zdealer, nullptr);
-    pthread_join(worker, nullptr);
-    zsocket_close(&zdealer);
-
-    return nullptr;
 }
 
 /**
@@ -902,6 +863,46 @@ server_populate_base_hwpool(
     );
 }
 
+// TODO(skg) Rename
+static void *
+doit(
+    void *data
+) {
+    qvi_rmi_server_t *server = (qvi_rmi_server_t *)data;
+
+    void *clients = zsocket_create_and_bind(
+        server->zctx, ZMQ_ROUTER, server->config->url
+    );
+    if (!clients) {
+        cstr_t ers = "zsocket_create_and_bind() failed";
+        qvi_log_error("{}", ers);
+        return nullptr;
+    }
+
+    void *workers = zsocket_create_and_bind(
+        server->zctx, ZMQ_DEALER, ZINPROC_ADDR
+    );
+    if (!workers) {
+        cstr_t ers = "zsocket_create_and_bind() failed";
+        qvi_log_error("{}", ers);
+        return nullptr;
+    }
+
+    pthread_t worker;
+    int rc = pthread_create(&worker, nullptr, server_go, server);
+    if (rc != 0) {
+        cstr_t ers = "pthread_create() failed";
+        qvi_log_error("{} with rc={} ({})", ers, rc, qvi_strerr(rc));
+    }
+    // The zmq_proxy() function always returns -1 and errno set to ETERM.
+    zmq_proxy(clients, workers, nullptr);
+    pthread_join(worker, nullptr);
+    zsocket_close(&workers);
+
+    zsocket_close(&clients);
+    return nullptr;
+}
+
 int
 qvi_rmi_server_start(
     qvi_rmi_server_t *server,
@@ -910,25 +911,24 @@ qvi_rmi_server_start(
     // First populate the base hardware resource pool.
     int qvrc = server_populate_base_hwpool(server);
     if (qvrc != QV_SUCCESS) return qvrc;
-    // Main thread opens channels used to communicate with clients.
-    qvrc = server_open_clichans(server);
-    if (qvrc != QV_SUCCESS) return qvrc;
-    // Start workers in new thread.
-    int rc = pthread_create(
-        &server->worker_thread,
-        nullptr,
-        server_start_workers,
-        server
+
+    server->zlo = zsocket_create_and_connect(
+        server->zctx, ZMQ_REQ, server->config->url
     );
+    if (!server->zlo) return QV_ERR_MSG;
+
+    int rc = pthread_create(&server->worker_thread, nullptr, doit, server);
     if (rc != 0) {
         cstr_t ers = "pthread_create() failed";
         qvi_log_error("{} with rc={} ({})", ers, rc, qvi_strerr(rc));
         qvrc = QV_ERR_SYS;
     }
+
     if (block && qvrc == QV_SUCCESS) {
         server->blocks = true;
         pthread_join(server->worker_thread, nullptr);
     }
+
     return qvrc;
 }
 

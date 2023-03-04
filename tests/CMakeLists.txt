@@ -31,6 +31,26 @@ add_test(
 ################################################################################
 ################################################################################
 add_executable(
+    test-rmi-server
+    test-rmi-server.cc
+)
+
+target_link_libraries(
+    test-rmi-server
+    quo-vadis
+)
+
+add_test(
+    NAME
+      rmi-server
+    COMMAND
+      bash -c "export URL=\"tcp://127.0.0.1:55995\" && \
+      ${CMAKE_CURRENT_BINARY_DIR}/test-rmi-server $URL"
+)
+
+################################################################################
+################################################################################
+add_executable(
     test-rmi
     test-rmi.cc
 )
@@ -350,10 +370,10 @@ if(MPI_FOUND)
 endif()
 
 # Set core test properties.
+# TODO(skg) Add rmi and process-scopes
 set_tests_properties(
     hwloc
-    rmi
-    process-scopes
+    rmi-server
     PROPERTIES
       TIMEOUT 10
       LABELS "core"
