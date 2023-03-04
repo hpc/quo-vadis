@@ -6,6 +6,8 @@
 # top-level directory of this distribution.
 #
 
+include(CheckLanguage)
+
 option(
     QV_DISABLE_FORTRAN_SUPPORT
     "Unconditionally disable Fortran support"
@@ -17,7 +19,13 @@ message(CHECK_START "Determining desired Fortran support level")
 set(QV_FORTRAN_HAPPY FALSE)
 if(NOT QV_DISABLE_FORTRAN_SUPPORT)
     message(CHECK_PASS "enabled")
-    # Enable Fortran support.
+
+    check_language(Fortran)
+    if(NOT CMAKE_Fortran_COMPILER)
+        message(STATUS "No Fortran support detected")
+        return()
+    endif()
+    # Else we have the right bits to see if we have Fortran support.
     enable_language(Fortran)
     # Make sure that we can support Fortran C interfaces.
     include(FortranCInterface)
