@@ -64,9 +64,9 @@ add_test(
     NAME
       rmi
     COMMAND
-      bash -c "export URL=\"tcp://127.0.0.1:55995\"      && \
-      ( sleep 5 && killall -9 test-rmi               & ) && \
-      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -s & ) && \
+      bash -c "export URL=\"tcp://127.0.0.1:55995\" && \
+      ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh \
+        \"${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -s\" 5 & ) && \
       ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
       ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
       ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
@@ -90,9 +90,8 @@ add_test(
     NAME
       process-scopes
     COMMAND
-      bash -c "export QV_PORT=\"55999\"                   && \
-      ( sleep 5 && killall -9 quo-vadisd              & ) && \
-      ( ${CMAKE_CURRENT_BINARY_DIR}/../src/quo-vadisd & ) && \
+      bash -c "export QV_PORT=\"55999\" && \
+      ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh ../src/quo-vadisd 5 & ) && \
         ${CMAKE_CURRENT_BINARY_DIR}/test-process-scopes"
 )
 
@@ -124,9 +123,8 @@ if (OPENMP_FOUND)
         NAME
           threads
         COMMAND
-          bash -c "export QV_PORT=\"55999\"                   && \
-          ( sleep 5 && killall -9 quo-vadisd              & ) && \
-          ( ${CMAKE_CURRENT_BINARY_DIR}/../src/quo-vadisd & ) && \
+          bash -c "export QV_PORT=\"55999\" && \
+          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh ../src/quo-vadisd 5 & ) && \
             ${CMAKE_CURRENT_BINARY_DIR}/test-threads"
     )
 
@@ -236,9 +234,8 @@ if(MPI_FOUND)
         NAME
           mpi-api
         COMMAND
-          bash -c "export QV_PORT=\"55999\"                   && \
-          ( sleep 5 && killall -9 quo-vadisd              & ) && \
-          ( ${CMAKE_CURRENT_BINARY_DIR}/../src/quo-vadisd & ) && \
+          bash -c "export QV_PORT=\"55999\" && \
+          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh ../src/quo-vadisd 5 & ) && \
             ${MPIEXEC_EXECUTABLE} \
             ${MPIEXEC_NUMPROC_FLAG} \
             ${MPIEXEC_MAX_NUMPROCS} \
@@ -307,10 +304,9 @@ if(QV_FORTRAN_HAPPY)
         NAME
           process-fortapi
         COMMAND
-          bash -c "export QV_PORT=\"55999\"                   && \
-          ( sleep 5 && killall -9 quo-vadisd              & ) && \
-          ( ${CMAKE_CURRENT_BINARY_DIR}/../src/quo-vadisd & ) && \
-            ${CMAKE_CURRENT_BINARY_DIR}/test-process-fortapi"
+          bash -c "export QV_PORT=\"55999\" && \
+          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh ../src/quo-vadisd 5 & ) && \
+          ${CMAKE_CURRENT_BINARY_DIR}/test-process-fortapi"
     )
 
     # Set fortran test properties.
@@ -374,6 +370,7 @@ endif()
 set_tests_properties(
     hwloc
     rmi-server
+    rmi
     PROPERTIES
       TIMEOUT 10
       LABELS "core"
