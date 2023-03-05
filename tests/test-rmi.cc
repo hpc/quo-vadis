@@ -76,8 +76,16 @@ server(
         basedir,
         &config->hwtopo_path
     );
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_hwloc_topology_export() failed";
+        goto out;
+    }
 
     rc = qvi_rmi_server_config(server, config);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_rmi_server_config() failed";
+        goto out;
+    }
 
     qvi_line_config_free(&config);
 
@@ -109,7 +117,6 @@ client(
     qvi_task_id_t who = { QV_TASK_TYPE_PROCESS, getpid()};
     hwloc_bitmap_t bitmap = NULL;
 
-    
     qvi_rmi_client_t *client = NULL;
     int rc = qvi_rmi_client_new(&client);
     if (rc != QV_SUCCESS) {
