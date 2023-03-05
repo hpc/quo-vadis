@@ -337,6 +337,7 @@ rpc_unpack(
             picture.c_str(),
             hdr.fid
         );
+        return QV_ERR_INTERNAL;
     }
 #endif
     void *body = data_trim(data, trim);
