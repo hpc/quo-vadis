@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2022 Triad National Security, LLC
+ * Copyright (c) 2021-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -927,7 +927,7 @@ qvi_bbuff_rmi_unpack(
     Types... args
 ) {
     byte_t *pos = (byte_t *)data;
-    size_t bytes_written;
+    size_t bytes_written = 0;
     int rc = qvi_bbuff_rmi_unpack_item(
         arg,
         (byte_t *)data,

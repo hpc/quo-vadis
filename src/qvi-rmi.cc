@@ -1015,9 +1015,7 @@ qvi_rmi_client_connect(
     const char *url
 ) {
     client->zsock = zsocket_create_and_connect(
-        client->zctx,
-        ZMQ_REQ,
-        url
+        client->zctx, ZMQ_REQ, url
     );
     if (!client->zsock) return QV_ERR_MSG;
 
@@ -1056,7 +1054,8 @@ qvi_rmi_task_get_cpubind(
     );
     if (qvrc != QV_SUCCESS) return qvrc;
 
-    int rpcrc;
+    // Should be set by rpc_rep, so assume an error.
+    int rpcrc = QV_ERR_MSG;
     qvrc = rpc_rep(client->zsock, &rpcrc, cpuset);
 
     if (qvrc != QV_SUCCESS) {
@@ -1081,7 +1080,8 @@ qvi_rmi_task_set_cpubind_from_cpuset(
     );
     if (qvrc != QV_SUCCESS) return qvrc;
 
-    int rpcrc;
+    // Should be set by rpc_rep, so assume an error.
+    int rpcrc = QV_ERR_MSG;
     qvrc = rpc_rep(client->zsock, &rpcrc);
     if (qvrc != QV_SUCCESS) return qvrc;
 
@@ -1105,11 +1105,10 @@ qvi_rmi_scope_get_intrinsic_hwpool(
     );
     if (qvrc != QV_SUCCESS) return qvrc;
 
-    int rpcrc;
+    // Should be set by rpc_rep, so assume an error.
+    int rpcrc = QV_ERR_MSG;
     qvrc = rpc_rep(
-        client->zsock,
-        &rpcrc,
-        hwpool
+        client->zsock, &rpcrc, hwpool
     );
     if (qvrc != QV_SUCCESS) return qvrc;
     return rpcrc;
@@ -1128,7 +1127,8 @@ qvi_rmi_obj_type_depth(
     );
     if (qvrc != QV_SUCCESS) return qvrc;
 
-    int rpcrc;
+    // Should be set by rpc_rep, so assume an error.
+    int rpcrc = QV_ERR_MSG;
     qvrc = rpc_rep(client->zsock, &rpcrc, depth);
     if (qvrc != QV_SUCCESS) return qvrc;
 
@@ -1150,7 +1150,8 @@ qvi_rmi_get_nobjs_in_cpuset(
     );
     if (qvrc != QV_SUCCESS) return qvrc;
 
-    int rpcrc;
+    // Should be set by rpc_rep, so assume an error.
+    int rpcrc = QV_ERR_MSG;
     qvrc = rpc_rep(client->zsock, &rpcrc, nobjs);
     if (qvrc != QV_SUCCESS) return qvrc;
 
@@ -1176,7 +1177,8 @@ qvi_rmi_get_device_in_cpuset(
     );
     if (qvrc != QV_SUCCESS) return qvrc;
 
-    int rpcrc;
+    // Should be set by rpc_rep, so assume an error.
+    int rpcrc = QV_ERR_MSG;
     qvrc = rpc_rep(client->zsock, &rpcrc, dev_id);
     if (qvrc != QV_SUCCESS) return qvrc;
 
