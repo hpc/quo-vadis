@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2022 Triad National Security, LLC
+# Copyright (c) 2020-2023 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -10,14 +10,26 @@
 #
 
 find_path(
+    ZMQ_HOME
+    NAMES
+      include/zmq.h
+    REQUIRED
+)
+
+find_path(
     ZMQ_INCLUDE_DIR
-    zmq.h
+    NAMES
+      zmq.h
+    HINTS
+      "${ZMQ_HOME}/include"
 )
 
 find_library(
     ZMQ_LIBRARY
     NAMES
       zmq
+    HINTS
+      "${ZMQ_HOME}/lib"
 )
 
 include(FindPackageHandleStandardArgs)
@@ -26,14 +38,16 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
     ZMQ
     DEFAULT_MSG
-    ZMQ_LIBRARY ZMQ_INCLUDE_DIR
+    ZMQ_HOME ZMQ_LIBRARY ZMQ_INCLUDE_DIR
 )
 
 mark_as_advanced(
+    ZMQ_HOME
     ZMQ_INCLUDE_DIR
     ZMQ_LIBRARY
 )
 
+set(ZMQ_HOME ${ZMQ_HOME})
 set(ZMQ_LIBRARIES ${ZMQ_LIBRARY})
 set(ZMQ_INCLUDE_DIRS ${ZMQ_INCLUDE_DIR})
 
