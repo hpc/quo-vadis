@@ -44,10 +44,10 @@ jobs:
       working-directory: ${{github.workspace}}/build
       run: ctest -L core -C ${{matrix.build-type}} --output-on-failure
 
-    - name: Run MPI Tests
+    - name: Run All Tests
       working-directory: ${{github.workspace}}/build
       if: ${{ matrix.build-type == 'Release' }}
-      run: ctest -L mpi -C ${{matrix.build-type}} --output-on-failure
+      run: ctest -C ${{matrix.build-type}} --output-on-failure
 
     - name: Test Packaging
       working-directory: ${{github.workspace}}/build
