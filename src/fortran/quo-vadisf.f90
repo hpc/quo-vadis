@@ -306,12 +306,10 @@ contains
         character, pointer, dimension(:) :: fstrp
 
         type(c_ptr) :: cstr
-        integer(c_size_t) :: string_shape(1)
 
         cstr = qv_strerr_c(ec)
         ! Now deal with the string
-        string_shape(1) = qvif_strlen_c(cstr)
-        call c_f_pointer(cstr, fstrp, string_shape)
+        call c_f_pointer(cstr, fstrp, [qvif_strlen_c(cstr)])
     end function qv_strerr
 
     subroutine qv_version(major, minor, patch, info)
@@ -359,7 +357,7 @@ contains
         )
     end subroutine qv_scope_split
 
-    subroutine qv_scope_split_at(&
+    subroutine qv_scope_split_at( &
         ctx, scope, obj_type, group_id, subscope, info &
     )
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
@@ -430,7 +428,6 @@ contains
 
         type(c_ptr) :: cstr
         integer(c_size_t) :: strlen
-        integer(c_size_t) :: string_shape(1)
         character, pointer, dimension(:) :: fstrp
 
         info = qv_scope_get_device_id_c( &
@@ -438,8 +435,7 @@ contains
         )
         ! Now deal with the string
         strlen = qvif_strlen_c(cstr)
-        string_shape(1) = strlen
-        call c_f_pointer(cstr, fstrp, string_shape)
+        call c_f_pointer(cstr, fstrp, [strlen])
         allocate(character(strlen) :: dev_id(1))
         dev_id = fstrp
         call qvif_free_c(cstr)
@@ -472,14 +468,12 @@ contains
 
         type(c_ptr) :: cstr
         integer(c_size_t) :: strlen
-        integer(c_size_t) :: string_shape(1)
         character, pointer, dimension(:) :: fstrp
 
         info = qv_bind_string_c(ctx, sformat, cstr)
         ! Now deal with the string
         strlen = qvif_strlen_c(cstr)
-        string_shape(1) = strlen
-        call c_f_pointer(cstr, fstrp, string_shape)
+        call c_f_pointer(cstr, fstrp, [strlen])
         allocate(character(strlen) :: fstr(1))
         fstr = fstrp
         call qvif_free_c(cstr)
