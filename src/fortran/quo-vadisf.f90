@@ -1,5 +1,5 @@
 !
-! Copyright (c) 2013-2022 Triad National Security, LLC
+! Copyright (c) 2013-2023 Triad National Security, LLC
 !                         All rights reserved.
 !
 ! This file is part of the quo-vadis project. See the LICENSE file at the
@@ -429,7 +429,7 @@ contains
         integer(c_int), intent(out) :: info
 
         type(c_ptr) :: cstr
-        integer :: strlen
+        integer(c_size_t) :: strlen
         integer(c_size_t) :: string_shape(1)
         character, pointer, dimension(:) :: fstrp
 
@@ -471,7 +471,7 @@ contains
         integer(c_int), intent(out) :: info
 
         type(c_ptr) :: cstr
-        integer :: strlen
+        integer(c_size_t) :: strlen
         integer(c_size_t) :: string_shape(1)
         character, pointer, dimension(:) :: fstrp
 
