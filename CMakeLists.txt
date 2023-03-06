@@ -31,13 +31,13 @@ set(CXX_STANDARD_REQUIRED TRUE)
 # Append our module path
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
+# Setup Fortran support.
+include(cmake/QVFortranSupport.cmake)
+
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.24.0")
     # DOWNLOAD_EXTRACT_TIMESTAMP=TRUE
     cmake_policy(SET CMP0135 OLD)
 endif()
-
-# Setup Fortran support.
-include(cmake/QVFortranSupport.cmake)
 
 ################################################################################
 # RPATH Settings (Always RPATH)

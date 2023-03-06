@@ -1,5 +1,5 @@
 #
-# Copyright (c)      2022 Triad National Security, LLC
+# Copyright (c) 2022-2023 Triad National Security, LLC
 #                         All rights reserved.
 #
 # This file is part of the quo-vadis project. See the LICENSE file at the
@@ -33,9 +33,11 @@ if(NOT QV_DISABLE_FORTRAN_SUPPORT)
     # Make sure we found a Fortran compiler.
     if(NOT CMAKE_Fortran_COMPILER STREQUAL "")
         set(QV_FORTRAN_HAPPY TRUE)
-        set(CMAKE_Fortran_MODULE_DIRECTORY
-            "${CMAKE_CURRENT_BINARY_DIR}/src/fortran")
-    endif(NOT CMAKE_Fortran_COMPILER STREQUAL "")
+        set(
+            CMAKE_Fortran_MODULE_DIRECTORY
+            "${CMAKE_BINARY_DIR}/src/fortran"
+        )
+    endif()
 else()
     message(CHECK_PASS "disabled")
 endif(NOT QV_DISABLE_FORTRAN_SUPPORT)
