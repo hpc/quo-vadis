@@ -176,11 +176,8 @@ msg_free_byte_buffer_cb(
     void *,
     void *hint
 ) {
-    static std::mutex mutex;
-    mutex.lock();
     qvi_bbuff_t *buff = (qvi_bbuff_t *)hint;
     qvi_bbuff_free(&buff);
-    mutex.unlock();
 }
 
 static int
