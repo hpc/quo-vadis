@@ -22,15 +22,15 @@ mkdir build && cd build && cmake -G Ninja .. && ninja
 Below is a table of build options for quo-vadis. Options can be specified in a
 variety of ways using `cmake` or `ccmake`. For example,
 ```shell
-cmake -DQV_DISABLE_GPU_SUPPORT=ON -DQV_DISABLE_FORTRAN_SUPPORT=ON ..
+cmake -DQV_GPU_SUPPORT=OFF -DQV_FORTRAN_SUPPORT=OFF ..
 ```
 
 | Option                       | Default | Comment                             |
 | ---------------------------- | ------- | ----------------------------------- |
-| QV_DISABLE_FORTRAN_SUPPORT   | OFF     | Disable Fortran support             |
-| QV_DISABLE_GPU_SUPPORT       | OFF     | Disable GPU support                 |
-| QV_DISABLE_MPI_SUPPORT       | OFF     | Disable MPI support                 |
-| QV_DISABLE_OMP_SUPPORT       | OFF     | Disable OpenMP support              |
+| QV_FORTRAN_SUPPORT           | ON      | Toggle Fortran support              |
+| QV_GPU_SUPPORT               | ON      | Toggle GPU support                  |
+| QV_MPI_SUPPORT               | ON      | Toggle MPI support                  |
+| QV_OMP_SUPPORT               | ON      | Toggle OpenMP support               |
 | QV_MPI_PROCESSES_ARE_THREADS | FALSE   | Affirm MPI processes are threads    |
 
 

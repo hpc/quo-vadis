@@ -85,21 +85,22 @@ find_package(ZMQ REQUIRED)
 
 # MPI support
 ################################################################################
-option(QV_DISABLE_MPI_SUPPORT "Unconditionally disable MPI support" OFF)
+option(QV_MPI_SUPPORT "Toggle MPI support" ON)
+
 option(
     QV_MPI_PROCESSES_ARE_THREADS
-    "Enable when the MPI library implements MPI processes as threads"
-    OFF
+    "Set to TRUE when the MPI library implements MPI processes as threads"
+    FALSE
 )
 
 message(CHECK_START "Determining MPI support status")
-if(NOT QV_DISABLE_MPI_SUPPORT)
+if(QV_MPI_SUPPORT)
     message(CHECK_PASS "enabled")
 else()
     message(CHECK_PASS "disabled")
 endif()
 
-if(NOT QV_DISABLE_MPI_SUPPORT)
+if(QV_MPI_SUPPORT)
     find_package(MPI)
     if (NOT MPI_FOUND)
         message(STATUS "MPI not found. Please set MPI_HOME")
@@ -127,30 +128,32 @@ endif()
 
 # OpenMP support
 ################################################################################
-option(QV_DISABLE_OMP_SUPPORT "Unconditionally disable OpenMP support" OFF)
+option(QV_OMP_SUPPORT "Toggle OpenMP support" ON)
+
 message(CHECK_START "Determining OpenMP support status")
-if(NOT QV_DISABLE_OMP_SUPPORT)
+if(QV_OMP_SUPPORT)
     message(CHECK_PASS "enabled")
 else()
     message(CHECK_PASS "disabled")
 endif()
-if(NOT QV_DISABLE_OMP_SUPPORT)
+
+if(QV_OMP_SUPPORT)
     find_package(OpenMP)
 endif()
 
 ################################################################################
 # GPU Support ##################################################################
 ################################################################################
-option(QV_DISABLE_GPU_SUPPORT "Unconditionally disable GPU support" OFF)
+option(QV_GPU_SUPPORT "Toggle GPU support" ON)
 
 message(CHECK_START "Determining desired GPU support level")
-if(NOT QV_DISABLE_GPU_SUPPORT)
+if(QV_GPU_SUPPORT)
     message(CHECK_PASS "enabled")
 else()
     message(CHECK_PASS "disabled")
 endif()
 
-if(NOT QV_DISABLE_GPU_SUPPORT)
+if(QV_GPU_SUPPORT)
     # TODO(skg) Set minimum required version?
     find_package(CUDAToolkit)
     find_package(ROCm)

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2022 Triad National Security, LLC
+# Copyright (c) 2020-2023 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -42,7 +42,7 @@ endif()
 
 set(PCIACCESS_NEEDED FALSE)
 
-if(CUDAToolkit_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
+if(CUDAToolkit_FOUND AND QV_GPU_SUPPORT)
     list(APPEND QVI_HWLOC_GPU_FLAGS "--with-cuda=${CUDAToolkit_TARGET_DIR}")
     list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-cuda=yes")
     list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-nvml=yes")
@@ -52,7 +52,7 @@ else()
     list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-nvml=no")
 endif()
 
-if(ROCM_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
+if(ROCM_FOUND AND QV_GPU_SUPPORT)
     list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-rsmi")
     set(
       QVI_HWLOC_CPPFLAGS
@@ -131,7 +131,7 @@ if(PCIACCESS_NEEDED)
     )
 endif()
 
-if(CUDAToolkit_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
+if(CUDAToolkit_FOUND AND QV_GPU_SUPPORT)
     target_link_libraries(
         hwloc
         INTERFACE
@@ -140,7 +140,7 @@ if(CUDAToolkit_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
     )
 endif()
 
-if(ROCM_FOUND AND NOT QV_DISABLE_GPU_SUPPORT)
+if(ROCM_FOUND AND QV_GPU_SUPPORT)
     target_link_libraries(
         hwloc
         INTERFACE

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -65,7 +65,7 @@
 #cmakedefine QVI_SIZEOF_INT   ${QVI_SIZEOF_INT}
 #cmakedefine QVI_SIZEOF_PID_T ${QVI_SIZEOF_PID_T}
 
-#cmakedefine QV_DISABLE_GPU_SUPPORT
+#cmakedefine QV_GPU_SUPPORT
 #cmakedefine CUDAToolkit_FOUND
 #cmakedefine ROCM_FOUND
 

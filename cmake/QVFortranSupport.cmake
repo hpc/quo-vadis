@@ -9,15 +9,15 @@
 include(CheckLanguage)
 
 option(
-    QV_DISABLE_FORTRAN_SUPPORT
-    "Unconditionally disable Fortran support"
-    OFF
+    QV_FORTRAN_SUPPORT
+    "Toggle Fortran support"
+    ON
 )
 
 message(CHECK_START "Determining desired Fortran support level")
 
 set(QV_FORTRAN_HAPPY FALSE)
-if(NOT QV_DISABLE_FORTRAN_SUPPORT)
+if(QV_FORTRAN_SUPPORT)
     message(CHECK_PASS "enabled")
 
     check_language(Fortran)
@@ -40,6 +40,6 @@ if(NOT QV_DISABLE_FORTRAN_SUPPORT)
     endif()
 else()
     message(CHECK_PASS "disabled")
-endif(NOT QV_DISABLE_FORTRAN_SUPPORT)
+endif()
 
 # vim: ts=4 sts=4 sw=4 expandtab
