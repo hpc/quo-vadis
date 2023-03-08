@@ -1,3 +1,4 @@
+/* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
  * Copyright (c)      2022 Triad National Security, LLC
  *                         All rights reserved.

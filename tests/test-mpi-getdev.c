@@ -1,3 +1,4 @@
+/* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 #include "qvi-macros.h"
 #include "quo-vadis-mpi.h"
 #include "qvi-test-common.h"
