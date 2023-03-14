@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2022 Triad National Security, LLC
+ * Copyright (c) 2021-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c)      2021 Lawrence Livermore National Security, LLC
@@ -60,10 +60,12 @@ qvi_bind_stack_free(
     if (!bstack) return;
     qvi_bind_stack_t *ibstack = *bstack;
     if (!ibstack) goto out;
-    while (!ibstack->stack->empty()) {
-        hwloc_cpuset_t bitm = ibstack->stack->top();
-        hwloc_bitmap_free(bitm);
-        ibstack->stack->pop();
+    if (ibstack->stack) {
+        while (!ibstack->stack->empty()) {
+            hwloc_cpuset_t bitm = ibstack->stack->top();
+            hwloc_bitmap_free(bitm);
+            ibstack->stack->pop();
+        }
     }
     delete ibstack->stack;
     delete ibstack;

@@ -406,7 +406,7 @@ qvi_scope_new(
     int rc = QV_SUCCESS;
 
     qv_scope_t *iscope = qvi_new qv_scope_t();
-    if (!scope) rc = QV_ERR_OOR;
+    if (!iscope) rc = QV_ERR_OOR;
     // hwpool and group will be initialized in scope_init().
     if (rc != QV_SUCCESS) {
         qvi_scope_free(&iscope);
@@ -920,6 +920,7 @@ qvi_scope_split(
     rc = parent->group->split(
         colorp, parent->group->id(), &group
     );
+    if (rc != QV_SUCCESS) goto out;
     // Create and initialize the new scope.
     rc = qvi_scope_new(&ichild);
     if (rc != QV_SUCCESS) goto out;

@@ -559,7 +559,7 @@ discover_gpu_devices(
             if (strcmp(dev->pci_bus_id, busid) != 0) continue;
             // Set as much device info as we can.
             int rc = set_gpu_device_info(hwl, obj, dev);
-            if (rc != QV_SUCCESS) return rc;
+            if (rc != QV_SUCCESS) goto out;
             // First, determine if this is a new device?
             auto got = devmap->find(busid);
             // New device (i.e., a new PCI bus ID)
@@ -569,7 +569,10 @@ discover_gpu_devices(
                 if (rc != QV_SUCCESS) return rc;
                 // Set base info from current device.
                 rc = qvi_hwloc_device_copy(dev, gpudev);
-                if (rc != QV_SUCCESS) return rc;
+                if (rc != QV_SUCCESS) {
+                    qvi_hwloc_device_free(&gpudev);
+                    return rc;
+                }
                 // Add it to our collection of 'seen' devices.
                 devmap->insert({busid, gpudev});
             }
@@ -590,7 +593,10 @@ discover_gpu_devices(
         if (rc != QV_SUCCESS) return rc;
         // Copy device info.
         rc = qvi_hwloc_device_copy(mapi.second, gpudev);
-        if (rc != QV_SUCCESS) return rc;
+        if (rc != QV_SUCCESS) {
+            qvi_hwloc_device_free(&gpudev);
+            return rc;
+        }
         // Save copy.
         hwl->gpus->push_back(gpudev);
     }
@@ -600,6 +606,7 @@ discover_gpu_devices(
         hwl->gpus->end(),
         dev_list_compare_by_visdev_id
     );
+out:
     // Free devmap, as it is no longer needed.
     dev_map_free(&devmap);
     return QV_SUCCESS;
@@ -629,8 +636,10 @@ discover_nic_devices(
             if (rc != QV_SUCCESS) return rc;
 
             rc = qvi_hwloc_device_copy(dev, nicdev);
-            if (rc != QV_SUCCESS) return rc;
-
+            if (rc != QV_SUCCESS) {
+                qvi_hwloc_device_free(&nicdev);
+                return rc;
+            }
             hwl->nics->push_back(nicdev);
         }
     }
@@ -849,7 +858,7 @@ qvi_hwloc_topology_export(
     rc = asprintf(path, "%s", hwl->topo_file);
     if (rc == -1) {
         ers = "asprintf() failed";
-        rc = QV_ERR_OOR;
+        qvrc = QV_ERR_OOR;
         goto out;
     }
 
