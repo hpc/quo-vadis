@@ -279,7 +279,7 @@ if(MPI_FOUND)
             quo-vadis-mpi
             OpenMP::OpenMP_C
         )
-      
+
     endif()
 endif()
 
@@ -361,7 +361,7 @@ if(MPI_FOUND)
         set_target_properties(
             test-mpi-threads-layout
             PROPERTIES LINKER_LANGUAGE C
-        )	  
+        )
     endif()
 endif()
 
