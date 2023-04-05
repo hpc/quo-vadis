@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c)      2022 Triad National Security, LLC
+ * Copyright (c) 2022-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -100,14 +100,6 @@ int
 qvi_line_config_unpack(
     void *buff,
     qvi_line_config_t *config
-);
-
-/**
- *
- */
-int
-qvi_line_devinfo_new(
-        qvi_line_devinfo_t *devinfo
 );
 
 /**
