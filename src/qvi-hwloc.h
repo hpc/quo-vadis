@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -36,6 +36,17 @@ typedef struct qvi_hwloc_s qvi_hwloc_t;
 struct qvi_hwloc_device_s;
 typedef struct qvi_hwloc_device_s qvi_hwloc_device_t;
 
+/**
+ * Returns the underlying hwloc type from the given qv_hw_obj_type_t type.
+ */
+hwloc_obj_type_t
+qvi_hwloc_get_obj_type(
+    qv_hw_obj_type_t external
+);
+
+/**
+ *
+ */
 hwloc_topology_t
 qvi_hwloc_get_topo_obj(
      qvi_hwloc_t *hwl

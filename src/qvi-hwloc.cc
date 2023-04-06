@@ -37,8 +37,8 @@ typedef enum qvi_hwloc_task_xop_obj_e {
 } qvi_hwloc_task_xop_obj_t;
 
 typedef struct qvi_hwloc_objx_s {
-    hwloc_obj_type_t objtype;
-    hwloc_obj_osdev_type_t osdev_type;
+    hwloc_obj_type_t objtype = {};
+    hwloc_obj_osdev_type_t osdev_type = {};
 } qvi_hwloc_objx_t;
 
 /** Array of supported device types. */
@@ -54,7 +54,7 @@ typedef struct qvi_hwloc_device_s {
     /** Device cpuset */
     hwloc_cpuset_t cpuset = nullptr;
     /** Internal object type information */
-    qvi_hwloc_objx_t objx;
+    qvi_hwloc_objx_t objx = {};
     /** Vendor ID */
     int vendor_id = -1;
     /** */
@@ -105,51 +105,53 @@ dev_list_compare_by_visdev_id(
     return a->visdev_id < b->visdev_id;
 }
 
-/**
- *
- */
+hwloc_obj_type_t
+qvi_hwloc_get_obj_type(
+    qv_hw_obj_type_t external
+) {
+    switch(external) {
+        case(QV_HW_OBJ_MACHINE):
+            return HWLOC_OBJ_MACHINE;
+        case(QV_HW_OBJ_PACKAGE):
+            return HWLOC_OBJ_PACKAGE;
+        case(QV_HW_OBJ_CORE):
+            return HWLOC_OBJ_CORE;
+        case(QV_HW_OBJ_PU):
+            return HWLOC_OBJ_PU;
+        case(QV_HW_OBJ_L1CACHE):
+            return HWLOC_OBJ_L1CACHE;
+        case(QV_HW_OBJ_L2CACHE):
+            return HWLOC_OBJ_L2CACHE;
+        case(QV_HW_OBJ_L3CACHE):
+            return HWLOC_OBJ_L3CACHE;
+        case(QV_HW_OBJ_L4CACHE):
+            return HWLOC_OBJ_L4CACHE;
+        case(QV_HW_OBJ_L5CACHE):
+            return HWLOC_OBJ_L5CACHE;
+        case(QV_HW_OBJ_NUMANODE):
+            return HWLOC_OBJ_NUMANODE;
+        case(QV_HW_OBJ_GPU):
+            return HWLOC_OBJ_OS_DEVICE;
+        default:
+            // This is an internal development error.
+            abort();
+    }
+}
+
 static inline int
 obj_type_from_external(
     qv_hw_obj_type_t external,
     qvi_hwloc_objx_t *objx
 ) {
+    // Get the underlying object type.
+    objx->objtype = qvi_hwloc_get_obj_type(external);
+    // If appropriate, update OS device type.
     switch(external) {
-        case(QV_HW_OBJ_MACHINE):
-            objx->objtype = HWLOC_OBJ_MACHINE;
-            break;
-        case(QV_HW_OBJ_PACKAGE):
-            objx->objtype = HWLOC_OBJ_PACKAGE;
-            break;
-        case(QV_HW_OBJ_CORE):
-            objx->objtype = HWLOC_OBJ_CORE;
-            break;
-        case(QV_HW_OBJ_PU):
-            objx->objtype = HWLOC_OBJ_PU;
-            break;
-        case(QV_HW_OBJ_L1CACHE):
-            objx->objtype = HWLOC_OBJ_L1CACHE;
-            break;
-        case(QV_HW_OBJ_L2CACHE):
-            objx->objtype = HWLOC_OBJ_L2CACHE;
-            break;
-        case(QV_HW_OBJ_L3CACHE):
-            objx->objtype = HWLOC_OBJ_L3CACHE;
-            break;
-        case(QV_HW_OBJ_L4CACHE):
-            objx->objtype = HWLOC_OBJ_L4CACHE;
-            break;
-        case(QV_HW_OBJ_L5CACHE):
-            objx->objtype = HWLOC_OBJ_L5CACHE;
-            break;
-        case(QV_HW_OBJ_NUMANODE):
-            objx->objtype = HWLOC_OBJ_NUMANODE;
-            break;
         case(QV_HW_OBJ_GPU):
-            objx->objtype = HWLOC_OBJ_OS_DEVICE;
             objx->osdev_type = HWLOC_OBJ_OSDEV_GPU;
             break;
         default:
-            return QV_ERR_INVLD_ARG;
+            return QV_SUCCESS;
     }
     return QV_SUCCESS;
 }
