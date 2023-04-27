@@ -1,10 +1,10 @@
-/* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
+ /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
  * Copyright (c) 2020-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright © Inria 2022.  All rights reserved.
- * Copyright © Bordeaux INP 2022. All rights reserved.
+ * Copyright (c) Inria 2022-2023.  All rights reserved.
+ * Copyright (c) Bordeaux INP 2022-2023. All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
  * top-level directory of this distribution.
@@ -90,105 +90,261 @@ out:
 }
 
 int
-qv_thread_layout_init(
-    qv_layout_t *layout,		      
-    qv_policy_t policy,
-    qv_hw_obj_type_t obj_type,
-    int stride
+qv_thread_layout_create( // use hwpool if necessary
+    qv_context_t *ctx,
+    qv_layout_params_t params,
+    qv_layout_t **layout
 )
 {
   int rc = QV_SUCCESS;
-  layout->policy   = policy;
-  layout->obj_type = obj_type;
-  layout->stride   = stride;
+  qv_layout_t *ilay = qvi_new qv_layout_t();
+
+  ilay->hwl       = qvi_rmi_client_hwloc_get(ctx->rmi);
+  ilay->hw_topo   = qvi_hwloc_get_topo_obj(ilay->hwl);
+  ilay->params    = params;
+  ilay->ctx       = ctx;
+  memset(&ilay->cached_info,0,sizeof(qv_layout_cached_info_t));
+  ilay->is_cached = 0;
+
+  *layout = ilay;
   return rc;
 }
 
-static hwloc_obj_type_t
-qv_thread_convert_obj_type(
-    qv_hw_obj_type_t obj_type
-) {
-    // TODO(skg) FIXME
-    hwloc_obj_type_t type = HWLOC_OBJ_MACHINE;
-
-    if(obj_type == QV_HW_OBJ_PU)
-        type = HWLOC_OBJ_PU;
-    else if(obj_type == QV_HW_OBJ_CORE)
-        type = HWLOC_OBJ_CORE;
-    else if(obj_type == QV_HW_OBJ_PACKAGE)
-        type = HWLOC_OBJ_PACKAGE;
-    else if (obj_type == QV_HW_OBJ_MACHINE)
-        type = HWLOC_OBJ_MACHINE;
-
-    return type;
-}
-
 int
-qv_thread_layout_apply(
-    qv_context_t *parent_ctx,
-    qv_scope_t *parent_scope,
-    qv_layout_t thread_layout
+qv_thread_layout_free(
+   qv_layout_t *layout
 )
 {
   int rc = QV_SUCCESS;
-  qvi_hwloc_t *hwl = qvi_rmi_client_hwloc_get(parent_ctx->rmi);
-  hwloc_topology_t hwloc_topology = qvi_hwloc_get_topo_obj(hwl);
-  hwloc_obj_type_t obj_type = qv_thread_convert_obj_type(thread_layout.obj_type);
-  hwloc_const_cpuset_t cpuset = qvi_scope_cpuset_get(parent_scope);
-#ifdef OPENMP_FOUND
-  int thr_idx = omp_get_thread_num();
-  int num_thr = omp_get_num_threads();
-#endif 
-  int nb_objs = 0; 
-  rc = qvi_hwloc_get_nobjs_in_cpuset(hwl,thread_layout.obj_type,cpuset, &nb_objs);
+
+  if (!layout) {
+      rc = QV_ERR_INVLD_ARG;
+      goto out;
+  }
+
+  //fixme check that is was actually allocated.
+  delete[] layout->cached_info.rsrc_idx;
+  delete layout;
+
+ out:
+  return rc;
+}
+
+int
+qv_thread_layout_set_policy(
+   qv_layout_t *layout,
+   qv_policy_t policy
+)
+{
+  int rc = QV_SUCCESS;
+
+  if (!layout) {
+      rc = QV_ERR_INVLD_ARG;
+      goto out;
+  }
+
+  layout->params.policy = policy;
+
+ out:
+  return rc;
+}
+
+int
+qv_thread_layout_set_obj_type(
+   qv_layout_t *layout,
+   qv_hw_obj_type_t obj_type
+)
+{
+  int rc = QV_SUCCESS;
+
+  if (!layout) {
+      rc = QV_ERR_INVLD_ARG;
+      goto out;
+  }
+
+  layout->params.obj_type = obj_type;
+
+ out:
+  return rc;
+}
+
+int
+qv_thread_layout_set_stride(
+   qv_layout_t *layout,
+   int stride
+)
+{
+  int rc = QV_SUCCESS;
+
+  if (!layout) {
+      rc = QV_ERR_INVLD_ARG;
+      goto out;
+  }
+
+  layout->params.stride = stride;
+
+ out:
+  return rc;
+}
+
+// check with OpenMP terminology for policies
+static int compute(int *array, int nb_threads, int nb_objs, int stride, qv_policy_t policy)
+{
+    int rc = QV_SUCCESS;
+    switch(policy)
+      {
+      case QV_POLICY_SPREAD:
+          {
+              break;
+          }
+      case QV_POLICY_DISTRIBUTE:
+      case QV_POLICY_ALTERNATE:
+      case QV_POLICY_CORESFIRST:
+          {
+              break;
+          }
+      case QV_POLICY_SCATTER:
+          {
+              break;
+          }
+      case QV_POLICY_CHOOSE:
+          {
+              break;
+          }
+      case QV_POLICY_PACKED:
+      case QV_POLICY_COMPACT:
+      case QV_POLICY_CLOSE:
+      default:
+          {
+              for(int idx = 0 ; idx < nb_threads ; idx++) {
+                  array[idx] = (idx+idx*stride)%(nb_objs);
+              }
+              break;
+          }
+      }
+    return rc;
+}
+
+int
+qv_thread_layout_apply( //use map interface if necessary
+    qv_context_t *parent_ctx,
+    qv_scope_t *parent_scope,
+    qv_layout_t *thread_layout,
+    int thr_idx,
+    int num_thr
+)
+{
+  int rc = QV_SUCCESS;
+
+  /* Brand new case: compute and cache as much as possible*/
+  if(thread_layout->is_cached == 0){
+      thread_layout->ctx = parent_ctx;
+      thread_layout->cached_info.params = thread_layout->params;
+      thread_layout->cached_info.cpuset = qvi_scope_cpuset_get(parent_scope);
+      thread_layout->cached_info.hwloc_obj_type = qvi_hwloc_get_obj_type(thread_layout->cached_info.params.obj_type);
+      rc = qvi_hwloc_get_nobjs_in_cpuset(thread_layout->hwl,
+                                         thread_layout->cached_info.params.obj_type,
+                                         thread_layout->cached_info.cpuset,
+                                         &(thread_layout->cached_info.nb_objs));
+      thread_layout->cached_info.nb_threads = num_thr;
+      thread_layout->cached_info.rsrc_idx = new int[thread_layout->cached_info.nb_threads]{-1};
+
+      rc = compute(thread_layout->cached_info.rsrc_idx,
+                   thread_layout->cached_info.nb_threads,
+                   thread_layout->cached_info.nb_objs,
+                   thread_layout->cached_info.params.stride,
+                   thread_layout->cached_info.params.policy);
+
+      thread_layout->is_cached = 1;
+
+  } else if (thread_layout->is_cached) {
+      // Are we using the right context?
+      if (thread_layout->ctx != parent_ctx) {
+          // pointer comparison might not be enough.
+          // do we need a unique ctxt id?
+          rc = QV_ERR_INVLD_ARG;
+          return rc;
+      } else {
+          // check changes and recompute if necessary
+          int recompute = 0;
+
+          hwloc_obj_type_t hwloc_obj_type = qvi_hwloc_get_obj_type(thread_layout->params.obj_type);
+          if ( hwloc_obj_type  != thread_layout->cached_info.hwloc_obj_type ){
+              int nb_objs;
+
+              //no need to systematically recompute in this case:
+              // recompute iff number of objects is different.
+              // otherwise: keep same parameters and apply to new objects
+              thread_layout->cached_info.hwloc_obj_type = hwloc_obj_type;
+
+              rc = qvi_hwloc_get_nobjs_in_cpuset(thread_layout->hwl,
+                                                 thread_layout->params.obj_type,
+                                                 thread_layout->cached_info.cpuset,
+                                                 &nb_objs);
+
+              if(nb_objs != thread_layout->cached_info.nb_objs){
+                  thread_layout->cached_info.nb_objs = nb_objs;
+                  recompute++;
+              }
+          }
+
+          /* cpuset is different, recompute info */
+          //if (hwloc_bitmap_compare(thread_layout->cached_info.cpuset,qvi_scope_cpuset_get(parent_scope)) != 0 ) {
+          //   thread_layout->cached_info.cpuset = qvi_scope_cpuset_get(parent_scope);
+          //    recompute++;
+          //}
+
+
+          if (num_thr != thread_layout->cached_info.nb_threads) {
+              thread_layout->cached_info.nb_threads = num_thr;
+              recompute++;
+          }
+
+          if(thread_layout->cached_info.params.stride != thread_layout->params.stride){
+              thread_layout->cached_info.params.stride = thread_layout->params.stride;
+              recompute++;
+          }
+
+          if (thread_layout->cached_info.params.policy != thread_layout->params.policy){
+              thread_layout->cached_info.params.policy = thread_layout->params.policy;
+              recompute++;
+          }
+
+          if(recompute){
+              rc = compute(thread_layout->cached_info.rsrc_idx,
+                           thread_layout->cached_info.nb_threads,
+                           thread_layout->cached_info.nb_objs,
+                           thread_layout->cached_info.params.stride,
+                           thread_layout->cached_info.params.policy);
+              //fprintf(stdout,"***********************>>>>>>>>>  recompute done\n");
+          }
+      }
+  }
   
-  /* FIXME : what should we do in oversubscribing case ?? */
-  if(nb_objs < num_thr)    
+  // FIXME : what should we do in oversubscribing case?
+  // GM EDIT: Mutiple threads on objects featuring multiple PUs is not an issue
+  // Oversub test : check that an index does not appear twice in the resrc indices array
+  if(thread_layout->cached_info.nb_objs < thread_layout->cached_info.nb_threads)
     {
       if (!thr_idx)
-	fprintf(stdout,"====> Oversubscribing \n");
+          fprintf(stdout,"====> Oversubscribing \n");
     }
   else {
     if (!thr_idx)
       fprintf(stdout,"====> Resource number is ok\n");
   }
 
-  switch(thread_layout.policy)
-    {
-    case QV_POLICY_PACKED:
-      //case QV_POLICY_COMPACT:
-      //case QV_POLICY_CLOSE:
-      {
-	hwloc_obj_t obj = hwloc_get_obj_inside_cpuset_by_type(hwloc_topology,
-							      cpuset,
-							      obj_type,
-							      (thr_idx+thr_idx*thread_layout.stride)%nb_objs);
-	
-	
-	hwloc_set_cpubind(hwloc_topology,obj->cpuset,HWLOC_CPUBIND_THREAD);	
-	fprintf(stdout,"[OMP TH #%i] === bound on resrc #%i\n",thr_idx,obj->logical_index);
-	/* perform sanity check here : get_proc_cpubind + obj from cpuset + logical idx and compare */
-	break;
-      }
-    case QV_POLICY_SPREAD:
-      {
-	break;
-      }
-    case QV_POLICY_DISTRIBUTE:
-      //case QV_POLICY_ALTERNATE:
-      //case QV_POLICY_CORESFIRST:
-      {
-	break;
-      }
-    case QV_POLICY_SCATTER:
-      {
-	break;
-      }
-    case QV_POLICY_CHOOSE:
-      {
-	break;
-      }      
-    }
+  /* enforce binding */
+  hwloc_obj_t obj = hwloc_get_obj_inside_cpuset_by_type(thread_layout->hw_topo,
+                                                        thread_layout->cached_info.cpuset,
+                                                        thread_layout->cached_info.hwloc_obj_type,
+                                                        thread_layout->cached_info.rsrc_idx[thr_idx]);
+
+  hwloc_set_cpubind(thread_layout->hw_topo,obj->cpuset,HWLOC_CPUBIND_THREAD);
+  fprintf(stdout,"[OMP TH #%i] === bound on resrc #%i\n",thr_idx,obj->logical_index);
+
+  /* Sanity check */
+  //assert(obj->logical_index == thread_layout->cached_info.rsrc_idx[thr_idx]);
   
   return rc;
 }

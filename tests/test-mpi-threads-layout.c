@@ -6,10 +6,10 @@
  * Copyright (c)      2020 Lawrence Livermore National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c) 2022      Inria.
+ * Copyright (c) 2022-2023 Inria.
  *                         All rights reserved.
  *
- * Copyright (c) 2022      Bordeaux INP.
+ * Copyright (c) 2022-2023 Bordeaux INP.
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -135,17 +135,17 @@ main(void)
         omp_set_num_threads(n_pu);
         printf("[%d] Spawing OpenMP Parallel Section with %d threads\n", wrank, n_pu);
 
-        qv_layout_t thread_layout;
-
         /* Bind to PUs w/o stride */
-        qv_thread_layout_init(&thread_layout,QV_POLICY_PACKED,QV_HW_OBJ_PU,0);
+        qv_layout_t *thread_layout = NULL;
+        qv_layout_params_t params = {QV_POLICY_PACKED, QV_HW_OBJ_PU, 0};
+        qv_thread_layout_create(mpi_ctx,params,&thread_layout);
 
 #pragma omp parallel private(ers, rc)
         {
             int tid = omp_get_thread_num();
             printf("[%d][%d] Binding to PUS \n", wrank, tid);
             rc = qv_thread_layout_apply(
-                    mpi_ctx, mpi_numa_scope, thread_layout
+                mpi_ctx, mpi_numa_scope, thread_layout, tid, omp_get_num_threads()
             );
         }
 
@@ -153,17 +153,19 @@ main(void)
         printf("[%d] Spawing OpenMP Parallel Section with %d threads\n", wrank, n_pu/4);
 
         /* Bind to cores with a stride of 1 */
-        qv_thread_layout_init(
-            &thread_layout, QV_POLICY_PACKED, QV_HW_OBJ_CORE, 1
-        );
+        qv_thread_layout_set_obj_type(thread_layout,QV_HW_OBJ_CORE);
+        qv_thread_layout_set_stride(thread_layout,1);
+
 #pragma omp parallel private(ers, rc)
         {
             int tid = omp_get_thread_num();
             printf("[%d][%d] Binding to CORES \n", wrank, tid);
             rc = qv_thread_layout_apply(
-                mpi_ctx, mpi_numa_scope, thread_layout
+                mpi_ctx, mpi_numa_scope, thread_layout, tid, omp_get_num_threads()
             );
         }
+
+        qv_thread_layout_free(thread_layout);
     }
     else {
         printf("[%d] Waiting for Master thread \n", wrank);

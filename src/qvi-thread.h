@@ -52,7 +52,6 @@ typedef enum qv_policy_s {
   QV_POLICY_CHOOSE     = 5,
 } qv_policy_t;
 */
-  
 /**                                                                                                   
  * Layout for fine-grain binding                                                                     
  * with default behaviour                                                                             
@@ -64,7 +63,6 @@ typedef struct qv_layout_s {
   int stride;
 } qv_layout_t;
 */
-  
 /**
  *
  */
