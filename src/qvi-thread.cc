@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2022      Inria.
@@ -37,10 +37,10 @@ using qvi_thread_group_tab_t = std::unordered_map<
 
 // We need to have one structure for fields
 // shared by all threads included in another
-// with fields specific to each thread 
+// with fields specific to each thread
 struct qvi_thread_group_shared_s {
     /** for resource freeing */
-    int in_use = 0; 
+    int in_use = 0;
     /** UNUSED : ID (rank) in group */
     /* probably need a LIST of IDs ...*/
     int id = -1;
@@ -134,14 +134,14 @@ qvi_thread_free(
     qvi_thread_t *ith = *th;
 
     if (!ith) goto out;
-    
+
     if (ith->group_tab) {
         delete ith->group_tab;
         ith->group_tab = nullptr;
     }
       // both pragma should be OK since finalize is called from zgroups
 #pragma omp barrier // ensure that no thread need this anymore
-#pragma omp single 
+#pragma omp single
     {
       pthread_barrier_destroy(ith->barrier);
       delete ith->barrier;
@@ -163,7 +163,7 @@ qvi_thread_init(
     // For now these are always fixed.
     const int world_id = 0, node_id = 0;
     pthread_barrier_t *barrier = nullptr;
-      
+
 #pragma omp single copyprivate(barrier)
     barrier = qvi_new pthread_barrier_t();
 
@@ -177,7 +177,7 @@ qvi_thread_init(
 #else
      pthread_barrier_init(th->barrier,NULL, 1); /* FIXME, thread number not right*/
 #endif
-    
+
     return qvi_task_init(
         th->task, QV_TASK_TYPE_THREAD, qvi_gettid(), world_id, node_id
     );
@@ -204,7 +204,7 @@ qvi_thread_node_barrier(
     int rc = pthread_barrier_wait(th->barrier);
     if ((rc != 0) && (rc != PTHREAD_BARRIER_SERIAL_THREAD)) {
       rc = QV_ERR_INTERNAL;
-    } else rc = QV_SUCCESS;    
+    } else rc = QV_SUCCESS;
     return rc;
 }
 
@@ -225,14 +225,14 @@ int
 qvi_thread_group_new(
     qvi_thread_group_t **thgrp
 ) {
-    qvi_thread_group_t *ithgrp = qvi_new qvi_thread_group_t(); 
+    qvi_thread_group_t *ithgrp = qvi_new qvi_thread_group_t();
     qvi_thread_group_shared_t *sdata = nullptr;
 
     if (!ithgrp) {
 	*thgrp = nullptr;
         return QV_ERR_OOR;
     }
-    
+
 #pragma omp single copyprivate(sdata)
     sdata = qvi_new qvi_thread_group_shared_t();
     if (!sdata) {
@@ -240,10 +240,10 @@ qvi_thread_group_new(
 	*thgrp = nullptr;
         return QV_ERR_OOR;;
     }
-    
+
 #pragma omp single
     sdata->in_use = omp_get_num_threads();
-    
+
     ithgrp->sdata = sdata;
 
     *thgrp = ithgrp;
@@ -264,7 +264,7 @@ qvi_thread_group_free(
       pthread_barrier_destroy(&(ithgrp->sdata->barrier));
       delete ithgrp->sdata;
     }
-    
+
     delete ithgrp;
 out:
     *thgrp = nullptr;
@@ -297,29 +297,29 @@ qvi_thread_group_create_size(
     {
       igroup->sdata->tabid = gtid;
       igroup->sdata->size = size;
-    }    
+    }
 #ifdef OPENMP_FOUND
     igroup->id = omp_get_thread_num();
 #else
     igroup->id = 0;
 #endif
-        
-#pragma omp single copyprivate(irc)         
+
+#pragma omp single copyprivate(irc)
     irc = pthread_barrier_init(&(igroup->sdata->barrier),NULL,igroup->sdata->size);
     if (irc != 0) {
       rc = QV_ERR_INTERNAL;
       goto out;
     }
-    
+
     //Insert the whole group structure or just the shared part??
 #pragma omp single
     th->group_tab->insert({gtid, *igroup});
-    
+
 out:
     if (rc != QV_SUCCESS) {
       qvi_thread_group_free(&igroup);
     }
-    
+
     *group = igroup;
     return QV_SUCCESS;
 }
@@ -394,10 +394,10 @@ int
 qvi_thread_group_barrier(
     qvi_thread_group_t *group
 ) {
-    int rc = pthread_barrier_wait(&(group->sdata->barrier));  
+    int rc = pthread_barrier_wait(&(group->sdata->barrier));
     if ((rc != 0) && (rc != PTHREAD_BARRIER_SERIAL_THREAD)) {
       rc = QV_ERR_INTERNAL;
-    } else rc = QV_SUCCESS;    
+    } else rc = QV_SUCCESS;
     return rc;
 }
 
@@ -521,12 +521,12 @@ static int qvi_get_subgroup_info(
     color_key_id_t *lptr = NULL;
 
 #pragma omp single copyprivate(lptr)
-    lptr = qvi_new color_key_id_t[size](); 
+    lptr = qvi_new color_key_id_t[size]();
     if (!lptr) {
       *new_id = *sgrp_size = *sgrp_rank = *num_of_sgrp = -1;
       return QV_ERR_OOR;
     }
-    
+
     /* Gather colors and keys from ALL threads */
     lptr[id].color = color;
     lptr[id].key   = key;
@@ -541,8 +541,8 @@ static int qvi_get_subgroup_info(
       bubble_sort_by_color(lptr, size);
       bubble_sort_by_key(lptr, size);
       bubble_sort_by_rank(lptr, size);
-    }    
-        
+    }
+
     /* compute number of subgroups */
     num_colors = 1;
     color_val = lptr[0].color;
@@ -556,7 +556,7 @@ static int qvi_get_subgroup_info(
 
     /* compute number and ranks of subgroups */
     num_colors = 0;
-    color_val = lptr[0].color;    
+    color_val = lptr[0].color;
     for(int idx = 0 ; idx < size ; idx++) {
       if(lptr[idx].color != color_val) {
 	num_colors++;
@@ -588,7 +588,7 @@ static int qvi_get_subgroup_info(
 
 #pragma omp barrier // to prevent the quickest hread to remove data before all others have used it
 #pragma omp single
-    delete [] lptr;    
+    delete [] lptr;
     return QV_SUCCESS;
 }
 
@@ -631,7 +631,7 @@ qvi_thread_group_create_from_split(
       *child = nullptr;
       return QV_ERR_SPLIT;
     }
-    
+
     rc = qvi_get_subgroup_info(
 	 parent,
 	 color,
@@ -639,7 +639,7 @@ qvi_thread_group_create_from_split(
 	 &newid,
 	 &sgrp_size,
 	 &sgrp_rank,
-	 &num_sgrp ); 
+	 &num_sgrp );
     if (rc != QV_SUCCESS) {
       *child = nullptr;
       return QV_ERR_SPLIT;
@@ -656,8 +656,8 @@ qvi_thread_group_create_from_split(
     if (!new_group) {
       	*child = nullptr;
     	return QV_ERR_OOR;
-    }    
-    
+    }
+
     /* sdata pointer allocation */
 #pragma omp single copyprivate(sdata_ptr_array)
     sdata_ptr_array = qvi_new qvi_thread_group_shared_t *[num_sgrp]();
@@ -666,7 +666,7 @@ qvi_thread_group_create_from_split(
       *child = nullptr;
       return QV_ERR_OOR;
     }
-    
+
     for(int i = 0 ; i < num_sgrp ; i++) {
 #pragma omp single copyprivate(tmp_sdata)
       tmp_sdata = qvi_new qvi_thread_group_shared_t();
@@ -681,38 +681,38 @@ qvi_thread_group_create_from_split(
       if ((newid == 0) && (i == sgrp_rank))
 	sdata_ptr_array[i] = tmp_sdata;
     }
-    
+
 #pragma omp single copyprivate(lock_ptr)
     {
       lock_ptr = qvi_new omp_lock_t();
       omp_init_lock(lock_ptr);
     }
-    
+
     /* Only the root(s) need(s) to initialize this */
     if (newid == 0) {
       omp_set_lock(lock_ptr);
       rc = next_group_tab_id(th, &gtid);
       omp_unset_lock(lock_ptr);
-      
+
       sdata_ptr_array[sgrp_rank]->tabid = gtid;
 
       sdata_ptr_array[sgrp_rank]->size = sgrp_size;
       sdata_ptr_array[sgrp_rank]->in_use = sgrp_size;
-      
+
       pthread_barrier_init(&(sdata_ptr_array[sgrp_rank]->barrier),NULL,sgrp_size);
     }
-#pragma omp barrier    
+#pragma omp barrier
     /* All threads set their own (sub)group sdata pointer */
     new_group->sdata = sdata_ptr_array[sgrp_rank];
     new_group->id = newid;
-    
+
     /* Only the root(s) need(s) to insert groups */
     if (newid == 0) {
       omp_set_lock(lock_ptr);
       th->group_tab->insert({gtid, *new_group});
       omp_unset_lock(lock_ptr);
-    }    
-    
+    }
+
     *child = new_group;
 #pragma omp barrier // to prevent the quickest thread to remove data before all others have used it
 #pragma omp single
@@ -751,17 +751,17 @@ qvi_thread_group_gather_bbuffs(
 
     rc = qvi_bbuff_new(&bbuffs[group_id]);
     if (rc != QV_SUCCESS) goto out;
-    
+
     rc = qvi_bbuff_append(bbuffs[group_id], qvi_bbuff_data(txbuff), send_count);
     if (rc != QV_SUCCESS) goto out;
-    
+
 #pragma omp barrier // Need to ensure that all threads have contributed to bbuffs
-    
-out:    
+
+out:
     if (rc != QV_SUCCESS) {
 #pragma omp single
       {
-        if (bbuffs) {	  
+        if (bbuffs) {
             for (int i = 0; i < group_size; ++i) {
                 qvi_bbuff_free(&bbuffs[i]);
             }
@@ -770,10 +770,10 @@ out:
       }
       bbuffs = nullptr;
     }
-    *rxbuffs = bbuffs;    
+    *rxbuffs = bbuffs;
     *shared_alloc = 1;
     //for(int i = 0 ; i < group_size ; i++)
-    //fprintf(stdout,"===== [%i] bbuff[%i] à %p\n",group_id,i,bbuffs[i]);    
+    //fprintf(stdout,"===== [%i] bbuff[%i] à %p\n",group_id,i,bbuffs[i]);
     return rc;
 }
 
@@ -794,21 +794,21 @@ qvi_thread_group_scatter_bbuffs(
     /* GM: Oh man, that is UGLY */
     /* Surely, some nice OpenMP magic will fix this mess */
 #pragma omp single copyprivate(tmp)
-    tmp = qvi_new qvi_bbuff_t**();    
+    tmp = qvi_new qvi_bbuff_t**();
 #pragma omp master
-    *tmp = txbuffs;  
+    *tmp = txbuffs;
 #pragma omp barrier
-    
+
     //fprintf(stdout,">>>>>>>>>>>>>>>>>>>>>>> SCATTER [%i] tmp @ %p txbuffs @ %p\n",group_id,*tmp,(*tmp)[group_id]);
-    
+
     qvi_bbuff_t *inbuff = (*tmp)[group_id];
     size_t data_size = qvi_bbuff_size(inbuff);
     void *data = qvi_bbuff_data(inbuff);
-    
+
     qvi_bbuff_t *mybbuff = nullptr;
     int rc = qvi_bbuff_new(&mybbuff);
-    if (rc == QV_SUCCESS) {    
-      rc = qvi_bbuff_append(mybbuff, data, data_size);    
+    if (rc == QV_SUCCESS) {
+      rc = qvi_bbuff_append(mybbuff, data, data_size);
     }
 #pragma omp barrier
 #pragma omp single

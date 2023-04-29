@@ -267,6 +267,10 @@ main(
         numa_scope,
         &my_numa_id
     );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_taskid() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
 
     printf("[%d]: #NUMAs=%d numa_scope_id=%d\n",
        wrank, nnumas, my_numa_id);
@@ -387,6 +391,10 @@ main(
         gpu_scope,
         &my_gpu_id
     );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_taskid() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
 
     rc = qv_bind_push(ctx, gpu_scope);
     if (rc != QV_SUCCESS) {

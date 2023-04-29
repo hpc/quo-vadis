@@ -147,6 +147,7 @@ main(
     rc = qv_mpi_context_free(ctx);
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_context_free() failed";
+        qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
     rc = MPI_Comm_free(&wscope_comm);

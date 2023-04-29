@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -572,7 +572,7 @@ qvi_mpi_group_create_from_ids(
     }
     // Not in the group and no errors.
     if (*maybe_group == nullptr) {
-        rc = QV_SUCCESS;
+        qvrc = QV_SUCCESS;
         goto out;
     }
     // In the group.

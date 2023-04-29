@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2023 Triad National Security, LLC
  *                         All rights reserved.
  * Copyright (c) 2022      Inria. All rights reserved.
  * Copyright (c) 2022      Bordeaux INP. All rights reserved.
@@ -24,10 +24,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-  
+
 // Forward declarations.
-  
-struct qvi_thread_group_shared_s;  
+
+struct qvi_thread_group_shared_s;
 typedef struct qvi_thread_group_shared_s qvi_thread_group_shared_t;
 
 struct qvi_thread_group_s;
@@ -36,8 +36,8 @@ typedef struct qvi_thread_group_s qvi_thread_group_t;
 struct qvi_thread_s;
 typedef struct qvi_thread_s qvi_thread_t;
 
-/**                                                                                                   
- * Mapping policies types.                                                                          
+/**
+ * Mapping policies types.
  */
 /*
 typedef enum qv_policy_s {
@@ -52,9 +52,9 @@ typedef enum qv_policy_s {
   QV_POLICY_CHOOSE     = 5,
 } qv_policy_t;
 */
-/**                                                                                                   
- * Layout for fine-grain binding                                                                     
- * with default behaviour                                                                             
+/**
+ * Layout for fine-grain binding
+ * with default behaviour
  */
 /*
 typedef struct qv_layout_s {

@@ -63,7 +63,7 @@ qv_thread_context_create(
 
     // Save zgroup instance pointer to context.
     ictx->zgroup = izgroup;
-    
+
     rc = izgroup->initialize();
     if (rc != QV_SUCCESS) {
         goto out;
@@ -320,7 +320,7 @@ qv_thread_layout_apply( //use map interface if necessary
           }
       }
   }
-  
+
   // FIXME : what should we do in oversubscribing case?
   // GM EDIT: Mutiple threads on objects featuring multiple PUs is not an issue
   // Oversub test : check that an index does not appear twice in the resrc indices array
@@ -345,7 +345,7 @@ qv_thread_layout_apply( //use map interface if necessary
 
   /* Sanity check */
   //assert(obj->logical_index == thread_layout->cached_info.rsrc_idx[thr_idx]);
-  
+
   return rc;
 }
 

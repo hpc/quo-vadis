@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2022      Inria.
@@ -60,7 +60,7 @@ qvi_zgroup_thread_s::group_create_intrinsic(
         rc = QV_ERR_OOR;
         goto out;
     }
-    
+
     rc = igroup->initialize(zth);
     if (rc != QV_SUCCESS) goto out;
 
