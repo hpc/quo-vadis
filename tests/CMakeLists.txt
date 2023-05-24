@@ -250,7 +250,22 @@ if(MPI_FOUND)
           LABELS "mpi"
     )
 
-################################# HYBRID TESTS #################################
+############################# HYBRID TESTS (PThreads) ##########################
+################################################################################
+    add_executable(
+         test-mpi-pthreads-layout
+         qvi-test-common.h
+         test-mpi-pthreads-layout.c
+    )
+
+
+    target_link_libraries(
+         test-mpi-pthreads-layout
+         quo-vadis
+         quo-vadis-mpi
+    )
+
+############################# HYBRID TESTS (OpenMP) ############################
 ################################################################################
     if(OPENMP_FOUND)
         add_executable(
@@ -350,6 +365,7 @@ if(MPI_FOUND)
         test-mpi-api
         test-mpi-getdev
         test-mpi-scopes
+	test-mpi-pthreads-layout
         PROPERTIES LINKER_LANGUAGE C
     )
 
