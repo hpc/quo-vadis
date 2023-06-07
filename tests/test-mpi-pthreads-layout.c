@@ -30,31 +30,20 @@
 
 typedef struct {
     int wrank;
-    qv_context_t *ctx;
-    qv_scope_t *scope;
-    qv_layout_t *thread_layout;
-    int th_id;
-    int num_th;
-} th_args_t;
+    int rc;
+    qv_thread_args_t th_args;
+} args_t;
 
-void *function(void *arg)
+void *thread_work(void *arg)
 {
-    //int rc;
+    qv_thread_args_t th_args = ((args_t *)arg)->th_args;
 
-    th_args_t *th_arg = (th_args_t *)arg;
-    qv_context_t *ctx = th_arg->ctx;
-    qv_scope_t *scope = th_arg->scope;
-    qv_layout_t *thread_layout = th_arg->thread_layout;
-    int tid = th_arg->th_id;
-    int wrank = th_arg->wrank;
+    printf("[%d][%d] Binding to PUS \n", ((args_t *)arg)->wrank, th_args.th_id);
 
-    //fprintf(stdout,"[Th #%i on %i] == in function \n",tid,th_arg->num_th);
+    ((args_t *)arg)->rc = qv_thread_layout_apply(th_args);
 
-    printf("[%d][%d] Binding to PUS \n", wrank, tid);
-    //rc =
-    qv_thread_layout_apply(
-                           ctx, scope, thread_layout, tid,th_arg->num_th
-                           );
+
+    /* do some work now */
 
     pthread_exit(NULL);
 }
@@ -69,7 +58,7 @@ main(void)
     int my_numa_id;
     int rc = QV_SUCCESS;
 
-    fprintf(stdout,"# Starting Hybrid MPI + OpenMP test\n");
+    fprintf(stdout,"# Starting Hybrid MPI + Pthreads test\n");
 
     rc = MPI_Init(NULL, NULL);
     if (rc != MPI_SUCCESS) {
@@ -160,58 +149,64 @@ main(void)
         }
 
 
-        /* Bind to PUs w/o stride */
+        /* Bind to PUs with stride of 1 (= resources with consecutive indices)*/
         qv_layout_t *thread_layout = NULL;
-        qv_layout_params_t params = {QV_POLICY_PACKED, QV_HW_OBJ_PU, 0};
+        qv_layout_params_t params = {QV_POLICY_PACKED, QV_HW_OBJ_PU, 1};
         qv_thread_layout_create(mpi_ctx,params,&thread_layout);
 
-        int num_threads = n_pu; //omp_set_num_threads(n_pu);
+        int num_threads = n_pu;
         printf("[%d] Spawing Pthreads Parallel Section with %d threads\n", wrank, num_threads);
 
         pthread_t *tid = malloc(num_threads*sizeof(pthread_t));
-        th_args_t *args = malloc(num_threads*sizeof(th_args_t));
+        args_t *args = malloc(num_threads*sizeof(args_t));
 
         for(int i = 0 ; i < num_threads ; i++) {
             args[i].wrank = wrank;
-            args[i].ctx = mpi_ctx;
-            args[i].scope = mpi_numa_scope;
-            args[i].thread_layout = thread_layout;
-            args[i].th_id = i;
-            args[i].num_th = num_threads;
-
-            pthread_create(&tid[i],NULL,function,(void *)&(args[i]));
+            rc = qv_thread_args_set(mpi_ctx,mpi_numa_scope,thread_layout,i,num_threads,&(args[i].th_args));
+            if (rc != QV_SUCCESS) {
+                ers = "qv_thread_args_set() failed";
+                qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+            }
+            pthread_create(&tid[i],NULL,thread_work,(void *)&(args[i]));
         }
 
         for(int i = 0 ; i < num_threads ; i++) {
             pthread_join(tid[i],NULL);
+            if (args[i].rc != QV_SUCCESS) {
+                ers = "qv_thread_layout_apply failed in thread";
+                qvi_test_panic("%s %i (rc=%s)", ers, i,qv_strerr(args[i].rc));
+            }
         }
 
         free(tid);
         free(args);
 
-        num_threads = n_pu/4; //omp_set_num_threads(n_pu/4);
+        num_threads = n_pu/4;
         printf("[%d] Spawing Pthreads  Parallel Section with %d threads\n", wrank, n_pu/4);
 
-        /* Bind to cores with a stride of 1 */
+        /* Bind to cores with a stride of 2 */
         qv_thread_layout_set_obj_type(thread_layout,QV_HW_OBJ_CORE);
-        qv_thread_layout_set_stride(thread_layout,1);
+        qv_thread_layout_set_stride(thread_layout,2);
 
         tid = malloc(num_threads*sizeof(pthread_t));
-        args = malloc(num_threads*sizeof(th_args_t));
+        args = malloc(num_threads*sizeof(args_t));
 
         for(int i = 0 ; i < num_threads ; i++) {
             args[i].wrank = wrank;
-            args[i].ctx = mpi_ctx;
-            args[i].scope = mpi_numa_scope;
-            args[i].thread_layout = thread_layout;
-            args[i].th_id = i;
-            args[i].num_th = num_threads;
-
-            pthread_create(&tid[i],NULL,function,(void *)&(args[i]));
+            rc = qv_thread_args_set(mpi_ctx,mpi_numa_scope,thread_layout,i,num_threads,&(args[i].th_args));
+            if (rc != QV_SUCCESS) {
+                ers = "qv_thread_args_set() failed";
+                qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+            }
+            pthread_create(&tid[i],NULL,thread_work,(void *)&(args[i]));
         }
 
         for(int i = 0 ; i < num_threads ; i++) {
             pthread_join(tid[i],NULL);
+            if (args[i].rc != QV_SUCCESS) {
+                ers = "qv_thread_layout_apply failed in thread";
+                qvi_test_panic("%s %i (rc=%s)", ers, i,qv_strerr(args[i].rc));
+            }
         }
 
         free(tid);

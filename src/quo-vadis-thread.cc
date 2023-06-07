@@ -187,13 +187,19 @@ qv_thread_layout_set_stride(
   return rc;
 }
 
-// check with OpenMP terminology for policies
+// Intel policies (KMP_AFFINITY) are :
+// - disabled: prevents the runtime library from making any affinity-related
+//             system calls (to avoid interference with other platform affinity mechanisms).
+// - compact: threads are placed as close together as possible.
+// - scatter: threads are distributed as evenly as possible across the entire system.
+//            (opposite of compact).
+// - explicit: threads are placed according to a list of OS proc IDs (required)
 static int compute(int *array, int nb_threads, int nb_objs, int stride, qv_policy_t policy)
 {
     int rc = QV_SUCCESS;
     switch(policy)
       {
-      case QV_POLICY_SPREAD:
+      case QV_POLICY_SPREAD: // Same as SCATTER?
           {
               break;
           }
@@ -207,7 +213,7 @@ static int compute(int *array, int nb_threads, int nb_objs, int stride, qv_polic
           {
               break;
           }
-      case QV_POLICY_CHOOSE:
+      case QV_POLICY_CHOOSE: // rename to EXPLICIT?
           {
               break;
           }
@@ -217,7 +223,7 @@ static int compute(int *array, int nb_threads, int nb_objs, int stride, qv_polic
       default:
           {
               for(int idx = 0 ; idx < nb_threads ; idx++) {
-                  array[idx] = (idx+idx*stride)%(nb_objs);
+                  array[idx] = (idx+idx*(stride-1))%(nb_objs);
               }
               break;
           }
@@ -227,14 +233,14 @@ static int compute(int *array, int nb_threads, int nb_objs, int stride, qv_polic
 
 int
 qv_thread_layout_apply( //use map interface if necessary
-    qv_context_t *parent_ctx,
-    qv_scope_t *parent_scope,
-    qv_layout_t *thread_layout,
-    int thr_idx,
-    int num_thr
+    qv_thread_args_t th_args
 )
 {
   int rc = QV_SUCCESS;
+  qv_context_t *parent_ctx = th_args.ctx;
+  qv_scope_t *parent_scope = th_args.scope;
+  qv_layout_t *thread_layout = th_args.thread_layout;                                                                                                                                                              int thr_idx = th_args.th_id;
+  int num_thr = th_args.num_th;
 
   /* Brand new case: compute and cache as much as possible*/
   if(thread_layout->is_cached == 0){
@@ -341,7 +347,8 @@ qv_thread_layout_apply( //use map interface if necessary
                                                         thread_layout->cached_info.rsrc_idx[thr_idx]);
 
   hwloc_set_cpubind(thread_layout->hw_topo,obj->cpuset,HWLOC_CPUBIND_THREAD);
-  fprintf(stdout,"[OMP TH #%i] === bound on resrc #%i\n",thr_idx,obj->logical_index);
+
+  fprintf(stdout,"[THREAD #%i] === bound on resrc #%i\n",thr_idx,obj->logical_index);
 
   /* Sanity check */
   //assert(obj->logical_index == thread_layout->cached_info.rsrc_idx[thr_idx]);
@@ -349,6 +356,30 @@ qv_thread_layout_apply( //use map interface if necessary
   return rc;
 }
 
+int
+qv_thread_args_set(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    qv_layout_t *thread_layout,
+    int th_id,
+    int num_th,
+    qv_thread_args_t *th_args
+)
+{
+  int rc = QV_SUCCESS;
+
+  if(!th_args)
+      return QV_ERR_INVLD_ARG;
+  else {
+      th_args->ctx = ctx;
+      th_args->scope = scope;
+      th_args->thread_layout = thread_layout;
+      th_args->th_id = th_id;
+      th_args->num_th = num_th;
+  }
+
+  return rc;
+}
 
 
 
