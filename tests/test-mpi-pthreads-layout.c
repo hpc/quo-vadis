@@ -42,7 +42,6 @@ void *thread_work(void *arg)
 
     ((args_t *)arg)->rc = qv_thread_layout_apply(th_args);
 
-
     /* do some work now */
 
     pthread_exit(NULL);
@@ -147,7 +146,6 @@ main(void)
             ers = "qv_scope_nobjs() failed";
             qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
-
 
         /* Bind to PUs with stride of 1 (= resources with consecutive indices)*/
         qv_layout_t *thread_layout = NULL;
