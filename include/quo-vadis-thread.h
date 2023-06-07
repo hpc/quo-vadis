@@ -83,6 +83,18 @@ typedef struct qv_layout_s {
 } qv_layout_t;
 
 /**
+ * Used to pass args to pthreads.
+ */
+typedef struct {
+  qv_context_t *ctx;
+  qv_scope_t *scope;
+  qv_layout_t *thread_layout;
+  int th_id;
+  int num_th;
+} qv_thread_args_t;
+
+
+/**
  * Creates a thread context.
  */
 int
@@ -114,11 +126,21 @@ qv_thread_layout_free(
 
 int
 qv_thread_layout_apply(
-    qv_context_t *parent_ctx,
-    qv_scope_t *parent_scope,
+    qv_thread_args_t th_args
+);
+
+
+/**
+ * Used for args to pthreads.
+ */
+int
+qv_thread_args_set(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
     qv_layout_t *thread_layout,
-    int thread_index,
-    int num_threads
+    int th_id,
+    int num_th,
+    qv_thread_args_t *th_args
 );
 
 int
