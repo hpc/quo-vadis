@@ -236,7 +236,7 @@ main(
     rc = qv_scope_nobjs(
         ctx,
         base_scope,
-    QV_HW_OBJ_NUMANODE,
+        QV_HW_OBJ_NUMANODE,
         &nnumas
     );
     if (rc != QV_SUCCESS) {
@@ -250,9 +250,9 @@ main(
         base_scope,
         QV_HW_OBJ_NUMANODE,
 #ifdef USE_AFFINITY_PRESERVING
-    QV_SCOPE_SPLIT_AFFINITY_PRESERVING,
+        QV_SCOPE_SPLIT_AFFINITY_PRESERVING,
 #else
-    wrank % nnumas,          // color or group id
+        wrank % nnumas, // color or group id
 #endif
         &numa_scope
     );

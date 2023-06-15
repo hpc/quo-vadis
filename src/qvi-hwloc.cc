@@ -146,7 +146,7 @@ obj_type_from_external(
     // Get the underlying object type.
     objx->objtype = qvi_hwloc_get_obj_type(external);
     // If appropriate, update OS device type.
-    switch(external) {
+    switch (external) {
         case(QV_HW_OBJ_GPU):
             objx->osdev_type = HWLOC_OBJ_OSDEV_GPU;
             break;
@@ -1206,7 +1206,7 @@ qvi_hwloc_get_nobjs_in_cpuset(
     hwloc_const_cpuset_t cpuset,
     int *nobjs
 ) {
-    switch(target_obj) {
+    switch (target_obj) {
         case(QV_HW_OBJ_GPU) :
             return get_nosdevs_in_cpuset(hwl, hwl->gpus, cpuset, nobjs);
         default:

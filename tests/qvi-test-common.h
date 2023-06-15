@@ -123,7 +123,7 @@ qvi_test_bind_push(
         ers = "qv_bind_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] New cpubind after qv_bind_push() is      %s\n", pid, bind1s);
+    printf("[%d] New cpubind after qv_bind_push() is %s\n", pid, bind1s);
 
     free(bind0s);
     free(bind1s);
@@ -163,7 +163,7 @@ qvi_test_bind_pop(
         ers = "qv_bind_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Current cpubind before qv_bind_pop() is  %s\n", pid, bind0s);
+    printf("[%d] Current cpubind before qv_bind_pop() is %s\n", pid, bind0s);
 
     // Change binding.
     rc = qv_bind_pop(ctx);
@@ -179,7 +179,7 @@ qvi_test_bind_pop(
         ers = "qv_bind_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] New cpubind after qv_bind_pop() is       %s\n", pid, bind1s);
+    printf("[%d] New cpubind after qv_bind_pop() is %s\n", pid, bind1s);
 
     free(bind0s);
     free(bind1s);
@@ -236,7 +236,7 @@ qvi_test_change_bind(
         ers = "qv_bind_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] New cpubind is     %s\n", pid, bind1s);
+    printf("[%d] New cpubind is %s\n", pid, bind1s);
 
     rc = qv_bind_pop(ctx);
     if (rc != QV_SUCCESS) {
@@ -250,7 +250,7 @@ qvi_test_change_bind(
         ers = "qv_bind_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Popped cpubind is  %s\n", pid, bind2s);
+    printf("[%d] Popped cpubind is %s\n", pid, bind2s);
 
     if (strcmp(bind0s, bind2s)) {
         ers = "bind push/pop mismatch";
