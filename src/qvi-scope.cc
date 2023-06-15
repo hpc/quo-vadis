@@ -14,6 +14,8 @@
  * @file qvi-scope.cc
  */
 
+// TODO(skg) Use distance API for device affinity.
+
 #include "qvi-common.h"
 
 #include "qvi-scope.h"
@@ -534,7 +536,7 @@ qvi_scope_group_get(
 }
 
 static int
-apply_mapping(
+apply_cpuset_mapping(
     const qvi_map_t &map,
     const qvi_map_cpusets_t cpusets,
     std::vector<qvi_hwpool_t *> &hwpools,
@@ -709,7 +711,7 @@ qvi_global_split_devices_affinity_preserving(
  * User-defined split.
  */
 static int
-qvi_global_split_user_defined(
+global_split_user_defined(
     qvi_global_split_t &gsplit,
     qv_scope_t *scope
 ) {
@@ -750,7 +752,7 @@ out:
  * Affinity preserving split.
  */
 static int
-qvi_global_split_affinity_preserving(
+global_split_affinity_preserving(
     qvi_global_split_t &gsplit,
     qv_scope_t *scope
 ) {
@@ -761,16 +763,16 @@ qvi_global_split_affinity_preserving(
     qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc_get(scope->rmi);
     // cpusets with straightforward splitting: one for each color.
     qvi_map_cpusets_t cpusets(gsplit.size);
-    // Maintains the mapping between task IDs and resource IDs.
+    // Maintains the mapping between task (consumer) IDs and resource IDs.
     qvi_map_t map;
     // The cpuset that we are going to split.
     hwloc_cpuset_t base_cpuset = nullptr;
     rc = qvi_global_split_get_cpuset(gsplit, &base_cpuset);
     if (rc != QV_SUCCESS) goto out;
-    // Perform a straightforward splitting of the provided cpuset. Notice that
-    // we do not go through the RMI for this because this is just an local,
-    // temporary splitting that is ultimately fed to another splitting
-    // algorithm.
+    // Perform a straightforward splitting of the provided cpuset: split the
+    // provided base cpuset into gsplit.size distinct pieces. Notice that we do
+    // not go through the RMI for this because this is just an local, temporary
+    // splitting that is ultimately fed to another splitting algorithm.
     for (uint_t color = 0; color < gsplit.size; ++color) {
         rc = qvi_hwloc_split_cpuset_by_color(
             hwloc, base_cpuset, gsplit.size, color, &cpusets[color]
@@ -788,7 +790,7 @@ qvi_global_split_affinity_preserving(
         goto out;
     }
     // Update the hardware pools to reflect the new mapping.
-    rc = apply_mapping(
+    rc = apply_cpuset_mapping(
         map, cpusets, gsplit.hwpools, gsplit.colors
     );
     if (rc != QV_SUCCESS) goto out;
@@ -829,12 +831,12 @@ qvi_global_split(
     }
     // User-defined splitting.
     if (!auto_split) {
-        return qvi_global_split_user_defined(gsplit, scope);
+        return global_split_user_defined(gsplit, scope);
     }
     // Automatic splitting.
     switch (gsplit.colors[0]) {
         case QV_SCOPE_SPLIT_AFFINITY_PRESERVING:
-            return qvi_global_split_affinity_preserving(gsplit, scope);
+            return global_split_affinity_preserving(gsplit, scope);
         default:
             rc = QV_ERR_INVLD_ARG;
             break;

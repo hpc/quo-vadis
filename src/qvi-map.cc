@@ -188,7 +188,6 @@ qvi_map_affinity_preserving(
     qvi_map_shaffinity_t res_affinity_map;
     // Stores the consumer IDs that all share affinity with a split resource.
     std::set<int> affinity_intersection;
-
     // Determine the consumer IDs that have shared affinity with the resources.
     for (uint_t cid = 0; cid < ncon; ++cid) {
         for (uint_t rid = 0; rid < nres; ++rid) {

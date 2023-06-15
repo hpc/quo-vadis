@@ -76,7 +76,8 @@ next_group_tab_id(
 }
 
 /**
- * Creates 'node' communicators from an arbitrary MPI communicator.
+ * Creates 'node' communicators from an arbitrary MPI communicator. Returns
+ * MPI_SUCCESS on success.
  */
 static int
 mpi_comm_to_new_node_comm(
@@ -93,22 +94,6 @@ mpi_comm_to_new_node_comm(
     if (rc != MPI_SUCCESS) {
         qvi_log_error("MPI_Comm_split_type(MPI_COMM_TYPE_SHARED) failed");
     }
-    /* this code should eventually be replaced by the following */
-    /* MPI 4.0 compliant (and correct) version */
-    /*
-     int rc;
-     MPI_info info;
-     MPI_Info_create(&info);
-     MPI_Info_set(info,"mpi_hw_resource_type","Machine");
-     rc = MPI_Comm_split_type(
-        comm,
-        MPI_COMM_TYPE_HW_GUIDED,
-        0,
-        info,
-        node_comm
-     );
-     MPI_Info_free(&info);
-     */
     return rc;
 }
 
