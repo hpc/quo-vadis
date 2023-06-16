@@ -863,7 +863,7 @@ server_populate_base_hwpool(
 }
 
 static void *
-start_server_threads(
+server_start_threads(
     void *data
 ) {
     qvi_rmi_server_t *server = (qvi_rmi_server_t *)data;
@@ -917,7 +917,7 @@ qvi_rmi_server_start(
 
     int rc = pthread_create(
         &server->worker_thread, nullptr,
-        start_server_threads, server
+        server_start_threads, server
     );
     if (rc != 0) {
         cstr_t ers = "pthread_create() failed";
