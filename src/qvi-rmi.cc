@@ -862,9 +862,8 @@ server_populate_base_hwpool(
     );
 }
 
-// TODO(skg) Rename
 static void *
-doit(
+start_server_threads(
     void *data
 ) {
     qvi_rmi_server_t *server = (qvi_rmi_server_t *)data;
@@ -916,7 +915,10 @@ qvi_rmi_server_start(
     );
     if (!server->zlo) return QV_ERR_MSG;
 
-    int rc = pthread_create(&server->worker_thread, nullptr, doit, server);
+    int rc = pthread_create(
+        &server->worker_thread, nullptr,
+        start_server_threads, server
+    );
     if (rc != 0) {
         cstr_t ers = "pthread_create() failed";
         qvi_log_error("{} with rc={} ({})", ers, rc, qvi_strerr(rc));
