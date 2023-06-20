@@ -245,6 +245,11 @@ struct qvi_global_split_t {
      */
     int mycolor = 0;
     /**
+     * The potential hardware resource that we are splitting at.
+     * TODO(skg) Document this properly.
+     */
+    qv_hw_obj_type_t split_at_type = {};
+    /**
      * Vector of task IDs, one for each member of the group. Note that the
      * number of task IDs will always match the group size and that their array
      * index corresponds to a task ID. It is handy to have the task IDs for
@@ -274,12 +279,14 @@ qvi_global_split_create(
     qvi_global_split_t &gsplit,
     qv_scope_t *scope,
     uint_t split_size,
-    int mycolor
+    int mycolor,
+    qv_hw_obj_type_t maybe_obj_type
 ) {
     gsplit.mycolor = mycolor;
     if (scope->group->id() == qvi_global_split_t::rootid) {
         const uint_t group_size = scope->group->size();
         gsplit.size = split_size;
+        gsplit.split_at_type = maybe_obj_type;
         gsplit.taskids.resize(group_size);
         gsplit.hwpools.resize(group_size);
         gsplit.affinities.resize(group_size);
@@ -659,7 +666,7 @@ qvi_global_split_devices_affinity_preserving(
         rc = qvi_hwpool_release_devices(hwpool);
         if (rc != QV_SUCCESS) return rc;
     }
-    // Cache all device infos associated with the parent hardware pool.
+    // Get a pointer to device infos associated with the parent hardware pool.
     auto dinfos = qvi_hwpool_devinfos_get(scope->hwpool);
     // Iterate over the supported device types and split them up.
     const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
@@ -710,6 +717,8 @@ qvi_global_split_devices_affinity_preserving(
 /**
  * User-defined split.
  */
+// TODO(skg) We may have to make some modifications here to make device and
+// cpuset splitting consistent with the automatic splitting algorithms.
 static int
 global_split_user_defined(
     qvi_global_split_t &gsplit,
@@ -748,6 +757,97 @@ out:
     return rc;
 }
 
+static int
+global_split_get_new_host_cpusets(
+    const qvi_global_split_t &gsplit,
+    qv_scope_t *scope,
+    qvi_map_cpusets_t &result
+) {
+    int rc = QV_SUCCESS;
+    // Pointer to my hwloc instance.
+    qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc_get(scope->rmi);
+    // Holds the host's split cpusets.
+    result.resize(gsplit.size);
+    // The cpuset that we are going to split.
+    hwloc_cpuset_t base_cpuset = nullptr;
+    rc = qvi_global_split_get_cpuset(gsplit, &base_cpuset);
+    if (rc != QV_SUCCESS) goto out;
+    // Perform a straightforward splitting of the provided cpuset: split the
+    // provided base cpuset into gsplit.size distinct pieces. Notice that we do
+    // not go through the RMI for this because this is just an local, temporary
+    // splitting that is ultimately fed to another splitting algorithm.
+    for (uint_t color = 0; color < gsplit.size; ++color) {
+        rc = qvi_hwloc_split_cpuset_by_color(
+            hwloc, base_cpuset, gsplit.size, color, &result[color]
+        );
+        if (rc != QV_SUCCESS) goto out;
+    }
+out:
+    if (rc != QV_SUCCESS) {
+        for (auto &cpuset : result) {
+            qvi_hwloc_bitmap_free(&cpuset);
+        }
+        result.clear();
+    }
+    qvi_hwloc_bitmap_free(&base_cpuset);
+    return rc;
+}
+
+static int
+global_split_get_new_osdev_cpusets(
+    const qvi_global_split_t &gsplit,
+    qv_scope_t *scope,
+    qvi_map_cpusets_t &result
+) {
+    int rc = QV_SUCCESS, nobj = 0;
+    // The target object type.
+    const qv_hw_obj_type_t obj_type = gsplit.split_at_type;
+    // Get the number of devices we have available in the provided scope.
+    rc = qvi_scope_nobjs(scope, obj_type, &nobj);
+    if (rc != QV_SUCCESS) return rc;
+    // Holds the device affinities used for the split.
+    result.resize(nobj);
+
+    auto dinfos = qvi_hwpool_devinfos_get(scope->hwpool);
+    uint_t affi = 0;
+    for (const auto &dinfo : *dinfos) {
+        // Not the type we are looking to split.
+        if (obj_type != dinfo.first) continue;
+
+        rc = qvi_hwloc_bitmap_calloc(&result[affi]);
+        if (rc != QV_SUCCESS) goto out;
+        // Copy the device's affinity to our list of device affinities.
+        rc = qvi_hwloc_bitmap_copy(dinfo.second->affinity, result[affi++]);
+        if (rc != QV_SUCCESS) goto out;
+    }
+out:
+    if (rc != QV_SUCCESS) {
+        for (auto &cpuset : result) {
+            qvi_hwloc_bitmap_free(&cpuset);
+        }
+        result.clear();
+    }
+    return rc;
+}
+
+static int
+global_split_get_primary_cpusets(
+    const qvi_global_split_t &gsplit,
+    qv_scope_t *scope,
+    qvi_map_cpusets_t &result
+) {
+    const qv_hw_obj_type_t obj_type = gsplit.split_at_type;
+    // Provided a real type that we have to split at or we find that
+    // QV_HW_OBJ_LAST is instead provided to indicate that we were called from
+    // the split() context, which uses the host's cpuset to split the resources.
+    if (qvi_hwloc_obj_type_is_host_resource(obj_type) ||
+        obj_type == QV_HW_OBJ_LAST) {
+        return global_split_get_new_host_cpusets(gsplit, scope, result);
+    }
+    // An OS device.
+    return global_split_get_new_osdev_cpusets(gsplit, scope, result);
+}
+
 /**
  * Affinity preserving split.
  */
@@ -759,26 +859,15 @@ global_split_affinity_preserving(
     int rc = QV_SUCCESS;
     // The group size: number of members.
     const uint_t group_size = scope->group->size();
-    // Pointer to my hwloc instance.
-    qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc_get(scope->rmi);
     // cpusets with straightforward splitting: one for each color.
-    qvi_map_cpusets_t cpusets(gsplit.size);
+    qvi_map_cpusets_t cpusets;
     // Maintains the mapping between task (consumer) IDs and resource IDs.
     qvi_map_t map;
-    // The cpuset that we are going to split.
-    hwloc_cpuset_t base_cpuset = nullptr;
-    rc = qvi_global_split_get_cpuset(gsplit, &base_cpuset);
+    // Get the
+    rc = global_split_get_primary_cpusets(
+        gsplit, scope, cpusets
+    );
     if (rc != QV_SUCCESS) goto out;
-    // Perform a straightforward splitting of the provided cpuset: split the
-    // provided base cpuset into gsplit.size distinct pieces. Notice that we do
-    // not go through the RMI for this because this is just an local, temporary
-    // splitting that is ultimately fed to another splitting algorithm.
-    for (uint_t color = 0; color < gsplit.size; ++color) {
-        rc = qvi_hwloc_split_cpuset_by_color(
-            hwloc, base_cpuset, gsplit.size, color, &cpusets[color]
-        );
-        if (rc != QV_SUCCESS) goto out;
-    }
     // Map tasks based on their affinity to resources encoded by the cpusets.
     rc = qvi_map_affinity_preserving(
         map, gsplit.affinities, cpusets
@@ -800,7 +889,6 @@ out:
     for (auto &cpuset : cpusets) {
         qvi_hwloc_bitmap_free(&cpuset);
     }
-    qvi_hwloc_bitmap_free(&base_cpuset);
     return rc;
 }
 
@@ -858,6 +946,7 @@ split_hardware_resources(
     qv_scope_t *parent,
     int ncolors,
     int color,
+    qv_hw_obj_type_t maybe_obj_type,
     int *colorp,
     qvi_hwpool_t **result
 ) {
@@ -868,7 +957,9 @@ split_hardware_resources(
     // qvi_global_split_t::rootid after gather has completed.
     qvi_global_split_t gsplit;
     //
-    rc = qvi_global_split_create(gsplit, parent, ncolors, color);
+    rc = qvi_global_split_create(
+        gsplit, parent, ncolors, color, maybe_obj_type
+    );
     if (rc != QV_SUCCESS) goto out;
     // First consolidate the provided information, as this is likely coming from
     // an SPMD-like context (e.g., splitting a resource shared by MPI
@@ -907,6 +998,7 @@ qvi_scope_split(
     qv_scope_t *parent,
     int ncolors,
     int color,
+    qv_hw_obj_type_t maybe_obj_type,
     qv_scope_t **child
 ) {
     int rc = QV_SUCCESS, colorp = 0;
@@ -915,7 +1007,7 @@ qvi_scope_split(
     qv_scope_t *ichild = nullptr;
     // Split the hardware resources based on the provided split parameters.
     rc = split_hardware_resources(
-        parent, ncolors, color, &colorp, &hwpool
+        parent, ncolors, color, maybe_obj_type, &colorp, &hwpool
     );
     if (rc != QV_SUCCESS) goto out;
     // Split underlying group. Notice the use of colorp here.
@@ -951,7 +1043,7 @@ qvi_scope_split_at(
     rc = qvi_scope_nobjs(parent, type, &nobj);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_scope_split(parent, nobj, group_id, &ichild);
+    rc = qvi_scope_split(parent, nobj, group_id, type, &ichild);
 out:
     if (rc != QV_SUCCESS) {
         qvi_scope_free(&ichild);
@@ -1013,13 +1105,14 @@ qvi_scope_nobjs(
     qv_hw_obj_type_t obj,
     int *n
 ) {
-    if (obj == QV_HW_OBJ_GPU) {
-        *n = qvi_hwpool_devinfos_get(scope->hwpool)->count(obj);
-        return QV_SUCCESS;
+    if (qvi_hwloc_obj_type_is_host_resource(obj)) {
+        return qvi_rmi_get_nobjs_in_cpuset(
+            scope->rmi, obj, qvi_hwpool_cpuset_get(scope->hwpool), n
+        );
     }
-    return qvi_rmi_get_nobjs_in_cpuset(
-        scope->rmi, obj, qvi_hwpool_cpuset_get(scope->hwpool), n
-    );
+    // TODO(skg) Should this go through the RMI?
+    *n = qvi_hwpool_devinfos_get(scope->hwpool)->count(obj);
+    return QV_SUCCESS;
 }
 
 int

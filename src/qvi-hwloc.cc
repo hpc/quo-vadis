@@ -138,6 +138,31 @@ qvi_hwloc_get_obj_type(
     }
 }
 
+bool
+qvi_hwloc_obj_type_is_host_resource(
+    qv_hw_obj_type_t type
+) {
+    switch(type) {
+        case(QV_HW_OBJ_MACHINE):
+        case(QV_HW_OBJ_PACKAGE):
+        case(QV_HW_OBJ_CORE):
+        case(QV_HW_OBJ_PU):
+        case(QV_HW_OBJ_L1CACHE):
+        case(QV_HW_OBJ_L2CACHE):
+        case(QV_HW_OBJ_L3CACHE):
+        case(QV_HW_OBJ_L4CACHE):
+        case(QV_HW_OBJ_L5CACHE):
+        case(QV_HW_OBJ_NUMANODE):
+            return true;
+        case(QV_HW_OBJ_GPU):
+        case(QV_HW_OBJ_LAST):
+            return false;
+        default:
+            // This is an internal development error.
+            abort();
+    }
+}
+
 static inline int
 obj_type_from_external(
     qv_hw_obj_type_t external,

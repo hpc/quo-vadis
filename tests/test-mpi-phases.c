@@ -353,7 +353,7 @@ main(
      *   GPU work!
      ***************************************/
     if (wrank == 0)
-      printf("\n===Phase 3: GPU split===\n");
+        printf("\n===Phase 3: GPU split===\n");
 
     int my_gpu_id;
     qv_scope_t *gpu_scope;
@@ -367,16 +367,20 @@ main(
       qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
+    if (ngpus == 0) {
+        if (wrank == 0) printf("Skipping: no GPUs found\n");
+        goto done;
+    }
+
     /* Split at GPUs */
     rc = qv_scope_split_at(
         ctx,
         base_scope,
         QV_HW_OBJ_GPU,
-        // TODO Fix if no GPUs; Crashes with 0
 #ifdef USE_AFFINITY_PRESERVING
-    QV_SCOPE_SPLIT_AFFINITY_PRESERVING,
+        QV_SCOPE_SPLIT_AFFINITY_PRESERVING,
 #else
-    wrank % ngpus,          // color or group id
+        wrank % ngpus,          // color or group id
 #endif
         &gpu_scope
     );
@@ -429,11 +433,16 @@ main(
       free(gpu);
     }
 
-
     /***************************************
      * Clean up
      ***************************************/
+    rc = qv_scope_free(ctx, gpu_scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_free() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
 
+done:
     rc = qv_scope_free(ctx, numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";

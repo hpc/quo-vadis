@@ -45,6 +45,14 @@ qvi_hwloc_get_obj_type(
 );
 
 /**
+ * Returns whether the provided type is a host resource (e.g., core, NUMA node).
+ */
+bool
+qvi_hwloc_obj_type_is_host_resource(
+    qv_hw_obj_type_t type
+);
+
+/**
  *
  */
 hwloc_topology_t

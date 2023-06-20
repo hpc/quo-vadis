@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -205,8 +205,12 @@ qv_scope_split(
     }
 
     qv_scope_t *isubscope = nullptr;
+    // We use the sentinel value QV_HW_OBJ_LAST to differentiate between calls
+    // from split() and split_at(). Since this call doesn't have a hardware type
+    // argument, we use QV_HW_OBJ_LAST as the hardware type.
     int rc = qvi_scope_split(
-        scope, npieces, color, &isubscope
+        scope, npieces, color,
+        QV_HW_OBJ_LAST, &isubscope
     );
     if (rc != QV_SUCCESS) {
         qvi_scope_free(&isubscope);

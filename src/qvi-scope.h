@@ -101,6 +101,7 @@ qvi_scope_split(
     qv_scope_t *parent,
     int ncolors,
     int color,
+    qv_hw_obj_type_t maybe_obj_type,
     qv_scope_t **child
 );
 
