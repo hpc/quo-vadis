@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2022      Triad National Security, LLC
+ * Copyright (c) 2022-2023 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -16,6 +16,40 @@
 
 #include "qvi-common.h"
 #include "qvi-hwloc.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/**
+ * Modes used to influence how affinity preserving mapping is done.
+ */
+typedef enum qvi_map_affinity_preserving_policy_e {
+    QVI_MAP_AFFINITY_PRESERVING_PACKED = 0,
+    QVI_MAP_AFFINITY_PRESERVING_SPREAD
+} qvi_map_affinity_preserving_policy_t;
+
+/**
+ * Returns the largest number that will fit in the space available.
+ */
+uint_t
+qvi_map_maxfit(
+    uint_t space_left,
+    uint_t max_chunk
+);
+
+/**
+ * Returns the max i per k.
+ */
+uint_t
+qvi_map_maxiperk(
+    uint_t i,
+    uint_t k
+);
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef __cplusplus
 
@@ -70,6 +104,13 @@ qvi_map_packed(
 );
 
 int
+qvi_map_spread(
+    qvi_map_t &map,
+    uint_t nfids,
+    const qvi_map_cpusets_t &tres
+);
+
+int
 qvi_map_disjoint_affinity(
     qvi_map_t &map,
     const qvi_map_shaffinity_t &damap
@@ -81,6 +122,7 @@ qvi_map_disjoint_affinity(
 int
 qvi_map_affinity_preserving(
     qvi_map_t &map,
+    qvi_map_affinity_preserving_policy_t policy,
     const qvi_map_cpusets_t &faffs,
     const qvi_map_cpusets_t &tores
 );
@@ -100,32 +142,6 @@ qvi_map_flatten(
     const qvi_map_t &map
 );
 
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-/**
- * Returns the largest number that will fit in the space available.
- */
-uint_t
-qvi_map_maxfit(
-    uint_t space_left,
-    uint_t max_chunk
-);
-
-/**
- * Returns the max i per k.
- */
-uint_t
-qvi_map_maxiperk(
-    uint_t i,
-    uint_t k
-);
-
-#ifdef __cplusplus
-}
 #endif
 
 #endif

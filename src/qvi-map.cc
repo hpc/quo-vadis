@@ -132,7 +132,6 @@ qvi_map_packed(
     uint_t nfids,
     const qvi_map_cpusets_t &tres
 ) {
-    int rc = QV_SUCCESS;
     const uint_t ntres = tres.size();
     // Max consumers per resource.
     const uint_t maxcpr = qvi_map_maxiperk(nfids, ntres);
@@ -151,7 +150,29 @@ qvi_map_packed(
             nmapped += 1;
         }
     }
-    return rc;
+    return QV_SUCCESS;
+}
+
+/**
+ * Maps round-robin over the given resources.
+ */
+int
+qvi_map_spread(
+    qvi_map_t &map,
+    uint_t nfids,
+    const qvi_map_cpusets_t &tres
+) {
+    const uint_t ntres = tres.size();
+    // Keeps track of the next IDs to map: 'from' and 'to' IDs.
+    uint_t nmapped = qvi_map_nfids_mapped(map);
+    for (uint_t fid = 0, tid = 0; fid < nfids && nmapped < nfids; ++fid) {
+        // Already mapped (potentially by some other mapper).
+        if (qvi_map_fid_mapped(map, fid)) continue;
+        // Mod to loop around 'to resource' IDs.
+        map.insert(std::make_pair(fid, (tid++) % ntres));
+        nmapped += 1;
+    }
+    return QV_SUCCESS;
 }
 
 int
@@ -176,9 +197,14 @@ qvi_map_disjoint_affinity(
 int
 qvi_map_affinity_preserving(
     qvi_map_t &map,
+    qvi_map_affinity_preserving_policy_t policy,
     const qvi_map_cpusets_t &faffs,
     const qvi_map_cpusets_t &tores
 ) {
+    using map_fn_t = std::function<
+        int(qvi_map_t &map, uint_t nfids, const qvi_map_cpusets_t &tres)
+    >;
+
     int rc = QV_SUCCESS;
     // Number of consumers.
     const uint_t ncon = faffs.size();
@@ -188,6 +214,8 @@ qvi_map_affinity_preserving(
     qvi_map_shaffinity_t res_affinity_map;
     // Stores the consumer IDs that all share affinity with a split resource.
     std::set<int> affinity_intersection;
+    // Function pointer to mapping policy.
+    map_fn_t map_fn = {};
     // Determine the consumer IDs that have shared affinity with the resources.
     for (uint_t cid = 0; cid < ncon; ++cid) {
         for (uint_t rid = 0; rid < nres; ++rid) {
@@ -202,6 +230,18 @@ qvi_map_affinity_preserving(
     // Calculate k-set intersection.
     rc = k_set_intersection(res_affinity_map, affinity_intersection);
     if (rc != QV_SUCCESS) goto out;
+    // Set mapping function based on policy.
+    switch (policy) {
+        case QVI_MAP_AFFINITY_PRESERVING_PACKED:
+            map_fn = qvi_map_packed;
+            break;
+        case QVI_MAP_AFFINITY_PRESERVING_SPREAD:
+            map_fn = qvi_map_spread;
+            break;
+        default:
+            // This is an internal error.
+            abort();
+    }
     // Now make a mapping decision based on the intersection size.
     // Completely disjoint sets.
     if (affinity_intersection.size() == 0) {
@@ -211,7 +251,7 @@ qvi_map_affinity_preserving(
     // All consumers overlap. Really no hope of doing anything fancy.
     // Note that we typically see this in the *no task is bound case*.
     else if (affinity_intersection.size() == ncon) {
-        rc = qvi_map_packed(map, ncon, tores);
+        rc = map_fn(map, ncon, tores);
         if (rc != QV_SUCCESS) goto out;
     }
     // Only a strict subset of consumers share a resource. First favor mapping
@@ -225,7 +265,7 @@ qvi_map_affinity_preserving(
         rc = qvi_map_disjoint_affinity(map, res_affinity_map);
         if (rc != QV_SUCCESS) goto out;
 
-        rc = qvi_map_packed(map, ncon, tores);
+        rc = map_fn(map, ncon, tores);
         if (rc != QV_SUCCESS) goto out;
     }
 out:

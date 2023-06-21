@@ -102,7 +102,7 @@ typedef enum qv_hw_obj_type_e {
 /**
  * Binding string representaiton formats.
  */
-typedef enum qv_bind_string_format_s {
+typedef enum qv_bind_string_format_e {
     QV_BIND_STRING_AS_BITMAP = 0,
     QV_BIND_STRING_AS_LIST
 } qv_bind_string_format_t;
@@ -123,7 +123,7 @@ enum {
 /**
  *
  */
-typedef enum qv_scope_create_hint_s {
+typedef enum qv_scope_create_hint_e {
     // TODO(skg) Enumerate all actual values.
     // TODO(skg) Add to Fortran interface.
     QV_SCOPE_CREATE_CLOSE = 0

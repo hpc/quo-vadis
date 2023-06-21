@@ -576,13 +576,25 @@ out:
     return rc;
 }
 
+static qvi_map_affinity_preserving_policy_t
+global_split_get_affinity_preserving_policy(
+    const qvi_global_split_t &gsplit
+) {
+    switch (gsplit.split_at_type) {
+        case QV_HW_OBJ_LAST:
+            return QVI_MAP_AFFINITY_PRESERVING_PACKED;
+        default:
+            return QVI_MAP_AFFINITY_PRESERVING_SPREAD;
+    }
+}
+
 /**
  * Straightforward user-defined device splitting.
  */
 // TODO(skg) Plenty of opportunity for optimization.
 // TODO(skg) Move lots of logic to map
 static int
-qvi_global_split_devices_user_defined(
+global_split_devices_user_defined(
     qvi_global_split_t &gsplit
 ) {
     int rc = QV_SUCCESS;
@@ -601,8 +613,8 @@ qvi_global_split_devices_user_defined(
     for (const auto &color : gsplit.colors) {
         color_set.insert(color);
     }
-    // Adjust the color set so that the distinct colors provided fall within the
-    // range of the number of splits requested.
+    // Adjust the color set so that the distinct colors provided
+    // fall within the range of the number of splits requested.
     std::set<int> color_setp;
     uint_t ncolors_chosen = 0;
     for (const auto &c : color_set) {
@@ -693,8 +705,9 @@ qvi_global_split_devices_affinity_preserving(
         }
 
         qvi_map_t map;
+        const auto policy = global_split_get_affinity_preserving_policy(gsplit);
         rc = qvi_map_affinity_preserving(
-            map, devaffs, gsplit.affinities
+            map, policy, devaffs, gsplit.affinities
         );
         if (rc != QV_SUCCESS) return rc;
 #if 0
@@ -754,7 +767,7 @@ global_split_user_defined(
     }
     if (rc != QV_SUCCESS) goto out;
     // Use a straightforward device splitting algorithm based on user's request.
-    rc = qvi_global_split_devices_user_defined(gsplit);
+    rc = global_split_devices_user_defined(gsplit);
 out:
     for (auto &cpuset : cpusets) {
         qvi_hwloc_bitmap_free(&cpuset);
@@ -842,37 +855,37 @@ global_split_get_primary_cpusets(
     qvi_map_cpusets_t &result
 ) {
     const qv_hw_obj_type_t obj_type = gsplit.split_at_type;
-    // Provided a real type that we have to split at or we find that
-    // QV_HW_OBJ_LAST is instead provided to indicate that we were called from
-    // the split() context, which uses the host's cpuset to split the resources.
+    // We were provided a real host resource type that we have to split. Or
+    // QV_HW_OBJ_LAST is instead provided to indicate that we were called from a
+    // split() context, which uses the host's cpuset to split the resources.
     if (qvi_hwloc_obj_type_is_host_resource(obj_type) ||
         obj_type == QV_HW_OBJ_LAST) {
         return global_split_get_new_host_cpusets(gsplit, result);
     }
     // An OS device.
-    return global_split_get_new_osdev_cpusets(gsplit, result);
+    else {
+        return global_split_get_new_osdev_cpusets(gsplit, result);
+    }
 }
 
-/**
- * Affinity preserving split.
- */
 static int
-global_split_affinity_preserving(
+global_split_affinity_preserving_pass1(
     qvi_global_split_t &gsplit
 ) {
     qv_scope_t *const parent_scope = gsplit.parent_scope;
     // The group size: number of members.
     const uint_t group_size = parent_scope->group->size();
     // cpusets used for first mapping pass.
-    qvi_map_cpusets_t pcpusets = {};
+    qvi_map_cpusets_t cpusets = {};
     // Get the primary cpusets used for the first pass of mapping.
-    int rc = global_split_get_primary_cpusets(gsplit, pcpusets);
+    int rc = global_split_get_primary_cpusets(gsplit, cpusets);
     if (rc != QV_SUCCESS) return rc;
     // Maintains the mapping between task (consumer) IDs and resource IDs.
     qvi_map_t map = {};
     // Map tasks based on their affinity to resources encoded by the cpusets.
+    const auto policy = global_split_get_affinity_preserving_policy(gsplit);
     rc = qvi_map_affinity_preserving(
-        map, gsplit.affinities, pcpusets
+        map, policy, gsplit.affinities, cpusets
     );
     if (rc != QV_SUCCESS) goto out;
     // Make sure that we mapped all the tasks. If not, this is a bug.
@@ -882,16 +895,27 @@ global_split_affinity_preserving(
     }
     // Update the hardware pools to reflect the new mapping.
     rc = apply_cpuset_mapping(
-        map, pcpusets, gsplit.hwpools, gsplit.colors
+        map, cpusets, gsplit.hwpools, gsplit.colors
     );
-    if (rc != QV_SUCCESS) goto out;
-    // Finally, split the devices.
-    rc = qvi_global_split_devices_affinity_preserving(gsplit);
 out:
-    for (auto &cpuset : pcpusets) {
+    for (auto &cpuset : cpusets) {
         qvi_hwloc_bitmap_free(&cpuset);
     }
     return rc;
+}
+
+/**
+ * Affinity preserving split.
+ */
+// TODO(skg) This needs more work.
+static int
+global_split_affinity_preserving(
+    qvi_global_split_t &gsplit
+) {
+    int rc = global_split_affinity_preserving_pass1(gsplit);
+    if (rc != QV_SUCCESS) return rc;
+    // Finally, split the devices.
+    return qvi_global_split_devices_affinity_preserving(gsplit);
 }
 
 /**
