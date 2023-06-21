@@ -237,6 +237,10 @@ struct qvi_global_split_t {
      */
     static const int rootid = 0;
     /**
+     * Points to the parent scope that we are splitting.
+     */
+    qv_scope_t *parent_scope = nullptr;
+    /**
      * The number of pieces in the coloring (split).
      */
     uint_t size = 0;
@@ -245,8 +249,10 @@ struct qvi_global_split_t {
      */
     int mycolor = 0;
     /**
-     * The potential hardware resource that we are splitting at.
-     * TODO(skg) Document this properly.
+     * The potential hardware resource that we are splitting at. QV_HW_OBJ_LAST
+     * indicates that we are called from a split() context. Any other hardware
+     * resource type indicates that we are splitting at that type: called from a
+     * split_at() context.
      */
     qv_hw_obj_type_t split_at_type = {};
     /**
@@ -277,14 +283,15 @@ struct qvi_global_split_t {
 static int
 qvi_global_split_create(
     qvi_global_split_t &gsplit,
-    qv_scope_t *scope,
+    qv_scope_t *parent_scope,
     uint_t split_size,
     int mycolor,
     qv_hw_obj_type_t maybe_obj_type
 ) {
+    gsplit.parent_scope = parent_scope;
     gsplit.mycolor = mycolor;
-    if (scope->group->id() == qvi_global_split_t::rootid) {
-        const uint_t group_size = scope->group->size();
+    if (parent_scope->group->id() == qvi_global_split_t::rootid) {
+        const uint_t group_size = parent_scope->group->size();
         gsplit.size = split_size;
         gsplit.split_at_type = maybe_obj_type;
         gsplit.taskids.resize(group_size);
@@ -313,40 +320,39 @@ qvi_global_split_free(
 
 static int
 qvi_global_split_gather(
-    qvi_global_split_t &gsplit,
-    qv_scope_t *scope
+    qvi_global_split_t &gsplit
 ) {
-    int rc = QV_SUCCESS;
-    const uint_t group_size = scope->group->size();
+    qv_scope_t *const parent_scope = gsplit.parent_scope;
+    const uint_t group_size = parent_scope->group->size();
 
-    rc = gather_values(
-        scope->group,
+    int rc = gather_values(
+        parent_scope->group,
         qvi_global_split_t::rootid,
-        scope->group->task_id(),
+        parent_scope->group->task_id(),
         gsplit.taskids
     );
     if (rc != QV_SUCCESS) goto out;
     // Note that the result hwpools are copies, so we can modify them freely.
     rc = gather_hwpools(
-        scope->group,
+        parent_scope->group,
         qvi_global_split_t::rootid,
-        scope->hwpool,
+        parent_scope->hwpool,
         gsplit.hwpools
     );
     if (rc != QV_SUCCESS) goto out;
 
     rc = gather_values(
-        scope->group,
+        parent_scope->group,
         qvi_global_split_t::rootid,
         gsplit.mycolor,
         gsplit.colors
     );
     if (rc != QV_SUCCESS) goto out;
 
-    if (scope->group->id() == qvi_global_split_t::rootid) {
+    if (parent_scope->group->id() == qvi_global_split_t::rootid) {
         for (uint_t tid = 0; tid < group_size; ++tid) {
             rc = qvi_rmi_task_get_cpubind(
-                scope->rmi,
+                parent_scope->rmi,
                 gsplit.taskids[tid],
                 &gsplit.affinities[tid]
             );
@@ -363,12 +369,11 @@ out:
 static int
 qvi_global_split_scatter(
     const qvi_global_split_t &gsplit,
-    qv_scope_t *scope,
     int *colorp,
     qvi_hwpool_t **result
 ) {
     int rc = scatter_values(
-        scope->group,
+        gsplit.parent_scope->group,
         qvi_global_split_t::rootid,
         gsplit.colors,
         colorp
@@ -376,7 +381,7 @@ qvi_global_split_scatter(
     if (rc != QV_SUCCESS) return rc;
 
     rc = scatter_hwpools(
-        scope->group,
+        gsplit.parent_scope->group,
         qvi_global_split_t::rootid,
         gsplit.hwpools,
         result
@@ -396,8 +401,7 @@ qvi_global_split_get_cpuset(
 ) {
     // This shouldn't happen.
     if (gsplit.hwpools.size() == 0) {
-        *result = nullptr;
-        return QV_ERR_INTERNAL;
+        abort();
     }
 
     int rc = qvi_hwloc_bitmap_calloc(result);
@@ -576,11 +580,11 @@ out:
 // TODO(skg) Move lots of logic to map
 static int
 qvi_global_split_devices_user_defined(
-    qvi_global_split_t &gsplit,
-    qv_scope_t *scope
+    qvi_global_split_t &gsplit
 ) {
     int rc = QV_SUCCESS;
-    const uint_t group_size = scope->group->size();
+    qv_scope_t *const parent_scope = gsplit.parent_scope;
+    const uint_t group_size = parent_scope->group->size();
     // Release devices from the hardware pools because they will be
     // redistributed in the next step.
     for (auto &hwpool : gsplit.hwpools) {
@@ -604,7 +608,7 @@ qvi_global_split_devices_user_defined(
         ncolors_chosen++;
     }
     // Cache all device infos associated with the parent hardware pool.
-    auto dinfos = qvi_hwpool_devinfos_get(scope->hwpool);
+    auto dinfos = qvi_hwpool_devinfos_get(parent_scope->hwpool);
     // Iterate over the supported device types and split them up round-robin.
     const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
     for (int i = 0; devts[i] != QV_HW_OBJ_LAST; ++i) {
@@ -656,8 +660,7 @@ qvi_global_split_devices_user_defined(
  */
 static int
 qvi_global_split_devices_affinity_preserving(
-    qvi_global_split_t &gsplit,
-    qv_scope_t *scope
+    qvi_global_split_t &gsplit
 ) {
     int rc = QV_SUCCESS;
     // Release devices from the hardware pools because they will be
@@ -667,7 +670,7 @@ qvi_global_split_devices_affinity_preserving(
         if (rc != QV_SUCCESS) return rc;
     }
     // Get a pointer to device infos associated with the parent hardware pool.
-    auto dinfos = qvi_hwpool_devinfos_get(scope->hwpool);
+    auto dinfos = qvi_hwpool_devinfos_get(gsplit.parent_scope->hwpool);
     // Iterate over the supported device types and split them up.
     const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
     for (int i = 0; devts[i] != QV_HW_OBJ_LAST; ++i) {
@@ -721,12 +724,12 @@ qvi_global_split_devices_affinity_preserving(
 // cpuset splitting consistent with the automatic splitting algorithms.
 static int
 global_split_user_defined(
-    qvi_global_split_t &gsplit,
-    qv_scope_t *scope
+    qvi_global_split_t &gsplit
 ) {
     int rc = QV_SUCCESS;
-    const uint_t group_size = scope->group->size();
-    qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc_get(scope->rmi);
+    qv_scope_t *const parent_scope = gsplit.parent_scope;
+    const uint_t group_size = parent_scope->group->size();
+    qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc_get(parent_scope->rmi);
     qvi_map_cpusets_t cpusets(group_size);
     // Get the base cpuset.
     hwloc_cpuset_t base_cpuset = nullptr;
@@ -748,7 +751,7 @@ global_split_user_defined(
     }
     if (rc != QV_SUCCESS) goto out;
     // Use a straightforward device splitting algorithm based on user's request.
-    rc = qvi_global_split_devices_user_defined(gsplit, scope);
+    rc = qvi_global_split_devices_user_defined(gsplit);
 out:
     for (auto &cpuset : cpusets) {
         qvi_hwloc_bitmap_free(&cpuset);
@@ -760,12 +763,12 @@ out:
 static int
 global_split_get_new_host_cpusets(
     const qvi_global_split_t &gsplit,
-    qv_scope_t *scope,
     qvi_map_cpusets_t &result
 ) {
     int rc = QV_SUCCESS;
+    qv_scope_t *const parent_scope = gsplit.parent_scope;
     // Pointer to my hwloc instance.
-    qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc_get(scope->rmi);
+    qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc_get(parent_scope->rmi);
     // Holds the host's split cpusets.
     result.resize(gsplit.size);
     // The cpuset that we are going to split.
@@ -796,19 +799,19 @@ out:
 static int
 global_split_get_new_osdev_cpusets(
     const qvi_global_split_t &gsplit,
-    qv_scope_t *scope,
     qvi_map_cpusets_t &result
 ) {
     int rc = QV_SUCCESS, nobj = 0;
+    qv_scope_t *const parent_scope = gsplit.parent_scope;
     // The target object type.
     const qv_hw_obj_type_t obj_type = gsplit.split_at_type;
     // Get the number of devices we have available in the provided scope.
-    rc = qvi_scope_nobjs(scope, obj_type, &nobj);
+    rc = qvi_scope_nobjs(parent_scope, obj_type, &nobj);
     if (rc != QV_SUCCESS) return rc;
     // Holds the device affinities used for the split.
     result.resize(nobj);
-
-    auto dinfos = qvi_hwpool_devinfos_get(scope->hwpool);
+    // Get a pointer to device infos associated with the parent hardware pool.
+    auto dinfos = qvi_hwpool_devinfos_get(parent_scope->hwpool);
     uint_t affi = 0;
     for (const auto &dinfo : *dinfos) {
         // Not the type we are looking to split.
@@ -833,7 +836,6 @@ out:
 static int
 global_split_get_primary_cpusets(
     const qvi_global_split_t &gsplit,
-    qv_scope_t *scope,
     qvi_map_cpusets_t &result
 ) {
     const qv_hw_obj_type_t obj_type = gsplit.split_at_type;
@@ -842,10 +844,10 @@ global_split_get_primary_cpusets(
     // the split() context, which uses the host's cpuset to split the resources.
     if (qvi_hwloc_obj_type_is_host_resource(obj_type) ||
         obj_type == QV_HW_OBJ_LAST) {
-        return global_split_get_new_host_cpusets(gsplit, scope, result);
+        return global_split_get_new_host_cpusets(gsplit, result);
     }
     // An OS device.
-    return global_split_get_new_osdev_cpusets(gsplit, scope, result);
+    return global_split_get_new_osdev_cpusets(gsplit, result);
 }
 
 /**
@@ -853,21 +855,19 @@ global_split_get_primary_cpusets(
  */
 static int
 global_split_affinity_preserving(
-    qvi_global_split_t &gsplit,
-    qv_scope_t *scope
+    qvi_global_split_t &gsplit
 ) {
     int rc = QV_SUCCESS;
+    qv_scope_t *const parent_scope = gsplit.parent_scope;
     // The group size: number of members.
-    const uint_t group_size = scope->group->size();
+    const uint_t group_size = parent_scope->group->size();
     // cpusets with straightforward splitting: one for each color.
     qvi_map_cpusets_t cpusets;
+    // Get the primary cpusets used for the first pass of mapping.
+    rc = global_split_get_primary_cpusets(gsplit, cpusets);
+    if (rc != QV_SUCCESS) return rc;
     // Maintains the mapping between task (consumer) IDs and resource IDs.
     qvi_map_t map;
-    // Get the
-    rc = global_split_get_primary_cpusets(
-        gsplit, scope, cpusets
-    );
-    if (rc != QV_SUCCESS) goto out;
     // Map tasks based on their affinity to resources encoded by the cpusets.
     rc = qvi_map_affinity_preserving(
         map, gsplit.affinities, cpusets
@@ -884,7 +884,7 @@ global_split_affinity_preserving(
     );
     if (rc != QV_SUCCESS) goto out;
     // Finally, split the devices.
-    rc = qvi_global_split_devices_affinity_preserving(gsplit, scope);
+    rc = qvi_global_split_devices_affinity_preserving(gsplit);
 out:
     for (auto &cpuset : cpusets) {
         qvi_hwloc_bitmap_free(&cpuset);
@@ -897,8 +897,7 @@ out:
  */
 static int
 qvi_global_split(
-    qvi_global_split_t &gsplit,
-    qv_scope_t *scope
+    qvi_global_split_t &gsplit
 ) {
     int rc = QV_SUCCESS;
     bool auto_split = false;
@@ -919,12 +918,12 @@ qvi_global_split(
     }
     // User-defined splitting.
     if (!auto_split) {
-        return global_split_user_defined(gsplit, scope);
+        return global_split_user_defined(gsplit);
     }
     // Automatic splitting.
     switch (gsplit.colors[0]) {
         case QV_SCOPE_SPLIT_AFFINITY_PRESERVING:
-            return global_split_affinity_preserving(gsplit, scope);
+            return global_split_affinity_preserving(gsplit);
         default:
             rc = QV_ERR_INVLD_ARG;
             break;
@@ -937,6 +936,8 @@ qvi_global_split(
  * - ncolors: The number of splits requested.
  * - color: Either user-supplied (explicitly set) or a value that requests
  *   us to do the coloring for the callers.
+ *   maybe_obj_type: Potentially the object type that we are splitting at. This
+ *   value influences how the splitting algorithms perform their mapping.
  * - colorp: color' is potentially a new color assignment determined by one
  *   of our coloring algorithms. This value can be used to influence the
  *   group splitting that occurs after this call completes.
@@ -955,29 +956,28 @@ split_hardware_resources(
     // Information relevant to hardware resource splitting. Note that
     // agglomerated data are only valid for the task whose id is equal to
     // qvi_global_split_t::rootid after gather has completed.
-    qvi_global_split_t gsplit;
-    //
+    qvi_global_split_t gsplit = {};
     rc = qvi_global_split_create(
         gsplit, parent, ncolors, color, maybe_obj_type
     );
     if (rc != QV_SUCCESS) goto out;
     // First consolidate the provided information, as this is likely coming from
-    // an SPMD-like context (e.g., splitting a resource shared by MPI
-    // processes).  In most cases it is easiest to have a single task
-    // calculate the split based on global knowledge and later redistribute the
-    // calculated result to its group members.
-    rc = qvi_global_split_gather(gsplit, parent);
+    // a SPMD-like context (e.g., splitting a resource shared by MPI processes).
+    // In most cases it is easiest to have a single task calculate the split
+    // based on global knowledge and later redistribute the calculated result to
+    // its group members.
+    rc = qvi_global_split_gather(gsplit);
     if (rc != QV_SUCCESS) goto out;
     // The root does this calculation.
     if (myid == rootid) {
-        rc2 = qvi_global_split(gsplit, parent);
+        rc2 = qvi_global_split(gsplit);
     }
     // Wait for the split information. Explicitly barrier here in case the
     // underlying broadcast implementation polls heavily for completion.
-    rc = parent->group->barrier();
+    rc = gsplit.parent_scope->group->barrier();
     if (rc != QV_SUCCESS) goto out;
     // To avoid hangs in split error paths, share the split rc with everyone.
-    rc = bcast_value(parent->group, rootid, &rc2);
+    rc = bcast_value(gsplit.parent_scope->group, rootid, &rc2);
     if (rc != QV_SUCCESS) goto out;
     // If the split failed, return the error to all callers.
     if (rc2 != QV_SUCCESS) {
@@ -985,7 +985,7 @@ split_hardware_resources(
         goto out;
     }
     // Scatter the results.
-    rc = qvi_global_split_scatter(gsplit, parent, colorp, result);
+    rc = qvi_global_split_scatter(gsplit, colorp, result);
     if (rc != QV_SUCCESS) goto out;
     // Done, so free split.
     rc = qvi_global_split_free(gsplit);
@@ -1123,12 +1123,10 @@ qvi_scope_get_device_id(
     qv_device_id_type_t id_type,
     char **dev_id
 ) {
-    // Device infos.
-    auto dinfos = qvi_hwpool_devinfos_get(scope->hwpool);
-
     int rc = QV_SUCCESS, id = 0, nw = 0;
+
     qvi_devinfo_t *finfo = nullptr;
-    for (const auto &dinfo : *dinfos) {
+    for (const auto &dinfo : *qvi_hwpool_devinfos_get(scope->hwpool)) {
         if (dev_obj != dinfo.first) continue;
         if (id++ == i) {
             finfo = dinfo.second.get();
