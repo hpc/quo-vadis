@@ -44,11 +44,9 @@ gather_values(
     TYPE invalue,
     std::vector<TYPE> &outvals
 ) {
-    int rc = QV_SUCCESS;
+    int rc = QV_SUCCESS, shared = 0;
     const uint_t group_size = group->size();
-    int shared = 0;
-    qvi_bbuff_t *txbuff = nullptr;
-    qvi_bbuff_t **bbuffs = nullptr;
+    qvi_bbuff_t *txbuff = nullptr, **bbuffs = nullptr;
 
     rc = qvi_bbuff_new(&txbuff);
     if (rc != QV_SUCCESS) goto out;
@@ -78,6 +76,10 @@ out:
         }
     }
     qvi_bbuff_free(&txbuff);
+    if (rc != QV_SUCCESS) {
+        // If something went wrong, just zero-initialize the values.
+        outvals = {};
+    }
     return rc;
 }
 
@@ -88,11 +90,9 @@ gather_hwpools(
     qvi_hwpool_t *txpool,
     std::vector<qvi_hwpool_t *> &rxpools
 ) {
-    int rc = QV_SUCCESS;
+    int rc = QV_SUCCESS, shared = 0;
     const uint_t group_size = group->size();
-    int shared = 0;
-    qvi_bbuff_t *txbuff = nullptr;
-    qvi_bbuff_t **bbuffs = nullptr;
+    qvi_bbuff_t *txbuff = nullptr, **bbuffs = nullptr;
 
     rc = qvi_bbuff_new(&txbuff);
     if (rc != QV_SUCCESS) goto out;
@@ -123,6 +123,10 @@ out:
         }
     }
     qvi_bbuff_free(&txbuff);
+    if (rc != QV_SUCCESS) {
+        // If something went wrong, just zero-initialize the pools.
+        rxpools = {};
+    }
     return rc;
 }
 
@@ -135,7 +139,7 @@ scatter_values(
     TYPE *value
 ) {
     int rc = QV_SUCCESS;
-    std::vector<qvi_bbuff_t *> txbuffs;
+    std::vector<qvi_bbuff_t *> txbuffs = {};
     qvi_bbuff_t *rxbuff = nullptr;
 
     if (root == group->id()) {
@@ -461,7 +465,7 @@ hwloc_const_cpuset_t
 qvi_scope_cpuset_get(
     qv_scope_t *scope
 ) {
-    if (!scope) return nullptr;
+    if (!scope) abort();
     return qvi_hwpool_cpuset_get(scope->hwpool);
 }
 
@@ -469,7 +473,7 @@ const qvi_hwpool_t *
 qvi_scope_hwpool_get(
     qv_scope_t *scope
 ) {
-    if (!scope) return nullptr;
+    if (!scope) abort();
     return scope->hwpool;
 }
 
@@ -478,7 +482,7 @@ qvi_scope_taskid(
     qv_scope_t *scope,
     int *taskid
 ) {
-    if (!scope) return QV_ERR_INTERNAL;
+    if (!scope) abort();
     *taskid = scope->group->id();
     return QV_SUCCESS;
 }
@@ -488,7 +492,7 @@ qvi_scope_ntasks(
     qv_scope_t *scope,
     int *ntasks
 ) {
-    if (!scope) return QV_ERR_INTERNAL;
+    if (!scope) abort();
     *ntasks = scope->group->size();
     return QV_SUCCESS;
 }
@@ -497,7 +501,7 @@ int
 qvi_scope_barrier(
     qv_scope_t *scope
 ) {
-    if (!scope) return QV_ERR_INTERNAL;
+    if (!scope) abort();
     return scope->group->barrier();
 }
 
@@ -508,11 +512,10 @@ qvi_scope_get(
     qv_scope_intrinsic_t iscope,
     qv_scope_t **scope
 ) {
-    int rc = QV_SUCCESS;
     qvi_group_t *group = nullptr;
     qvi_hwpool_t *hwpool = nullptr;
     // Get the requested intrinsic group.
-    rc = zgroup->group_create_intrinsic(
+    int rc = zgroup->group_create_intrinsic(
         iscope, &group
     );
     if (rc != QV_SUCCESS) goto out;
@@ -542,7 +545,7 @@ qvi_group_t *
 qvi_scope_group_get(
     qv_scope_t *scope
 ) {
-    if (!scope) return nullptr;
+    if (!scope) abort();
     return scope->group;
 }
 
@@ -857,20 +860,19 @@ static int
 global_split_affinity_preserving(
     qvi_global_split_t &gsplit
 ) {
-    int rc = QV_SUCCESS;
     qv_scope_t *const parent_scope = gsplit.parent_scope;
     // The group size: number of members.
     const uint_t group_size = parent_scope->group->size();
-    // cpusets with straightforward splitting: one for each color.
-    qvi_map_cpusets_t cpusets;
+    // cpusets used for first mapping pass.
+    qvi_map_cpusets_t pcpusets = {};
     // Get the primary cpusets used for the first pass of mapping.
-    rc = global_split_get_primary_cpusets(gsplit, cpusets);
+    int rc = global_split_get_primary_cpusets(gsplit, pcpusets);
     if (rc != QV_SUCCESS) return rc;
     // Maintains the mapping between task (consumer) IDs and resource IDs.
-    qvi_map_t map;
+    qvi_map_t map = {};
     // Map tasks based on their affinity to resources encoded by the cpusets.
     rc = qvi_map_affinity_preserving(
-        map, gsplit.affinities, cpusets
+        map, gsplit.affinities, pcpusets
     );
     if (rc != QV_SUCCESS) goto out;
     // Make sure that we mapped all the tasks. If not, this is a bug.
@@ -880,13 +882,13 @@ global_split_affinity_preserving(
     }
     // Update the hardware pools to reflect the new mapping.
     rc = apply_cpuset_mapping(
-        map, cpusets, gsplit.hwpools, gsplit.colors
+        map, pcpusets, gsplit.hwpools, gsplit.colors
     );
     if (rc != QV_SUCCESS) goto out;
     // Finally, split the devices.
     rc = qvi_global_split_devices_affinity_preserving(gsplit);
 out:
-    for (auto &cpuset : cpusets) {
+    for (auto &cpuset : pcpusets) {
         qvi_hwloc_bitmap_free(&cpuset);
     }
     return rc;
