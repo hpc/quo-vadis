@@ -44,6 +44,8 @@ gather_values(
     TYPE invalue,
     std::vector<TYPE> &outvals
 ) {
+    static_assert(std::is_trivially_copyable<TYPE>::value, "");
+
     int rc = QV_SUCCESS, shared = 0;
     const uint_t group_size = group->size();
     qvi_bbuff_t *txbuff = nullptr, **bbuffs = nullptr;
@@ -138,6 +140,8 @@ scatter_values(
     const std::vector<TYPE> &values,
     TYPE *value
 ) {
+    static_assert(std::is_trivially_copyable<TYPE>::value, "");
+
     int rc = QV_SUCCESS;
     std::vector<qvi_bbuff_t *> txbuffs = {};
     qvi_bbuff_t *rxbuff = nullptr;
@@ -221,6 +225,8 @@ bcast_value(
     int root,
     TYPE *value
 ) {
+    static_assert(std::is_trivially_copyable<TYPE>::value, "");
+
     std::vector<TYPE> values = {};
 
     if (root == group->id()) {
