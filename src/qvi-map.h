@@ -110,6 +110,17 @@ qvi_map_spread(
     const qvi_map_cpusets_t &tres
 );
 
+/**
+ * Calculates a shared affinity map of consumer IDs (from)
+ * that have shared affinity with the resources (to).
+ */
+int
+qvi_map_calc_shaffinity(
+    const qvi_map_cpusets_t &faffs,
+    const qvi_map_cpusets_t &tores,
+    qvi_map_shaffinity_t &res_affinity_map
+);
+
 int
 qvi_map_disjoint_affinity(
     qvi_map_t &map,
