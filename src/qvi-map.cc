@@ -237,7 +237,7 @@ qvi_map_affinity_preserving(
     // Stores the consumer IDs that all share affinity with a split resource.
     std::set<int> affinity_intersection;
     // Function pointer to mapping policy.
-    map_fn_t map_rest_fn = {};
+    map_fn_t map_rest_fn{};
     // Determine the consumer IDs that have shared affinity with the resources.
     rc = qvi_map_calc_shaffinity(faffs, tores, res_affinity_map);
     if (rc != QV_SUCCESS) goto out;
