@@ -171,7 +171,7 @@ main(void)
         pthread_t *tid = malloc(num_threads*sizeof(pthread_t));
         args_t *args = malloc(num_threads*sizeof(args_t));
         int value = 101;
-        
+
         for(int i = 0 ; i < num_threads ; i++) {
             args[i].wrank     = wrank;
             args[i].work_func = work_example;
