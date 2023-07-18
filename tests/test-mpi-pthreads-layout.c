@@ -31,20 +31,33 @@
 typedef struct {
     int wrank;
     int rc;
+    void *(*work_func)(void *);
+    void *func_arg;
     qv_thread_args_t th_args;
 } args_t;
+
 
 void *thread_work(void *arg)
 {
     qv_thread_args_t th_args = ((args_t *)arg)->th_args;
+    void *ret __attribute__((unused)) = NULL;
 
     printf("[%d][%d] Binding to PUS \n", ((args_t *)arg)->wrank, th_args.th_id);
 
+    /* Apply layout and bind thread */
     ((args_t *)arg)->rc = qv_thread_layout_apply(th_args);
 
-    /* do some work now */
+    /* do the real work now */
+    ret = ((args_t *)arg)->work_func(((args_t *)arg)->func_arg);
 
     pthread_exit(NULL);
+}
+
+void *work_example(void *arg)
+{
+    int val = *((int *)arg);
+    fprintf(stdout,"========= Hi there! %i\n",val);
+    return NULL;
 }
 
 int
@@ -157,9 +170,12 @@ main(void)
 
         pthread_t *tid = malloc(num_threads*sizeof(pthread_t));
         args_t *args = malloc(num_threads*sizeof(args_t));
-
+        int value = 101;
+        
         for(int i = 0 ; i < num_threads ; i++) {
-            args[i].wrank = wrank;
+            args[i].wrank     = wrank;
+            args[i].work_func = work_example;
+            args[i].func_arg  = &value;
             rc = qv_thread_args_set(mpi_ctx,mpi_numa_scope,thread_layout,i,num_threads,&(args[i].th_args));
             if (rc != QV_SUCCESS) {
                 ers = "qv_thread_args_set() failed";
@@ -190,7 +206,9 @@ main(void)
         args = malloc(num_threads*sizeof(args_t));
 
         for(int i = 0 ; i < num_threads ; i++) {
-            args[i].wrank = wrank;
+            args[i].wrank     = wrank;
+            args[i].work_func = work_example;
+            args[i].func_arg  = &value;
             rc = qv_thread_args_set(mpi_ctx,mpi_numa_scope,thread_layout,i,num_threads,&(args[i].th_args));
             if (rc != QV_SUCCESS) {
                 ers = "qv_thread_args_set() failed";
