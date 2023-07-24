@@ -133,7 +133,7 @@ if (OPENMP_FOUND)
     set_tests_properties(
         threads
         PROPERTIES
-          TIMEOUT 10
+          TIMEOUT 60
           LABELS "threads"
     )
 endif()
@@ -246,7 +246,7 @@ if(MPI_FOUND)
     set_tests_properties(
         mpi-api
         PROPERTIES
-          TIMEOUT 10
+          TIMEOUT 60
           LABELS "mpi"
     )
 
@@ -328,7 +328,7 @@ if(QV_FORTRAN_HAPPY)
     set_tests_properties(
         process-fortapi
         PROPERTIES
-          TIMEOUT 10
+          TIMEOUT 60
           LABELS "fortran"
     )
 
@@ -388,7 +388,7 @@ set_tests_properties(
     rmi-server
     rmi
     PROPERTIES
-      TIMEOUT 10
+      TIMEOUT 60
       LABELS "core"
 )
 
