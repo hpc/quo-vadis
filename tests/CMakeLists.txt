@@ -208,6 +208,17 @@ if(MPI_FOUND)
     )
 
     add_executable(
+        test-progress-thread
+        qvi-test-common.h
+        test-progress-thread.c
+    )
+
+    target_link_libraries(
+        test-progress-thread
+        quo-vadis-mpi
+    )
+
+    add_executable(
         test-mpi-scope-create
         qvi-test-common.h
         test-mpi-scope-create.c
