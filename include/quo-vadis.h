@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -126,7 +126,9 @@ enum {
 typedef enum qv_scope_create_hint_e {
     // TODO(skg) Enumerate all actual values.
     // TODO(skg) Add to Fortran interface.
-    QV_SCOPE_CREATE_CLOSE = 0
+    // TODO(skg) Test bitmap operations in Fortran.
+    QV_SCOPE_CREATE_EXCLUSIVE = 0x00000001,
+    QV_SCOPE_CREATE_CLOSE =     0x00000002
 } qv_scope_create_hint_t;
 
 /**
