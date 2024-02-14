@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022-2023 Triad National Security, LLC
+# Copyright (c) 2022-2024 Triad National Security, LLC
 #                         All rights reserved.
 #
 # This file is part of the quo-vadis project. See the LICENSE file at the
@@ -32,6 +32,8 @@ if(QV_FORTRAN_SUPPORT)
     FortranCInterface_VERIFY()
     # Make sure we found a Fortran compiler.
     if(NOT CMAKE_Fortran_COMPILER STREQUAL "")
+        # TODO(skg) Improve
+        set(CMAKE_FORTRAN_FLAGS "${CMAKE_FORTRAN_FLAGS} -Wall -Wextra -pedantic")
         set(QV_FORTRAN_HAPPY TRUE)
         set(
             CMAKE_Fortran_MODULE_DIRECTORY

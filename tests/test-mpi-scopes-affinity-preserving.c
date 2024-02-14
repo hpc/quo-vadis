@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2022-2023 Triad National Security, LLC
+ * Copyright (c) 2022-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -49,7 +49,7 @@ main(
     }
 
     qv_context_t *ctx;
-    rc = qv_mpi_context_create(&ctx, comm);
+    rc = qv_mpi_context_create(comm, &ctx);
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_context_create() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));

@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2023 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c)      2020 Lawrence Livermore National Security, LLC
@@ -22,7 +22,6 @@
 
 #include "quo-vadis-mpi.h"
 #include "quo-vadis-thread.h"
-#include "qvi-macros.h"
 #include "qvi-test-common.h"
 
 #include <sys/syscall.h>
@@ -63,7 +62,7 @@ main(void)
     }
 
     qv_context_t *mpi_ctx;
-    rc = qv_mpi_context_create(&mpi_ctx, comm);
+    rc = qv_mpi_context_create(comm, &mpi_ctx);
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_context_create() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));

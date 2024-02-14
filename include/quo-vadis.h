@@ -223,7 +223,7 @@ qv_scope_nobjs(
     qv_context_t *ctx,
     qv_scope_t *scope,
     qv_hw_obj_type_t obj,
-    int *n
+    int *nobjs
 );
 
 /**

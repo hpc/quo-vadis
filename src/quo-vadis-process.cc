@@ -19,16 +19,6 @@
 #include "qvi-zgroup-process.h"
 
 int
-qv_process_context_free(
-    qv_context_t *ctx
-) {
-    if (!ctx) return QV_ERR_INVLD_ARG;
-    delete ctx->zgroup;
-    qvi_context_free(&ctx);
-    return QV_SUCCESS;
-}
-
-int
 qv_process_context_create(
     qv_context_t **ctx
 ) {
@@ -74,6 +64,16 @@ out:
     }
     *ctx = ictx;
     return rc;
+}
+
+int
+qv_process_context_free(
+    qv_context_t *ctx
+) {
+    if (!ctx) return QV_ERR_INVLD_ARG;
+    delete ctx->zgroup;
+    qvi_context_free(&ctx);
+    return QV_SUCCESS;
 }
 
 /*

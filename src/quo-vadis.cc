@@ -123,13 +123,13 @@ qv_scope_nobjs(
     qv_context_t *ctx,
     qv_scope_t *scope,
     qv_hw_obj_type_t obj,
-    int *n
+    int *nobjs
 ) {
-    if (!ctx || !scope || !n) {
+    if (!ctx || !scope || !nobjs) {
         return QV_ERR_INVLD_ARG;
     }
 
-    return qvi_scope_nobjs(scope, obj, n);
+    return qvi_scope_nobjs(scope, obj, nobjs);
 }
 
 int
@@ -191,6 +191,31 @@ qv_scope_barrier(
     return qvi_scope_barrier(scope);
 }
 
+// TODO(skg) Add Fortran interface.
+int
+qv_scope_create(
+    qv_context_t *ctx,
+    qv_scope_t *scope,
+    qv_hw_obj_type_t type,
+    int nobjs,
+    qv_scope_create_hint_t hint,
+    qv_scope_t **subscope
+) {
+    if (!ctx || !scope || (nobjs < 0) || !subscope) {
+        return QV_ERR_INVLD_ARG;
+    }
+
+    qv_scope_t *isubscope = nullptr;
+    int rc = qvi_scope_create(
+        scope, type, nobjs, hint, &isubscope
+    );
+    if (rc != QV_SUCCESS) {
+        qvi_scope_free(&isubscope);
+    }
+    *subscope = isubscope;
+    return rc;
+}
+
 int
 qv_scope_split(
     qv_context_t *ctx,
@@ -233,31 +258,6 @@ qv_scope_split_at(
     qv_scope_t *isubscope = nullptr;
     int rc = qvi_scope_split_at(
         scope, type, group_id, &isubscope
-    );
-    if (rc != QV_SUCCESS) {
-        qvi_scope_free(&isubscope);
-    }
-    *subscope = isubscope;
-    return rc;
-}
-
-// TODO(skg) Add Fortran interface.
-int
-qv_scope_create(
-    qv_context_t *ctx,
-    qv_scope_t *scope,
-    qv_hw_obj_type_t type,
-    int nobjs,
-    qv_scope_create_hint_t hint,
-    qv_scope_t **subscope
-) {
-    if (!ctx || !scope || (nobjs < 0) || !subscope) {
-        return QV_ERR_INVLD_ARG;
-    }
-
-    qv_scope_t *isubscope = nullptr;
-    int rc = qvi_scope_create(
-        scope, type, nobjs, hint, &isubscope
     );
     if (rc != QV_SUCCESS) {
         qvi_scope_free(&isubscope);

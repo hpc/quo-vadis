@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2023 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -70,7 +70,7 @@ main(
 
     /* Create a QV context */
     qv_context_t *ctx;
-    rc = qv_mpi_context_create(&ctx, comm);
+    rc = qv_mpi_context_create(comm, &ctx);
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_context_create() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
