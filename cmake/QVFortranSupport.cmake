@@ -33,7 +33,7 @@ if(QV_FORTRAN_SUPPORT)
     # Make sure we found a Fortran compiler.
     if(NOT CMAKE_Fortran_COMPILER STREQUAL "")
         # TODO(skg) Improve
-        set(CMAKE_FORTRAN_FLAGS "${CMAKE_FORTRAN_FLAGS} -Wall -Wextra -pedantic")
+        # set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall -Wextra -pedantic")
         set(QV_FORTRAN_HAPPY TRUE)
         set(
             CMAKE_Fortran_MODULE_DIRECTORY
