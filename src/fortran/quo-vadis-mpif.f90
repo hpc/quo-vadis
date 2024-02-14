@@ -1,5 +1,5 @@
 !
-! Copyright (c) 2013-2022 Triad National Security, LLC
+! Copyright (c) 2013-2024 Triad National Security, LLC
 !                         All rights reserved.
 !
 ! This file is part of the quo-vadis project. See the LICENSE file at the
@@ -12,7 +12,7 @@ module quo_vadis_mpif
 
 interface
     integer(c_int) &
-    function qv_mpi_context_create_c(ctx, comm) &
+    function qv_mpi_context_create_c(comm, ctx) &
         bind(c, name='qvi_mpi_context_create_f2c')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
@@ -41,13 +41,13 @@ end interface
 
 contains
 
-    subroutine qv_mpi_context_create(ctx, comm, info)
+    subroutine qv_mpi_context_create(comm, ctx, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), intent(out) :: ctx
         integer, value :: comm
         integer(c_int), intent(out) :: info
-        info = qv_mpi_context_create_c(ctx, comm)
+        info = qv_mpi_context_create_c(comm, ctx)
     end subroutine qv_mpi_context_create
 
     subroutine qv_mpi_scope_comm_dup(ctx, scope, comm, info)

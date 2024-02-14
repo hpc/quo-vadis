@@ -33,11 +33,11 @@ extern "C" {
 
 int
 qvi_mpi_context_create_f2c(
-    qv_context_t **ctx,
-    MPI_Fint comm
+    MPI_Fint comm,
+    qv_context_t **ctx
 ) {
     MPI_Comm c_comm = MPI_Comm_f2c(comm);
-    return qv_mpi_context_create(ctx, c_comm);
+    return qv_mpi_context_create(c_comm, ctx);
 }
 
 int
@@ -58,8 +58,8 @@ qvi_mpi_scope_comm_dup_f2c(
 
 int
 qv_mpi_context_create(
-    qv_context_t **ctx,
-    MPI_Comm comm
+    MPI_Comm comm,
+    qv_context_t **ctx
 ) {
     if (!ctx || comm == MPI_COMM_NULL) {
         return QV_ERR_INVLD_ARG;

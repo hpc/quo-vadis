@@ -1,5 +1,5 @@
 !
-! Copyright (c) 2013-2022 Triad National Security, LLC
+! Copyright (c) 2013-2024 Triad National Security, LLC
 !                         All rights reserved.
 !
 ! This file is part of the quo-vadis project. See the LICENSE file at the
@@ -53,7 +53,7 @@ program mpi_fortapi
         print *, 'cwsize', cwsize
     end if
 
-    call qv_mpi_context_create(ctx, MPI_COMM_WORLD, info)
+    call qv_mpi_context_create(MPI_COMM_WORLD, ctx, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
