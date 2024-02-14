@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c)      2021 Triad National Security, LLC
+ * Copyright (c) 2021-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c)      2021 Lawrence Livermore National Security, LLC
@@ -19,9 +19,9 @@
 #ifndef QVI_BIND_H
 #define QVI_BIND_H
 
-#include "qvi-common.h"
+#include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-task.h"
-#include "qvi-hwloc.h"
+#include "qvi-hwloc.h" // IWYU pragma: keep
 #include "qvi-rmi.h"
 
 #ifdef __cplusplus

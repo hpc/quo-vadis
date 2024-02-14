@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2023 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  * Copyright (c) 2022      Inria. All rights reserved.
  * Copyright (c) 2022      Bordeaux INP. All rights reserved.
@@ -16,7 +16,7 @@
 #ifndef QVI_THREAD_H
 #define QVI_THREAD_H
 
-#include "qvi-common.h"
+#include "qvi-common.h" // IWYU pragma: keep
 
 #include "qvi-task.h"
 #include "qvi-bbuff.h"

@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -15,7 +15,6 @@
 
 #include "qvi-process.h"
 #include "qvi-group.h"
-#include "qvi-utils.h"
 
 // Type definitions.
 typedef qvi_group_id_t qvi_process_group_id_t;

@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2023 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2022      Inria.
@@ -17,7 +17,7 @@
  * @file qvi-zgroup-thread.cc
  */
 
-#include "qvi-common.h"
+#include "qvi-common.h" // IWYU pragma: keep
 
 #include "qvi-zgroup-thread.h"
 #include "qvi-group-thread.h"

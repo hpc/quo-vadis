@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c)      2021 Triad National Security, LLC
+ * Copyright (c) 2021-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -11,10 +11,9 @@
  * @file qvi-nvml.cc
  */
 
-#include "qvi-common.h"
+#include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-nvml.h"
 #include "qvi-hwloc.h"
-#include "qvi-utils.h"
 
 #ifdef CUDAToolkit_FOUND
 #include "hwloc/nvml.h"

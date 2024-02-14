@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2023 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -17,22 +17,22 @@
 #ifndef QVI_COMMON_H
 #define QVI_COMMON_H
 
-#include "quo-vadis/config.h"
-#include "qvi-macros.h"
-#include "quo-vadis.h"
+#include "quo-vadis/config.h" // IWYU pragma: keep
+#include "qvi-macros.h" // IWYU pragma: keep
+#include "quo-vadis.h" // IWYU pragma: keep
 
-#include <assert.h>
-#include <errno.h>
+#include <assert.h> // IWYU pragma: keep
+#include <errno.h> // IWYU pragma: keep
 #include <fcntl.h>
-#include <inttypes.h>
-#include <limits.h>
+#include <inttypes.h> // IWYU pragma: keep
+#include <limits.h> // IWYU pragma: keep
 #include <pthread.h>
-#include <stdarg.h>
+#include <stdarg.h> // IWYU pragma: keep
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <stdio.h> // IWYU pragma: keep
+#include <stdlib.h> // IWYU pragma: keep
+#include <string.h> // IWYU pragma: keep
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/syscall.h>
@@ -41,18 +41,18 @@
 #include <unistd.h>
 
 #ifdef __cplusplus
-#include "qvi-log.h"
-
-#include <chrono>
-#include <map>
-#include <new>
-#include <set>
-#include <stack>
-#include <stdexcept>
-#include <thread>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
+#include "qvi-log.h" // IWYU pragma: keep
+ // IWYU pragma: keep
+#include <chrono> // IWYU pragma: keep
+#include <map> // IWYU pragma: keep
+#include <new> // IWYU pragma: keep
+#include <set> // IWYU pragma: keep
+#include <stack> // IWYU pragma: keep
+#include <stdexcept> // IWYU pragma: keep
+#include <thread> // IWYU pragma: keep
+#include <unordered_map> // IWYU pragma: keep
+#include <unordered_set> // IWYU pragma: keep
+#include <vector> // IWYU pragma: keep
 #endif
 
 typedef uint8_t byte_t;
