@@ -1,6 +1,6 @@
  /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2023 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) Inria 2022-2023.  All rights reserved.
@@ -14,13 +14,13 @@
  * @file quo-vadis-thread.cc
  */
 
-#include "qvi-common.h"
+#include "qvi-common.h" // IWYU pragma: keep
 
 #include "quo-vadis-thread.h"
 
 #include "qvi-context.h"
 #include "qvi-zgroup-thread.h"
-#include "qvi-group-thread.h"
+#include "qvi-group-thread.h" // IWYU pragma: keep
 #include "qvi-scope.h"
 
 #ifdef OPENMP_FOUND

@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -14,7 +14,7 @@
  * @file qvi-group-mpi.cc
  */
 
-#include "qvi-common.h"
+#include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-group-mpi.h"
 
 qvi_group_mpi_s::~qvi_group_mpi_s(void)

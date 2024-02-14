@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2023 Triad National Security, LLC
+ * Copyright (c) 2021-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c)      2021 Lawrence Livermore National Security, LLC
@@ -14,7 +14,7 @@
  * @file qvi-bind.cc
  */
 
-#include "qvi-common.h"
+#include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-bind.h"
 
 using qvi_bind_bitmap_stack_t = std::stack<hwloc_cpuset_t>;
