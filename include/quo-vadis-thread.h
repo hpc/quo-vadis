@@ -53,6 +53,51 @@ typedef enum qv_policy_s {
   QV_POLICY_CHOOSE
 } qv_policy_t;
 
+
+/**
+ * Creates a thread context.
+ */
+int
+qv_thread_context_create(
+    qv_context_t **ctx
+);
+
+
+/**
+ * Frees resources associated with a context created by
+ * qv_thread_context_create().
+ */
+int
+qv_thread_context_free(
+    qv_context_t *ctx
+);
+
+
+#ifndef USE_LAYOUTS
+typedef struct {
+    qv_context_t *ctx;
+    qv_scope_t *scope;
+    void *(*thread_routine)(void *);
+    void *arg;
+} qv_thread_args_t;
+
+
+void *
+qv_thread_routine(
+    void * arg
+);
+
+
+int
+qv_pthread_create(
+    pthread_t *thread,
+    pthread_attr_t *attr,
+    void *(*thread_routine)(void *arg),
+    void *arg,
+    qv_context_t *ctx,
+    qv_scope_t *scope
+);
+#else
 /**                                                                                                     
  * Layout for fine-grain binding                                                                        
  * with default behaviour                                                                               
@@ -92,25 +137,6 @@ typedef struct {
   int th_id;
   int num_th;
 } qv_thread_args_t;
-
-
-/**
- * Creates a thread context.
- */
-int
-qv_thread_context_create(
-    qv_context_t **ctx
-);
-
-
-/**
- * Frees resources associated with a context created by
- * qv_thread_context_create().
- */
-int
-qv_thread_context_free(
-    qv_context_t *ctx
-);
 
 int
 qv_thread_layout_create(
@@ -160,6 +186,7 @@ qv_thread_layout_set_stride(
    qv_layout_t *layout,
    int stride
 );
+#endif // USE_LAYOUTS
 
 
 #ifdef __cplusplus
