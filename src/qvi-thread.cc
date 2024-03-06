@@ -586,7 +586,7 @@ static int qvi_get_subgroup_info(
       idx2++;
     *new_id = (idx2 - idx);
 
-#pragma omp barrier // to prevent the quickest hread to remove data before all others have used it
+#pragma omp barrier // to prevent the quickest thread to remove data before all others have used it
 #pragma omp single
     delete [] lptr;
     return QV_SUCCESS;

@@ -215,6 +215,7 @@ if(MPI_FOUND)
 
     target_link_libraries(
         test-progress-thread
+	quo-vadis
         quo-vadis-mpi
     )
 
@@ -263,18 +264,18 @@ if(MPI_FOUND)
 
 ############################# HYBRID TESTS (PThreads) ##########################
 ################################################################################
-    add_executable(
-         test-mpi-pthreads-layout
-         qvi-test-common.h
-         test-mpi-pthreads-layout.c
-    )
+    #add_executable(
+         #test-mpi-pthreads-layout
+         #qvi-test-common.h
+         #test-mpi-pthreads-layout.c
+    #)
 
 
-    target_link_libraries(
-         test-mpi-pthreads-layout
-         quo-vadis
-         quo-vadis-mpi
-    )
+    #target_link_libraries(
+         #test-mpi-pthreads-layout
+         #quo-vadis
+         #quo-vadis-mpi
+    #)
 
 ############################# HYBRID TESTS (OpenMP) ############################
 ################################################################################
@@ -292,19 +293,19 @@ if(MPI_FOUND)
             OpenMP::OpenMP_C
         )
 
-        add_executable(
-            test-mpi-threads-layout
-            qvi-test-common.h
-            test-mpi-threads-layout.c
-        )
+        #add_executable(
+        #    test-mpi-threads-layout
+        #    qvi-test-common.h
+        #    test-mpi-threads-layout.c
+        #)
 
 
-        target_link_libraries(
-            test-mpi-threads-layout
-            quo-vadis
-            quo-vadis-mpi
-            OpenMP::OpenMP_C
-        )
+        #target_link_libraries(
+        #    test-mpi-threads-layout
+        #    quo-vadis
+        #    quo-vadis-mpi
+        #    OpenMP::OpenMP_C
+        #)
 
     endif()
 endif()
@@ -376,7 +377,7 @@ if(MPI_FOUND)
         test-mpi-api
         test-mpi-getdev
         test-mpi-scopes
-	test-mpi-pthreads-layout
+	#test-mpi-pthreads-layout
         PROPERTIES LINKER_LANGUAGE C
     )
 
@@ -385,10 +386,10 @@ if(MPI_FOUND)
             test-mpi-threads
             PROPERTIES LINKER_LANGUAGE C
         )
-        set_target_properties(
-            test-mpi-threads-layout
-            PROPERTIES LINKER_LANGUAGE C
-        )
+        #set_target_properties(
+        #    test-mpi-threads-layout
+        #    PROPERTIES LINKER_LANGUAGE C
+        #)
     endif()
 endif()
 

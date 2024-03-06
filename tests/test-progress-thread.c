@@ -2,56 +2,8 @@
 #include <stdio.h>
 #include <pthread.h>
 #include "quo-vadis-mpi.h"
+#include "quo-vadis-thread.h"
 #include "qvi-test-common.h"
-
-
-/*
- * It would be nice to have these defined as part of QV.
- * It would simplify usage and avoid errors.
- */
-
-typedef struct {
-    qv_context_t *ctx;
-    qv_scope_t *scope;
-    void *(*thread_routine)(void *);
-    void *arg;
-} qv_thread_args_t;
-
-void *qv_thread_routine(void * arg)
-{
-    qv_thread_args_t *qvp = (qv_thread_args_t *) arg;
-    //  printf("qv_thread_routine: ctx=%p scope=%p\n", qvp->ctx, qvp->scope);
-
-    int rc = qv_bind_push(qvp->ctx, qvp->scope);
-    if (rc != QV_SUCCESS) {
-        char const *ers = "qv_bind_push() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    qvp->thread_routine(qvp->arg);
-
-    /* Memory allocated in qv_pthread_create */
-    free(qvp);
-
-    pthread_exit(NULL);
-}
-
-int qv_pthread_create(pthread_t *thread, pthread_attr_t *attr,
-        void *(*thread_routine)(void *arg), void *arg,
-        qv_context_t *ctx, qv_scope_t *scope)
-{
-    /* Memory will be freed in qv_thread_routine to avoid
-       a memory leak */
-    qv_thread_args_t *qv_thargs = malloc(sizeof(qv_thread_args_t));
-    qv_thargs->ctx = ctx;
-    qv_thargs->scope = scope;
-    qv_thargs->thread_routine = thread_routine;
-    qv_thargs->arg = arg;
-
-    //  printf("qv_pthread_create: ctx=%p scope=%p\n", ctx, scope);
-    return pthread_create(thread, attr, qv_thread_routine, qv_thargs);
-}
-
 
 /*
  * QV Todo:

@@ -89,32 +89,76 @@ out:
     return rc;
 }
 
+#ifndef USE_LAYOUTS
+//New interface
+void *
+qv_thread_routine(
+    void * arg
+) {
+    qv_thread_args_t *arg_ptr = (qv_thread_args_t *) arg;
+    //  fprintf(stdout,"qv_thread_routine: ctx=%p scope=%p\n", qvp->ctx, qvp->scope);
+
+    int rc = qv_bind_push(arg_ptr->ctx, arg_ptr->scope);
+    if (rc != QV_SUCCESS) {
+        // char const *ers = "qv_bind_push() failed";
+        // qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        pthread_exit(NULL);
+    }
+
+    void *ret = arg_ptr->thread_routine(arg_ptr->arg);
+
+    // Free memory allocated in qv_pthread_create
+    //free(arg_ptr);
+    delete arg_ptr;
+    pthread_exit(ret);
+}
+
+int
+qv_pthread_create(
+     pthread_t *thread,
+     pthread_attr_t *attr,
+     void *(*thread_routine)(void *arg),
+     void *arg,
+     qv_context_t *ctx,
+     qv_scope_t *scope
+) {
+     // Memory will be freed in qv_thread_routine to avoid  memory leaks
+     qv_thread_args_t *arg_ptr = qvi_new qv_thread_args_t();
+     //(qv_thread_args_t *)malloc(sizeof(qv_thread_args_t));
+     arg_ptr->ctx = ctx;
+     arg_ptr->scope = scope;
+     arg_ptr->thread_routine = thread_routine;
+     arg_ptr->arg = arg;
+
+    // fprintf(stdout,"qv_pthread_create: ctx=%p scope=%p\n", ctx, scope);
+    return pthread_create(thread, attr, qv_thread_routine, arg_ptr);
+}
+#else // USE_LAYOUTS
+// Layout interface
 int
 qv_thread_layout_create( // use hwpool if necessary
     qv_context_t *ctx,
     qv_layout_params_t params,
     qv_layout_t **layout
-)
-{
-  int rc = QV_SUCCESS;
-  qv_layout_t *ilay = qvi_new qv_layout_t();
+) {
+    int rc = QV_SUCCESS;
+    qv_layout_t *ilay = qvi_new qv_layout_t();
 
-  ilay->hwl       = qvi_rmi_client_hwloc_get(ctx->rmi);
-  ilay->hw_topo   = qvi_hwloc_get_topo_obj(ilay->hwl);
-  ilay->params    = params;
-  ilay->ctx       = ctx;
-  memset(&ilay->cached_info,0,sizeof(qv_layout_cached_info_t));
-  ilay->is_cached = 0;
+    ilay->hwl       = qvi_rmi_client_hwloc_get(ctx->rmi);
+    ilay->hw_topo   = qvi_hwloc_get_topo_obj(ilay->hwl);
+    ilay->params    = params;
+    ilay->ctx       = ctx;
+    memset(&ilay->cached_info,0,sizeof(qv_layout_cached_info_t));
+    ilay->is_cached = 0;
 
-  *layout = ilay;
-  return rc;
+    *layout = ilay;
+    return rc;
 }
 
 int
 qv_thread_layout_free(
    qv_layout_t *layout
-)
-{
+){
   int rc = QV_SUCCESS;
 
   if (!layout) {
@@ -134,8 +178,7 @@ int
 qv_thread_layout_set_policy(
    qv_layout_t *layout,
    qv_policy_t policy
-)
-{
+) {
   int rc = QV_SUCCESS;
 
   if (!layout) {
@@ -153,8 +196,7 @@ int
 qv_thread_layout_set_obj_type(
    qv_layout_t *layout,
    qv_hw_obj_type_t obj_type
-)
-{
+) {
   int rc = QV_SUCCESS;
 
   if (!layout) {
@@ -172,8 +214,7 @@ int
 qv_thread_layout_set_stride(
    qv_layout_t *layout,
    int stride
-)
-{
+) {
   int rc = QV_SUCCESS;
 
   if (!layout) {
@@ -381,7 +422,7 @@ qv_thread_args_set(
   return rc;
 }
 
-
+#endif // USE_LAYOUTS
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
