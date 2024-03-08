@@ -30,6 +30,14 @@ extern "C" {
 /** Convenience definition. */
 #define QUO_VADIS 1
 
+/**
+ * This number is updated to (X<<16)+(Y<<8)+Z
+ * when a release X.Y.Z modifies the API.
+ *
+ * In python: print(f'{(X<<16)+(Y<<8)+Z:#010x}')
+ */
+#define QUO_VADIS_API_VERSION 0x00000001
+
 /** Opaque quo-vadis context. */
 struct qv_context_s;
 typedef struct qv_context_s qv_context_t;
