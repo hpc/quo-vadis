@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2023 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -410,9 +410,7 @@ qvi_global_split_get_cpuset(
     hwloc_cpuset_t *result
 ) {
     // This shouldn't happen.
-    if (gsplit.hwpools.size() == 0) {
-        abort();
-    }
+    assert(gsplit.hwpools.size() != 0);
 
     int rc = qvi_hwloc_bitmap_calloc(result);
     if (rc != QV_SUCCESS) return rc;
@@ -460,7 +458,8 @@ scope_init(
     qvi_group_t *group,
     qvi_hwpool_t *hwpool
 ) {
-    if (!rmi || !hwpool || !scope) abort();
+    assert(rmi && hwpool && scope);
+
     scope->rmi = rmi;
     scope->group = group;
     scope->hwpool = hwpool;
@@ -471,7 +470,7 @@ hwloc_const_cpuset_t
 qvi_scope_cpuset_get(
     qv_scope_t *scope
 ) {
-    if (!scope) abort();
+    assert(scope);
     return qvi_hwpool_cpuset_get(scope->hwpool);
 }
 
@@ -479,7 +478,7 @@ const qvi_hwpool_t *
 qvi_scope_hwpool_get(
     qv_scope_t *scope
 ) {
-    if (!scope) abort();
+    assert(scope);
     return scope->hwpool;
 }
 
@@ -488,7 +487,7 @@ qvi_scope_taskid(
     qv_scope_t *scope,
     int *taskid
 ) {
-    if (!scope) abort();
+    assert(scope);
     *taskid = scope->group->id();
     return QV_SUCCESS;
 }
@@ -498,7 +497,7 @@ qvi_scope_ntasks(
     qv_scope_t *scope,
     int *ntasks
 ) {
-    if (!scope) abort();
+    assert(scope);
     *ntasks = scope->group->size();
     return QV_SUCCESS;
 }
@@ -507,7 +506,7 @@ int
 qvi_scope_barrier(
     qv_scope_t *scope
 ) {
-    if (!scope) abort();
+    assert(scope);
     return scope->group->barrier();
 }
 
@@ -551,7 +550,7 @@ qvi_group_t *
 qvi_scope_group_get(
     qv_scope_t *scope
 ) {
-    if (!scope) abort();
+    assert(scope);
     return scope->group;
 }
 

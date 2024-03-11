@@ -71,6 +71,8 @@ qv_bind_string(
         return QV_ERR_INVLD_ARG;
     }
 
+    *str = nullptr;
+
     hwloc_cpuset_t cpuset = nullptr;
     int rc = qvi_rmi_task_get_cpubind(
         ctx->rmi,
