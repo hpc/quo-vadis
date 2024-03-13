@@ -151,6 +151,15 @@ qvi_hwloc_bitmap_copy(
 );
 
 /**
+ * Returns the number of bits required to represent a given cpuset.
+ */
+int
+qvi_hwloc_bitmap_nbits(
+    hwloc_const_cpuset_t cpuset,
+    size_t *nbits
+);
+
+/**
  *
  */
 int
