@@ -794,6 +794,20 @@ qvi_hwloc_bitmap_copy(
     return QV_SUCCESS;
 }
 
+int
+qvi_hwloc_bitmap_nbits(
+    hwloc_const_cpuset_t cpuset,
+    size_t *nbits
+) {
+    *nbits = 0;
+
+    const int inbits = hwloc_bitmap_last(cpuset);
+    if (inbits == -1) return QV_ERR_HWLOC;
+
+    *nbits = (size_t)inbits;
+    return QV_SUCCESS;
+}
+
 static int
 topo_fname(
     const char *base,
