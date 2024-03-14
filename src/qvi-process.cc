@@ -12,8 +12,8 @@
  */
 
 #include "qvi-common.h"
-
 #include "qvi-process.h"
+#include "qvi-utils.h"
 #include "qvi-group.h"
 
 // Type definitions.
@@ -24,19 +24,35 @@ using qvi_process_group_tab_t = std::unordered_map<
 >;
 
 struct qvi_process_group_s {
+    int qvim_rc = QV_SUCCESS;
     /** ID used for table lookups */
     qvi_process_group_id_t tabid = 0;
     /** ID (rank) in group */
     int id = 0;
     /** Size of group */
     int size = 0;
+    /** Constructor */
+    qvi_process_group_s(void) = default;
+    /** Destructor */
+    ~qvi_process_group_s(void) = default;
 };
 
 struct qvi_process_s {
+    int qvim_rc = QV_ERR_INTERNAL;
     /** Task associated with this process */
     qvi_task_t *task = nullptr;
     /** Maintains the next available group ID value */
-    qvi_process_group_tab_t *group_tab = nullptr;
+    qvi_process_group_tab_t group_tab;
+    /** Constructor */
+    qvi_process_s(void)
+    {
+        qvim_rc = qvi_task_new(&task);
+    }
+    /** Destructor */
+    ~qvi_process_s(void)
+    {
+        qvi_task_free(&task);
+    }
 };
 
 /**
@@ -54,44 +70,14 @@ int
 qvi_process_new(
     qvi_process_t **proc
 ) {
-    int rc = QV_SUCCESS;
-
-    qvi_process_t *iproc = qvi_new qvi_process_t();
-    if (!iproc) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-    // Task
-    rc = qvi_task_new(&iproc->task);
-    if (rc != QV_SUCCESS) goto out;
-    // Groups
-    iproc->group_tab = qvi_new qvi_process_group_tab_t();
-    if (!iproc->group_tab) {
-        rc = QV_ERR_OOR;
-    }
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_process_free(&iproc);
-    }
-    *proc = iproc;
-    return rc;
+    return qvi_new_rc(proc);
 }
 
 void
 qvi_process_free(
     qvi_process_t **proc
 ) {
-    if (!proc) return;
-    qvi_process_t *iproc = *proc;
-    if (!iproc) goto out;
-    if (iproc->group_tab) {
-        delete iproc->group_tab;
-        iproc->group_tab = nullptr;
-    }
-    qvi_task_free(&iproc->task);
-    delete iproc;
-out:
-    *proc = nullptr;
+    return qvi_delete(proc);
 }
 
 /**
@@ -134,29 +120,14 @@ int
 qvi_process_group_new(
     qvi_process_group_t **procgrp
 ) {
-    int rc = QV_SUCCESS;
-
-    qvi_process_group_t *iprocgrp = qvi_new qvi_process_group_t();
-    if (!iprocgrp) {
-        rc = QV_ERR_OOR;
-    }
-    if (rc != QV_SUCCESS) {
-        qvi_process_group_free(&iprocgrp);
-    }
-    *procgrp = iprocgrp;
-    return rc;
+    return qvi_new_rc(procgrp);
 }
 
 void
 qvi_process_group_free(
     qvi_process_group_t **procgrp
 ) {
-    if (!procgrp) return;
-    qvi_process_group_t *iprocgrp = *procgrp;
-    if (!iprocgrp) goto out;
-    delete iprocgrp;
-out:
-    *procgrp = nullptr;
+    qvi_delete(procgrp);
 }
 
 int
@@ -177,7 +148,7 @@ qvi_process_group_create(
     igroup->id    = 0;
     igroup->size  = 1;
 
-    proc->group_tab->insert({gtid, *igroup});
+    proc->group_tab.insert({gtid, *igroup});
 out:
     if (rc != QV_SUCCESS) {
         qvi_process_group_free(&igroup);
