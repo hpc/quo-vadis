@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -18,6 +18,39 @@
 #define QVI_UTILS_H
 
 #include "qvi-common.h"
+
+#ifdef __cplusplus
+
+/**
+ * Returns the code captured by a constructor. Since we are trying to avoid the
+ * use of exceptions, we instead use this method for checking the state of an
+ * object after its construction. This method isn't perfect, and requires that a
+ * class member named qvim_rc (read as (qvi) (m)ember (r)eturn (c)ode) is
+ * present in the provided class. Compilation will fail otherwise.
+ */
+template <class T>
+int
+qvi_construct_rc(
+    const T &t
+) {
+    return t.qvim_rc;
+}
+
+/**
+ * Similar to qvi_construct_rc(), but is used also to check the value returned
+ * by qvi_new.
+ */
+template <class T>
+int
+qvi_new_rc(
+    const T *const t
+) {
+    // qvi_new must have returned nullptr.
+    if (!t) return QV_ERR_OOR;
+    return t->qvim_rc;
+}
+
+#endif
 
 #ifdef __cplusplus
 extern "C" {
