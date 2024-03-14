@@ -37,6 +37,7 @@ struct qvi_mpi_group_s {
 };
 
 struct qvi_mpi_s {
+    int qvim_rc = QV_ERR_INTERNAL;
     /** Task associated with this MPI process */
     qvi_task_t *task = nullptr;
     /** Node size */
@@ -50,7 +51,26 @@ struct qvi_mpi_s {
     /** Node communicator */
     MPI_Comm node_comm = MPI_COMM_NULL;
     /** Group table (ID to internal structure mapping) */
-    qvi_mpi_group_tab_t *group_tab = nullptr;
+    qvi_mpi_group_tab_t group_tab;
+    /** Constructor */
+    qvi_mpi_s(void)
+    {
+        qvim_rc = qvi_task_new(&task);
+    }
+    /** Destructor */
+    ~qvi_mpi_s(void)
+    {
+        for (auto &i : group_tab) {
+            auto &mpi_comm = i.second.mpi_comm;
+            if (mpi_comm != MPI_COMM_NULL) {
+                MPI_Comm_free(&mpi_comm);
+            }
+        }
+        if (world_comm != MPI_COMM_NULL) {
+            MPI_Comm_free(&world_comm);
+        }
+        qvi_task_free(&task);
+    }
 };
 
 /**
@@ -203,7 +223,7 @@ group_add(
         if (rc != QV_SUCCESS) return rc;
     }
     group->tabid = gtid;
-    mpi->group_tab->insert({gtid, *group});
+    mpi->group_tab.insert({gtid, *group});
     return QV_SUCCESS;
 }
 
@@ -211,53 +231,14 @@ int
 qvi_mpi_new(
     qvi_mpi_t **mpi
 ) {
-    int rc = QV_SUCCESS;
-
-    qvi_mpi_t *impi = qvi_new qvi_mpi_t();
-    if (!impi) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-    // Task
-    rc = qvi_task_new(&impi->task);
-    if (rc != QV_SUCCESS) goto out;
-    // Groups
-    impi->group_tab = qvi_new qvi_mpi_group_tab_t();
-    if (!impi->group_tab) {
-        rc = QV_ERR_OOR;
-    }
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_mpi_free(&impi);
-    }
-    *mpi = impi;
-    return rc;
+    return qvi_new_rc(mpi);
 }
 
 void
 qvi_mpi_free(
     qvi_mpi_t **mpi
 ) {
-    if (!mpi) return;
-    qvi_mpi_t *impi = *mpi;
-    if (!impi) goto out;
-    if (impi->group_tab) {
-        for (auto &i : *impi->group_tab) {
-            auto &mpi_comm = i.second.mpi_comm;
-            if (mpi_comm != MPI_COMM_NULL) {
-                MPI_Comm_free(&mpi_comm);
-            }
-        }
-        delete impi->group_tab;
-        impi->group_tab = nullptr;
-    }
-    if (impi->world_comm != MPI_COMM_NULL) {
-        MPI_Comm_free(&impi->world_comm);
-    }
-    qvi_task_free(&impi->task);
-    delete impi;
-out:
-    *mpi = nullptr;
+    qvi_delete(mpi);
 }
 
 qvi_task_t *
@@ -481,8 +462,8 @@ qvi_mpi_group_lookup_by_id(
     qvi_mpi_group_id_t id,
     qvi_mpi_group_t *group
 ) {
-    auto got = mpi->group_tab->find(id);
-    if (got == mpi->group_tab->end()) {
+    auto got = mpi->group_tab.find(id);
+    if (got == mpi->group_tab.end()) {
         return QV_ERR_NOT_FOUND;
     }
     cp_mpi_group(&got->second, group);
