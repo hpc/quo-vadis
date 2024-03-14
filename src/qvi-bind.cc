@@ -16,61 +16,43 @@
 
 #include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-bind.h"
+#include "qvi-utils.h"
 
 using qvi_bind_bitmap_stack_t = std::stack<hwloc_cpuset_t>;
 
 // Type definition
 struct qvi_bind_stack_s {
+    int qvim_rc = QV_SUCCESS;
     /** Initialized task instance. */
     qvi_task_t *task = nullptr;
     /** Client RMI instance. */
     qvi_rmi_client_t *rmi = nullptr;
     /** The bind stack. */
-    qvi_bind_bitmap_stack_t *stack = nullptr;
+    qvi_bind_bitmap_stack_t stack;
+    /** Constructor */
+    qvi_bind_stack_s(void) = default;
+    /** Destructor */
+    ~qvi_bind_stack_s(void)
+    {
+        while (!stack.empty()) {
+            hwloc_bitmap_free(stack.top());
+            stack.pop();
+        }
+    }
 };
 
 int
 qvi_bind_stack_new(
     qvi_bind_stack_t **bstack
 ) {
-    int rc = QV_SUCCESS;
-
-    qvi_bind_stack_t *ibstack = qvi_new qvi_bind_stack_t();
-    if (!ibstack) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-
-    ibstack->stack = qvi_new qvi_bind_bitmap_stack_t();
-    if (!ibstack->stack) {
-        rc = QV_ERR_OOR;
-    }
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_bind_stack_free(&ibstack);
-    }
-    *bstack = ibstack;
-    return rc;
+    return qvi_new_rc(bstack);
 }
 
 void
 qvi_bind_stack_free(
     qvi_bind_stack_t **bstack
 ) {
-    if (!bstack) return;
-    qvi_bind_stack_t *ibstack = *bstack;
-    if (!ibstack) goto out;
-    if (ibstack->stack) {
-        while (!ibstack->stack->empty()) {
-            hwloc_cpuset_t bitm = ibstack->stack->top();
-            hwloc_bitmap_free(bitm);
-            ibstack->stack->pop();
-        }
-    }
-    delete ibstack->stack;
-    delete ibstack;
-out:
-    *bstack = nullptr;
+    qvi_delete(bstack);
 }
 
 int
@@ -91,7 +73,7 @@ qvi_bind_stack_init(
     );
     if (rc != QV_SUCCESS) goto out;
 
-    bstack->stack->push(current_bind);
+    bstack->stack.push(current_bind);
 out:
     if (rc != QV_SUCCESS) {
         hwloc_bitmap_free(current_bind);
@@ -119,7 +101,7 @@ qvi_bind_push(
     );
     if (rc != QV_SUCCESS) goto out;
     // Push bitmap onto stack.
-    bstack->stack->push(bitmap_copy);
+    bstack->stack.push(bitmap_copy);
 out:
     if (rc != QV_SUCCESS) {
         hwloc_bitmap_free(bitmap_copy);
@@ -131,13 +113,13 @@ int
 qvi_bind_pop(
     qvi_bind_stack_t *bstack
 ) {
-    hwloc_bitmap_free(bstack->stack->top());
-    bstack->stack->pop();
+    hwloc_bitmap_free(bstack->stack.top());
+    bstack->stack.pop();
 
     return qvi_rmi_task_set_cpubind_from_cpuset(
         bstack->rmi,
         qvi_task_task_id(bstack->task),
-        bstack->stack->top()
+        bstack->stack.top()
     );
 }
 

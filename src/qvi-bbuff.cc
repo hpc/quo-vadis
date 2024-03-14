@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -16,8 +16,10 @@
 
 #include "qvi-common.h"
 #include "qvi-bbuff.h"
+#include "qvi-utils.h"
 
 struct qvi_bbuff_s {
+    int qvim_rc = QV_ERR_INTERNAL;
     /** Current capacity of buffer. */
     size_t capacity = 0;
     /** Amount of data already stored. */
@@ -29,45 +31,36 @@ struct qvi_bbuff_s {
         /** Minimum growth in bytes for resizes, etc. */
         min_growth = 256
     } constants;
+    /** Constructor */
+    qvi_bbuff_s(void)
+    {
+        capacity = min_growth;
+        data = calloc(capacity, sizeof(byte_t));
+        if (!data) {
+            qvim_rc = QV_ERR_OOR;
+            return;
+        }
+        qvim_rc = QV_SUCCESS;
+    }
+    /** Destructor */
+    ~qvi_bbuff_s(void)
+    {
+        if (data) free(data);
+    }
 };
 
 int
 qvi_bbuff_new(
     qvi_bbuff_t **buff
 ) {
-    int rc = QV_SUCCESS;
-
-    qvi_bbuff_t *ibuff = qvi_new qvi_bbuff_t();
-    if (!ibuff) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-
-    ibuff->capacity = ibuff->min_growth;
-    ibuff->data = calloc(ibuff->capacity, sizeof(byte_t));
-    if (!ibuff->data) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_bbuff_free(&ibuff);
-    }
-    *buff = ibuff;
-    return rc;
+    return qvi_new_rc(buff);
 }
 
 void
 qvi_bbuff_free(
     qvi_bbuff_t **buff
 ) {
-    if (!buff) return;
-    qvi_bbuff_t *ibuff = *buff;
-    if (!ibuff) goto out;
-    if (ibuff->data) free(ibuff->data);
-    delete ibuff;
-out:
-    *buff = nullptr;
+    qvi_delete(buff);
 }
 
 void *
