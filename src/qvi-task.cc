@@ -16,45 +16,36 @@
 
 #include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-task.h"
+#include "qvi-utils.h"
 
 static const int qvi_task_id_invalid = -1;
 
 struct qvi_task_s {
+    int qvim_rc = QV_SUCCESS;
     /** Task ID */
     qvi_task_id_t task_id = {};
     /** Global task ID */
     int64_t gid = qvi_task_id_invalid;
     /** Node-local task ID */
     int lid = qvi_task_id_invalid;
+    /** Constructor */
+    qvi_task_s(void) = default;
+    /** Destructor */
+    ~qvi_task_s(void) = default;
 };
 
 int
 qvi_task_new(
     qvi_task_t **task
 ) {
-    int rc = QV_SUCCESS;
-
-    qvi_task_t *itask = qvi_new qvi_task_t();
-    if (!itask) {
-        rc = QV_ERR_OOR;
-    }
-    if (rc != QV_SUCCESS) {
-        qvi_task_free(&itask);
-    }
-    *task = itask;
-    return rc;
+    return qvi_new_rc(task);
 }
 
 void
 qvi_task_free(
     qvi_task_t **task
 ) {
-    if (!task) return;
-    qvi_task_t *itask = *task;
-    if (!itask) goto out;
-    delete itask;
-out:
-    *task = nullptr;
+    qvi_delete(task);
 }
 
 int
