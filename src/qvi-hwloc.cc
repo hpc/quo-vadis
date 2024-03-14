@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2023 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -804,7 +804,7 @@ qvi_hwloc_bitmap_nbits(
     const int inbits = hwloc_bitmap_last(cpuset);
     if (inbits == -1) return QV_ERR_HWLOC;
 
-    *nbits = (size_t)inbits;
+    *nbits = size_t(inbits) + 1;
     return QV_SUCCESS;
 }
 
