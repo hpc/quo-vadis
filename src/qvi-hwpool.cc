@@ -239,12 +239,7 @@ void
 qvi_hwpool_free(
     qvi_hwpool_t **rpool
 ) {
-    if (!rpool) return;
-    qvi_hwpool_t *irpool = *rpool;
-    if (!irpool) goto out;
-    delete irpool;
-out:
-    *rpool = nullptr;
+    qvi_delete(rpool);
 }
 
 int

@@ -22,6 +22,22 @@
 #ifdef __cplusplus
 
 /**
+ * Simple wrapper around delete that also nullifies the input pointer.
+ */
+template <class T>
+void
+qvi_delete(
+    T **t
+) {
+    if (!t) return;
+    T *it = *t;
+    if (!it) goto out;
+    delete it;
+out:
+    *t = nullptr;
+}
+
+/**
  * Returns the code captured by a constructor. Since we are trying to avoid the
  * use of exceptions, we instead use this method for checking the state of an
  * object after its construction. This method isn't perfect, and requires that a
