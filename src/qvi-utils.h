@@ -53,17 +53,23 @@ qvi_construct_rc(
 }
 
 /**
- * Similar to qvi_construct_rc(), but is used also to check the value returned
- * by qvi_new.
+ * Constructs a new object of a given type. *t will be valid if successful,
+ * nullptr otherwise. Returns QV_SUCCESS if successful.
  */
 template <class T>
 int
 qvi_new_rc(
-    const T *const t
+    T **t
 ) {
-    // qvi_new must have returned nullptr.
-    if (!t) return QV_ERR_OOR;
-    return t->qvim_rc;
+    T *it = qvi_new T();
+    if (!it) return QV_ERR_OOR;
+
+    const int rc = qvi_construct_rc(*it);
+    if (rc != QV_SUCCESS) {
+        qvi_delete(&it);
+    }
+    *t = it;
+    return rc;
 }
 
 #endif

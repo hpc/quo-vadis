@@ -130,13 +130,7 @@ int
 qvi_hwpool_new(
     qvi_hwpool_t **rpool
 ) {
-    qvi_hwpool_t *irpool = qvi_new qvi_hwpool_t();
-    int rc = qvi_new_rc(irpool);
-    if (rc != QV_SUCCESS) {
-        qvi_hwpool_free(&irpool);
-    }
-    *rpool = irpool;
-    return rc;
+    return qvi_new_rc(rpool);
 }
 
 int
