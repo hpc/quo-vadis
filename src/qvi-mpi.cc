@@ -81,6 +81,7 @@ cp_mpi_group(
     const qvi_mpi_group_t *src,
     qvi_mpi_group_t *dst
 ) {
+    static_assert(std::is_trivially_copyable<qvi_mpi_group_t>::value, "");
     memmove(dst, src, sizeof(*src));
 }
 
