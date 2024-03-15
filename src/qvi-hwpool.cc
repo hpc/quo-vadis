@@ -253,14 +253,10 @@ qvi_hwpool_add_device(
     cstr_t uuid,
     hwloc_const_cpuset_t affinity
 ) {
-    rpool->devinfos.insert(
-        std::make_pair(
-            type,
-            std::make_shared<qvi_devinfo_t>(
-                type, id, pcibid, uuid, affinity
-            )
-        )
+    auto dinfo = std::make_shared<qvi_devinfo_t>(
+        type, id, pcibid, uuid, affinity
     );
+    rpool->devinfos.insert({type, dinfo});
     return QV_SUCCESS;
 }
 
