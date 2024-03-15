@@ -52,6 +52,14 @@ qvi_construct_rc(
     return t.qvim_rc;
 }
 
+template <class T>
+int
+qvi_construct_rc(
+    const std::shared_ptr<T> &t
+) {
+    return qvi_construct_rc(*t.get());
+}
+
 /**
  * Constructs a new object of a given type. *t will be valid if successful,
  * nullptr otherwise. Returns QV_SUCCESS if successful.

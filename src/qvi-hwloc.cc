@@ -22,11 +22,14 @@
 #include "qvi-rsmi.h"
 
 /** Device list type. */
-using qvi_hwloc_dev_list_t = std::vector<qvi_hwloc_device_t *>;
+using qvi_hwloc_dev_list_t = std::vector<
+    std::shared_ptr<qvi_hwloc_device_t>
+>;
+
 /** Maps a string identifier to a device. */
 using qvi_hwloc_dev_map_t = std::unordered_map<
     std::string,
-    qvi_hwloc_device_t *
+    std::shared_ptr<qvi_hwloc_device_t>
 >;
 /** Set of device identifiers. */
 using qvi_hwloc_dev_id_set_t = std::unordered_set<std::string>;
@@ -51,6 +54,7 @@ static const qv_hw_obj_type_t supported_devices[] = {
 static const int QVI_HWLOC_DEVICE_INVISIBLE_ID = -1;
 
 typedef struct qvi_hwloc_device_s {
+    int qvim_rc = QV_ERR_INTERNAL;
     /** Device cpuset */
     hwloc_cpuset_t cpuset = nullptr;
     /** Internal object type information */
@@ -67,21 +71,40 @@ typedef struct qvi_hwloc_device_s {
     char pci_bus_id[QVI_HWLOC_PCI_BUS_ID_BUFF_SIZE] = {'\0'};
     /** UUID */
     char uuid[QVI_HWLOC_UUID_BUFF_SIZE] = {'\0'};
+    /** Constructor */
+    qvi_hwloc_device_s(void)
+    {
+        qvim_rc = qvi_hwloc_bitmap_calloc(&cpuset);
+    }
+    /** Destructor */
+    ~qvi_hwloc_device_s(void)
+    {
+        qvi_hwloc_bitmap_free(&cpuset);
+    }
 } qvi_hwloc_device_t;
 
 typedef struct qvi_hwloc_s {
+    int qvim_rc = QV_SUCCESS;
     /** The cached node topology. */
     hwloc_topology_t topo = nullptr;
     /** Path to exported hardware topology. */
     char *topo_file = nullptr;
     /** Cached set of PCI IDs discovered during topology load. */
-    qvi_hwloc_dev_id_set_t *device_ids = nullptr;
+    qvi_hwloc_dev_id_set_t device_ids;
     /** Cached devices discovered during topology load. */
-    qvi_hwloc_dev_list_t *devices = nullptr;
+    qvi_hwloc_dev_list_t devices;
     /** Cached GPUs discovered during topology load. */
-    qvi_hwloc_dev_list_t *gpus = nullptr;
+    qvi_hwloc_dev_list_t gpus;
     /** Cached NICs discovered during topology load. */
-    qvi_hwloc_dev_list_t *nics = nullptr;
+    qvi_hwloc_dev_list_t nics;
+    /** Constructor */
+    qvi_hwloc_s(void) = default;
+    /** Destructor */
+    ~qvi_hwloc_s(void)
+    {
+        if (topo) hwloc_topology_destroy(topo);
+        if (topo_file) free(topo_file);
+    }
 } qvi_hwloc_t;
 
 /**
@@ -99,10 +122,10 @@ qvi_hwloc_get_topo_obj(
  */
 static bool
 dev_list_compare_by_visdev_id(
-    const qvi_hwloc_device_t *a,
-    const qvi_hwloc_device_t *b
+    const std::shared_ptr<qvi_hwloc_device_t> &a,
+    const std::shared_ptr<qvi_hwloc_device_t> &b
 ) {
-    return a->visdev_id < b->visdev_id;
+    return a.get()->visdev_id < b.get()->visdev_id;
 }
 
 hwloc_obj_type_t
@@ -226,100 +249,14 @@ int
 qvi_hwloc_new(
     qvi_hwloc_t **hwl
 ) {
-    int rc = QV_SUCCESS;
-
-    qvi_hwloc_t *ihwl = qvi_new qvi_hwloc_t();
-    if (!ihwl) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-
-    ihwl->device_ids = qvi_new qvi_hwloc_dev_id_set_t();
-    if (!ihwl->device_ids) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-
-    ihwl->devices = qvi_new qvi_hwloc_dev_list_t();
-    if (!ihwl->devices) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-
-    ihwl->gpus = qvi_new qvi_hwloc_dev_list_t();
-    if (!ihwl->gpus) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-
-    ihwl->nics = qvi_new qvi_hwloc_dev_list_t();
-    if (!ihwl->nics) {
-        rc = QV_ERR_OOR;
-    }
-out:
-    if (rc != QV_SUCCESS) qvi_hwloc_free(&ihwl);
-    *hwl = ihwl;
-    return QV_SUCCESS;
-}
-
-static void
-dev_list_free(
-    qvi_hwloc_dev_list_t **devl
-) {
-    if (!devl) return;
-    qvi_hwloc_dev_list_t *idevl = *devl;
-    if (!idevl) goto out;
-    for (auto &dev : *idevl) {
-        qvi_hwloc_device_free(&dev);
-    }
-    delete idevl;
-out:
-    *devl = nullptr;
-}
-
-static void
-dev_map_free(
-    qvi_hwloc_dev_map_t **devm
-) {
-    if (!devm) return;
-    qvi_hwloc_dev_map_t *idevm = *devm;
-    if (!idevm) goto out;
-    for (auto &mapi : *idevm) {
-        qvi_hwloc_device_free(&mapi.second);
-    }
-    delete idevm;
-out:
-    *devm = nullptr;
-}
-
-static void
-qvi_hwloc_dev_id_set_free(
-    qvi_hwloc_dev_id_set_t **set
-) {
-    if (!set) return;
-    qvi_hwloc_dev_id_set_t *iset = *set;
-    if (!iset) goto out;
-    delete iset;
-out:
-    *set = nullptr;
+    return qvi_new_rc(hwl);
 }
 
 void
 qvi_hwloc_free(
     qvi_hwloc_t **hwl
 ) {
-    if (!hwl) return;
-    qvi_hwloc_t *ihwl = *hwl;
-    if (!ihwl) goto out;
-    qvi_hwloc_dev_id_set_free(&ihwl->device_ids);
-    dev_list_free(&ihwl->devices);
-    dev_list_free(&ihwl->gpus);
-    dev_list_free(&ihwl->nics);
-    if (ihwl->topo) hwloc_topology_destroy(ihwl->topo);
-    if (ihwl->topo_file) free(ihwl->topo_file);
-    delete ihwl;
-out:
-    *hwl = nullptr;
+    qvi_delete(hwl);
 }
 
 static int
@@ -540,17 +477,17 @@ discover_all_devices(
         // may correspond to the same GPU hardware.
         // insert().second returns whether or not item insertion took place. If
         // true, we have not seen it.
-        bool seen = !hwl->device_ids->insert(busid).second;
+        bool seen = !hwl->device_ids.insert(busid).second;
         if (seen) continue;
         // Add a new device with a unique PCI busid.
-        qvi_hwloc_device_t *new_dev = nullptr;
-        int rc = qvi_hwloc_device_new(&new_dev);
+        auto new_dev = std::make_shared<qvi_hwloc_device_t>();
+        int rc = qvi_construct_rc(new_dev);
         if (rc != QV_SUCCESS) return rc;
         // Save general device info to new device instance.
-        rc = set_general_device_info(hwl, obj, pci_obj, busid, new_dev);
+        rc = set_general_device_info(hwl, obj, pci_obj, busid, new_dev.get());
         if (rc != QV_SUCCESS) return rc;
         // Add the new device to our list of available devices.
-        hwl->devices->push_back(new_dev);
+        hwl->devices.push_back(new_dev);
     }
     return QV_SUCCESS;
 }
@@ -560,11 +497,7 @@ discover_gpu_devices(
     qvi_hwloc_t *hwl
 ) {
     // This will maintain a mapping of PCI bus ID to device pointers.
-    qvi_hwloc_dev_map_t *devmap = nullptr;
-    devmap = qvi_new qvi_hwloc_dev_map_t();
-    if (!devmap) {
-        return QV_ERR_OOR;
-    }
+    qvi_hwloc_dev_map_t devmap;
 
     hwloc_obj_t obj = nullptr;
     while ((obj = hwloc_get_next_osdev(hwl->topo, obj)) != nullptr) {
@@ -579,63 +512,55 @@ discover_gpu_devices(
         hwloc_obj_t pci_obj = get_pci_busid(obj, busid, sizeof(busid));
         if (!pci_obj) continue;
 
-        for (auto &dev : *hwl->devices) {
+        for (auto &dev : hwl->devices) {
             // Skip invisible devices.
             if (dev->visdev_id == QVI_HWLOC_DEVICE_INVISIBLE_ID) continue;
             // Skip if this is not the PCI bus ID we are looking for.
             if (strcmp(dev->pci_bus_id, busid) != 0) continue;
             // Set as much device info as we can.
-            int rc = set_gpu_device_info(hwl, obj, dev);
+            int rc = set_gpu_device_info(hwl, obj, dev.get());
             if (rc != QV_SUCCESS) goto out;
             // First, determine if this is a new device?
-            auto got = devmap->find(busid);
+            auto got = devmap.find(busid);
             // New device (i.e., a new PCI bus ID)
-            if (got == devmap->end()) {
-                qvi_hwloc_device_t *gpudev = nullptr;
-                int rc = qvi_hwloc_device_new(&gpudev);
+            if (got == devmap.end()) {
+                auto gpudev = std::make_shared<qvi_hwloc_device_t>();
+                rc = qvi_construct_rc(gpudev);
                 if (rc != QV_SUCCESS) return rc;
                 // Set base info from current device.
-                rc = qvi_hwloc_device_copy(dev, gpudev);
-                if (rc != QV_SUCCESS) {
-                    qvi_hwloc_device_free(&gpudev);
-                    return rc;
-                }
+                rc = qvi_hwloc_device_copy(dev.get(), gpudev.get());
+                if (rc != QV_SUCCESS) return rc;
                 // Add it to our collection of 'seen' devices.
-                devmap->insert({busid, gpudev});
+                devmap.insert({busid, gpudev});
             }
             // A device we have seen before. Try to set as much info as
             // possible. Note that we don't copy because we don't know if the
             // source device has a different amount of information.
             else {
-                qvi_hwloc_device_t *gpudev = got->second;
+                qvi_hwloc_device_t *gpudev = got->second.get();
                 rc = set_gpu_device_info(hwl, obj, gpudev);
                 if (rc != QV_SUCCESS) return rc;
             }
         }
     }
     // Now populate our GPU device list.
-    for (const auto &mapi : *devmap) {
-        qvi_hwloc_device_t *gpudev = nullptr;
-        int rc = qvi_hwloc_device_new(&gpudev);
+    for (const auto &mapi : devmap) {
+        auto gpudev = std::make_shared<qvi_hwloc_device_t>();
+        int rc = qvi_construct_rc(gpudev);
         if (rc != QV_SUCCESS) return rc;
         // Copy device info.
-        rc = qvi_hwloc_device_copy(mapi.second, gpudev);
-        if (rc != QV_SUCCESS) {
-            qvi_hwloc_device_free(&gpudev);
-            return rc;
-        }
+        rc = qvi_hwloc_device_copy(mapi.second.get(), gpudev.get());
+        if (rc != QV_SUCCESS) return rc;
         // Save copy.
-        hwl->gpus->push_back(gpudev);
+        hwl->gpus.push_back(gpudev);
     }
     // Sort list based on device ID.
     std::sort(
-        hwl->gpus->begin(),
-        hwl->gpus->end(),
+        hwl->gpus.begin(),
+        hwl->gpus.end(),
         dev_list_compare_by_visdev_id
     );
 out:
-    // Free devmap, as it is no longer needed.
-    dev_map_free(&devmap);
     return QV_SUCCESS;
 }
 
@@ -651,23 +576,20 @@ discover_nic_devices(
         hwloc_obj_t pci_obj = get_pci_busid(obj, busid, sizeof(busid));
         if (!pci_obj) continue;
 
-        for (auto &dev : *hwl->devices) {
+        for (auto &dev : hwl->devices) {
             // Skip if this is not the PCI bus ID we are looking for.
             if (strcmp(dev->pci_bus_id, busid) != 0) continue;
             //
-            int rc = set_of_device_info(hwl, obj, dev);
+            int rc = set_of_device_info(hwl, obj, dev.get());
             if (rc != QV_SUCCESS) return rc;
             //
-            qvi_hwloc_device_t *nicdev;
-            rc = qvi_hwloc_device_new(&nicdev);
+            auto nicdev = std::make_shared<qvi_hwloc_device_t>();
+            rc = qvi_construct_rc(nicdev);
             if (rc != QV_SUCCESS) return rc;
 
-            rc = qvi_hwloc_device_copy(dev, nicdev);
-            if (rc != QV_SUCCESS) {
-                qvi_hwloc_device_free(&nicdev);
-                return rc;
-            }
-            hwl->nics->push_back(nicdev);
+            rc = qvi_hwloc_device_copy(dev.get(), nicdev.get());
+            if (rc != QV_SUCCESS) return rc;
+            hwl->nics.push_back(nicdev);
         }
     }
     return QV_SUCCESS;
@@ -1201,12 +1123,12 @@ qvi_hwloc_task_isincluded_in_obj_by_type_id(
 static int
 get_nosdevs_in_cpuset(
     qvi_hwloc_t *,
-    qvi_hwloc_dev_list_t *devs,
+    const qvi_hwloc_dev_list_t &devs,
     hwloc_const_cpuset_t cpuset,
     int *nobjs
 ) {
     int ndevs = 0;
-    for (auto &dev : *devs) {
+    for (auto &dev : devs) {
         if (hwloc_bitmap_isincluded(dev->cpuset, cpuset)) ndevs++;
     }
     *nobjs = ndevs;
@@ -1297,37 +1219,14 @@ int
 qvi_hwloc_device_new(
     qvi_hwloc_device_t **dev
 ) {
-    int rc = QV_SUCCESS;
-
-    qvi_hwloc_device_t *idev = qvi_new qvi_hwloc_device_t();
-    if (!idev) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-
-    rc = qvi_hwloc_bitmap_calloc(&idev->cpuset);
-    if (rc != QV_SUCCESS) {
-        goto out;
-    }
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_hwloc_device_free(&idev);
-    }
-    *dev = idev;
-    return rc;
+    return qvi_new_rc(dev);
 }
 
 void
 qvi_hwloc_device_free(
     qvi_hwloc_device_t **dev
 ) {
-    if (!dev) return;
-    qvi_hwloc_device_t *idev = *dev;
-    if (!idev) goto out;
-    qvi_hwloc_bitmap_free(&idev->cpuset);
-    delete idev;
-out:
-    *dev = nullptr;
+    qvi_delete(dev);
 }
 
 int
@@ -1358,7 +1257,7 @@ qvi_hwloc_devices_emit(
     qvi_hwloc_dev_list_t *devlist = nullptr;
     switch (obj_type) {
         case QV_HW_OBJ_GPU:
-            devlist = hwl->gpus;
+            devlist = &hwl->gpus;
             break;
         default:
             return QV_ERR_NOT_SUPPORTED;
@@ -1383,23 +1282,20 @@ qvi_hwloc_devices_emit(
 
 static int
 get_devices_in_cpuset_from_dev_list(
-    qvi_hwloc_dev_list_t *devlist,
+    const qvi_hwloc_dev_list_t &devlist,
     hwloc_const_cpuset_t cpuset,
-    qvi_hwloc_dev_list_t *devs
+    qvi_hwloc_dev_list_t &devs
 ) {
-    for (auto &dev : *devlist) {
+    for (auto &dev : devlist) {
         if (!hwloc_bitmap_isincluded(dev->cpuset, cpuset)) continue;
 
-        qvi_hwloc_device_t *devin;
-        int rc = qvi_hwloc_device_new(&devin);
+        auto devin = std::make_shared<qvi_hwloc_device_t>();
+        int rc = qvi_construct_rc(devin);
         if (rc != QV_SUCCESS) return rc;
 
-        rc = qvi_hwloc_device_copy(dev, devin);
-        if (rc != QV_SUCCESS) {
-            qvi_hwloc_device_free(&devin);
-            return rc;
-        }
-        devs->push_back(devin);
+        rc = qvi_hwloc_device_copy(dev.get(), devin.get());
+        if (rc != QV_SUCCESS) return rc;
+        devs.push_back(devin);
     }
     return QV_SUCCESS;
 }
@@ -1412,21 +1308,21 @@ get_devices_in_cpuset(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t obj_type,
     hwloc_const_cpuset_t cpuset,
-    qvi_hwloc_dev_list_t *devs
+    qvi_hwloc_dev_list_t &devs
 ) {
     qvi_hwloc_dev_list_t *devlist = nullptr;
     // Make sure that the user provided a valid, supported device type.
     switch (obj_type) {
         // TODO(skg) We can support more devices, so do that eventually.
         case QV_HW_OBJ_GPU:
-            devlist = hwl->gpus;
+            devlist = &hwl->gpus;
             break;
         default:
             return QV_ERR_NOT_SUPPORTED;
     }
 
     return get_devices_in_cpuset_from_dev_list(
-        devlist, cpuset, devs
+        *devlist, cpuset, devs
     );
 }
 
@@ -1441,11 +1337,7 @@ qvi_hwloc_get_device_in_cpuset(
 ) {
     int rc = QV_SUCCESS, nw = 0;
 
-    qvi_hwloc_dev_list_t *devs = qvi_new qvi_hwloc_dev_list_t();
-    if (!devs) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
+    qvi_hwloc_dev_list_t devs;
 
     rc = get_devices_in_cpuset(hwl, dev_obj, cpuset, devs);
     if (rc != QV_SUCCESS) {
@@ -1454,13 +1346,13 @@ qvi_hwloc_get_device_in_cpuset(
 
     switch (dev_id_type) {
         case (QV_DEVICE_ID_UUID):
-            nw = asprintf(dev_id, "%s", devs->at(i)->uuid);
+            nw = asprintf(dev_id, "%s", devs.at(i)->uuid);
             break;
         case (QV_DEVICE_ID_PCI_BUS_ID):
-            nw = asprintf(dev_id, "%s", devs->at(i)->pci_bus_id);
+            nw = asprintf(dev_id, "%s", devs.at(i)->pci_bus_id);
             break;
         case (QV_DEVICE_ID_ORDINAL):
-            nw = asprintf(dev_id, "%d", devs->at(i)->visdev_id);
+            nw = asprintf(dev_id, "%d", devs.at(i)->visdev_id);
             break;
         default:
             rc = QV_ERR_INVLD_ARG;
@@ -1471,7 +1363,6 @@ out:
     if (rc != QV_SUCCESS) {
         *dev_id = nullptr;
     }
-    dev_list_free(&devs);
     return rc;
 }
 
@@ -1643,7 +1534,7 @@ qvi_hwloc_get_device_affinity(
 
     switch(dev_obj) {
         case(QV_HW_OBJ_GPU) :
-            devlist = hwl->gpus;
+            devlist = &hwl->gpus;
             break;
         default:
             rc = QV_ERR_NOT_SUPPORTED;
