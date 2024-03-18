@@ -26,6 +26,7 @@ using qvi_mpi_group_tab_t = std::unordered_map<
 >;
 
 struct qvi_mpi_group_s {
+    int qvim_rc = QV_SUCCESS;
     /** ID used for table lookups */
     qvi_mpi_group_id_t tabid = 0;
     /** ID (rank) in group */
@@ -34,6 +35,20 @@ struct qvi_mpi_group_s {
     int size = 0;
     /** MPI communicator */
     MPI_Comm mpi_comm = MPI_COMM_NULL;
+    /** Constructor */
+    qvi_mpi_group_s(void) = default;
+    /** Destructor */
+    ~qvi_mpi_group_s(void) = default;
+    /** Assignment operator. */
+    void operator=
+    (const qvi_mpi_group_s &src)
+    {
+        qvim_rc = src.qvim_rc;
+        tabid = src.tabid;
+        id = src.id;
+        size = src.size;
+        mpi_comm = src.mpi_comm;
+    }
 };
 
 struct qvi_mpi_s {
@@ -81,8 +96,7 @@ cp_mpi_group(
     const qvi_mpi_group_t *src,
     qvi_mpi_group_t *dst
 ) {
-    static_assert(std::is_trivially_copyable<qvi_mpi_group_t>::value, "");
-    memmove(dst, src, sizeof(*src));
+    *dst = *src;
 }
 
 /**
@@ -422,25 +436,14 @@ int
 qvi_mpi_group_new(
     qvi_mpi_group_t **group
 ) {
-    int rc = QV_SUCCESS;
-
-    qvi_mpi_group_t *igroup = qvi_new qvi_mpi_group_t();
-    if (!igroup) rc = QV_ERR_OOR;
-
-    *group = igroup;
-    return rc;
+    return qvi_new_rc(group);
 }
 
 void
 qvi_mpi_group_free(
     qvi_mpi_group_t **group
 ) {
-    if (!group) return;
-    qvi_mpi_group_t *igroup = *group;
-    if (!igroup) goto out;
-    delete igroup;
-out:
-    *group = nullptr;
+    qvi_delete(group);
 }
 
 int
