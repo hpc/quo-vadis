@@ -175,10 +175,8 @@ qvi_hwpool_new_line_from_hwpool(
     qvi_line_hwpool_t *iline = nullptr;
     rc = qvi_line_hwpool_new(&iline);
     if (rc != QV_SUCCESS) goto out;
-    // Initialize and copy the cpuset.
-    rc = qvi_hwloc_bitmap_calloc(&iline->cpuset);
-    if (rc != QV_SUCCESS) goto out;
-    rc = qvi_hwloc_bitmap_copy(rpool->cpus.cpuset, iline->cpuset);
+    // Duplicate the cpuset.
+    rc = qvi_hwloc_bitmap_dup(rpool->cpus.cpuset, &iline->cpuset);
     if (rc != QV_SUCCESS) goto out;
     // Initialize and fill in the device information.
     iline->ndevinfos = ndevinfos;
@@ -192,14 +190,10 @@ qvi_hwpool_new_line_from_hwpool(
         for (const auto &dinfo : rpool->devinfos) {
             iline->devinfos[idx].type = dinfo.second->type;
             iline->devinfos[idx].id = dinfo.second->id;
-            // Initialize and copy cpuset
-            rc = qvi_hwloc_bitmap_calloc(
-                &iline->devinfos[idx].affinity
-            );
-            if (rc != QV_SUCCESS) break;
-            rc = qvi_hwloc_bitmap_copy(
+            // Duplicate the cpuset
+            rc = qvi_hwloc_bitmap_dup(
                 dinfo.second->affinity,
-                iline->devinfos[idx].affinity
+                &iline->devinfos[idx].affinity
             );
             if (rc != QV_SUCCESS) break;
             nw = asprintf(
