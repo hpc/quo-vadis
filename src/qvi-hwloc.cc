@@ -705,15 +705,30 @@ qvi_hwloc_bitmap_copy(
     hwloc_const_cpuset_t src,
     hwloc_cpuset_t dest
 ) {
-    if (!src || !dest) {
-        assert(false);
-        return QV_ERR_INTERNAL;
-    }
+    assert(src && dest);
 
     if (hwloc_bitmap_copy(dest, src) != 0) {
         return QV_ERR_HWLOC;
     }
     return QV_SUCCESS;
+}
+
+int
+qvi_hwloc_bitmap_dup(
+    hwloc_const_cpuset_t src,
+    hwloc_cpuset_t *dest
+) {
+    hwloc_cpuset_t idest = nullptr;
+    int rc = qvi_hwloc_bitmap_calloc(&idest);
+    if (rc != QV_SUCCESS) goto out;
+
+    rc = qvi_hwloc_bitmap_copy(src, idest);
+out:
+    if (rc != QV_SUCCESS) {
+        qvi_hwloc_bitmap_free(&idest);
+    }
+    *dest = idest;
+    return rc;
 }
 
 int
@@ -1545,8 +1560,7 @@ qvi_hwloc_get_device_affinity(
     // lists tend to be small, so just perform a linear search for the given ID.
     for (const auto &dev : *devlist) {
         if (dev->visdev_id != device_id) continue;
-        qvi_hwloc_bitmap_calloc(&icpuset);
-        rc = qvi_hwloc_bitmap_copy(dev->cpuset, icpuset);
+        rc = qvi_hwloc_bitmap_dup(dev->cpuset, &icpuset);
         if (rc != QV_SUCCESS) goto out;
     }
     if (!icpuset) rc = QV_ERR_NOT_FOUND;
