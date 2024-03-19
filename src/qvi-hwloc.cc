@@ -56,7 +56,7 @@ static const int QVI_HWLOC_DEVICE_INVISIBLE_ID = -1;
 typedef struct qvi_hwloc_device_s {
     int qvim_rc = QV_ERR_INTERNAL;
     /** Device cpuset */
-    hwloc_cpuset_t cpuset = nullptr;
+    qvi_hwloc_bitmap_t cpuset;
     /** Internal object type information */
     qvi_hwloc_objx_t objx = {};
     /** Vendor ID */
@@ -74,13 +74,10 @@ typedef struct qvi_hwloc_device_s {
     /** Constructor */
     qvi_hwloc_device_s(void)
     {
-        qvim_rc = qvi_hwloc_bitmap_calloc(&cpuset);
+        qvim_rc = qvi_construct_rc(cpuset);
     }
     /** Destructor */
-    ~qvi_hwloc_device_s(void)
-    {
-        qvi_hwloc_bitmap_free(&cpuset);
-    }
+    ~qvi_hwloc_device_s(void) = default;
 } qvi_hwloc_device_t;
 
 typedef struct qvi_hwloc_s {
@@ -415,7 +412,7 @@ set_gpu_device_info(
         return qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
             hwl,
             device->smi,
-            device->cpuset
+            device->cpuset.data
         );
     }
     //
@@ -431,7 +428,7 @@ set_gpu_device_info(
         return qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
             hwl,
             device->pci_bus_id,
-            device->cpuset
+            device->cpuset.data
         );
     }
     return QV_SUCCESS;
@@ -1144,7 +1141,7 @@ get_nosdevs_in_cpuset(
 ) {
     int ndevs = 0;
     for (auto &dev : devs) {
-        if (hwloc_bitmap_isincluded(dev->cpuset, cpuset)) ndevs++;
+        if (hwloc_bitmap_isincluded(dev->cpuset.data, cpuset)) ndevs++;
     }
     *nobjs = ndevs;
 
@@ -1249,7 +1246,7 @@ qvi_hwloc_device_copy(
     qvi_hwloc_device_t *src,
     qvi_hwloc_device_t *dest
 ) {
-    int rc = qvi_hwloc_bitmap_copy(src->cpuset, dest->cpuset);
+    int rc = qvi_hwloc_bitmap_copy(src->cpuset.data, dest->cpuset.data);
     if (rc != QV_SUCCESS) return rc;
 
     dest->objx = src->objx;
@@ -1279,7 +1276,7 @@ qvi_hwloc_devices_emit(
     }
     for (auto &dev : *devlist) {
         char *cpusets = nullptr;
-        int rc = qvi_hwloc_bitmap_asprintf(&cpusets, dev->cpuset);
+        int rc = qvi_hwloc_bitmap_asprintf(&cpusets, dev->cpuset.data);
         if (rc != QV_SUCCESS) return rc;
 
         qvi_log_info("  Device Name: {}", dev->name);
@@ -1302,7 +1299,7 @@ get_devices_in_cpuset_from_dev_list(
     qvi_hwloc_dev_list_t &devs
 ) {
     for (auto &dev : devlist) {
-        if (!hwloc_bitmap_isincluded(dev->cpuset, cpuset)) continue;
+        if (!hwloc_bitmap_isincluded(dev->cpuset.data, cpuset)) continue;
 
         auto devin = std::make_shared<qvi_hwloc_device_t>();
         int rc = qvi_construct_rc(devin);
@@ -1560,7 +1557,7 @@ qvi_hwloc_get_device_affinity(
     // lists tend to be small, so just perform a linear search for the given ID.
     for (const auto &dev : *devlist) {
         if (dev->visdev_id != device_id) continue;
-        rc = qvi_hwloc_bitmap_dup(dev->cpuset, &icpuset);
+        rc = qvi_hwloc_bitmap_dup(dev->cpuset.data, &icpuset);
         if (rc != QV_SUCCESS) goto out;
     }
     if (!icpuset) rc = QV_ERR_NOT_FOUND;
