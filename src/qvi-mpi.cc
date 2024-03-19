@@ -40,8 +40,8 @@ struct qvi_mpi_group_s {
     /** Destructor */
     ~qvi_mpi_group_s(void) = default;
     /** Assignment operator. */
-    void operator=
-    (const qvi_mpi_group_s &src)
+    void
+    operator=(const qvi_mpi_group_s &src)
     {
         qvim_rc = src.qvim_rc;
         tabid = src.tabid;

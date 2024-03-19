@@ -33,6 +33,9 @@ extern "C" {
 struct qvi_hwloc_s;
 typedef struct qvi_hwloc_s qvi_hwloc_t;
 
+struct qvi_hwloc_bitmap_s;
+typedef struct qvi_hwloc_bitmap_s qvi_hwloc_bitmap_t;
+
 struct qvi_hwloc_device_s;
 typedef struct qvi_hwloc_device_s qvi_hwloc_device_t;
 
@@ -415,6 +418,36 @@ qvi_hwloc_get_device_affinity(
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef __cplusplus
+
+/**
+ * C++ style hwloc bitmap.
+ */
+struct qvi_hwloc_bitmap_s {
+    int qvim_rc = QV_ERR_INTERNAL;
+    /** Internal bitmap */
+    hwloc_bitmap_t data = nullptr;
+    /** Constructor */
+    qvi_hwloc_bitmap_s(void)
+    {
+        qvim_rc = qvi_hwloc_bitmap_calloc(&data);
+    }
+    /** Destructor */
+    ~qvi_hwloc_bitmap_s(void)
+    {
+        qvi_hwloc_bitmap_free(&data);
+    }
+    /** Assignment operator. */
+    void
+    operator=(const qvi_hwloc_bitmap_s &src)
+    {
+        qvim_rc = qvi_hwloc_bitmap_copy(src.data, data);
+        assert(qvim_rc == QV_SUCCESS);
+    }
+};
+
 #endif
 
 #endif
