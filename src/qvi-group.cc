@@ -13,6 +13,7 @@
 
 #include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-group.h"
+#include "qvi-utils.h"
 #include "qvi-log.h"
 
 /**
@@ -37,12 +38,7 @@ void
 qvi_group_free(
     qvi_group_t **group
 ) {
-    if (!group) return;
-    qvi_group_t *igroup = *group;
-    if (!igroup) goto out;
-    delete igroup;
-out:
-    *group = nullptr;
+    qvi_delete(group);
 }
 
 /*
