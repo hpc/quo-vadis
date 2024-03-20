@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2023 Triad National Security, LLC
+# Copyright (c) 2020-2024 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -29,7 +29,6 @@ add_library(
       qvi-bbuff-rmi.h
       qvi-context.h
       qvi-task.h
-      qvi-devinfo.h
       qvi-group.h
       qvi-map.h
       qvi-scope.h

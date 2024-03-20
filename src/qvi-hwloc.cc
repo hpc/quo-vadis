@@ -21,9 +21,9 @@
 #include "qvi-nvml.h"
 #include "qvi-rsmi.h"
 
-static constexpr int pci_bus_id_buff_size = 16;
-static constexpr int dev_name_buff_size = 32;
-static constexpr int uuid_buff_size = 64;
+static constexpr int PCI_BUS_ID_BUFF_SIZE = 16;
+static constexpr int DEV_NAME_BUFF_SIZE = 32;
+static constexpr int UUID_BUFF_SIZE = 64;
 
 /** Device list type. */
 using qvi_hwloc_dev_list_t = std::vector<
@@ -70,11 +70,11 @@ typedef struct qvi_hwloc_device_s {
     /** CUDA/ROCm visible devices ID */
     int visdev_id = QVI_HWLOC_DEVICE_INVISIBLE_ID;
     /** Device name */
-    char name[dev_name_buff_size] = {'\0'};
+    char name[DEV_NAME_BUFF_SIZE] = {'\0'};
     /** PCI bus ID */
-    char pci_bus_id[pci_bus_id_buff_size] = {'\0'};
+    char pci_bus_id[PCI_BUS_ID_BUFF_SIZE] = {'\0'};
     /** UUID */
-    char uuid[uuid_buff_size] = {'\0'};
+    char uuid[UUID_BUFF_SIZE] = {'\0'};
     /** Constructor */
     qvi_hwloc_device_s(void)
     {
@@ -377,19 +377,19 @@ set_general_device_info(
     // Save device name.
     int nw = snprintf(
         device->name,
-        dev_name_buff_size,
+        DEV_NAME_BUFF_SIZE,
         "%s", obj->name
     );
-    if (nw >= dev_name_buff_size) {
+    if (nw >= DEV_NAME_BUFF_SIZE) {
         return QV_ERR_INTERNAL;
     }
     // Set the PCI bus ID.
     nw = snprintf(
         device->pci_bus_id,
-        pci_bus_id_buff_size,
+        PCI_BUS_ID_BUFF_SIZE,
         "%s", pci_bus_id
     );
-    if (nw >= pci_bus_id_buff_size) {
+    if (nw >= PCI_BUS_ID_BUFF_SIZE) {
         return QV_ERR_INTERNAL;
     }
     // Set visible device ID, if applicable.
@@ -407,10 +407,10 @@ set_gpu_device_info(
     if (sscanf(obj->name, "rsmi%d", &id) == 1) {
         device->smi = id;
         int nw = snprintf(
-            device->uuid, uuid_buff_size, "%s",
+            device->uuid, UUID_BUFF_SIZE, "%s",
             hwloc_obj_get_info_by_name(obj, "AMDUUID")
         );
-        if (nw >= uuid_buff_size) {
+        if (nw >= UUID_BUFF_SIZE) {
             return QV_ERR_INTERNAL;
         }
         return qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
@@ -423,10 +423,10 @@ set_gpu_device_info(
     if (sscanf(obj->name, "nvml%d", &id) == 1) {
         device->smi = id;
         int nw = snprintf(
-            device->uuid, uuid_buff_size, "%s",
+            device->uuid, UUID_BUFF_SIZE, "%s",
             hwloc_obj_get_info_by_name(obj, "NVIDIAUUID")
         );
-        if (nw >= uuid_buff_size) {
+        if (nw >= UUID_BUFF_SIZE) {
             return QV_ERR_INTERNAL;
         }
         return qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
@@ -446,11 +446,11 @@ set_of_device_info(
 ) {
     // TODO(skg) Get cpuset, if available.
     int nw = snprintf(
-        device->uuid, uuid_buff_size, "%s",
+        device->uuid, UUID_BUFF_SIZE, "%s",
         hwloc_obj_get_info_by_name(obj, "NodeGUID")
     );
     // Internal error because our buffer is too small.
-    if (nw >= uuid_buff_size) return QV_ERR_INTERNAL;
+    if (nw >= UUID_BUFF_SIZE) return QV_ERR_INTERNAL;
     return QV_SUCCESS;
 }
 
@@ -471,7 +471,7 @@ discover_all_devices(
             continue;
         }
         // Try to get the PCI object.
-        char busid[pci_bus_id_buff_size] = {'\0'};
+        char busid[PCI_BUS_ID_BUFF_SIZE] = {'\0'};
         hwloc_obj_t pci_obj = get_pci_busid(obj, busid, sizeof(busid));
         if (!pci_obj) continue;
         // Have we seen this device already? For example, opencl0d0 and cuda0
@@ -509,7 +509,7 @@ discover_gpu_devices(
             continue;
         }
         // Try to get the PCI object.
-        char busid[pci_bus_id_buff_size] = {'\0'};
+        char busid[PCI_BUS_ID_BUFF_SIZE] = {'\0'};
         hwloc_obj_t pci_obj = get_pci_busid(obj, busid, sizeof(busid));
         if (!pci_obj) continue;
 
@@ -573,7 +573,7 @@ discover_nic_devices(
     while ((obj = hwloc_get_next_osdev(hwl->topo, obj)) != nullptr) {
         if (obj->attr->osdev.type != HWLOC_OBJ_OSDEV_OPENFABRICS) continue;
         // Try to get the PCI object.
-        char busid[pci_bus_id_buff_size] = {'\0'};
+        char busid[PCI_BUS_ID_BUFF_SIZE] = {'\0'};
         hwloc_obj_t pci_obj = get_pci_busid(obj, busid, sizeof(busid));
         if (!pci_obj) continue;
 

@@ -33,7 +33,7 @@
 
 #include "zmq.h"
 
-static const cstr_t zinproc_addr = "inproc://qvi-rmi-workers";
+static const cstr_t ZINPROC_ADDR = "inproc://qvi-rmi-workers";
 
 struct qvi_rmi_server_s {
     /** Server configuration */
@@ -117,7 +117,7 @@ zctx_destroy(
 ) {
     void *ictx = *ctx;
     if (!ictx) return;
-    int rc = zmq_ctx_destroy(ictx);
+    const int rc = zmq_ctx_destroy(ictx);
     if (rc != 0) qvi_zwrn_msg("zmq_ctx_destroy() failed", errno);
     *ctx = nullptr;
 }
@@ -128,7 +128,7 @@ zsocket_close(
 ) {
     void *isock = *sock;
     if (!isock) return;
-    int rc = zmq_close(isock);
+    const int rc = zmq_close(isock);
     if (rc != 0) qvi_zwrn_msg("zmq_close() failed", errno);
     *sock = nullptr;
 }
@@ -142,7 +142,7 @@ zsocket_create_and_connect(
     void *zsock = zmq_socket(zctx, sock_type);
     if (!zsock) qvi_zerr_msg("zmq_socket() failed", errno);
 
-    int rc = zmq_connect(zsock, addr);
+    const int rc = zmq_connect(zsock, addr);
     if (rc != 0) {
         qvi_zerr_msg("zmq_connect() failed", errno);
         zsocket_close(&zsock);
@@ -160,7 +160,7 @@ zsocket_create_and_bind(
     void *zsock = zmq_socket(zctx, sock_type);
     if (!zsock) qvi_zerr_msg("zmq_socket() failed", errno);
 
-    int rc = zmq_bind(zsock, addr);
+    const int rc = zmq_bind(zsock, addr);
     if (rc != 0) {
         qvi_zerr_msg("zmq_bind() failed", errno);
         zsocket_close(&zsock);
@@ -230,7 +230,7 @@ zmsg_init_from_bbuff(
     zmq_msg_t *zmsg
 ) {
     const size_t buffer_size = qvi_bbuff_size(bbuff);
-    int zrc = zmq_msg_init_data(
+    const int zrc = zmq_msg_init_data(
         zmsg,
         qvi_bbuff_data(bbuff),
         buffer_size,
@@ -731,7 +731,7 @@ server_go(
     qvi_rmi_server_t *server = (qvi_rmi_server_t *)data;
 
     void *zworksock = zsocket_create_and_connect(
-        server->zctx, ZMQ_REP, zinproc_addr
+        server->zctx, ZMQ_REP, ZINPROC_ADDR
     );
     if (!zworksock) return nullptr;
 
@@ -878,7 +878,7 @@ server_start_threads(
     }
 
     void *workers = zsocket_create_and_bind(
-        server->zctx, ZMQ_DEALER, zinproc_addr
+        server->zctx, ZMQ_DEALER, ZINPROC_ADDR
     );
     if (!workers) {
         cstr_t ers = "zsocket_create_and_bind() failed";

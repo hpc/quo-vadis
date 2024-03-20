@@ -15,8 +15,8 @@
  */
 
 #include "qvi-common.h" // IWYU pragma: keep
-
 #include "qvi-context.h"
+#include "qvi-utils.h"
 
 int
 qvi_context_new(
