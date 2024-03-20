@@ -155,6 +155,7 @@ qvi_map_packed(
 /**
  * Maps round-robin over the given resources.
  */
+// TODO(skg) Verify name and functionality, rename?
 int
 qvi_map_spread(
     qvi_map_t &map,

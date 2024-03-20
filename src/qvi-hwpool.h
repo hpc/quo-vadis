@@ -17,7 +17,63 @@
 #define QVI_HWPOOL_H
 
 #include "qvi-common.h"
+#include "qvi-hwloc.h"
 #include "qvi-line.h"
+#include "qvi-utils.h"
+
+/**
+ * Maintains a mapping between a resource ID and associated hint flags.
+ */
+using qvi_hwpool_resource_id_hint_map_t = std::unordered_map<
+    uint32_t, qv_scope_create_hint_t
+>;
+
+/**
+ * Maintains information about a pool of hardware resources by resource ID.
+ */
+struct qvi_hwpool_resource_info_s {
+    /**
+     * Vector maintaining the reference count for a given resource ID. There is
+     * a one-to-one correspondence between resource IDs and addressable vector
+     * slots since every resource is reference counted. For example, each bit in
+     * a cpuset will have a corresponding reference count indexed by the bit's
+     * location in the cpuset.
+     */
+    std::vector<uint32_t> resid_ref_count;
+    /**
+     * Maps resource IDs to hint flags that
+     * they might have associated with them.
+     */
+    qvi_hwpool_resource_id_hint_map_t resid_hint_map;
+};
+
+/**
+ * Base hardware pool resource class.
+ */
+struct qvi_hwpool_resource_s {
+    /** Resource info. */
+    qvi_hwpool_resource_info_s resinfo;
+    /** Base constructor that does minimal work. */
+    qvi_hwpool_resource_s(void) = default;
+    /** Virtual destructor. */
+    virtual ~qvi_hwpool_resource_s(void) = default;
+};
+
+/**
+ * Defines a cpuset pool.
+ */
+struct qvi_hwpool_cpus_s : qvi_hwpool_resource_s {
+    int qvim_rc = QV_ERR_INTERNAL;
+    /** The cpuset of the maintained CPUs. */
+    qvi_hwloc_bitmap_t cpuset;
+    /** Constructor */
+    qvi_hwpool_cpus_s(void)
+    {
+        qvim_rc = qvi_construct_rc(cpuset);
+    }
+    /** Destructor */
+    virtual ~qvi_hwpool_cpus_s(void) = default;
+};
 
 /** Device information. */
 struct qvi_hwpool_devinfo_s {
@@ -27,48 +83,24 @@ struct qvi_hwpool_devinfo_s {
     /** Device ID. */
     int id = 0;
     /** The PCI bus ID. */
-    char *pci_bus_id = nullptr;
+    std::string pci_bus_id;
     /** UUID */
-    char *uuid = nullptr;
+    std::string uuid;
     /** The bitmap encoding CPU affinity. */
-    hwloc_bitmap_t affinity = nullptr;
+    qvi_hwloc_bitmap_t affinity;
     /** Constructor */
     qvi_hwpool_devinfo_s(
-        qv_hw_obj_type_t t,
-        int i,
+        qv_hw_obj_type_t type,
+        int id,
         cstr_t pci_bus_id,
         cstr_t uuid,
-        hwloc_const_cpuset_t c
-    ) : type(t)
-      , id(i)
-    {
-        int nw = asprintf(&this->pci_bus_id, "%s", pci_bus_id);
-        if (nw == -1) {
-            qvim_rc = QV_ERR_OOR;
-            return;
-        }
-
-        nw = asprintf(&this->uuid, "%s", uuid);
-        if (nw == -1) {
-            qvim_rc = QV_ERR_OOR;
-            return;
-        }
-
-        qvim_rc = qvi_hwloc_bitmap_dup(c, &affinity);
-    }
+        hwloc_const_cpuset_t affinity
+    );
     /** Destructor */
-    ~qvi_hwpool_devinfo_s(void)
-    {
-        qvi_hwloc_bitmap_free(&affinity);
-        free(pci_bus_id);
-        free(uuid);
-    }
+    ~qvi_hwpool_devinfo_s(void) = default;
     /** Equality operator. */
     bool
-    operator==(const qvi_hwpool_devinfo_s &x) const
-    {
-        return id == x.id && type == x.type;
-    }
+    operator==(const qvi_hwpool_devinfo_s &x) const;
 };
 
 using qvi_hwpool_devinfos_t = std::multimap<
@@ -177,18 +209,6 @@ qvi_hwpool_obtain_by_cpuset(
     qvi_hwloc_t *hwloc,
     hwloc_const_cpuset_t cpuset,
     qvi_hwpool_t **opool
-);
-
-/**
- *
- */
-int
-qvi_hwpool_split_devices(
-    qvi_hwpool_t **pools,
-    int npools,
-    qvi_hwloc_t *hwloc,
-    int ncolors,
-    int color
 );
 
 /**

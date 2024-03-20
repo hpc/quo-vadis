@@ -43,62 +43,27 @@
 // approach using the device IDs instead of the bit positions.
 
 #include "qvi-hwpool.h"
-#include "qvi-hwloc.h"
-#include "qvi-utils.h"
 
-/**
- * Maintains a mapping between a resource ID and associated hint flags.
- */
-using qvi_hwpool_resource_id_hint_map_t = std::unordered_map<
-    uint32_t, qv_scope_create_hint_t
->;
+qvi_hwpool_devinfo_s::qvi_hwpool_devinfo_s(
+    qv_hw_obj_type_t a_type,
+    int a_id,
+    cstr_t a_pci_bus_id,
+    cstr_t a_uuid,
+    hwloc_const_cpuset_t a_affinity
+) : type(a_type)
+  , id(a_id)
+  , pci_bus_id(a_pci_bus_id)
+  , uuid(a_uuid)
+{
+    qvim_rc = qvi_hwloc_bitmap_copy(a_affinity, affinity.data);
+}
 
-/**
- * Maintains information about a pool of hardware resources by resource ID.
- */
-struct qvi_hwpool_resource_info_s {
-    /**
-     * Vector maintaining the reference count for a given resource ID. There is
-     * a one-to-one correspondence between resource IDs and addressable vector
-     * slots since every resource is reference counted. For example, each bit in
-     * a cpuset will have a corresponding reference count indexed by the bit's
-     * location in the cpuset.
-     */
-    std::vector<uint32_t> resid_ref_count;
-    /**
-     * Maps resource IDs to hint flags that they might have associated with
-     * them.
-     */
-    qvi_hwpool_resource_id_hint_map_t resid_hint_map;
-};
-
-/**
- * Base hardware pool resource class.
- */
-struct qvi_hwpool_resource_s {
-    /** Resource info. */
-    qvi_hwpool_resource_info_s resinfo;
-    /** Base constructor that does minimal work. */
-    qvi_hwpool_resource_s(void) = default;
-    /** Virtual destructor. */
-    virtual ~qvi_hwpool_resource_s(void) = default;
-};
-
-/**
- * Defines a cpuset pool.
- */
-struct qvi_hwpool_cpus_s : qvi_hwpool_resource_s {
-    int qvim_rc = QV_ERR_INTERNAL;
-    /** The cpuset of the maintained CPUs. */
-    qvi_hwloc_bitmap_t cpuset;
-    /** Constructor */
-    qvi_hwpool_cpus_s(void)
-    {
-        qvim_rc = qvi_construct_rc(cpuset);
-    }
-    /** Destructor */
-    virtual ~qvi_hwpool_cpus_s(void) = default;
-};
+bool
+qvi_hwpool_devinfo_s::operator==(
+    const qvi_hwpool_devinfo_s &x
+) const {
+    return id == x.id && type == x.type;
+}
 
 struct qvi_hwpool_s {
     int qvim_rc = QV_ERR_INTERNAL;
@@ -106,21 +71,13 @@ struct qvi_hwpool_s {
     qvi_hwpool_cpus_s cpus;
     /** Device information. */
     qvi_hwpool_devinfos_t devinfos;
-    /** The obtained cpuset of this resource pool. */
-    hwloc_bitmap_t obcpuset = nullptr;
-
+    /** Constructor */
     qvi_hwpool_s(void)
     {
         qvim_rc = qvi_construct_rc(cpus);
-        if (qvim_rc != QV_SUCCESS) return;
-
-        qvim_rc = qvi_hwloc_bitmap_calloc(&obcpuset);
     }
-
-    ~qvi_hwpool_s(void)
-    {
-        qvi_hwloc_bitmap_free(&obcpuset);
-    }
+    /** Destructor */
+    ~qvi_hwpool_s(void) = default;
 };
 
 int
@@ -189,13 +146,13 @@ qvi_hwpool_new_line_from_hwpool(
             iline->devinfos[idx].id = dinfo.second->id;
             // Duplicate the cpuset
             rc = qvi_hwloc_bitmap_dup(
-                dinfo.second->affinity,
+                dinfo.second->affinity.data,
                 &iline->devinfos[idx].affinity
             );
             if (rc != QV_SUCCESS) break;
             nw = asprintf(
                 &iline->devinfos[idx].pci_bus_id,
-                "%s", dinfo.second->pci_bus_id
+                "%s", dinfo.second->pci_bus_id.c_str()
             );
             if (nw == -1) {
                 rc = QV_ERR_OOR;
@@ -203,7 +160,7 @@ qvi_hwpool_new_line_from_hwpool(
             }
             nw = asprintf(
                 &iline->devinfos[idx].uuid,
-                "%s", dinfo.second->uuid
+                "%s", dinfo.second->uuid.c_str()
             );
             if (nw == -1) {
                 rc = QV_ERR_OOR;
@@ -329,12 +286,17 @@ pool_obtain_cpus_by_cpuset(
     qvi_hwpool_t *pool,
     hwloc_const_cpuset_t request
 ) {
+#if 0
     int hwrc = hwloc_bitmap_or(
         pool->obcpuset,
         pool->obcpuset,
         request
     );
     return (hwrc == 0 ? QV_SUCCESS : QV_ERR_HWLOC);
+#endif
+    QVI_UNUSED(pool);
+    QVI_UNUSED(request);
+    return QV_SUCCESS;
 }
 
 /**
