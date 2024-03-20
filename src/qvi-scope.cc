@@ -24,7 +24,7 @@
 #include "qvi-map.h"
 
 /** Maintains a mapping between IDs to device information. */
-using id_devinfo_multimap_t = std::multimap<int, const qvi_devinfo_t *>;
+using id_devinfo_multimap_t = std::multimap<int, const qvi_hwpool_devinfo_s *>;
 
 /** Scope type definition. */
 struct qv_scope_s {
@@ -642,6 +642,7 @@ global_split_devices_user_defined(
     // Cache all device infos associated with the parent hardware pool.
     auto dinfos = qvi_hwpool_devinfos_get(parent_scope->hwpool);
     // Iterate over the supported device types and split them up round-robin.
+    // TODO(skg) Should this be a mapping operation in qvi-map?
     const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
     for (int i = 0; devts[i] != QV_HW_OBJ_LAST; ++i) {
         // The current device type.
@@ -649,7 +650,7 @@ global_split_devices_user_defined(
         // Get the number of devices.
         const int ndevs = dinfos->count(devt);
         // Store device infos.
-        std::vector<const qvi_devinfo_t *> devs;
+        std::vector<const qvi_hwpool_devinfo_s *> devs;
         for (const auto &dinfo : *dinfos) {
             // Not the type we are currently dealing with.
             if (devt != dinfo.first) continue;
@@ -706,7 +707,7 @@ qvi_global_split_devices_affinity_preserving(
         // The current device type.
         const qv_hw_obj_type_t devt = devts[i];
         // Store device infos.
-        std::vector<const qvi_devinfo_t *> devs;
+        std::vector<const qvi_hwpool_devinfo_s *> devs;
         for (const auto &dinfo : *dinfos) {
             // Not the type we are currently dealing with.
             if (devt != dinfo.first) continue;
@@ -1165,7 +1166,7 @@ qvi_scope_get_device_id(
 ) {
     int rc = QV_SUCCESS, id = 0, nw = 0;
 
-    qvi_devinfo_t *finfo = nullptr;
+    qvi_hwpool_devinfo_s *finfo = nullptr;
     for (const auto &dinfo : *qvi_hwpool_devinfos_get(scope->hwpool)) {
         if (dev_obj != dinfo.first) continue;
         if (id++ == i) {

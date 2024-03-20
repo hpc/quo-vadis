@@ -31,7 +31,7 @@ do {                                                                           \
 } while (0)
 
 /**
- * Convenience wrapper around new(std::nothrow).
+ * Convenience macro for new(std::nothrow).
  */
 #define qvi_new new(std::nothrow)
 

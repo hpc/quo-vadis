@@ -42,8 +42,6 @@
 // is zero, then the resource is not in use. For devices, we can take a similar
 // approach using the device IDs instead of the bit positions.
 
-#include "qvi-common.h"
-
 #include "qvi-hwpool.h"
 #include "qvi-hwloc.h"
 #include "qvi-utils.h"
@@ -93,14 +91,13 @@ struct qvi_hwpool_cpus_s : qvi_hwpool_resource_s {
     int qvim_rc = QV_ERR_INTERNAL;
     /** The cpuset of the maintained CPUs. */
     qvi_hwloc_bitmap_t cpuset;
-
+    /** Constructor */
     qvi_hwpool_cpus_s(void)
     {
         qvim_rc = qvi_construct_rc(cpuset);
     }
-
-    virtual
-    ~qvi_hwpool_cpus_s(void) = default;
+    /** Destructor */
+    virtual ~qvi_hwpool_cpus_s(void) = default;
 };
 
 struct qvi_hwpool_s {
@@ -109,7 +106,6 @@ struct qvi_hwpool_s {
     qvi_hwpool_cpus_s cpus;
     /** Device information. */
     qvi_hwpool_devinfos_t devinfos;
-    // TODO(skg) Add owner to structure?
     /** The obtained cpuset of this resource pool. */
     hwloc_bitmap_t obcpuset = nullptr;
 
@@ -248,7 +244,7 @@ qvi_hwpool_add_device(
     cstr_t uuid,
     hwloc_const_cpuset_t affinity
 ) {
-    auto dinfo = std::make_shared<qvi_devinfo_t>(
+    auto dinfo = std::make_shared<qvi_hwpool_devinfo_s>(
         type, id, pcibid, uuid, affinity
     );
     const int rc = qvi_construct_rc(dinfo);
@@ -483,6 +479,25 @@ out:
         qvi_hwpool_free(hwp);
     }
     return rc;
+}
+
+/**
+ * Extend namespace std so we can easily add qvi_devinfo_ts to
+ * unordered_sets.
+ */
+namespace std {
+    template <>
+    struct hash<qvi_hwpool_devinfo_s>
+    {
+        size_t
+        operator()(const qvi_hwpool_devinfo_s &x) const
+        {
+            const int a = x.id;
+            const int b = (int)x.type;
+            const int64_t c = qvi_cantor_pairing(a, b);
+            return hash<int64_t>()(c);
+        }
+    };
 }
 
 /*
