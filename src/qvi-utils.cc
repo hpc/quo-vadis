@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -147,10 +147,10 @@ qvi_url(
 const char *
 qvi_conn_ers(void)
 {
-    static cstr_t msg = "Cannot determine connection information. "
-                      "Please make sure that the following environment "
-                      "variable is set to an unused port number: "
-                      QVI_ENV_PORT;
+    static const cstr_t msg = "Cannot determine connection information. "
+                              "Please make sure that the following environment "
+                              "variable is set to an unused port number: "
+                              QVI_ENV_PORT;
     return msg;
 }
 

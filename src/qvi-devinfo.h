@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c)      2022 Triad National Security, LLC
+ * Copyright (c) 2022-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -22,6 +22,7 @@
 
 /** Device information. */
 struct qvi_devinfo_t {
+    int qvim_rc = QV_ERR_INTERNAL;
     /** Device type. */
     qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
     /** Device ID. */
@@ -44,14 +45,17 @@ struct qvi_devinfo_t {
     {
         int nw = asprintf(&this->pci_bus_id, "%s", pci_bus_id);
         if (nw == -1) {
-            this->pci_bus_id = nullptr;
+            qvim_rc = QV_ERR_OOR;
+            return;
         }
+
         nw = asprintf(&this->uuid, "%s", uuid);
         if (nw == -1) {
-            this->uuid = nullptr;
+            qvim_rc = QV_ERR_OOR;
+            return;
         }
-        (void)qvi_hwloc_bitmap_calloc(&affinity);
-        (void)qvi_hwloc_bitmap_copy(c, affinity);
+
+        qvim_rc = qvi_hwloc_bitmap_dup(c, &affinity);
     }
     /** Destructor */
     ~qvi_devinfo_t(void)

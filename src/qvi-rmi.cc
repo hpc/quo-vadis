@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2023 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -33,7 +33,7 @@
 
 #include "zmq.h"
 
-#define ZINPROC_ADDR "inproc://qvi-rmi-workers"
+static const cstr_t zinproc_addr = "inproc://qvi-rmi-workers";
 
 struct qvi_rmi_server_s {
     /** Server configuration */
@@ -98,7 +98,7 @@ qvi_zerr_msg(
     cstr_t ers,
     int err_no
 ) {
-    int erno = (err_no);
+    const int erno = err_no;
     qvi_log_error("{} with errno={} ({})", ers, erno, qvi_strerr(erno));
 }
 
@@ -107,7 +107,7 @@ qvi_zwrn_msg(
     cstr_t ers,
     int err_no
 ) {
-    int erno = (err_no);
+    const int erno = err_no;
     qvi_log_warn("{} with errno={} ({})", (ers), erno, qvi_strerr(erno));
 }
 
@@ -731,7 +731,7 @@ server_go(
     qvi_rmi_server_t *server = (qvi_rmi_server_t *)data;
 
     void *zworksock = zsocket_create_and_connect(
-        server->zctx, ZMQ_REP, ZINPROC_ADDR
+        server->zctx, ZMQ_REP, zinproc_addr
     );
     if (!zworksock) return nullptr;
 
@@ -878,7 +878,7 @@ server_start_threads(
     }
 
     void *workers = zsocket_create_and_bind(
-        server->zctx, ZMQ_DEALER, ZINPROC_ADDR
+        server->zctx, ZMQ_DEALER, zinproc_addr
     );
     if (!workers) {
         cstr_t ers = "zsocket_create_and_bind() failed";
