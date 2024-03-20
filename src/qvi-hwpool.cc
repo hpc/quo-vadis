@@ -251,8 +251,10 @@ qvi_hwpool_add_device(
     auto dinfo = std::make_shared<qvi_devinfo_t>(
         type, id, pcibid, uuid, affinity
     );
+    const int rc = qvi_construct_rc(dinfo);
+    if (rc != QV_SUCCESS) return rc;
     rpool->devinfos.insert({type, dinfo});
-    return QV_SUCCESS;
+    return rc;
 }
 
 int

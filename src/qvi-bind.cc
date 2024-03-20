@@ -88,10 +88,7 @@ qvi_bind_push(
 ) {
     // Copy input bitmap because we don't want to directly modify it.
     hwloc_cpuset_t bitmap_copy = nullptr;
-    int rc = qvi_hwloc_bitmap_calloc(&bitmap_copy);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_hwloc_bitmap_copy(cpuset, bitmap_copy);
+    int rc = qvi_hwloc_bitmap_dup(cpuset, &bitmap_copy);
     if (rc != QV_SUCCESS) goto out;
     // Change policy
     rc = qvi_rmi_task_set_cpubind_from_cpuset(

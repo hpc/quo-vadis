@@ -45,7 +45,7 @@ struct qvi_global_split_t {
      * The root task ID used for collective operations.
      * Note: We use 0 as the root because 0 will always exist.
      */
-    static const int rootid = 0;
+    static constexpr int rootid = 0;
     /**
      * Points to the parent scope that we are splitting.
      */

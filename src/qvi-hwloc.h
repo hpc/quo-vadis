@@ -26,10 +26,6 @@
 extern "C" {
 #endif
 
-#define QVI_HWLOC_PCI_BUS_ID_BUFF_SIZE 16
-#define QVI_HWLOC_DEV_NAME_BUFF_SIZE   32
-#define QVI_HWLOC_UUID_BUFF_SIZE       64
-
 struct qvi_hwloc_s;
 typedef struct qvi_hwloc_s qvi_hwloc_t;
 
@@ -418,9 +414,6 @@ qvi_hwloc_get_device_affinity(
 
 #ifdef __cplusplus
 }
-#endif
-
-#ifdef __cplusplus
 
 /**
  * C++ style hwloc bitmap.
