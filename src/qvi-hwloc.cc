@@ -21,9 +21,9 @@
 #include "qvi-nvml.h"
 #include "qvi-rsmi.h"
 
-constexpr int pci_bus_id_buff_size = 16;
-constexpr int dev_name_buff_size = 32;
-constexpr int uuid_buff_size = 64;
+static constexpr int pci_bus_id_buff_size = 16;
+static constexpr int dev_name_buff_size = 32;
+static constexpr int uuid_buff_size = 64;
 
 /** Device list type. */
 using qvi_hwloc_dev_list_t = std::vector<
