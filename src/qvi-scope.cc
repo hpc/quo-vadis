@@ -675,9 +675,9 @@ global_split_devices_user_defined(
                     gsplit.hwpools[i],
                     c2d.second->type,
                     c2d.second->id,
-                    c2d.second->pci_bus_id,
-                    c2d.second->uuid,
-                    c2d.second->affinity
+                    c2d.second->pci_bus_id.c_str(),
+                    c2d.second->uuid.c_str(),
+                    c2d.second->affinity.data
                 );
                 if (rc != QV_SUCCESS) break;
             }
@@ -716,7 +716,7 @@ qvi_global_split_devices_affinity_preserving(
         // Store device affinities.
         qvi_map_cpusets_t devaffs;
         for (auto &dev : devs) {
-            devaffs.push_back(dev->affinity);
+            devaffs.push_back(dev->affinity.data);
         }
 
         qvi_map_t map;
@@ -737,9 +737,9 @@ qvi_global_split_devices_affinity_preserving(
                 gsplit.hwpools[pooli],
                 devs[devid]->type,
                 devs[devid]->id,
-                devs[devid]->pci_bus_id,
-                devs[devid]->uuid,
-                devs[devid]->affinity
+                devs[devid]->pci_bus_id.c_str(),
+                devs[devid]->uuid.c_str(),
+                devs[devid]->affinity.data
             );
             if (rc != QV_SUCCESS) break;
         }
@@ -851,7 +851,7 @@ global_split_get_new_osdev_cpusets(
         rc = qvi_hwloc_bitmap_calloc(&result[affi]);
         if (rc != QV_SUCCESS) goto out;
         // Copy the device's affinity to our list of device affinities.
-        rc = qvi_hwloc_bitmap_copy(dinfo.second->affinity, result[affi++]);
+        rc = qvi_hwloc_bitmap_copy(dinfo.second->affinity.data, result[affi++]);
         if (rc != QV_SUCCESS) goto out;
     }
 out:
@@ -1181,10 +1181,10 @@ qvi_scope_get_device_id(
 
     switch (id_type) {
         case (QV_DEVICE_ID_UUID):
-            nw = asprintf(dev_id, "%s", finfo->uuid);
+            nw = asprintf(dev_id, "%s", finfo->uuid.c_str());
             break;
         case (QV_DEVICE_ID_PCI_BUS_ID):
-            nw = asprintf(dev_id, "%s", finfo->pci_bus_id);
+            nw = asprintf(dev_id, "%s", finfo->pci_bus_id.c_str());
             break;
         case (QV_DEVICE_ID_ORDINAL):
             nw = asprintf(dev_id, "%d", finfo->id);

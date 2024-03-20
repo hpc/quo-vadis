@@ -17,10 +17,6 @@
 #include "qvi-common.h"
 #include "qvi-hwloc.h" // IWYU pragma: keep
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * Modes used to influence how affinity preserving mapping is done.
  */
@@ -46,12 +42,6 @@ qvi_map_maxiperk(
     uint_t i,
     uint_t k
 );
-
-#ifdef __cplusplus
-}
-#endif
-
-#ifdef __cplusplus
 
 /** Maintains a mapping between 'From IDs' to 'To IDs'. */
 using qvi_map_t = std::map<int, int>;
@@ -152,8 +142,6 @@ std::vector<int>
 qvi_map_flatten(
     const qvi_map_t &map
 );
-
-#endif
 
 #endif
 
