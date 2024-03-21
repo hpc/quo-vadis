@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2023 Triad National Security, LLC
+ * Copyright (c) 2021-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -19,6 +19,7 @@
  * h = qvi_line_hwpool_t *
  * i = int
  * s = char *
+ * s = std::string
  * t = qvi_task_id_t
  * z = qvi_bbuff_rmi_zero_msg_t
  */
@@ -30,10 +31,8 @@
 #include "qvi-hwloc.h"
 #include "qvi-hwpool.h"
 
-#include <string>
-
 // 'Null' cpuset representation as a string.
-#define QV_BUFF_RMI_NULL_CPUSET ""
+static const cstr_t QV_BUFF_RMI_NULL_CPUSET = "";
 
 // Byte containers
 using qvi_bbuff_rmi_bytes_in_t = std::pair<void *, size_t>;
@@ -231,6 +230,15 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
+    std::string &
+) {
+    picture += "s";
+}
+
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
     qvi_bbuff_rmi_zero_msg_t
 ) {
     picture += "z";
@@ -359,6 +367,17 @@ qvi_bbuff_rmi_pack_item_impl(
     cstr_t data
 ) {
     return qvi_bbuff_append(buff, data, strlen(data) + 1);
+}
+
+/**
+ * Packs std::string
+ */
+inline int
+qvi_bbuff_rmi_pack_item(
+    qvi_bbuff_t *buff,
+    const std::string &data
+) {
+    return qvi_bbuff_rmi_pack_item_impl(buff, data.c_str());
 }
 
 /**
@@ -662,6 +681,17 @@ qvi_bbuff_rmi_unpack_item(
 
 inline int
 qvi_bbuff_rmi_unpack_item(
+    std::string &str,
+    byte_t *buffpos,
+    size_t *bytes_written
+) {
+    str = std::string((const char *)buffpos);
+    *bytes_written = strlen((char *)buffpos) + 1;
+    return QV_SUCCESS;
+}
+
+inline int
+qvi_bbuff_rmi_unpack_item(
     qv_scope_intrinsic_t *o,
     byte_t *buffpos,
     size_t *bytes_written
@@ -798,7 +828,6 @@ qvi_bbuff_rmi_unpack_item(
     );
     if (rc != QV_SUCCESS) goto out;
     total_bw += bw;
-    buffpos += bw;
 out:
     if (rc != QV_SUCCESS) {
         total_bw = 0;
@@ -901,7 +930,6 @@ qvi_bbuff_rmi_unpack_item(
     );
     if (rc != QV_SUCCESS) goto out;
     total_bw += bw;
-    buffpos += bw;
 out:
     if (rc != QV_SUCCESS) {
         total_bw = 0;
