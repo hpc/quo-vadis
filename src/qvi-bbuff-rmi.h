@@ -15,6 +15,7 @@
  * Picture Reference:
  * b = qvi_bbuff_rmi_bytes_in_t, qvi_bbuff_rmi_bytes_out_t
  * c = hwloc_cpuset_t
+ * c = qvi_hwloc_bitmap_s
  * h = qvi_hwpool_t * (conversion to qvi_line_hwpool_t * done internally)
  * h = qvi_line_hwpool_t *
  * i = int
@@ -85,6 +86,15 @@ inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
     hwloc_cpuset_t *
+) {
+    picture += "c";
+}
+
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
+    const qvi_hwloc_bitmap_s &
 ) {
     picture += "c";
 }
@@ -467,6 +477,17 @@ qvi_bbuff_rmi_pack_item(
 }
 
 /**
+ * Packs qvi_hwloc_bitmap_s
+ */
+inline int
+qvi_bbuff_rmi_pack_item(
+    qvi_bbuff_t *buff,
+    const qvi_hwloc_bitmap_s &bitmap
+) {
+    return qvi_bbuff_rmi_pack_item_impl(buff, bitmap.data);
+}
+
+/**
  * Packs hwloc_const_cpuset_t
  */
 inline int
@@ -772,8 +793,25 @@ qvi_bbuff_rmi_unpack_item(
     *bytes_written = strlen(cpusets) + 1;
 out:
     if (rc != QV_SUCCESS) {
-        hwloc_bitmap_free(*cpuset);
+        qvi_hwloc_bitmap_free(cpuset);
     }
+    return rc;
+}
+
+inline int
+qvi_bbuff_rmi_unpack_item(
+    qvi_hwloc_bitmap_s &bitmap,
+    byte_t *buffpos,
+    size_t *bytes_written
+) {
+    hwloc_cpuset_t raw_cpuset = nullptr;
+    int rc = qvi_bbuff_rmi_unpack_item(
+        &raw_cpuset, buffpos, bytes_written
+    );
+    if (rc != QV_SUCCESS) return rc;
+
+    rc = qvi_hwloc_bitmap_copy(raw_cpuset, bitmap.data);
+    qvi_hwloc_bitmap_free(&raw_cpuset);
     return rc;
 }
 
