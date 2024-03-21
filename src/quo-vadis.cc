@@ -14,8 +14,6 @@
  * @file quo-vadis.cc
  */
 
-#include "qvi-common.h" // IWYU pragma: keep
-
 #include "qvi-context.h" // IWYU pragma: keep
 #include "qvi-scope.h"
 

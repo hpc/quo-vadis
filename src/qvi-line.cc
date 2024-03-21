@@ -14,11 +14,8 @@
  * More generally, they are types that can be easily serialized.
  */
 
-#include "qvi-common.h" // IWYU pragma: keep
-
 #include "qvi-line.h"
 #include "qvi-bbuff-rmi.h"
-#include "qvi-utils.h" // IWYU pragma: keep
 
 int
 qvi_line_config_new(

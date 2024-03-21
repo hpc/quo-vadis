@@ -14,7 +14,6 @@
  * @file qvi-bbuff.cc
  */
 
-#include "qvi-common.h"
 #include "qvi-bbuff.h"
 #include "qvi-utils.h"
 

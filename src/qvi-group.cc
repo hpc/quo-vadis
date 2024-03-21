@@ -11,7 +11,6 @@
  * @file qvi-group.cc
  */
 
-#include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-group.h"
 #include "qvi-utils.h"
 #include "qvi-log.h"

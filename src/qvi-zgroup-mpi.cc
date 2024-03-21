@@ -14,8 +14,6 @@
  * @file qvi-zgroup-mpi.cc
  */
 
-#include "qvi-common.h" // IWYU pragma: keep
-
 #include "qvi-zgroup-mpi.h"
 #include "qvi-group-mpi.h"
 

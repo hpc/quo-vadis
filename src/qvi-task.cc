@@ -14,7 +14,6 @@
  * @file qvi-task.cc
  */
 
-#include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-task.h"
 #include "qvi-utils.h"
 

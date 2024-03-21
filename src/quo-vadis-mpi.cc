@@ -14,10 +14,7 @@
  * @file quo-vadis-mpi.cc
  */
 
-#include "qvi-common.h" // IWYU pragma: keep
-
 #include "quo-vadis-mpi.h"
-
 #include "qvi-context.h"
 #include "qvi-group-mpi.h"
 #include "qvi-zgroup-mpi.h"

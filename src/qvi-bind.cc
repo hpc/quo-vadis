@@ -14,7 +14,6 @@
  * @file qvi-bind.cc
  */
 
-#include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-bind.h"
 #include "qvi-utils.h"
 

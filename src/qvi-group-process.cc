@@ -11,7 +11,6 @@
  * @file qvi-group-process.cc
  */
 
-#include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-group-process.h"
 
 qvi_group_process_s::~qvi_group_process_s(void)

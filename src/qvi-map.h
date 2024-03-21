@@ -15,7 +15,6 @@
 #define QVI_MAP_H
 
 #include "qvi-common.h"
-#include "qvi-hwloc.h" // IWYU pragma: keep
 
 /**
  * Modes used to influence how affinity preserving mapping is done.
