@@ -87,6 +87,13 @@ qvi_hwpool_new(
     return qvi_new_rc(rpool);
 }
 
+void
+qvi_hwpool_free(
+    qvi_hwpool_t **rpool
+) {
+    qvi_delete(rpool);
+}
+
 int
 qvi_hwpool_new_from_line(
     qvi_line_hwpool_t *line,
@@ -175,13 +182,6 @@ out:
     }
     *line = iline;
     return rc;
-}
-
-void
-qvi_hwpool_free(
-    qvi_hwpool_t **rpool
-) {
-    qvi_delete(rpool);
 }
 
 int
