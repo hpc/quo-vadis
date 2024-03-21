@@ -22,6 +22,8 @@
 #include "qvi-macros.h"
 #include "quo-vadis.h"
 
+#include "hwloc.h"
+
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>

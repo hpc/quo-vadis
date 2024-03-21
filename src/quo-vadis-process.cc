@@ -11,10 +11,7 @@
  * @file quo-vadis-process.cc
  */
 
-#include "qvi-common.h" // IWYU pragma: keep
-
 #include "quo-vadis-process.h"
-
 #include "qvi-context.h"
 #include "qvi-zgroup-process.h"
 

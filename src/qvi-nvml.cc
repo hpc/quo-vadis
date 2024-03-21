@@ -11,7 +11,6 @@
  * @file qvi-nvml.cc
  */
 
-#include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-nvml.h"
 #include "qvi-hwloc.h"
 

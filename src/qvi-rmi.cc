@@ -25,7 +25,6 @@
 //
 // TODO(skg) We need to implement timeouts.
 
-#include "qvi-common.h"
 #include "qvi-rmi.h"
 #include "qvi-bbuff-rmi.h"
 #include "qvi-hwpool.h"

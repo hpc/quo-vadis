@@ -18,7 +18,6 @@
 #define QVI_LINE_H
 
 #include "qvi-common.h" // IWYU pragma: keep
-
 #include "qvi-bbuff.h"
 #include "qvi-hwloc.h"
 

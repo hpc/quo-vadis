@@ -11,7 +11,6 @@
  * @file qvi-rsmi.cc
  */
 
-#include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-rsmi.h"
 #include "qvi-hwloc.h"
 

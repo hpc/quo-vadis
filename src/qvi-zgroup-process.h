@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -17,6 +17,7 @@
 #ifndef QVI_ZGROUP_PROCESS_H
 #define QVI_ZGROUP_PROCESS_H
 
+#include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-zgroup.h"
 #include "qvi-process.h"
 

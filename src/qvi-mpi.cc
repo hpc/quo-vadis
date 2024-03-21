@@ -14,12 +14,8 @@
  * @file qvi-mpi.cc
  */
 
-#include "qvi-common.h"
-
 #include "qvi-mpi.h"
 #include "qvi-utils.h" // IWYU pragma: keep
-
-#include "mpi.h"
 
 using qvi_mpi_group_tab_t = std::unordered_map<
     qvi_mpi_group_id_t, qvi_mpi_group_t

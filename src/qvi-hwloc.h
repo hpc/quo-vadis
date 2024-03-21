@@ -20,8 +20,6 @@
 #include "qvi-common.h"
 #include "qvi-task.h"
 
-#include "hwloc.h" // IWYU pragma: keep
-
 #ifdef __cplusplus
 extern "C" {
 #endif

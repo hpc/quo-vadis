@@ -11,7 +11,6 @@
  * @file qvi-process.cc
  */
 
-#include "qvi-common.h"
 #include "qvi-process.h"
 #include "qvi-utils.h"
 #include "qvi-group.h"

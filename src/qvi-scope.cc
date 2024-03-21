@@ -16,8 +16,6 @@
 
 // TODO(skg) Use distance API for device affinity.
 
-#include "qvi-common.h"
-
 #include "qvi-scope.h"
 #include "qvi-rmi.h"
 #include "qvi-hwpool.h"

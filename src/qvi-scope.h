@@ -18,7 +18,6 @@
 #define QVI_SCOPE_H
 
 #include "qvi-common.h" // IWYU pragma: keep
-
 #include "qvi-zgroup.h"
 #include "qvi-rmi.h"
 

@@ -14,7 +14,6 @@
  * @file qvi-utils.cc
  */
 
-#include "qvi-common.h"
 #include "qvi-utils.h"
 
 /** Description of the return codes. */

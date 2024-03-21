@@ -14,7 +14,6 @@
  * @file qvi-hwloc.cc
  */
 
-#include "qvi-common.h"
 #include "qvi-hwloc.h"
 #include "qvi-utils.h"
 

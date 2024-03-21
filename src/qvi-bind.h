@@ -21,7 +21,6 @@
 
 #include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-task.h"
-#include "qvi-hwloc.h" // IWYU pragma: keep
 #include "qvi-rmi.h"
 
 #ifdef __cplusplus

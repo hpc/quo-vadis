@@ -23,7 +23,6 @@
 #define QVI_CONTEXT_H
 
 #include "qvi-common.h" // IWYU pragma: keep
-
 #include "qvi-rmi.h"
 #include "qvi-zgroup.h"
 #include "qvi-bind.h"

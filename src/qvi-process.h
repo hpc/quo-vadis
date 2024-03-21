@@ -15,7 +15,6 @@
 #define QVI_PROCESS_H
 
 #include "qvi-common.h" // IWYU pragma: keep
-
 #include "qvi-task.h"
 #include "qvi-bbuff.h"
 
