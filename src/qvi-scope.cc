@@ -410,11 +410,8 @@ qvi_global_split_get_cpuset(
     // This shouldn't happen.
     assert(gsplit.hwpools.size() != 0);
 
-    int rc = qvi_hwloc_bitmap_calloc(result);
-    if (rc != QV_SUCCESS) return rc;
-
-    return qvi_hwloc_bitmap_copy(
-        qvi_hwpool_cpuset_get(gsplit.hwpools[0]), *result
+    return qvi_hwloc_bitmap_dup(
+        qvi_hwpool_cpuset_get(gsplit.hwpools[0]), result
     );
 }
 
@@ -624,10 +621,7 @@ global_split_devices_user_defined(
     // Determine mapping of colors to task IDs. The array index i of colors is
     // the color requested by task i. Also determine the number of distinct
     // colors provided in the colors array.
-    std::set<int> color_set;
-    for (const auto &color : gsplit.colors) {
-        color_set.insert(color);
-    }
+    std::set<int> color_set(gsplit.colors.begin(), gsplit.colors.end());
     // Adjust the color set so that the distinct colors provided
     // fall within the range of the number of splits requested.
     std::set<int> color_setp;
@@ -932,6 +926,33 @@ global_split_affinity_preserving(
 }
 
 /**
+ * Takes a vector of colors and clamps their values to [0, max) in place. If
+ * this function finds more colors than slots available from [0, max), then it
+ * returns an error code.
+ */
+static int
+clamp_colors(
+    std::vector<int> &values,
+    uint_t max
+) {
+    // Recall: sets are ordered.
+    std::set<int> valset(values.begin(), values.end());
+    // Too many colors for the given space.
+    if (valset.size() > max) return QV_ERR_INVLD_ARG;
+    // Maps the input vector colors to their clamped values.
+    std::map<int, int> colors2clamped;
+    // color': the clamped color.
+    int colorp = 0;
+    for (auto val : valset) {
+        colors2clamped.insert({val, colorp++});
+    }
+    for (uint_t i = 0; i < values.size(); ++i) {
+        values[i] = colors2clamped[values[i]];
+    }
+    return QV_SUCCESS;
+}
+
+/**
  * Splits global scope data.
  */
 static int
@@ -942,14 +963,30 @@ qvi_global_split(
     bool auto_split = false;
     // Make sure that the supplied colors are consistent and determine the type
     // of coloring we are using. Positive values denote an explicit coloring
-    // provided by the caller. Negative values are reserved for automatic
-    // coloring algorithms and should be constants defined in quo-vadis.h.
+    // provided by the caller. Negative values are reserved for internal
+    // use and shall be constants defined in quo-vadis.h. Note we don't sort the
+    // gsplit's colors directly because they are ordered by task ID.
     std::vector<int> tcolors(gsplit.colors);
     std::sort(tcolors.begin(), tcolors.end());
-    // If all the values are negative and equal, then auto split. If not, then
-    // we were called with an invalid request. Else the values are all positive
-    // and we are going to split based on the input from the caller.
-    if (tcolors.front() < 0) {
+    // We have a few possibilities here:
+    // * The values are all positive: user-defined split, but we have to clamp
+    //   their values to a usable range for internal consumption.
+    // * The values are negative and equal:
+    //   - All the same, valid auto split constant: auto split
+    //   - All the same, undefined constant: user-defined split, but this is a
+    //     strange case since all participants will get empty sets.
+    // * A mix if positive and negative values:
+    //   - A strict subset is QV_SCOPE_SPLIT_UNDEFINED: user-defined split
+    //   - A strict subset is not QV_SCOPE_SPLIT_UNDEFINED: return error code.
+
+    // All colors are positive.
+    if (tcolors.front() >= 0) {
+        rc = clamp_colors(gsplit.colors, gsplit.size);
+        if (rc != QV_SUCCESS) return rc;
+    }
+    // Some values are negative.
+    else {
+        // TODO(skg) Implement the rest.
         if (tcolors.front() != tcolors.back()) {
             return QV_ERR_INVLD_ARG;
         }
