@@ -1,5 +1,5 @@
 !
-! Copyright (c) 2013-2023 Triad National Security, LLC
+! Copyright (c) 2013-2024 Triad National Security, LLC
 !                         All rights reserved.
 !
 ! This file is part of the quo-vadis project. See the LICENSE file at the
@@ -111,9 +111,11 @@ module quo_vadisf
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Automatic grouping options for qv_scope_split().
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    integer(c_int) QV_SCOPE_SPLIT_UNDEFINED
     integer(c_int) QV_SCOPE_SPLIT_AFFINITY_PRESERVING
 
-    parameter (QV_SCOPE_SPLIT_AFFINITY_PRESERVING = -1)
+    parameter (QV_SCOPE_SPLIT_UNDEFINED = -1)
+    parameter (QV_SCOPE_SPLIT_AFFINITY_PRESERVING = -2)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Device ID types
