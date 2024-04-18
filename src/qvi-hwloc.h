@@ -430,12 +430,15 @@ struct qvi_hwloc_bitmap_s {
     {
         qvi_hwloc_bitmap_free(&data);
     }
-    /** Assignment operator. */
+    /**
+     * Assignment operator.
+     *
+     * Check qvim_rc on the LHS after assignment to verify status.
+     */
     void
     operator=(const qvi_hwloc_bitmap_s &src)
     {
         qvim_rc = qvi_hwloc_bitmap_copy(src.data, data);
-        assert(qvim_rc == QV_SUCCESS);
     }
 };
 
