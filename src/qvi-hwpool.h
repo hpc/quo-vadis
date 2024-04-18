@@ -88,6 +88,8 @@ struct qvi_hwpool_devinfo_s {
     std::string uuid;
     /** The bitmap encoding CPU affinity. */
     qvi_hwloc_bitmap_t affinity;
+    /** No default constructor. */
+    qvi_hwpool_devinfo_s(void) = delete;
     /** Constructor */
     qvi_hwpool_devinfo_s(
         qv_hw_obj_type_t type,
@@ -151,6 +153,15 @@ qvi_hwpool_init(
 void
 qvi_hwpool_free(
     qvi_hwpool_t **pool
+);
+
+/**
+ *
+ */
+int
+qvi_hwpool_dup(
+    const qvi_hwpool_t *const rpool,
+    qvi_hwpool_t **dup
 );
 
 /**

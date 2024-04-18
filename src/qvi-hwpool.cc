@@ -95,6 +95,31 @@ qvi_hwpool_free(
 }
 
 int
+qvi_hwpool_dup(
+    const qvi_hwpool_t *const rpool,
+    qvi_hwpool_t **dup
+) {
+    qvi_hwpool_t *idup = nullptr;
+    int rc = qvi_hwpool_new(&idup);
+    if (rc != QV_SUCCESS) goto out;
+    // This performs a deep copy of the underlying CPUs.
+    idup->cpus = rpool->cpus;
+    // Assignment here sets qvim_rc, so check it.
+    if (idup->qvim_rc != QV_SUCCESS) {
+        rc = idup->qvim_rc;
+        goto out;
+    }
+    // This performs a deep copy of the underlying device infos.
+    idup->devinfos = rpool->devinfos;
+out:
+    if (rc != QV_SUCCESS) {
+        qvi_hwpool_free(&idup);
+    }
+    *dup = idup;
+    return rc;
+}
+
+int
 qvi_hwpool_new_from_line(
     qvi_line_hwpool_t *line,
     qvi_hwpool_t **rpool

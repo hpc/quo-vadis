@@ -105,7 +105,6 @@ struct qvi_scope_split_agg_s {
             qvi_hwloc_bitmap_free(&cpuset);
         }
         affinities.clear();
-
     }
 };
 
@@ -1143,6 +1142,58 @@ out:
     *child = ichild;
     return rc;
 }
+
+#if 0
+int
+qvi_scope_ksplit(
+    qv_scope_t *parent,
+    int npieces,
+    int *colors,
+    uint_t k,
+    qv_hw_obj_type_t maybe_obj_type,
+    qv_scope_t **children
+) {
+    int rc = QV_SUCCESS, colorp = 0;
+    qvi_hwpool_t *hwpool = nullptr;
+    qvi_group_t *group = nullptr;
+    qv_scope_t *ichild = nullptr;
+
+    qvi_scope_split_agg_s splitagg{};
+    splitagg.rmi = parent->rmi;
+    splitagg.base_hwpool = parent->hwpool;
+    splitagg.split_size = npieces;
+    splitagg.group_size = k;
+    splitagg.split_at_type = maybe_obj_type;
+    splitagg.colors = std::vector<int>(colors, colors + k);
+    for (uint_t i = 0; i < k; ++i) {
+        qvi_hwpool_t *hwp = nullptr;
+        rc = qvi_hwpool_dup(parent->hwpool, &hwp);
+        if (rc != QV_SUCCESS) goto out;
+        splitagg.hwpools.push_back(hwp);
+    }
+    // Split the hardware resources based on the provided split parameters.
+    rc = agg_split(splitagg);
+    if (rc != QV_SUCCESS) goto out;
+    // Split underlying group. Notice the use of colorp here.
+    rc = parent->group->split(
+        colorp, parent->group->id(), &group
+    );
+    if (rc != QV_SUCCESS) goto out;
+    // Create and initialize the new scope.
+    rc = qvi_scope_new(&ichild);
+    if (rc != QV_SUCCESS) goto out;
+
+    rc = scope_init(ichild, parent->rmi, group, hwpool);
+out:
+    if (rc != QV_SUCCESS) {
+        qvi_scope_free(&ichild);
+        qvi_group_free(&group);
+        qvi_hwpool_free(&hwpool);
+    }
+    *children = ichild;
+    return rc;
+}
+#endif
 
 int
 qvi_scope_split_at(
