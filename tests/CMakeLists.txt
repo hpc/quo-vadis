@@ -231,6 +231,17 @@ if(MPI_FOUND)
     )
 
     add_executable(
+        test-mpi-scope-ksplit
+        qvi-test-common.h
+        test-mpi-scope-ksplit.cc
+    )
+
+    target_link_libraries(
+        test-mpi-scope-ksplit
+        quo-vadis-mpi
+    )
+
+    add_executable(
         test-mpi-getdev
         qvi-test-common.h
         test-mpi-getdev.c
@@ -365,6 +376,7 @@ endif()
 ################################################################################
 ################################################################################
 # Use the C linker to test for C/C++ linkage problems.
+# TODO(skg) Add other C programs below.
 set_target_properties(
     test-hwloc
     PROPERTIES LINKER_LANGUAGE C
