@@ -92,6 +92,10 @@ struct qvi_scope_split_agg_s {
      */
     qvi_map_cpusets_t affinities{};
     /**
+     * Constructor.
+     */
+    qvi_scope_split_agg_s(void) = default;
+    /**
      * Destructor
      */
     ~qvi_scope_split_agg_s(void)
@@ -105,6 +109,29 @@ struct qvi_scope_split_agg_s {
             qvi_hwloc_bitmap_free(&cpuset);
         }
         affinities.clear();
+    }
+    /**
+     * Minimally initializes instance.
+     */
+    int
+    init(
+        qvi_rmi_client_t *rmi_a,
+        qvi_hwpool_t *base_hwpool_a,
+        uint_t group_size_a,
+        uint_t split_size_a,
+        qv_hw_obj_type_t split_at_type_a
+    ) {
+        rmi = rmi_a;
+        base_hwpool = base_hwpool_a;
+        group_size = group_size_a;
+        split_size = split_size_a;
+        split_at_type = split_at_type_a;
+        // To save memory we don't eagerly resize our vectors to group_size
+        // since most processes will not use the storage. For example, in the
+        // collective case the root ID process will be the only one needing
+        // group_size elements in our vectors. We'll let the call paths enforce
+        // appropriate vector sizing.
+        return QV_SUCCESS;
     }
 };
 
@@ -132,6 +159,28 @@ struct qvi_scope_split_coll_s {
      * operations across the members in parent_scope.
      */
     qvi_scope_split_agg_s gsplit{};
+    /**
+     * Initializes instance.
+     */
+    int
+    init(
+        qv_scope_t *parent_scope_a,
+        uint_t split_size_a,
+        int mycolor_a,
+        qv_hw_obj_type_t split_at_type_a
+    ) {
+        const int myid = parent_scope_a->group->id();
+        parent_scope = parent_scope_a;
+        mycolor = mycolor_a;
+        if (myid == qvi_scope_split_coll_s::rootid) {
+            const uint_t group_size = parent_scope->group->size();
+            gsplit.init(
+                parent_scope->rmi, parent_scope->hwpool,
+                group_size, split_size_a, split_at_type_a
+            );
+        }
+        return QV_SUCCESS;
+    }
 };
 
 // TODO(skg) This should live in RMI.
@@ -353,64 +402,42 @@ bcast_value(
 }
 
 static int
-scope_split_coll_init(
-    qvi_scope_split_coll_s &splitcoll,
-    qv_scope_t *parent_scope,
-    uint_t split_size,
-    int mycolor,
-    qv_hw_obj_type_t maybe_obj_type
-) {
-    splitcoll.parent_scope = parent_scope;
-    splitcoll.mycolor = mycolor;
-    if (parent_scope->group->id() == qvi_scope_split_coll_s::rootid) {
-        const uint_t group_size = parent_scope->group->size();
-        splitcoll.gsplit.group_size = group_size;
-        splitcoll.gsplit.split_size = split_size;
-        splitcoll.gsplit.rmi = parent_scope->rmi;
-        splitcoll.gsplit.base_hwpool = parent_scope->hwpool;
-        splitcoll.gsplit.split_at_type = maybe_obj_type;
-        splitcoll.gsplit.taskids.resize(group_size);
-        splitcoll.gsplit.hwpools.resize(group_size);
-        splitcoll.gsplit.affinities.resize(group_size);
-    }
-    return QV_SUCCESS;
-}
-
-static int
 scope_split_coll_gather(
     qvi_scope_split_coll_s &splitcoll
 ) {
-    qv_scope_t *const parent_scope = splitcoll.parent_scope;
+    qv_scope_t *const parent = splitcoll.parent_scope;
 
     int rc = gather_values(
-        parent_scope->group,
+        parent->group,
         qvi_scope_split_coll_s::rootid,
-        parent_scope->group->task_id(),
+        parent->group->task_id(),
         splitcoll.gsplit.taskids
     );
     if (rc != QV_SUCCESS) return rc;
     // Note that the result hwpools are copies, so we can modify them freely.
     rc = gather_hwpools(
-        parent_scope->group,
+        parent->group,
         qvi_scope_split_coll_s::rootid,
-        parent_scope->hwpool,
+        parent->hwpool,
         splitcoll.gsplit.hwpools
     );
     if (rc != QV_SUCCESS) return rc;
 
     rc = gather_values(
-        parent_scope->group,
+        parent->group,
         qvi_scope_split_coll_s::rootid,
         splitcoll.mycolor,
         splitcoll.gsplit.colors
     );
     if (rc != QV_SUCCESS) return rc;
 
-    const uint_t group_size = parent_scope->group->size();
-    if (parent_scope->group->id() == qvi_scope_split_coll_s::rootid) {
+    const int myid = parent->group->id();
+    const uint_t group_size = parent->group->size();
+    if (myid == qvi_scope_split_coll_s::rootid) {
+        splitcoll.gsplit.affinities.resize(group_size);
         for (uint_t tid = 0; tid < group_size; ++tid) {
             rc = qvi_rmi_task_get_cpubind(
-                parent_scope->rmi,
+                parent->rmi,
                 splitcoll.gsplit.taskids[tid],
                 &splitcoll.gsplit.affinities[tid]
             );
@@ -1072,9 +1099,7 @@ coll_split_hardware_resources(
     // aggregated data are only valid for the task whose id is equal to
     // qvi_global_split_t::rootid after gather has completed.
     qvi_scope_split_coll_s splitcoll{};
-    rc = scope_split_coll_init(
-        splitcoll, parent, npieces, color, maybe_obj_type
-    );
+    rc = splitcoll.init(parent, npieces, color, maybe_obj_type);
     if (rc != QV_SUCCESS) goto out;
     // First consolidate the provided information, as this is coming from a
     // SPMD-like context (e.g., splitting a resource shared by MPI processes).
@@ -1151,33 +1176,33 @@ qvi_scope_ksplit(
     int *colors,
     uint_t k,
     qv_hw_obj_type_t maybe_obj_type,
-    qv_scope_t **children
+    qv_scope_t ***children
 ) {
-    int rc = QV_SUCCESS, colorp = 0;
+    int rc = QV_SUCCESS;
     qvi_hwpool_t *hwpool = nullptr;
     qvi_group_t *group = nullptr;
     qv_scope_t *ichild = nullptr;
 
+    const uint_t group_size = k;
     qvi_scope_split_agg_s splitagg{};
-    splitagg.rmi = parent->rmi;
-    splitagg.base_hwpool = parent->hwpool;
-    splitagg.split_size = npieces;
-    splitagg.group_size = k;
-    splitagg.split_at_type = maybe_obj_type;
-    splitagg.colors = std::vector<int>(colors, colors + k);
-    for (uint_t i = 0; i < k; ++i) {
-        qvi_hwpool_t *hwp = nullptr;
-        rc = qvi_hwpool_dup(parent->hwpool, &hwp);
-        if (rc != QV_SUCCESS) goto out;
-        splitagg.hwpools.push_back(hwp);
+    rc = splitagg.init(
+        parent->rmi, parent->hwpool, group_size, npieces, maybe_obj_type
+    );
+    if (rc != QV_SUCCESS) goto out;
+    // Now populate the relevant data before attempting a split.
+    for (uint_t i = 0; i < group_size; ++i) {
+        splitagg.colors[i] = colors[i];
+        rc = qvi_hwpool_dup(parent->hwpool, &splitagg.hwpools[i]);
+        if (rc != QV_SUCCESS) return rc;
     }
     // Split the hardware resources based on the provided split parameters.
     rc = agg_split(splitagg);
     if (rc != QV_SUCCESS) goto out;
-    // Split underlying group. Notice the use of colorp here.
-    rc = parent->group->split(
-        colorp, parent->group->id(), &group
-    );
+    // TODO(skg) ???
+    //for (uint_t i = 0; i <
+    // Split off from our parent group. This call is usually called from a
+    // context in which a process is splitting its resources across its threads.
+    rc = parent->group->self(&group);
     if (rc != QV_SUCCESS) goto out;
     // Create and initialize the new scope.
     rc = qvi_scope_new(&ichild);

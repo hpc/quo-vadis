@@ -54,6 +54,7 @@ using qvi_map_shaffinity_t = std::map<int, std::set<int>>;
 /**
  * Vector of cpusets.
  */
+// TODO(skg) Update to use qvi_hwloc_bitmap_t.
 using qvi_map_cpusets_t = std::vector<hwloc_cpuset_t>;
 
 /**

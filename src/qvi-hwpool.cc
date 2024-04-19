@@ -45,17 +45,17 @@
 #include "qvi-hwpool.h"
 
 qvi_hwpool_devinfo_s::qvi_hwpool_devinfo_s(
-    qv_hw_obj_type_t a_type,
-    int a_id,
-    cstr_t a_pci_bus_id,
-    cstr_t a_uuid,
-    hwloc_const_cpuset_t a_affinity
-) : type(a_type)
-  , id(a_id)
-  , pci_bus_id(a_pci_bus_id)
-  , uuid(a_uuid)
+    qv_hw_obj_type_t type_a,
+    int id_a,
+    cstr_t pci_bus_id_a,
+    cstr_t uuid_a,
+    hwloc_const_cpuset_t affinity_a
+) : type(type_a)
+  , id(id_a)
+  , pci_bus_id(pci_bus_id_a)
+  , uuid(uuid_a)
 {
-    qvim_rc = qvi_hwloc_bitmap_copy(a_affinity, affinity.data);
+    qvim_rc = qvi_hwloc_bitmap_copy(affinity_a, affinity.data);
 }
 
 bool
