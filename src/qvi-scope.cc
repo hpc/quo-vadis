@@ -1168,7 +1168,6 @@ out:
     return rc;
 }
 
-#if 0
 int
 qvi_scope_ksplit(
     qv_scope_t *parent,
@@ -1176,49 +1175,99 @@ qvi_scope_ksplit(
     int *colors,
     uint_t k,
     qv_hw_obj_type_t maybe_obj_type,
-    qv_scope_t ***children
+    qv_scope_t ***kchildren
 ) {
     int rc = QV_SUCCESS;
-    qvi_hwpool_t *hwpool = nullptr;
-    qvi_group_t *group = nullptr;
-    qv_scope_t *ichild = nullptr;
+
+    if (!colors || k == 0) return QV_ERR_INVLD_ARG;
 
     const uint_t group_size = k;
     qvi_scope_split_agg_s splitagg{};
     rc = splitagg.init(
         parent->rmi, parent->hwpool, group_size, npieces, maybe_obj_type
     );
-    if (rc != QV_SUCCESS) goto out;
+    if (rc != QV_SUCCESS) return rc;
+    // Since this is called by a single task, get its ID and associated hardware
+    // affinity here, and replicate them in the following loop that populates
+    // splitagg. No point in doing this in a loop.
+    const qvi_task_id_t taskid = parent->group->task_id();
+    hwloc_cpuset_t task_affinity = nullptr;
+    rc = qvi_rmi_task_get_cpubind(
+        parent->rmi, taskid, &task_affinity
+
+    );
+    if (rc != QV_SUCCESS) return rc;
     // Now populate the relevant data before attempting a split.
     for (uint_t i = 0; i < group_size; ++i) {
-        splitagg.colors[i] = colors[i];
-        rc = qvi_hwpool_dup(parent->hwpool, &splitagg.hwpools[i]);
-        if (rc != QV_SUCCESS) return rc;
+        // Store requested colors in aggregate.
+        splitagg.colors.push_back(colors[i]);
+        // Since the parent hardware pool is the resource we are splitting and
+        // agg_split_* calls expect |group_size| elements, replicate by dups.
+        qvi_hwpool_t *hwp = nullptr;
+        rc = qvi_hwpool_dup(parent->hwpool, &hwp);
+        if (rc != QV_SUCCESS) break;
+        splitagg.hwpools.push_back(hwp);
+        // Since this is called by a single task, replicate its task ID, too.
+        splitagg.taskids.push_back(taskid);
+        // Same goes for the task's affinity.
+        hwloc_cpuset_t aff = nullptr;
+        rc = qvi_hwloc_bitmap_dup(task_affinity, &aff);
+        if (rc != QV_SUCCESS) break;
+        splitagg.affinities.push_back(aff);
     }
+    // Cleanup: we don't need task_affinity anymore.
+    qvi_hwloc_bitmap_free(&task_affinity);
+    if (rc != QV_SUCCESS) return rc;
     // Split the hardware resources based on the provided split parameters.
     rc = agg_split(splitagg);
-    if (rc != QV_SUCCESS) goto out;
-    // TODO(skg) ???
-    //for (uint_t i = 0; i <
-    // Split off from our parent group. This call is usually called from a
-    // context in which a process is splitting its resources across its threads.
-    rc = parent->group->self(&group);
-    if (rc != QV_SUCCESS) goto out;
-    // Create and initialize the new scope.
-    rc = qvi_scope_new(&ichild);
-    if (rc != QV_SUCCESS) goto out;
+    if (rc != QV_SUCCESS) return rc;
+    // Now populate the children.
+    qv_scope_t **ikchildren = (qv_scope_t **)calloc(
+        group_size, sizeof(qv_scope_t *)
+    );
+    if (!ikchildren) return QV_ERR_OOR;
 
-    rc = scope_init(ichild, parent->rmi, group, hwpool);
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_scope_free(&ichild);
-        qvi_group_free(&group);
-        qvi_hwpool_free(&hwpool);
+    for (uint_t i = 0; i < group_size; ++i) {
+        // Split off from our parent group. This call is usually called from a
+        // context in which a process is splitting its resources across its
+        // threads, so create a new self group for each child.
+        qvi_group_t *group = nullptr;
+        rc = parent->group->self(&group);
+        if (rc != QV_SUCCESS) break;
+        // Create and initialize the new scope.
+        qv_scope_t *child = nullptr;
+        rc = qvi_scope_new(&child);
+        if (rc != QV_SUCCESS) {
+            qvi_group_free(&group);
+            break;
+        }
+        // Copy out, since the hardware pools in splitagg will get freed.
+        qvi_hwpool_t *hwpool = nullptr;
+        rc = qvi_hwpool_dup(splitagg.hwpools[i], &hwpool);
+        if (rc != QV_SUCCESS) {
+            qvi_scope_free(&child);
+            qvi_group_free(&group);
+            break;
+        }
+        rc = scope_init(child, parent->rmi, group, hwpool);
+        if (rc != QV_SUCCESS) {
+            qvi_scope_free(&child);
+            qvi_group_free(&group);
+            qvi_hwpool_free(&hwpool);
+            break;
+        }
+        ikchildren[i] = child;
     }
-    *children = ichild;
+    if (rc != QV_SUCCESS && ikchildren) {
+        for (uint_t i = 0; i < group_size; ++i) {
+            qvi_scope_free(&ikchildren[i]);
+        }
+        free(ikchildren);
+        ikchildren = nullptr;
+    }
+    *kchildren = ikchildren;
     return rc;
 }
-#endif
 
 int
 qvi_scope_split_at(
