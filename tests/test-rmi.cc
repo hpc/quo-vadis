@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2023 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -19,7 +19,6 @@
 #include "qvi-utils.h"
 #include "qvi-hwloc.h"
 #include "qvi-rmi.h"
-#include "qvi-test-common.h"
 
 static int
 server(
@@ -115,7 +114,7 @@ client(
     printf("# [%d] Starting Client (%s)\n", getpid(), url);
 
     char const *ers = NULL;
-    qvi_task_id_t who = { QV_TASK_TYPE_PROCESS, getpid()};
+    qvi_task_id_t who = { QV_TASK_TYPE_PROCESS, getpid() };
     hwloc_bitmap_t bitmap = NULL;
 
     qvi_rmi_client_t *client = NULL;
