@@ -129,7 +129,7 @@ int
 qvi_map_packed(
     qvi_map_t &map,
     uint_t nfids,
-    const qvi_map_cpusets_t &tres
+    const qvi_hwloc_cpusets_t &tres
 ) {
     const uint_t ntres = tres.size();
     // Max consumers per resource.
@@ -160,7 +160,7 @@ int
 qvi_map_spread(
     qvi_map_t &map,
     uint_t nfids,
-    const qvi_map_cpusets_t &tres
+    const qvi_hwloc_cpusets_t &tres
 ) {
     const uint_t ntres = tres.size();
     // Keeps track of the next IDs to map: 'from' and 'to' IDs.
@@ -196,8 +196,8 @@ qvi_map_disjoint_affinity(
 
 int
 qvi_map_calc_shaffinity(
-    const qvi_map_cpusets_t &faffs,
-    const qvi_map_cpusets_t &tores,
+    const qvi_hwloc_cpusets_t &faffs,
+    const qvi_hwloc_cpusets_t &tores,
     qvi_map_shaffinity_t &res_affinity_map
 ) {
     // Number of consumers.
@@ -208,7 +208,7 @@ qvi_map_calc_shaffinity(
     for (uint_t cid = 0; cid < ncon; ++cid) {
         for (uint_t rid = 0; rid < nres; ++rid) {
             const int intersects = hwloc_bitmap_intersects(
-                faffs.at(cid), tores.at(rid)
+                faffs.at(cid).data, tores.at(rid).data
             );
             if (intersects) {
                 res_affinity_map[rid].insert(cid);
@@ -222,11 +222,11 @@ int
 qvi_map_affinity_preserving(
     qvi_map_t &map,
     qvi_map_affinity_preserving_policy_t policy,
-    const qvi_map_cpusets_t &faffs,
-    const qvi_map_cpusets_t &tores
+    const qvi_hwloc_cpusets_t &faffs,
+    const qvi_hwloc_cpusets_t &tores
 ) {
     using map_fn_t = std::function<
-        int(qvi_map_t &map, uint_t nfids, const qvi_map_cpusets_t &tres)
+        int(qvi_map_t &map, uint_t nfids, const qvi_hwloc_cpusets_t &tres)
     >;
 
     int rc = QV_SUCCESS;
@@ -293,10 +293,10 @@ out:
 hwloc_const_cpuset_t
 qvi_map_cpuset_at(
     const qvi_map_t &map,
-    const qvi_map_cpusets_t &cpusets,
+    const qvi_hwloc_cpusets_t &cpusets,
     int fid
 ) {
-    return cpusets.at(map.at(fid));
+    return cpusets.at(map.at(fid)).data;
 }
 
 std::vector<int>

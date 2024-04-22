@@ -15,6 +15,7 @@
 #define QVI_MAP_H
 
 #include "qvi-common.h"
+#include "qvi-hwloc.h"
 
 /**
  * Modes used to influence how affinity preserving mapping is done.
@@ -52,12 +53,6 @@ using qvi_map_t = std::map<int, int>;
 using qvi_map_shaffinity_t = std::map<int, std::set<int>>;
 
 /**
- * Vector of cpusets.
- */
-// TODO(skg) Update to use qvi_hwloc_bitmap_t.
-using qvi_map_cpusets_t = std::vector<hwloc_cpuset_t>;
-
-/**
  * Prints debug output.
  */
 void
@@ -90,14 +85,14 @@ int
 qvi_map_packed(
     qvi_map_t &map,
     uint_t nfids,
-    const qvi_map_cpusets_t &tres
+    const qvi_hwloc_cpusets_t &tres
 );
 
 int
 qvi_map_spread(
     qvi_map_t &map,
     uint_t nfids,
-    const qvi_map_cpusets_t &tres
+    const qvi_hwloc_cpusets_t &tres
 );
 
 /**
@@ -106,8 +101,8 @@ qvi_map_spread(
  */
 int
 qvi_map_calc_shaffinity(
-    const qvi_map_cpusets_t &faffs,
-    const qvi_map_cpusets_t &tores,
+    const qvi_hwloc_cpusets_t &faffs,
+    const qvi_hwloc_cpusets_t &tores,
     qvi_map_shaffinity_t &res_affinity_map
 );
 
@@ -124,8 +119,8 @@ int
 qvi_map_affinity_preserving(
     qvi_map_t &map,
     qvi_map_affinity_preserving_policy_t policy,
-    const qvi_map_cpusets_t &faffs,
-    const qvi_map_cpusets_t &tores
+    const qvi_hwloc_cpusets_t &faffs,
+    const qvi_hwloc_cpusets_t &tores
 );
 
 /**
@@ -134,7 +129,7 @@ qvi_map_affinity_preserving(
 hwloc_const_cpuset_t
 qvi_map_cpuset_at(
     const qvi_map_t &map,
-    const qvi_map_cpusets_t &cpusets,
+    const qvi_hwloc_cpusets_t &cpusets,
     int fid
 );
 

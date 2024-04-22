@@ -65,7 +65,7 @@ struct qvi_hwpool_resource_s {
 struct qvi_hwpool_cpus_s : qvi_hwpool_resource_s {
     int qvim_rc = QV_ERR_INTERNAL;
     /** The cpuset of the maintained CPUs. */
-    qvi_hwloc_bitmap_t cpuset;
+    qvi_hwloc_bitmap_s cpuset;
     /** Constructor */
     qvi_hwpool_cpus_s(void)
     {
@@ -87,7 +87,7 @@ struct qvi_hwpool_devinfo_s {
     /** UUID */
     std::string uuid;
     /** The bitmap encoding CPU affinity. */
-    qvi_hwloc_bitmap_t affinity;
+    qvi_hwloc_bitmap_s affinity;
     /** No default constructor. */
     qvi_hwpool_devinfo_s(void) = delete;
     /** Constructor */

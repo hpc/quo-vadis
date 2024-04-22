@@ -59,7 +59,7 @@ static const int QVI_HWLOC_DEVICE_INVISIBLE_ID = -1;
 typedef struct qvi_hwloc_device_s {
     int qvim_rc = QV_ERR_INTERNAL;
     /** Device cpuset */
-    qvi_hwloc_bitmap_t cpuset;
+    qvi_hwloc_bitmap_s cpuset;
     /** Internal object type information */
     qvi_hwloc_objx_t objx = {};
     /** Vendor ID */
@@ -1421,20 +1421,18 @@ split_cpuset_by_range(
     hwloc_const_cpuset_t cpuset,
     int base,
     int extent,
-    hwloc_bitmap_t *result
+    hwloc_bitmap_t result
 ) {
-    // Allocate and zero-out a new bitmap that will encode the split.
-    hwloc_bitmap_t iresult = nullptr;
-    int rc = qvi_hwloc_bitmap_calloc(&iresult);
-    if (rc != QV_SUCCESS) goto out;
+    // Zero-out the result bitmap that will encode the split.
+    hwloc_bitmap_zero(result);
     // We use PUs to split resources. Each set bit represents a PU. The number
     // of bits set represents the number of PUs present on the system. The
     // least-significant (right-most) bit represents logical ID 0.
-    int pu_depth;
-    rc = qvi_hwloc_obj_type_depth(
+    int pu_depth = 0;
+    int rc = qvi_hwloc_obj_type_depth(
         hwl, QV_HW_OBJ_PU, &pu_depth
     );
-    if (rc != QV_SUCCESS) goto out;
+    if (rc != QV_SUCCESS) return rc;
     // Calculate split based on given range.
     for (int i = base; i < base + extent; ++i) {
         hwloc_obj_t dobj;
@@ -1443,17 +1441,12 @@ split_cpuset_by_range(
         );
         if (rc != QV_SUCCESS) break;
 
-        rc = hwloc_bitmap_or(iresult, iresult, dobj->cpuset);
+        rc = hwloc_bitmap_or(result, result, dobj->cpuset);
         if (rc != 0) {
             rc = QV_ERR_HWLOC;
             break;
         }
     }
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_hwloc_bitmap_free(&iresult);
-    }
-    *result = iresult;
     return rc;
 }
 
@@ -1503,36 +1496,29 @@ qvi_hwloc_split_cpuset_by_color(
     hwloc_const_cpuset_t cpuset,
     int ncolors,
     int color,
-    hwloc_cpuset_t *result
+    hwloc_cpuset_t result
 ) {
     int chunk = 0;
     int rc = split_cpuset_chunk_size(
         hwl, cpuset, ncolors, &chunk
     );
-    if (rc != QV_SUCCESS) goto out;
+    if (rc != QV_SUCCESS) return rc;
     // This happens when n > npus. We can't support that split.
     // TODO(skg) Perhaps we can create an empty cpuset that denotes no
     // resources?
     if (chunk == 0) {
-        rc = QV_ERR_SPLIT;
-        goto out;
+        return QV_ERR_SPLIT;
     }
     // Group IDs must be < n: 0, 1, ... , ncolors-1.
     // TODO(skg) We could also allow this. That might mean that this processor
     // should not be considered in the split.
     if (color >= ncolors) {
-        rc = QV_ERR_SPLIT;
-        goto out;
+        return QV_ERR_SPLIT;
     }
 
-    rc = split_cpuset_by_range(
+    return split_cpuset_by_range(
         hwl, cpuset, chunk * color, chunk, result
     );
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_hwloc_bitmap_free(result);
-    }
-    return rc;
 }
 
 int

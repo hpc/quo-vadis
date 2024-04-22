@@ -27,9 +27,6 @@ extern "C" {
 struct qvi_hwloc_s;
 typedef struct qvi_hwloc_s qvi_hwloc_t;
 
-struct qvi_hwloc_bitmap_s;
-typedef struct qvi_hwloc_bitmap_s qvi_hwloc_bitmap_t;
-
 struct qvi_hwloc_device_s;
 typedef struct qvi_hwloc_device_s qvi_hwloc_device_t;
 
@@ -384,7 +381,7 @@ qvi_hwloc_split_cpuset_by_color(
     hwloc_const_cpuset_t cpuset,
     int ncolors,
     int color,
-    hwloc_cpuset_t *result
+    hwloc_cpuset_t result
 );
 
 /**
@@ -420,10 +417,24 @@ struct qvi_hwloc_bitmap_s {
     int qvim_rc = QV_ERR_INTERNAL;
     /** Internal bitmap */
     hwloc_bitmap_t data = nullptr;
-    /** Constructor */
+    /** Default constructor */
     qvi_hwloc_bitmap_s(void)
     {
         qvim_rc = qvi_hwloc_bitmap_calloc(&data);
+    }
+    /** Construct via hwloc_const_bitmap_t */
+    qvi_hwloc_bitmap_s(hwloc_const_bitmap_t bitmap)
+    {
+        qvim_rc = qvi_hwloc_bitmap_calloc(&data);
+        if (qvim_rc != QV_SUCCESS) return;
+        set(bitmap);
+    }
+    /** Copy constructor. */
+    qvi_hwloc_bitmap_s(const qvi_hwloc_bitmap_s &src)
+    {
+        qvim_rc = qvi_hwloc_bitmap_calloc(&data);
+        if (qvim_rc != QV_SUCCESS) return;
+        qvim_rc = qvi_hwloc_bitmap_copy(src.data, data);
     }
     /** Destructor */
     ~qvi_hwloc_bitmap_s(void)
@@ -440,7 +451,20 @@ struct qvi_hwloc_bitmap_s {
     {
         qvim_rc = qvi_hwloc_bitmap_copy(src.data, data);
     }
+    /**
+     * Sets the object's internal bitmap to match src's.
+     */
+    int
+    set(hwloc_const_bitmap_t src)
+    {
+        return qvi_hwloc_bitmap_copy(src, data);
+    }
 };
+
+/**
+ * Vector of cpuset objects.
+ */
+using qvi_hwloc_cpusets_t = std::vector<qvi_hwloc_bitmap_s>;
 
 #endif
 

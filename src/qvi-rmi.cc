@@ -1185,22 +1185,6 @@ qvi_rmi_get_device_in_cpuset(
 }
 
 int
-qvi_rmi_split_cpuset_by_color(
-    qvi_rmi_client_t *client,
-    hwloc_const_cpuset_t cpuset,
-    int ncolors,
-    int color,
-    hwloc_cpuset_t *result
-) {
-    // TODO(skg) At some point we will acquire the resources
-    // for improved splitting and resource distribution.
-    return qvi_hwloc_split_cpuset_by_color(
-        client->config->hwloc, cpuset,
-        ncolors, color, result
-    );
-}
-
-int
 qvi_rmi_get_cpuset_for_nobjs(
     qvi_rmi_client_t *client,
     hwloc_const_cpuset_t cpuset,
