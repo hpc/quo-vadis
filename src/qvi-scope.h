@@ -109,7 +109,7 @@ int
 qvi_scope_ksplit(
     qv_scope_t *parent,
     int npieces,
-    int *colors,
+    int *kcolors,
     uint_t k,
     qv_hw_obj_type_t maybe_obj_type,
     qv_scope_t ***kchildren

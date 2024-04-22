@@ -167,18 +167,6 @@ qvi_rmi_get_device_in_cpuset(
     char **dev_id
 );
 
-/**
- *
- */
-int
-qvi_rmi_split_cpuset_by_color(
-    qvi_rmi_client_t *client,
-    hwloc_const_cpuset_t cpuset,
-    int ncolors,
-    int color,
-    hwloc_cpuset_t *result
-);
-
 int
 qvi_rmi_get_cpuset_for_nobjs(
     qvi_rmi_client_t *client,

@@ -90,7 +90,7 @@ struct qvi_scope_split_agg_s {
     /**
      * Vector of task affinities.
      */
-    qvi_map_cpusets_t affinities{};
+    qvi_hwloc_cpusets_t affinities{};
     /**
      * Constructor.
      */
@@ -104,11 +104,6 @@ struct qvi_scope_split_agg_s {
             qvi_hwpool_free(&hwpool);
         }
         hwpools.clear();
-
-        for (auto &cpuset : affinities) {
-            qvi_hwloc_bitmap_free(&cpuset);
-        }
-        affinities.clear();
     }
     /**
      * Minimally initializes instance.
@@ -436,12 +431,16 @@ scope_split_coll_gather(
     if (myid == qvi_scope_split_coll_s::rootid) {
         splitcoll.gsplit.affinities.resize(group_size);
         for (uint_t tid = 0; tid < group_size; ++tid) {
+            hwloc_cpuset_t cpuset = nullptr;
             rc = qvi_rmi_task_get_cpubind(
-                parent->rmi,
-                splitcoll.gsplit.taskids[tid],
-                &splitcoll.gsplit.affinities[tid]
+                parent->rmi, splitcoll.gsplit.taskids[tid], &cpuset
             );
-            if (rc != QV_SUCCESS) return rc;
+            if (rc != QV_SUCCESS) break;
+
+            rc = splitcoll.gsplit.affinities[tid].set(cpuset);
+            // Clean up.
+            qvi_hwloc_bitmap_free(&cpuset);
+            if (rc != QV_SUCCESS) break;
         }
     }
     return rc;
@@ -475,7 +474,7 @@ scope_split_coll_scatter(
  * For example, some hardware pools may have GPUs, while others may not.
  */
 static int
-qvi_scope_split_agg_get_cpuset(
+qvi_scope_split_agg_cpuset_dup(
     const qvi_scope_split_agg_s &splitagg,
     hwloc_cpuset_t *result
 ) {
@@ -624,7 +623,7 @@ qvi_scope_group_get(
 static int
 apply_cpuset_mapping(
     const qvi_map_t &map,
-    const qvi_map_cpusets_t cpusets,
+    const qvi_hwloc_cpusets_t cpusets,
     std::vector<qvi_hwpool_t *> &hwpools,
     std::vector<int> &colors
 ) {
@@ -777,9 +776,9 @@ agg_split_devices_affinity_preserving(
             devs.push_back(dinfo.second.get());
         }
         // Store device affinities.
-        qvi_map_cpusets_t devaffs;
+        qvi_hwloc_cpusets_t devaffs;
         for (auto &dev : devs) {
-            devaffs.push_back(dev->affinity.data);
+            devaffs.push_back(dev->affinity);
         }
 
         qvi_map_t map;
@@ -821,68 +820,57 @@ agg_split_user_defined(
     qvi_scope_split_agg_s &splitagg
 ) {
     int rc = QV_SUCCESS;
-    const uint_t group_size = splitagg.group_size;
-    qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc_get(splitagg.rmi);
-    qvi_map_cpusets_t cpusets(group_size);
-    // Get the base cpuset.
+    // Get a copy of the base cpuset.
     hwloc_cpuset_t base_cpuset = nullptr;
-    rc = qvi_scope_split_agg_get_cpuset(splitagg, &base_cpuset);
-    if (rc != QV_SUCCESS) goto out;
+    rc = qvi_scope_split_agg_cpuset_dup(splitagg, &base_cpuset);
+    if (rc != QV_SUCCESS) return rc;
 
+    qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc_get(splitagg.rmi);
+    const uint_t group_size = splitagg.group_size;
+    qvi_hwloc_cpusets_t cpusets(group_size);
     for (uint_t i = 0; i < group_size; ++i) {
         rc = qvi_hwloc_split_cpuset_by_color(
             hwloc,
             base_cpuset,
             splitagg.split_size,
             splitagg.colors[i],
-            &cpusets[i]
+            cpusets[i].data
         );
         if (rc != QV_SUCCESS) break;
         // Reinitialize the hwpool with the new cpuset.
-        rc = qvi_hwpool_init(splitagg.hwpools[i], cpusets[i]);
+        rc = qvi_hwpool_init(splitagg.hwpools[i], cpusets[i].data);
         if (rc != QV_SUCCESS) break;
     }
-    if (rc != QV_SUCCESS) goto out;
-    // Use a straightforward device splitting algorithm based on user's request.
-    rc = agg_split_devices_user_defined(splitagg);
-out:
-    for (auto &cpuset : cpusets) {
-        qvi_hwloc_bitmap_free(&cpuset);
-    }
+    // No longer needed.
     qvi_hwloc_bitmap_free(&base_cpuset);
-    return rc;
+    if (rc != QV_SUCCESS) return rc;
+    // Use a straightforward device splitting algorithm based on user's request.
+    return agg_split_devices_user_defined(splitagg);
 }
 
 static int
 agg_split_get_new_host_cpusets(
     const qvi_scope_split_agg_s &splitagg,
-    qvi_map_cpusets_t &result
+    qvi_hwloc_cpusets_t &result
 ) {
     int rc = QV_SUCCESS;
+    // The cpuset that we are going to split.
+    hwloc_cpuset_t base_cpuset = nullptr;
+    rc = qvi_scope_split_agg_cpuset_dup(splitagg, &base_cpuset);
+    if (rc != QV_SUCCESS) return rc;
     // Pointer to my hwloc instance.
     qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc_get(splitagg.rmi);
     // Holds the host's split cpusets.
     result.resize(splitagg.split_size);
-    // The cpuset that we are going to split.
-    hwloc_cpuset_t base_cpuset = nullptr;
-    rc = qvi_scope_split_agg_get_cpuset(splitagg, &base_cpuset);
-    if (rc != QV_SUCCESS) goto out;
     // Perform a straightforward splitting of the provided cpuset: split the
     // provided base cpuset into splitcoll.size distinct pieces. Notice that we do
     // not go through the RMI for this because this is just an local, temporary
     // splitting that is ultimately fed to another splitting algorithm.
     for (uint_t color = 0; color < splitagg.split_size; ++color) {
         rc = qvi_hwloc_split_cpuset_by_color(
-            hwloc, base_cpuset, splitagg.split_size, color, &result[color]
+            hwloc, base_cpuset, splitagg.split_size, color, result[color].data
         );
-        if (rc != QV_SUCCESS) goto out;
-    }
-out:
-    if (rc != QV_SUCCESS) {
-        for (auto &cpuset : result) {
-            qvi_hwloc_bitmap_free(&cpuset);
-        }
-        result.clear();
+        if (rc != QV_SUCCESS) break;
     }
     qvi_hwloc_bitmap_free(&base_cpuset);
     return rc;
@@ -891,7 +879,7 @@ out:
 static int
 agg_split_get_new_osdev_cpusets(
     const qvi_scope_split_agg_s &splitagg,
-    qvi_map_cpusets_t &result
+    qvi_hwloc_cpusets_t &result
 ) {
     int rc = QV_SUCCESS, nobj = 0;
     // The target object type.
@@ -907,19 +895,11 @@ agg_split_get_new_osdev_cpusets(
     for (const auto &dinfo : *dinfos) {
         // Not the type we are looking to split.
         if (obj_type != dinfo.first) continue;
-
-        rc = qvi_hwloc_bitmap_calloc(&result[affi]);
-        if (rc != QV_SUCCESS) goto out;
         // Copy the device's affinity to our list of device affinities.
-        rc = qvi_hwloc_bitmap_copy(dinfo.second->affinity.data, result[affi++]);
-        if (rc != QV_SUCCESS) goto out;
-    }
-out:
-    if (rc != QV_SUCCESS) {
-        for (auto &cpuset : result) {
-            qvi_hwloc_bitmap_free(&cpuset);
-        }
-        result.clear();
+        rc = qvi_hwloc_bitmap_copy(
+            dinfo.second->affinity.data, result[affi++].data
+        );
+        if (rc != QV_SUCCESS) break;
     }
     return rc;
 }
@@ -927,7 +907,7 @@ out:
 static int
 agg_split_get_primary_cpusets(
     const qvi_scope_split_agg_s &splitagg,
-    qvi_map_cpusets_t &result
+    qvi_hwloc_cpusets_t &result
 ) {
     const qv_hw_obj_type_t obj_type = splitagg.split_at_type;
     // We were provided a real host resource type that we have to split. Or
@@ -949,7 +929,7 @@ agg_split_affinity_preserving_pass1(
 ) {
     const uint_t group_size = splitagg.group_size;
     // cpusets used for first mapping pass.
-    qvi_map_cpusets_t cpusets{};
+    qvi_hwloc_cpusets_t cpusets{};
     // Get the primary cpusets used for the first pass of mapping.
     int rc = agg_split_get_primary_cpusets(splitagg, cpusets);
     if (rc != QV_SUCCESS) return rc;
@@ -960,21 +940,15 @@ agg_split_affinity_preserving_pass1(
     rc = qvi_map_affinity_preserving(
         map, policy, splitagg.affinities, cpusets
     );
-    if (rc != QV_SUCCESS) goto out;
+    if (rc != QV_SUCCESS) return rc;
     // Make sure that we mapped all the tasks. If not, this is a bug.
     if (qvi_map_nfids_mapped(map) != group_size) {
-        rc = QV_ERR_INTERNAL;
-        goto out;
+        return QV_ERR_INTERNAL;
     }
     // Update the hardware pools to reflect the new mapping.
-    rc = apply_cpuset_mapping(
+    return apply_cpuset_mapping(
         map, cpusets, splitagg.hwpools, splitagg.colors
     );
-out:
-    for (auto &cpuset : cpusets) {
-        qvi_hwloc_bitmap_free(&cpuset);
-    }
-    return rc;
 }
 
 /**
@@ -1172,14 +1146,14 @@ int
 qvi_scope_ksplit(
     qv_scope_t *parent,
     int npieces,
-    int *colors,
+    int *kcolors,
     uint_t k,
     qv_hw_obj_type_t maybe_obj_type,
     qv_scope_t ***kchildren
 ) {
     int rc = QV_SUCCESS;
 
-    if (!colors || k == 0) return QV_ERR_INVLD_ARG;
+    if (!kcolors || k == 0) return QV_ERR_INVLD_ARG;
 
     const uint_t group_size = k;
     qvi_scope_split_agg_s splitagg{};
@@ -1200,7 +1174,7 @@ qvi_scope_ksplit(
     // Now populate the relevant data before attempting a split.
     for (uint_t i = 0; i < group_size; ++i) {
         // Store requested colors in aggregate.
-        splitagg.colors.push_back(colors[i]);
+        splitagg.colors.push_back(kcolors[i]);
         // Since the parent hardware pool is the resource we are splitting and
         // agg_split_* calls expect |group_size| elements, replicate by dups.
         qvi_hwpool_t *hwp = nullptr;
@@ -1210,10 +1184,7 @@ qvi_scope_ksplit(
         // Since this is called by a single task, replicate its task ID, too.
         splitagg.taskids.push_back(taskid);
         // Same goes for the task's affinity.
-        hwloc_cpuset_t aff = nullptr;
-        rc = qvi_hwloc_bitmap_dup(task_affinity, &aff);
-        if (rc != QV_SUCCESS) break;
-        splitagg.affinities.push_back(aff);
+        splitagg.affinities.push_back(qvi_hwloc_bitmap_s(task_affinity));
     }
     // Cleanup: we don't need task_affinity anymore.
     qvi_hwloc_bitmap_free(&task_affinity);
