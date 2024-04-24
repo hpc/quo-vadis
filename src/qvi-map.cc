@@ -126,6 +126,41 @@ qvi_map_fid_mapped(
 }
 
 int
+qvi_map_colors(
+    qvi_map_t &map,
+    const std::vector<int> &fcolors,
+    const qvi_hwloc_cpusets_t &tres
+) {
+    // Note: the array index i of fcolors is the color requested by task i.
+    // Determine the number of distinct colors provided in the colors array.
+    std::set<int> color_set(fcolors.begin(), fcolors.end());
+    const uint_t nfrom = color_set.size();
+    // For convenience, we convert the set to a vector for later use.
+    std::vector<int> color_vec(color_set.begin(), color_set.end());
+    // Maps a given color to its corresponding vector index. For example:
+    // colors = {3, 5, 3, 4}, color_set = {3, 4, 5}, color_vec = {3, 4, 5}
+    // color_set_index (csi) = {0, 1, 2}, since we have three distinct colors.
+    // color2csi = {3:0, 4:1, 5:2}
+    qvi_map_t color2csi;
+    for (uint_t i = 0; i < color_vec.size(); ++i) {
+        color2csi.insert({color_vec[i], i});
+    }
+    // Create a mapping of color_set indices to cpuset indices.
+    qvi_map_t csi2cpui;
+    int rc = qvi_map_packed(csi2cpui, nfrom, tres);
+    if (rc != QV_SUCCESS) return rc;
+    // Now map the task colors to their respective cpusets.
+    for (uint_t fid = 0; fid < fcolors.size(); ++fid) {
+        // Already mapped (potentially by some other mapper).
+        if (qvi_map_fid_mapped(map, fid)) continue;
+        const int csi = color2csi.at(fcolors[fid]);
+        const int tid = csi2cpui.at(csi);
+        map.insert({fid, tid});
+    }
+    return rc;
+}
+
+int
 qvi_map_packed(
     qvi_map_t &map,
     uint_t nfids,
@@ -145,7 +180,7 @@ qvi_map_packed(
             // Already mapped (potentially by some other mapper).
             if (qvi_map_fid_mapped(map, fid)) continue;
             // Else map the consumer to the resource ID.
-            map.insert(std::make_pair(fid, tid));
+            map.insert({fid, tid});
             nmapped++;
         }
     }
@@ -169,7 +204,7 @@ qvi_map_spread(
         // Already mapped (potentially by some other mapper).
         if (qvi_map_fid_mapped(map, fid)) continue;
         // Mod to loop around 'to resource' IDs.
-        map.insert(std::make_pair(fid, (tid++) % ntres));
+        map.insert({fid, (tid++) % ntres});
         nmapped++;
     }
     return QV_SUCCESS;
@@ -188,7 +223,7 @@ qvi_map_disjoint_affinity(
             // Already mapped (potentially by some other mapper).
             if (qvi_map_fid_mapped(map, fid)) continue;
             // Map the consumer ID to its resource ID.
-            map.insert(std::make_pair(fid, tid));
+            map.insert({fid, tid});
         }
     }
     return QV_SUCCESS;
