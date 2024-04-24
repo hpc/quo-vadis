@@ -137,10 +137,11 @@ qvi_map_colors(
     const uint_t nfrom = color_set.size();
     // For convenience, we convert the set to a vector for later use.
     std::vector<int> color_vec(color_set.begin(), color_set.end());
-    // Maps a given color to its corresponding vector index. For example:
-    // colors = {3, 5, 3, 4}, color_set = {3, 4, 5}, color_vec = {3, 4, 5}
+    // Maps a given color to its corresponding set index.
+    // For example, given colors = {3, 5, 3, 4}, we get the following:
+    // color_set = {3, 4, 5}, color_vec = {3, 4, 5}
     // color_set_index (csi) = {0, 1, 2}, since we have three distinct colors.
-    // color2csi = {3:0, 4:1, 5:2}
+    // color2csi = {3:0, 4:1, 5:2}.
     qvi_map_t color2csi;
     for (uint_t i = 0; i < color_vec.size(); ++i) {
         color2csi.insert({color_vec[i], i});
@@ -190,7 +191,6 @@ qvi_map_packed(
 /**
  * Maps round-robin over the given resources.
  */
-// TODO(skg) Verify name and functionality, rename?
 int
 qvi_map_spread(
     qvi_map_t &map,
@@ -198,14 +198,11 @@ qvi_map_spread(
     const qvi_hwloc_cpusets_t &tres
 ) {
     const uint_t ntres = tres.size();
-    // Keeps track of the next IDs to map: 'from' and 'to' IDs.
-    uint_t nmapped = qvi_map_nfids_mapped(map);
-    for (uint_t fid = 0, tid = 0; fid < nfids && nmapped < nfids; ++fid) {
+    for (uint_t fid = 0, tid = 0; fid < nfids; ++fid) {
         // Already mapped (potentially by some other mapper).
         if (qvi_map_fid_mapped(map, fid)) continue;
         // Mod to loop around 'to resource' IDs.
         map.insert({fid, (tid++) % ntres});
-        nmapped++;
     }
     return QV_SUCCESS;
 }
