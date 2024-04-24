@@ -1388,26 +1388,18 @@ static int
 split_cpuset_chunk_size(
     qvi_hwloc_t *hwl,
     hwloc_const_cpuset_t cpuset,
-    int npieces,
-    int *chunk
+    uint_t npieces,
+    uint_t *chunk_size
 ) {
-    int rc = QV_SUCCESS;
-
-    if (npieces <= 0) {
-        rc = QV_ERR_INVLD_ARG;
-        goto out;
-    }
-
-    int npus;
-    rc = qvi_hwloc_get_nobjs_in_cpuset(
+    int npus = 0;
+    int rc = qvi_hwloc_get_nobjs_in_cpuset(
         hwl, QV_HW_OBJ_PU, cpuset, &npus
     );
-out:
-    if (rc != QV_SUCCESS) {
-        *chunk = 0;
+    if (rc != QV_SUCCESS || npieces == 0 || npus == 0 ) {
+        *chunk_size = 0;
     }
     else {
-        *chunk = npus / npieces;
+        *chunk_size = npus / npieces;
     }
     return rc;
 }
@@ -1419,8 +1411,8 @@ static int
 split_cpuset_by_range(
     qvi_hwloc_t *hwl,
     hwloc_const_cpuset_t cpuset,
-    int base,
-    int extent,
+    uint_t base,
+    uint_t extent,
     hwloc_bitmap_t result
 ) {
     // Zero-out the result bitmap that will encode the split.
@@ -1434,7 +1426,7 @@ split_cpuset_by_range(
     );
     if (rc != QV_SUCCESS) return rc;
     // Calculate split based on given range.
-    for (int i = base; i < base + extent; ++i) {
+    for (uint_t i = base; i < base + extent; ++i) {
         hwloc_obj_t dobj;
         rc = qvi_hwloc_get_obj_in_cpuset_by_depth(
             hwl, cpuset, pu_depth, i, &dobj
@@ -1450,13 +1442,12 @@ split_cpuset_by_range(
     return rc;
 }
 
-// TODO(skg) Merge with split_cpuset_by_range().
 int
 qvi_hwloc_get_cpuset_for_nobjs(
     qvi_hwloc_t *hwl,
     hwloc_const_cpuset_t cpuset,
     qv_hw_obj_type_t obj_type,
-    int nobjs,
+    uint_t nobjs,
     hwloc_cpuset_t *result
 ) {
     hwloc_bitmap_t iresult = nullptr;
@@ -1469,7 +1460,7 @@ qvi_hwloc_get_cpuset_for_nobjs(
     );
     if (rc != QV_SUCCESS) goto out;
     // Calculate cpuset based on number of desired objects.
-    for (int i = 0; i < nobjs; ++i) {
+    for (uint_t i = 0; i < nobjs; ++i) {
         hwloc_obj_t dobj;
         rc = qvi_hwloc_get_obj_in_cpuset_by_depth(
             hwl, cpuset, obj_depth, i, &dobj
@@ -1491,33 +1482,26 @@ out:
 }
 
 int
-qvi_hwloc_split_cpuset_by_color(
+qvi_hwloc_split_cpuset_by_chunk_id(
     qvi_hwloc_t *hwl,
     hwloc_const_cpuset_t cpuset,
-    int ncolors,
-    int color,
+    uint_t nchunks,
+    uint_t chunk_id,
     hwloc_cpuset_t result
 ) {
-    int chunk = 0;
+    uint_t chunk_size = 0;
     int rc = split_cpuset_chunk_size(
-        hwl, cpuset, ncolors, &chunk
+        hwl, cpuset, nchunks, &chunk_size
     );
     if (rc != QV_SUCCESS) return rc;
-    // This happens when n > npus. We can't support that split.
-    // TODO(skg) Perhaps we can create an empty cpuset that denotes no
-    // resources?
-    if (chunk == 0) {
-        return QV_ERR_SPLIT;
-    }
-    // Group IDs must be < n: 0, 1, ... , ncolors-1.
-    // TODO(skg) We could also allow this. That might mean that this processor
-    // should not be considered in the split.
-    if (color >= ncolors) {
+    // 0 chunk_size likely caused by nonsensical split request.
+    // Chunk IDs must be < nchunks: 0, 1, ... , nchunks-1.
+    if (chunk_size == 0 || chunk_id >= nchunks) {
         return QV_ERR_SPLIT;
     }
 
     return split_cpuset_by_range(
-        hwl, cpuset, chunk * color, chunk, result
+        hwl, cpuset, chunk_size * chunk_id, chunk_size, result
     );
 }
 

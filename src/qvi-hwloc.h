@@ -376,11 +376,11 @@ qvi_hwloc_get_device_in_cpuset(
  *
  */
 int
-qvi_hwloc_split_cpuset_by_color(
+qvi_hwloc_split_cpuset_by_chunk_id(
     qvi_hwloc_t *hwl,
     hwloc_const_cpuset_t cpuset,
-    int ncolors,
-    int color,
+    uint_t nchunks,
+    uint_t chunk_id,
     hwloc_cpuset_t result
 );
 
@@ -392,7 +392,7 @@ qvi_hwloc_get_cpuset_for_nobjs(
     qvi_hwloc_t *hwl,
     hwloc_const_cpuset_t cpuset,
     qv_hw_obj_type_t obj_type,
-    int nobjs,
+    uint_t nobjs,
     hwloc_cpuset_t *result
 );
 
@@ -427,7 +427,7 @@ struct qvi_hwloc_bitmap_s {
     {
         qvim_rc = qvi_hwloc_bitmap_calloc(&data);
         if (qvim_rc != QV_SUCCESS) return;
-        set(bitmap);
+        qvim_rc = set(bitmap);
     }
     /** Copy constructor. */
     qvi_hwloc_bitmap_s(const qvi_hwloc_bitmap_s &src)

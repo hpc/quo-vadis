@@ -113,6 +113,16 @@ qvi_map_disjoint_affinity(
 );
 
 /**
+ * Performs a mapping between the provided colors to the provided cpusets.
+ */
+int
+qvi_map_colors(
+    qvi_map_t &map,
+    const std::vector<int> &fcolors,
+    const qvi_hwloc_cpusets_t &tres
+);
+
+/**
  * Performs an affinity preserving mapping.
  */
 int
