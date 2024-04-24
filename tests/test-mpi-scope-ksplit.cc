@@ -82,7 +82,7 @@ main(void)
 
     // Test internal APIs
     const int npieces = ncores / 2;
-    std::vector<int> colors(npieces);
+    std::vector<int> colors(npieces * 2);
     std::iota(colors.begin(), colors.end(), 0);
 
     qv_scope_t **subscopes = nullptr;

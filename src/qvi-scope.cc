@@ -963,30 +963,14 @@ agg_split_affinity_preserving(
 }
 
 /**
- * Takes a vector of colors and clamps their values to [0, max) in place. If
- * this function finds more colors than slots available from [0, max), then it
- * returns an error code.
+ * Takes a vector of colors and clamps their values to [0, values.size()) in
+ * place.
  */
-// TODO(skg) Lift size restriction.
 static int
 clamp_colors(
-    std::vector<int> &values,
-    uint_t max
+    std::vector<int> &values
 ) {
-    // Recall: sets are ordered.
-    std::set<int> valset(values.begin(), values.end());
-    // Too many colors for the given space.
-    if (valset.size() > max) return QV_ERR_INVLD_ARG;
-    // Maps the input vector colors to their clamped values.
-    std::map<int, int> colors2clamped;
-    // color': the clamped color.
-    int colorp = 0;
-    for (auto val : valset) {
-        colors2clamped.insert({val, colorp++});
-    }
-    for (uint_t i = 0; i < values.size(); ++i) {
-        values[i] = colors2clamped[values[i]];
-    }
+    std::iota(values.begin(), values.end(), 0);
     return QV_SUCCESS;
 }
 
@@ -1019,7 +1003,7 @@ agg_split(
 
     // All colors are positive.
     if (tcolors.front() >= 0) {
-        rc = clamp_colors(splitagg.colors, splitagg.split_size);
+        rc = clamp_colors(splitagg.colors);
         if (rc != QV_SUCCESS) return rc;
     }
     // Some values are negative.

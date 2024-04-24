@@ -48,6 +48,7 @@
 #include <chrono>
 #include <map>
 #include <new>
+#include <numeric>
 #include <set>
 #include <stack>
 #include <stdexcept>
