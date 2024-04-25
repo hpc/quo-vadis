@@ -963,14 +963,25 @@ agg_split_affinity_preserving(
 }
 
 /**
- * Takes a vector of colors and clamps their values to [0, values.size()) in
- * place.
+ * Takes a vector of colors and clamps their values to [0, ndc)
+ * in place, where ndc is the number of distinct numbers found in values.
  */
 static int
 clamp_colors(
     std::vector<int> &values
 ) {
-    std::iota(values.begin(), values.end(), 0);
+    // Recall: sets are ordered.
+    std::set<int> valset(values.begin(), values.end());
+    // Maps the input vector colors to their clamped values.
+    std::map<int, int> colors2clamped;
+    // color': the clamped color.
+    int colorp = 0;
+    for (auto val : valset) {
+        colors2clamped.insert({val, colorp++});
+    }
+    for (uint_t i = 0; i < values.size(); ++i) {
+        values[i] = colors2clamped[values[i]];
+    }
     return QV_SUCCESS;
 }
 
