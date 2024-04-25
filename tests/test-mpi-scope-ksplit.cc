@@ -15,12 +15,11 @@
 #include "quo-vadis-mpi.h"
 #include "qvi-scope.h"
 #include "qvi-test-common.h"
-#include <numeric>
 
 int
 main(void)
 {
-    char const *ers = NULL;
+    cstr_t ers = NULL;
     MPI_Comm comm = MPI_COMM_WORLD;
 
     /* Initialization */
@@ -30,48 +29,39 @@ main(void)
         qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
-    int wsize;
+    int wsize = 0;
     rc = MPI_Comm_size(comm, &wsize);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_size() failed";
         qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
-    int wrank;
+    int wrank = 0;
     rc = MPI_Comm_rank(comm, &wrank);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_rank() failed";
         qvi_test_panic("%s (rc=%d)", ers, rc);
     }
-
+    // Helps with flushing MPI process output.
     setbuf(stdout, NULL);
 
-    qv_context_t *ctx;
+    qv_context_t *ctx = nullptr;
     rc = qv_mpi_context_create(comm, &ctx);
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_context_create() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    qv_scope_t *base_scope;
+    qv_scope_t *base_scope = nullptr;
     rc = qv_scope_get(
-        ctx,
-        QV_SCOPE_USER,
-        &base_scope
+        ctx, QV_SCOPE_USER, &base_scope
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_get() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    qvi_test_bind_push(
-        ctx, base_scope
-    );
-    qvi_test_bind_pop(
-        ctx, base_scope
-    );
-
-    int ncores;
+    int ncores = 0;
     rc = qv_scope_nobjs(
         ctx, base_scope, QV_HW_OBJ_CORE, &ncores
     );
@@ -81,21 +71,21 @@ main(void)
     }
 
     // Test internal APIs
-    const int npieces = ncores / 2;
+    const uint_t npieces = ncores / 2;
     std::vector<int> colors(npieces * 2);
-    std::iota(colors.begin(), colors.end(), 0);
+    std::fill_n(colors.begin(), colors.size(), (int)QV_SCOPE_SPLIT_AFFINITY_PRESERVING);
+    //std::iota(colors.begin(), colors.end(), 0);
 
-    qv_scope_t **subscopes = nullptr;
+    std::vector<qv_scope_t *> subscopes;
     rc = qvi_scope_ksplit(
-        base_scope, npieces, colors.data(),
-        colors.size(), QV_HW_OBJ_MACHINE, &subscopes
+        base_scope, npieces, colors, subscopes
     );
     if (rc != QV_SUCCESS) {
         ers = "qvi_scope_ksplit() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    for (uint_t i = 0; i < colors.size(); ++i) {
+    for (uint_t i = 0; i < subscopes.size(); ++i) {
         qvi_test_scope_report(
             ctx, subscopes[i], std::to_string(i).c_str()
         );
@@ -107,15 +97,7 @@ main(void)
         );
     }
 
-    for (uint_t i = 0; i < colors.size(); ++i) {
-        rc = qv_scope_free(ctx, subscopes[i]);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_scope_free() failed";
-            qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
-    }
-    // TODO(skg) This isn't nice, fix by adding to internal API.
-    free(subscopes);
+    qvi_scope_kfree(subscopes);
 
     rc = qv_scope_free(ctx, base_scope);
     if (rc != QV_SUCCESS) {
@@ -129,7 +111,15 @@ main(void)
         qvi_test_panic("%s", ers);
     }
 
-    MPI_Finalize();
+    rc = MPI_Finalize();
+    if (rc != MPI_SUCCESS) {
+        ers = "MPI_Finalize() failed";
+        qvi_test_panic("%s (rc=%d)", ers, rc);
+    }
+
+    if (wrank == 0) {
+        qvi_log_info("Test Passed");
+    }
 
     return EXIT_SUCCESS;
 }
