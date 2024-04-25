@@ -15,6 +15,7 @@
  */
 
 // TODO(skg) Use distance API for device affinity.
+// TODO(skg) Add RMI to acquire/release resources.
 
 #include "qvi-scope.h"
 #include "qvi-rmi.h"
@@ -26,12 +27,22 @@ using id_devinfo_multimap_t = std::multimap<int, const qvi_hwpool_devinfo_s *>;
 
 /** Scope type definition. */
 struct qv_scope_s {
+    int qvim_rc = QV_SUCCESS;
     /** Pointer to initialized RMI infrastructure. */
     qvi_rmi_client_t *rmi = nullptr;
     /** Task group associated with this scope instance. */
     qvi_group_t *group = nullptr;
     /** Hardware resource pool. */
     qvi_hwpool_t *hwpool = nullptr;
+    /** Constructor */
+    qv_scope_s(void) = default;
+    /** Destructor */
+    ~qv_scope_s(void)
+    {
+        rmi = nullptr;
+        qvi_hwpool_free(&hwpool);
+        qvi_group_free(&group);
+    }
 };
 
 /**
@@ -490,31 +501,24 @@ int
 qvi_scope_new(
     qv_scope_t **scope
 ) {
-    int rc = QV_SUCCESS;
-
-    qv_scope_t *iscope = qvi_new qv_scope_t();
-    if (!iscope) rc = QV_ERR_OOR;
-    // hwpool and group will be initialized in scope_init().
-    if (rc != QV_SUCCESS) {
-        qvi_scope_free(&iscope);
-    }
-    *scope = iscope;
-    return rc;
+    return qvi_new_rc(scope);
 }
 
-// TODO(skg) Add RMI to release resources.
 void
 qvi_scope_free(
     qv_scope_t **scope
 ) {
-    if (!scope) return;
-    qv_scope_t *iscope = *scope;
-    if (!iscope) goto out;
-    qvi_hwpool_free(&iscope->hwpool);
-    qvi_group_free(&iscope->group);
-    delete iscope;
-out:
-    *scope = nullptr;
+    qvi_delete(scope);
+}
+
+void
+qvi_scope_kfree(
+    std::vector<qv_scope_t *> &scopes
+) {
+    for (auto scope : scopes) {
+        qvi_scope_free(&scope);
+    }
+    scopes.clear();
 }
 
 static int
@@ -647,15 +651,17 @@ apply_cpuset_mapping(
     return rc;
 }
 
-static qvi_map_affinity_preserving_policy_t
+static qvi_map_fn_t
 split_agg_get_affinity_preserving_policy(
     const qvi_scope_split_agg_s &splitagg
 ) {
     switch (splitagg.split_at_type) {
+        // For split()
         case QV_HW_OBJ_LAST:
-            return QVI_MAP_AFFINITY_PRESERVING_PACKED;
+            return qvi_map_packed;
+        // For split_at()
         default:
-            return QVI_MAP_AFFINITY_PRESERVING_SPREAD;
+            return qvi_map_spread;
     }
 }
 
@@ -1138,18 +1144,16 @@ out:
 int
 qvi_scope_ksplit(
     qv_scope_t *parent,
-    int npieces,
-    int *kcolors,
-    uint_t k,
-    qv_hw_obj_type_t maybe_obj_type,
-    qv_scope_t ***kchildren
+    uint_t npieces,
+    const std::vector<int> &kcolors,
+    std::vector<qv_scope_t *> &kchildren
 ) {
-    if (!kcolors || k == 0) return QV_ERR_INVLD_ARG;
+    if (kcolors.size() == 0) return QV_ERR_INVLD_ARG;
 
-    const uint_t group_size = k;
+    const uint_t group_size = kcolors.size();
     qvi_scope_split_agg_s splitagg{};
     int rc = splitagg.init(
-        parent->rmi, parent->hwpool, group_size, npieces, maybe_obj_type
+        parent->rmi, parent->hwpool, group_size, npieces, QV_HW_OBJ_LAST
     );
     if (rc != QV_SUCCESS) return rc;
     // Since this is called by a single task, get its ID and associated hardware
@@ -1186,11 +1190,7 @@ qvi_scope_ksplit(
     rc = agg_split(splitagg);
     if (rc != QV_SUCCESS) return rc;
     // Now populate the children.
-    // TODO(skg) Use a better data structure here.
-    qv_scope_t **ikchildren = (qv_scope_t **)calloc(
-        group_size, sizeof(qv_scope_t *)
-    );
-    if (!ikchildren) return QV_ERR_OOR;
+    kchildren.resize(group_size);
 
     for (uint_t i = 0; i < group_size; ++i) {
         // Split off from our parent group. This call is usually called from a
@@ -1221,16 +1221,11 @@ qvi_scope_ksplit(
             qvi_scope_free(&child);
             break;
         }
-        ikchildren[i] = child;
+        kchildren[i] = child;
     }
-    if (rc != QV_SUCCESS && ikchildren) {
-        for (uint_t i = 0; i < group_size; ++i) {
-            qvi_scope_free(&ikchildren[i]);
-        }
-        free(ikchildren);
-        ikchildren = nullptr;
+    if (rc != QV_SUCCESS) {
+        kchildren.clear();
     }
-    *kchildren = ikchildren;
     return rc;
 }
 

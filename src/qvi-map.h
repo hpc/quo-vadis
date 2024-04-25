@@ -18,14 +18,6 @@
 #include "qvi-hwloc.h"
 
 /**
- * Modes used to influence how affinity preserving mapping is done.
- */
-typedef enum qvi_map_affinity_preserving_policy_e {
-    QVI_MAP_AFFINITY_PRESERVING_PACKED = 0,
-    QVI_MAP_AFFINITY_PRESERVING_SPREAD
-} qvi_map_affinity_preserving_policy_t;
-
-/**
  * Returns the largest number that will fit in the space available.
  */
 uint_t
@@ -45,6 +37,13 @@ qvi_map_maxiperk(
 
 /** Maintains a mapping between 'From IDs' to 'To IDs'. */
 using qvi_map_t = std::map<int, int>;
+
+/**
+ * Defines a function pointer to a desired mapping function.
+ */
+using qvi_map_fn_t = std::function<
+    int(qvi_map_t &map, uint_t nfids, const qvi_hwloc_cpusets_t &tres)
+>;
 
 /**
  * Maintains a mapping between resource IDs to a set of
@@ -106,6 +105,10 @@ qvi_map_calc_shaffinity(
     qvi_map_shaffinity_t &res_affinity_map
 );
 
+/**
+ * The disjoint affinity mapper maps consuer IDs to resource IDs with NO shared
+ * affinity. It assumes disjoint affinity in damap.
+ */
 int
 qvi_map_disjoint_affinity(
     qvi_map_t &map,
@@ -128,7 +131,7 @@ qvi_map_colors(
 int
 qvi_map_affinity_preserving(
     qvi_map_t &map,
-    qvi_map_affinity_preserving_policy_t policy,
+    const qvi_map_fn_t map_rest_fn,
     const qvi_hwloc_cpusets_t &faffs,
     const qvi_hwloc_cpusets_t &tores
 );

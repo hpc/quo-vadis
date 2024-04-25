@@ -212,11 +212,9 @@ qvi_map_disjoint_affinity(
     qvi_map_t &map,
     const qvi_map_shaffinity_t &damap
 ) {
-    // The disjoint affinity map maps resource IDs (To IDs)
-    // to a set of consumer IDs (From IDs) with shared affinity.
     for (auto &tidfids : damap) {
         const int tid = tidfids.first;
-        for (const auto &fid : damap.at(tid)) {
+        for (const auto fid : damap.at(tid)) {
             // Already mapped (potentially by some other mapper).
             if (qvi_map_fid_mapped(map, fid)) continue;
             // Map the consumer ID to its resource ID.
@@ -253,13 +251,10 @@ qvi_map_calc_shaffinity(
 int
 qvi_map_affinity_preserving(
     qvi_map_t &map,
-    qvi_map_affinity_preserving_policy_t policy,
+    const qvi_map_fn_t map_rest_fn,
     const qvi_hwloc_cpusets_t &faffs,
     const qvi_hwloc_cpusets_t &tores
 ) {
-    using map_fn_t = std::function<
-        int(qvi_map_t &map, uint_t nfids, const qvi_hwloc_cpusets_t &tres)
-    >;
 
     int rc = QV_SUCCESS;
     // Number of consumers.
@@ -268,40 +263,22 @@ qvi_map_affinity_preserving(
     qvi_map_shaffinity_t res_affinity_map;
     // Stores the consumer IDs that all share affinity with a split resource.
     std::set<int> affinity_intersection;
-    // Function pointer to mapping policy.
-    map_fn_t map_rest_fn{};
     // Determine the consumer IDs that have shared affinity with the resources.
     rc = qvi_map_calc_shaffinity(faffs, tores, res_affinity_map);
     if (rc != QV_SUCCESS) goto out;
     // Calculate k-set intersection.
     rc = k_set_intersection(res_affinity_map, affinity_intersection);
     if (rc != QV_SUCCESS) goto out;
-    // Set mapping function based on policy.
-    switch (policy) {
-        case QVI_MAP_AFFINITY_PRESERVING_PACKED:
-            map_rest_fn = qvi_map_packed;
-            break;
-        case QVI_MAP_AFFINITY_PRESERVING_SPREAD:
-            map_rest_fn = qvi_map_spread;
-            break;
-        default:
-            // This is an internal error.
-            abort();
-    }
     // Now make a mapping decision based on the intersection size.
     // Completely disjoint sets.
     if (affinity_intersection.size() == 0) {
         rc = qvi_map_disjoint_affinity(map, res_affinity_map);
         if (rc != QV_SUCCESS) goto out;
     }
-    // All consumers overlap. Really no hope of doing anything fancy.
-    // Note that we typically see this in the *no task is bound case*.
-    else if (affinity_intersection.size() == ncon) {
-        rc = map_rest_fn(map, ncon, tores);
-        if (rc != QV_SUCCESS) goto out;
-    }
-    // Only a strict subset of consumers share a resource. First favor mapping
+    // Only a subset of consumers share a resource. First favor mapping
     // consumers with affinity to a particular resource, then map the rest.
+    // Note that the subset is not strict, so this branch also covers the
+    // 'all consumers share a resource' case, too.
     else {
         rc = make_shared_affinity_map_disjoint(
             res_affinity_map, affinity_intersection
