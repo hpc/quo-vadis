@@ -14,7 +14,7 @@
 #include "qvi-rsmi.h"
 #include "qvi-hwloc.h"
 
-#ifdef ROCM_FOUND
+#ifdef ROCmSMI_FOUND
 #include "rocm_smi/rocm_smi.h"
 #include "hwloc/rsmi.h"
 #endif
@@ -25,7 +25,7 @@ qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
     uint32_t devid,
     hwloc_cpuset_t cpuset
 ) {
-#ifndef ROCM_FOUND
+#ifndef ROCmSMI_FOUND
     QVI_UNUSED(hwl);
     QVI_UNUSED(devid);
     QVI_UNUSED(cpuset);

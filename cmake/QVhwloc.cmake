@@ -52,13 +52,10 @@ else()
     list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-nvml=no")
 endif()
 
-if(ROCM_FOUND AND QV_GPU_SUPPORT)
+if(ROCmSMI_FOUND AND QV_GPU_SUPPORT)
     list(APPEND QVI_HWLOC_GPU_FLAGS "--enable-rsmi")
-    set(
-      QVI_HWLOC_CPPFLAGS
-      "-I${ROCM_SMI_INCLUDE_DIR} -I${ROCM_OPENCL_INCLUDE_DIR}"
-    )
-    set(QVI_HWLOC_LDFLAGS "-L${ROCM_HOME}/lib")
+    set(QVI_HWLOC_CPPFLAGS "-I${ROCmSMI_INCLUDE_DIRS}")
+    set(QVI_HWLOC_LDFLAGS "${ROCmSMI_LIBRARIES}")
     list(APPEND QVI_HWLOC_CONFIG_VARS "CPPFLAGS=${QVI_HWLOC_CPPFLAGS}")
     list(APPEND QVI_HWLOC_CONFIG_VARS "LDFLAGS=${QVI_HWLOC_LDFLAGS}")
     set(PCIACCESS_NEEDED TRUE)
@@ -140,11 +137,11 @@ if(CUDAToolkit_FOUND AND QV_GPU_SUPPORT)
     )
 endif()
 
-if(ROCM_FOUND AND QV_GPU_SUPPORT)
+if(ROCmSMI_FOUND AND QV_GPU_SUPPORT)
     target_link_libraries(
         hwloc
         INTERFACE
-          ROCm
+          ROCmSMI
     )
 endif()
 
