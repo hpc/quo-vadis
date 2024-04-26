@@ -496,6 +496,9 @@ static int
 discover_gpu_devices(
     qvi_hwloc_t *hwl
 ) {
+#ifndef QV_GPU_SUPPORT
+    return QV_SUCCESS;
+#endif
     // This will maintain a mapping of PCI bus ID to device pointers.
     qvi_hwloc_dev_map_t devmap;
 

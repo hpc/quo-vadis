@@ -146,17 +146,21 @@ endif()
 ################################################################################
 option(QV_GPU_SUPPORT "Toggle GPU support" ON)
 
-message(CHECK_START "Determining desired GPU support level")
+if(QV_GPU_SUPPORT)
+    # TODO(skg) Set minimum required version?
+    find_package(CUDAToolkit)
+    find_package(ROCmSMI)
+    if (NOT (CUDAToolkit_FOUND OR ROCmSMI_FOUND))
+        set(QV_GPU_SUPPORT OFF)
+        message(STATUS "Turning off GPU support: no suitable support found")
+    endif()
+endif()
+
+message(CHECK_START "Determining GPU support level")
 if(QV_GPU_SUPPORT)
     message(CHECK_PASS "enabled")
 else()
     message(CHECK_PASS "disabled")
-endif()
-
-if(QV_GPU_SUPPORT)
-    # TODO(skg) Set minimum required version?
-    find_package(CUDAToolkit)
-    find_package(ROCm)
 endif()
 
 # Specify default build type

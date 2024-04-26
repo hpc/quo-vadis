@@ -67,7 +67,7 @@
 
 #cmakedefine QV_GPU_SUPPORT
 #cmakedefine CUDAToolkit_FOUND
-#cmakedefine ROCM_FOUND
+#cmakedefine ROCmSMI_FOUND
 
 #endif
 
