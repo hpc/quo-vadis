@@ -120,19 +120,18 @@ typedef enum qv_bind_string_format_e {
  * used instead of group_id to influence how automatic task grouping is
  * accomplished.
  */
-enum {
-    /**
-     * Constant used to indicate undefined or unknown integer value. This means
-     * that the caller will not be considered in the split, and therefore
-     * receive an empty scope.
-     */
-    QV_SCOPE_SPLIT_UNDEFINED = -1,
-    /**
-     * Split the provided group by attempting to preserve tasks' current
-     * affinities (at time of the split call) as much as possible.
-     */
-    QV_SCOPE_SPLIT_AFFINITY_PRESERVING = -2
-};
+
+/**
+ * Constant used to indicate undefined or unknown integer value. This means that
+ * the caller will not be considered in the split, and therefore receive an
+ * empty scope.
+ */
+const int QV_SCOPE_SPLIT_UNDEFINED = -1;
+/**
+ * Split the provided group by attempting to preserve tasks' current affinities
+ * (at time of the split call) as much as possible.
+ */
+const int QV_SCOPE_SPLIT_AFFINITY_PRESERVING = -2;
 
 /**
  *
