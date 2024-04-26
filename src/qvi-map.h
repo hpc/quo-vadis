@@ -36,7 +36,7 @@ qvi_map_maxiperk(
 );
 
 /** Maintains a mapping between 'From IDs' to 'To IDs'. */
-using qvi_map_t = std::map<int, int>;
+using qvi_map_t = std::map<uint_t, uint_t>;
 
 /**
  * Defines a function pointer to a desired mapping function.
@@ -49,7 +49,7 @@ using qvi_map_fn_t = std::function<
  * Maintains a mapping between resource IDs to a set of
  * consumer IDs that have shared affinity with a given resource.
  */
-using qvi_map_shaffinity_t = std::map<int, std::set<int>>;
+using qvi_map_shaffinity_t = std::map<uint_t, std::set<uint_t>>;
 
 /**
  * Prints debug output.
@@ -73,7 +73,7 @@ qvi_map_nfids_mapped(
 bool
 qvi_map_fid_mapped(
     const qvi_map_t &map,
-    int cid
+    uint_t cid
 );
 
 /**
@@ -143,11 +143,16 @@ hwloc_const_cpuset_t
 qvi_map_cpuset_at(
     const qvi_map_t &map,
     const qvi_hwloc_cpusets_t &cpusets,
-    int fid
+    uint_t fid
+);
+
+std::vector<uint_t>
+qvi_map_flatten(
+    const qvi_map_t &map
 );
 
 std::vector<int>
-qvi_map_flatten(
+qvi_map_flatten_to_colors(
     const qvi_map_t &map
 );
 

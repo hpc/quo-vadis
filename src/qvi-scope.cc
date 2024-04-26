@@ -646,7 +646,7 @@ apply_cpuset_mapping(
         colors.clear();
     }
     else {
-        colors = qvi_map_flatten(map);
+        colors = qvi_map_flatten_to_colors(map);
     }
     return rc;
 }
@@ -799,8 +799,8 @@ agg_split_devices_affinity_preserving(
         // Now that we have the mapping, assign
         // devices to the associated hardware pools.
         for (const auto &mi : map) {
-            const int devid = mi.first;
-            const int pooli = mi.second;
+            const uint_t devid = mi.first;
+            const uint_t pooli = mi.second;
             rc = qvi_hwpool_add_device(
                 splitagg.hwpools[pooli],
                 devs[devid]->type,
@@ -883,11 +883,13 @@ agg_split_get_new_osdev_cpusets(
     const qvi_scope_split_agg_s &splitagg,
     qvi_hwloc_cpusets_t &result
 ) {
-    int rc = QV_SUCCESS, nobj = 0;
     // The target object type.
     const qv_hw_obj_type_t obj_type = splitagg.split_at_type;
     // Get the number of devices we have available in the provided scope.
-    rc = get_nobjs_in_hwpool(splitagg.rmi, splitagg.base_hwpool, obj_type, &nobj);
+    int nobj = 0;
+    int rc = get_nobjs_in_hwpool(
+        splitagg.rmi, splitagg.base_hwpool, obj_type, &nobj
+    );
     if (rc != QV_SUCCESS) return rc;
     // Holds the device affinities used for the split.
     result.resize(nobj);
@@ -1236,10 +1238,10 @@ qvi_scope_split_at(
     int color,
     qv_scope_t **child
 ) {
-    int rc = QV_SUCCESS, nobj = 0;
     qv_scope_t *ichild = nullptr;
 
-    rc = qvi_scope_nobjs(parent, type, &nobj);
+    int nobj = 0;
+    int rc = qvi_scope_nobjs(parent, type, &nobj);
     if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_scope_split(parent, nobj, color, type, &ichild);

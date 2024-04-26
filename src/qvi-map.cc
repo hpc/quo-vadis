@@ -19,7 +19,7 @@
 static int
 k_set_intersection(
     const qvi_map_shaffinity_t &smap,
-    std::set<int> &result
+    std::set<uint_t> &result
 ) {
     result.clear();
     // Nothing to do.
@@ -51,7 +51,7 @@ k_set_intersection(
 static int
 make_shared_affinity_map_disjoint(
     qvi_map_shaffinity_t &samap,
-    const std::set<int> &interids
+    const std::set<uint_t> &interids
 ) {
     // Number of intersecting consumer IDs.
     const uint_t ninter = interids.size();
@@ -63,7 +63,7 @@ make_shared_affinity_map_disjoint(
     qvi_map_shaffinity_t dmap;
     // First remove all IDs that intersect from the provided set map.
     for (const auto &mi: samap) {
-        const int rid = mi.first;
+        const uint_t rid = mi.first;
         std::set_difference(
             mi.second.cbegin(),
             mi.second.cend(),
@@ -73,10 +73,10 @@ make_shared_affinity_map_disjoint(
         );
     }
     // Copy IDs into a set we can modify.
-    std::set<int> coii(interids);
+    std::set<uint_t> coii(interids);
     // Assign disjoint IDs to relevant resources.
     for (const auto &mi: samap) {
-        const int rid = mi.first;
+        const uint_t rid = mi.first;
         uint_t nids = 0;
         for (const auto &cid : mi.second) {
             if (coii.find(cid) == coii.end()) continue;
@@ -120,7 +120,7 @@ qvi_map_nfids_mapped(
 bool
 qvi_map_fid_mapped(
     const qvi_map_t &map,
-    int cid
+    uint_t cid
 ) {
     return map.find(cid) != map.end();
 }
@@ -142,20 +142,22 @@ qvi_map_colors(
     // color_set = {3, 4, 5}, color_vec = {3, 4, 5}
     // color_set_index (csi) = {0, 1, 2}, since we have three distinct colors.
     // color2csi = {3:0, 4:1, 5:2}.
-    qvi_map_t color2csi;
+    std::map<int, uint_t> color2csi;
     for (uint_t i = 0; i < color_vec.size(); ++i) {
         color2csi.insert({color_vec[i], i});
     }
     // Create a mapping of color_set indices to cpuset indices.
     qvi_map_t csi2cpui;
+    // We map packed here because we are assuming that like or near colors
+    // should be mapped close together.
     int rc = qvi_map_packed(csi2cpui, nfrom, tres);
     if (rc != QV_SUCCESS) return rc;
     // Now map the task colors to their respective cpusets.
     for (uint_t fid = 0; fid < fcolors.size(); ++fid) {
         // Already mapped (potentially by some other mapper).
         if (qvi_map_fid_mapped(map, fid)) continue;
-        const int csi = color2csi.at(fcolors[fid]);
-        const int tid = csi2cpui.at(csi);
+        const uint_t csi = color2csi.at(fcolors[fid]);
+        const uint_t tid = csi2cpui.at(csi);
         map.insert({fid, tid});
     }
     return rc;
@@ -255,14 +257,13 @@ qvi_map_affinity_preserving(
     const qvi_hwloc_cpusets_t &faffs,
     const qvi_hwloc_cpusets_t &tores
 ) {
-
     int rc = QV_SUCCESS;
     // Number of consumers.
     const uint_t ncon = faffs.size();
     // Maps resource IDs to consumer IDs with shared affinity.
     qvi_map_shaffinity_t res_affinity_map;
     // Stores the consumer IDs that all share affinity with a split resource.
-    std::set<int> affinity_intersection;
+    std::set<uint_t> affinity_intersection;
     // Determine the consumer IDs that have shared affinity with the resources.
     rc = qvi_map_calc_shaffinity(faffs, tores, res_affinity_map);
     if (rc != QV_SUCCESS) goto out;
@@ -303,18 +304,29 @@ hwloc_const_cpuset_t
 qvi_map_cpuset_at(
     const qvi_map_t &map,
     const qvi_hwloc_cpusets_t &cpusets,
-    int fid
+    uint_t fid
 ) {
     return cpusets.at(map.at(fid)).data;
 }
 
-std::vector<int>
+std::vector<uint_t>
 qvi_map_flatten(
+    const qvi_map_t &map
+) {
+    std::vector<uint_t> result(map.size());
+    for (const auto &mi : map) {
+        result[mi.first] = mi.second;
+    }
+    return result;
+}
+
+std::vector<int>
+qvi_map_flatten_to_colors(
     const qvi_map_t &map
 ) {
     std::vector<int> result(map.size());
     for (const auto &mi : map) {
-        result[mi.first] = mi.second;
+        result[mi.first] = (int)mi.second;
     }
     return result;
 }

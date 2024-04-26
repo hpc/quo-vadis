@@ -16,7 +16,7 @@
 
 #ifdef ROCmSMI_FOUND
 #include "rocm_smi/rocm_smi.h"
-#include "hwloc/rsmi.h"
+#include "hwloc/rsmi.h" // IWYU pragma: keep
 #endif
 
 int
