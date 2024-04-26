@@ -73,7 +73,10 @@ main(void)
     // Test internal APIs
     const uint_t npieces = ncores / 2;
     std::vector<int> colors(npieces * 2);
-    std::fill_n(colors.begin(), colors.size(), (int)QV_SCOPE_SPLIT_AFFINITY_PRESERVING);
+    std::fill_n(
+        colors.begin(), colors.size(),
+        QV_SCOPE_SPLIT_AFFINITY_PRESERVING
+    );
     //std::iota(colors.begin(), colors.end(), 0);
 
     std::vector<qv_scope_t *> subscopes;
