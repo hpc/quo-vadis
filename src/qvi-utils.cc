@@ -53,7 +53,7 @@ qv_strerr(int ec)
     return got->second.c_str();
 }
 
-char *
+cstr_t
 qvi_strerr(int ec)
 {
     static thread_local char sb[1024];
@@ -77,7 +77,7 @@ qvi_time(void)
 
 bool
 qvi_path_usable(
-    const char *path,
+    const cstr_t path,
     int *errc
 ) {
     *errc = 0;
@@ -124,7 +124,7 @@ int
 qvi_port(
     int *port
 ) {
-    cstr_t ports = getenv(QVI_ENV_PORT);
+    const cstr_t ports = getenv(QVI_ENV_PORT);
     if (!ports) return QV_ERR_ENV;
     return qvi_atoi(ports, port);
 }
@@ -135,7 +135,7 @@ qvi_url(
 ) {
     static const cstr_t base = "tcp://127.0.0.1";
 
-    int port;
+    int port = 0;
     int rc = qvi_port(&port);
     if (rc != QV_SUCCESS) return rc;
 
@@ -145,7 +145,7 @@ qvi_url(
     return QV_SUCCESS;
 }
 
-const char *
+cstr_t
 qvi_conn_ers(void)
 {
     static const cstr_t msg = "Cannot determine connection information. "
@@ -155,7 +155,7 @@ qvi_conn_ers(void)
     return msg;
 }
 
-const char *
+cstr_t
 qvi_tmpdir(void)
 {
     static thread_local char tmpdir[PATH_MAX];
@@ -174,7 +174,7 @@ qvi_tmpdir(void)
     return tmp;
 }
 
-const char *
+cstr_t
 qvi_whoami(void)
 {
     static const int bsize = 128;
@@ -183,18 +183,18 @@ qvi_whoami(void)
     if (!user) {
         user = PACKAGE_NAME;
     }
-    int nw = snprintf(buff, bsize, "%s", user);
+    const int nw = snprintf(buff, bsize, "%s", user);
     if (nw >= bsize) return PACKAGE_NAME;
     return buff;
 }
 
 int
 qvi_file_size(
-    const char *path,
+    const cstr_t path,
     size_t *size
 ) {
     struct stat st;
-    int rc = stat(path, &st);
+    const int rc = stat(path, &st);
     if (rc == -1) return QV_ERR_FILE_IO;
     *size = st.st_size;
     return QV_SUCCESS;

@@ -89,7 +89,7 @@ extern "C" {
 /**
  *
  */
-char *
+cstr_t
 qvi_strerr(int ec);
 
 /**
@@ -109,7 +109,7 @@ qvi_time(void);
  */
 bool
 qvi_path_usable(
-    const char *path,
+    const cstr_t path,
     int *errc
 );
 
@@ -133,19 +133,19 @@ qvi_url(
 /**
  *
  */
-const char *
+cstr_t
 qvi_conn_ers(void);
 
 /**
  *
  */
-const char *
+cstr_t
 qvi_tmpdir(void);
 
 /**
  *
  */
-const char *
+cstr_t
 qvi_whoami(void);
 
 /**
@@ -153,7 +153,7 @@ qvi_whoami(void);
  */
 int
 qvi_file_size(
-    const char *path,
+    const cstr_t path,
     size_t *size
 );
 

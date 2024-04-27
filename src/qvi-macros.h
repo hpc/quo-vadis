@@ -31,6 +31,15 @@ do {                                                                           \
 } while (0)
 
 /**
+ * Prints abort location then calls abort().
+ */
+#define qvi_abort()                                                            \
+do {                                                                           \
+    qvi_log_info("abort() raised at {}:{}", __FILE__, __LINE__);               \
+    abort();                                                                   \
+} while (0)
+
+/**
  * Convenience macro for new(std::nothrow).
  */
 #define qvi_new new(std::nothrow)

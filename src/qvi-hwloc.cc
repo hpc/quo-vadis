@@ -157,7 +157,7 @@ qvi_hwloc_get_obj_type(
             return HWLOC_OBJ_OS_DEVICE;
         default:
             // This is an internal development error.
-            abort();
+            qvi_abort();
     }
 }
 
@@ -182,7 +182,7 @@ qvi_hwloc_obj_type_is_host_resource(
             return false;
         default:
             // This is an internal development error.
-            abort();
+            qvi_abort();
     }
 }
 
@@ -949,13 +949,13 @@ qvi_hwloc_cpuset_debug(
 #endif
 
     if (!cpuset) {
-        abort();
+        qvi_abort();
     }
 
     char *cpusets = nullptr;
     int rc = qvi_hwloc_bitmap_asprintf(&cpusets, cpuset);
     if (rc != QV_SUCCESS) {
-        abort();
+        qvi_abort();
     }
 
     qvi_log_debug("{} CPUSET={}", msg, cpusets);
