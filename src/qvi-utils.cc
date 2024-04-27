@@ -16,39 +16,41 @@
 
 #include "qvi-utils.h"
 
-/** Description of the return codes. */
-static const char *qvi_rc_strerrs[] = {
-    "Success",
-    "Success, operation already complete",
-    "Succcess, shut down",
-    "Unspecified error",
-    "Environment error",
-    "Internal error",
-    "File I/O error",
-    "System error",
-    "Out of resources",
-    "Invalid argument",
-    "Call before initialization",
-    "Hardware locality error",
-    "MPI error",
-    "Internal message error",
-    "Remote procedure call error",
-    "Operation not supported",
-    "Pop operation error",
-    "PMI operation error",
-    "Not found",
-    "Split error",
-    "Resources unavailable"
+/** Maps return codes to their respective descriptions. */
+static const std::map<uint_t, std::string> qvi_rc2str = {
+    {QV_SUCCESS, "Success"},
+    {QV_SUCCESS_ALREADY_DONE, "Success, operation already complete"},
+    {QV_SUCCESS_SHUTDOWN, "Success, shut down"},
+    {QV_ERR, "Unspecified error"},
+    {QV_ERR_ENV, "Environment error"},
+    {QV_ERR_INTERNAL, "Internal error"},
+    {QV_ERR_FILE_IO, "File I/O error"},
+    {QV_ERR_SYS, "System error"},
+    {QV_ERR_OOR, "Out of resources"},
+    {QV_ERR_INVLD_ARG, "Invalid argument"},
+    {QV_ERR_CALL_BEFORE_INIT, "Call before initialization"},
+    {QV_ERR_HWLOC, "Hardware locality error"},
+    {QV_ERR_MPI, "MPI error"},
+    {QV_ERR_MSG, "Internal message error"},
+    {QV_ERR_RPC, "Remote procedure call error"},
+    {QV_ERR_NOT_SUPPORTED, "Operation not supported"},
+    {QV_ERR_POP, "Pop operation error"},
+    {QV_ERR_NOT_FOUND, "Not found"},
+    {QV_ERR_SPLIT, "Split error"},
+    {QV_RES_UNAVAILABLE, "Resources unavailable"},
+    {QV_RC_LAST, ""}
 };
 
 const char *
 qv_strerr(int ec)
 {
-    if (ec < 0 || ec >= QV_RC_LAST) {
+    const auto got = qvi_rc2str.find(ec);
+    // Not found.
+    if (got == qvi_rc2str.end()) {
         static const cstr_t bad = "";
         return bad;
     }
-    return qvi_rc_strerrs[ec];
+    return got->second.c_str();
 }
 
 char *

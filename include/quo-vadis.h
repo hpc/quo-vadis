@@ -46,7 +46,6 @@ typedef struct qv_context_s qv_context_t;
 struct qv_scope_s;
 typedef struct qv_scope_s qv_scope_t;
 
-/* If this changes, please update the order and contents of qvi_rc_strerrs. */
 /**
  * Return codes.
  */
@@ -68,7 +67,6 @@ enum {
     QV_ERR_RPC,
     QV_ERR_NOT_SUPPORTED,
     QV_ERR_POP,
-    QV_ERR_PMI,
     QV_ERR_NOT_FOUND,
     QV_ERR_SPLIT,
     /** Resources unavailable. */

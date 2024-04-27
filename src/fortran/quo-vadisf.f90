@@ -28,7 +28,6 @@ module quo_vadisf
     integer(c_int) QV_ERR_RPC
     integer(c_int) QV_ERR_NOT_SUPPORTED
     integer(c_int) QV_ERR_POP
-    integer(c_int) QV_ERR_PMI
     integer(c_int) QV_ERR_NOT_FOUND
     integer(c_int) QV_ERR_SPLIT
     integer(c_int) QV_RES_UNAVAILABLE
@@ -51,7 +50,6 @@ module quo_vadisf
     parameter (QV_ERR_RPC = 14)
     parameter (QV_ERR_NOT_SUPPORTED = 15)
     parameter (QV_ERR_POP = 16)
-    parameter (QV_ERR_PMI = 17)
     parameter (QV_ERR_NOT_FOUND = 18)
     parameter (QV_ERR_SPLIT = 19)
     parameter (QV_RES_UNAVAILABLE = 20)
