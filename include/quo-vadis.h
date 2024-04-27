@@ -78,7 +78,7 @@ enum {
 /**
  * Intrinsic scope types.
  */
-typedef enum qv_scope_intrinsic_e {
+typedef enum {
     QV_SCOPE_SYSTEM = 0,
     QV_SCOPE_USER,
     QV_SCOPE_JOB,
@@ -88,7 +88,7 @@ typedef enum qv_scope_intrinsic_e {
 /**
  * Hardware object types.
  */
-typedef enum qv_hw_obj_type_e {
+typedef enum {
     QV_HW_OBJ_MACHINE = 0,
     QV_HW_OBJ_PACKAGE,
     QV_HW_OBJ_CORE,
@@ -108,7 +108,7 @@ typedef enum qv_hw_obj_type_e {
 /**
  * Binding string representaiton formats.
  */
-typedef enum qv_bind_string_format_e {
+typedef enum {
     QV_BIND_STRING_AS_BITMAP = 0,
     QV_BIND_STRING_AS_LIST
 } qv_bind_string_format_t;
@@ -134,7 +134,7 @@ const int QV_SCOPE_SPLIT_AFFINITY_PRESERVING = -2;
 /**
  *
  */
-typedef enum qv_scope_create_hint_e {
+typedef enum {
     // TODO(skg) Enumerate all actual values.
     // TODO(skg) Add to Fortran interface.
     QV_SCOPE_CREATE_HINT_NONE      = 0x00000000,
@@ -145,7 +145,7 @@ typedef enum qv_scope_create_hint_e {
 /**
  * Device identifier types.
  */
-typedef enum qv_device_id_type_e {
+typedef enum {
     QV_DEVICE_ID_UUID = 0,
     QV_DEVICE_ID_PCI_BUS_ID,
     QV_DEVICE_ID_ORDINAL
