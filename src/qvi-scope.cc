@@ -1249,19 +1249,11 @@ qvi_scope_split_at(
     int color,
     qv_scope_t **child
 ) {
-    qv_scope_t *ichild = nullptr;
-
     int nobj = 0;
     int rc = qvi_scope_nobjs(parent, type, &nobj);
-    if (rc != QV_SUCCESS) goto out;
+    if (rc != QV_SUCCESS) return rc;
 
-    rc = qvi_scope_split(parent, nobj, color, type, &ichild);
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_scope_free(&ichild);
-    }
-    *child = ichild;
-    return rc;
+    return qvi_scope_split(parent, nobj, color, type, child);
 }
 
 int
