@@ -38,11 +38,12 @@ qvi_scope_free(
 );
 
 /**
- * Frees scope resources and clears the input vector.
+ * Frees scope resources and container.
  */
 void
 qvi_scope_kfree(
-    std::vector<qv_scope_t *> &scopes
+    qv_scope_t ***kscopes,
+    uint_t k
 );
 
 /**
@@ -117,8 +118,10 @@ int
 qvi_scope_ksplit(
     qv_scope_t *parent,
     uint_t npieces,
-    const std::vector<int> &kcolors,
-    std::vector<qv_scope_t *> &kchildren
+    int *kcolors,
+    uint_t k,
+    qv_hw_obj_type_t maybe_obj_type,
+    qv_scope_t ***kchildren
 );
 
 /**
@@ -130,6 +133,18 @@ qvi_scope_split_at(
     qv_hw_obj_type_t type,
     int group_id,
     qv_scope_t **child
+);
+
+/**
+ *
+ */
+int
+qvi_scope_ksplit_at(
+    qv_scope_t *parent,
+    qv_hw_obj_type_t type,
+    int *kgroup_ids,
+    uint_t k,
+    qv_scope_t ***kchildren
 );
 
 /**

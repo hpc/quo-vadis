@@ -513,12 +513,17 @@ qvi_scope_free(
 
 void
 qvi_scope_kfree(
-    std::vector<qv_scope_t *> &scopes
+    qv_scope_t ***kscopes,
+    uint_t k
 ) {
-    for (auto scope : scopes) {
-        qvi_scope_free(&scope);
+    if (!kscopes) return;
+
+    qv_scope_t **ikscopes = *kscopes;
+    for (uint_t i = 0; i < k; ++i) {
+        qvi_scope_free(&ikscopes[i]);
     }
-    scopes.clear();
+    delete[] ikscopes;
+    *kscopes = nullptr;
 }
 
 static int
@@ -1147,15 +1152,18 @@ int
 qvi_scope_ksplit(
     qv_scope_t *parent,
     uint_t npieces,
-    const std::vector<int> &kcolors,
-    std::vector<qv_scope_t *> &kchildren
+    int *kcolors,
+    uint_t k,
+    qv_hw_obj_type_t maybe_obj_type,
+    qv_scope_t ***kchildren
 ) {
-    if (kcolors.size() == 0) return QV_ERR_INVLD_ARG;
+    if (k == 0 || !kchildren) return QV_ERR_INVLD_ARG;
+    *kchildren = nullptr;
 
-    const uint_t group_size = kcolors.size();
+    const uint_t group_size = k;
     qvi_scope_split_agg_s splitagg{};
     int rc = splitagg.init(
-        parent->rmi, parent->hwpool, group_size, npieces, QV_HW_OBJ_LAST
+        parent->rmi, parent->hwpool, group_size, npieces, maybe_obj_type
     );
     if (rc != QV_SUCCESS) return rc;
     // Since this is called by a single task, get its ID and associated hardware
@@ -1191,8 +1199,10 @@ qvi_scope_ksplit(
     // Split the hardware resources based on the provided split parameters.
     rc = agg_split(splitagg);
     if (rc != QV_SUCCESS) return rc;
+
     // Now populate the children.
-    kchildren.resize(group_size);
+    qv_scope_t **ikchildren = qvi_new qv_scope_t*[group_size];
+    if (!ikchildren) return QV_ERR_OOR;
 
     for (uint_t i = 0; i < group_size; ++i) {
         // Split off from our parent group. This call is usually called from a
@@ -1223,11 +1233,12 @@ qvi_scope_ksplit(
             qvi_scope_free(&child);
             break;
         }
-        kchildren[i] = child;
+        ikchildren[i] = child;
     }
     if (rc != QV_SUCCESS) {
-        kchildren.clear();
+        qvi_scope_kfree(&ikchildren, k);
     }
+    *kchildren = ikchildren;
     return rc;
 }
 
@@ -1251,6 +1262,21 @@ out:
     }
     *child = ichild;
     return rc;
+}
+
+int
+qvi_scope_ksplit_at(
+    qv_scope_t *parent,
+    qv_hw_obj_type_t type,
+    int *kgroup_ids,
+    uint_t k,
+    qv_scope_t ***kchildren
+) {
+    int nobj = 0;
+    int rc = qvi_scope_nobjs(parent, type, &nobj);
+    if (rc != QV_SUCCESS) return rc;
+
+    return qvi_scope_ksplit(parent, nobj, kgroup_ids, k, type, kchildren);
 }
 
 int

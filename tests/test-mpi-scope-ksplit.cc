@@ -78,17 +78,21 @@ main(void)
         QV_SCOPE_SPLIT_AFFINITY_PRESERVING
     );
     //std::iota(colors.begin(), colors.end(), 0);
+    const uint_t k = colors.size();
 
-    std::vector<qv_scope_t *> subscopes;
+    qvi_log_info("Testing ksplit()");
+
+    qv_scope_t **subscopes = nullptr;
     rc = qvi_scope_ksplit(
-        base_scope, npieces, colors, subscopes
+        base_scope, npieces, colors.data(),
+        k, QV_HW_OBJ_LAST, &subscopes
     );
     if (rc != QV_SUCCESS) {
         ers = "qvi_scope_ksplit() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    for (uint_t i = 0; i < subscopes.size(); ++i) {
+    for (uint_t i = 0; i < k; ++i) {
         qvi_test_scope_report(
             ctx, subscopes[i], std::to_string(i).c_str()
         );
@@ -99,8 +103,32 @@ main(void)
             ctx, subscopes[i]
         );
     }
+    // Done with all the subscopes, so clean-up everything.
+    qvi_scope_kfree(&subscopes, k);
 
-    qvi_scope_kfree(subscopes);
+    qvi_log_info("Testing ksplit_at()");
+    // Test qvi_scope_ksplit_at().
+    rc = qvi_scope_ksplit_at(
+        base_scope, QV_HW_OBJ_PU, colors.data(), k, &subscopes
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_scope_ksplit_at() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    for (uint_t i = 0; i < k; ++i) {
+        qvi_test_scope_report(
+            ctx, subscopes[i], std::to_string(i).c_str()
+        );
+        qvi_test_bind_push(
+            ctx, subscopes[i]
+        );
+        qvi_test_bind_pop(
+            ctx, subscopes[i]
+        );
+    }
+    // Done with all the subscopes, so clean-up everything.
+    qvi_scope_kfree(&subscopes, k);
 
     rc = qv_scope_free(ctx, base_scope);
     if (rc != QV_SUCCESS) {
