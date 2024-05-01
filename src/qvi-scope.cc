@@ -868,7 +868,6 @@ agg_split_user_defined(
     // Developer sanity check.
     if (cpusets.size() != split_size) {
         qvi_abort();
-        return QV_ERR_INTERNAL;
     }
     // Maintains the mapping between task (consumer) IDs and resource IDs.
     qvi_map_t map{};
@@ -953,7 +952,6 @@ agg_split_affinity_preserving_pass1(
     // Make sure that we mapped all the tasks. If not, this is a bug.
     if (qvi_map_nfids_mapped(map) != group_size) {
         qvi_abort();
-        return QV_ERR_INTERNAL;
     }
     // Update the hardware pools and colors to reflect the new mapping.
     return apply_cpuset_mapping(
