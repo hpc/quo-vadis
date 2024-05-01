@@ -1,5 +1,6 @@
+# -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*-
 #
-# Copyright (c) 2020-2023 Triad National Security, LLC
+# Copyright (c) 2020-2024 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -9,75 +10,10 @@
 # top-level directory of this distribution.
 #
 
-# TODO(skg) Add valgrind tests.
-################################################################################
-################################################################################
-add_executable(
-    test-hwloc
-    qvi-test-common.h
-    test-hwloc.c
-)
-
-target_link_libraries(
-    test-hwloc
-    quo-vadis
-)
-
-add_test(
-    hwloc
-    test-hwloc
-)
-
-################################################################################
-################################################################################
-add_executable(
-    test-rmi-server
-    test-rmi-server.cc
-)
-
-target_link_libraries(
-    test-rmi-server
-    quo-vadis
-)
-
-add_test(
-    NAME
-      rmi-server
-    COMMAND
-      bash -c "export URL=\"tcp://127.0.0.1:55995\" && \
-      ${CMAKE_CURRENT_BINARY_DIR}/test-rmi-server $URL"
-)
-
-################################################################################
-################################################################################
-add_executable(
-    test-rmi
-    test-rmi.cc
-)
-
-target_link_libraries(
-    test-rmi
-    quo-vadis
-)
-
-add_test(
-    NAME
-      rmi
-    COMMAND
-      bash -c "export URL=\"tcp://127.0.0.1:55995\" && \
-      ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh \
-        \"${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -s\" 5 & ) && \
-      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
-      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
-      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
-        ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c"
-)
-
 ################################################################################
 ################################################################################
 add_executable(
     test-process-scopes
-    qvi-test-common.h
     test-process-scopes.c
 )
 
@@ -93,6 +29,12 @@ add_test(
       bash -c "export QV_PORT=\"55999\" && \
       ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh ../src/quo-vadisd 5 & ) && \
         ${CMAKE_CURRENT_BINARY_DIR}/test-process-scopes"
+)
+
+# Use the C linker to test for C/C++ linkage problems.
+set_target_properties(
+    test-process-scopes
+    PROPERTIES LINKER_LANGUAGE C
 )
 
 ################################################################################
@@ -119,6 +61,12 @@ if (OPENMP_FOUND)
         OpenMP::OpenMP_C
     )
 
+    set_target_properties(
+        test-threads
+        test-openmp
+        PROPERTIES LINKER_LANGUAGE C
+    )
+
     add_test(
         NAME
           threads
@@ -142,19 +90,7 @@ endif()
 ################################################################################
 if(MPI_FOUND)
     add_executable(
-        test-mpi
-        qvi-test-common.h
-        test-mpi.c
-    )
-
-    target_link_libraries(
-        test-mpi
-        quo-vadis-mpi
-    )
-
-    add_executable(
         test-mpi-init
-        qvi-test-common.h
         test-mpi-init.c
     )
 
@@ -165,7 +101,6 @@ if(MPI_FOUND)
 
     add_executable(
         test-mpi-api
-        qvi-test-common.h
         test-mpi-api.c
     )
 
@@ -176,7 +111,6 @@ if(MPI_FOUND)
 
     add_executable(
         test-mpi-scopes
-        qvi-test-common.h
         test-mpi-scopes.c
     )
 
@@ -187,7 +121,6 @@ if(MPI_FOUND)
 
     add_executable(
         test-mpi-scopes-affinity-preserving
-        qvi-test-common.h
         test-mpi-scopes-affinity-preserving.c
     )
 
@@ -198,7 +131,6 @@ if(MPI_FOUND)
 
     add_executable(
         test-mpi-phases
-        qvi-test-common.h
         test-mpi-phases.c
     )
 
@@ -209,19 +141,17 @@ if(MPI_FOUND)
 
     add_executable(
         test-progress-thread
-        qvi-test-common.h
         test-progress-thread.c
     )
 
     target_link_libraries(
         test-progress-thread
-	quo-vadis
+        quo-vadis
         quo-vadis-mpi
     )
 
     add_executable(
         test-mpi-scope-create
-        qvi-test-common.h
         test-mpi-scope-create.c
     )
 
@@ -231,25 +161,27 @@ if(MPI_FOUND)
     )
 
     add_executable(
-        test-mpi-scope-ksplit
-        qvi-test-common.h
-        test-mpi-scope-ksplit.cc
-    )
-
-    target_link_libraries(
-        test-mpi-scope-ksplit
-        quo-vadis-mpi
-    )
-
-    add_executable(
         test-mpi-getdev
-        qvi-test-common.h
         test-mpi-getdev.c
     )
 
     target_link_libraries(
         test-mpi-getdev
         quo-vadis-mpi
+    )
+
+    # Use the C linker to test for C/C++ linkage problems.
+    set_target_properties(
+        test-mpi-init
+        test-mpi-api
+        test-mpi-scopes
+        test-mpi-scopes-affinity-preserving
+        test-mpi-phases
+        test-progress-thread
+        test-mpi-scope-create
+        test-mpi-getdev
+        #test-mpi-pthreads-layout
+        PROPERTIES LINKER_LANGUAGE C
     )
 
     # TODO(skg) Automate adding MPI tests.
@@ -277,7 +209,6 @@ if(MPI_FOUND)
 ################################################################################
     #add_executable(
          #test-mpi-pthreads-layout
-         #qvi-test-common.h
          #test-mpi-pthreads-layout.c
     #)
 
@@ -293,7 +224,6 @@ if(MPI_FOUND)
     if(OPENMP_FOUND)
         add_executable(
             test-mpi-threads
-            qvi-test-common.h
             test-mpi-threads.c
         )
 
@@ -306,7 +236,6 @@ if(MPI_FOUND)
 
         #add_executable(
         #    test-mpi-threads-layout
-        #    qvi-test-common.h
         #    test-mpi-threads-layout.c
         #)
 
@@ -318,6 +247,11 @@ if(MPI_FOUND)
         #    OpenMP::OpenMP_C
         #)
 
+        set_target_properties(
+            test-mpi-threads
+            #test-mpi-threads-layout
+            PROPERTIES LINKER_LANGUAGE C
+        )
     endif()
 endif()
 
@@ -372,48 +306,5 @@ if(QV_FORTRAN_HAPPY)
         )
     endif()
 endif()
-
-################################################################################
-################################################################################
-# Use the C linker to test for C/C++ linkage problems.
-# TODO(skg) Add other C programs below.
-set_target_properties(
-    test-hwloc
-    PROPERTIES LINKER_LANGUAGE C
-)
-
-if(MPI_FOUND)
-    set_target_properties(
-        test-mpi
-        test-mpi-init
-        test-mpi-api
-        test-mpi-getdev
-        test-mpi-scopes
-	#test-mpi-pthreads-layout
-        PROPERTIES LINKER_LANGUAGE C
-    )
-
-    if (OPENMP_FOUND)
-        set_target_properties(
-            test-mpi-threads
-            PROPERTIES LINKER_LANGUAGE C
-        )
-        #set_target_properties(
-        #    test-mpi-threads-layout
-        #    PROPERTIES LINKER_LANGUAGE C
-        #)
-    endif()
-endif()
-
-# Set core test properties.
-# TODO(skg) Add rmi and process-scopes
-set_tests_properties(
-    hwloc
-    rmi-server
-    rmi
-    PROPERTIES
-      TIMEOUT 60
-      LABELS "core"
-)
 
 # vim: ts=4 sts=4 sw=4 expandtab
