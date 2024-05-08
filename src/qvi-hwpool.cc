@@ -352,12 +352,10 @@ qvi_hwpool_add_devices_with_affinity(
 ) {
     int rc = QV_SUCCESS;
     // Iterate over the supported device types.
-    const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
-    for (int i = 0; devts[i] != QV_HW_OBJ_LAST; ++i) {
-        const qv_hw_obj_type_t type = devts[i];
+    for (const auto devt : qvi_hwloc_supported_devices()) {
         int nobjs = 0;
         rc = qvi_hwloc_get_nobjs_in_cpuset(
-            hwloc, type, pool->cpus.cpuset.data, &nobjs
+            hwloc, devt, pool->cpus.cpuset.data, &nobjs
         );
         if (rc != QV_SUCCESS) break;
         // Iterate over the number of devices in each type.
@@ -365,7 +363,7 @@ qvi_hwpool_add_devices_with_affinity(
             char *devids = nullptr, *pcibid = nullptr, *uuids = nullptr;
             // Device ID
             rc = qvi_hwloc_get_device_in_cpuset(
-                hwloc, type, devi, pool->cpus.cpuset.data,
+                hwloc, devt, devi, pool->cpus.cpuset.data,
                 QV_DEVICE_ID_ORDINAL, &devids
             );
             if (rc != QV_SUCCESS) break;
@@ -375,25 +373,25 @@ qvi_hwpool_add_devices_with_affinity(
             if (rc != QV_SUCCESS) break;
             // PCI Bus ID
             rc = qvi_hwloc_get_device_in_cpuset(
-                hwloc, type, devi, pool->cpus.cpuset.data,
+                hwloc, devt, devi, pool->cpus.cpuset.data,
                 QV_DEVICE_ID_PCI_BUS_ID, &pcibid
             );
             if (rc != QV_SUCCESS) break;
             // UUID
             rc = qvi_hwloc_get_device_in_cpuset(
-                hwloc, type, devi, pool->cpus.cpuset.data,
+                hwloc, devt, devi, pool->cpus.cpuset.data,
                 QV_DEVICE_ID_UUID, &uuids
             );
             if (rc != QV_SUCCESS) break;
             // Get the device affinity.
             hwloc_bitmap_t devaff = nullptr;
             rc = qvi_hwloc_get_device_affinity(
-                hwloc, type, devid, &devaff
+                hwloc, devt, devid, &devaff
             );
             if (rc != QV_SUCCESS) break;
             // Add it to the pool.
             rc = qvi_hwpool_add_device(
-                pool, type, devid, pcibid, uuids, devaff
+                pool, devt, devid, pcibid, uuids, devaff
             );
             if (rc != QV_SUCCESS) break;
             //

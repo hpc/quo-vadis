@@ -47,12 +47,6 @@ typedef struct qvi_hwloc_objx_s {
     hwloc_obj_osdev_type_t osdev_type = {};
 } qvi_hwloc_objx_t;
 
-/** Array of supported device types. */
-static const qv_hw_obj_type_t supported_devices[] = {
-    QV_HW_OBJ_GPU,
-    QV_HW_OBJ_LAST
-};
-
 /** ID used for invisible devices. */
 static const int QVI_HWLOC_DEVICE_INVISIBLE_ID = -1;
 
@@ -1221,16 +1215,12 @@ qvi_hwloc_get_obj_in_cpuset_by_depth(
     return (found ? QV_SUCCESS : QV_ERR_HWLOC);
 }
 
-const qv_hw_obj_type_t *
+const std::vector<qv_hw_obj_type_t> &
 qvi_hwloc_supported_devices(void) {
+    static const std::vector<qv_hw_obj_type_t> supported_devices = {
+        QV_HW_OBJ_GPU
+    };
     return supported_devices;
-}
-
-int
-qvi_hwloc_n_supported_devices(void) {
-    size_t fsize = sizeof(supported_devices) / sizeof(supported_devices[0]);
-    // Adjust to exclude the sentinel value.
-    return fsize - 1;
 }
 
 int

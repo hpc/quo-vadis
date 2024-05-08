@@ -306,18 +306,6 @@ qvi_hwloc_get_obj_in_cpuset_by_depth(
 /**
  *
  */
-const qv_hw_obj_type_t *
-qvi_hwloc_supported_devices(void);
-
-/**
- *
- */
-int
-qvi_hwloc_n_supported_devices(void);
-
-/**
- *
- */
 int
 qvi_hwloc_device_new(
     qvi_hwloc_device_t **dev
@@ -409,6 +397,12 @@ qvi_hwloc_get_device_affinity(
 
 #ifdef __cplusplus
 }
+
+/**
+ * Returns a reference to vector of supported device types.
+ */
+const std::vector<qv_hw_obj_type_t> &
+qvi_hwloc_supported_devices(void);
 
 /**
  * C++ style hwloc bitmap.
