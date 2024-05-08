@@ -716,10 +716,7 @@ agg_split_devices_user_defined(
     auto dinfos = qvi_hwpool_devinfos_get(splitagg.base_hwpool);
     // Iterate over the supported device types and split them up round-robin.
     // TODO(skg) Should this be a mapping operation in qvi-map?
-    const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
-    for (int i = 0; devts[i] != QV_HW_OBJ_LAST; ++i) {
-        // The current device type.
-        const qv_hw_obj_type_t devt = devts[i];
+    for (const auto devt : qvi_hwloc_supported_devices()) {
         // Get the number of devices.
         const uint_t ndevs = dinfos->count(devt);
         // Store device infos.
@@ -775,10 +772,7 @@ agg_split_devices_affinity_preserving(
     // Get a pointer to device infos associated with the parent hardware pool.
     auto dinfos = qvi_hwpool_devinfos_get(splitagg.base_hwpool);
     // Iterate over the supported device types and split them up.
-    const qv_hw_obj_type_t *devts = qvi_hwloc_supported_devices();
-    for (int i = 0; devts[i] != QV_HW_OBJ_LAST; ++i) {
-        // The current device type.
-        const qv_hw_obj_type_t devt = devts[i];
+    for (const auto devt : qvi_hwloc_supported_devices()) {
         // Store device infos.
         std::vector<const qvi_hwpool_devinfo_s *> devs;
         for (const auto &dinfo : *dinfos) {
