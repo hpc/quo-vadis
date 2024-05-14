@@ -1165,7 +1165,6 @@ qvi_scope_ksplit(
     hwloc_cpuset_t task_affinity = nullptr;
     rc = qvi_rmi_task_get_cpubind(
         parent->rmi, taskid, &task_affinity
-
     );
     if (rc != QV_SUCCESS) return rc;
     // Now populate the relevant data before attempting a split.
