@@ -34,6 +34,7 @@ using qvi_hwloc_dev_map_t = std::unordered_map<
     std::string,
     std::shared_ptr<qvi_hwloc_device_t>
 >;
+
 /** Set of device identifiers. */
 using qvi_hwloc_dev_id_set_t = std::unordered_set<std::string>;
 
@@ -42,23 +43,18 @@ typedef enum qvi_hwloc_task_xop_obj_e {
     QVI_HWLOC_TASK_ISINCLUDED_IN_OBJ
 } qvi_hwloc_task_xop_obj_t;
 
-typedef struct qvi_hwloc_objx_s {
-    hwloc_obj_type_t objtype = {};
-    hwloc_obj_osdev_type_t osdev_type = {};
-} qvi_hwloc_objx_t;
-
 /** ID used for invisible devices. */
 static const int QVI_HWLOC_DEVICE_INVISIBLE_ID = -1;
 
 typedef struct qvi_hwloc_device_s {
     int qvim_rc = QV_ERR_INTERNAL;
-    /** Device cpuset */
-    qvi_hwloc_bitmap_s cpuset;
-    /** Internal object type information */
-    qvi_hwloc_objx_t objx = {};
+    /** Device type. */
+    qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
+    /** Device affinity. */
+    qvi_hwloc_bitmap_s affinity;
     /** Vendor ID */
     int vendor_id = -1;
-    /** */
+    /** System Management Interface ID. */
     int smi = -1;
     /** CUDA/ROCm visible devices ID */
     int visdev_id = QVI_HWLOC_DEVICE_INVISIBLE_ID;
@@ -71,7 +67,7 @@ typedef struct qvi_hwloc_device_s {
     /** Constructor */
     qvi_hwloc_device_s(void)
     {
-        qvim_rc = qvi_construct_rc(cpuset);
+        qvim_rc = qvi_construct_rc(affinity);
     }
     /** Destructor */
     ~qvi_hwloc_device_s(void) = default;
@@ -180,24 +176,6 @@ qvi_hwloc_obj_type_is_host_resource(
     }
 }
 
-static inline int
-obj_type_from_external(
-    qv_hw_obj_type_t external,
-    qvi_hwloc_objx_t *objx
-) {
-    // Get the underlying object type.
-    objx->objtype = qvi_hwloc_get_obj_type(external);
-    // If appropriate, update OS device type.
-    switch (external) {
-        case(QV_HW_OBJ_GPU):
-            objx->osdev_type = HWLOC_OBJ_OSDEV_GPU;
-            break;
-        default:
-            return QV_SUCCESS;
-    }
-    return QV_SUCCESS;
-}
-
 int
 qvi_hwloc_obj_type_depth(
     qvi_hwloc_t *hwloc,
@@ -206,11 +184,8 @@ qvi_hwloc_obj_type_depth(
 ) {
     *depth = HWLOC_TYPE_DEPTH_UNKNOWN;
 
-    qvi_hwloc_objx_t objx;
-    const int rc = obj_type_from_external(type, &objx);
-    if (rc != QV_SUCCESS) return rc;
-
-    *depth = hwloc_get_type_depth(hwloc->topo, objx.objtype);
+    const hwloc_obj_type_t obj_type = qvi_hwloc_get_obj_type(type);
+    *depth = hwloc_get_type_depth(hwloc->topo, obj_type);
     return QV_SUCCESS;
 }
 
@@ -221,12 +196,9 @@ obj_get_by_type(
     int type_index,
     hwloc_obj_t *out_obj
 ) {
-    qvi_hwloc_objx_t objx;
-    int rc = obj_type_from_external(type, &objx);
-    if (rc != QV_SUCCESS) return rc;
-
+    const hwloc_obj_type_t obj_type = qvi_hwloc_get_obj_type(type);
     const uint_t tiau = (uint_t)type_index;
-    *out_obj = hwloc_get_obj_by_type(hwloc->topo, objx.objtype, tiau);
+    *out_obj = hwloc_get_obj_by_type(hwloc->topo, obj_type, tiau);
     if (!*out_obj) {
         // There are a couple of reasons why target_obj may be NULL. If this
         // ever happens and the specified type and obj index are valid, then
@@ -321,10 +293,9 @@ static int
 set_visdev_id(
     qvi_hwloc_device_t *device
 ) {
-    const hwloc_obj_osdev_type_t type = device->objx.osdev_type;
+    const qv_hw_obj_type_t type = device->type;
     // Consider only what is listed here.
-    if (type != HWLOC_OBJ_OSDEV_GPU &&
-        type != HWLOC_OBJ_OSDEV_COPROC) {
+    if (type != QV_HW_OBJ_GPU) {
         return QV_SUCCESS;
     }
     // Set visible devices.  Note that these IDs are relative to a
@@ -355,15 +326,16 @@ set_general_device_info(
     cstr_t pci_bus_id,
     qvi_hwloc_device_t *device
 ) {
-    // Set objx types.
-    device->objx.objtype = HWLOC_OBJ_OS_DEVICE;
-    // For our purposes a HWLOC_OBJ_OSDEV_COPROC is the same as a
-    // HWLOC_OBJ_OSDEV_GPU, so adjust accordingly.
-    if (obj->attr->osdev.type == HWLOC_OBJ_OSDEV_COPROC) {
-        device->objx.osdev_type = HWLOC_OBJ_OSDEV_GPU;
-    }
-    else {
-        device->objx.osdev_type = obj->attr->osdev.type;
+    switch (obj->attr->osdev.type) {
+        // For our purposes a HWLOC_OBJ_OSDEV_COPROC
+        // is the same as a HWLOC_OBJ_OSDEV_GPU.
+        case HWLOC_OBJ_OSDEV_GPU:
+        case HWLOC_OBJ_OSDEV_COPROC:
+            device->type = QV_HW_OBJ_GPU;
+            break;
+        // TODO(skg) Add other device types.
+        default:
+            return QV_SUCCESS;
     }
     // Set vendor ID.
     device->vendor_id = pci_obj->attr->pcidev.vendor_id;
@@ -409,7 +381,7 @@ set_gpu_device_info(
         return qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
             hwl,
             device->smi,
-            device->cpuset.data
+            device->affinity.data
         );
     }
     //
@@ -425,7 +397,7 @@ set_gpu_device_info(
         return qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
             hwl,
             device->pci_bus_id,
-            device->cpuset.data
+            device->affinity.data
         );
     }
     return QV_SUCCESS;
@@ -1141,7 +1113,7 @@ get_nosdevs_in_cpuset(
 ) {
     int ndevs = 0;
     for (auto &dev : devs) {
-        if (hwloc_bitmap_isincluded(dev->cpuset.data, cpuset)) ndevs++;
+        if (hwloc_bitmap_isincluded(dev->affinity.data, cpuset)) ndevs++;
     }
     *nobjs = ndevs;
 
@@ -1242,10 +1214,10 @@ qvi_hwloc_device_copy(
     qvi_hwloc_device_t *src,
     qvi_hwloc_device_t *dest
 ) {
-    int rc = qvi_hwloc_bitmap_copy(src->cpuset.data, dest->cpuset.data);
+    int rc = qvi_hwloc_bitmap_copy(src->affinity.data, dest->affinity.data);
     if (rc != QV_SUCCESS) return rc;
 
-    dest->objx = src->objx;
+    dest->type = src->type;
     dest->vendor_id = src->vendor_id;
     dest->smi = src->smi;
     dest->visdev_id = src->visdev_id;
@@ -1272,13 +1244,13 @@ qvi_hwloc_devices_emit(
     }
     for (auto &dev : *devlist) {
         char *cpusets = nullptr;
-        int rc = qvi_hwloc_bitmap_asprintf(&cpusets, dev->cpuset.data);
+        int rc = qvi_hwloc_bitmap_asprintf(&cpusets, dev->affinity.data);
         if (rc != QV_SUCCESS) return rc;
 
         qvi_log_info("  Device Name: {}", dev->name);
         qvi_log_info("  Device PCI Bus ID: {}", dev->pci_bus_id);
         qvi_log_info("  Device UUID: {}", dev->uuid);
-        qvi_log_info("  Device cpuset: {}", cpusets);
+        qvi_log_info("  Device affinity: {}", cpusets);
         qvi_log_info("  Device Vendor ID: {}", dev->vendor_id);
         qvi_log_info("  Device SMI: {}", dev->smi);
         qvi_log_info("  Device Visible Device ID: {}\n", dev->visdev_id);
@@ -1295,7 +1267,7 @@ get_devices_in_cpuset_from_dev_list(
     qvi_hwloc_dev_list_t &devs
 ) {
     for (auto &dev : devlist) {
-        if (!hwloc_bitmap_isincluded(dev->cpuset.data, cpuset)) continue;
+        if (!hwloc_bitmap_isincluded(dev->affinity.data, cpuset)) continue;
 
         auto devin = std::make_shared<qvi_hwloc_device_t>();
         int rc = qvi_construct_rc(devin);
@@ -1523,7 +1495,7 @@ qvi_hwloc_get_device_affinity(
     // lists tend to be small, so just perform a linear search for the given ID.
     for (const auto &dev : *devlist) {
         if (dev->visdev_id != device_id) continue;
-        rc = qvi_hwloc_bitmap_dup(dev->cpuset.data, &icpuset);
+        rc = qvi_hwloc_bitmap_dup(dev->affinity.data, &icpuset);
         if (rc != QV_SUCCESS) goto out;
     }
     if (!icpuset) rc = QV_ERR_NOT_FOUND;
