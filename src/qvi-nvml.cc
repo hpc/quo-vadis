@@ -11,7 +11,7 @@
  * @file qvi-nvml.cc
  */
 
-#include "qvi-nvml.h"
+#include "qvi-nvml.h" // IWYU pragma: keep
 #include "qvi-hwloc.h"
 
 #ifdef CUDAToolkit_FOUND
@@ -21,8 +21,8 @@
 int
 qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
     qvi_hwloc_t *hwl,
-    const char *uuid,
-    hwloc_cpuset_t cpuset
+    const std::string &uuid,
+    const qvi_hwloc_bitmap_s &cpuset
 ) {
 #ifndef CUDAToolkit_FOUND
     QVI_UNUSED(hwl);
@@ -36,7 +36,7 @@ qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
     if (!qvi_hwloc_topo_is_this_system(hwl)) {
         return qvi_hwloc_bitmap_copy(
             hwloc_topology_get_topology_cpuset(qvi_hwloc_topo_get(hwl)),
-            cpuset
+            cpuset.data
         );
     }
     // This method should be called once before invoking any other methods in
@@ -48,21 +48,17 @@ qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
     // Starting from NVML 5, this API causes NVML to initialize the target GPU
     // NVML may initialize additional GPUs if the target GPU is an SLI slave.
     nvmlDevice_t device;
-    nvrc = nvmlDeviceGetHandleByPciBusId_v2(uuid, &device);
+    nvrc = nvmlDeviceGetHandleByPciBusId_v2(uuid.c_str(), &device);
     if (nvrc != NVML_SUCCESS) {
         rc = QV_ERR_HWLOC;
         goto out;
     }
 
-    int hwrc;
-    hwrc = hwloc_nvml_get_device_cpuset(
-        qvi_hwloc_topo_get(hwl),
-        device,
-        cpuset
+    const int hwrc = hwloc_nvml_get_device_cpuset(
+        qvi_hwloc_topo_get(hwl), device, cpuset.data
     );
     if (hwrc != 0) {
         rc = QV_ERR_HWLOC;
-        goto out;
     }
 out:
     // These are reference counted, so always match with our call to nvmlInit.

@@ -417,7 +417,7 @@ struct qvi_hwloc_bitmap_s {
         qvim_rc = qvi_hwloc_bitmap_calloc(&data);
     }
     /** Construct via hwloc_const_bitmap_t */
-    qvi_hwloc_bitmap_s(hwloc_const_bitmap_t bitmap)
+    explicit qvi_hwloc_bitmap_s(hwloc_const_bitmap_t bitmap)
     {
         qvim_rc = qvi_hwloc_bitmap_calloc(&data);
         if (qvim_rc != QV_SUCCESS) return;
