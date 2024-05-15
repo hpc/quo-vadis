@@ -198,7 +198,7 @@ qv_scope_create(
     qv_scope_t *scope,
     qv_hw_obj_type_t type,
     int nobjs,
-    qv_scope_create_hint_t hint,
+    qv_scope_create_hints_t hints,
     qv_scope_t **subscope
 ) {
     if (!ctx || !scope || (nobjs < 0) || !subscope) {
@@ -207,7 +207,7 @@ qv_scope_create(
 
     qv_scope_t *isubscope = nullptr;
     int rc = qvi_scope_create(
-        scope, type, nobjs, hint, &isubscope
+        scope, type, nobjs, hints, &isubscope
     );
     if (rc != QV_SUCCESS) {
         qvi_scope_free(&isubscope);

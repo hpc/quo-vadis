@@ -44,7 +44,7 @@
 
 #include "qvi-hwpool.h"
 
-qvi_hwpool_devinfo_s::qvi_hwpool_devinfo_s(
+qvi_hwpool_dev_s::qvi_hwpool_dev_s(
     qv_hw_obj_type_t type_a,
     int id_a,
     cstr_t pci_bus_id_a,
@@ -55,26 +55,26 @@ qvi_hwpool_devinfo_s::qvi_hwpool_devinfo_s(
   , pci_bus_id(pci_bus_id_a)
   , uuid(uuid_a)
 {
-    qvim_rc = qvi_hwloc_bitmap_copy(affinity_a, affinity.data);
+    qvim_rc = affinity.set(affinity_a);
 }
 
 bool
-qvi_hwpool_devinfo_s::operator==(
-    const qvi_hwpool_devinfo_s &x
+qvi_hwpool_dev_s::operator==(
+    const qvi_hwpool_dev_s &x
 ) const {
     return id == x.id && type == x.type;
 }
 
 struct qvi_hwpool_s {
     int qvim_rc = QV_ERR_INTERNAL;
-    /** The CPUs in the resource pool. */
-    qvi_hwpool_cpus_s cpus;
-    /** Device information. */
-    qvi_hwpool_devinfos_t devinfos;
+    /** The hardware pool's CPU. */
+    qvi_hwpool_cpu_s cpu;
+    /** The hardware pool's devices. */
+    qvi_hwpool_devs_t devs;
     /** Constructor */
     qvi_hwpool_s(void)
     {
-        qvim_rc = qvi_construct_rc(cpus);
+        qvim_rc = qvi_construct_rc(cpu);
     }
     /** Destructor */
     ~qvi_hwpool_s(void) = default;
@@ -103,14 +103,14 @@ qvi_hwpool_dup(
     int rc = qvi_hwpool_new(&idup);
     if (rc != QV_SUCCESS) goto out;
     // This performs a deep copy of the underlying CPUs.
-    idup->cpus = rpool->cpus;
+    idup->cpu = rpool->cpu;
     // Assignment here sets qvim_rc, so check it.
     if (idup->qvim_rc != QV_SUCCESS) {
         rc = idup->qvim_rc;
         goto out;
     }
     // This performs a deep copy of the underlying device infos.
-    idup->devinfos = rpool->devinfos;
+    idup->devs = rpool->devs;
 out:
     if (rc != QV_SUCCESS) {
         qvi_hwpool_free(&idup);
@@ -156,13 +156,13 @@ qvi_hwpool_new_line_from_hwpool(
     qvi_line_hwpool_t **line
 ) {
     int rc = QV_SUCCESS;
-    const int ndevinfos = rpool->devinfos.size();
+    const int ndevinfos = rpool->devs.size();
 
     qvi_line_hwpool_t *iline = nullptr;
     rc = qvi_line_hwpool_new(&iline);
     if (rc != QV_SUCCESS) goto out;
     // Duplicate the cpuset.
-    rc = qvi_hwloc_bitmap_dup(rpool->cpus.cpuset.data, &iline->cpuset);
+    rc = qvi_hwloc_bitmap_dup(rpool->cpu.cpuset.data, &iline->cpuset);
     if (rc != QV_SUCCESS) goto out;
     // Initialize and fill in the device information.
     iline->ndevinfos = ndevinfos;
@@ -173,7 +173,7 @@ qvi_hwpool_new_line_from_hwpool(
     }
     do {
         int idx = 0, nw = 0;
-        for (const auto &dinfo : rpool->devinfos) {
+        for (const auto &dinfo : rpool->devs) {
             iline->devinfos[idx].type = dinfo.second->type;
             iline->devinfos[idx].id = dinfo.second->id;
             // Duplicate the cpuset
@@ -214,7 +214,7 @@ qvi_hwpool_init(
     qvi_hwpool_t *rpool,
     hwloc_const_bitmap_t cpuset
 ) {
-    return qvi_hwloc_bitmap_copy(cpuset, rpool->cpus.cpuset.data);
+    return qvi_hwloc_bitmap_copy(cpuset, rpool->cpu.cpuset.data);
 }
 
 int
@@ -226,12 +226,12 @@ qvi_hwpool_add_device(
     cstr_t uuid,
     hwloc_const_cpuset_t affinity
 ) {
-    auto dinfo = std::make_shared<qvi_hwpool_devinfo_s>(
+    auto dinfo = std::make_shared<qvi_hwpool_dev_s>(
         type, id, pcibid, uuid, affinity
     );
     const int rc = qvi_construct_rc(dinfo);
     if (rc != QV_SUCCESS) return rc;
-    rpool->devinfos.insert({type, dinfo});
+    rpool->devs.insert({type, dinfo});
     return rc;
 }
 
@@ -239,7 +239,7 @@ int
 qvi_hwpool_release_devices(
     qvi_hwpool_t *pool
 ) {
-    pool->devinfos.clear();
+    pool->devs.clear();
     return QV_SUCCESS;
 }
 
@@ -248,15 +248,15 @@ qvi_hwpool_cpuset_get(
     qvi_hwpool_t *rpool
 ) {
     assert(rpool);
-    return rpool->cpus.cpuset.data;
+    return rpool->cpu.cpuset.data;
 }
 
-const qvi_hwpool_devinfos_t *
+const qvi_hwpool_devs_t *
 qvi_hwpool_devinfos_get(
     qvi_hwpool_t *pool
 ) {
     assert(pool);
-    return &pool->devinfos;
+    return &pool->devs;
 }
 
 #if 0
@@ -355,7 +355,7 @@ qvi_hwpool_add_devices_with_affinity(
     for (const auto devt : qvi_hwloc_supported_devices()) {
         int nobjs = 0;
         rc = qvi_hwloc_get_nobjs_in_cpuset(
-            hwloc, devt, pool->cpus.cpuset.data, &nobjs
+            hwloc, devt, pool->cpu.cpuset.data, &nobjs
         );
         if (rc != QV_SUCCESS) break;
         // Iterate over the number of devices in each type.
@@ -363,7 +363,7 @@ qvi_hwpool_add_devices_with_affinity(
             char *devids = nullptr, *pcibid = nullptr, *uuids = nullptr;
             // Device ID
             rc = qvi_hwloc_get_device_in_cpuset(
-                hwloc, devt, devi, pool->cpus.cpuset.data,
+                hwloc, devt, devi, pool->cpu.cpuset.data,
                 QV_DEVICE_ID_ORDINAL, &devids
             );
             if (rc != QV_SUCCESS) break;
@@ -373,13 +373,13 @@ qvi_hwpool_add_devices_with_affinity(
             if (rc != QV_SUCCESS) break;
             // PCI Bus ID
             rc = qvi_hwloc_get_device_in_cpuset(
-                hwloc, devt, devi, pool->cpus.cpuset.data,
+                hwloc, devt, devi, pool->cpu.cpuset.data,
                 QV_DEVICE_ID_PCI_BUS_ID, &pcibid
             );
             if (rc != QV_SUCCESS) break;
             // UUID
             rc = qvi_hwloc_get_device_in_cpuset(
-                hwloc, devt, devi, pool->cpus.cpuset.data,
+                hwloc, devt, devi, pool->cpu.cpuset.data,
                 QV_DEVICE_ID_UUID, &uuids
             );
             if (rc != QV_SUCCESS) break;
@@ -472,10 +472,10 @@ out:
  */
 namespace std {
     template <>
-    struct hash<qvi_hwpool_devinfo_s>
+    struct hash<qvi_hwpool_dev_s>
     {
         size_t
-        operator()(const qvi_hwpool_devinfo_s &x) const
+        operator()(const qvi_hwpool_dev_s &x) const
         {
             const int a = x.id;
             const int b = (int)x.type;
