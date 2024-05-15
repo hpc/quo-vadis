@@ -140,7 +140,7 @@ typedef enum {
     QV_SCOPE_CREATE_HINT_NONE      = 0x00000000,
     QV_SCOPE_CREATE_HINT_EXCLUSIVE = 0x00000001,
     QV_SCOPE_CREATE_HINT_CLOSE     = 0x00000002
-} qv_scope_create_hint_t;
+} qv_scope_create_hints_t;
 
 /**
  * Device identifier types.
@@ -222,7 +222,7 @@ qv_scope_create(
     qv_scope_t *scope,
     qv_hw_obj_type_t type,
     int nobjs,
-    qv_scope_create_hint_t hint,
+    qv_scope_create_hints_t hint,
     qv_scope_t **subscope
 );
 

@@ -22,61 +22,46 @@
 #include "qvi-utils.h"
 
 /**
- * Maintains a mapping between a resource ID and associated hint flags.
- */
-using qvi_hwpool_resource_id_hint_map_t = std::unordered_map<
-    uint32_t, qv_scope_create_hint_t
->;
-
-/**
- * Maintains information about a pool of hardware resources by resource ID.
- */
-struct qvi_hwpool_resource_info_s {
-    /**
-     * Vector maintaining the reference count for a given resource ID. There is
-     * a one-to-one correspondence between resource IDs and addressable vector
-     * slots since every resource is reference counted. For example, each bit in
-     * a cpuset will have a corresponding reference count indexed by the bit's
-     * location in the cpuset.
-     */
-    std::vector<uint32_t> resid_ref_count;
-    /**
-     * Maps resource IDs to hint flags that
-     * they might have associated with them.
-     */
-    qvi_hwpool_resource_id_hint_map_t resid_hint_map;
-};
-
-/**
  * Base hardware pool resource class.
  */
-struct qvi_hwpool_resource_s {
-    /** Resource info. */
-    qvi_hwpool_resource_info_s resinfo;
-    /** Base constructor that does minimal work. */
-    qvi_hwpool_resource_s(void) = default;
-    /** Virtual destructor. */
-    virtual ~qvi_hwpool_resource_s(void) = default;
+struct qvi_hwpool_res_s {
+    /**
+     * Resource hint flags.
+     */
+    qv_scope_create_hints_t hints = QV_SCOPE_CREATE_HINT_NONE;
+    /**
+     * Base constructor that does minimal work.
+     */
+    qvi_hwpool_res_s(void) = default;
+    /**
+     * Virtual destructor.
+     */
+    virtual ~qvi_hwpool_res_s(void) = default;
 };
 
 /**
- * Defines a cpuset pool.
+ * Defines a hardware pool CPU. A CPU here may have multiple
+ * processing units (PUs), which are defined in the CPU's cpuset.
  */
-struct qvi_hwpool_cpus_s : qvi_hwpool_resource_s {
+struct qvi_hwpool_cpu_s : qvi_hwpool_res_s {
     int qvim_rc = QV_ERR_INTERNAL;
-    /** The cpuset of the maintained CPUs. */
+    /**
+     * The cpuset of the CPU's PUs.
+     */
     qvi_hwloc_bitmap_s cpuset;
     /** Constructor */
-    qvi_hwpool_cpus_s(void)
+    qvi_hwpool_cpu_s(void)
     {
         qvim_rc = qvi_construct_rc(cpuset);
     }
-    /** Destructor */
-    virtual ~qvi_hwpool_cpus_s(void) = default;
+    /** Virtual destructor */
+    virtual ~qvi_hwpool_cpu_s(void) = default;
 };
 
-/** Device information. */
-struct qvi_hwpool_devinfo_s {
+/**
+ * Defines a hardware pool device.
+ */
+struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
     int qvim_rc = QV_ERR_INTERNAL;
     /** Device type. */
     qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
@@ -89,9 +74,9 @@ struct qvi_hwpool_devinfo_s {
     /** The bitmap encoding CPU affinity. */
     qvi_hwloc_bitmap_s affinity;
     /** No default constructor. */
-    qvi_hwpool_devinfo_s(void) = delete;
+    qvi_hwpool_dev_s(void) = delete;
     /** Constructor */
-    qvi_hwpool_devinfo_s(
+    qvi_hwpool_dev_s(
         qv_hw_obj_type_t type,
         int id,
         cstr_t pci_bus_id,
@@ -99,14 +84,17 @@ struct qvi_hwpool_devinfo_s {
         hwloc_const_cpuset_t affinity
     );
     /** Destructor */
-    ~qvi_hwpool_devinfo_s(void) = default;
+    ~qvi_hwpool_dev_s(void) = default;
     /** Equality operator. */
     bool
-    operator==(const qvi_hwpool_devinfo_s &x) const;
+    operator==(const qvi_hwpool_dev_s &x) const;
 };
 
-using qvi_hwpool_devinfos_t = std::multimap<
-    int, std::shared_ptr<qvi_hwpool_devinfo_s>
+/**
+ * Maintains a mapping between device types and devices of those types.
+ */
+using qvi_hwpool_devs_t = std::multimap<
+    qv_hw_obj_type_t, std::shared_ptr<qvi_hwpool_dev_s>
 >;
 
 struct qvi_hwpool_s;
@@ -206,7 +194,7 @@ qvi_hwpool_cpuset_get(
 /**
  *
  */
-const qvi_hwpool_devinfos_t *
+const qvi_hwpool_devs_t *
 qvi_hwpool_devinfos_get(
     qvi_hwpool_t *pool
 );

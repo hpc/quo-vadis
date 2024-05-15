@@ -155,7 +155,7 @@ qvi_scope_create(
     qv_scope_t *parent,
     qv_hw_obj_type_t type,
     int nobjs,
-    qv_scope_create_hint_t hint,
+    qv_scope_create_hints_t hints,
     qv_scope_t **child
 );
 

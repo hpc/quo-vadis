@@ -23,7 +23,7 @@
 #include "qvi-map.h"
 
 /** Maintains a mapping between IDs to device information. */
-using id_devinfo_multimap_t = std::multimap<int, const qvi_hwpool_devinfo_s *>;
+using id_devinfo_multimap_t = std::multimap<int, const qvi_hwpool_dev_s *>;
 
 /** Scope type definition. */
 struct qv_scope_s {
@@ -720,7 +720,7 @@ agg_split_devices_user_defined(
         // Get the number of devices.
         const uint_t ndevs = dinfos->count(devt);
         // Store device infos.
-        std::vector<const qvi_hwpool_devinfo_s *> devs;
+        std::vector<const qvi_hwpool_dev_s *> devs;
         for (const auto &dinfo : *dinfos) {
             // Not the type we are currently dealing with.
             if (devt != dinfo.first) continue;
@@ -774,7 +774,7 @@ agg_split_devices_affinity_preserving(
     // Iterate over the supported device types and split them up.
     for (const auto devt : qvi_hwloc_supported_devices()) {
         // Store device infos.
-        std::vector<const qvi_hwpool_devinfo_s *> devs;
+        std::vector<const qvi_hwpool_dev_s *> devs;
         for (const auto &dinfo : *dinfos) {
             // Not the type we are currently dealing with.
             if (devt != dinfo.first) continue;
@@ -1267,11 +1267,11 @@ qvi_scope_create(
     qv_scope_t *parent,
     qv_hw_obj_type_t type,
     int nobjs,
-    qv_scope_create_hint_t hint,
+    qv_scope_create_hints_t hints,
     qv_scope_t **child
 ) {
     // TODO(skg) Implement use of hints.
-    QVI_UNUSED(hint);
+    QVI_UNUSED(hints);
 
     qvi_group_t *group = nullptr;
     qvi_hwpool_t *hwpool = nullptr;
@@ -1330,7 +1330,7 @@ qvi_scope_get_device_id(
 ) {
     int rc = QV_SUCCESS, id = 0, nw = 0;
 
-    qvi_hwpool_devinfo_s *finfo = nullptr;
+    qvi_hwpool_dev_s *finfo = nullptr;
     for (const auto &dinfo : *qvi_hwpool_devinfos_get(scope->hwpool)) {
         if (dev_obj != dinfo.first) continue;
         if (id++ == i) {
