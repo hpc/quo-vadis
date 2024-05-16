@@ -20,6 +20,16 @@
 #include "qvi-nvml.h"
 #include "qvi-rsmi.h"
 
+/** ID used for invisible devices. */
+static constexpr int QVI_HWLOC_DEVICE_INVISIBLE_ID = -1;
+/** ID used to indicate an invalid or unset ID. */
+static constexpr int QVI_HWLOC_DEVICE_INVALID_ID = -1;
+
+typedef enum qvi_hwloc_task_xop_obj_e {
+    QVI_HWLOC_TASK_INTERSECTS_OBJ = 0,
+    QVI_HWLOC_TASK_ISINCLUDED_IN_OBJ
+} qvi_hwloc_task_xop_obj_t;
+
 /** Device list type. */
 using qvi_hwloc_dev_list_t = std::vector<
     std::shared_ptr<qvi_hwloc_device_t>
@@ -33,16 +43,6 @@ using qvi_hwloc_dev_map_t = std::unordered_map<
 
 /** Set of device identifiers. */
 using qvi_hwloc_dev_id_set_t = std::unordered_set<std::string>;
-
-typedef enum qvi_hwloc_task_xop_obj_e {
-    QVI_HWLOC_TASK_INTERSECTS_OBJ = 0,
-    QVI_HWLOC_TASK_ISINCLUDED_IN_OBJ
-} qvi_hwloc_task_xop_obj_t;
-
-/** ID used for invisible devices. */
-static constexpr int QVI_HWLOC_DEVICE_INVISIBLE_ID = -1;
-/** ID used to indicate an invalid or unset ID. */
-static constexpr int QVI_HWLOC_DEVICE_INVALID_ID = -1;
 
 typedef struct qvi_hwloc_device_s {
     int qvim_rc = QV_ERR_INTERNAL;
@@ -192,20 +192,23 @@ obj_get_by_type(
     qvi_hwloc_t *hwloc,
     qv_hw_obj_type_t type,
     int type_index,
-    hwloc_obj_t *out_obj
+    hwloc_obj_t *obj
 ) {
     const hwloc_obj_type_t obj_type = qvi_hwloc_get_obj_type(type);
-    const uint_t tiau = (uint_t)type_index;
-    *out_obj = hwloc_get_obj_by_type(hwloc->topo, obj_type, tiau);
-    if (!*out_obj) {
+    hwloc_obj_t iobj = hwloc_get_obj_by_type(
+        hwloc->topo, obj_type, (uint_t)type_index
+    );
+    if (!iobj) {
         // There are a couple of reasons why target_obj may be NULL. If this
         // ever happens and the specified type and obj index are valid, then
         // improve this code.
         qvi_log_error(
             "hwloc_get_obj_by_type() failed. Please submit a bug report."
         );
+        *obj = nullptr;
         return QV_ERR_INTERNAL;
     }
+    *obj = iobj;
     return QV_SUCCESS;
 }
 
@@ -228,7 +231,7 @@ topo_set_from_xml(
     qvi_hwloc_t *hwl,
     const char *path
 ) {
-    int rc = hwloc_topology_set_xml(hwl->topo, path);
+    const int rc = hwloc_topology_set_xml(hwl->topo, path);
     if (rc == -1) {
         qvi_log_error("hwloc_topology_set_xml() failed");
         return QV_ERR_HWLOC;
@@ -241,7 +244,7 @@ qvi_hwloc_topology_init(
     qvi_hwloc_t *hwl,
     const char *xml
 ) {
-    int rc = hwloc_topology_init(&hwl->topo);
+    const int rc = hwloc_topology_init(&hwl->topo);
     if (rc != 0) {
         qvi_log_error("hwloc_topology_init() failed");
         return QV_ERR_HWLOC;
@@ -410,7 +413,7 @@ discover_all_devices(
         // may correspond to the same GPU hardware.
         // insert().second returns whether or not item insertion took place. If
         // true, we have not seen it.
-        bool seen = !hwl->device_ids.insert(busid).second;
+        const bool seen = !hwl->device_ids.insert(busid).second;
         if (seen) continue;
         // Add a new device with a unique PCI busid.
         auto new_dev = std::make_shared<qvi_hwloc_device_t>();
@@ -533,19 +536,6 @@ discover_nic_devices(
     return QV_SUCCESS;
 }
 
-static int
-discover_devices(
-    qvi_hwloc_t *hwl
-) {
-    int rc = discover_all_devices(hwl);
-    if (rc != QV_SUCCESS) return rc;
-    rc = discover_gpu_devices(hwl);
-    if (rc != QV_SUCCESS) return rc;
-    rc = discover_nic_devices(hwl);
-    if (rc != QV_SUCCESS) return rc;
-    return QV_SUCCESS;
-}
-
 int
 qvi_hwloc_topology_load(
     qvi_hwloc_t *hwl
@@ -595,7 +585,13 @@ int
 qvi_hwloc_discover_devices(
     qvi_hwloc_t *hwl
 ) {
-    return discover_devices(hwl);
+    int rc = discover_all_devices(hwl);
+    if (rc != QV_SUCCESS) return rc;
+    rc = discover_gpu_devices(hwl);
+    if (rc != QV_SUCCESS) return rc;
+    rc = discover_nic_devices(hwl);
+    if (rc != QV_SUCCESS) return rc;
+    return QV_SUCCESS;
 }
 
 hwloc_topology_t
@@ -690,7 +686,7 @@ topo_fname(
 ) {
     const int pid = getpid();
     srand(time(nullptr));
-    int nw = asprintf(
+    const int nw = asprintf(
         name,
         "%s/%s-%s-%d-%d.xml",
         base,
@@ -715,22 +711,23 @@ topo_fopen(
     const char *path,
     int *fd
 ) {
-    *fd = open(path, O_CREAT | O_RDWR, 0644);
-    if (*fd == -1) {
-        int err = errno;
+    const int ifd = open(path, O_CREAT | O_RDWR, 0644);
+    if (ifd == -1) {
+        const int err = errno;
         cstr_t ers = "open() failed";
         qvi_log_error("{} {}", ers, qvi_strerr(err));
         return QV_ERR_FILE_IO;
     }
     // We need to publish this file to consumers that are potentially not part
     // of our group. We cannot assume the current umask, so set explicitly.
-    int rc = fchmod(*fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    const int rc = fchmod(ifd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (rc == -1) {
-        int err = errno;
+        const int err = errno;
         cstr_t ers = "fchmod() failed";
         qvi_log_error("{} {}", ers, qvi_strerr(err));
         return QV_ERR_FILE_IO;
     }
+    *fd = ifd;
     return QV_SUCCESS;
 }
 
@@ -751,8 +748,8 @@ qvi_hwloc_topology_export(
         return QV_ERR;
     }
 
-    char *topo_xml;
-    int topo_xml_len;
+    char *topo_xml = nullptr;
+    int topo_xml_len = 0;
     rc = hwloc_topology_export_xmlbuffer(
         hwl->topo,
         &topo_xml,
@@ -807,12 +804,12 @@ qvi_hwloc_get_nobjs_by_type(
    qv_hw_obj_type_t target_type,
    int *out_nobjs
 ) {
-    int depth;
-    int rc = qvi_hwloc_obj_type_depth(hwloc, target_type, &depth);
+    int depth = HWLOC_TYPE_DEPTH_UNKNOWN;
+    const int rc = qvi_hwloc_obj_type_depth(hwloc, target_type, &depth);
     if (rc != QV_SUCCESS) return rc;
 
     *out_nobjs = hwloc_get_nbobjs_by_depth(hwloc->topo, depth);
-    return QV_SUCCESS;
+    return rc;
 }
 
 int
@@ -933,8 +930,8 @@ get_proc_cpubind(
         get_task_cpubind_flags(task_id.type)
     );
     if (rc != 0) return QV_ERR_HWLOC;
-    // XXX(skg) In some instances I've noticed that the system's topology cpuset
-    // is a strict subset of a process' cpuset, so protect against that case by
+    // Note in some instances I've noticed that the system's topology cpuset is
+    // a strict subset of a process' cpuset, so protect against that case by
     // setting the process' cpuset to the system topology's if the above case is
     // what we are dealing.
     hwloc_const_cpuset_t tcpuset = qvi_hwloc_topo_get_cpuset(hwl);
@@ -972,17 +969,16 @@ qvi_hwloc_task_set_cpubind_from_cpuset(
     qvi_task_id_t task_id,
     hwloc_const_cpuset_t cpuset
 ) {
-    int qvrc = QV_SUCCESS;
-    int rc = hwloc_set_proc_cpubind(
+    const int rc = hwloc_set_proc_cpubind(
         hwl->topo,
         qvi_task_id_get_pid(task_id),
         cpuset,
         get_task_cpubind_flags(task_id.type)
     );
     if (rc == -1) {
-        qvrc = QV_ERR_NOT_SUPPORTED;
+        return QV_ERR_NOT_SUPPORTED;
     }
-    return qvrc;
+    return QV_SUCCESS;
 }
 
 int
@@ -991,7 +987,7 @@ qvi_hwloc_task_get_cpubind_as_string(
     qvi_task_id_t task_id,
     char **cpusets
 ) {
-    hwloc_cpuset_t cpuset;
+    hwloc_cpuset_t cpuset = nullptr;
     int rc = qvi_hwloc_task_get_cpubind(hwl, task_id, &cpuset);
     if (rc != QV_SUCCESS) return rc;
 
@@ -1183,8 +1179,8 @@ qvi_hwloc_device_copy(
     qvi_hwloc_device_t *src,
     qvi_hwloc_device_t *dest
 ) {
-    int rc = qvi_hwloc_bitmap_copy(src->affinity.data, dest->affinity.data);
-    if (rc != QV_SUCCESS) return rc;
+    dest->affinity = src->affinity;
+    if (dest->qvim_rc != QV_SUCCESS) return dest->qvim_rc;
 
     dest->type = src->type;
     dest->vendor_id = src->vendor_id;
@@ -1287,7 +1283,6 @@ qvi_hwloc_get_device_in_cpuset(
     int rc = QV_SUCCESS, nw = 0;
 
     qvi_hwloc_dev_list_t devs;
-
     rc = get_devices_in_cpuset(hwl, dev_obj, cpuset, devs);
     if (rc != QV_SUCCESS) {
         goto out;
@@ -1326,7 +1321,7 @@ split_cpuset_chunk_size(
     uint_t *chunk_size
 ) {
     int npus = 0;
-    int rc = qvi_hwloc_get_nobjs_in_cpuset(
+    const int rc = qvi_hwloc_get_nobjs_in_cpuset(
         hwl, QV_HW_OBJ_PU, cpuset, &npus
     );
     if (rc != QV_SUCCESS || npieces == 0 || npus == 0 ) {
