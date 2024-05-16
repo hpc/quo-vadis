@@ -90,16 +90,15 @@ qvi_line_config_unpack(
     );
 }
 
+// TODO(skg) Remove
 void
 qvi_line_devinfo_free(
     qvi_line_devinfo_t *devinfo
 ) {
     if (!devinfo) return;
-    qvi_hwloc_bitmap_free(&devinfo->affinity);
-    free(devinfo->pci_bus_id);
-    free(devinfo->uuid);
 }
 
+// TODO(skg) Remove
 int
 qvi_line_hwpool_new(
     qvi_line_hwpool_t **hwp
@@ -114,6 +113,7 @@ qvi_line_hwpool_new(
     return rc;
 }
 
+// TODO(skg) Remove
 void
 qvi_line_hwpool_free(
     qvi_line_hwpool_t **hwp
@@ -121,13 +121,6 @@ qvi_line_hwpool_free(
     if (!hwp) return;
     qvi_line_hwpool_t *ihwp = *hwp;
     if (!ihwp) goto out;
-    qvi_hwloc_bitmap_free(&ihwp->cpuset);
-    if (ihwp->devinfos) {
-        for (int i = 0; i < ihwp->ndevinfos; ++i) {
-            qvi_line_devinfo_free(&ihwp->devinfos[i]);
-        }
-        delete[] ihwp->devinfos;
-    }
     delete ihwp;
 out:
     *hwp = nullptr;

@@ -25,17 +25,11 @@
  * Base hardware pool resource class.
  */
 struct qvi_hwpool_res_s {
-    /**
-     * Resource hint flags.
-     */
+    /** Resource hint flags. */
     qv_scope_create_hints_t hints = QV_SCOPE_CREATE_HINT_NONE;
-    /**
-     * Base constructor that does minimal work.
-     */
+    /** Base constructor that does minimal work. */
     qvi_hwpool_res_s(void) = default;
-    /**
-     * Virtual destructor.
-     */
+    /** Virtual destructor. */
     virtual ~qvi_hwpool_res_s(void) = default;
 };
 
@@ -45,9 +39,7 @@ struct qvi_hwpool_res_s {
  */
 struct qvi_hwpool_cpu_s : qvi_hwpool_res_s {
     int qvim_rc = QV_ERR_INTERNAL;
-    /**
-     * The cpuset of the CPU's PUs.
-     */
+    /** The cpuset of the CPU's PUs. */
     qvi_hwloc_bitmap_s cpuset;
     /** Constructor */
     qvi_hwpool_cpu_s(void)
@@ -59,20 +51,21 @@ struct qvi_hwpool_cpu_s : qvi_hwpool_res_s {
 };
 
 /**
- * Defines a hardware pool device.
+ * Defines a hardware pool device. This differs from a qvi_hwloc_device_s
+ * because we only maintain information relevant for user-facing operations.
  */
 struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
     int qvim_rc = QV_ERR_INTERNAL;
     /** Device type. */
     qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
+    /** The bitmap encoding CPU affinity. */
+    qvi_hwloc_bitmap_s affinity;
     /** Device ID. */
     int id = 0;
     /** The PCI bus ID. */
     std::string pci_bus_id;
     /** UUID */
     std::string uuid;
-    /** The bitmap encoding CPU affinity. */
-    qvi_hwloc_bitmap_s affinity;
     /** No default constructor. */
     qvi_hwpool_dev_s(void) = delete;
     /** Constructor */
@@ -87,7 +80,11 @@ struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
     ~qvi_hwpool_dev_s(void) = default;
     /** Equality operator. */
     bool
-    operator==(const qvi_hwpool_dev_s &x) const;
+    operator==(
+        const qvi_hwpool_dev_s &x
+    ) const {
+        return uuid == x.uuid;
+    }
 };
 
 /**

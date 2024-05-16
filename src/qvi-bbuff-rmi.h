@@ -33,7 +33,7 @@
 #include "qvi-hwpool.h"
 
 // 'Null' cpuset representation as a string.
-static const cstr_t QV_BUFF_RMI_NULL_CPUSET = "";
+static constexpr cstr_t QV_BUFF_RMI_NULL_CPUSET = "";
 
 // Byte containers
 using qvi_bbuff_rmi_bytes_in_t = std::pair<void *, size_t>;
@@ -626,7 +626,7 @@ qvi_bbuff_rmi_pack(
     T arg,
     Types... args
 ) {
-    int rc = qvi_bbuff_rmi_pack_item(buff, arg);
+    const int rc = qvi_bbuff_rmi_pack_item(buff, arg);
     if (rc != QV_SUCCESS) return rc;
     return qvi_bbuff_rmi_pack(buff, args...);
 }
@@ -834,7 +834,7 @@ qvi_bbuff_rmi_unpack_item(
     size_t bw = 0, total_bw = 0;
 
     int rc = qvi_bbuff_rmi_unpack_item(
-        &di->affinity, buffpos, &bw
+        di->affinity, buffpos, &bw
     );
     if (rc != QV_SUCCESS) goto out;
     total_bw += bw;
@@ -855,14 +855,14 @@ qvi_bbuff_rmi_unpack_item(
     buffpos += bw;
 
     rc = qvi_bbuff_rmi_unpack_item(
-        &di->pci_bus_id, buffpos, &bw
+        di->pci_bus_id, buffpos, &bw
     );
     if (rc != QV_SUCCESS) goto out;
     total_bw += bw;
     buffpos += bw;
 
     rc = qvi_bbuff_rmi_unpack_item(
-        &di->uuid, buffpos, &bw
+        di->uuid, buffpos, &bw
     );
     if (rc != QV_SUCCESS) goto out;
     total_bw += bw;
@@ -888,7 +888,7 @@ qvi_bbuff_rmi_unpack_item(
     if (rc != QV_SUCCESS) goto out;
     // Unpack cpuset.
     rc = qvi_bbuff_rmi_unpack_item(
-        &ihwp->cpuset, buffpos, &bw
+        ihwp->cpuset, buffpos, &bw
     );
     if (rc != QV_SUCCESS) goto out;
     total_bw += bw;
@@ -901,11 +901,7 @@ qvi_bbuff_rmi_unpack_item(
     total_bw += bw;
     buffpos += bw;
     // Unpack devinfos.
-    ihwp->devinfos = qvi_new qvi_line_devinfo_t[ihwp->ndevinfos]();
-    if (!ihwp->devinfos) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
+    ihwp->devinfos.resize(ihwp->ndevinfos);
     for (int i = 0; i < ihwp->ndevinfos; ++i) {
         rc = qvi_bbuff_rmi_unpack_item(
             &ihwp->devinfos[i], buffpos, &bw
@@ -995,7 +991,7 @@ qvi_bbuff_rmi_unpack(
 ) {
     byte_t *pos = (byte_t *)data;
     size_t bytes_written = 0;
-    int rc = qvi_bbuff_rmi_unpack_item(
+    const int rc = qvi_bbuff_rmi_unpack_item(
         arg,
         (byte_t *)data,
         &bytes_written
