@@ -22,7 +22,7 @@ int
 qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
     qvi_hwloc_t *hwl,
     const std::string &uuid,
-    const qvi_hwloc_bitmap_s &cpuset
+    qvi_hwloc_bitmap_s &cpuset
 ) {
 #ifndef CUDAToolkit_FOUND
     QVI_UNUSED(hwl);
