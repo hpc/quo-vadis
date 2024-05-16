@@ -58,13 +58,6 @@ qvi_hwpool_dev_s::qvi_hwpool_dev_s(
     qvim_rc = affinity.set(affinity_a);
 }
 
-bool
-qvi_hwpool_dev_s::operator==(
-    const qvi_hwpool_dev_s &x
-) const {
-    return id == x.id && type == x.type;
-}
-
 struct qvi_hwpool_s {
     int qvim_rc = QV_ERR_INTERNAL;
     /** The hardware pool's CPU. */
@@ -128,7 +121,7 @@ qvi_hwpool_new_from_line(
     int rc = qvi_hwpool_new(&irpool);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_hwpool_init(irpool, line->cpuset);
+    rc = qvi_hwpool_init(irpool, line->cpuset.data);
     if (rc != QV_SUCCESS) goto out;
 
     for (int i = 0; i < line->ndevinfos; ++i) {
@@ -136,9 +129,9 @@ qvi_hwpool_new_from_line(
             irpool,
             line->devinfos[i].type,
             line->devinfos[i].id,
-            line->devinfos[i].pci_bus_id,
-            line->devinfos[i].uuid,
-            line->devinfos[i].affinity
+            line->devinfos[i].pci_bus_id.c_str(),
+            line->devinfos[i].uuid.c_str(),
+            line->devinfos[i].affinity.data
         );
         if (rc != QV_SUCCESS) break;
     }
@@ -161,43 +154,19 @@ qvi_hwpool_new_line_from_hwpool(
     qvi_line_hwpool_t *iline = nullptr;
     rc = qvi_line_hwpool_new(&iline);
     if (rc != QV_SUCCESS) goto out;
-    // Duplicate the cpuset.
-    rc = qvi_hwloc_bitmap_dup(rpool->cpu.cpuset.data, &iline->cpuset);
-    if (rc != QV_SUCCESS) goto out;
+    iline->cpuset = rpool->cpu.cpuset;
     // Initialize and fill in the device information.
     iline->ndevinfos = ndevinfos;
-    iline->devinfos = qvi_new qvi_line_devinfo_t[ndevinfos]();
-    if (!iline->devinfos) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
+    iline->devinfos.resize(ndevinfos);
     do {
-        int idx = 0, nw = 0;
+        int idx = 0;
         for (const auto &dinfo : rpool->devs) {
+            // TODO(skg) Use copy constructor?
             iline->devinfos[idx].type = dinfo.second->type;
+            iline->devinfos[idx].affinity = dinfo.second->affinity;
             iline->devinfos[idx].id = dinfo.second->id;
-            // Duplicate the cpuset
-            rc = qvi_hwloc_bitmap_dup(
-                dinfo.second->affinity.data,
-                &iline->devinfos[idx].affinity
-            );
-            if (rc != QV_SUCCESS) break;
-            nw = asprintf(
-                &iline->devinfos[idx].pci_bus_id,
-                "%s", dinfo.second->pci_bus_id.c_str()
-            );
-            if (nw == -1) {
-                rc = QV_ERR_OOR;
-                break;
-            }
-            nw = asprintf(
-                &iline->devinfos[idx].uuid,
-                "%s", dinfo.second->uuid.c_str()
-            );
-            if (nw == -1) {
-                rc = QV_ERR_OOR;
-                break;
-            }
+            iline->devinfos[idx].pci_bus_id = dinfo.second->pci_bus_id;
+            iline->devinfos[idx].uuid = dinfo.second->uuid;
             idx++;
         }
     } while (0);
