@@ -90,42 +90,6 @@ qvi_line_config_unpack(
     );
 }
 
-// TODO(skg) Remove
-void
-qvi_line_devinfo_free(
-    qvi_line_devinfo_t *devinfo
-) {
-    if (!devinfo) return;
-}
-
-// TODO(skg) Remove
-int
-qvi_line_hwpool_new(
-    qvi_line_hwpool_t **hwp
-) {
-    int rc = QV_SUCCESS;
-
-    qvi_line_hwpool_t *ihwp = qvi_new qvi_line_hwpool_t();
-    if (!ihwp) rc = QV_ERR_OOR;
-    // Do minimal initialization here because other routines will do the rest.
-    if (rc != QV_SUCCESS) qvi_line_hwpool_free(&ihwp);
-    *hwp = ihwp;
-    return rc;
-}
-
-// TODO(skg) Remove
-void
-qvi_line_hwpool_free(
-    qvi_line_hwpool_t **hwp
-) {
-    if (!hwp) return;
-    qvi_line_hwpool_t *ihwp = *hwp;
-    if (!ihwp) goto out;
-    delete ihwp;
-out:
-    *hwp = nullptr;
-}
-
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
  */

@@ -13,10 +13,11 @@
 
 /*
  * Picture Reference:
+ * a = size_t
  * b = qvi_bbuff_rmi_bytes_in_t, qvi_bbuff_rmi_bytes_out_t
  * c = hwloc_cpuset_t
  * c = qvi_hwloc_bitmap_s
- * h = qvi_hwpool_t * (conversion to qvi_line_hwpool_t * done internally)
+ * h = qvi_hwpool_s *
  * h = qvi_line_hwpool_t *
  * i = int
  * s = char *
@@ -53,6 +54,15 @@ qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
     T
 );
+
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
+    size_t
+) {
+    picture += "a";
+}
 
 template<>
 inline void
@@ -103,7 +113,7 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
-    qvi_line_hwpool_t *
+    const qvi_hwpool_s *
 ) {
     picture += "h";
 }
@@ -112,7 +122,7 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
-    const qvi_hwpool_t *
+    qvi_hwpool_s *
 ) {
     picture += "h";
 }
@@ -121,16 +131,7 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
-    qvi_hwpool_t *
-) {
-    picture += "h";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    qvi_hwpool_t **
+    qvi_hwpool_s **
 ) {
     picture += "h";
 }
@@ -297,6 +298,17 @@ qvi_bbuff_rmi_pack_item(
     qvi_bbuff_t *,
     T
 );
+
+/**
+ * Packs size_t.
+ */
+inline int
+qvi_bbuff_rmi_pack_item(
+    qvi_bbuff_t *buff,
+    size_t data
+) {
+    return qvi_bbuff_append(buff, &data, sizeof(data));
+}
 
 /**
  * Packs int.
@@ -499,12 +511,12 @@ qvi_bbuff_rmi_pack_item(
 }
 
 /**
- * Packs qvi_line_devinfo_t *
+ * Packs qvi_hwpool_dev_s *
  */
 inline int
 qvi_bbuff_rmi_pack_item(
     qvi_bbuff_t *buff,
-    qvi_line_devinfo_t *data
+    qvi_hwpool_dev_s *data
 ) {
     // Pack device affinity.
     int rc = qvi_bbuff_rmi_pack_item(buff, data->affinity);
@@ -525,41 +537,26 @@ qvi_bbuff_rmi_pack_item(
 }
 
 /**
- * Packs qvi_line_hwpool_t *
- */
-inline int
-qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
-    qvi_line_hwpool_t *data
-) {
-    // Pack cpuset.
-    int rc = qvi_bbuff_rmi_pack_item(buff, data->cpuset);
-    if (rc != QV_SUCCESS) return rc;
-    // Pack ndevinfos
-    rc = qvi_bbuff_rmi_pack_item(buff, data->ndevinfos);
-    if (rc != QV_SUCCESS) return rc;
-    // Pack device infos.
-    for (int i = 0; i < data->ndevinfos; ++i) {
-        qvi_bbuff_rmi_pack_item(buff, &data->devinfos[i]);
-    }
-    return rc;
-}
-
-/**
- * Packs const qvi_hwpool_t *
+ * Packs qvi_hwpool_s *
  */
 inline int
 qvi_bbuff_rmi_pack_item_impl(
     qvi_bbuff_t *buff,
-    const qvi_hwpool_t *data
+    const qvi_hwpool_s *data
 ) {
-    // Convert input data to line protocol.
-    qvi_line_hwpool_t *line = nullptr;
-    int rc = qvi_hwpool_new_line_from_hwpool(data, &line);
+    // Pack cpuset.
+    // TODO(skg) Add flags.
+    // TODO(skg) Pack cpu
+    int rc = qvi_bbuff_rmi_pack_item(buff, data->cpu.cpuset);
     if (rc != QV_SUCCESS) return rc;
-    // Pack the data
-    rc = qvi_bbuff_rmi_pack_item(buff, line);
-    qvi_line_hwpool_free(&line);
+    // Pack ndevinfos
+    const size_t ndev = data->devs.size();
+    rc = qvi_bbuff_rmi_pack_item(buff, ndev);
+    if (rc != QV_SUCCESS) return rc;
+    // Pack devices.
+    for (const auto &dev : data->devs) {
+        qvi_bbuff_rmi_pack_item(buff, dev.second.get());
+    }
     return rc;
 }
 
@@ -579,23 +576,23 @@ qvi_bbuff_rmi_pack_item_impl(
 }
 
 /**
- * Packs const qvi_hwpool_t *
+ * Packs const qvi_hwpool_s *
  */
 inline int
 qvi_bbuff_rmi_pack_item(
     qvi_bbuff_t *buff,
-    const qvi_hwpool_t *data
+    const qvi_hwpool_s *data
 ) {
     return qvi_bbuff_rmi_pack_item_impl(buff, data);
 }
 
 /**
- * Packs qvi_hwpool_t *
+ * Packs qvi_hwpool_s *
  */
 inline int
 qvi_bbuff_rmi_pack_item(
     qvi_bbuff_t *buff,
-    qvi_hwpool_t *data
+    qvi_hwpool_s *data
 ) {
     return qvi_bbuff_rmi_pack_item_impl(buff, data);
 }
@@ -642,6 +639,17 @@ qvi_bbuff_rmi_unpack_item(
     byte_t *buffpos,
     size_t *bytes_written
 );
+
+inline int
+qvi_bbuff_rmi_unpack_item(
+    size_t *i,
+    byte_t *buffpos,
+    size_t *bytes_written
+) {
+    memmove(i, buffpos, sizeof(*i));
+    *bytes_written = sizeof(*i);
+    return QV_SUCCESS;
+}
 
 inline int
 qvi_bbuff_rmi_unpack_item(
@@ -826,46 +834,46 @@ qvi_bbuff_rmi_unpack_item(
 }
 
 /**
- * Unpacks qvi_line_devinfo_t *
+ * Unpacks qvi_hwpool_dev_s *
  */
 inline int
 qvi_bbuff_rmi_unpack_item(
-    qvi_line_devinfo_t *di,
+    qvi_hwpool_dev_s *dev,
     byte_t *buffpos,
     size_t *bytes_written
 ) {
     size_t bw = 0, total_bw = 0;
 
     int rc = qvi_bbuff_rmi_unpack_item(
-        di->affinity, buffpos, &bw
+        dev->affinity, buffpos, &bw
     );
     if (rc != QV_SUCCESS) goto out;
     total_bw += bw;
     buffpos += bw;
 
     rc = qvi_bbuff_rmi_unpack_item(
-        &di->type, buffpos, &bw
+        &dev->type, buffpos, &bw
     );
     if (rc != QV_SUCCESS) goto out;
     total_bw += bw;
     buffpos += bw;
 
     rc = qvi_bbuff_rmi_unpack_item(
-        &di->id, buffpos, &bw
+        &dev->id, buffpos, &bw
     );
     if (rc != QV_SUCCESS) goto out;
     total_bw += bw;
     buffpos += bw;
 
     rc = qvi_bbuff_rmi_unpack_item(
-        di->pci_bus_id, buffpos, &bw
+        dev->pci_bus_id, buffpos, &bw
     );
     if (rc != QV_SUCCESS) goto out;
     total_bw += bw;
     buffpos += bw;
 
     rc = qvi_bbuff_rmi_unpack_item(
-        di->uuid, buffpos, &bw
+        dev->uuid, buffpos, &bw
     );
     if (rc != QV_SUCCESS) goto out;
     total_bw += bw;
@@ -877,73 +885,55 @@ out:
     return rc;
 }
 
+/**
+ * Unpacks qvi_hwpool_s **
+ */
 inline int
 qvi_bbuff_rmi_unpack_item(
-    qvi_line_hwpool_t **hwp,
+    qvi_hwpool_s **hwp,
     byte_t *buffpos,
     size_t *bytes_written
 ) {
-    int rc = QV_SUCCESS;
+    qvi_hwpool_s *ihwp = nullptr;
+    int rc = qvi_hwpool_new(&ihwp);
+    if (rc != QV_SUCCESS) return rc;
+
     size_t bw = 0, total_bw = 0;
 
-    qvi_line_hwpool_t *ihwp = nullptr;
-    rc = qvi_line_hwpool_new(&ihwp);
-    if (rc != QV_SUCCESS) goto out;
     // Unpack cpuset.
     rc = qvi_bbuff_rmi_unpack_item(
-        ihwp->cpuset, buffpos, &bw
+        ihwp->cpu.cpuset, buffpos, &bw
     );
-    if (rc != QV_SUCCESS) goto out;
+    if (rc != QV_SUCCESS) return rc;
     total_bw += bw;
     buffpos += bw;
     // Unpack number of devinfos.
+    size_t ndev = 0;
     rc = qvi_bbuff_rmi_unpack_item(
-        &ihwp->ndevinfos, buffpos, &bw
+        &ndev, buffpos, &bw
     );
     if (rc != QV_SUCCESS) goto out;
     total_bw += bw;
     buffpos += bw;
-    // Unpack devinfos.
-    ihwp->devinfos.resize(ihwp->ndevinfos);
-    for (int i = 0; i < ihwp->ndevinfos; ++i) {
+    // Unpack devices.
+    for (size_t i = 0; i < ndev; ++i) {
+        qvi_hwpool_dev_s dev;
         rc = qvi_bbuff_rmi_unpack_item(
-            &ihwp->devinfos[i], buffpos, &bw
+            &dev, buffpos, &bw
         );
-        if (rc != QV_SUCCESS) break;
         total_bw += bw;
         buffpos += bw;
+        if (rc != QV_SUCCESS) break;
+
+        rc = ihwp->add_device(dev);
+        if (rc != QV_SUCCESS) break;
     }
 out:
     if (rc != QV_SUCCESS) {
         total_bw = 0;
-        qvi_line_hwpool_free(&ihwp);
     }
     *bytes_written = total_bw;
     *hwp = ihwp;
-    return rc;
-}
-
-inline int
-qvi_bbuff_rmi_unpack_item(
-    qvi_hwpool_t **hwp,
-    byte_t *buffpos,
-    size_t *bytes_written
-) {
-    qvi_line_hwpool_t *line = nullptr;
-    int rc = qvi_bbuff_rmi_unpack_item(
-        &line,
-        buffpos,
-        bytes_written
-    );
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_hwpool_new_from_line(line, hwp);
-out:
-    qvi_line_hwpool_free(&line);
-    if (rc != QV_SUCCESS) {
-        *bytes_written = 0;
-        qvi_hwpool_free(hwp);
-    }
     return rc;
 }
 

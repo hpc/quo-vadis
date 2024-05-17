@@ -59,41 +59,26 @@ qvi_hwpool_dev_s::qvi_hwpool_dev_s(
     qvim_rc = affinity.set(affinity_a);
 }
 
-struct qvi_hwpool_s {
-    int qvim_rc = QV_ERR_INTERNAL;
-    /** The hardware pool's CPU. */
-    qvi_hwpool_cpu_s cpu;
-    /** The hardware pool's devices. */
-    qvi_hwpool_devs_t devs;
-    /** Constructor */
-    qvi_hwpool_s(void)
-    {
-        qvim_rc = qvi_construct_rc(cpu);
-    }
-    /** Destructor */
-    ~qvi_hwpool_s(void) = default;
-};
-
 int
 qvi_hwpool_new(
-    qvi_hwpool_t **rpool
+    qvi_hwpool_s **rpool
 ) {
     return qvi_new_rc(rpool);
 }
 
 void
 qvi_hwpool_free(
-    qvi_hwpool_t **rpool
+    qvi_hwpool_s **rpool
 ) {
     qvi_delete(rpool);
 }
 
 int
 qvi_hwpool_dup(
-    const qvi_hwpool_t *const rpool,
-    qvi_hwpool_t **dup
+    const qvi_hwpool_s *const rpool,
+    qvi_hwpool_s **dup
 ) {
-    qvi_hwpool_t *idup = nullptr;
+    qvi_hwpool_s *idup = nullptr;
     int rc = qvi_hwpool_new(&idup);
     if (rc != QV_SUCCESS) goto out;
     // This performs a deep copy of the underlying CPUs.
@@ -114,82 +99,17 @@ out:
 }
 
 int
-qvi_hwpool_new_from_line(
-    qvi_line_hwpool_t *line,
-    qvi_hwpool_t **rpool
-) {
-    qvi_hwpool_t *irpool = nullptr;
-    int rc = qvi_hwpool_new(&irpool);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_hwpool_init(irpool, line->cpuset.data);
-    if (rc != QV_SUCCESS) goto out;
-
-    for (int i = 0; i < line->ndevinfos; ++i) {
-        rc = qvi_hwpool_add_device(
-            irpool,
-            line->devinfos[i].type,
-            line->devinfos[i].id,
-            line->devinfos[i].pci_bus_id.c_str(),
-            line->devinfos[i].uuid.c_str(),
-            line->devinfos[i].affinity.data
-        );
-        if (rc != QV_SUCCESS) break;
-    }
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_hwpool_free(&irpool);
-    }
-    *rpool = irpool;
-    return rc;
-}
-
-int
-qvi_hwpool_new_line_from_hwpool(
-    const qvi_hwpool_t *rpool,
-    qvi_line_hwpool_t **line
-) {
-    int rc = QV_SUCCESS;
-    const int ndevinfos = rpool->devs.size();
-
-    qvi_line_hwpool_t *iline = nullptr;
-    rc = qvi_line_hwpool_new(&iline);
-    if (rc != QV_SUCCESS) goto out;
-    iline->cpuset = rpool->cpu.cpuset;
-    // Initialize and fill in the device information.
-    iline->ndevinfos = ndevinfos;
-    iline->devinfos.resize(ndevinfos);
-    do {
-        int idx = 0;
-        for (const auto &dinfo : rpool->devs) {
-            // TODO(skg) Use copy constructor?
-            iline->devinfos[idx].type = dinfo.second->type;
-            iline->devinfos[idx].affinity = dinfo.second->affinity;
-            iline->devinfos[idx].id = dinfo.second->id;
-            iline->devinfos[idx].pci_bus_id = dinfo.second->pci_bus_id;
-            iline->devinfos[idx].uuid = dinfo.second->uuid;
-            idx++;
-        }
-    } while (0);
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_line_hwpool_free(&iline);
-    }
-    *line = iline;
-    return rc;
-}
-
-int
 qvi_hwpool_init(
-    qvi_hwpool_t *rpool,
+    qvi_hwpool_s *rpool,
     hwloc_const_bitmap_t cpuset
 ) {
     return qvi_hwloc_bitmap_copy(cpuset, rpool->cpu.cpuset.data);
 }
 
+// TODO(skg) Remove
 int
 qvi_hwpool_add_device(
-    qvi_hwpool_t *rpool,
+    qvi_hwpool_s *rpool,
     qv_hw_obj_type_t type,
     int id,
     cstr_t pcibid,
@@ -207,7 +127,7 @@ qvi_hwpool_add_device(
 
 int
 qvi_hwpool_release_devices(
-    qvi_hwpool_t *pool
+    qvi_hwpool_s *pool
 ) {
     pool->devs.clear();
     return QV_SUCCESS;
@@ -215,7 +135,7 @@ qvi_hwpool_release_devices(
 
 hwloc_const_cpuset_t
 qvi_hwpool_cpuset_get(
-    qvi_hwpool_t *rpool
+    qvi_hwpool_s *rpool
 ) {
     assert(rpool);
     return rpool->cpu.cpuset.data;
@@ -223,7 +143,7 @@ qvi_hwpool_cpuset_get(
 
 const qvi_hwpool_devs_t *
 qvi_hwpool_devinfos_get(
-    qvi_hwpool_t *pool
+    qvi_hwpool_s *pool
 ) {
     assert(pool);
     return &pool->devs;
@@ -278,7 +198,7 @@ cpus_available(
  */
 static int
 pool_obtain_cpus_by_cpuset(
-    qvi_hwpool_t *pool,
+    qvi_hwpool_s *pool,
     hwloc_const_cpuset_t request
 ) {
 #if 0
@@ -303,7 +223,7 @@ pool_obtain_cpus_by_cpuset(
 #if 0
 static int
 pool_release_cpus_by_cpuset(
-    qvi_hwpool_t *pool,
+    qvi_hwpool_s *pool,
     hwloc_const_cpuset_t release
 ) {
     int hwrc = hwloc_bitmap_andnot(
@@ -317,7 +237,7 @@ pool_release_cpus_by_cpuset(
 
 int
 qvi_hwpool_add_devices_with_affinity(
-    qvi_hwpool_t *pool,
+    qvi_hwpool_s *pool,
     qvi_hwloc_t *hwloc
 ) {
     int rc = QV_SUCCESS;
@@ -377,12 +297,12 @@ qvi_hwpool_add_devices_with_affinity(
 
 int
 qvi_hwpool_obtain_by_cpuset(
-    qvi_hwpool_t *pool,
+    qvi_hwpool_s *pool,
     qvi_hwloc_t *hwloc,
     hwloc_const_cpuset_t cpuset,
-    qvi_hwpool_t **opool
+    qvi_hwpool_s **opool
 ) {
-    qvi_hwpool_t *ipool = nullptr;
+    qvi_hwpool_s *ipool = nullptr;
 
     int rc = pool_obtain_cpus_by_cpuset(pool, cpuset);
     if (rc != QV_SUCCESS) goto out;
@@ -405,7 +325,7 @@ out:
 
 int
 qvi_hwpool_pack(
-    const qvi_hwpool_t *hwp,
+    const qvi_hwpool_s *hwp,
     qvi_bbuff_t *buff
 ) {
     return qvi_bbuff_rmi_pack(buff, hwp);
@@ -414,7 +334,7 @@ qvi_hwpool_pack(
 int
 qvi_hwpool_unpack(
     void *buff,
-    qvi_hwpool_t **hwp
+    qvi_hwpool_s **hwp
 ) {
     return qvi_bbuff_rmi_unpack(buff, hwp);
 }

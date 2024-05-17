@@ -34,30 +34,6 @@ typedef struct qvi_line_config_s {
     char *hwtopo_path = nullptr;
 } qvi_line_config_t;
 
-/** Device information struct for line transmission. */
-typedef struct qvi_line_devinfo_s {
-    /** The bitmap encoding device affinity. */
-    qvi_hwloc_bitmap_s affinity;
-    /** Device type. */
-    qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
-    /** Device ID. */
-    int id = 0;
-    /** PCI bus ID. */
-    std::string pci_bus_id;
-    /** UUID */
-    std::string uuid;
-} qvi_line_devinfo_t;
-
-/** Hardware pool data structure for line transmission. */
-typedef struct qvi_line_hwpool_s {
-    /** The cpuset of this resource pool. */
-    qvi_hwloc_bitmap_s cpuset;
-    /** Number of devinfos. */
-    int ndevinfos = 0;
-    /** Vector of device infos. */
-    std::vector<qvi_line_devinfo_t> devinfos;
-} qvi_line_hwpool_t;
-
 /**
  *
  */
@@ -99,30 +75,6 @@ int
 qvi_line_config_unpack(
     void *buff,
     qvi_line_config_t *config
-);
-
-/**
- *
- */
-void
-qvi_line_devinfo_free(
-    qvi_line_devinfo_t *devinfo
-);
-
-/**
- *
- */
-int
-qvi_line_hwpool_new(
-    qvi_line_hwpool_t **hws
-);
-
-/**
- *
- */
-void
-qvi_line_hwpool_free(
-    qvi_line_hwpool_t **hws
 );
 
 #ifdef __cplusplus
