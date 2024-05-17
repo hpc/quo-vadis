@@ -38,7 +38,7 @@ struct qvi_rmi_server_s {
     /** Server configuration */
     qvi_line_config_t *config = nullptr;
     /** The base resource pool maintained by the server. */
-    qvi_hwpool_t *hwpool = nullptr;
+    qvi_hwpool_s *hwpool = nullptr;
     /** ZMQ context */
     void *zctx = nullptr;
     /** Loopback socket for managerial messages */
@@ -593,7 +593,7 @@ static int
 get_intrinsic_scope_user(
     qvi_rmi_server_t *server,
     qvi_task_id_t,
-    qvi_hwpool_t **hwpool
+    qvi_hwpool_s **hwpool
 ) {
     // TODO(skg) Is the cpuset the best way to do this?
     return qvi_hwpool_obtain_by_cpuset(
@@ -608,7 +608,7 @@ static int
 get_intrinsic_scope_proc(
     qvi_rmi_server_t *server,
     qvi_task_id_t who,
-    qvi_hwpool_t **hwpool
+    qvi_hwpool_s **hwpool
 ) {
     hwloc_cpuset_t cpuset = nullptr;
     int rc = qvi_hwloc_task_get_cpubind(
@@ -649,7 +649,7 @@ rpc_ssi_scope_get_intrinsic_hwpool(
 
     int rpcrc = QV_SUCCESS;
     // TODO(skg) Implement the rest.
-    qvi_hwpool_t *hwpool = nullptr;
+    qvi_hwpool_s *hwpool = nullptr;
     switch (iscope) {
         case QV_SCOPE_SYSTEM:
         case QV_SCOPE_USER:
@@ -1092,7 +1092,7 @@ qvi_rmi_scope_get_intrinsic_hwpool(
     qvi_rmi_client_t *client,
     qvi_task_id_t who,
     qv_scope_intrinsic_t iscope,
-    qvi_hwpool_t **hwpool
+    qvi_hwpool_s **hwpool
 ) {
     *hwpool = nullptr;
 

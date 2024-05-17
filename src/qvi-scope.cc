@@ -33,7 +33,7 @@ struct qv_scope_s {
     /** Task group associated with this scope instance. */
     qvi_group_t *group = nullptr;
     /** Hardware resource pool. */
-    qvi_hwpool_t *hwpool = nullptr;
+    qvi_hwpool_s *hwpool = nullptr;
     /** Constructor */
     qv_scope_s(void) = default;
     /** Destructor */
@@ -63,7 +63,7 @@ struct qvi_scope_split_agg_s {
     /**
      * The base hardware pool we are splitting.
      */
-    qvi_hwpool_t *base_hwpool = nullptr;
+    qvi_hwpool_s *base_hwpool = nullptr;
     /**
      * The number of members that are part of the split.
      */
@@ -91,7 +91,7 @@ struct qvi_scope_split_agg_s {
      * number of hardware pools will always match the group size and that their
      * array index corresponds to a task ID: 0 ... group_size - 1.
      */
-    std::vector<qvi_hwpool_t *> hwpools{};
+    std::vector<qvi_hwpool_s *> hwpools{};
     /**
      * Vector of colors, one for each member of the group. Note that the number
      * of colors will always match the group size and that their array index
@@ -122,7 +122,7 @@ struct qvi_scope_split_agg_s {
     int
     init(
         qvi_rmi_client_t *rmi_a,
-        qvi_hwpool_t *base_hwpool_a,
+        qvi_hwpool_s *base_hwpool_a,
         uint_t group_size_a,
         uint_t split_size_a,
         qv_hw_obj_type_t split_at_type_a
@@ -193,7 +193,7 @@ struct qvi_scope_split_coll_s {
 static int
 get_nobjs_in_hwpool(
     qvi_rmi_client_t *rmi,
-    qvi_hwpool_t *hwpool,
+    qvi_hwpool_s *hwpool,
     qv_hw_obj_type_t obj,
     int *n
 ) {
@@ -260,8 +260,8 @@ static int
 gather_hwpools(
     qvi_group_t *group,
     int root,
-    qvi_hwpool_t *txpool,
-    std::vector<qvi_hwpool_t *> &rxpools
+    qvi_hwpool_s *txpool,
+    std::vector<qvi_hwpool_s *> &rxpools
 ) {
     int rc = QV_SUCCESS, shared = 0;
     const uint_t group_size = group->size();
@@ -353,8 +353,8 @@ static int
 scatter_hwpools(
     qvi_group_t *group,
     int root,
-    const std::vector<qvi_hwpool_t *> &pools,
-    qvi_hwpool_t **pool
+    const std::vector<qvi_hwpool_s *> &pools,
+    qvi_hwpool_s **pool
 ) {
     int rc = QV_SUCCESS;
     std::vector<qvi_bbuff_t *> txbuffs{};
@@ -461,7 +461,7 @@ static int
 scope_split_coll_scatter(
     const qvi_scope_split_coll_s &splitcoll,
     int *colorp,
-    qvi_hwpool_t **result
+    qvi_hwpool_s **result
 ) {
     int rc = scatter_values(
         splitcoll.parent_scope->group,
@@ -531,7 +531,7 @@ scope_init(
     qv_scope_t *scope,
     qvi_rmi_client_t *rmi,
     qvi_group_t *group,
-    qvi_hwpool_t *hwpool
+    qvi_hwpool_s *hwpool
 ) {
     assert(rmi && hwpool && scope);
 
@@ -549,7 +549,7 @@ qvi_scope_cpuset_get(
     return qvi_hwpool_cpuset_get(scope->hwpool);
 }
 
-const qvi_hwpool_t *
+const qvi_hwpool_s *
 qvi_scope_hwpool_get(
     qv_scope_t *scope
 ) {
@@ -593,7 +593,7 @@ qvi_scope_get(
     qv_scope_t **scope
 ) {
     qvi_group_t *group = nullptr;
-    qvi_hwpool_t *hwpool = nullptr;
+    qvi_hwpool_s *hwpool = nullptr;
     // Get the requested intrinsic group.
     int rc = zgroup->group_create_intrinsic(
         iscope, &group
@@ -633,7 +633,7 @@ static int
 apply_cpuset_mapping(
     const qvi_map_t &map,
     const qvi_hwloc_cpusets_t cpusets,
-    std::vector<qvi_hwpool_t *> &hwpools,
+    std::vector<qvi_hwpool_s *> &hwpools,
     std::vector<int> &colors
 ) {
     int rc = QV_SUCCESS;
@@ -1063,7 +1063,7 @@ coll_split_hardware_resources(
     int color,
     qv_hw_obj_type_t maybe_obj_type,
     int *colorp,
-    qvi_hwpool_t **result
+    qvi_hwpool_s **result
 ) {
     int rc = QV_SUCCESS, rc2 = QV_SUCCESS;
     const int rootid = qvi_scope_split_coll_s::rootid, myid = parent->group->id();
@@ -1112,7 +1112,7 @@ qvi_scope_split(
     qv_scope_t **child
 ) {
     int rc = QV_SUCCESS, colorp = 0;
-    qvi_hwpool_t *hwpool = nullptr;
+    qvi_hwpool_s *hwpool = nullptr;
     qvi_group_t *group = nullptr;
     qv_scope_t *ichild = nullptr;
     // Split the hardware resources based on the provided split parameters.
@@ -1210,7 +1210,7 @@ qvi_scope_ksplit(
             break;
         }
         // Copy out, since the hardware pools in splitagg will get freed.
-        qvi_hwpool_t *hwpool = nullptr;
+        qvi_hwpool_s *hwpool = nullptr;
         rc = qvi_hwpool_dup(splitagg.hwpools[i], &hwpool);
         if (rc != QV_SUCCESS) {
             qvi_group_free(&group);
@@ -1274,7 +1274,7 @@ qvi_scope_create(
     QVI_UNUSED(hints);
 
     qvi_group_t *group = nullptr;
-    qvi_hwpool_t *hwpool = nullptr;
+    qvi_hwpool_s *hwpool = nullptr;
     qv_scope_t *ichild = nullptr;
     hwloc_cpuset_t cpuset = nullptr;
     // TODO(skg) We need to acquire these resources.
