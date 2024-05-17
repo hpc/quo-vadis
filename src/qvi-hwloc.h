@@ -24,6 +24,11 @@
 extern "C" {
 #endif
 
+/** ID used for invisible devices. */
+const int QVI_HWLOC_DEVICE_INVISIBLE_ID = -1;
+/** ID used to indicate an invalid or unset ID. */
+const int QVI_HWLOC_DEVICE_INVALID_ID = -1;
+
 struct qvi_hwloc_s;
 typedef struct qvi_hwloc_s qvi_hwloc_t;
 
