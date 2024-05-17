@@ -60,11 +60,11 @@ struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
     qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
     /** The bitmap encoding CPU affinity. */
     qvi_hwloc_bitmap_s affinity;
-    /** Device ID. */
-    int id = 0;
+    /** Device ID (ordinal). */
+    int id = QVI_HWLOC_DEVICE_INVALID_ID;
     /** The PCI bus ID. */
     std::string pci_bus_id;
-    /** UUID */
+    /** Universally Unique Identifier. */
     std::string uuid;
     /** No default constructor. */
     qvi_hwpool_dev_s(void) = delete;

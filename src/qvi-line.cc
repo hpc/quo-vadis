@@ -126,22 +126,6 @@ out:
     *hwp = nullptr;
 }
 
-int
-qvi_line_hwpool_pack(
-    qvi_line_hwpool_t *hwp,
-    qvi_bbuff_t *buff
-) {
-    return qvi_bbuff_rmi_pack(buff, hwp);
-}
-
-int
-qvi_line_hwpool_unpack(
-    void *buff,
-    qvi_line_hwpool_t **hwp
-) {
-    return qvi_bbuff_rmi_unpack(buff, hwp);
-}
-
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
  */

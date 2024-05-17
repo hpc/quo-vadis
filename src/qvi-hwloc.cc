@@ -20,11 +20,6 @@
 #include "qvi-nvml.h"
 #include "qvi-rsmi.h"
 
-/** ID used for invisible devices. */
-static constexpr int QVI_HWLOC_DEVICE_INVISIBLE_ID = -1;
-/** ID used to indicate an invalid or unset ID. */
-static constexpr int QVI_HWLOC_DEVICE_INVALID_ID = -1;
-
 typedef enum qvi_hwloc_task_xop_obj_e {
     QVI_HWLOC_TASK_INTERSECTS_OBJ = 0,
     QVI_HWLOC_TASK_ISINCLUDED_IN_OBJ

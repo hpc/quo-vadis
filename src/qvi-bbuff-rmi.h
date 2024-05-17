@@ -506,7 +506,7 @@ qvi_bbuff_rmi_pack_item(
     qvi_bbuff_t *buff,
     qvi_line_devinfo_t *data
 ) {
-    // Pack cpuset.
+    // Pack device affinity.
     int rc = qvi_bbuff_rmi_pack_item(buff, data->affinity);
     if (rc != QV_SUCCESS) return rc;
     // Pack device type.
@@ -825,6 +825,9 @@ qvi_bbuff_rmi_unpack_item(
     return QV_SUCCESS;
 }
 
+/**
+ * Unpacks qvi_line_devinfo_t *
+ */
 inline int
 qvi_bbuff_rmi_unpack_item(
     qvi_line_devinfo_t *di,

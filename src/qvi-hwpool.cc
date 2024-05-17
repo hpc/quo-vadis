@@ -43,6 +43,7 @@
 // approach using the device IDs instead of the bit positions.
 
 #include "qvi-hwpool.h"
+#include "qvi-bbuff-rmi.h"
 
 qvi_hwpool_dev_s::qvi_hwpool_dev_s(
     qv_hw_obj_type_t type_a,
@@ -407,14 +408,7 @@ qvi_hwpool_pack(
     const qvi_hwpool_t *hwp,
     qvi_bbuff_t *buff
 ) {
-    // Convert input data to line protocol.
-    qvi_line_hwpool_t *line = nullptr;
-    int rc = qvi_hwpool_new_line_from_hwpool(hwp, &line);
-    if (rc != QV_SUCCESS) return rc;
-    // Pack the data
-    rc = qvi_line_hwpool_pack(line, buff);
-    qvi_line_hwpool_free(&line);
-    return rc;
+    return qvi_bbuff_rmi_pack(buff, hwp);
 }
 
 int
@@ -422,17 +416,7 @@ qvi_hwpool_unpack(
     void *buff,
     qvi_hwpool_t **hwp
 ) {
-    qvi_line_hwpool_t *line = nullptr;
-    int rc = qvi_line_hwpool_unpack(buff, &line);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_hwpool_new_from_line(line, hwp);
-out:
-    qvi_line_hwpool_free(&line);
-    if (rc != QV_SUCCESS) {
-        qvi_hwpool_free(hwp);
-    }
-    return rc;
+    return qvi_bbuff_rmi_unpack(buff, hwp);
 }
 
 /**

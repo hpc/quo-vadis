@@ -125,24 +125,6 @@ qvi_line_hwpool_free(
     qvi_line_hwpool_t **hws
 );
 
-/**
- *
- */
-int
-qvi_line_hwpool_pack(
-    qvi_line_hwpool_t *hws,
-    qvi_bbuff_t *buff
-);
-
-/**
- *
- */
-int
-qvi_line_hwpool_unpack(
-    void *buff,
-    qvi_line_hwpool_t **hws
-);
-
 #ifdef __cplusplus
 }
 #endif
