@@ -17,8 +17,8 @@
 #define QVI_HWPOOL_H
 
 #include "qvi-common.h"
+#include "qvi-bbuff.h"
 #include "qvi-hwloc.h"
-#include "qvi-line.h"
 #include "qvi-utils.h"
 
 /**
