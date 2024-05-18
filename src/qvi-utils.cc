@@ -131,7 +131,7 @@ qvi_port(
 
 int
 qvi_url(
-    char **url
+    std::string &url
 ) {
     static const cstr_t base = "tcp://127.0.0.1";
 
@@ -139,9 +139,7 @@ qvi_url(
     int rc = qvi_port(&port);
     if (rc != QV_SUCCESS) return rc;
 
-    int nw = asprintf(url, "%s:%d", base, port);
-    if (nw == -1) return QV_ERR_OOR;
-
+    url = std::string(base) + ":" + std::to_string(port);
     return QV_SUCCESS;
 }
 

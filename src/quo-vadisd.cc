@@ -21,12 +21,11 @@
 
 #include "qvi-utils.h"
 #include "qvi-hwloc.h"
-#include "qvi-line.h"
 #include "qvi-rmi.h"
 
 struct context {
+    qvi_rmi_config_s rmic;
     qvi_hwloc_t *hwloc = nullptr;
-    qvi_line_config_t *rmic = nullptr;
     qvi_rmi_server_t *rmi = nullptr;
     bool daemonized = false;
 };
@@ -38,7 +37,6 @@ context_free(
     if (!ctx) return;
     context *ictx = *ctx;
     if (!ictx) return;
-    qvi_line_config_free(&ictx->rmic);
     qvi_rmi_server_free(&ictx->rmi);
     qvi_hwloc_free(&ictx->hwloc);
     delete ictx;
@@ -56,12 +54,6 @@ context_new(
     if (!ictx) {
         ers = "memory allocation failed";
         rc = QV_ERR_OOR;
-        goto out;
-    }
-
-    rc = qvi_line_config_new(&ictx->rmic);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_line_config_new() failed";
         goto out;
     }
 
@@ -139,22 +131,22 @@ rmi_config(
 ) {
     qvi_log_debug("Starting RMI");
 
-    ctx->rmic->hwloc = ctx->hwloc;
+    ctx->rmic.hwloc = ctx->hwloc;
 
-    int rc = qvi_url(&ctx->rmic->url);
+    int rc = qvi_url(ctx->rmic.url);
     if (rc != QV_SUCCESS) {
         qvi_panic_log_error(qvi_conn_ers());
         return;
     }
 
-    rc = qvi_rmi_server_config(ctx->rmi, ctx->rmic);
+    rc = qvi_rmi_server_config(ctx->rmi, &ctx->rmic);
     if (rc != QV_SUCCESS) {
         qvi_panic_log_error("qvi_rmi_server_config() failed");
         return;
     }
 
-    qvi_log_debug("URL: {}", ctx->rmic->url);
-    qvi_log_debug("hwloc XML: {}", ctx->rmic->hwtopo_path);
+    qvi_log_debug("URL: {}", ctx->rmic.url);
+    qvi_log_debug("hwloc XML: {}", ctx->rmic.hwtopo_path);
 }
 
 static void
@@ -210,15 +202,16 @@ hwtopo_export(
     qvi_log_debug("Publishing hardware information");
 
     cstr_t basedir = qvi_tmpdir();
+    char *path = nullptr;
     int rc = qvi_hwloc_topology_export(
-        ctx->hwloc,
-        basedir,
-        &ctx->rmic->hwtopo_path
+        ctx->hwloc, basedir, &path
     );
     if (rc != QV_SUCCESS) {
         static cstr_t ers = "qvi_hwloc_topology_export() failed";
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
+    ctx->rmic.hwtopo_path = std::string(path);
+    free(path);
 }
 
 // TODO(skg) Add daemonize option.

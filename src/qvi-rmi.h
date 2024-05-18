@@ -20,11 +20,20 @@
 #define QVI_RMI_H
 
 #include "qvi-common.h" // IWYU pragma: keep
-#include "qvi-line.h"
 #include "qvi-hwloc.h"
 #include "qvi-hwpool.h"
 
 #ifdef __cplusplus
+
+struct qvi_rmi_config_s {
+    /** Not sent, initialized elsewhere. */
+    qvi_hwloc_t *hwloc = nullptr;
+    /** Connection URL. */
+    std::string url;
+    /** Path to hardware topology file. */
+    std::string hwtopo_path;
+};
+
 extern "C" {
 #endif
 
@@ -57,7 +66,7 @@ qvi_rmi_server_free(
 int
 qvi_rmi_server_config(
     qvi_rmi_server_t *server,
-    qvi_line_config_t *config
+    qvi_rmi_config_s *config
 );
 
 /**

@@ -19,7 +19,7 @@
 #include "qvi-utils.h"
 #include "qvi-hwloc.h"
 #include "qvi-rmi.h"
-#include "qvi-test-common.h"
+#include "qvi-test-common.h" // IWYU pragma: keep
 
 static int
 server(
@@ -29,7 +29,9 @@ server(
 
     char const *ers = NULL;
     const char *basedir = qvi_tmpdir();
+    char *path = nullptr;
     double start = qvi_time(), end;
+    qvi_rmi_config_s config;
 
     qvi_rmi_server_t *server = NULL;
     int rc = qvi_rmi_server_new(&server);
@@ -57,30 +59,25 @@ server(
         goto out;
     }
 
-    qvi_line_config_t *config;
-    rc = qvi_line_config_new(&config);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_line_config_new() failed";
-        goto out;
-    }
-
-    rc = asprintf(&config->url, "%s", url);
-    if (rc == -1) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-
-    config->hwloc = hwloc;
+    config.url = std::string(url);
+    config.hwloc = hwloc;
 
     rc = qvi_hwloc_topology_export(
-        hwloc,
-        basedir,
-        &config->hwtopo_path
+        hwloc, basedir, &path
     );
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_hwloc_topology_export() failed";
+        goto out;
+    }
 
-    rc = qvi_rmi_server_config(server, config);
+    config.hwtopo_path = std::string(path);
+    free(path);
 
-    qvi_line_config_free(&config);
+    rc = qvi_rmi_server_config(server, &config);
+    if (rc != QV_SUCCESS) {
+        ers = "qvi_rmi_server_config() failed";
+        goto out;
+    }
 
     rc = qvi_rmi_server_start(server, false);
     if (rc != QV_SUCCESS) {
