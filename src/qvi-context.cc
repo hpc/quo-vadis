@@ -59,15 +59,14 @@ int
 qvi_context_connect_to_server(
     qv_context_t *ctx
 ) {
-    char *url = nullptr;
-    int rc = qvi_url(&url);
+    std::string url;
+    int rc = qvi_url(url);
     if (rc != QV_SUCCESS) {
         qvi_log_error("{}", qvi_conn_ers());
         return rc;
     }
 
-    rc = qvi_rmi_client_connect(ctx->rmi, url);
-    if (url) free(url);
+    rc = qvi_rmi_client_connect(ctx->rmi, url.c_str());
     return rc;
 }
 

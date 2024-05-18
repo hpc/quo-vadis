@@ -24,7 +24,6 @@ add_library(
       qvi-hwloc.h
       qvi-nvml.h
       qvi-rsmi.h
-      qvi-line.h
       qvi-hwpool.h
       qvi-rmi.h
       qvi-bbuff-rmi.h
@@ -41,7 +40,6 @@ add_library(
       qvi-hwloc.cc
       qvi-nvml.cc
       qvi-rsmi.cc
-      qvi-line.cc
       qvi-hwpool.cc
       qvi-rmi.cc
       qvi-context.cc
