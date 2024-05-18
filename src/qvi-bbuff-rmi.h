@@ -241,6 +241,15 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
+    std::string
+) {
+    picture += "s";
+}
+
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
     std::string &
 ) {
     picture += "s";
@@ -285,11 +294,11 @@ inline void
 qvi_bbuff_rmi_get_picture
 (
     std::string &picture,
-    T arg,
-    Types... args
+    T&& arg,
+    Types&&... args
 ) {
-    qvi_bbuff_rmi_pack_type_picture(picture, arg);
-    qvi_bbuff_rmi_get_picture(picture, args...);
+    qvi_bbuff_rmi_pack_type_picture(picture, std::forward<T>(arg));
+    qvi_bbuff_rmi_get_picture(picture, std::forward<Types>(args)...);
 }
 
 template<typename T>
@@ -620,12 +629,12 @@ template<typename T, typename... Types>
 inline int
 qvi_bbuff_rmi_pack(
     qvi_bbuff_t *buff,
-    T arg,
-    Types... args
+    T&& arg,
+    Types&&... args
 ) {
-    const int rc = qvi_bbuff_rmi_pack_item(buff, arg);
+    const int rc = qvi_bbuff_rmi_pack_item(buff, std::forward<T>(arg));
     if (rc != QV_SUCCESS) return rc;
-    return qvi_bbuff_rmi_pack(buff, args...);
+    return qvi_bbuff_rmi_pack(buff, std::forward<Types>(args)...);
 }
 
 
@@ -979,19 +988,19 @@ template<typename T, typename... Types>
 inline int
 qvi_bbuff_rmi_unpack(
     void *data,
-    T arg,
-    Types... args
+    T&& arg,
+    Types&&... args
 ) {
     byte_t *pos = (byte_t *)data;
     size_t bytes_written = 0;
     const int rc = qvi_bbuff_rmi_unpack_item(
-        arg,
+        std::forward<T>(arg),
         (byte_t *)data,
         &bytes_written
     );
     if (rc != QV_SUCCESS) return rc;
     pos += bytes_written;
-    return qvi_bbuff_rmi_unpack(pos, args...);
+    return qvi_bbuff_rmi_unpack(pos, std::forward<Types>(args)...);
 }
 
 #endif

@@ -290,7 +290,7 @@ static int
 rpc_pack(
     qvi_bbuff_t **buff,
     qvi_rpc_funid_t fid,
-    Types... args
+    Types&&... args
 ) {
     std::string picture;
 
@@ -298,12 +298,12 @@ rpc_pack(
     int rc = qvi_bbuff_new(&ibuff);
     if (rc != QV_SUCCESS) goto out;
     // Get the picture based on the types passed.
-    qvi_bbuff_rmi_get_picture(picture, args...);
+    qvi_bbuff_rmi_get_picture(picture, std::forward<Types>(args)...);
     // Fill and add header.
     rc = buffer_append_header(ibuff, fid, picture.c_str());
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_bbuff_rmi_pack(ibuff, args...);
+    rc = qvi_bbuff_rmi_pack(ibuff, std::forward<Types>(args)...);
 out:
     if (rc != QV_SUCCESS) {
         qvi_bbuff_free(&ibuff);
@@ -316,14 +316,14 @@ template <typename... Types>
 static int
 rpc_unpack(
     void *data,
-    Types... args
+    Types&&... args
 ) {
     qvi_msg_header_t hdr;
     const size_t trim = unpack_msg_header(data, &hdr);
 #if QVI_DEBUG_MODE == 1
     std::string picture;
     // Get the picture based on the types passed.
-    qvi_bbuff_rmi_get_picture(picture, args...);
+    qvi_bbuff_rmi_get_picture(picture, std::forward<Types>(args)...);
     // Verify it matches the arguments provided.
     if (strcmp(picture.c_str(), hdr.picture) != 0) {
         qvi_log_error(
@@ -338,7 +338,7 @@ rpc_unpack(
     }
 #endif
     void *body = data_trim(data, trim);
-    return qvi_bbuff_rmi_unpack(body, args...);
+    return qvi_bbuff_rmi_unpack(body, std::forward<Types>(args)...);
 }
 
 template <typename... Types>
@@ -346,13 +346,13 @@ static inline int
 rpc_req(
     void *zsock,
     qvi_rpc_funid_t fid,
-    Types... args
+    Types&&... args
 ) {
     int qvrc = QV_SUCCESS;
     int buffer_size = 0;
 
     qvi_bbuff_t *buff = nullptr;
-    int rc = rpc_pack(&buff, fid, args...);
+    int rc = rpc_pack(&buff, fid, std::forward<Types>(args)...);
     if (rc != QV_SUCCESS) {
         qvi_bbuff_free(&buff);
         return rc;
@@ -382,12 +382,12 @@ template <typename... Types>
 static inline int
 rpc_rep(
     void *zsock,
-    Types... args
+    Types&&... args
 ) {
     zmq_msg_t msg;
     int rc = zmsg_recv(zsock, &msg);
     if (rc != QV_SUCCESS) goto out;
-    rc = rpc_unpack(zmq_msg_data(&msg), args...);
+    rc = rpc_unpack(zmq_msg_data(&msg), std::forward<Types>(args)...);
 out:
     zmq_msg_close(&msg);
     return rc;
@@ -404,7 +404,7 @@ rpc_ssi_invalid(
     qvi_bbuff_t **
 ) {
     qvi_log_error("Something bad happened in RPC dispatch.");
-    assert(false);
+    qvi_abort();
     return QV_ERR_INVLD_ARG;
 }
 
