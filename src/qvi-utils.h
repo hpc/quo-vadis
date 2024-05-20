@@ -80,6 +80,14 @@ qvi_new_rc(
     return rc;
 }
 
+/**
+ *
+ */
+int
+qvi_url(
+    std::string &url
+);
+
 #endif
 
 #ifdef __cplusplus
@@ -120,14 +128,6 @@ int
 qvi_atoi(
     cstr_t str,
     int *maybe_val
-);
-
-/**
- *
- */
-int
-qvi_url(
-    std::string &url
 );
 
 /**

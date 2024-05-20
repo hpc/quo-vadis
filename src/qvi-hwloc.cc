@@ -25,11 +25,6 @@ typedef enum qvi_hwloc_task_xop_obj_e {
     QVI_HWLOC_TASK_ISINCLUDED_IN_OBJ
 } qvi_hwloc_task_xop_obj_t;
 
-/** Device list type. */
-using qvi_hwloc_dev_list_t = std::vector<
-    std::shared_ptr<qvi_hwloc_device_t>
->;
-
 /** Maps a string identifier to a device. */
 using qvi_hwloc_dev_map_t = std::unordered_map<
     std::string,
@@ -38,33 +33,6 @@ using qvi_hwloc_dev_map_t = std::unordered_map<
 
 /** Set of device identifiers. */
 using qvi_hwloc_dev_id_set_t = std::unordered_set<std::string>;
-
-typedef struct qvi_hwloc_device_s {
-    int qvim_rc = QV_ERR_INTERNAL;
-    /** Device type. */
-    qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
-    /** Device affinity. */
-    qvi_hwloc_bitmap_s affinity;
-    /** Vendor ID */
-    int vendor_id = QVI_HWLOC_DEVICE_INVALID_ID;
-    /** System Management Interface ID. */
-    int smi = QVI_HWLOC_DEVICE_INVALID_ID;
-    /** CUDA/ROCm visible devices ID */
-    int visdev_id = QVI_HWLOC_DEVICE_INVISIBLE_ID;
-    /** Device name */
-    std::string name;
-    /** PCI bus ID */
-    std::string pci_bus_id;
-    /** UUID */
-    std::string uuid;
-    /** Constructor */
-    qvi_hwloc_device_s(void)
-    {
-        qvim_rc = qvi_construct_rc(affinity);
-    }
-    /** Destructor */
-    ~qvi_hwloc_device_s(void) = default;
-} qvi_hwloc_device_t;
 
 typedef struct qvi_hwloc_s {
     int qvim_rc = QV_SUCCESS;
@@ -108,7 +76,7 @@ dev_list_compare_by_visdev_id(
     const std::shared_ptr<qvi_hwloc_device_t> &a,
     const std::shared_ptr<qvi_hwloc_device_t> &b
 ) {
-    return a.get()->visdev_id < b.get()->visdev_id;
+    return a.get()->id < b.get()->id;
 }
 
 hwloc_obj_type_t
@@ -304,15 +272,15 @@ set_visdev_id(
     // request via (e.g, CUDA_VISIBLE_DEVICES, ROCR_VISIBLE_DEVICES).
     int id = QVI_HWLOC_DEVICE_INVISIBLE_ID, id2 = id;
     if (sscanf(device->name.c_str(), "cuda%d", &id) == 1) {
-        device->visdev_id = id;
+        device->id = id;
         return QV_SUCCESS;
     }
     if (sscanf(device->name.c_str(), "rsmi%d", &id) == 1) {
-        device->visdev_id = id;
+        device->id = id;
         return QV_SUCCESS;
     }
     if (sscanf(device->name.c_str(), "opencl%dd%d", &id2, &id) == 2) {
-        device->visdev_id = id;
+        device->id = id;
         return QV_SUCCESS;
     }
     return QV_SUCCESS;
@@ -450,7 +418,7 @@ discover_gpu_devices(
 
         for (auto &dev : hwl->devices) {
             // Skip invisible devices.
-            if (dev->visdev_id == QVI_HWLOC_DEVICE_INVISIBLE_ID) continue;
+            if (dev->id == QVI_HWLOC_DEVICE_INVISIBLE_ID) continue;
             // Skip if this is not the PCI bus ID we are looking for.
             if (dev->pci_bus_id != busid) continue;
             // Set as much device info as we can.
@@ -1180,7 +1148,7 @@ qvi_hwloc_device_copy(
     dest->type = src->type;
     dest->vendor_id = src->vendor_id;
     dest->smi = src->smi;
-    dest->visdev_id = src->visdev_id;
+    dest->id = src->id;
 
     dest->name = src->name;
     dest->pci_bus_id = src->pci_bus_id;
@@ -1213,7 +1181,7 @@ qvi_hwloc_devices_emit(
         qvi_log_info("  Device affinity: {}", cpusets);
         qvi_log_info("  Device Vendor ID: {}", dev->vendor_id);
         qvi_log_info("  Device SMI: {}", dev->smi);
-        qvi_log_info("  Device Visible Device ID: {}\n", dev->visdev_id);
+        qvi_log_info("  Device Visible Device ID: {}\n", dev->id);
 
         free(cpusets);
     }
@@ -1267,7 +1235,17 @@ get_devices_in_cpuset(
 }
 
 int
-qvi_hwloc_get_device_in_cpuset(
+qvi_hwloc_get_devices_in_bitmap(
+    qvi_hwloc_t *hwl,
+    qv_hw_obj_type_t dev_type,
+    const qvi_hwloc_bitmap_s &bitmap,
+    qvi_hwloc_dev_list_t &devs
+) {
+    return get_devices_in_cpuset(hwl, dev_type, bitmap.data, devs);
+}
+
+int
+qvi_hwloc_get_device_id_in_cpuset(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t dev_obj,
     int i,
@@ -1291,7 +1269,7 @@ qvi_hwloc_get_device_in_cpuset(
             nw = asprintf(dev_id, "%s", devs.at(i)->pci_bus_id.c_str());
             break;
         case (QV_DEVICE_ID_ORDINAL):
-            nw = asprintf(dev_id, "%d", devs.at(i)->visdev_id);
+            nw = asprintf(dev_id, "%d", devs.at(i)->id);
             break;
         default:
             rc = QV_ERR_INVLD_ARG;
@@ -1453,7 +1431,7 @@ qvi_hwloc_get_device_affinity(
     // XXX(skg) This isn't the most efficient way of doing this, but the device
     // lists tend to be small, so just perform a linear search for the given ID.
     for (const auto &dev : *devlist) {
-        if (dev->visdev_id != device_id) continue;
+        if (dev->id != device_id) continue;
         rc = qvi_hwloc_bitmap_dup(dev->affinity.data, &icpuset);
         if (rc != QV_SUCCESS) goto out;
     }
