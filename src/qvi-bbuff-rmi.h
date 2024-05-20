@@ -17,6 +17,7 @@
  * b = qvi_bbuff_rmi_bytes_in_t, qvi_bbuff_rmi_bytes_out_t
  * c = hwloc_cpuset_t
  * c = qvi_hwloc_bitmap_s
+ * d = qv_scope_create_hints_t
  * h = qvi_hwpool_s *
  * h = qvi_line_hwpool_t *
  * i = int
@@ -107,6 +108,15 @@ qvi_bbuff_rmi_pack_type_picture(
     const qvi_hwloc_bitmap_s &
 ) {
     picture += "c";
+}
+
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
+    qv_scope_create_hints_t
+) {
+    picture += "d";
 }
 
 template<>
@@ -331,6 +341,18 @@ qvi_bbuff_rmi_pack_item(
 }
 
 /**
+ * Packs qv_scope_create_hints_t as an int.
+ */
+inline int
+qvi_bbuff_rmi_pack_item(
+    qvi_bbuff_t *buff,
+    qv_scope_create_hints_t data
+) {
+    const int dai = (int)data;
+    return qvi_bbuff_append(buff, &dai, sizeof(dai));
+}
+
+/**
  * Packs qv_hw_obj_type_t as an int.
  */
 inline int
@@ -455,7 +477,7 @@ qvi_bbuff_rmi_pack_item(
     // We store size then data so unpack has an easier time, but keep
     // the user interface order as data then size.
     size_t dsize = data.second;
-    int rc = qvi_bbuff_append(buff, &dsize, sizeof(dsize));
+    const int rc = qvi_bbuff_append(buff, &dsize, sizeof(dsize));
     if (rc != QV_SUCCESS) return rc;
     return qvi_bbuff_append(buff, data.first, dsize);
 }
@@ -468,21 +490,20 @@ qvi_bbuff_rmi_pack_item_impl(
     qvi_bbuff_t *buff,
     hwloc_const_cpuset_t data
 ) {
-    int rc = QV_SUCCESS;
-    char *datas = nullptr;
     // Protect against null data.
     if (!data) {
-        int np = asprintf(&datas, "%s", QV_BUFF_RMI_NULL_CPUSET);
-        if (np == -1) return QV_ERR_OOR;
+        return qvi_bbuff_append(
+            buff, QV_BUFF_RMI_NULL_CPUSET,
+            strlen(QV_BUFF_RMI_NULL_CPUSET) + 1
+        );
     }
-    else {
-        rc = qvi_hwloc_bitmap_asprintf(&datas, data);
-        if (rc != QV_SUCCESS) goto out;
-    }
+    // Non-null data.
+    char *datas = nullptr;
+    int rc = qvi_hwloc_bitmap_asprintf(&datas, data);
+    if (rc != QV_SUCCESS) return rc;
     // We are sending the string representation of the cpuset.
     rc = qvi_bbuff_append(buff, datas, strlen(datas) + 1);
-out:
-    if (datas) free(datas);
+    free(datas);
     return rc;
 }
 
@@ -520,6 +541,21 @@ qvi_bbuff_rmi_pack_item(
 }
 
 /**
+ * Packs qvi_hwpool_cpu_s
+ */
+inline int
+qvi_bbuff_rmi_pack_item(
+    qvi_bbuff_t *buff,
+    const qvi_hwpool_cpu_s &data
+) {
+    // Pack hints.
+    const int rc = qvi_bbuff_rmi_pack_item(buff, data.hints);
+    if (rc != QV_SUCCESS) return rc;
+
+    return qvi_bbuff_rmi_pack_item(buff, data.cpuset);
+}
+
+/**
  * Packs qvi_hwpool_dev_s *
  */
 inline int
@@ -527,8 +563,11 @@ qvi_bbuff_rmi_pack_item(
     qvi_bbuff_t *buff,
     qvi_hwpool_dev_s *data
 ) {
+    // Pack device hints.
+    int rc = qvi_bbuff_rmi_pack_item(buff, data->hints);
+    if (rc != QV_SUCCESS) return rc;
     // Pack device affinity.
-    int rc = qvi_bbuff_rmi_pack_item(buff, data->affinity);
+    rc = qvi_bbuff_rmi_pack_item(buff, data->affinity);
     if (rc != QV_SUCCESS) return rc;
     // Pack device type.
     rc = qvi_bbuff_rmi_pack_item(buff, data->type);
@@ -553,10 +592,8 @@ qvi_bbuff_rmi_pack_item_impl(
     qvi_bbuff_t *buff,
     const qvi_hwpool_s *data
 ) {
-    // Pack cpuset.
-    // TODO(skg) Add flags.
-    // TODO(skg) Pack cpu
-    int rc = qvi_bbuff_rmi_pack_item(buff, data->cpu.cpuset);
+    // Pack CPU.
+    int rc = qvi_bbuff_rmi_pack_item(buff, data->cpu);
     if (rc != QV_SUCCESS) return rc;
     // Pack ndevinfos
     const size_t ndev = data->devs.size();
@@ -564,7 +601,8 @@ qvi_bbuff_rmi_pack_item_impl(
     if (rc != QV_SUCCESS) return rc;
     // Pack devices.
     for (const auto &dev : data->devs) {
-        qvi_bbuff_rmi_pack_item(buff, dev.second.get());
+        rc = qvi_bbuff_rmi_pack_item(buff, dev.second.get());
+        if (rc != QV_SUCCESS) return rc;
     }
     return rc;
 }
@@ -578,7 +616,7 @@ qvi_bbuff_rmi_pack_item_impl(
     qvi_task_id_t data
 ) {
     // Pack task type.
-    int rc = qvi_bbuff_rmi_pack_item(buff, data.type);
+    const int rc = qvi_bbuff_rmi_pack_item(buff, data.type);
     if (rc != QV_SUCCESS) return rc;
     // Pack pid
     return qvi_bbuff_rmi_pack_item(buff, data.who);
@@ -649,6 +687,9 @@ qvi_bbuff_rmi_unpack_item(
     size_t *bytes_written
 );
 
+/**
+ * Unpacks size_t.
+ */
 inline int
 qvi_bbuff_rmi_unpack_item(
     size_t *i,
@@ -660,6 +701,9 @@ qvi_bbuff_rmi_unpack_item(
     return QV_SUCCESS;
 }
 
+/**
+ * Unpacks int.
+ */
 inline int
 qvi_bbuff_rmi_unpack_item(
     int *i,
@@ -671,6 +715,9 @@ qvi_bbuff_rmi_unpack_item(
     return QV_SUCCESS;
 }
 
+/**
+ * Unpacks qvi_task_type_t.
+ */
 inline int
 qvi_bbuff_rmi_unpack_item(
     qvi_task_type_t *o,
@@ -685,7 +732,27 @@ qvi_bbuff_rmi_unpack_item(
     return QV_SUCCESS;
 }
 
+/**
+ * Unpacks qv_scope_create_hints_t.
+ */
+inline int
+qvi_bbuff_rmi_unpack_item(
+    qv_scope_create_hints_t *o,
+    byte_t *buffpos,
+    size_t *bytes_written
+) {
+    // Remember we are sending this as an int.
+    int oai = 0;
+    memmove(&oai, buffpos, sizeof(oai));
+    *bytes_written = sizeof(oai);
+    *o = (qv_scope_create_hints_t)oai;
+    return QV_SUCCESS;
+}
+
 #if QVI_SIZEOF_INT != QVI_SIZEOF_PID_T
+/**
+ * Unpacks pid_t.
+ */
 inline int
 qvi_bbuff_rmi_unpack_item(
     pid_t *i,
@@ -701,6 +768,9 @@ qvi_bbuff_rmi_unpack_item(
 }
 #endif
 
+/**
+ * Unpacks char *.
+ */
 inline int
 qvi_bbuff_rmi_unpack_item(
     char **s,
@@ -717,6 +787,9 @@ qvi_bbuff_rmi_unpack_item(
     return QV_SUCCESS;
 }
 
+/**
+ * Unpacks std::string.
+ */
 inline int
 qvi_bbuff_rmi_unpack_item(
     std::string &str,
@@ -728,6 +801,9 @@ qvi_bbuff_rmi_unpack_item(
     return QV_SUCCESS;
 }
 
+/**
+ * Unpacks qv_scope_intrinsic_t.
+ */
 inline int
 qvi_bbuff_rmi_unpack_item(
     qv_scope_intrinsic_t *o,
@@ -742,6 +818,9 @@ qvi_bbuff_rmi_unpack_item(
     return QV_SUCCESS;
 }
 
+/**
+ * Unpacks qv_device_id_type_t.
+ */
 inline int
 qvi_bbuff_rmi_unpack_item(
     qv_device_id_type_t *o,
@@ -756,6 +835,9 @@ qvi_bbuff_rmi_unpack_item(
     return QV_SUCCESS;
 }
 
+/**
+ * Unpacks qv_hw_obj_type_t.
+ */
 inline int
 qvi_bbuff_rmi_unpack_item(
     qv_hw_obj_type_t *o,
@@ -770,6 +852,9 @@ qvi_bbuff_rmi_unpack_item(
     return QV_SUCCESS;
 }
 
+/**
+ * Unpacks qvi_bbuff_rmi_bytes_out_t.
+ */
 inline int
 qvi_bbuff_rmi_unpack_item(
     qvi_bbuff_rmi_bytes_out_t data,
@@ -792,6 +877,9 @@ qvi_bbuff_rmi_unpack_item(
     return QV_SUCCESS;
 }
 
+/**
+ * Unpacks qvi_bbuff_rmi_bytes_out_t.
+ */
 inline int
 qvi_bbuff_rmi_unpack_item(
     hwloc_cpuset_t *cpuset,
@@ -815,6 +903,9 @@ out:
     return rc;
 }
 
+/**
+ * Unpacks qvi_hwloc_bitmap_s.
+ */
 inline int
 qvi_bbuff_rmi_unpack_item(
     qvi_hwloc_bitmap_s &bitmap,
@@ -832,6 +923,9 @@ qvi_bbuff_rmi_unpack_item(
     return rc;
 }
 
+/**
+ * Unpacks qvi_bbuff_rmi_zero_msg_t.
+ */
 inline int
 qvi_bbuff_rmi_unpack_item(
     qvi_bbuff_rmi_zero_msg_t,
@@ -840,6 +934,37 @@ qvi_bbuff_rmi_unpack_item(
 ) {
     *bytes_written = 0;
     return QV_SUCCESS;
+}
+
+/**
+ * Unpacks qvi_hwpool_cpu_s
+ */
+inline int
+qvi_bbuff_rmi_unpack_item(
+    qvi_hwpool_cpu_s &cpu,
+    byte_t *buffpos,
+    size_t *bytes_written
+) {
+    size_t bw = 0, total_bw = 0;
+    // Unpack hints.
+    int rc = qvi_bbuff_rmi_unpack_item(
+        &cpu.hints, buffpos, &bw
+    );
+    if (rc != QV_SUCCESS) goto out;
+    total_bw += bw;
+    buffpos += bw;
+    // Unpack bitmap.
+    rc = qvi_bbuff_rmi_unpack_item(
+        cpu.cpuset, buffpos, &bw
+    );
+    if (rc != QV_SUCCESS) goto out;
+    total_bw += bw;
+out:
+    if (rc != QV_SUCCESS) {
+        total_bw = 0;
+    }
+    *bytes_written = total_bw;
+    return rc;
 }
 
 /**
@@ -854,6 +979,13 @@ qvi_bbuff_rmi_unpack_item(
     size_t bw = 0, total_bw = 0;
 
     int rc = qvi_bbuff_rmi_unpack_item(
+        &dev->hints, buffpos, &bw
+    );
+    if (rc != QV_SUCCESS) goto out;
+    total_bw += bw;
+    buffpos += bw;
+
+    rc = qvi_bbuff_rmi_unpack_item(
         dev->affinity, buffpos, &bw
     );
     if (rc != QV_SUCCESS) goto out;
@@ -909,14 +1041,14 @@ qvi_bbuff_rmi_unpack_item(
 
     size_t bw = 0, total_bw = 0;
 
-    // Unpack cpuset.
+    // Unpack CPU.
     rc = qvi_bbuff_rmi_unpack_item(
-        ihwp->cpu.cpuset, buffpos, &bw
+        ihwp->cpu, buffpos, &bw
     );
     if (rc != QV_SUCCESS) return rc;
     total_bw += bw;
     buffpos += bw;
-    // Unpack number of devinfos.
+    // Unpack number of devices.
     size_t ndev = 0;
     rc = qvi_bbuff_rmi_unpack_item(
         &ndev, buffpos, &bw
@@ -946,6 +1078,9 @@ out:
     return rc;
 }
 
+/**
+ * Unpacks qvi_task_id_t.
+ */
 inline int
 qvi_bbuff_rmi_unpack_item(
     qvi_task_id_t *taski,
