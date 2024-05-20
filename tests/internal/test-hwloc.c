@@ -137,7 +137,7 @@ echo_gpu_info(
     for (int i = 0; i < ngpus; ++i) {
         for (unsigned j = 0; j < ndevids; ++j) {
             char *devids = NULL;
-            rc = qvi_hwloc_get_device_in_cpuset(
+            rc = qvi_hwloc_get_device_id_in_cpuset(
                 hwl, QV_HW_OBJ_GPU, i,
                 hwloc_get_root_obj(qvi_hwloc_topo_get(hwl))->cpuset,
                 devnts[j].type, &devids

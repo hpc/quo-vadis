@@ -554,7 +554,7 @@ rpc_ssi_get_device_in_cpuset(
     if (qvrc != QV_SUCCESS) return qvrc;
 
     char *dev_id = nullptr;
-    int rpcrc = qvi_hwloc_get_device_in_cpuset(
+    int rpcrc = qvi_hwloc_get_device_id_in_cpuset(
         server->config.hwloc, dev_obj, dev_i, cpuset, devid_type, &dev_id
     );
 

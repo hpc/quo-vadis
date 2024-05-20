@@ -16,7 +16,7 @@
 #ifndef QVI_HWPOOL_H
 #define QVI_HWPOOL_H
 
-#include "qvi-common.h"
+#include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-bbuff.h"
 #include "qvi-hwloc.h"
 #include "qvi-utils.h"
@@ -66,19 +66,29 @@ struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
     std::string pci_bus_id;
     /** Universally Unique Identifier. */
     std::string uuid;
-    /** Constructor. */
+    /** Default constructor. */
     qvi_hwpool_dev_s(void)
     {
         qvim_rc = qvi_construct_rc(affinity);
     }
-    /** Constructor */
-    qvi_hwpool_dev_s(
-        qv_hw_obj_type_t type,
-        int id,
-        cstr_t pci_bus_id,
-        cstr_t uuid,
-        hwloc_const_cpuset_t affinity
-    );
+    /** Constructor using qvi_hwloc_device_s. */
+    explicit qvi_hwpool_dev_s(
+        const qvi_hwloc_device_s &dev
+    ) : type(dev.type)
+      , affinity(dev.affinity)
+      , id(dev.id)
+      , pci_bus_id(dev.pci_bus_id)
+      , uuid(dev.uuid)
+    {
+        qvim_rc = QV_SUCCESS;
+    }
+    /** Constructor using std::shared_ptr<qvi_hwloc_device_s>. */
+    explicit qvi_hwpool_dev_s(
+        const std::shared_ptr<qvi_hwloc_device_s> &shdev
+    ) : qvi_hwpool_dev_s(*shdev.get())
+    {
+        qvim_rc = QV_SUCCESS;
+    }
     /** Destructor */
     ~qvi_hwpool_dev_s(void) = default;
     /** Equality operator. */
@@ -110,7 +120,7 @@ struct qvi_hwpool_s {
     }
     /** Destructor */
     ~qvi_hwpool_s(void) = default;
-    /** Adds a device. */
+    /** Adds a qvi_hwpool_dev_s device. */
     int
     add_device(
         const qvi_hwpool_dev_s &dev
@@ -155,19 +165,6 @@ int
 qvi_hwpool_dup(
     const qvi_hwpool_s *const rpool,
     qvi_hwpool_s **dup
-);
-
-/**
- *
- */
-int
-qvi_hwpool_add_device(
-    qvi_hwpool_s *rpool,
-    qv_hw_obj_type_t type,
-    int id,
-    cstr_t pcibid,
-    cstr_t uuid,
-    hwloc_const_cpuset_t affinity
 );
 
 /**

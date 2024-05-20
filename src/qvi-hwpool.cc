@@ -45,20 +45,6 @@
 #include "qvi-hwpool.h"
 #include "qvi-bbuff-rmi.h"
 
-qvi_hwpool_dev_s::qvi_hwpool_dev_s(
-    qv_hw_obj_type_t type_a,
-    int id_a,
-    cstr_t pci_bus_id_a,
-    cstr_t uuid_a,
-    hwloc_const_cpuset_t affinity_a
-) : type(type_a)
-  , id(id_a)
-  , pci_bus_id(pci_bus_id_a)
-  , uuid(uuid_a)
-{
-    qvim_rc = affinity.set(affinity_a);
-}
-
 int
 qvi_hwpool_new(
     qvi_hwpool_s **rpool
@@ -104,25 +90,6 @@ qvi_hwpool_init(
     hwloc_const_bitmap_t cpuset
 ) {
     return qvi_hwloc_bitmap_copy(cpuset, rpool->cpu.cpuset.data);
-}
-
-// TODO(skg) Remove
-int
-qvi_hwpool_add_device(
-    qvi_hwpool_s *rpool,
-    qv_hw_obj_type_t type,
-    int id,
-    cstr_t pcibid,
-    cstr_t uuid,
-    hwloc_const_cpuset_t affinity
-) {
-    auto dinfo = std::make_shared<qvi_hwpool_dev_s>(
-        type, id, pcibid, uuid, affinity
-    );
-    const int rc = qvi_construct_rc(dinfo);
-    if (rc != QV_SUCCESS) return rc;
-    rpool->devs.insert({type, dinfo});
-    return rc;
 }
 
 int
@@ -243,54 +210,15 @@ qvi_hwpool_add_devices_with_affinity(
     int rc = QV_SUCCESS;
     // Iterate over the supported device types.
     for (const auto devt : qvi_hwloc_supported_devices()) {
-        int nobjs = 0;
-        rc = qvi_hwloc_get_nobjs_in_cpuset(
-            hwloc, devt, pool->cpu.cpuset.data, &nobjs
+        qvi_hwloc_dev_list_t devs;
+        rc = qvi_hwloc_get_devices_in_bitmap(
+            hwloc, devt, pool->cpu.cpuset, devs
         );
-        if (rc != QV_SUCCESS) break;
-        // Iterate over the number of devices in each type.
-        for (int devi = 0; devi < nobjs; ++devi) {
-            char *devids = nullptr, *pcibid = nullptr, *uuids = nullptr;
-            // Device ID
-            rc = qvi_hwloc_get_device_in_cpuset(
-                hwloc, devt, devi, pool->cpu.cpuset.data,
-                QV_DEVICE_ID_ORDINAL, &devids
-            );
-            if (rc != QV_SUCCESS) break;
-            // Convert to int.
-            int devid = 0;
-            rc = qvi_atoi(devids, &devid);
-            if (rc != QV_SUCCESS) break;
-            // PCI Bus ID
-            rc = qvi_hwloc_get_device_in_cpuset(
-                hwloc, devt, devi, pool->cpu.cpuset.data,
-                QV_DEVICE_ID_PCI_BUS_ID, &pcibid
-            );
-            if (rc != QV_SUCCESS) break;
-            // UUID
-            rc = qvi_hwloc_get_device_in_cpuset(
-                hwloc, devt, devi, pool->cpu.cpuset.data,
-                QV_DEVICE_ID_UUID, &uuids
-            );
-            if (rc != QV_SUCCESS) break;
-            // Get the device affinity.
-            hwloc_bitmap_t devaff = nullptr;
-            rc = qvi_hwloc_get_device_affinity(
-                hwloc, devt, devid, &devaff
-            );
-            if (rc != QV_SUCCESS) break;
-            // Add it to the pool.
-            rc = qvi_hwpool_add_device(
-                pool, devt, devid, pcibid, uuids, devaff
-            );
-            if (rc != QV_SUCCESS) break;
-            //
-            free(devids);
-            free(pcibid);
-            free(uuids);
-            qvi_hwloc_bitmap_free(&devaff);
+        if (rc != QV_SUCCESS) return rc;
+        for (const auto &dev : devs) {
+            rc = pool->add_device(qvi_hwpool_dev_s(dev));
+            if (rc != QV_SUCCESS) return rc;
         }
-        if (rc != QV_SUCCESS) break;
     }
     return rc;
 }

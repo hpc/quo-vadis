@@ -18,6 +18,7 @@
 #define QVI_HWLOC_H
 
 #include "qvi-common.h"
+#include "qvi-utils.h"
 #include "qvi-task.h"
 
 #ifdef __cplusplus
@@ -356,7 +357,7 @@ qvi_hwloc_devices_emit(
  *
  */
 int
-qvi_hwloc_get_device_in_cpuset(
+qvi_hwloc_get_device_id_in_cpuset(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t dev_obj,
     int i,
@@ -410,7 +411,7 @@ const std::vector<qv_hw_obj_type_t> &
 qvi_hwloc_supported_devices(void);
 
 /**
- * C++ style hwloc bitmap.
+ * hwloc bitmap object.
  */
 struct qvi_hwloc_bitmap_s {
     int qvim_rc = QV_ERR_INTERNAL;
@@ -464,6 +465,50 @@ struct qvi_hwloc_bitmap_s {
  * Vector of cpuset objects.
  */
 using qvi_hwloc_cpusets_t = std::vector<qvi_hwloc_bitmap_s>;
+
+typedef struct qvi_hwloc_device_s {
+    int qvim_rc = QV_ERR_INTERNAL;
+    /** Device type. */
+    qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
+    /** Device affinity. */
+    qvi_hwloc_bitmap_s affinity;
+    /** Vendor ID. */
+    int vendor_id = QVI_HWLOC_DEVICE_INVALID_ID;
+    /** System Management Interface ID. */
+    int smi = QVI_HWLOC_DEVICE_INVALID_ID;
+    /** CUDA/ROCm visible devices ID. */
+    int id = QVI_HWLOC_DEVICE_INVISIBLE_ID;
+    /** Device name. */
+    std::string name;
+    /** PCI bus ID. */
+    std::string pci_bus_id;
+    /** Universally Unique Identifier. */
+    std::string uuid;
+    /** Constructor. */
+    qvi_hwloc_device_s(void)
+    {
+        qvim_rc = qvi_construct_rc(affinity);
+    }
+    /** Destructor. */
+    ~qvi_hwloc_device_s(void) = default;
+} qvi_hwloc_device_t;
+
+/** Device list type. */
+using qvi_hwloc_dev_list_t = std::vector<
+    std::shared_ptr<qvi_hwloc_device_t>
+>;
+
+/**
+ *
+ */
+// TODO(skg) Rename
+int
+qvi_hwloc_get_devices_in_bitmap(
+    qvi_hwloc_t *hwl,
+    qv_hw_obj_type_t dev_type,
+    const qvi_hwloc_bitmap_s &bitmap,
+    qvi_hwloc_dev_list_t &devs
+);
 
 #endif
 

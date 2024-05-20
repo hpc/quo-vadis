@@ -741,14 +741,7 @@ agg_split_devices_user_defined(
             const int color = splitagg.colors[i];
             for (const auto &c2d : devmap) {
                 if (c2d.first != color) continue;
-                rc = qvi_hwpool_add_device(
-                    splitagg.hwpools[i],
-                    c2d.second->type,
-                    c2d.second->id,
-                    c2d.second->pci_bus_id.c_str(),
-                    c2d.second->uuid.c_str(),
-                    c2d.second->affinity.data
-                );
+                rc = splitagg.hwpools[i]->add_device(*c2d.second);
                 if (rc != QV_SUCCESS) break;
             }
             if (rc != QV_SUCCESS) break;
@@ -800,14 +793,7 @@ agg_split_devices_affinity_preserving(
         for (const auto &mi : map) {
             const uint_t devid = mi.first;
             const uint_t pooli = mi.second;
-            rc = qvi_hwpool_add_device(
-                splitagg.hwpools[pooli],
-                devs[devid]->type,
-                devs[devid]->id,
-                devs[devid]->pci_bus_id.c_str(),
-                devs[devid]->uuid.c_str(),
-                devs[devid]->affinity.data
-            );
+            rc = splitagg.hwpools[pooli]->add_device(*devs[devid]);
             if (rc != QV_SUCCESS) break;
         }
         if (rc != QV_SUCCESS) break;
