@@ -12,11 +12,6 @@
 
 /**
  * @file qvi-context.h
- *
- * @note This file breaks our convention by defining a struct within a header.
- * There is good reason for this: we want to hide the implementation details of
- * QV contexts, but require its definition in a header that is accessible to
- * multiple internal consumers.
  */
 
 #ifndef QVI_CONTEXT_H
