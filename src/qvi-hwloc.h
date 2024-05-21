@@ -501,7 +501,6 @@ using qvi_hwloc_dev_list_t = std::vector<
 /**
  *
  */
-// TODO(skg) Rename
 int
 qvi_hwloc_get_devices_in_bitmap(
     qvi_hwloc_t *hwl,
