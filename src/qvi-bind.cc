@@ -65,10 +65,8 @@ qvi_bind_stack_init(
     bstack->rmi = rmi;
     // Cache current binding.
     hwloc_cpuset_t current_bind = nullptr;
-    int rc = qvi_rmi_task_get_cpubind(
-        rmi,
-        qvi_task_task_id(task),
-        &current_bind
+    const int rc = qvi_rmi_task_get_cpubind(
+        rmi, qvi_task_task_id(task), &current_bind
     );
     if (rc != QV_SUCCESS) goto out;
 
@@ -117,6 +115,36 @@ qvi_bind_pop(
         qvi_task_task_id(bstack->task),
         bstack->stack.top()
     );
+}
+
+int
+qvi_bind_string(
+    qvi_bind_stack_t *bstack,
+    qv_bind_string_format_t format,
+    char **str
+) {
+    char *istr = nullptr;
+
+    hwloc_cpuset_t cpuset = nullptr;
+    int rc = qvi_rmi_task_get_cpubind(
+        bstack->rmi, qvi_task_task_id(bstack->task), &cpuset
+    );
+    if (rc != QV_SUCCESS) goto out;
+
+    switch (format) {
+        case QV_BIND_STRING_AS_BITMAP:
+            rc = qvi_hwloc_bitmap_asprintf(&istr, cpuset);
+            break;
+        case QV_BIND_STRING_AS_LIST:
+            rc = qvi_hwloc_bitmap_list_asprintf(&istr, cpuset);
+            break;
+        default:
+            rc = QV_ERR_INVLD_ARG;
+    }
+out:
+    hwloc_bitmap_free(cpuset);
+    *str = istr;
+    return rc;
 }
 
 /*

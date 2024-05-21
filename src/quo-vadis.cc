@@ -42,10 +42,12 @@ qv_bind_push(
     if (!ctx || !scope) {
         return QV_ERR_INVLD_ARG;
     }
-
-    return qvi_bind_push(
-        ctx->bind_stack, qvi_scope_cpuset_get(scope)
-    );
+    try {
+        return qvi_bind_push(
+            ctx->bind_stack, qvi_scope_cpuset_get(scope)
+        );
+    }
+    qvi_catch_and_return();
 }
 
 int
@@ -55,8 +57,10 @@ qv_bind_pop(
     if (!ctx) {
         return QV_ERR_INVLD_ARG;
     }
-
-    return qvi_bind_pop(ctx->bind_stack);
+    try {
+        return qvi_bind_pop(ctx->bind_stack);
+    }
+    qvi_catch_and_return();
 }
 
 int
@@ -68,30 +72,10 @@ qv_bind_string(
     if (!ctx || !str) {
         return QV_ERR_INVLD_ARG;
     }
-
-    *str = nullptr;
-
-    hwloc_cpuset_t cpuset = nullptr;
-    int rc = qvi_rmi_task_get_cpubind(
-        ctx->rmi,
-        qvi_task_task_id(ctx->zgroup->task()),
-        &cpuset
-    );
-    if (rc != QV_SUCCESS) goto out;
-
-    switch (format) {
-        case QV_BIND_STRING_AS_BITMAP:
-            rc = qvi_hwloc_bitmap_asprintf(str, cpuset);
-            break;
-        case QV_BIND_STRING_AS_LIST:
-            rc = qvi_hwloc_bitmap_list_asprintf(str, cpuset);
-            break;
-        default:
-            rc = QV_ERR_INVLD_ARG;
+    try {
+        return qvi_bind_string(ctx->bind_stack, format, str);
     }
-out:
-    hwloc_bitmap_free(cpuset);
-    return rc;
+    qvi_catch_and_return();
 }
 
 int
@@ -101,8 +85,10 @@ qv_context_barrier(
     if (!ctx) {
         return QV_ERR_INVLD_ARG;
     }
-
-    return ctx->zgroup->barrier();
+    try {
+        return ctx->zgroup->barrier();
+    }
+    qvi_catch_and_return();
 }
 
 int
@@ -113,9 +99,11 @@ qv_scope_free(
     if (!ctx || !scope) {
         return QV_ERR_INVLD_ARG;
     }
-
-    qvi_scope_free(&scope);
-    return QV_SUCCESS;
+    try {
+        qvi_scope_free(&scope);
+        return QV_SUCCESS;
+    }
+    qvi_catch_and_return();
 }
 
 int
@@ -128,8 +116,10 @@ qv_scope_nobjs(
     if (!ctx || !scope || !nobjs) {
         return QV_ERR_INVLD_ARG;
     }
-
-    return qvi_scope_nobjs(scope, obj, nobjs);
+    try {
+        return qvi_scope_nobjs(scope, obj, nobjs);
+    }
+    qvi_catch_and_return();
 }
 
 int
@@ -141,8 +131,10 @@ qv_scope_taskid(
     if (!ctx || !scope || !taskid) {
         return QV_ERR_INVLD_ARG;
     }
-
-    return qvi_scope_taskid(scope, taskid);
+    try {
+        return qvi_scope_taskid(scope, taskid);
+    }
+    qvi_catch_and_return();
 }
 
 int
@@ -154,8 +146,10 @@ qv_scope_ntasks(
     if (!ctx || !scope || !ntasks) {
         return QV_ERR_INVLD_ARG;
     }
-
-    return qvi_scope_ntasks(scope, ntasks);
+    try {
+        return qvi_scope_ntasks(scope, ntasks);
+    }
+    qvi_catch_and_return();
 }
 
 int
@@ -167,16 +161,12 @@ qv_scope_get(
     if (!ctx || !scope) {
         return QV_ERR_INVLD_ARG;
     }
-
-    qv_scope_t *scopei = nullptr;
-    int rc = qvi_scope_get(
-        ctx->zgroup, ctx->rmi, iscope, &scopei
-    );
-    if (rc != QV_SUCCESS) {
-        qvi_scope_free(&scopei);
+    try {
+        return qvi_scope_get(
+            ctx->zgroup, ctx->rmi, iscope, scope
+        );
     }
-    *scope = scopei;
-    return rc;
+    qvi_catch_and_return();
 }
 
 int
@@ -187,8 +177,10 @@ qv_scope_barrier(
     if (!ctx || !scope) {
         return QV_ERR_INVLD_ARG;
     }
-
-    return qvi_scope_barrier(scope);
+    try {
+        return qvi_scope_barrier(scope);
+    }
+    qvi_catch_and_return();
 }
 
 // TODO(skg) Add Fortran interface.
@@ -204,16 +196,12 @@ qv_scope_create(
     if (!ctx || !scope || (nobjs < 0) || !subscope) {
         return QV_ERR_INVLD_ARG;
     }
-
-    qv_scope_t *isubscope = nullptr;
-    int rc = qvi_scope_create(
-        scope, type, nobjs, hints, &isubscope
-    );
-    if (rc != QV_SUCCESS) {
-        qvi_scope_free(&isubscope);
+    try {
+        return qvi_scope_create(
+            scope, type, nobjs, hints, subscope
+        );
     }
-    *subscope = isubscope;
-    return rc;
+    qvi_catch_and_return();
 }
 
 int
@@ -227,20 +215,15 @@ qv_scope_split(
     if (!ctx || !scope || (npieces <= 0) | !subscope) {
         return QV_ERR_INVLD_ARG;
     }
-
-    qv_scope_t *isubscope = nullptr;
-    // We use the sentinel value QV_HW_OBJ_LAST to differentiate between calls
-    // from split() and split_at(). Since this call doesn't have a hardware type
-    // argument, we use QV_HW_OBJ_LAST as the hardware type.
-    int rc = qvi_scope_split(
-        scope, npieces, color,
-        QV_HW_OBJ_LAST, &isubscope
-    );
-    if (rc != QV_SUCCESS) {
-        qvi_scope_free(&isubscope);
+    try {
+        // We use the sentinel value QV_HW_OBJ_LAST to differentiate between
+        // calls from split() and split_at(). Since this call doesn't have a
+        // hardware type argument, we use QV_HW_OBJ_LAST as the hardware type.
+        return qvi_scope_split(
+            scope, npieces, color, QV_HW_OBJ_LAST, subscope
+        );
     }
-    *subscope = isubscope;
-    return rc;
+    qvi_catch_and_return();
 }
 
 int
@@ -254,16 +237,12 @@ qv_scope_split_at(
     if (!ctx || !scope || !subscope) {
         return QV_ERR_INVLD_ARG;
     }
-
-    qv_scope_t *isubscope = nullptr;
-    int rc = qvi_scope_split_at(
-        scope, type, group_id, &isubscope
-    );
-    if (rc != QV_SUCCESS) {
-        qvi_scope_free(&isubscope);
+    try {
+        return qvi_scope_split_at(
+            scope, type, group_id, subscope
+        );
     }
-    *subscope = isubscope;
-    return rc;
+    qvi_catch_and_return();
 }
 
 int
@@ -278,10 +257,12 @@ qv_scope_get_device_id(
     if (!ctx || !scope || (dev_index < 0) || !dev_id) {
         return QV_ERR_INVLD_ARG;
     }
-
-    return qvi_scope_get_device_id(
-        scope, dev_obj, dev_index, id_type, dev_id
-    );
+    try {
+        return qvi_scope_get_device_id(
+            scope, dev_obj, dev_index, id_type, dev_id
+        );
+    }
+    qvi_catch_and_return();
 }
 
 /*

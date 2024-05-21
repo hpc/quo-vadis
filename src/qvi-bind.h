@@ -74,6 +74,16 @@ qvi_bind_pop(
     qvi_bind_stack_t *bstack
 );
 
+/**
+ *
+ */
+int
+qvi_bind_string(
+    qvi_bind_stack_t *bstack,
+    qv_bind_string_format_t format,
+    char **str
+);
+
 #ifdef __cplusplus
 }
 #endif
