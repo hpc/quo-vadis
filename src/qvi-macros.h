@@ -57,16 +57,6 @@ do {                                                                           \
  */
 #define qvi_new new(std::nothrow)
 
-/**
- * Port environment variable string.
- */
-#define QVI_ENV_PORT "QV_PORT"
-
-/**
- * Temporary directory variable string.
- */
-#define QVI_ENV_TMPDIR "QV_TMPDIR"
-
 #endif
 
 /*

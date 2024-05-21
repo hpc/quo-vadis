@@ -16,6 +16,11 @@
 
 #include "qvi-utils.h"
 
+/**
+ * Port environment variable string.
+ */
+static constexpr cstr_t QVI_ENV_PORT = "QV_PORT";
+
 /** Maps return codes to their respective descriptions. */
 static const std::map<uint_t, std::string> qvi_rc2str = {
     {QV_SUCCESS, "Success"},
@@ -136,21 +141,21 @@ qvi_url(
     static const cstr_t base = "tcp://127.0.0.1";
 
     int port = 0;
-    int rc = qvi_port(&port);
+    const int rc = qvi_port(&port);
     if (rc != QV_SUCCESS) return rc;
 
     url = std::string(base) + ":" + std::to_string(port);
-    return QV_SUCCESS;
+    return rc;
 }
 
 cstr_t
 qvi_conn_ers(void)
 {
-    static const cstr_t msg = "Cannot determine connection information. "
-                              "Please make sure that the following environment "
-                              "variable is set to an unused port number: "
-                              QVI_ENV_PORT;
-    return msg;
+    static const std::string msg = "Cannot determine connection information. "
+                                   "Please make sure that the following "
+                                   "environment variable is set to an unused "
+                                   "port number: " + std::string(QVI_ENV_PORT);
+    return msg.c_str();
 }
 
 cstr_t
@@ -158,7 +163,7 @@ qvi_tmpdir(void)
 {
     static thread_local char tmpdir[PATH_MAX];
 
-    cstr_t qvenv = getenv(QVI_ENV_TMPDIR);
+    cstr_t qvenv = getenv("QV_TMPDIR");
     if (qvenv) {
         int nw = snprintf(tmpdir, PATH_MAX, "%s", qvenv);
         if (nw < PATH_MAX) return tmpdir;
