@@ -89,7 +89,7 @@ qvi_hwpool_init(
     qvi_hwpool_s *rpool,
     hwloc_const_bitmap_t cpuset
 ) {
-    return qvi_hwloc_bitmap_copy(cpuset, rpool->cpu.cpuset.data);
+    return rpool->cpu.cpuset.set(cpuset);
 }
 
 int

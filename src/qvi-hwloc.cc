@@ -1335,8 +1335,8 @@ split_cpuset_by_range(
         );
         if (rc != QV_SUCCESS) break;
 
-        rc = hwloc_bitmap_or(result, result, dobj->cpuset);
-        if (rc != 0) {
+        const int orrc = hwloc_bitmap_or(result, result, dobj->cpuset);
+        if (orrc != 0) {
             rc = QV_ERR_HWLOC;
             break;
         }
@@ -1369,8 +1369,10 @@ qvi_hwloc_get_cpuset_for_nobjs(
         );
         if (rc != QV_SUCCESS) break;
 
-        rc = hwloc_bitmap_or(iresult, iresult, dobj->cpuset);
-        if (rc != 0) {
+        const int orrc = hwloc_bitmap_or(
+            iresult, iresult, dobj->cpuset
+        );
+        if (orrc != 0) {
             rc = QV_ERR_HWLOC;
             break;
         }
