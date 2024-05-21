@@ -23,6 +23,9 @@
 #include <string.h>
 #include <unistd.h>
 
+#define QVI_TEST_STRINGIFY(x) #x
+#define QVI_TEST_TOSTRING(x)  QVI_TEST_STRINGIFY(x)
+
 #define qvi_test_panic(...)                                                    \
 do {                                                                           \
     fprintf(stderr, "\n%s@%d: ", __func__, __LINE__);                          \

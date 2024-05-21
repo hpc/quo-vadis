@@ -614,9 +614,9 @@ qvi_scope_get(
     rc = scope_init(*scope, rmi, group, hwpool);
 out:
     if (rc != QV_SUCCESS) {
-        qvi_scope_free(scope);
-        qvi_hwpool_free(&hwpool);
         qvi_group_free(&group);
+        qvi_hwpool_free(&hwpool);
+        qvi_scope_free(scope);
     }
     return rc;
 }

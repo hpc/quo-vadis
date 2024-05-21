@@ -17,9 +17,6 @@
 #ifndef QVI_MACROS_H
 #define QVI_MACROS_H
 
-#define QVI_STRINGIFY(x) #x
-#define QVI_TOSTRING(x)  QVI_STRINGIFY(x)
-
 /**
  * Convenience macro used to silence warnings about unused variables.
  *
@@ -28,6 +25,22 @@
 #define QVI_UNUSED(x)                                                          \
 do {                                                                           \
     (void)(x);                                                                 \
+} while (0)
+
+#define qvi_catch_and_return()                                                 \
+catch (...)                                                                    \
+{                                                                              \
+    auto eptr = std::current_exception();                                      \
+    try {                                                                      \
+        if (eptr) std::rethrow_exception(eptr);                                \
+    }                                                                          \
+    catch(const std::exception &e)                                             \
+    {                                                                          \
+        qvi_log_error("An exception occurred: {}", e.what());                  \
+    }                                                                          \
+    return QV_ERR;                                                             \
+}                                                                              \
+do {                                                                           \
 } while (0)
 
 /**

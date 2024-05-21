@@ -9,9 +9,9 @@ typedef struct device_name_type_s {
 } device_name_type_t;
 
 static const device_name_type_t devnts[] = {
-    {QVI_STRINGIFY(QV_DEVICE_ID_UUID),       QV_DEVICE_ID_UUID},
-    {QVI_STRINGIFY(QV_DEVICE_ID_PCI_BUS_ID), QV_DEVICE_ID_PCI_BUS_ID},
-    {QVI_STRINGIFY(QV_DEVICE_ID_ORDINAL),    QV_DEVICE_ID_ORDINAL}
+    {QVI_TEST_TOSTRING(QV_DEVICE_ID_UUID),       QV_DEVICE_ID_UUID},
+    {QVI_TEST_TOSTRING(QV_DEVICE_ID_PCI_BUS_ID), QV_DEVICE_ID_PCI_BUS_ID},
+    {QVI_TEST_TOSTRING(QV_DEVICE_ID_ORDINAL),    QV_DEVICE_ID_ORDINAL}
 };
 
 // TODO(skg) Merge with others
