@@ -48,11 +48,7 @@ qvi_zgroup_mpi_s::group_create_intrinsic(
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_group_mpi_t *igroup = qvi_new qvi_group_mpi_t();
-    if (!igroup) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
+    qvi_group_mpi_t *igroup = new qvi_group_mpi_t();
 
     rc = igroup->initialize(mpi);
     if (rc != QV_SUCCESS) goto out;
@@ -98,16 +94,9 @@ int
 qvi_zgroup_mpi_new(
     qvi_zgroup_mpi_t **zgroup
 ) {
-    int rc = QV_SUCCESS;
+    qvi_zgroup_mpi_t *izgroup = new qvi_zgroup_mpi_t();
 
-    qvi_zgroup_mpi_t *izgroup = qvi_new qvi_zgroup_mpi_t();
-    if (!izgroup) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-
-    rc = izgroup->create();
-out:
+    const int rc = izgroup->create();
     if (rc != QV_SUCCESS) {
         qvi_zgroup_mpi_free(&izgroup);
     }

@@ -46,11 +46,7 @@ qvi_zgroup_process_s::group_create_intrinsic(
     // we create the process group, so we ignore it.
     int rc = QV_SUCCESS;
 
-    qvi_group_process_t *igroup = qvi_new qvi_group_process_t();
-    if (!igroup) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
+    qvi_group_process_t *igroup = new qvi_group_process_t();
 
     rc = igroup->initialize(zproc);
     if (rc != QV_SUCCESS) goto out;
@@ -77,16 +73,9 @@ int
 qvi_zgroup_process_new(
     qvi_zgroup_process_t **zgroup
 ) {
-    int rc = QV_SUCCESS;
+    qvi_zgroup_process_t *izgroup = new qvi_zgroup_process_t();
 
-    qvi_zgroup_process_t *izgroup = qvi_new qvi_zgroup_process_t();
-    if (!izgroup) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-
-    rc = izgroup->create();
-out:
+    const int rc = izgroup->create();
     if (rc != QV_SUCCESS) {
         qvi_zgroup_process_free(&izgroup);
     }

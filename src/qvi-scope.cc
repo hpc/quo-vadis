@@ -1178,8 +1178,7 @@ qvi_scope_ksplit(
     if (rc != QV_SUCCESS) return rc;
 
     // Now populate the children.
-    qv_scope_t **ikchildren = qvi_new qv_scope_t*[group_size];
-    if (!ikchildren) return QV_ERR_OOR;
+    qv_scope_t **ikchildren = new qv_scope_t*[group_size];
 
     for (uint_t i = 0; i < group_size; ++i) {
         // Split off from our parent group. This call is usually called from a

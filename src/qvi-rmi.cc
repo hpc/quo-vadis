@@ -738,12 +738,7 @@ qvi_rmi_server_new(
     int rc = QV_SUCCESS;
     cstr_t ers = nullptr;
 
-    qvi_rmi_server_t *iserver = qvi_new qvi_rmi_server_t();
-    if (!iserver) {
-        ers = "memory allocation failed";
-        rc = QV_ERR_OOR;
-        goto out;
-    }
+    qvi_rmi_server_t *iserver = new qvi_rmi_server_t();
 
     iserver->zctx = zmq_ctx_new();
     if (!iserver->zctx) {
@@ -897,6 +892,7 @@ qvi_rmi_server_start(
     return qvrc;
 }
 
+// TODO(skg) Use new method.
 int
 qvi_rmi_client_new(
     qvi_rmi_client_t **client
@@ -904,12 +900,7 @@ qvi_rmi_client_new(
     int rc = QV_SUCCESS;
     cstr_t ers = nullptr;
 
-    qvi_rmi_client_t *icli = qvi_new qvi_rmi_client_t();
-    if (!icli) {
-        ers = "memory allocation failed";
-        rc = QV_ERR_OOR;
-        goto out;
-    }
+    qvi_rmi_client_t *icli = new qvi_rmi_client_t();
 
     // Remember clients own the hwloc data, unlike the server.
     rc = qvi_hwloc_new(&icli->config.hwloc);
