@@ -108,7 +108,7 @@ qvi_atoi(
     }
     errno = 0;
     char *end = nullptr;
-    long val = strtol(str, &end, 10);
+    const long val = strtol(str, &end, 10);
     int err = errno;
     // Did we get any digits?
     if (str == end) return QV_ERR_INVLD_ARG;
@@ -165,12 +165,12 @@ qvi_tmpdir(void)
 
     cstr_t qvenv = getenv("QV_TMPDIR");
     if (qvenv) {
-        int nw = snprintf(tmpdir, PATH_MAX, "%s", qvenv);
+        const int nw = snprintf(tmpdir, PATH_MAX, "%s", qvenv);
         if (nw < PATH_MAX) return tmpdir;
     }
     qvenv = getenv("TMPDIR");
     if (qvenv) {
-        int nw = snprintf(tmpdir, PATH_MAX, "%s", qvenv);
+        const int nw = snprintf(tmpdir, PATH_MAX, "%s", qvenv);
         if (nw < PATH_MAX) return tmpdir;
     }
     static cstr_t tmp = "/tmp";
