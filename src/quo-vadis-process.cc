@@ -15,14 +15,10 @@
 #include "qvi-context.h"
 #include "qvi-zgroup-process.h"
 
-int
-qv_process_context_create(
+static int
+qvi_process_context_create(
     qv_context_t **ctx
 ) {
-    if (!ctx) {
-        return QV_ERR_INVLD_ARG;
-    }
-
     int rc = QV_SUCCESS;
     qv_context_t *ictx = nullptr;
     qvi_zgroup_process_t *izgroup = nullptr;
@@ -64,13 +60,36 @@ out:
 }
 
 int
+qv_process_context_create(
+    qv_context_t **ctx
+) {
+    if (!ctx) {
+        return QV_ERR_INVLD_ARG;
+    }
+    try {
+        return qvi_process_context_create(ctx);
+    }
+    qvi_catch_and_return();
+}
+
+static int
+qvi_process_context_free(
+    qv_context_t *ctx
+) {
+    delete ctx->zgroup;
+    qvi_context_free(&ctx);
+    return QV_SUCCESS;
+}
+
+int
 qv_process_context_free(
     qv_context_t *ctx
 ) {
     if (!ctx) return QV_ERR_INVLD_ARG;
-    delete ctx->zgroup;
-    qvi_context_free(&ctx);
-    return QV_SUCCESS;
+    try {
+        return qvi_process_context_free(ctx);
+    }
+    qvi_catch_and_return();
 }
 
 /*
