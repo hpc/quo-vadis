@@ -21,13 +21,13 @@
 #include "qvi-rmi.h"
 #include "qvi-hwpool.h"
 #include "qvi-map.h"
+#include "qvi-utils.h"
 
 /** Maintains a mapping between IDs to device information. */
 using id_devinfo_multimap_t = std::multimap<int, const qvi_hwpool_dev_s *>;
 
 /** Scope type definition. */
 struct qv_scope_s {
-    int qvim_rc = QV_SUCCESS;
     /** Pointer to initialized RMI infrastructure. */
     qvi_rmi_client_t *rmi = nullptr;
     /** Task group associated with this scope instance. */

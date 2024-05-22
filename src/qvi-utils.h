@@ -22,6 +22,22 @@
 #ifdef __cplusplus
 
 /**
+ * Constructs a new object of a given type. *t will be valid if successful,
+ * undefined otherwise. Returns QV_SUCCESS if successful.
+ */
+template <class T>
+int
+qvi_new_rc(
+    T **t
+) {
+    try {
+        *t = new T();
+        return QV_SUCCESS;
+    }
+    qvi_catch_and_return();
+}
+
+/**
  * Simple wrapper around delete that also nullifies the input pointer.
  */
 template <class T>
@@ -35,49 +51,6 @@ qvi_delete(
     delete it;
 out:
     *t = nullptr;
-}
-
-/**
- * Returns the code captured by a constructor. Since we are trying to avoid the
- * use of exceptions, we instead use this method for checking the state of an
- * object after its construction. This method isn't perfect, and requires that a
- * class member named qvim_rc (read as (qvi) (m)ember (r)eturn (c)ode) is
- * present in the provided class. Compilation will fail otherwise.
- */
-template <class T>
-int
-qvi_construct_rc(
-    const T &t
-) {
-    return t.qvim_rc;
-}
-
-template <class T>
-int
-qvi_construct_rc(
-    const std::shared_ptr<T> &t
-) {
-    return qvi_construct_rc(*t.get());
-}
-
-/**
- * Constructs a new object of a given type. *t will be valid if successful,
- * nullptr otherwise. Returns QV_SUCCESS if successful.
- */
-template <class T>
-int
-qvi_new_rc(
-    T **t
-) {
-    T *it = qvi_new T();
-    if (!it) return QV_ERR_OOR;
-
-    const int rc = qvi_construct_rc(*it);
-    if (rc != QV_SUCCESS) {
-        qvi_delete(&it);
-    }
-    *t = it;
-    return rc;
 }
 
 /**

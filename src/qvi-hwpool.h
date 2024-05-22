@@ -19,7 +19,6 @@
 #include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-bbuff.h"
 #include "qvi-hwloc.h"
-#include "qvi-utils.h"
 
 /**
  * Base hardware pool resource class.
@@ -38,15 +37,11 @@ struct qvi_hwpool_res_s {
  * processing units (PUs), which are defined in the CPU's cpuset.
  */
 struct qvi_hwpool_cpu_s : qvi_hwpool_res_s {
-    int qvim_rc = QV_ERR_INTERNAL;
     /** The cpuset of the CPU's PUs. */
     qvi_hwloc_bitmap_s cpuset;
-    /** Constructor */
-    qvi_hwpool_cpu_s(void)
-    {
-        qvim_rc = qvi_construct_rc(cpuset);
-    }
-    /** Virtual destructor */
+    /** Constructor. */
+    qvi_hwpool_cpu_s(void) = default;
+    /** Virtual destructor. */
     virtual ~qvi_hwpool_cpu_s(void) = default;
 };
 
@@ -55,7 +50,6 @@ struct qvi_hwpool_cpu_s : qvi_hwpool_res_s {
  * because we only maintain information relevant for user-facing operations.
  */
 struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
-    int qvim_rc = QV_ERR_INTERNAL;
     /** Device type. */
     qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
     /** The bitmap encoding CPU affinity. */
@@ -67,10 +61,7 @@ struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
     /** Universally Unique Identifier. */
     std::string uuid;
     /** Default constructor. */
-    qvi_hwpool_dev_s(void)
-    {
-        qvim_rc = qvi_construct_rc(affinity);
-    }
+    qvi_hwpool_dev_s(void) = default;
     /** Constructor using qvi_hwloc_device_s. */
     explicit qvi_hwpool_dev_s(
         const qvi_hwloc_device_s &dev
@@ -80,17 +71,15 @@ struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
       , pci_bus_id(dev.pci_bus_id)
       , uuid(dev.uuid)
     {
-        qvim_rc = QV_SUCCESS;
     }
     /** Constructor using std::shared_ptr<qvi_hwloc_device_s>. */
     explicit qvi_hwpool_dev_s(
         const std::shared_ptr<qvi_hwloc_device_s> &shdev
     ) : qvi_hwpool_dev_s(*shdev.get())
     {
-        qvim_rc = QV_SUCCESS;
     }
     /** Destructor */
-    ~qvi_hwpool_dev_s(void) = default;
+    virtual ~qvi_hwpool_dev_s(void) = default;
     /** Equality operator. */
     bool
     operator==(
@@ -108,17 +97,13 @@ using qvi_hwpool_devs_t = std::multimap<
 >;
 
 struct qvi_hwpool_s {
-    int qvim_rc = QV_ERR_INTERNAL;
     /** The hardware pool's CPU. */
     qvi_hwpool_cpu_s cpu;
     /** The hardware pool's devices. */
     qvi_hwpool_devs_t devs;
-    /** Constructor */
-    qvi_hwpool_s(void)
-    {
-        qvim_rc = qvi_construct_rc(cpu);
-    }
-    /** Destructor */
+    /** Constructor. */
+    qvi_hwpool_s(void) = default;
+    /** Destructor. */
     ~qvi_hwpool_s(void) = default;
     /** Adds a qvi_hwpool_dev_s device. */
     int
@@ -126,10 +111,8 @@ struct qvi_hwpool_s {
         const qvi_hwpool_dev_s &dev
     ) {
         auto shdev = std::make_shared<qvi_hwpool_dev_s>(dev);
-        const int rc = qvi_construct_rc(shdev);
-        if (rc != QV_SUCCESS) return rc;
         devs.insert({dev.type, shdev});
-        return rc;
+        return QV_SUCCESS;
     }
 };
 

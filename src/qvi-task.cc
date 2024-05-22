@@ -20,7 +20,6 @@
 static const int qvi_task_id_invalid = -1;
 
 struct qvi_task_s {
-    int qvim_rc = QV_SUCCESS;
     /** Task ID */
     qvi_task_id_t task_id = {};
     /** Global task ID */

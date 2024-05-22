@@ -35,7 +35,6 @@ using qvi_hwloc_dev_map_t = std::unordered_map<
 using qvi_hwloc_dev_id_set_t = std::unordered_set<std::string>;
 
 typedef struct qvi_hwloc_s {
-    int qvim_rc = QV_SUCCESS;
     /** The cached node topology. */
     hwloc_topology_t topo = nullptr;
     /** Path to exported hardware topology. */
@@ -380,10 +379,8 @@ discover_all_devices(
         if (seen) continue;
         // Add a new device with a unique PCI busid.
         auto new_dev = std::make_shared<qvi_hwloc_device_t>();
-        int rc = qvi_construct_rc(new_dev);
-        if (rc != QV_SUCCESS) return rc;
         // Save general device info to new device instance.
-        rc = set_general_device_info(
+        const int rc = set_general_device_info(
             hwl, obj, pci_obj, busid.c_str(), new_dev.get()
         );
         if (rc != QV_SUCCESS) return rc;
@@ -429,8 +426,6 @@ discover_gpu_devices(
             // New device (i.e., a new PCI bus ID)
             if (got == devmap.end()) {
                 auto gpudev = std::make_shared<qvi_hwloc_device_t>();
-                rc = qvi_construct_rc(gpudev);
-                if (rc != QV_SUCCESS) return rc;
                 // Set base info from current device.
                 rc = qvi_hwloc_device_copy(dev.get(), gpudev.get());
                 if (rc != QV_SUCCESS) return rc;
@@ -450,10 +445,10 @@ discover_gpu_devices(
     // Now populate our GPU device list.
     for (const auto &mapi : devmap) {
         auto gpudev = std::make_shared<qvi_hwloc_device_t>();
-        int rc = qvi_construct_rc(gpudev);
-        if (rc != QV_SUCCESS) return rc;
         // Copy device info.
-        rc = qvi_hwloc_device_copy(mapi.second.get(), gpudev.get());
+        const int rc = qvi_hwloc_device_copy(
+            mapi.second.get(), gpudev.get()
+        );
         if (rc != QV_SUCCESS) return rc;
         // Save copy.
         hwl->gpus.push_back(gpudev);
@@ -488,8 +483,6 @@ discover_nic_devices(
             if (rc != QV_SUCCESS) return rc;
             //
             auto nicdev = std::make_shared<qvi_hwloc_device_t>();
-            rc = qvi_construct_rc(nicdev);
-            if (rc != QV_SUCCESS) return rc;
 
             rc = qvi_hwloc_device_copy(dev.get(), nicdev.get());
             if (rc != QV_SUCCESS) return rc;
@@ -1142,18 +1135,7 @@ qvi_hwloc_device_copy(
     qvi_hwloc_device_t *src,
     qvi_hwloc_device_t *dest
 ) {
-    dest->affinity = src->affinity;
-    if (dest->qvim_rc != QV_SUCCESS) return dest->qvim_rc;
-
-    dest->type = src->type;
-    dest->vendor_id = src->vendor_id;
-    dest->smi = src->smi;
-    dest->id = src->id;
-
-    dest->name = src->name;
-    dest->pci_bus_id = src->pci_bus_id;
-    dest->uuid = src->uuid;
-
+    *dest = *src;
     return QV_SUCCESS;
 }
 
@@ -1198,10 +1180,7 @@ get_devices_in_cpuset_from_dev_list(
         if (!hwloc_bitmap_isincluded(dev->affinity.data, cpuset)) continue;
 
         auto devin = std::make_shared<qvi_hwloc_device_t>();
-        int rc = qvi_construct_rc(devin);
-        if (rc != QV_SUCCESS) return rc;
-
-        rc = qvi_hwloc_device_copy(dev.get(), devin.get());
+        const int rc = qvi_hwloc_device_copy(dev.get(), devin.get());
         if (rc != QV_SUCCESS) return rc;
         devs.push_back(devin);
     }

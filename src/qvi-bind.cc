@@ -21,7 +21,6 @@ using qvi_bind_bitmap_stack_t = std::stack<hwloc_cpuset_t>;
 
 // Type definition
 struct qvi_bind_stack_s {
-    int qvim_rc = QV_SUCCESS;
     /** Initialized task instance. */
     qvi_task_t *task = nullptr;
     /** Client RMI instance. */

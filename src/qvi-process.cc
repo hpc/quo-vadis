@@ -23,7 +23,6 @@ using qvi_process_group_tab_t = std::unordered_map<
 >;
 
 struct qvi_process_group_s {
-    int qvim_rc = QV_SUCCESS;
     /** ID used for table lookups */
     qvi_process_group_id_t tabid = 0;
     /** ID (rank) in group */
@@ -37,7 +36,6 @@ struct qvi_process_group_s {
 };
 
 struct qvi_process_s {
-    int qvim_rc = QV_ERR_INTERNAL;
     /** Task associated with this process */
     qvi_task_t *task = nullptr;
     /** Maintains the next available group ID value */
@@ -45,7 +43,8 @@ struct qvi_process_s {
     /** Constructor */
     qvi_process_s(void)
     {
-        qvim_rc = qvi_task_new(&task);
+        const int rc = qvi_task_new(&task);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
     }
     /** Destructor */
     ~qvi_process_s(void)
