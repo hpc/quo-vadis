@@ -1,0 +1,2 @@
+# Disables warnings '... is insecure as it does not provide security checks...'
+Checks: "-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling"
