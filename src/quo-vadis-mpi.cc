@@ -53,15 +53,11 @@ qvi_mpi_scope_comm_dup_f2c(
 }
 #endif
 
-int
-qv_mpi_context_create(
+static int
+qvi_mpi_context_create(
     MPI_Comm comm,
     qv_context_t **ctx
 ) {
-    if (!ctx || comm == MPI_COMM_NULL) {
-        return QV_ERR_INVLD_ARG;
-    }
-
     int rc = QV_SUCCESS;
     qv_context_t *ictx = nullptr;
     qvi_zgroup_mpi_t *izgroup = nullptr;
@@ -103,13 +99,51 @@ out:
 }
 
 int
-qv_mpi_context_free(
+qv_mpi_context_create(
+    MPI_Comm comm,
+    qv_context_t **ctx
+) {
+    if (!ctx || comm == MPI_COMM_NULL) {
+        return QV_ERR_INVLD_ARG;
+    }
+    try {
+        return qvi_mpi_context_create(comm, ctx);
+    }
+    qvi_catch_and_return();
+}
+
+static int
+qvi_mpi_context_free(
     qv_context_t *ctx
 ) {
-    if (!ctx) return QV_ERR_INVLD_ARG;
     delete ctx->zgroup;
     qvi_context_free(&ctx);
     return QV_SUCCESS;
+}
+
+int
+qv_mpi_context_free(
+    qv_context_t *ctx
+) {
+    if (!ctx) {
+        return QV_ERR_INVLD_ARG;
+    }
+    try {
+        return qvi_mpi_context_free(ctx);
+    }
+    qvi_catch_and_return();
+}
+
+static int
+qvi_mpi_scope_comm_dup(
+    qv_context_t *,
+    qv_scope_t *scope,
+    MPI_Comm *comm
+) {
+    qvi_group_mpi_t *mpi_group = dynamic_cast<qvi_group_mpi_t *>(
+        qvi_scope_group_get(scope)
+    );
+    return mpi_group->comm_dup(comm);
 }
 
 int
@@ -121,11 +155,10 @@ qv_mpi_scope_comm_dup(
     if (!ctx || !scope || !comm) {
         return QV_ERR_INVLD_ARG;
     }
-
-    qvi_group_mpi_t *mpi_group = dynamic_cast<qvi_group_mpi_t *>(
-        qvi_scope_group_get(scope)
-    );
-    return mpi_group->comm_dup(comm);
+    try {
+        return qvi_mpi_scope_comm_dup(ctx, scope, comm);
+    }
+    qvi_catch_and_return();
 }
 
 /*
