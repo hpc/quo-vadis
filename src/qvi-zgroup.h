@@ -28,12 +28,10 @@
  * Virtual base zgroup class.
  */
 struct qvi_zgroup_s {
-    /** Base constructor that does minimal work. */
+    /** Constructor. */
     qvi_zgroup_s(void) = default;
     /** Virtual destructor. */
     virtual ~qvi_zgroup_s(void) = default;
-    /** The real 'constructor' that can possibly fail. */
-    virtual int create(void) = 0;
     /** Returns pointer to the caller's task information. */
     virtual qvi_task_t *task(void) = 0;
     /** Creates an intrinsic group from an intrinsic identifier. */

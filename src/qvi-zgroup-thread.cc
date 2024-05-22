@@ -21,29 +21,7 @@
 
 #include "qvi-zgroup-thread.h"
 #include "qvi-group-thread.h"
-
-qvi_zgroup_thread_s::~qvi_zgroup_thread_s(void)
-{
-    qvi_thread_free(&zth);
-}
-
-int
-qvi_zgroup_thread_s::create(void)
-{
-    return qvi_thread_new(&zth);
-}
-
-int
-qvi_zgroup_thread_s::initialize(void)
-{
-    return qvi_thread_init(zth);
-}
-
-qvi_task_t *
-qvi_zgroup_thread_s::task(void)
-{
-    return qvi_thread_task_get(zth);
-}
+#include "qvi-utils.h"
 
 int
 qvi_zgroup_thread_s::group_create_intrinsic(
@@ -53,9 +31,9 @@ qvi_zgroup_thread_s::group_create_intrinsic(
     // NOTE: the provided scope doesn't affect how
     // we create the thread group, so we ignore it.
     int rc = QV_SUCCESS;
-    qvi_group_thread_t *igroup = NULL;
+    qvi_group_thread_s *igroup = NULL;
 
-    igroup = qvi_new qvi_group_thread_t();
+    igroup = qvi_new qvi_group_thread_s();
     if (!igroup) {
         rc = QV_ERR_OOR;
         goto out;
@@ -77,43 +55,17 @@ out:
 }
 
 int
-qvi_zgroup_thread_s::barrier(void)
-{
-    return qvi_thread_node_barrier(zth);
-}
-
-int
 qvi_zgroup_thread_new(
     qvi_zgroup_thread_t **zgroup
 ) {
-    int rc = QV_SUCCESS;
-
-    qvi_zgroup_thread_t *izgroup = qvi_new qvi_zgroup_thread_t();
-    if (!izgroup) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-
-    rc = izgroup->create();
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_zgroup_thread_free(&izgroup);
-    }
-    *zgroup = izgroup;
-    return rc;
+    return qvi_new_rc(zgroup);
 }
 
 void
 qvi_zgroup_thread_free(
     qvi_zgroup_thread_t **zgroup
 ) {
-    if (!zgroup) return;
-    qvi_zgroup_thread_t *izgroup = *zgroup;
-
-    if (!izgroup) goto out;
-    delete izgroup;
-out:
-    *zgroup = nullptr;
+    qvi_delete(zgroup);
 }
 
 /*
