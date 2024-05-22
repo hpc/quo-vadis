@@ -24,23 +24,43 @@
 struct qvi_zgroup_process_s : public qvi_zgroup_s {
     /** Internal qvi_process_t instance maintained by this zgroup. */
     qvi_process_t *zproc = nullptr;
-    /** Base constructor that does minimal work. */
-    qvi_zgroup_process_s(void) = default;
+    /** Constructor. */
+    qvi_zgroup_process_s(void)
+    {
+        const int rc = qvi_process_new(&zproc);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+    }
     /** Virtual destructor. */
-    virtual ~qvi_zgroup_process_s(void);
+    virtual ~qvi_zgroup_process_s(void)
+    {
+        qvi_process_free(&zproc);
+    }
     /** The real 'constructor' that can possibly fail. */
-    virtual int create(void);
+    // TODO(skg) Remove.
+    virtual int create(void)
+    {
+        return QV_SUCCESS;
+    }
     /** Initializes the process group. */
-    int initialize(void);
+    int initialize(void)
+    {
+        return qvi_process_init(zproc);
+    }
     /** Returns a pointer to the caller's task information. */
-    virtual qvi_task_t *task(void);
+    virtual qvi_task_t *task(void)
+    {
+        return qvi_process_task_get(zproc);
+    }
     /** Creates an intrinsic group from an intrinsic identifier. */
     virtual int group_create_intrinsic(
         qv_scope_intrinsic_t intrinsic,
         qvi_group_t **group
     );
     /** Node-local task barrier. */
-    virtual int barrier(void);
+    virtual int barrier(void)
+    {
+        return qvi_process_node_barrier(zproc);
+    }
 };
 typedef qvi_zgroup_process_s qvi_zgroup_process_t;
 
