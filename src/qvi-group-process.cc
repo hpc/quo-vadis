@@ -63,15 +63,9 @@ int
 qvi_group_process_s::self(
     qvi_group_t **child
 ) {
-    int rc = QV_SUCCESS;
-
-    qvi_group_process_t *ichild = qvi_new qvi_group_process_t();
-    if (!ichild) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
+    qvi_group_process_t *ichild = new qvi_group_process_t();
     // Initialize the child with the parent's process instance.
-    rc = ichild->initialize(proc);
+    int rc = ichild->initialize(proc);
     if (rc != QV_SUCCESS) goto out;
     // Because this is in the context of a process, the concept of splitting
     // doesn't really apply here, so just create another process group.

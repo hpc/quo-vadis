@@ -21,15 +21,9 @@ int
 qvi_context_new(
     qv_context_t **ctx
 ) {
-    int rc = QV_SUCCESS;
+    qv_context_t *ictx = new qv_context_t();
 
-    qv_context_t *ictx = qvi_new qv_context_t();
-    if (!ictx) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-
-    rc = qvi_rmi_client_new(&ictx->rmi);
+    int rc = qvi_rmi_client_new(&ictx->rmi);
     if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_bind_stack_new(&ictx->bind_stack);

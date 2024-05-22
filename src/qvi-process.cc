@@ -187,29 +187,17 @@ qvi_process_group_gather_bbuffs(
 ) {
     const int group_size = qvi_process_group_size(group);
     // Make sure that we are dealing with a valid process group.
-    assert(root == 0 && group_size == 1);
+    // If not, this is an internal development error, so abort.
     if (root != 0 || group_size != 1) {
-        return QV_ERR_INTERNAL;
+        qvi_abort();
     }
 
     int rc = QV_SUCCESS;
-    int *rxcounts = nullptr;
-    byte_t *bytepos = nullptr;
+    std::vector<size_t> rxcounts = {qvi_bbuff_size(txbuff)};
     // Zero initialize array of pointers to nullptr.
-    qvi_bbuff_t **bbuffs = qvi_new qvi_bbuff_t *[group_size]();
-    if (!bbuffs) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
+    qvi_bbuff_t **bbuffs = new qvi_bbuff_t *[group_size]();
 
-    rxcounts = qvi_new int[group_size]();
-    if (!rxcounts) {
-        rc = QV_ERR_OOR;
-        goto out;
-    }
-    rxcounts[0] = qvi_bbuff_size(txbuff);
-
-    bytepos = (byte_t *)qvi_bbuff_data(txbuff);
+    byte_t *bytepos = (byte_t *)qvi_bbuff_data(txbuff);
     for (int i = 0; i < group_size; ++i) {
         rc = qvi_bbuff_new(&bbuffs[i]);
         if (rc != QV_SUCCESS) break;
@@ -217,8 +205,6 @@ qvi_process_group_gather_bbuffs(
         if (rc != QV_SUCCESS) break;
         bytepos += rxcounts[i];
     }
-out:
-    delete[] rxcounts;
     if (rc != QV_SUCCESS) {
         if (bbuffs) {
             for (int i = 0; i < group_size; ++i) {
@@ -242,9 +228,9 @@ qvi_process_group_scatter_bbuffs(
 ) {
     const int group_size = qvi_process_group_size(group);
     // Make sure that we are dealing with a valid process group.
-    assert(root == 0 && group_size == 1);
+    // If not, this is an internal development error, so abort.
     if (root != 0 || group_size != 1) {
-        return QV_ERR_INTERNAL;
+        qvi_abort();
     }
     // There should always be only one at the root (us).
     qvi_bbuff_t *inbuff = txbuffs[root];

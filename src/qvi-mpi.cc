@@ -663,21 +663,17 @@ qvi_mpi_group_gather_bbuffs(
     const int group_size = group->size;
 
     int rc = QV_SUCCESS, mpirc = MPI_SUCCESS;
-    int *rxcounts = nullptr, *displs = nullptr;
-    byte_t *allbytes = nullptr;
+    std::vector<int> rxcounts, displs;
+    std::vector<byte_t> allbytes;
     qvi_bbuff_t **bbuffs = nullptr;
 
     if (group_id == root) {
-        rxcounts = qvi_new int[group_size]();
-        if (!rxcounts) {
-            rc = QV_ERR_OOR;
-            goto out;
-        }
+        rxcounts.resize(group_size);
     }
     // Figure out now much data are sent by each participant.
     mpirc = MPI_Gather(
         &send_count, 1, MPI_INT,
-        rxcounts, 1, MPI_INT,
+        rxcounts.data(), 1, MPI_INT,
         root, group->mpi_comm
     );
     if (mpirc != MPI_SUCCESS) {
@@ -686,28 +682,19 @@ qvi_mpi_group_gather_bbuffs(
     }
     // Root sets up relevant Gatherv data structures.
     if (group_id == root) {
-        displs = qvi_new int[group_size]();
-        if (!displs) {
-            rc = QV_ERR_OOR;
-            goto out;
-        };
+        displs.resize(group_size);
 
         int total_bytes = 0;
         for (int i = 0; i < group_size; ++i) {
             displs[i] = total_bytes;
             total_bytes += rxcounts[i];
         }
-
-        allbytes = qvi_new byte_t[total_bytes]();
-        if (!allbytes) {
-            rc = QV_ERR_OOR;
-            goto out;
-        };
+        allbytes.resize(total_bytes);
     }
 
     mpirc = MPI_Gatherv(
         qvi_bbuff_data(txbuff), send_count, MPI_UINT8_T,
-        allbytes, rxcounts, displs, MPI_UINT8_T,
+        allbytes.data(), rxcounts.data(), displs.data(), MPI_UINT8_T,
         root, group->mpi_comm
     );
     if (mpirc != MPI_SUCCESS) {
@@ -717,12 +704,9 @@ qvi_mpi_group_gather_bbuffs(
     // Root creates new buffers from data gathered from each participant.
     if (group_id == root) {
         // Zero initialize array of pointers to nullptr.
-        bbuffs = qvi_new qvi_bbuff_t*[group_size]();
-        if (!bbuffs) {
-            rc = QV_ERR_OOR;
-            goto out;
-        }
-        byte_t *bytepos = allbytes;
+        bbuffs = new qvi_bbuff_t*[group_size]();
+
+        byte_t *bytepos = allbytes.data();
         for (int i = 0; i < group_size; ++i) {
             rc = qvi_bbuff_new(&bbuffs[i]);
             if (rc != QV_SUCCESS) break;
@@ -732,9 +716,6 @@ qvi_mpi_group_gather_bbuffs(
         }
     }
 out:
-    delete[] rxcounts;
-    delete[] displs;
-    delete[] allbytes;
     if (rc != QV_SUCCESS) {
         if (bbuffs) {
             for (int i = 0; i < group_size; ++i) {
@@ -760,22 +741,14 @@ qvi_mpi_group_scatter_bbuffs(
     const int group_id = group->id;
 
     int rc = QV_SUCCESS, mpirc = MPI_SUCCESS, rxcount = 0;
-    int *txcounts = nullptr, *displs = nullptr, total_bytes = 0;
-    byte_t *mybytes = nullptr, *txbytes = nullptr;
+    int total_bytes = 0;
+    std::vector<int> txcounts, displs;
+    std::vector<byte_t> mybytes, txbytes;
     qvi_bbuff_t *mybbuff = nullptr;
     // Root sets up relevant Scatterv data structures.
     if (group_id == root) {
-        txcounts = qvi_new int[group_size]();
-        if (!txcounts) {
-            rc = QV_ERR_OOR;
-            goto out;
-        }
-
-        displs = qvi_new int[group_size]();
-        if (!displs) {
-            rc = QV_ERR_OOR;
-            goto out;
-        };
+        txcounts.resize(group_size);
+        displs.resize(group_size);
 
         for (int i = 0; i < group_size; ++i) {
             txcounts[i] = (int)qvi_bbuff_size(txbuffs[i]);
@@ -783,13 +756,9 @@ qvi_mpi_group_scatter_bbuffs(
             total_bytes += txcounts[i];
         }
         // A flattened buffer containing all the relevant information.
-        txbytes = qvi_new byte_t[total_bytes]();
-        if (!txbytes) {
-            rc = QV_ERR_OOR;
-            goto out;
-        };
+        txbytes.resize(total_bytes);
         // Copy buffer data into flattened buffer.
-        byte_t *bytepos = txbytes;
+        byte_t *bytepos = txbytes.data();
         for (int i = 0; i < group_size; ++i) {
             memmove(bytepos, qvi_bbuff_data(txbuffs[i]), txcounts[i]);
             bytepos += txcounts[i];
@@ -797,7 +766,7 @@ qvi_mpi_group_scatter_bbuffs(
     }
     // Scatter buffer sizes.
     mpirc = MPI_Scatter(
-        txcounts, 1, MPI_INT,
+        txcounts.data(), 1, MPI_INT,
         &rxcount, 1, MPI_INT,
         root, group->mpi_comm
     );
@@ -806,16 +775,11 @@ qvi_mpi_group_scatter_bbuffs(
         goto out;
     }
     // Everyone allocates a buffer for their data.
-    mybytes = qvi_new byte_t[rxcount]();
-    if (!mybytes) {
-        rc = QV_ERR_OOR;
-        goto out;
-    };
+    mybytes.resize(rxcount);
 
     mpirc = MPI_Scatterv(
-        txbytes, txcounts, displs, MPI_UINT8_T,
-        mybytes, rxcount, MPI_UINT8_T,
-        root, group->mpi_comm
+        txbytes.data(), txcounts.data(), displs.data(), MPI_UINT8_T,
+        mybytes.data(), rxcount, MPI_UINT8_T, root, group->mpi_comm
     );
     if (mpirc != MPI_SUCCESS) {
         rc = QV_ERR_MPI;
@@ -824,12 +788,8 @@ qvi_mpi_group_scatter_bbuffs(
     // Everyone creates new buffers from data received from root.
     rc = qvi_bbuff_new(&mybbuff);
     if (rc != QV_SUCCESS) goto out;
-    rc = qvi_bbuff_append(mybbuff, mybytes, rxcount);
+    rc = qvi_bbuff_append(mybbuff, mybytes.data(), rxcount);
 out:
-    delete[] txcounts;
-    delete[] displs;
-    delete[] txbytes;
-    delete[] mybytes;
     if (rc != QV_SUCCESS) {
         qvi_bbuff_free(&mybbuff);
     }
@@ -842,7 +802,7 @@ qvi_mpi_group_comm_dup(
     qvi_mpi_group_t *group,
     MPI_Comm *comm
 ) {
-    int rc = MPI_Comm_dup(group->mpi_comm, comm);
+    const int rc = MPI_Comm_dup(group->mpi_comm, comm);
     if (rc != MPI_SUCCESS) return QV_ERR_MPI;
     return QV_SUCCESS;
 }
