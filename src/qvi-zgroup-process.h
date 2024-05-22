@@ -35,12 +35,6 @@ struct qvi_zgroup_process_s : public qvi_zgroup_s {
     {
         qvi_process_free(&zproc);
     }
-    /** The real 'constructor' that can possibly fail. */
-    // TODO(skg) Remove.
-    virtual int create(void)
-    {
-        return QV_SUCCESS;
-    }
     /** Initializes the process group. */
     int initialize(void)
     {

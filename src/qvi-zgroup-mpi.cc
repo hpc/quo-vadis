@@ -25,7 +25,7 @@ qvi_zgroup_mpi_s::group_create_intrinsic(
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_group_mpi_t *igroup = new qvi_group_mpi_t();
+    qvi_group_mpi_s *igroup = new qvi_group_mpi_s();
 
     rc = igroup->initialize(mpi);
     if (rc != QV_SUCCESS) goto out;

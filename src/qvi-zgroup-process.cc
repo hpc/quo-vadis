@@ -22,7 +22,7 @@ qvi_zgroup_process_s::group_create_intrinsic(
 ) {
     // NOTE: the provided scope doesn't affect how
     // we create the process group, so we ignore it.
-    qvi_group_process_t *igroup = new qvi_group_process_t();
+    qvi_group_process_s *igroup = new qvi_group_process_s();
 
     int rc = igroup->initialize(zproc);
     if (rc != QV_SUCCESS) goto out;
