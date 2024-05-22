@@ -37,6 +37,12 @@ set_target_properties(
     PROPERTIES LINKER_LANGUAGE C
 )
 
+set_tests_properties(
+    process-scopes
+    PROPERTIES
+      TIMEOUT 60
+)
+
 ################################################################################
 ################################################################################
 if (OPENMP_FOUND)

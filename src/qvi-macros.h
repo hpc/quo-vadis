@@ -27,12 +27,16 @@ do {                                                                           \
     (void)(x);                                                                 \
 } while (0)
 
+#define qvi_runtime_error()                                                    \
+std::runtime_error(__FILE__ ":" + std::to_string(__LINE__))
+
 #define qvi_catch_and_return()                                                 \
 catch (...)                                                                    \
 {                                                                              \
     auto eptr = std::current_exception();                                      \
     try {                                                                      \
         if (eptr) std::rethrow_exception(eptr);                                \
+        qvi_log_error("An unknown exception occurred.");                       \
     }                                                                          \
     catch(const std::exception &e)                                             \
     {                                                                          \
