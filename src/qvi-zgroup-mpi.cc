@@ -16,30 +16,7 @@
 
 #include "qvi-zgroup-mpi.h"
 #include "qvi-group-mpi.h"
-
-qvi_zgroup_mpi_s::~qvi_zgroup_mpi_s(void)
-{
-    qvi_mpi_free(&mpi);
-}
-
-int
-qvi_zgroup_mpi_s::create(void)
-{
-    return qvi_mpi_new(&mpi);
-}
-
-int
-qvi_zgroup_mpi_s::initialize(
-    MPI_Comm comm
-) {
-    return qvi_mpi_init(mpi, comm);
-}
-
-qvi_task_t *
-qvi_zgroup_mpi_s::task(void)
-{
-    return qvi_mpi_task_get(mpi);
-}
+#include "qvi-utils.h"
 
 int
 qvi_zgroup_mpi_s::group_create_intrinsic(
@@ -85,35 +62,17 @@ out:
 }
 
 int
-qvi_zgroup_mpi_s::barrier(void)
-{
-    return qvi_mpi_node_barrier(mpi);
-}
-
-int
 qvi_zgroup_mpi_new(
     qvi_zgroup_mpi_t **zgroup
 ) {
-    qvi_zgroup_mpi_t *izgroup = new qvi_zgroup_mpi_t();
-
-    const int rc = izgroup->create();
-    if (rc != QV_SUCCESS) {
-        qvi_zgroup_mpi_free(&izgroup);
-    }
-    *zgroup = izgroup;
-    return rc;
+    return qvi_new_rc(zgroup);
 }
 
 void
 qvi_zgroup_mpi_free(
     qvi_zgroup_mpi_t **zgroup
 ) {
-    if (!zgroup) return;
-    qvi_zgroup_mpi_t *izgroup = *zgroup;
-    if (!izgroup) goto out;
-    delete izgroup;
-out:
-    *zgroup = nullptr;
+    qvi_delete(zgroup);
 }
 
 /*

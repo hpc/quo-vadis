@@ -26,23 +26,42 @@
 struct qvi_zgroup_mpi_s : public qvi_zgroup_s {
     /** Internal qvi_mpi instance maintained by this zgroup. */
     qvi_mpi_t *mpi = nullptr;
-    /** Base constructor that does minimal work. */
-    qvi_zgroup_mpi_s(void) = default;
+    /** Constructor. */
+    qvi_zgroup_mpi_s(void)
+    {
+        const int rc = qvi_mpi_new(&mpi);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+    }
     /** Virtual destructor. */
-    virtual ~qvi_zgroup_mpi_s(void);
+    virtual ~qvi_zgroup_mpi_s(void)
+    {
+        qvi_mpi_free(&mpi);
+    }
     /** The real 'constructor' that can possibly fail. */
-    virtual int create(void);
+    virtual int create(void)
+    {
+        return QV_SUCCESS;
+    }
     /** Initializes the MPI group. */
-    int initialize(MPI_Comm comm);
+    int initialize(MPI_Comm comm)
+    {
+        return qvi_mpi_init(mpi, comm);
+    }
     /** Returns a pointer to the caller's task information. */
-    virtual qvi_task_t *task(void);
+    virtual qvi_task_t *task(void)
+    {
+        return qvi_mpi_task_get(mpi);
+    }
     /** Creates an intrinsic group from an intrinsic identifier. */
     virtual int group_create_intrinsic(
         qv_scope_intrinsic_t intrinsic,
         qvi_group_t **group
     );
     /** Node-local task barrier. */
-    virtual int barrier(void);
+    virtual int barrier(void)
+    {
+        return qvi_mpi_node_barrier(mpi);
+    }
 };
 typedef qvi_zgroup_mpi_s qvi_zgroup_mpi_t;
 
