@@ -18,7 +18,6 @@
 #include "qvi-utils.h"
 
 struct qvi_bbuff_s {
-    int qvim_rc = QV_ERR_INTERNAL;
     /** Current capacity of buffer. */
     size_t capacity = 0;
     /** Amount of data already stored. */
@@ -35,11 +34,7 @@ struct qvi_bbuff_s {
     {
         capacity = min_growth;
         data = calloc(capacity, sizeof(byte_t));
-        if (!data) {
-            qvim_rc = QV_ERR_OOR;
-            return;
-        }
-        qvim_rc = QV_SUCCESS;
+        if (!data) throw qvi_runtime_error();
     }
     /** Destructor */
     ~qvi_bbuff_s(void)

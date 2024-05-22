@@ -44,6 +44,7 @@
 
 #include "qvi-hwpool.h"
 #include "qvi-bbuff-rmi.h"
+#include "qvi-utils.h"
 
 int
 qvi_hwpool_new(
@@ -69,11 +70,6 @@ qvi_hwpool_dup(
     if (rc != QV_SUCCESS) goto out;
     // This performs a deep copy of the underlying CPUs.
     idup->cpu = rpool->cpu;
-    // Assignment here sets qvim_rc, so check it.
-    if (idup->qvim_rc != QV_SUCCESS) {
-        rc = idup->qvim_rc;
-        goto out;
-    }
     // This performs a deep copy of the underlying device infos.
     idup->devs = rpool->devs;
 out:

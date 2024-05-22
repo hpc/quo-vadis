@@ -18,7 +18,6 @@
 #define QVI_HWLOC_H
 
 #include "qvi-common.h"
-#include "qvi-utils.h"
 #include "qvi-task.h"
 
 #ifdef __cplusplus
@@ -414,46 +413,43 @@ qvi_hwloc_supported_devices(void);
  * hwloc bitmap object.
  */
 struct qvi_hwloc_bitmap_s {
-    int qvim_rc = QV_ERR_INTERNAL;
-    /** Internal bitmap */
+    /** Internal bitmap. */
     hwloc_bitmap_t data = nullptr;
-    /** Default constructor */
+    /** Default constructor. */
     qvi_hwloc_bitmap_s(void)
     {
-        qvim_rc = qvi_hwloc_bitmap_calloc(&data);
+        const int rc = qvi_hwloc_bitmap_calloc(&data);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
     }
-    /** Construct via hwloc_const_bitmap_t */
+    /** Construct via hwloc_const_bitmap_t. */
     explicit qvi_hwloc_bitmap_s(hwloc_const_bitmap_t bitmap)
     {
-        qvim_rc = qvi_hwloc_bitmap_calloc(&data);
-        if (qvim_rc != QV_SUCCESS) return;
-        qvim_rc = set(bitmap);
+        int rc = qvi_hwloc_bitmap_calloc(&data);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        rc = set(bitmap);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
     }
     /** Copy constructor. */
     qvi_hwloc_bitmap_s(const qvi_hwloc_bitmap_s &src)
     {
-        qvim_rc = qvi_hwloc_bitmap_calloc(&data);
-        if (qvim_rc != QV_SUCCESS) return;
-        qvim_rc = qvi_hwloc_bitmap_copy(src.data, data);
+        int rc = qvi_hwloc_bitmap_calloc(&data);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        rc = qvi_hwloc_bitmap_copy(src.data, data);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
     }
-    /** Destructor */
+    /** Destructor. */
     ~qvi_hwloc_bitmap_s(void)
     {
         qvi_hwloc_bitmap_free(&data);
     }
-    /**
-     * Assignment operator.
-     *
-     * Check qvim_rc on the LHS after assignment to verify status.
-     */
+    /** Assignment operator. */
     void
     operator=(const qvi_hwloc_bitmap_s &src)
     {
-        qvim_rc = qvi_hwloc_bitmap_copy(src.data, data);
+        const int rc = qvi_hwloc_bitmap_copy(src.data, data);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
     }
-    /**
-     * Sets the object's internal bitmap to match src's.
-     */
+    /** Sets the object's internal bitmap to match src's. */
     int
     set(hwloc_const_bitmap_t src)
     {
@@ -467,7 +463,6 @@ struct qvi_hwloc_bitmap_s {
 using qvi_hwloc_cpusets_t = std::vector<qvi_hwloc_bitmap_s>;
 
 typedef struct qvi_hwloc_device_s {
-    int qvim_rc = QV_ERR_INTERNAL;
     /** Device type. */
     qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
     /** Device affinity. */
@@ -485,10 +480,7 @@ typedef struct qvi_hwloc_device_s {
     /** Universally Unique Identifier. */
     std::string uuid;
     /** Constructor. */
-    qvi_hwloc_device_s(void)
-    {
-        qvim_rc = qvi_construct_rc(affinity);
-    }
+    qvi_hwloc_device_s(void) = default;
     /** Destructor. */
     ~qvi_hwloc_device_s(void) = default;
 } qvi_hwloc_device_t;

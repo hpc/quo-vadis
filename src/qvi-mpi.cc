@@ -22,7 +22,6 @@ using qvi_mpi_group_tab_t = std::unordered_map<
 >;
 
 struct qvi_mpi_group_s {
-    int qvim_rc = QV_SUCCESS;
     /** ID used for table lookups */
     qvi_mpi_group_id_t tabid = 0;
     /** ID (rank) in group */
@@ -35,20 +34,9 @@ struct qvi_mpi_group_s {
     qvi_mpi_group_s(void) = default;
     /** Destructor */
     ~qvi_mpi_group_s(void) = default;
-    /** Assignment operator. */
-    void
-    operator=(const qvi_mpi_group_s &src)
-    {
-        qvim_rc = src.qvim_rc;
-        tabid = src.tabid;
-        id = src.id;
-        size = src.size;
-        mpi_comm = src.mpi_comm;
-    }
 };
 
 struct qvi_mpi_s {
-    int qvim_rc = QV_ERR_INTERNAL;
     /** Task associated with this MPI process */
     qvi_task_t *task = nullptr;
     /** Node size */
@@ -66,7 +54,8 @@ struct qvi_mpi_s {
     /** Constructor */
     qvi_mpi_s(void)
     {
-        qvim_rc = qvi_task_new(&task);
+        const int rc = qvi_task_new(&task);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
     }
     /** Destructor */
     ~qvi_mpi_s(void)
