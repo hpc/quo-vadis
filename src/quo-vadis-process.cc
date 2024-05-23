@@ -34,11 +34,6 @@ qvi_process_context_create(
     }
     // Save zgroup instance pointer to context.
     ictx->zgroup = izgroup;
-
-    rc = izgroup->initialize();
-    if (rc != QV_SUCCESS) {
-        goto out;
-    }
     // Connect to RMI server.
     rc = qvi_context_connect_to_server(ictx);
     if (rc != QV_SUCCESS) {

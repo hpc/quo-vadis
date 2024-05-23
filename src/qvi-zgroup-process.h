@@ -27,19 +27,15 @@ struct qvi_zgroup_process_s : public qvi_zgroup_s {
     /** Constructor. */
     qvi_zgroup_process_s(void)
     {
-        const int rc = qvi_process_new(&zproc);
+        int rc = qvi_process_new(&zproc);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        rc = qvi_process_init(zproc);
         if (rc != QV_SUCCESS) throw qvi_runtime_error();
     }
     /** Virtual destructor. */
     virtual ~qvi_zgroup_process_s(void)
     {
         qvi_process_free(&zproc);
-    }
-    /** Initializes the process group. */
-    int
-    initialize(void)
-    {
-        return qvi_process_init(zproc);
     }
     /** Returns a pointer to the caller's task information. */
     virtual qvi_task_t *
