@@ -116,7 +116,6 @@ static int
 qvi_mpi_context_free(
     qv_context_t *ctx
 ) {
-    delete ctx->zgroup;
     qvi_context_free(&ctx);
     return QV_SUCCESS;
 }

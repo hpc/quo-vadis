@@ -21,7 +21,6 @@
 #include "qvi-context.h"
 #include "qvi-zgroup-thread.h"
 #include "qvi-group-thread.h" // IWYU pragma: keep
-#include "qvi-scope.h"
 
 #ifdef OPENMP_FOUND
 #include <omp.h>
@@ -32,7 +31,6 @@ qv_thread_context_free(
     qv_context_t *ctx
 ) {
     if (!ctx) return QV_ERR_INVLD_ARG;
-    delete ctx->zgroup;
     qvi_context_free(&ctx);
     return QV_SUCCESS;
 }
