@@ -958,10 +958,10 @@ hello_handshake(
 int
 qvi_rmi_client_connect(
     qvi_rmi_client_t *client,
-    const char *url
+    const std::string &url
 ) {
     client->zsock = zsocket_create_and_connect(
-        client->zctx, ZMQ_REQ, url
+        client->zctx, ZMQ_REQ, url.c_str()
     );
     if (!client->zsock) return QV_ERR_MSG;
 

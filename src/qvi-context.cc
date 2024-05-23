@@ -21,32 +21,14 @@ int
 qvi_context_new(
     qv_context_t **ctx
 ) {
-    qv_context_t *ictx = new qv_context_t();
-
-    int rc = qvi_rmi_client_new(&ictx->rmi);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_bind_stack_new(&ictx->bind_stack);
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_context_free(&ictx);
-    }
-    *ctx = ictx;
-    return rc;
+    return qvi_new_rc(ctx);
 }
 
 void
 qvi_context_free(
     qv_context_t **ctx
 ) {
-    if (!ctx) return;
-    qv_context_t *ictx = *ctx;
-    if (!ictx) goto out;
-    qvi_bind_stack_free(&ictx->bind_stack);
-    qvi_rmi_client_free(&ictx->rmi);
-    delete ictx;
-out:
-    *ctx = nullptr;
+    qvi_delete(ctx);
 }
 
 int
@@ -54,14 +36,12 @@ qvi_context_connect_to_server(
     qv_context_t *ctx
 ) {
     std::string url;
-    int rc = qvi_url(url);
+    const int rc = qvi_url(url);
     if (rc != QV_SUCCESS) {
         qvi_log_error("{}", qvi_conn_ers());
         return rc;
     }
-
-    rc = qvi_rmi_client_connect(ctx->rmi, url.c_str());
-    return rc;
+    return qvi_rmi_client_connect(ctx->rmi, url);
 }
 
 /*

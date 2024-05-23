@@ -33,6 +33,21 @@ struct qv_context_s {
     qvi_rmi_client_t *rmi = nullptr;
     qvi_zgroup_t *zgroup = nullptr;
     qvi_bind_stack_t *bind_stack = nullptr;
+    /** Constructor. */
+    qv_context_s(void)
+    {
+        int rc = qvi_rmi_client_new(&rmi);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+
+        rc = qvi_bind_stack_new(&bind_stack);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+    }
+    /** Destructor. */
+    ~qv_context_s(void)
+    {
+        qvi_bind_stack_free(&bind_stack);
+        qvi_rmi_client_free(&rmi);
+    }
 };
 
 /**
