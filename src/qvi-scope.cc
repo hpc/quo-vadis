@@ -463,7 +463,7 @@ scope_split_coll_scatter(
     int *colorp,
     qvi_hwpool_s **result
 ) {
-    int rc = scatter_values(
+    const int rc = scatter_values(
         splitcoll.parent_scope->group,
         qvi_scope_split_coll_s::rootid,
         splitcoll.gsplit.colors,
@@ -490,7 +490,7 @@ qvi_scope_split_agg_cpuset_dup(
     hwloc_cpuset_t *result
 ) {
     // This shouldn't happen.
-    assert(splitagg.hwpools.size() != 0);
+    if (splitagg.hwpools.size() == 0) qvi_abort();
 
     return qvi_hwloc_bitmap_dup(
         qvi_hwpool_cpuset_get(splitagg.hwpools[0]), result
@@ -517,7 +517,6 @@ qvi_scope_kfree(
     uint_t k
 ) {
     if (!kscopes) return;
-
     qv_scope_t **ikscopes = *kscopes;
     for (uint_t i = 0; i < k; ++i) {
         qvi_scope_free(&ikscopes[i]);
@@ -533,8 +532,7 @@ scope_init(
     qvi_group_t *group,
     qvi_hwpool_s *hwpool
 ) {
-    assert(rmi && hwpool && scope);
-
+    if (!rmi || !hwpool || !scope) qvi_abort();
     scope->rmi = rmi;
     scope->group = group;
     scope->hwpool = hwpool;
@@ -545,7 +543,7 @@ hwloc_const_cpuset_t
 qvi_scope_cpuset_get(
     qv_scope_t *scope
 ) {
-    assert(scope);
+    if (!scope) qvi_abort();
     return qvi_hwpool_cpuset_get(scope->hwpool);
 }
 
@@ -553,7 +551,7 @@ const qvi_hwpool_s *
 qvi_scope_hwpool_get(
     qv_scope_t *scope
 ) {
-    assert(scope);
+    if (!scope) qvi_abort();
     return scope->hwpool;
 }
 
@@ -562,7 +560,7 @@ qvi_scope_taskid(
     qv_scope_t *scope,
     int *taskid
 ) {
-    assert(scope);
+    if (!scope) qvi_abort();
     *taskid = scope->group->id();
     return QV_SUCCESS;
 }
@@ -572,7 +570,7 @@ qvi_scope_ntasks(
     qv_scope_t *scope,
     int *ntasks
 ) {
-    assert(scope);
+    if (!scope) qvi_abort();
     *ntasks = scope->group->size();
     return QV_SUCCESS;
 }
@@ -581,7 +579,7 @@ int
 qvi_scope_barrier(
     qv_scope_t *scope
 ) {
-    assert(scope);
+    if (!scope) qvi_abort();
     return scope->group->barrier();
 }
 
@@ -625,7 +623,7 @@ qvi_group_t *
 qvi_scope_group_get(
     qv_scope_t *scope
 ) {
-    assert(scope);
+    if (!scope) qvi_abort();
     return scope->group;
 }
 
