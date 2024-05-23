@@ -26,7 +26,7 @@
 struct qvi_hwpool_res_s {
     /** Resource hint flags. */
     qv_scope_create_hints_t hints = QV_SCOPE_CREATE_HINT_NONE;
-    /** Base constructor that does minimal work. */
+    /** Constructor. */
     qvi_hwpool_res_s(void) = default;
     /** Virtual destructor. */
     virtual ~qvi_hwpool_res_s(void) = default;
@@ -146,7 +146,7 @@ qvi_hwpool_free(
  */
 int
 qvi_hwpool_dup(
-    const qvi_hwpool_s *const rpool,
+    const qvi_hwpool_s *const pool,
     qvi_hwpool_s **dup
 );
 
