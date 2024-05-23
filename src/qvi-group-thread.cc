@@ -20,13 +20,59 @@
 #include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-group-thread.h"
 
+qvi_group_thread_s::~qvi_group_thread_s(void)
+{
+    qvi_thread_group_free(&th_group);
+}
+
+int
+qvi_group_thread_s::create(void)
+{
+    return qvi_thread_group_new(&th_group);
+}
+
+int
+qvi_group_thread_s::initialize(
+    qvi_thread_t *th
+) {
+    assert(th);
+    if (!th) return QV_ERR_INTERNAL;
+
+    this->th = th;
+    return QV_SUCCESS;
+}
+
+qvi_task_id_t
+qvi_group_thread_s::task_id(void)
+{
+    return qvi_task_task_id(qvi_thread_task_get(th));
+}
+
+int
+qvi_group_thread_s::id(void)
+{
+    return qvi_thread_group_id(th_group);
+}
+
+int
+qvi_group_thread_s::size(void)
+{
+    return qvi_thread_group_size(th_group);
+}
+
+int
+qvi_group_thread_s::barrier(void)
+{
+    return qvi_thread_group_barrier(th_group);
+}
+
 int
 qvi_group_thread_s::self(
     qvi_group_t **child
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_group_thread_s *ichild = qvi_new qvi_group_thread_s();
+    qvi_group_thread_t *ichild = qvi_new qvi_group_thread_t();
     if (!ichild) {
         rc = QV_ERR_OOR;
         goto out;
@@ -56,7 +102,7 @@ qvi_group_thread_s::split(
 ) {
     int rc = QV_SUCCESS;
 
-    qvi_group_thread_s *ichild = qvi_new qvi_group_thread_s();
+    qvi_group_thread_t *ichild = qvi_new qvi_group_thread_t();
     if (!ichild) {
         rc = QV_ERR_OOR;
         goto out;
@@ -76,6 +122,29 @@ out:
     }
     *child = ichild;
     return rc;
+}
+
+int
+qvi_group_thread_s::gather(
+    qvi_bbuff_t *txbuff,
+    int root,
+    qvi_bbuff_t ***rxbuffs,
+    int *shared
+) {
+    return qvi_thread_group_gather_bbuffs(
+       th_group, txbuff, root, rxbuffs, shared
+    );
+}
+
+int
+qvi_group_thread_s::scatter(
+    qvi_bbuff_t **txbuffs,
+    int root,
+    qvi_bbuff_t **rxbuff
+) {
+    return qvi_thread_group_scatter_bbuffs(
+        th_group, txbuffs, root, rxbuff
+    );
 }
 
 /*

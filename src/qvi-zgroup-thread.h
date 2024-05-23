@@ -29,37 +29,23 @@
 struct qvi_zgroup_thread_s : public qvi_zgroup_s {
     /** Internal qvi_thread_t instance maintained by this zgroup. */
     qvi_thread_t *zth = nullptr;
-    /** Constructor. */
-    qvi_zgroup_thread_s(void)
-    {
-        const int rc = qvi_thread_new(&zth);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
-    }
+    /** Base constructor that does minimal work. */
+    qvi_zgroup_thread_s(void) = default;
     /** Virtual destructor. */
-    virtual ~qvi_zgroup_thread_s(void)
-    {
-        qvi_thread_free(&zth);
-    }
+    virtual ~qvi_zgroup_thread_s(void);
+    /** The real 'constructor' that can possibly fail. */
+    virtual int create(void);
     /** Initializes the thread group. */
-    int initialize(void)
-    {
-        return qvi_thread_init(zth);
-    }
+    int initialize(void);
     /** Returns a pointer to the caller's task information. */
-    virtual qvi_task_t *task(void)
-    {
-        return qvi_thread_task_get(zth);
-    }
+    virtual qvi_task_t *task(void);
     /** Creates an intrinsic group from an intrinsic identifier. */
     virtual int group_create_intrinsic(
         qv_scope_intrinsic_t intrinsic,
         qvi_group_t **group
     );
     /** Node-local task barrier. */
-    virtual int barrier(void)
-    {
-        return qvi_thread_node_barrier(zth);
-    }
+    virtual int barrier(void);
 };
 typedef qvi_zgroup_thread_s qvi_zgroup_thread_t;
 
