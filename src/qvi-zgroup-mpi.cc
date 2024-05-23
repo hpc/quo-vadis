@@ -23,11 +23,9 @@ qvi_zgroup_mpi_s::group_create_intrinsic(
     qv_scope_intrinsic_t scope,
     qvi_group_t **group
 ) {
-    int rc = QV_SUCCESS;
-
     qvi_group_mpi_t *igroup = new qvi_group_mpi_t();
 
-    rc = igroup->initialize(mpi);
+    int rc = igroup->initialize(mpi);
     if (rc != QV_SUCCESS) goto out;
 
     qvi_mpi_group_id_t mpi_group;
@@ -48,9 +46,7 @@ qvi_zgroup_mpi_s::group_create_intrinsic(
     if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_mpi_group_create_from_group_id(
-        mpi,
-        mpi_group,
-        &igroup->mpi_group
+        mpi, mpi_group, &igroup->mpi_group
     );
 out:
     if (rc != QV_SUCCESS) {

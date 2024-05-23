@@ -35,29 +35,27 @@ struct qvi_zgroup_process_s : public qvi_zgroup_s {
     {
         qvi_process_free(&zproc);
     }
-    /** The real 'constructor' that can possibly fail. */
-    // TODO(skg) Remove.
-    virtual int create(void)
-    {
-        return QV_SUCCESS;
-    }
     /** Initializes the process group. */
-    int initialize(void)
+    int
+    initialize(void)
     {
         return qvi_process_init(zproc);
     }
     /** Returns a pointer to the caller's task information. */
-    virtual qvi_task_t *task(void)
+    virtual qvi_task_t *
+    task(void)
     {
         return qvi_process_task_get(zproc);
     }
     /** Creates an intrinsic group from an intrinsic identifier. */
-    virtual int group_create_intrinsic(
+    virtual int
+    group_create_intrinsic(
         qv_scope_intrinsic_t intrinsic,
         qvi_group_t **group
     );
     /** Node-local task barrier. */
-    virtual int barrier(void)
+    virtual int
+    barrier(void)
     {
         return qvi_process_node_barrier(zproc);
     }
