@@ -208,7 +208,7 @@ qvi_cantor_pairing(
     int a,
     int b
 ) {
-    return (a + b) * (a + b + 1) / 2 + b;
+    return (a + b) * ((a + b + 1) / 2) + b;
 }
 
 /*
