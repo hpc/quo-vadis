@@ -97,15 +97,6 @@ qvi_rmi_client_free(
 /**
  *
  */
-int
-qvi_rmi_client_connect(
-    qvi_rmi_client_t *client,
-    const char *url
-);
-
-/**
- *
- */
 qvi_hwloc_t *
 qvi_rmi_client_hwloc_get(
     qvi_rmi_client_t *client
@@ -187,6 +178,15 @@ qvi_rmi_get_cpuset_for_nobjs(
 
 #ifdef __cplusplus
 }
+
+/**
+ *
+ */
+int
+qvi_rmi_client_connect(
+    qvi_rmi_client_t *client,
+    const std::string &url
+);
 #endif
 
 #endif
