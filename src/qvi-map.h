@@ -17,6 +17,22 @@
 #include "qvi-common.h"
 #include "qvi-hwloc.h"
 
+/** Maintains a mapping between 'From IDs' to 'To IDs'. */
+using qvi_map_t = std::map<uint_t, uint_t>;
+
+/**
+ * Defines a function pointer to a desired mapping function.
+ */
+using qvi_map_fn_t = std::function<
+    int(qvi_map_t &map, uint_t nfids, const qvi_hwloc_cpusets_t &tres)
+>;
+
+/**
+ * Maintains a mapping between resource IDs to a set of
+ * consumer IDs that have shared affinity with a given resource.
+ */
+using qvi_map_shaffinity_t = std::map<uint_t, std::set<uint_t>>;
+
 /**
  * Returns the largest number that will fit in the space available.
  */
@@ -34,22 +50,6 @@ qvi_map_maxiperk(
     uint_t i,
     uint_t k
 );
-
-/** Maintains a mapping between 'From IDs' to 'To IDs'. */
-using qvi_map_t = std::map<uint_t, uint_t>;
-
-/**
- * Defines a function pointer to a desired mapping function.
- */
-using qvi_map_fn_t = std::function<
-    int(qvi_map_t &map, uint_t nfids, const qvi_hwloc_cpusets_t &tres)
->;
-
-/**
- * Maintains a mapping between resource IDs to a set of
- * consumer IDs that have shared affinity with a given resource.
- */
-using qvi_map_shaffinity_t = std::map<uint_t, std::set<uint_t>>;
 
 /**
  * Prints debug output.
