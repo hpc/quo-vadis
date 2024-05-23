@@ -28,44 +28,21 @@ struct qvi_group_process_s : public qvi_group_s {
     /** Underlying group instance. */
     qvi_process_group_t *proc_group = nullptr;
     /** Base constructor that does minimal work. */
-    qvi_group_process_s(void)
-    {
-        const int rc = qvi_process_group_new(&proc_group);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
-    }
+    qvi_group_process_s(void) = default;
     /** Virtual destructor. */
-    virtual ~qvi_group_process_s(void)
-    {
-        qvi_process_group_free(&proc_group);
-    }
+    virtual ~qvi_group_process_s(void);
+    /** The real 'constructor' that can possibly fail. */
+    virtual int create(void);
     /** Initializes the instance. */
-    int initialize(qvi_process_t *proc_a)
-    {
-        if (!proc_a) qvi_abort();
-
-        proc = proc_a;
-        return QV_SUCCESS;
-    }
+    int initialize(qvi_process_t *proc);
     /** Returns the caller's task_id. */
-    virtual qvi_task_id_t task_id(void)
-    {
-        return qvi_task_task_id(qvi_process_task_get(proc));
-    }
+    virtual qvi_task_id_t task_id(void);
     /** Returns the caller's group ID. */
-    virtual int id(void)
-    {
-        return qvi_process_group_id(proc_group);
-    }
+    virtual int id(void);
     /** Returns the number of members in this group. */
-    virtual int size(void)
-    {
-        return qvi_process_group_size(proc_group);
-    }
+    virtual int size(void);
     /** Performs node-local group barrier. */
-    virtual int barrier(void)
-    {
-        return qvi_process_group_barrier(proc_group);
-    }
+    virtual int barrier(void);
     /**
      * Creates a new self group with a single member: the caller.
      * Returns the appropriate newly created child group to the caller.
@@ -80,40 +57,31 @@ struct qvi_group_process_s : public qvi_group_s {
      */
     virtual int
     split(
-        int,
-        int,
+        int color,
+        int key,
         qvi_group_s **child
-    ) {
-        // NOTE: The concept of coloring with a provided key doesn't apply here,
-        // so ignore.  Also, because this is in the context of a process, the
-        // concept of splitting doesn't really apply here, so just create
-        // another process group, self will suffice.
-        return self(child);
-    }
-    /** Gathers bbuffs to specified root. */
+    );
+    /**
+     * Gathers bbuffs to specified root.
+     */
     virtual int
     gather(
         qvi_bbuff_t *txbuff,
         int root,
         qvi_bbuff_t ***rxbuffs,
         int *shared
-    ) {
-        return qvi_process_group_gather_bbuffs(
-            proc_group, txbuff, root, rxbuffs, shared
-        );
-    }
-    /** Scatters bbuffs from specified root. */
+    );
+    /**
+     * Scatters bbuffs from specified root.
+     */
     virtual int
     scatter(
         qvi_bbuff_t **txbuffs,
         int root,
         qvi_bbuff_t **rxbuff
-    ) {
-        return qvi_process_group_scatter_bbuffs(
-            proc_group, txbuffs, root, rxbuff
-        );
-    }
+    );
 };
+typedef qvi_group_process_s qvi_group_process_t;
 
 #endif
 

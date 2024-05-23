@@ -37,6 +37,11 @@ struct qvi_zgroup_mpi_s : public qvi_zgroup_s {
     {
         qvi_mpi_free(&mpi);
     }
+    /** The real 'constructor' that can possibly fail. */
+    virtual int create(void)
+    {
+        return QV_SUCCESS;
+    }
     /** Initializes the MPI group. */
     int initialize(MPI_Comm comm)
     {

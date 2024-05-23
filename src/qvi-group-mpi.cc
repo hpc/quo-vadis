@@ -16,11 +16,57 @@
 
 #include "qvi-group-mpi.h"
 
+qvi_group_mpi_s::~qvi_group_mpi_s(void)
+{
+    qvi_mpi_group_free(&mpi_group);
+}
+
+int
+qvi_group_mpi_s::create(void)
+{
+    return qvi_mpi_group_new(&mpi_group);
+}
+
+int
+qvi_group_mpi_s::initialize(
+    qvi_mpi_t *mpi
+) {
+    assert(mpi);
+    if (!mpi) return QV_ERR_INTERNAL;
+
+    this->mpi = mpi;
+    return QV_SUCCESS;
+}
+
+qvi_task_id_t
+qvi_group_mpi_s::task_id(void)
+{
+    return qvi_task_task_id(qvi_mpi_task_get(mpi));
+}
+
+int
+qvi_group_mpi_s::id(void)
+{
+    return qvi_mpi_group_id(mpi_group);
+}
+
+int
+qvi_group_mpi_s::size(void)
+{
+    return qvi_mpi_group_size(mpi_group);
+}
+
+int
+qvi_group_mpi_s::barrier(void)
+{
+    return qvi_mpi_group_barrier(mpi_group);
+}
+
 int
 qvi_group_mpi_s::self(
     qvi_group_t **child
 ) {
-    qvi_group_mpi_s *ichild = new qvi_group_mpi_s();
+    qvi_group_mpi_t *ichild = new qvi_group_mpi_t();
     // Initialize the child with the parent's MPI instance.
     int rc = ichild->initialize(mpi);
     if (rc != QV_SUCCESS) goto out;
@@ -43,7 +89,7 @@ qvi_group_mpi_s::split(
     int key,
     qvi_group_t **child
 ) {
-    qvi_group_mpi_s *ichild = new qvi_group_mpi_s();
+    qvi_group_mpi_t *ichild = new qvi_group_mpi_t();
     // Initialize the child with the parent's MPI instance.
     int rc = ichild->initialize(mpi);
     if (rc != QV_SUCCESS) goto out;
@@ -59,6 +105,36 @@ out:
     }
     *child = ichild;
     return rc;
+}
+
+int
+qvi_group_mpi_s::gather(
+    qvi_bbuff_t *txbuff,
+    int root,
+    qvi_bbuff_t ***rxbuffs,
+    int *shared
+) {
+    return qvi_mpi_group_gather_bbuffs(
+        mpi_group, txbuff, root, rxbuffs, shared
+    );
+}
+
+int
+qvi_group_mpi_s::scatter(
+    qvi_bbuff_t **txbuffs,
+    int root,
+    qvi_bbuff_t **rxbuff
+) {
+    return qvi_mpi_group_scatter_bbuffs(
+        mpi_group, txbuffs, root, rxbuff
+    );
+}
+
+int
+qvi_group_mpi_s::comm_dup(
+    MPI_Comm *comm
+) {
+    return qvi_mpi_group_comm_dup(mpi_group, comm);
 }
 
 /*

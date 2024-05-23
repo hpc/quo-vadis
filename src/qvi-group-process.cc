@@ -13,11 +13,57 @@
 
 #include "qvi-group-process.h"
 
+qvi_group_process_s::~qvi_group_process_s(void)
+{
+    qvi_process_group_free(&proc_group);
+}
+
+int
+qvi_group_process_s::create(void)
+{
+    return qvi_process_group_new(&proc_group);
+}
+
+int
+qvi_group_process_s::initialize(
+    qvi_process_t *proc
+) {
+    assert(proc);
+    if (!proc) return QV_ERR_INTERNAL;
+
+    this->proc = proc;
+    return QV_SUCCESS;
+}
+
+qvi_task_id_t
+qvi_group_process_s::task_id(void)
+{
+    return qvi_task_task_id(qvi_process_task_get(proc));
+}
+
+int
+qvi_group_process_s::id(void)
+{
+    return qvi_process_group_id(proc_group);
+}
+
+int
+qvi_group_process_s::size(void)
+{
+    return qvi_process_group_size(proc_group);
+}
+
+int
+qvi_group_process_s::barrier(void)
+{
+    return qvi_process_group_barrier(proc_group);
+}
+
 int
 qvi_group_process_s::self(
     qvi_group_t **child
 ) {
-    qvi_group_process_s *ichild = new qvi_group_process_s();
+    qvi_group_process_t *ichild = new qvi_group_process_t();
     // Initialize the child with the parent's process instance.
     int rc = ichild->initialize(proc);
     if (rc != QV_SUCCESS) goto out;
@@ -33,6 +79,42 @@ out:
     }
     *child = ichild;
     return rc;
+}
+
+int
+qvi_group_process_s::split(
+    int,
+    int,
+    qvi_group_t **child
+) {
+    // NOTE: The concept of coloring with a provided key doesn't apply here, so
+    // ignore.  Also, because this is in the context of a process, the concept
+    // of splitting doesn't really apply here, so just create another process
+    // group, self will suffice.
+    return self(child);
+}
+
+int
+qvi_group_process_s::gather(
+    qvi_bbuff_t *txbuff,
+    int root,
+    qvi_bbuff_t ***rxbuffs,
+    int *shared
+) {
+    return qvi_process_group_gather_bbuffs(
+        proc_group, txbuff, root, rxbuffs, shared
+    );
+}
+
+int
+qvi_group_process_s::scatter(
+    qvi_bbuff_t **txbuffs,
+    int root,
+    qvi_bbuff_t **rxbuff
+) {
+    return qvi_process_group_scatter_bbuffs(
+        proc_group, txbuffs, root, rxbuff
+    );
 }
 
 /*

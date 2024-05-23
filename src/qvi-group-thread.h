@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2022 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2022      Inria.
@@ -33,44 +33,21 @@ struct qvi_group_thread_s : public qvi_group_s {
     /** Underlying group instance. */
     qvi_thread_group_t *th_group = nullptr;
     /** Base constructor that does minimal work. */
-    qvi_group_thread_s(void)
-    {
-        const int rc = qvi_thread_group_new(&th_group);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
-    }
+    qvi_group_thread_s(void) = default;
     /** Virtual destructor. */
-    virtual ~qvi_group_thread_s(void)
-    {
-        qvi_thread_group_free(&th_group);
-    }
+    virtual ~qvi_group_thread_s(void);
+    /** The real 'constructor' that can possibly fail. */
+    virtual int create(void);
     /** Initializes the instance. */
-    int initialize(qvi_thread_t *th_a)
-    {
-        if (!th_a) qvi_abort();
-
-        th = th_a;
-        return QV_SUCCESS;
-    }
+    int initialize(qvi_thread_t *th);
     /** Returns the caller's task_id. */
-    virtual qvi_task_id_t task_id(void)
-    {
-        return qvi_task_task_id(qvi_thread_task_get(th));
-    }
+    virtual qvi_task_id_t task_id(void);
     /** Returns the caller's group ID. */
-    virtual int id(void)
-    {
-        return qvi_thread_group_id(th_group);
-    }
+    virtual int id(void);
     /** Returns the number of members in this group. */
-    virtual int size(void)
-    {
-        return qvi_thread_group_size(th_group);
-    }
+    virtual int size(void);
     /** Performs node-local group barrier. */
-    virtual int barrier(void)
-    {
-        return qvi_thread_group_barrier(th_group);
-    }
+    virtual int barrier(void);
     /**
      * Creates a new self group with a single member: the caller.
      * Returns the appropriate newly created child group to the caller.
@@ -89,30 +66,27 @@ struct qvi_group_thread_s : public qvi_group_s {
         int key,
         qvi_group_s **child
     );
-    /** Gathers bbuffs to specified root. */
+    /**
+     * Gathers bbuffs to specified root.
+     */
     virtual int
     gather(
         qvi_bbuff_t *txbuff,
         int root,
         qvi_bbuff_t ***rxbuffs,
         int *shared
-    ) {
-        return qvi_thread_group_gather_bbuffs(
-           th_group, txbuff, root, rxbuffs, shared
-        );
-    }
-    /** Scatters bbuffs from specified root. */
+    );
+    /**
+     * Scatters bbuffs from specified root.
+     */
     virtual int
     scatter(
         qvi_bbuff_t **txbuffs,
         int root,
         qvi_bbuff_t **rxbuff
-    ) {
-        return qvi_thread_group_scatter_bbuffs(
-            th_group, txbuffs, root, rxbuff
-        );
-    }
+    );
 };
+typedef qvi_group_thread_s qvi_group_thread_t;
 
 #endif
 

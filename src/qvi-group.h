@@ -26,10 +26,12 @@
  * Virtual base group class.
  */
 struct qvi_group_s {
-    /** Constructor. */
+    /** Base constructor that does minimal work. */
     qvi_group_s(void) = default;
     /** Virtual destructor. */
     virtual ~qvi_group_s(void) = default;
+    /** The real 'constructor' that can possibly fail. */
+    virtual int create(void) = 0;
     /** Returns the caller's task_id. */
     virtual qvi_task_id_t task_id(void) = 0;
     /** Returns the caller's group ID. */
