@@ -41,12 +41,15 @@ struct qv_context_s {
 
         rc = qvi_bind_stack_new(&bind_stack);
         if (rc != QV_SUCCESS) throw qvi_runtime_error();
+
+        // The zgroup is polymorphic and created elsewhere.
     }
     /** Destructor. */
     ~qv_context_s(void)
     {
         qvi_bind_stack_free(&bind_stack);
         qvi_rmi_client_free(&rmi);
+        delete zgroup;
     }
 };
 

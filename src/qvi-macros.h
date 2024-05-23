@@ -40,7 +40,7 @@ catch (...)                                                                    \
     }                                                                          \
     catch(const std::exception &e)                                             \
     {                                                                          \
-        qvi_log_error("An exception occurred: {}", e.what());                  \
+        qvi_log_error("An exception occurred at {}", e.what());                \
     }                                                                          \
     return QV_ERR;                                                             \
 }                                                                              \
