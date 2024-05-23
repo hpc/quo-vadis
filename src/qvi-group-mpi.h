@@ -27,22 +27,46 @@ struct qvi_group_mpi_s : public qvi_group_s {
     qvi_mpi_t *mpi = nullptr;
     /** Underlying group instance. */
     qvi_mpi_group_t *mpi_group = nullptr;
-    /** Base constructor that does minimal work. */
+    /** Constructor. */
     qvi_group_mpi_s(void) = default;
     /** Virtual destructor. */
-    virtual ~qvi_group_mpi_s(void);
-    /** The real 'constructor' that can possibly fail. */
-    virtual int create(void);
+    virtual ~qvi_group_mpi_s(void)
+    {
+        qvi_mpi_group_free(&mpi_group);
+    }
     /** Initializes the instance. */
-    int initialize(qvi_mpi_t *mpi);
+    int
+    initialize(qvi_mpi_t *mpi_a)
+    {
+        if (!mpi_a) qvi_abort();
+
+        mpi = mpi_a;
+        return QV_SUCCESS;
+    }
     /** Returns the caller's task_id. */
-    virtual qvi_task_id_t task_id(void);
+    virtual qvi_task_id_t
+    task_id(void)
+    {
+        return qvi_task_task_id(qvi_mpi_task_get(mpi));
+    }
     /** Returns the caller's group ID. */
-    virtual int id(void);
+    virtual int
+    id(void)
+    {
+        return qvi_mpi_group_id(mpi_group);
+    }
     /** Returns the number of members in this group. */
-    virtual int size(void);
+    virtual int
+    size(void)
+    {
+        return qvi_mpi_group_size(mpi_group);
+    }
     /** Performs node-local group barrier. */
-    virtual int barrier(void);
+    virtual int
+    barrier(void)
+    {
+        return qvi_mpi_group_barrier(mpi_group);
+    }
     /**
      * Creates a new self group with a single member: the caller.
      * Returns the appropriate newly created child group to the caller.
@@ -61,32 +85,36 @@ struct qvi_group_mpi_s : public qvi_group_s {
         int key,
         qvi_group_s **child
     );
-    /**
-     * Gathers bbuffs to specified root.
-     */
+    /** Gathers bbuffs to specified root. */
     virtual int
     gather(
         qvi_bbuff_t *txbuff,
         int root,
         qvi_bbuff_t ***rxbuffs,
         int *shared
-    );
-    /**
-     * Scatters bbuffs from specified root.
-     */
+    ) {
+        return qvi_mpi_group_gather_bbuffs(
+            mpi_group, txbuff, root, rxbuffs, shared
+        );
+    }
+    /** Scatters bbuffs from specified root. */
     virtual int
     scatter(
         qvi_bbuff_t **txbuffs,
         int root,
         qvi_bbuff_t **rxbuff
-    );
-    /**
-     * Returns a duplicate of the underlying MPI group communicator.
-     */
+    ) {
+        return qvi_mpi_group_scatter_bbuffs(
+            mpi_group, txbuffs, root, rxbuff
+        );
+    }
+    /** Returns a duplicate of the underlying MPI group communicator. */
     int
     comm_dup(
         MPI_Comm *comm
-    );
+    ) {
+        return qvi_mpi_group_comm_dup(mpi_group, comm);
+    }
 };
 typedef qvi_group_mpi_s qvi_group_mpi_t;
 
