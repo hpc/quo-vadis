@@ -23,6 +23,7 @@
 #include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-task.h"
 #include "qvi-group.h"
+#include "qvi-utils.h"
 
 /**
  * Virtual base zgroup class.
@@ -43,6 +44,13 @@ struct qvi_zgroup_s {
     virtual int barrier(void) = 0;
 };
 typedef qvi_zgroup_s qvi_zgroup_t;
+
+static inline void
+qvi_zgroup_free(
+    qvi_zgroup_t **zgroup
+) {
+    qvi_delete(zgroup);
+}
 
 #endif
 

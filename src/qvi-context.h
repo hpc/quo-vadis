@@ -48,8 +48,8 @@ struct qv_context_s {
     ~qv_context_s(void)
     {
         qvi_bind_stack_free(&bind_stack);
+        qvi_zgroup_free(&zgroup);
         qvi_rmi_client_free(&rmi);
-        delete zgroup;
     }
 };
 
