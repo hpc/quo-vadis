@@ -21,13 +21,18 @@ int
 qvi_context_new(
     qv_context_t **ctx
 ) {
-    return qvi_new_rc(ctx);
+    int rc = qvi_new_rc(ctx);
+    pthread_mutex_init(&(*ctx)->lock,NULL);
+    fprintf(stdout,"=================> mutex ctxt init done @%p\n",(void *)&(*ctx)->lock);
+    return rc;
+    //return qvi_new_rc(ctx);
 }
 
 void
 qvi_context_free(
     qv_context_t **ctx
 ) {
+    pthread_mutex_destroy(&(*ctx)->lock);
     qvi_delete(ctx);
 }
 

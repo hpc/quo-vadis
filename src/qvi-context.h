@@ -52,6 +52,7 @@ struct qv_context_s {
         qvi_zgroup_free(&zgroup);
         qvi_rmi_client_free(&rmi);
     }
+
 };
 
 /**

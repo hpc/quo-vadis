@@ -106,7 +106,7 @@ typedef enum {
 } qv_hw_obj_type_t;
 
 /**
- * Binding string representaiton formats.
+ * Binding string representation formats.
  */
 typedef enum {
     QV_BIND_STRING_AS_BITMAP = 0,
