@@ -1,4 +1,4 @@
- /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
+/* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
  * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
@@ -21,6 +21,11 @@
 #include "qvi-context.h"
 #include "qvi-zgroup-thread.h"
 #include "qvi-group-thread.h" // IWYU pragma: keep
+
+
+#include "qvi-scope.h"
+//#include "qvi-hwpool.h"
+//#include "qvi-map.h"
 
 #ifdef OPENMP_FOUND
 #include <omp.h>
@@ -87,6 +92,187 @@ out:
     return rc;
 }
 
+/**
+ *
+ */
+static void swap_elts(
+    int *el1,
+    int *el2
+) {
+    *el1 = *el1 - *el2;
+    *el2 = *el1 + *el2;
+    *el1 = *el2 - *el1;
+}
+
+/**
+ *
+ */
+static void bsort(
+     int tab[],
+     int size_tab
+) {
+    if (size_tab > 1) {
+        for(size_t i = 0 ; i < (size_t)size_tab - 1 ; i++)
+            if (tab[i]  > tab[i+1] )
+                swap_elts(&tab[i],&tab[i+1]);
+        bsort(tab,size_tab-1);
+     }
+}
+
+/**
+ *
+ */
+/*
+static void display_tab(
+     int tab[],
+     int size_tab
+) {
+    for(size_t i = 0; i < (size_t)size_tab ; i++)
+        fprintf(stdout,"%i ",tab[i]);
+    fprintf(stdout,"\n");
+}
+*/
+
+/**
+ *
+ */
+/*
+static int num_colors(
+     int tab[],
+     int size_tab,
+     int *num_colors,
+     int **newcolors
+) {
+    if(size_tab > 0){
+        int index = 0;
+        int el = tab[0];
+        *newcolors = qvi_new int[size_tab];
+        (*newcolors)[index] = el;
+        *num_colors = 1;
+        for(size_t i = 1 ; i < (size_t)size_tab ; i++){
+            if(tab[i] != el){
+                el = tab[i];
+                (*newcolors)[++index] = el;
+                (*num_colors)++;
+            }
+        }
+    }
+    return QV_SUCCESS;
+}
+*/
+
+
+
+int
+qv_thread_scope_split(
+    qv_context_t *ctxt,
+    qv_scope_t *scope,
+    int npieces,
+    int *color_array,
+    int nthreads,
+    qv_scope_t ***subscope
+){
+    int rc = QV_SUCCESS;
+
+    QVI_UNUSED(ctxt);
+    QVI_UNUSED(scope);
+    QVI_UNUSED(npieces);
+    QVI_UNUSED(color_array);
+    QVI_UNUSED(nthreads);
+    QVI_UNUSED(subscope);
+    /*
+    qvi_hwpool_t *hwpool = nullptr;
+    qvi_group_t *group = nullptr;
+    qv_scope_t *ichild = nullptr;
+
+    //get obj type from scope
+
+    // Split the hardware resources based on the provided split parameters.
+    rc = split_hardware_resources(
+        parent, ncolors, color, maybe_obj_type, &colorp, &hwpool
+    );
+    if (rc != QV_SUCCESS) goto out;
+    // Split underlying group. Notice the use of colorp here.
+    rc = parent->group->split(
+        colorp, parent->group->id(), &group
+    );
+    if (rc != QV_SUCCESS) goto out;
+    // Create and initialize the new scope.
+    rc = qvi_scope_new(&ichild);
+    if (rc != QV_SUCCESS) goto out;
+
+    rc = scope_init(ichild, parent->rmi, group, hwpool);
+out:
+    if (rc != QV_SUCCESS) {
+        qvi_scope_free(&ichild);
+        qvi_group_free(&group);
+        qvi_hwpool_free(&hwpool);
+    }
+    *child = ichild;
+    return rc;
+    */
+
+    return rc;
+}
+
+int
+qv_thread_scope_split_at(
+    qv_context_t *ctxt,
+    qv_scope_t *scope,
+    qv_hw_obj_type_t type,
+    int *color_array,
+    int nthreads,
+    qv_scope_t ***subscope
+){
+    int rc = QV_SUCCESS;
+
+    QVI_UNUSED(ctxt);
+
+    rc = qvi_scope_ksplit_at(scope, type, color_array, nthreads, subscope);
+
+    for(int i = 0 ; i < nthreads ; i++){
+        fprintf(stdout,"Subscope[%i] ptr  = %p\n",i,(void *)(*subscope)[i]);
+    }
+
+
+    //int nobjs = 0;
+    //int ncolors = 0;
+    //int *newcolors;
+    //color array size is nthreads
+    //number of subscopes is the number of colors
+    /*
+    bsort(color_array,nthreads);
+    if (color_array[0] < 0) {
+        if (color_array[0] != color_array[nthreads-1]) {
+            return QV_ERR_INVLD_ARG;
+        }
+    }
+    */
+    //display_tab(color_array,nthreads);
+    //num_colors(color_array,nthreads,&ncolors,&newcolors);
+    //display_tab(newcolors,ncolors);
+
+    //qv_scope_t **isubscopes = qvi_new (qv_scope_t*)();
+
+
+    //qv_scope_t **isubscopes = (qv_scope_t **)malloc(nthreads*sizeof(qv_scope_t *));
+    //for (int i = 0; i < nthreads; ++i) {
+    //fprintf(stdout,"splitting for color : %i\n",color_array[i]);
+        //rc = qvi_scope_split(scope, 2, 0 /*color_array[i]*/, type ,&isubscopes[i]);
+    /*
+    if (rc != QV_SUCCESS) {
+            qvi_scope_free(&isubscopes[i]);
+            goto out;
+        }
+    }
+
+ out:
+    *subscope = isubscopes;
+    */
+
+    return rc;
+}
+
 #ifndef USE_LAYOUTS
 //New interface
 void *
@@ -94,19 +280,28 @@ qv_thread_routine(
     void * arg
 ) {
     qv_thread_args_t *arg_ptr = (qv_thread_args_t *) arg;
-    //  fprintf(stdout,"qv_thread_routine: ctx=%p scope=%p\n", qvp->ctx, qvp->scope);
+    int ret2 = 0;
+
+    QVI_UNUSED(ret2);
+
+    ret2 = pthread_mutex_lock(&(arg_ptr->ctx->lock));
+    assert(ret2 == 0);
+    fprintf(stdout,"================ lock taken @%p\n",(void *)&(arg_ptr->ctx->lock));
 
     int rc = qv_bind_push(arg_ptr->ctx, arg_ptr->scope);
+
+    ret2 = pthread_mutex_unlock(&(arg_ptr->ctx->lock));
+    assert(ret2 == 0);
+    fprintf(stdout,"================ lock freed @%p\n",(void *)&(arg_ptr->ctx->lock));
+
     if (rc != QV_SUCCESS) {
-        // char const *ers = "qv_bind_push() failed";
-        // qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        fprintf(stdout,"==== Bind Push error \n");
         pthread_exit(NULL);
     }
 
     void *ret = arg_ptr->thread_routine(arg_ptr->arg);
 
     // Free memory allocated in qv_pthread_create
-    //free(arg_ptr);
     delete arg_ptr;
     pthread_exit(ret);
 }

@@ -33,6 +33,8 @@ struct qv_context_s {
     qvi_rmi_client_t *rmi = nullptr;
     qvi_zgroup_t *zgroup = nullptr;
     qvi_bind_stack_t *bind_stack = nullptr;
+    pthread_mutex_t lock;
+
     /** Constructor. */
     qv_context_s(void)
     {
@@ -51,6 +53,7 @@ struct qv_context_s {
         qvi_zgroup_free(&zgroup);
         qvi_rmi_client_free(&rmi);
     }
+
 };
 
 /**
