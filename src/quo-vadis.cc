@@ -43,6 +43,7 @@ qv_bind_push(
         return QV_ERR_INVLD_ARG;
     }
     try {
+        std::lock_guard<std::mutex> guard(ctx->mutex);
         return qvi_bind_push(
             ctx->bind_stack, qvi_scope_cpuset_get(scope)
         );
@@ -58,6 +59,7 @@ qv_bind_pop(
         return QV_ERR_INVLD_ARG;
     }
     try {
+        std::lock_guard<std::mutex> guard(ctx->mutex);
         return qvi_bind_pop(ctx->bind_stack);
     }
     qvi_catch_and_return();
@@ -73,6 +75,7 @@ qv_bind_string(
         return QV_ERR_INVLD_ARG;
     }
     try {
+        std::lock_guard<std::mutex> guard(ctx->mutex);
         return qvi_bind_string(ctx->bind_stack, format, str);
     }
     qvi_catch_and_return();
@@ -86,6 +89,7 @@ qv_context_barrier(
         return QV_ERR_INVLD_ARG;
     }
     try {
+        std::lock_guard<std::mutex> guard(ctx->mutex);
         return ctx->zgroup->barrier();
     }
     qvi_catch_and_return();
@@ -100,6 +104,7 @@ qv_scope_free(
         return QV_ERR_INVLD_ARG;
     }
     try {
+        std::lock_guard<std::mutex> guard(ctx->mutex);
         qvi_scope_free(&scope);
         return QV_SUCCESS;
     }
@@ -117,6 +122,7 @@ qv_scope_nobjs(
         return QV_ERR_INVLD_ARG;
     }
     try {
+        std::lock_guard<std::mutex> guard(ctx->mutex);
         return qvi_scope_nobjs(scope, obj, nobjs);
     }
     qvi_catch_and_return();
@@ -132,6 +138,7 @@ qv_scope_taskid(
         return QV_ERR_INVLD_ARG;
     }
     try {
+        std::lock_guard<std::mutex> guard(ctx->mutex);
         return qvi_scope_taskid(scope, taskid);
     }
     qvi_catch_and_return();
@@ -147,6 +154,7 @@ qv_scope_ntasks(
         return QV_ERR_INVLD_ARG;
     }
     try {
+        std::lock_guard<std::mutex> guard(ctx->mutex);
         return qvi_scope_ntasks(scope, ntasks);
     }
     qvi_catch_and_return();
@@ -162,6 +170,7 @@ qv_scope_get(
         return QV_ERR_INVLD_ARG;
     }
     try {
+        std::lock_guard<std::mutex> guard(ctx->mutex);
         return qvi_scope_get(
             ctx->zgroup, ctx->rmi, iscope, scope
         );
@@ -178,6 +187,7 @@ qv_scope_barrier(
         return QV_ERR_INVLD_ARG;
     }
     try {
+        std::lock_guard<std::mutex> guard(ctx->mutex);
         return qvi_scope_barrier(scope);
     }
     qvi_catch_and_return();
@@ -197,6 +207,7 @@ qv_scope_create(
         return QV_ERR_INVLD_ARG;
     }
     try {
+        std::lock_guard<std::mutex> guard(ctx->mutex);
         return qvi_scope_create(
             scope, type, nobjs, hints, subscope
         );
@@ -216,6 +227,7 @@ qv_scope_split(
         return QV_ERR_INVLD_ARG;
     }
     try {
+        std::lock_guard<std::mutex> guard(ctx->mutex);
         // We use the sentinel value QV_HW_OBJ_LAST to differentiate between
         // calls from split() and split_at(). Since this call doesn't have a
         // hardware type argument, we use QV_HW_OBJ_LAST as the hardware type.
@@ -238,6 +250,7 @@ qv_scope_split_at(
         return QV_ERR_INVLD_ARG;
     }
     try {
+        std::lock_guard<std::mutex> guard(ctx->mutex);
         return qvi_scope_split_at(
             scope, type, group_id, subscope
         );
@@ -258,6 +271,7 @@ qv_scope_get_device_id(
         return QV_ERR_INVLD_ARG;
     }
     try {
+        std::lock_guard<std::mutex> guard(ctx->mutex);
         return qvi_scope_get_device_id(
             scope, dev_obj, dev_index, id_type, dev_id
         );

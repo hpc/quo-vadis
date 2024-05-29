@@ -33,6 +33,7 @@ struct qv_context_s {
     qvi_rmi_client_t *rmi = nullptr;
     qvi_zgroup_t *zgroup = nullptr;
     qvi_bind_stack_t *bind_stack = nullptr;
+    std::mutex mutex;
     /** Constructor. */
     qv_context_s(void)
     {

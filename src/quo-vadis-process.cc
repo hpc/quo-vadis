@@ -81,6 +81,7 @@ qv_process_context_free(
 ) {
     if (!ctx) return QV_ERR_INVLD_ARG;
     try {
+        std::lock_guard<std::mutex> guard(ctx->mutex);
         return qvi_process_context_free(ctx);
     }
     qvi_catch_and_return();
