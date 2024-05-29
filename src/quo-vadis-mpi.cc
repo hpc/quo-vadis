@@ -44,7 +44,7 @@ qvi_mpi_scope_comm_dup_f2c(
     MPI_Fint *comm
 ) {
     MPI_Comm c_comm = MPI_COMM_NULL;
-    int rc = qv_mpi_scope_comm_dup(ctx, scope, &c_comm);
+    const int rc = qv_mpi_scope_comm_dup(ctx, scope, &c_comm);
     *comm = MPI_Comm_c2f(c_comm);
     return rc;
 }
@@ -128,6 +128,7 @@ qv_mpi_context_free(
         return QV_ERR_INVLD_ARG;
     }
     try {
+        std::lock_guard<std::mutex> guard(ctx->mutex);
         return qvi_mpi_context_free(ctx);
     }
     qvi_catch_and_return();
@@ -155,6 +156,7 @@ qv_mpi_scope_comm_dup(
         return QV_ERR_INVLD_ARG;
     }
     try {
+        std::lock_guard<std::mutex> guard(ctx->mutex);
         return qvi_mpi_scope_comm_dup(ctx, scope, comm);
     }
     qvi_catch_and_return();
