@@ -110,7 +110,7 @@ main(void)
     }
     fprintf(stdout,"[%d] Number of PUs in mpi_numa_scope is %d\n", wrank, n_pus);
 
-    int nthreads = 2*n_cores;
+    int nthreads = 1*n_cores;
     assert(nthreads <= n_pus);
 
     fprintf(stdout,"[%d] Number of threads : %i\n", wrank, nthreads);

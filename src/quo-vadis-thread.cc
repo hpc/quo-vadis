@@ -280,19 +280,9 @@ qv_thread_routine(
     void * arg
 ) {
     qv_thread_args_t *arg_ptr = (qv_thread_args_t *) arg;
-    int ret2 = 0;
-
-    QVI_UNUSED(ret2);
-
-    ret2 = pthread_mutex_lock(&(arg_ptr->ctx->lock));
-    assert(ret2 == 0);
-    fprintf(stdout,"================ lock taken @%p\n",(void *)&(arg_ptr->ctx->lock));
 
     int rc = qv_bind_push(arg_ptr->ctx, arg_ptr->scope);
 
-    ret2 = pthread_mutex_unlock(&(arg_ptr->ctx->lock));
-    assert(ret2 == 0);
-    fprintf(stdout,"================ lock freed @%p\n",(void *)&(arg_ptr->ctx->lock));
 
     if (rc != QV_SUCCESS) {
         fprintf(stdout,"==== Bind Push error \n");
