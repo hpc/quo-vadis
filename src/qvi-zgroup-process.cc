@@ -22,9 +22,11 @@ qvi_zgroup_process_s::group_create_intrinsic(
 ) {
     // NOTE: the provided scope doesn't affect how
     // we create the process group, so we ignore it.
-    qvi_group_process_t *igroup = new qvi_group_process_t();
+    qvi_group_process_t *igroup = nullptr;
+    int rc = qvi_group_process_new(&igroup);
+    if (rc != QV_SUCCESS) goto out;
 
-    int rc = igroup->initialize(zproc);
+    rc = igroup->initialize(zproc);
     if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_process_group_create(
@@ -32,8 +34,7 @@ qvi_zgroup_process_s::group_create_intrinsic(
     );
 out:
     if (rc != QV_SUCCESS) {
-        delete igroup;
-        igroup = nullptr;
+        qvi_group_process_free(&igroup);
     }
     *group = igroup;
     return rc;

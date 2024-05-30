@@ -117,6 +117,16 @@ struct qvi_group_process_s : public qvi_group_s {
 };
 typedef qvi_group_process_s qvi_group_process_t;
 
+int
+qvi_group_process_new(
+    qvi_group_process_t **group
+);
+
+void
+qvi_group_process_free(
+    qvi_group_process_t **group
+);
+
 #endif
 
 /*
