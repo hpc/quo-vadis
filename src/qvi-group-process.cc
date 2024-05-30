@@ -12,6 +12,7 @@
  */
 
 #include "qvi-group-process.h"
+#include "qvi-utils.h"
 
 int
 qvi_group_process_s::self(
@@ -33,6 +34,20 @@ out:
     }
     *child = ichild;
     return rc;
+}
+
+int
+qvi_group_process_new(
+    qvi_group_process_t **group
+) {
+    return qvi_new_rc(group);
+}
+
+void
+qvi_group_process_free(
+    qvi_group_process_t **group
+) {
+    qvi_delete(group);
 }
 
 /*
