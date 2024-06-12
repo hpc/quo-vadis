@@ -18,17 +18,14 @@
 #include "qvi-utils.h"
 
 struct qvi_bbuff_s {
+    /** Minimum growth in bytes for resizes, etc. */
+    static constexpr size_t min_growth = 256;
     /** Current capacity of buffer. */
     size_t capacity = 0;
     /** Amount of data already stored. */
     size_t size = 0;
     /** Pointer to data backing store. */
     void *data = nullptr;
-    /** Buffer constants. */
-    enum {
-        /** Minimum growth in bytes for resizes, etc. */
-        min_growth = 256
-    } constants;
     /** Constructor */
     qvi_bbuff_s(void)
     {

@@ -82,8 +82,6 @@ struct qvi_group_s {
 extern "C" {
 #endif
 
-// Forward declarations.
-struct qvi_group_s;
 typedef struct qvi_group_s qvi_group_t;
 
 /** Group ID. */
