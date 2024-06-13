@@ -55,6 +55,22 @@ out:
 }
 
 /**
+ * Simple wrapper that duplicates the provided instance.
+ */
+template <class T>
+int
+qvi_dup(
+    const T &t,
+    T **dup
+) {
+    try {
+        *dup = new T(t);
+        return QV_SUCCESS;
+    }
+    qvi_catch_and_return();
+}
+
+/**
  *
  */
 int

@@ -572,8 +572,7 @@ get_intrinsic_scope_user(
     qvi_hwpool_s **hwpool
 ) {
     // TODO(skg) Is the cpuset the best way to do this?
-    return qvi_hwpool_obtain_by_cpuset(
-        server->hwpool,
+    return server->hwpool->obtain_new_hwpool_by_cpuset(
         server->config.hwloc,
         qvi_hwloc_topo_get_cpuset(server->config.hwloc),
         hwpool
@@ -592,8 +591,8 @@ get_intrinsic_scope_proc(
     );
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_hwpool_obtain_by_cpuset(
-        server->hwpool, server->config.hwloc, cpuset, hwpool
+    rc = server->hwpool->obtain_new_hwpool_by_cpuset(
+        server->config.hwloc, cpuset, hwpool
     );
 out:
     if (cpuset) hwloc_bitmap_free(cpuset);
@@ -816,9 +815,7 @@ server_populate_base_hwpool(
     const int rc = server->hwpool->initialize(cpuset);
     if (rc != QV_SUCCESS) return rc;
     // Add all the discovered devices since the cpuset is the root.
-    return qvi_hwpool_add_devices_with_affinity(
-        server->hwpool, hwloc
-    );
+    return server->hwpool->add_devices_with_affinity(hwloc);
 }
 
 static void *

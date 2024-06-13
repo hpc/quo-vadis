@@ -46,39 +46,6 @@
 #include "qvi-bbuff-rmi.h"
 #include "qvi-utils.h"
 
-int
-qvi_hwpool_dup(
-    const qvi_hwpool_s *const pool,
-    qvi_hwpool_s **dup
-) {
-    *dup = new qvi_hwpool_s(*pool);
-    return QV_SUCCESS;
-}
-
-int
-qvi_hwpool_release_devices(
-    qvi_hwpool_s *pool
-) {
-    pool->devs.clear();
-    return QV_SUCCESS;
-}
-
-hwloc_const_cpuset_t
-qvi_hwpool_cpuset_get(
-    qvi_hwpool_s *pool
-) {
-    if (!pool) qvi_abort();
-    return pool->cpu.cpuset.data;
-}
-
-const qvi_hwpool_devs_t *
-qvi_hwpool_devinfos_get(
-    qvi_hwpool_s *pool
-) {
-    if (!pool) qvi_abort();
-    return &pool->devs;
-}
-
 #if 0
 /**
  * Returns whether two cpusets are equal.
@@ -126,6 +93,7 @@ cpus_available(
  * request   1000 1010
  * obcpuset' 1110 1111
  */
+#if 0
 static int
 pool_obtain_cpus_by_cpuset(
     qvi_hwpool_s *pool,
@@ -143,6 +111,7 @@ pool_obtain_cpus_by_cpuset(
     QVI_UNUSED(request);
     return QV_SUCCESS;
 }
+#endif
 
 /**
  * Example:
@@ -166,46 +135,21 @@ pool_release_cpus_by_cpuset(
 #endif
 
 int
-qvi_hwpool_add_devices_with_affinity(
-    qvi_hwpool_s *pool,
-    qvi_hwloc_t *hwloc
-) {
-    int rc = QV_SUCCESS;
-    // Iterate over the supported device types.
-    for (const auto devt : qvi_hwloc_supported_devices()) {
-        qvi_hwloc_dev_list_t devs;
-        rc = qvi_hwloc_get_devices_in_bitmap(
-            hwloc, devt, pool->cpu.cpuset, devs
-        );
-        if (rc != QV_SUCCESS) return rc;
-        for (const auto &dev : devs) {
-            rc = pool->add_device(qvi_hwpool_dev_s(dev));
-            if (rc != QV_SUCCESS) return rc;
-        }
-    }
-    return rc;
-}
-
-int
-qvi_hwpool_obtain_by_cpuset(
-    qvi_hwpool_s *pool,
+qvi_hwpool_s::obtain_new_hwpool_by_cpuset(
     qvi_hwloc_t *hwloc,
     hwloc_const_cpuset_t cpuset,
     qvi_hwpool_s **opool
 ) {
-    qvi_hwpool_s *ipool = nullptr;
-
-    int rc = pool_obtain_cpus_by_cpuset(pool, cpuset);
-    if (rc != QV_SUCCESS) goto out;
     // We obtained the CPUs, so create the new pool.
-    rc = qvi_new_rc(&ipool);
+    qvi_hwpool_s *ipool = nullptr;
+    int rc = qvi_new_rc(&ipool);
     if (rc != QV_SUCCESS) goto out;
     // Initialize the hardware pool.
     rc = ipool->initialize(cpuset);
     if (rc != QV_SUCCESS) goto out;
     // Add devices with affinity to the new hardware pool.
     // TODO(skg) Acquire devices.
-    rc = qvi_hwpool_add_devices_with_affinity(ipool, hwloc);
+    rc = ipool->add_devices_with_affinity(hwloc);
 out:
     if (rc != QV_SUCCESS) {
         qvi_delete(&ipool);
@@ -215,15 +159,14 @@ out:
 }
 
 int
-qvi_hwpool_pack(
-    const qvi_hwpool_s *hwp,
+qvi_hwpool_s::pack(
     qvi_bbuff_t *buff
 ) {
-    return qvi_bbuff_rmi_pack(buff, hwp);
+    return qvi_bbuff_rmi_pack(buff, this);
 }
 
 int
-qvi_hwpool_unpack(
+qvi_hwpool_s::unpack(
     void *buff,
     qvi_hwpool_s **hwp
 ) {
