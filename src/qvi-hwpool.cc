@@ -56,14 +56,6 @@ qvi_hwpool_dup(
 }
 
 int
-qvi_hwpool_init(
-    qvi_hwpool_s *pool,
-    hwloc_const_bitmap_t cpuset
-) {
-    return pool->cpu.cpuset.set(cpuset);
-}
-
-int
 qvi_hwpool_release_devices(
     qvi_hwpool_s *pool
 ) {
@@ -209,7 +201,7 @@ qvi_hwpool_obtain_by_cpuset(
     rc = qvi_new_rc(&ipool);
     if (rc != QV_SUCCESS) goto out;
     // Initialize the hardware pool.
-    rc = qvi_hwpool_init(ipool, cpuset);
+    rc = ipool->initialize(cpuset);
     if (rc != QV_SUCCESS) goto out;
     // Add devices with affinity to the new hardware pool.
     // TODO(skg) Acquire devices.

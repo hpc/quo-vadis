@@ -203,9 +203,22 @@ if(MPI_FOUND)
             ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-api"
     )
 
+    add_test(
+        NAME
+          mpi-scopes
+        COMMAND
+          bash -c "export QV_PORT=\"55999\" && \
+          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh ../src/quo-vadisd 5 & ) && \
+            ${MPIEXEC_EXECUTABLE} \
+            ${MPIEXEC_NUMPROC_FLAG} \
+            ${MPIEXEC_MAX_NUMPROCS} \
+            ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-scopes"
+    )
+
     # Set mpi test properties.
     set_tests_properties(
         mpi-api
+        mpi-scopes
         PROPERTIES
           TIMEOUT 60
           LABELS "mpi"

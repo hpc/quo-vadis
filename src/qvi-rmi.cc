@@ -813,7 +813,7 @@ server_populate_base_hwpool(
     qvi_hwloc_t *const hwloc = server->config.hwloc;
     hwloc_const_cpuset_t cpuset = qvi_hwloc_topo_get_cpuset(hwloc);
     // The base resource pool will contain all available processors.
-    const int rc = qvi_hwpool_init(server->hwpool, cpuset);
+    const int rc = server->hwpool->initialize(cpuset);
     if (rc != QV_SUCCESS) return rc;
     // Add all the discovered devices since the cpuset is the root.
     return qvi_hwpool_add_devices_with_affinity(

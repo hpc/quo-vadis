@@ -26,10 +26,6 @@
 struct qvi_hwpool_res_s {
     /** Resource hint flags. */
     qv_scope_create_hints_t hints = QV_SCOPE_CREATE_HINT_NONE;
-    /** Constructor. */
-    qvi_hwpool_res_s(void) = default;
-    /** Virtual destructor. */
-    virtual ~qvi_hwpool_res_s(void) = default;
 };
 
 /**
@@ -39,10 +35,6 @@ struct qvi_hwpool_res_s {
 struct qvi_hwpool_cpu_s : qvi_hwpool_res_s {
     /** The cpuset of the CPU's PUs. */
     qvi_hwloc_bitmap_s cpuset;
-    /** Constructor. */
-    qvi_hwpool_cpu_s(void) = default;
-    /** Virtual destructor. */
-    virtual ~qvi_hwpool_cpu_s(void) = default;
 };
 
 /**
@@ -78,7 +70,7 @@ struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
     ) : qvi_hwpool_dev_s(*shdev.get())
     {
     }
-    /** Destructor */
+    /** Destructor. */
     virtual ~qvi_hwpool_dev_s(void) = default;
     /** Equality operator. */
     bool
@@ -101,10 +93,13 @@ struct qvi_hwpool_s {
     qvi_hwpool_cpu_s cpu;
     /** The hardware pool's devices. */
     qvi_hwpool_devs_t devs;
-    /** Constructor. */
-    qvi_hwpool_s(void) = default;
-    /** Destructor. */
-    ~qvi_hwpool_s(void) = default;
+    /** Initializes a hardware pool with the given cpuset. */
+    int
+    initialize(
+        hwloc_const_bitmap_t cpuset
+    ) {
+        return cpu.cpuset.set(cpuset);
+    }
     /** Adds a qvi_hwpool_dev_s device. */
     int
     add_device(
@@ -115,15 +110,6 @@ struct qvi_hwpool_s {
         return QV_SUCCESS;
     }
 };
-
-/**
- *
- */
-int
-qvi_hwpool_init(
-    qvi_hwpool_s *pool,
-    hwloc_const_bitmap_t cpuset
-);
 
 /**
  *
