@@ -33,6 +33,7 @@
 #include "qvi-common.h"
 #include "qvi-hwloc.h"
 #include "qvi-hwpool.h"
+#include "qvi-utils.h"
 
 // 'Null' cpuset representation as a string.
 static constexpr cstr_t QV_BUFF_RMI_NULL_CPUSET = "";
@@ -1036,7 +1037,7 @@ qvi_bbuff_rmi_unpack_item(
     size_t *bytes_written
 ) {
     qvi_hwpool_s *ihwp = nullptr;
-    int rc = qvi_hwpool_new(&ihwp);
+    int rc = qvi_new_rc(&ihwp);
     if (rc != QV_SUCCESS) return rc;
 
     size_t bw = 0, total_bw = 0;

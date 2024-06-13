@@ -47,20 +47,6 @@
 #include "qvi-utils.h"
 
 int
-qvi_hwpool_new(
-    qvi_hwpool_s **pool
-) {
-    return qvi_new_rc(pool);
-}
-
-void
-qvi_hwpool_free(
-    qvi_hwpool_s **pool
-) {
-    qvi_delete(pool);
-}
-
-int
 qvi_hwpool_dup(
     const qvi_hwpool_s *const pool,
     qvi_hwpool_s **dup
@@ -220,7 +206,7 @@ qvi_hwpool_obtain_by_cpuset(
     int rc = pool_obtain_cpus_by_cpuset(pool, cpuset);
     if (rc != QV_SUCCESS) goto out;
     // We obtained the CPUs, so create the new pool.
-    rc = qvi_hwpool_new(&ipool);
+    rc = qvi_new_rc(&ipool);
     if (rc != QV_SUCCESS) goto out;
     // Initialize the hardware pool.
     rc = qvi_hwpool_init(ipool, cpuset);
@@ -230,7 +216,7 @@ qvi_hwpool_obtain_by_cpuset(
     rc = qvi_hwpool_add_devices_with_affinity(ipool, hwloc);
 out:
     if (rc != QV_SUCCESS) {
-        qvi_hwpool_free(&ipool);
+        qvi_delete(&ipool);
     }
     *opool = ipool;
     return rc;

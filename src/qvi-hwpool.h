@@ -120,25 +120,9 @@ struct qvi_hwpool_s {
  *
  */
 int
-qvi_hwpool_new(
-    qvi_hwpool_s **pool
-);
-
-/**
- *
- */
-int
 qvi_hwpool_init(
     qvi_hwpool_s *pool,
     hwloc_const_bitmap_t cpuset
-);
-
-/**
- *
- */
-void
-qvi_hwpool_free(
-    qvi_hwpool_s **pool
 );
 
 /**

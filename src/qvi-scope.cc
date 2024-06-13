@@ -40,7 +40,7 @@ struct qv_scope_s {
     ~qv_scope_s(void)
     {
         rmi = nullptr;
-        qvi_hwpool_free(&hwpool);
+        qvi_delete(&hwpool);
         qvi_delete(&group);
     }
 };
@@ -112,7 +112,7 @@ struct qvi_scope_split_agg_s {
     ~qvi_scope_split_agg_s(void)
     {
         for (auto &hwpool : hwpools) {
-            qvi_hwpool_free(&hwpool);
+            qvi_delete(&hwpool);
         }
         hwpools.clear();
     }
@@ -384,7 +384,7 @@ out:
     }
     qvi_bbuff_free(&rxbuff);
     if (rc != QV_SUCCESS) {
-        qvi_hwpool_free(pool);
+        qvi_delete(pool);
     }
     return rc;
 }
@@ -611,7 +611,7 @@ qvi_scope_get(
 out:
     if (rc != QV_SUCCESS) {
         qvi_delete(&group);
-        qvi_hwpool_free(&hwpool);
+        qvi_delete(&hwpool);
         qvi_scope_free(scope);
     }
     return rc;
@@ -1114,7 +1114,7 @@ qvi_scope_split(
     rc = scope_init(ichild, parent->rmi, group, hwpool);
 out:
     if (rc != QV_SUCCESS) {
-        qvi_hwpool_free(&hwpool);
+        qvi_delete(&hwpool);
         qvi_delete(&group);
         qvi_scope_free(&ichild);
     }
@@ -1200,7 +1200,7 @@ qvi_scope_ksplit(
         }
         rc = scope_init(child, parent->rmi, group, hwpool);
         if (rc != QV_SUCCESS) {
-            qvi_hwpool_free(&hwpool);
+            qvi_delete(&hwpool);
             qvi_delete(&group);
             qvi_scope_free(&child);
             break;
@@ -1267,7 +1267,7 @@ qvi_scope_create(
     if (rc != QV_SUCCESS) goto out;
     // Now that we have the desired cpuset,
     // create a corresponding hardware pool.
-    rc = qvi_hwpool_new(&hwpool);
+    rc = qvi_new_rc(&hwpool);
     if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_hwpool_init(hwpool, cpuset);
@@ -1283,7 +1283,7 @@ qvi_scope_create(
 out:
     qvi_hwloc_bitmap_free(&cpuset);
     if (rc != QV_SUCCESS) {
-        qvi_hwpool_free(&hwpool);
+        qvi_delete(&hwpool);
         qvi_scope_free(&ichild);
     }
     *child = ichild;

@@ -598,7 +598,7 @@ get_intrinsic_scope_proc(
 out:
     if (cpuset) hwloc_bitmap_free(cpuset);
     if (rc != QV_SUCCESS) {
-        qvi_hwpool_free(hwpool);
+        qvi_delete(hwpool);
     }
     return rc;
 }
@@ -637,7 +637,7 @@ rpc_ssi_scope_get_intrinsic_hwpool(
     // TODO(skg) Protect against errors above.
     rc = rpc_pack(output, hdr->fid, rpcrc, hwpool);
 
-    qvi_hwpool_free(&hwpool);
+    qvi_delete(&hwpool);
     if (rc != QV_SUCCESS) {
         return rc;
     }
@@ -747,7 +747,7 @@ qvi_rmi_server_new(
         goto out;
     }
 
-    rc = qvi_hwpool_new(&iserver->hwpool);
+    rc = qvi_new_rc(&iserver->hwpool);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwpool_new() failed";
         goto out;
@@ -783,7 +783,7 @@ qvi_rmi_server_free(
     zctx_destroy(&iserver->zctx);
 
     unlink(iserver->config.hwtopo_path.c_str());
-    qvi_hwpool_free(&iserver->hwpool);
+    qvi_delete(&iserver->hwpool);
 
     if (!iserver->blocks) {
         pthread_join(iserver->worker_thread, nullptr);
