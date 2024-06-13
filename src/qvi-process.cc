@@ -29,24 +29,30 @@ struct qvi_process_group_s {
     int id = 0;
     /** Size of group */
     int size = 0;
-    /** Constructor */
+    /** Constructor. */
     qvi_process_group_s(void) = default;
-    /** Destructor */
+    /** Destructor. */
     ~qvi_process_group_s(void) = default;
 };
 
 struct qvi_process_s {
-    /** Task associated with this process */
+    /** Task associated with this process. */
     qvi_task_t *task = nullptr;
-    /** Maintains the next available group ID value */
+    /** Maintains the next available group ID value. */
     qvi_process_group_tab_t group_tab;
-    /** Constructor */
+    /** Constructor. */
     qvi_process_s(void)
     {
-        const int rc = qvi_task_new(&task);
+        int rc = qvi_task_new(&task);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        // For now these are always fixed.
+        const int world_id = 0, node_id = 0;
+        rc = qvi_task_init(
+            task, QV_TASK_TYPE_PROCESS, getpid(), world_id, node_id
+        );
         if (rc != QV_SUCCESS) throw qvi_runtime_error();
     }
-    /** Destructor */
+    /** Destructor. */
     ~qvi_process_s(void)
     {
         qvi_task_free(&task);
@@ -76,27 +82,6 @@ qvi_process_free(
     qvi_process_t **proc
 ) {
     return qvi_delete(proc);
-}
-
-/**
- *
- */
-int
-qvi_process_init(
-    qvi_process_t *proc
-) {
-    // For now these are always fixed.
-    const int world_id = 0, node_id = 0;
-    return qvi_task_init(
-        proc->task, QV_TASK_TYPE_PROCESS, getpid(), world_id, node_id
-    );
-}
-
-int
-qvi_process_finalize(
-    qvi_process_t *
-) {
-    return QV_SUCCESS;
 }
 
 int

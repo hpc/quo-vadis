@@ -22,6 +22,7 @@
 #include "qvi-task.h"
 
 #ifdef __cplusplus
+
 /**
  * Virtual base group class.
  */
@@ -30,14 +31,20 @@ struct qvi_group_s {
     qvi_group_s(void) = default;
     /** Virtual destructor. */
     virtual ~qvi_group_s(void) = default;
-    /** Returns the caller's task_id. */
-    virtual qvi_task_id_t task_id(void) = 0;
+    /** Returns pointer to the caller's task information. */
+    virtual qvi_task_t *task(void) = 0;
     /** Returns the caller's group ID. */
     virtual int id(void) = 0;
     /** Returns the number of members in this group. */
     virtual int size(void) = 0;
     /** Performs node-local group barrier. */
     virtual int barrier(void) = 0;
+    /** Creates a new intrinsic group from an intrinsic identifier. */
+    virtual int
+    intrinsic(
+        qv_scope_intrinsic_t intrinsic,
+        qvi_group_s **group
+    ) = 0;
     /**
      * Creates a new self group with a single member: the caller.
      * Returns the appropriate newly created child group to the caller.
@@ -56,9 +63,7 @@ struct qvi_group_s {
         int key,
         qvi_group_s **child
     ) = 0;
-    /**
-     * Gathers bbuffs to specified root.
-     */
+    /** Gathers bbuffs to specified root. */
     virtual int
     gather(
         qvi_bbuff_t *txbuff,
@@ -66,9 +71,7 @@ struct qvi_group_s {
         qvi_bbuff_t ***rxbuffs,
         int *shared
     ) = 0;
-    /**
-     * Scatters bbuffs from specified root.
-     */
+    /** Scatters bbuffs from specified root. */
     virtual int
     scatter(
         qvi_bbuff_t **txbuffs,

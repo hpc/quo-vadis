@@ -26,14 +26,14 @@ struct qvi_bbuff_s {
     size_t size = 0;
     /** Pointer to data backing store. */
     void *data = nullptr;
-    /** Constructor */
+    /** Constructor. */
     qvi_bbuff_s(void)
     {
         capacity = min_growth;
         data = calloc(capacity, sizeof(byte_t));
         if (!data) throw qvi_runtime_error();
     }
-    /** Destructor */
+    /** Destructor. */
     ~qvi_bbuff_s(void)
     {
         if (data) free(data);

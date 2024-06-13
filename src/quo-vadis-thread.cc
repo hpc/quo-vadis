@@ -19,8 +19,9 @@
 #include "quo-vadis-thread.h"
 
 #include "qvi-context.h"
-#include "qvi-zgroup-thread.h"
+#include "qvi-group-thread.h"
 #include "qvi-group-thread.h" // IWYU pragma: keep
+#include "qvi-utils.h"
 
 #ifdef OPENMP_FOUND
 #include <omp.h>
@@ -42,31 +43,19 @@ qv_thread_context_create(
     if (!ctx) {
         return QV_ERR_INVLD_ARG;
     }
-
-    int rc = QV_SUCCESS;
-    qv_context_t *ictx = nullptr;
-    qvi_zgroup_thread_t *izgroup = nullptr;
-
     // Create base context.
-    rc = qvi_context_new(&ictx);
+    qv_context_t *ictx = nullptr;
+    int rc = qvi_context_new(&ictx);
     if (rc != QV_SUCCESS) {
         goto out;
     }
-
     // Create and initialize the base group.
-    rc = qvi_zgroup_thread_new(&izgroup);
+    qvi_zgroup_thread_s *izgroup;
+    rc = qvi_new_rc(&izgroup);
     if (rc != QV_SUCCESS) {
         goto out;
     }
-
-    // Save zgroup instance pointer to context.
     ictx->zgroup = izgroup;
-
-    rc = izgroup->initialize();
-    if (rc != QV_SUCCESS) {
-        goto out;
-    }
-
     // Connect to RMI server.
     rc = qvi_context_connect_to_server(ictx);
     if (rc != QV_SUCCESS) {
@@ -75,7 +64,7 @@ qv_thread_context_create(
 
     rc = qvi_bind_stack_init(
         ictx->bind_stack,
-        qvi_thread_task_get(izgroup->zth),
+        ictx->zgroup->task(),
         ictx->rmi
     );
 out:

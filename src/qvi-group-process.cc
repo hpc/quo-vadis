@@ -15,12 +15,39 @@
 #include "qvi-utils.h"
 
 int
+qvi_group_process_s::intrinsic(
+    qv_scope_intrinsic_t,
+    qvi_group_s **group
+) {
+    // NOTE: the provided scope doesn't affect how
+    // we create the process group, so we ignore it.
+    qvi_group_process_t *igroup = nullptr;
+    int rc = qvi_new_rc(&igroup);
+    if (rc != QV_SUCCESS) goto out;
+
+    rc = igroup->initialize(proc);
+    if (rc != QV_SUCCESS) goto out;
+
+    rc = qvi_process_group_create(
+        proc, &igroup->proc_group
+    );
+out:
+    if (rc != QV_SUCCESS) {
+        qvi_delete(&igroup);
+    }
+    *group = igroup;
+    return rc;
+}
+
+int
 qvi_group_process_s::self(
     qvi_group_t **child
 ) {
-    qvi_group_process_t *ichild = new qvi_group_process_t();
+    qvi_group_process_t *ichild = nullptr;
+    int rc = qvi_new_rc(&ichild);
+    if (rc != QV_SUCCESS) goto out;
     // Initialize the child with the parent's process instance.
-    int rc = ichild->initialize(proc);
+    rc = ichild->initialize(proc);
     if (rc != QV_SUCCESS) goto out;
     // Because this is in the context of a process, the concept of splitting
     // doesn't really apply here, so just create another process group.
@@ -29,25 +56,10 @@ qvi_group_process_s::self(
     );
 out:
     if (rc != QV_SUCCESS) {
-        delete ichild;
-        ichild = nullptr;
+        qvi_delete(&ichild);
     }
     *child = ichild;
     return rc;
-}
-
-int
-qvi_group_process_new(
-    qvi_group_process_t **group
-) {
-    return qvi_new_rc(group);
-}
-
-void
-qvi_group_process_free(
-    qvi_group_process_t **group
-) {
-    qvi_delete(group);
 }
 
 /*
