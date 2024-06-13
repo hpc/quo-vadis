@@ -23,7 +23,7 @@ qvi_process_context_create(
     int rc = QV_SUCCESS;
     // Create base context.
     qv_context_t *ictx = nullptr;
-    rc = qvi_context_new(&ictx);
+    rc = qvi_new_rc(&ictx);
     if (rc != QV_SUCCESS) {
         goto out;
     }
@@ -47,7 +47,7 @@ qvi_process_context_create(
     );
 out:
     if (rc != QV_SUCCESS) {
-        qvi_context_free(&ictx);
+        qvi_delete(&ictx);
     }
     *ctx = ictx;
     return rc;
@@ -68,7 +68,7 @@ static int
 qvi_process_context_free(
     qv_context_t *ctx
 ) {
-    qvi_context_free(&ctx);
+    qvi_delete(&ctx);
     return QV_SUCCESS;
 }
 

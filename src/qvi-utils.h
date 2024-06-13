@@ -25,6 +25,7 @@
  * Constructs a new object of a given type. *t will be valid if successful,
  * undefined otherwise. Returns QV_SUCCESS if successful.
  */
+// TODO(skg) Rename to qvi_new
 template <class T>
 int
 qvi_new_rc(
