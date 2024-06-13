@@ -636,8 +636,7 @@ apply_cpuset_mapping(
 
     const uint_t npools = hwpools.size();
     for (uint_t pid = 0; pid < npools; ++pid) {
-        rc = qvi_hwpool_init(
-            hwpools.at(pid),
+        rc = hwpools.at(pid)->initialize(
             qvi_map_cpuset_at(map, cpusets, pid)
         );
         if (rc != QV_SUCCESS) break;
@@ -1270,7 +1269,7 @@ qvi_scope_create(
     rc = qvi_new_rc(&hwpool);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_hwpool_init(hwpool, cpuset);
+    rc = hwpool->initialize(cpuset);
     if (rc != QV_SUCCESS) goto out;
     // Create underlying group. Notice the use of self here.
     rc = parent->group->self(&group);
