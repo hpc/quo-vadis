@@ -199,11 +199,11 @@ get_nobjs_in_hwpool(
 ) {
     if (qvi_hwloc_obj_type_is_host_resource(obj)) {
         return qvi_rmi_get_nobjs_in_cpuset(
-            rmi, obj, qvi_hwpool_cpuset_get(hwpool), n
+            rmi, obj, hwpool->get_cpuset(), n
         );
     }
     // TODO(skg) This should go through the RMI.
-    *n = qvi_hwpool_devinfos_get(hwpool)->count(obj);
+    *n = hwpool->get_devices().count(obj);
     return QV_SUCCESS;
 }
 
@@ -270,7 +270,7 @@ gather_hwpools(
     rc = qvi_bbuff_new(&txbuff);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_hwpool_pack(txpool, txbuff);
+    rc = txpool->pack(txbuff);
     if (rc != QV_SUCCESS) goto out;
 
     rc = group->gather(txbuff, root, &bbuffs, &shared);
@@ -280,7 +280,7 @@ gather_hwpools(
         rxpools.resize(group_size);
         // Unpack the hwpools.
         for (uint_t i = 0; i < group_size; ++i) {
-            rc = qvi_hwpool_unpack(
+            rc = qvi_hwpool_s::unpack(
                 qvi_bbuff_data(bbuffs[i]), &rxpools[i]
             );
             if (rc != QV_SUCCESS) break;
@@ -368,7 +368,7 @@ scatter_hwpools(
             rc = qvi_bbuff_new(&txbuffs[i]);
             if (rc != QV_SUCCESS) break;
 
-            rc = qvi_hwpool_pack(pools[i], txbuffs[i]);
+            rc = pools[i]->pack(txbuffs[i]);
             if (rc != QV_SUCCESS) break;
         }
         if (rc != QV_SUCCESS) goto out;
@@ -377,7 +377,7 @@ scatter_hwpools(
     rc = group->scatter(txbuffs.data(), root, &rxbuff);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_hwpool_unpack(qvi_bbuff_data(rxbuff), pool);
+    rc = qvi_hwpool_s::unpack(qvi_bbuff_data(rxbuff), pool);
 out:
     for (auto &buff : txbuffs) {
         qvi_bbuff_free(&buff);
@@ -493,7 +493,7 @@ qvi_scope_split_agg_cpuset_dup(
     if (splitagg.hwpools.size() == 0) qvi_abort();
 
     return qvi_hwloc_bitmap_dup(
-        qvi_hwpool_cpuset_get(splitagg.hwpools[0]), result
+        splitagg.hwpools[0]->get_cpuset(), result
     );
 }
 
@@ -544,7 +544,7 @@ qvi_scope_cpuset_get(
     qv_scope_t *scope
 ) {
     if (!scope) qvi_abort();
-    return qvi_hwpool_cpuset_get(scope->hwpool);
+    return scope->hwpool->get_cpuset();
 }
 
 const qvi_hwpool_s *
@@ -674,7 +674,7 @@ agg_split_release_devices(
 ) {
     int rc = QV_SUCCESS;
     for (auto &hwpool : splitagg.hwpools) {
-        rc = qvi_hwpool_release_devices(hwpool);
+        rc = hwpool->release_devices();
         if (rc != QV_SUCCESS) return rc;
     }
     return rc;
@@ -708,15 +708,15 @@ agg_split_devices_user_defined(
         ncolors_chosen++;
     }
     // Cache all device infos associated with the parent hardware pool.
-    auto dinfos = qvi_hwpool_devinfos_get(splitagg.base_hwpool);
+    auto dinfos = splitagg.base_hwpool->get_devices();
     // Iterate over the supported device types and split them up round-robin.
     // TODO(skg) Should this be a mapping operation in qvi-map?
     for (const auto devt : qvi_hwloc_supported_devices()) {
         // Get the number of devices.
-        const uint_t ndevs = dinfos->count(devt);
+        const uint_t ndevs = dinfos.count(devt);
         // Store device infos.
         std::vector<const qvi_hwpool_dev_s *> devs;
-        for (const auto &dinfo : *dinfos) {
+        for (const auto &dinfo : dinfos) {
             // Not the type we are currently dealing with.
             if (devt != dinfo.first) continue;
             devs.push_back(dinfo.second.get());
@@ -758,12 +758,12 @@ agg_split_devices_affinity_preserving(
     int rc = agg_split_release_devices(splitagg);
     if (rc != QV_SUCCESS) return rc;
     // Get a pointer to device infos associated with the parent hardware pool.
-    auto dinfos = qvi_hwpool_devinfos_get(splitagg.base_hwpool);
+    auto dinfos = splitagg.base_hwpool->get_devices();
     // Iterate over the supported device types and split them up.
     for (const auto devt : qvi_hwloc_supported_devices()) {
         // Store device infos.
         std::vector<const qvi_hwpool_dev_s *> devs;
-        for (const auto &dinfo : *dinfos) {
+        for (const auto &dinfo : dinfos) {
             // Not the type we are currently dealing with.
             if (devt != dinfo.first) continue;
             devs.push_back(dinfo.second.get());
@@ -873,9 +873,9 @@ agg_split_get_new_osdev_cpusets(
     // Holds the device affinities used for the split.
     result.resize(nobj);
     // Get a pointer to device infos associated with the base hardware pool.
-    auto dinfos = qvi_hwpool_devinfos_get(splitagg.base_hwpool);
+    auto dinfos = splitagg.base_hwpool->get_devices();
     uint_t affi = 0;
-    for (const auto &dinfo : *dinfos) {
+    for (const auto &dinfo : dinfos) {
         // Not the type we are looking to split.
         if (obj_type != dinfo.first) continue;
         // Copy the device's affinity to our list of device affinities.
@@ -1158,7 +1158,7 @@ qvi_scope_ksplit(
         splitagg.colors[i] = kcolors[i];
         // Since the parent hardware pool is the resource we are splitting and
         // agg_split_* calls expect |group_size| elements, replicate by dups.
-        rc = qvi_hwpool_dup(parent->hwpool, &splitagg.hwpools[i]);
+        rc = qvi_dup(*parent->hwpool, &splitagg.hwpools[i]);
         if (rc != QV_SUCCESS) break;
         // Since this is called by a single task, replicate its task ID, too.
         splitagg.taskids[i] = taskid;
@@ -1191,7 +1191,7 @@ qvi_scope_ksplit(
         }
         // Copy out, since the hardware pools in splitagg will get freed.
         qvi_hwpool_s *hwpool = nullptr;
-        rc = qvi_hwpool_dup(splitagg.hwpools[i], &hwpool);
+        rc = qvi_dup(*splitagg.hwpools[i], &hwpool);
         if (rc != QV_SUCCESS) {
             qvi_delete(&group);
             qvi_scope_free(&child);
@@ -1260,7 +1260,7 @@ qvi_scope_create(
     // TODO(skg) We need to acquire these resources.
     int rc = qvi_rmi_get_cpuset_for_nobjs(
         parent->rmi,
-        qvi_hwpool_cpuset_get(parent->hwpool),
+        parent->hwpool->get_cpuset(),
         type, nobjs, &cpuset
     );
     if (rc != QV_SUCCESS) goto out;
@@ -1311,7 +1311,7 @@ qvi_scope_get_device_id(
     int rc = QV_SUCCESS, id = 0, nw = 0;
 
     qvi_hwpool_dev_s *finfo = nullptr;
-    for (const auto &dinfo : *qvi_hwpool_devinfos_get(scope->hwpool)) {
+    for (const auto &dinfo : scope->hwpool->get_devices()) {
         if (dev_obj != dinfo.first) continue;
         if (id++ == i) {
             finfo = dinfo.second.get();
