@@ -18,20 +18,6 @@
 #include "qvi-utils.h"
 
 int
-qvi_context_new(
-    qv_context_t **ctx
-) {
-    return qvi_new_rc(ctx);
-}
-
-void
-qvi_context_free(
-    qv_context_t **ctx
-) {
-    qvi_delete(ctx);
-}
-
-int
 qvi_context_connect_to_server(
     qv_context_t *ctx
 ) {

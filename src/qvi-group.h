@@ -21,7 +21,8 @@
 #include "qvi-bbuff.h"
 #include "qvi-task.h"
 
-#ifdef __cplusplus
+/** Group ID type. */
+typedef uint64_t qvi_group_id_t;
 
 /**
  * Virtual base group class.
@@ -79,24 +80,7 @@ struct qvi_group_s {
         qvi_bbuff_t **rxbuff
     ) = 0;
 };
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 typedef struct qvi_group_s qvi_group_t;
-
-/** Group ID. */
-typedef uint64_t qvi_group_id_t;
-
-/**
- *
- */
-void
-qvi_group_free(
-    qvi_group_t **group
-);
 
 /**
  *
@@ -105,10 +89,6 @@ int
 qvi_group_next_id(
     qvi_group_id_t *gid
 );
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 

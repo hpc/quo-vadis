@@ -19,12 +19,9 @@
 
 #include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-rmi.h"
-#include "qvi-group.h"
 #include "qvi-bind.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "qvi-group.h"
+#include "qvi-utils.h"
 
 /**
  * The underlying data structure that defines an ultimately opaque QV context.
@@ -57,7 +54,7 @@ struct qv_context_s {
     ~qv_context_s(void)
     {
         qvi_bind_stack_free(&bind_stack);
-        qvi_group_free(&zgroup);
+        qvi_delete(&zgroup);
         qvi_rmi_client_free(&rmi);
     }
 };
@@ -66,29 +63,9 @@ struct qv_context_s {
  *
  */
 int
-qvi_context_new(
-    qv_context_t **ctx
-);
-
-/**
- *
- */
-void
-qvi_context_free(
-    qv_context_t **ctx
-);
-
-/**
- *
- */
-int
 qvi_context_connect_to_server(
     qv_context_t *ctx
 );
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 

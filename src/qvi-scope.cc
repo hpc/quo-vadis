@@ -41,7 +41,7 @@ struct qv_scope_s {
     {
         rmi = nullptr;
         qvi_hwpool_free(&hwpool);
-        qvi_group_free(&group);
+        qvi_delete(&group);
     }
 };
 
@@ -610,7 +610,7 @@ qvi_scope_get(
     rc = scope_init(*scope, rmi, group, hwpool);
 out:
     if (rc != QV_SUCCESS) {
-        qvi_group_free(&group);
+        qvi_delete(&group);
         qvi_hwpool_free(&hwpool);
         qvi_scope_free(scope);
     }
@@ -1115,7 +1115,7 @@ qvi_scope_split(
 out:
     if (rc != QV_SUCCESS) {
         qvi_hwpool_free(&hwpool);
-        qvi_group_free(&group);
+        qvi_delete(&group);
         qvi_scope_free(&ichild);
     }
     *child = ichild;
@@ -1187,21 +1187,21 @@ qvi_scope_ksplit(
         qv_scope_t *child = nullptr;
         rc = qvi_scope_new(&child);
         if (rc != QV_SUCCESS) {
-            qvi_group_free(&group);
+            qvi_delete(&group);
             break;
         }
         // Copy out, since the hardware pools in splitagg will get freed.
         qvi_hwpool_s *hwpool = nullptr;
         rc = qvi_hwpool_dup(splitagg.hwpools[i], &hwpool);
         if (rc != QV_SUCCESS) {
-            qvi_group_free(&group);
+            qvi_delete(&group);
             qvi_scope_free(&child);
             break;
         }
         rc = scope_init(child, parent->rmi, group, hwpool);
         if (rc != QV_SUCCESS) {
             qvi_hwpool_free(&hwpool);
-            qvi_group_free(&group);
+            qvi_delete(&group);
             qvi_scope_free(&child);
             break;
         }
