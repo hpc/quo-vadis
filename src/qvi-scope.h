@@ -18,8 +18,8 @@
 #define QVI_SCOPE_H
 
 #include "qvi-common.h" // IWYU pragma: keep
-#include "qvi-zgroup.h"
 #include "qvi-rmi.h"
+#include "qvi-group.h"
 
 /**
  *
@@ -51,7 +51,7 @@ qvi_scope_kfree(
  */
 int
 qvi_scope_get(
-    qvi_zgroup_t *zgroup,
+    qvi_group_t *group,
     qvi_rmi_client_t *rmi,
     qv_scope_intrinsic_t iscope,
     qv_scope_t **scope

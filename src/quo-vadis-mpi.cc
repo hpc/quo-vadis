@@ -17,8 +17,9 @@
 #include "quo-vadis-mpi.h"
 #include "qvi-context.h"
 #include "qvi-group-mpi.h"
-#include "qvi-zgroup-mpi.h"
+#include "qvi-group-mpi.h"
 #include "qvi-scope.h"
+#include "qvi-utils.h"
 
 /**
  * Simply a wrapper for our Fortran interface to C interface. No need to expose
@@ -58,41 +59,31 @@ qvi_mpi_context_create(
     MPI_Comm comm,
     qv_context_t **ctx
 ) {
-    int rc = QV_SUCCESS;
-    qv_context_t *ictx = nullptr;
-    qvi_zgroup_mpi_t *izgroup = nullptr;
     // Create base context.
-    rc = qvi_context_new(&ictx);
-    if (rc != QV_SUCCESS) {
-        goto out;
-    }
+    qv_context_t *ictx = nullptr;
+    int rc = qvi_context_new(&ictx);
+    if (rc != QV_SUCCESS) goto out;
     // Create and initialize the base group.
-    rc = qvi_zgroup_mpi_new(&izgroup);
-    if (rc != QV_SUCCESS) {
-        goto out;
-    }
-    // Save zgroup instance pointer to context.
-    ictx->zgroup = izgroup;
+    qvi_zgroup_mpi_s *izgroup;
+    rc = qvi_new_rc(&izgroup);
+    if (rc != QV_SUCCESS) goto out;
 
     rc = izgroup->initialize(comm);
-    if (rc != QV_SUCCESS) {
-        goto out;
-    }
+    if (rc != QV_SUCCESS) goto out;
+
+    ictx->zgroup = izgroup;
     // Connect to RMI server.
     rc = qvi_context_connect_to_server(ictx);
-    if (rc != QV_SUCCESS) {
-        goto out;
-    }
+    if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_bind_stack_init(
         ictx->bind_stack,
-        qvi_mpi_task_get(izgroup->mpi),
+        ictx->zgroup->task(),
         ictx->rmi
     );
 out:
     if (rc != QV_SUCCESS) {
-        (void)qv_mpi_context_free(ictx);
-        ictx = nullptr;
+        qvi_delete(&ictx);
     }
     *ctx = ictx;
     return rc;
@@ -124,11 +115,8 @@ int
 qv_mpi_context_free(
     qv_context_t *ctx
 ) {
-    if (!ctx) {
-        return QV_ERR_INVLD_ARG;
-    }
+    if (!ctx) return QV_ERR_INVLD_ARG;
     try {
-        std::lock_guard<std::mutex> guard(ctx->mutex);
         return qvi_mpi_context_free(ctx);
     }
     qvi_catch_and_return();

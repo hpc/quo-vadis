@@ -32,7 +32,6 @@ add_library(
       qvi-group.h
       qvi-map.h
       qvi-scope.h
-      qvi-zgroup.h
       qvi-bind.h
       qvi-log.cc
       qvi-utils.cc
@@ -90,10 +89,8 @@ set(
     ../include/quo-vadis-process.h
     qvi-process.h
     qvi-group-process.h
-    qvi-zgroup-process.h
     qvi-process.cc
     qvi-group-process.cc
-    qvi-zgroup-process.cc
     quo-vadis-process.cc
 )
 
@@ -103,11 +100,9 @@ set(
     QUO_VADIS_SOURCE
     ${QUO_VADIS_SOURCE}
     qvi-thread.h
-    qvi-zgroup-thread.h
     qvi-group-thread.h
     ../include/quo-vadis-thread.h
     qvi-thread.cc
-    qvi-zgroup-thread.cc
     qvi-group-thread.cc
     quo-vadis-thread.cc
 )
@@ -148,10 +143,8 @@ if(MPI_FOUND)
           ../include/quo-vadis-mpi.h
           qvi-mpi.h
           qvi-group-mpi.h
-          qvi-zgroup-mpi.h
           qvi-mpi.cc
           qvi-group-mpi.cc
-          qvi-zgroup-mpi.cc
           quo-vadis-mpi.cc
     )
 

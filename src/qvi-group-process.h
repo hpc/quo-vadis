@@ -20,65 +20,63 @@
 #include "qvi-process.h"
 
 struct qvi_group_process_s : public qvi_group_s {
-    /**
-     * Initialized qvi_process_t instance
-     * embedded in process group instances.
-     */
+    /** Process instance pointer. */
     qvi_process_t *proc = nullptr;
     /** Underlying group instance. */
     qvi_process_group_t *proc_group = nullptr;
-    /** Base constructor that does minimal work. */
+    /** Constructor. */
     qvi_group_process_s(void) = default;
-    /** Virtual destructor. */
+    /** Destructor. */
     virtual ~qvi_group_process_s(void)
     {
         qvi_process_group_free(&proc_group);
     }
-    /** Initializes the instance. */
+
     int
-    initialize(qvi_process_t *proc_a)
-    {
+    initialize(
+        qvi_process_t *proc_a
+    ) {
         if (!proc_a) qvi_abort();
 
         proc = proc_a;
         return QV_SUCCESS;
     }
-    /** Returns the caller's task_id. */
-    virtual qvi_task_id_t
-    task_id(void)
+
+    virtual qvi_task_t *
+    task(void)
     {
-        return qvi_task_task_id(qvi_process_task_get(proc));
+        return qvi_process_task_get(proc);
     }
-    /** Returns the caller's group ID. */
+
     virtual int
     id(void)
     {
         return qvi_process_group_id(proc_group);
     }
-    /** Returns the number of members in this group. */
+
     virtual int
     size(void)
     {
         return qvi_process_group_size(proc_group);
     }
-    /** Performs node-local group barrier. */
+
     virtual int
     barrier(void)
     {
         return qvi_process_group_barrier(proc_group);
     }
-    /**
-     * Creates a new self group with a single member: the caller.
-     * Returns the appropriate newly created child group to the caller.
-     */
+
+    virtual int
+    intrinsic(
+        qv_scope_intrinsic_t intrinsic,
+        qvi_group_s **group
+    );
+
     virtual int
     self(
         qvi_group_s **child
     );
-    /**
-     * Creates new groups by splitting this group based on color, key.
-     * Returns the appropriate newly created child group to the caller.
-     */
+
     virtual int
     split(
         int,
@@ -91,7 +89,7 @@ struct qvi_group_process_s : public qvi_group_s {
         // another process group, self will suffice.
         return self(child);
     }
-    /** Gathers bbuffs to specified root. */
+
     virtual int
     gather(
         qvi_bbuff_t *txbuff,
@@ -103,7 +101,7 @@ struct qvi_group_process_s : public qvi_group_s {
             proc_group, txbuff, root, rxbuffs, shared
         );
     }
-    /** Scatters bbuffs from specified root. */
+
     virtual int
     scatter(
         qvi_bbuff_t **txbuffs,
@@ -117,15 +115,19 @@ struct qvi_group_process_s : public qvi_group_s {
 };
 typedef qvi_group_process_s qvi_group_process_t;
 
-int
-qvi_group_process_new(
-    qvi_group_process_t **group
-);
-
-void
-qvi_group_process_free(
-    qvi_group_process_t **group
-);
+struct qvi_zgroup_process_s : public qvi_group_process_s {
+    /** Constructor. */
+    qvi_zgroup_process_s(void)
+    {
+        const int rc = qvi_process_new(&proc);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+    }
+    /** Destructor. */
+    virtual ~qvi_zgroup_process_s(void)
+    {
+        qvi_process_free(&proc);
+    }
+};
 
 #endif
 

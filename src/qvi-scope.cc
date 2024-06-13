@@ -416,7 +416,7 @@ scope_split_coll_gather(
     int rc = gather_values(
         parent->group,
         qvi_scope_split_coll_s::rootid,
-        parent->group->task_id(),
+        qvi_task_task_id(parent->group->task()),
         splitcoll.gsplit.taskids
     );
     if (rc != QV_SUCCESS) return rc;
@@ -585,7 +585,7 @@ qvi_scope_barrier(
 
 int
 qvi_scope_get(
-    qvi_zgroup_t *zgroup,
+    qvi_group_t *zgroup,
     qvi_rmi_client_t *rmi,
     qv_scope_intrinsic_t iscope,
     qv_scope_t **scope
@@ -593,9 +593,7 @@ qvi_scope_get(
     qvi_group_t *group = nullptr;
     qvi_hwpool_s *hwpool = nullptr;
     // Get the requested intrinsic group.
-    int rc = zgroup->group_create_intrinsic(
-        iscope, &group
-    );
+    int rc = zgroup->intrinsic(iscope, &group);
     if (rc != QV_SUCCESS) goto out;
     // Get the requested intrinsic hardware pool.
     rc = qvi_rmi_scope_get_intrinsic_hwpool(
@@ -1145,7 +1143,7 @@ qvi_scope_ksplit(
     // Since this is called by a single task, get its ID and associated hardware
     // affinity here, and replicate them in the following loop that populates
     // splitagg. No point in doing this in a loop.
-    const qvi_task_id_t taskid = parent->group->task_id();
+    const qvi_task_id_t taskid = qvi_task_task_id(parent->group->task());
     hwloc_cpuset_t task_affinity = nullptr;
     rc = qvi_rmi_task_get_cpubind(
         parent->rmi, taskid, &task_affinity

@@ -15,7 +15,6 @@
 
 /**
  * @file qvi-group-thread.h
- *
  */
 
 #ifndef QVI_GROUP_THREAD_H
@@ -34,65 +33,64 @@ struct qvi_group_thread_s : public qvi_group_s {
     qvi_thread_group_t *th_group = nullptr;
     /** Constructor. */
     qvi_group_thread_s(void) = default;
-    /** Virtual destructor. */
+    /** Destructor. */
     virtual ~qvi_group_thread_s(void)
     {
         qvi_thread_group_free(&th_group);
     }
     /** Initializes the instance. */
     int
-    initialize(qvi_thread_t *th_a)
-    {
+    initialize(
+        qvi_thread_t *th_a
+    ) {
         if (!th_a) qvi_abort();
 
         th = th_a;
         return QV_SUCCESS;
     }
-    /** Returns the caller's task_id. */
-    virtual qvi_task_id_t
-    task_id(void)
+
+    virtual qvi_task_t *
+    task(void)
     {
-        return qvi_task_task_id(qvi_thread_task_get(th));
+        return qvi_thread_task_get(th);
     }
-    /** Returns the caller's group ID. */
+
     virtual int
     id(void)
     {
         return qvi_thread_group_id(th_group);
     }
-    /** Returns the number of members in this group. */
+
     virtual int
     size(void)
     {
         return qvi_thread_group_size(th_group);
     }
-    /** Performs node-local group barrier. */
+
     virtual int
     barrier(void)
     {
         return qvi_thread_group_barrier(th_group);
     }
-    /**
-     * Creates a new self group with a single member: the caller.
-     * Returns the appropriate newly created child group to the caller.
-     */
+
+    virtual int
+    intrinsic(
+        qv_scope_intrinsic_t intrinsic,
+        qvi_group_s **group
+    );
+
     virtual int
     self(
         qvi_group_s **child
     );
-    /**
-     * Creates new groups by splitting this group based on color, key.
-     * Returns the appropriate newly created child group to the caller.
-     */
+
     virtual int
     split(
         int color,
         int key,
         qvi_group_s **child
     );
-    /**
-     * Gathers bbuffs to specified root.
-     */
+
     virtual int
     gather(
         qvi_bbuff_t *txbuff,
@@ -104,9 +102,7 @@ struct qvi_group_thread_s : public qvi_group_s {
            th_group, txbuff, root, rxbuffs, shared
         );
     }
-    /**
-     * Scatters bbuffs from specified root.
-     */
+
     virtual int
     scatter(
         qvi_bbuff_t **txbuffs,
@@ -119,6 +115,28 @@ struct qvi_group_thread_s : public qvi_group_s {
     }
 };
 typedef qvi_group_thread_s qvi_group_thread_t;
+
+struct qvi_zgroup_thread_s : public qvi_group_thread_s {
+    /** Constructor. */
+    qvi_zgroup_thread_s(void)
+    {
+        int rc = qvi_thread_new(&th);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        rc = qvi_thread_init(th);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+    }
+    /** Destructor. */
+    virtual ~qvi_zgroup_thread_s(void)
+    {
+        qvi_thread_free(&th);
+    }
+    /** Node-local task barrier. */
+    virtual int
+    barrier(void)
+    {
+        return qvi_thread_node_barrier(th);
+    }
+};
 
 #endif
 

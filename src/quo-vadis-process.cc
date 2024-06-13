@@ -13,26 +13,26 @@
 
 #include "quo-vadis-process.h"
 #include "qvi-context.h"
-#include "qvi-zgroup-process.h"
+#include "qvi-group-process.h"
+#include "qvi-utils.h"
 
 static int
 qvi_process_context_create(
     qv_context_t **ctx
 ) {
     int rc = QV_SUCCESS;
-    qv_context_t *ictx = nullptr;
-    qvi_zgroup_process_t *izgroup = nullptr;
     // Create base context.
+    qv_context_t *ictx = nullptr;
     rc = qvi_context_new(&ictx);
     if (rc != QV_SUCCESS) {
         goto out;
     }
     // Create and initialize the base group.
-    rc = qvi_zgroup_process_new(&izgroup);
+    qvi_zgroup_process_s *izgroup;
+    rc = qvi_new_rc(&izgroup);
     if (rc != QV_SUCCESS) {
         goto out;
     }
-    // Save zgroup instance pointer to context.
     ictx->zgroup = izgroup;
     // Connect to RMI server.
     rc = qvi_context_connect_to_server(ictx);
@@ -42,13 +42,12 @@ qvi_process_context_create(
 
     rc = qvi_bind_stack_init(
         ictx->bind_stack,
-        qvi_process_task_get(izgroup->zproc),
+        ictx->zgroup->task(),
         ictx->rmi
     );
 out:
     if (rc != QV_SUCCESS) {
-        (void)qv_process_context_free(ictx);
-        ictx = nullptr;
+        qvi_context_free(&ictx);
     }
     *ctx = ictx;
     return rc;
@@ -58,9 +57,7 @@ int
 qv_process_context_create(
     qv_context_t **ctx
 ) {
-    if (!ctx) {
-        return QV_ERR_INVLD_ARG;
-    }
+    if (!ctx) return QV_ERR_INVLD_ARG;
     try {
         return qvi_process_context_create(ctx);
     }
@@ -81,7 +78,6 @@ qv_process_context_free(
 ) {
     if (!ctx) return QV_ERR_INVLD_ARG;
     try {
-        std::lock_guard<std::mutex> guard(ctx->mutex);
         return qvi_process_context_free(ctx);
     }
     qvi_catch_and_return();

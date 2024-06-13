@@ -49,22 +49,6 @@ qvi_process_free(
  *
  */
 int
-qvi_process_init(
-    qvi_process_t *proc
-);
-
-/**
- *
- */
-int
-qvi_process_finalize(
-    qvi_process_t *proc
-);
-
-/**
- *
- */
-int
 qvi_process_node_barrier(
     qvi_process_t *proc
 );
