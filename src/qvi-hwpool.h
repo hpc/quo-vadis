@@ -93,7 +93,9 @@ struct qvi_hwpool_s {
     qvi_hwpool_cpu_s cpu;
     /** The hardware pool's devices. */
     qvi_hwpool_devs_t devs;
-    /** Initializes a hardware pool with the given cpuset. */
+    /**
+     * Initializes a hardware pool with the given cpuset.
+     */
     int
     initialize(
         hwloc_const_bitmap_t cpuset
@@ -101,22 +103,26 @@ struct qvi_hwpool_s {
         return cpu.cpuset.set(cpuset);
     }
     /**
-     * Obtains a new hardware pool based on the
-     * affinity encoded in the provided cpuset.
+     * Creates a new, initialized hardware pool based
+     * on the affinity encoded in the provided cpuset.
      */
-    int
-    obtain_new_hwpool_by_cpuset(
+    static int
+    new_hwpool_by_cpuset(
         qvi_hwloc_t *hwloc,
         hwloc_const_cpuset_t cpuset,
         qvi_hwpool_s **opool
     );
-    /** Returns a pointer to the hwpool's cpuset. */
-    hwloc_const_cpuset_t
+    /**
+     * Returns a pointer to the hwpool's cpuset.
+     */
+    const qvi_hwloc_bitmap_s &
     get_cpuset(void)
     {
-        return cpu.cpuset.data;
+        return cpu.cpuset;
     }
-    /** Adds a qvi_hwpool_dev_s device. */
+    /**
+     * Adds a qvi_hwpool_dev_s device.
+     */
     int
     add_device(
         const qvi_hwpool_dev_s &dev
@@ -148,25 +154,33 @@ struct qvi_hwpool_s {
         }
         return rc;
     }
-    /** Releases all devices in the hwpool. */
+    /**
+     * Releases all devices in the hwpool.
+     */
     int
     release_devices(void)
     {
         devs.clear();
         return QV_SUCCESS;
     }
-    /** Returns a const reference to the hardware pool's devices. */
+    /**
+     * Returns a const reference to the hardware pool's devices.
+     */
     const qvi_hwpool_devs_t &
     get_devices(void)
     {
         return devs;
     }
-    /** Packs the instance into a bbuff. */
+    /**
+     * Packs the instance into a bbuff.
+     */
     int
     pack(
         qvi_bbuff_t *buff
     );
-    /** Unpacks the buffer and creates a new hardware pool instance. */
+    /**
+     * Unpacks the buffer and creates a new hardware pool instance.
+     */
     static int
     unpack(
         void *buff,
