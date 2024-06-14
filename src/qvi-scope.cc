@@ -199,7 +199,7 @@ get_nobjs_in_hwpool(
 ) {
     if (qvi_hwloc_obj_type_is_host_resource(obj)) {
         return qvi_rmi_get_nobjs_in_cpuset(
-            rmi, obj, hwpool->get_cpuset().data, n
+            rmi, obj, hwpool->get_cpuset().cdata(), n
         );
     }
     // TODO(skg) This should go through the RMI.
@@ -818,8 +818,8 @@ agg_split_cpuset(
     // algorithm.
     for (uint_t chunkid = 0; chunkid < splitagg.split_size; ++chunkid) {
         rc = qvi_hwloc_split_cpuset_by_chunk_id(
-            hwloc, base_cpuset.data, splitagg.split_size,
-            chunkid, result[chunkid].data
+            hwloc, base_cpuset.cdata(), splitagg.split_size,
+            chunkid, result[chunkid].data()
         );
         if (rc != QV_SUCCESS) break;
     }
@@ -877,10 +877,7 @@ agg_split_get_new_osdev_cpusets(
         // Not the type we are looking to split.
         if (obj_type != dinfo.first) continue;
         // Copy the device's affinity to our list of device affinities.
-        rc = qvi_hwloc_bitmap_copy(
-            dinfo.second->affinity.data, result[affi++].data
-        );
-        if (rc != QV_SUCCESS) break;
+        result[affi++] = dinfo.second->affinity;
     }
     return rc;
 }
@@ -1258,7 +1255,7 @@ qvi_scope_create(
     // TODO(skg) We need to acquire these resources.
     int rc = qvi_rmi_get_cpuset_for_nobjs(
         parent->rmi,
-        parent->hwpool->get_cpuset().data,
+        parent->hwpool->get_cpuset().cdata(),
         type, nobjs, &cpuset
     );
     if (rc != QV_SUCCESS) goto out;

@@ -527,7 +527,7 @@ qvi_bbuff_rmi_pack_item(
     qvi_bbuff_t *buff,
     const qvi_hwloc_bitmap_s &bitmap
 ) {
-    return qvi_bbuff_rmi_pack_item_impl(buff, bitmap.data);
+    return qvi_bbuff_rmi_pack_item_impl(buff, bitmap.cdata());
 }
 
 /**
@@ -919,7 +919,7 @@ qvi_bbuff_rmi_unpack_item(
     );
     if (rc != QV_SUCCESS) return rc;
 
-    rc = qvi_hwloc_bitmap_copy(raw_cpuset, bitmap.data);
+    rc = bitmap.set(raw_cpuset);
     qvi_hwloc_bitmap_free(&raw_cpuset);
     return rc;
 }

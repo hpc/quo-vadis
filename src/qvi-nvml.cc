@@ -36,7 +36,7 @@ qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
     if (!qvi_hwloc_topo_is_this_system(hwl)) {
         return qvi_hwloc_bitmap_copy(
             hwloc_topology_get_topology_cpuset(qvi_hwloc_topo_get(hwl)),
-            cpuset.data
+            cpuset.data()
         );
     }
     // This method should be called once before invoking any other methods in
@@ -55,7 +55,7 @@ qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
     }
 
     const int hwrc = hwloc_nvml_get_device_cpuset(
-        qvi_hwloc_topo_get(hwl), device, cpuset.data
+        qvi_hwloc_topo_get(hwl), device, cpuset.data()
     );
     if (hwrc != 0) {
         rc = QV_ERR_HWLOC;

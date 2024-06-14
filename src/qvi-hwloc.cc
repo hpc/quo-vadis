@@ -1034,9 +1034,10 @@ get_nosdevs_in_cpuset(
 ) {
     int ndevs = 0;
     for (auto &dev : devs) {
-        if (hwloc_bitmap_isincluded(dev->affinity.data, cpuset)) ndevs++;
+        if (hwloc_bitmap_isincluded(dev->affinity.cdata(), cpuset)) ndevs++;
     }
     *nobjs = ndevs;
+
 
     return QV_SUCCESS;
 }
@@ -1154,7 +1155,7 @@ qvi_hwloc_devices_emit(
     }
     for (auto &dev : *devlist) {
         char *cpusets = nullptr;
-        int rc = qvi_hwloc_bitmap_asprintf(&cpusets, dev->affinity.data);
+        int rc = qvi_hwloc_bitmap_asprintf(&cpusets, dev->affinity.cdata());
         if (rc != QV_SUCCESS) return rc;
 
         qvi_log_info("  Device Name: {}", dev->name);
@@ -1177,7 +1178,7 @@ get_devices_in_cpuset_from_dev_list(
     qvi_hwloc_dev_list_t &devs
 ) {
     for (auto &dev : devlist) {
-        if (!hwloc_bitmap_isincluded(dev->affinity.data, cpuset)) continue;
+        if (!hwloc_bitmap_isincluded(dev->affinity.cdata(), cpuset)) continue;
 
         auto devin = std::make_shared<qvi_hwloc_device_t>();
         const int rc = qvi_hwloc_device_copy(dev.get(), devin.get());
@@ -1220,7 +1221,7 @@ qvi_hwloc_get_devices_in_bitmap(
     const qvi_hwloc_bitmap_s &bitmap,
     qvi_hwloc_dev_list_t &devs
 ) {
-    return get_devices_in_cpuset(hwl, dev_type, bitmap.data, devs);
+    return get_devices_in_cpuset(hwl, dev_type, bitmap.cdata(), devs);
 }
 
 int
@@ -1413,7 +1414,7 @@ qvi_hwloc_get_device_affinity(
     // lists tend to be small, so just perform a linear search for the given ID.
     for (const auto &dev : *devlist) {
         if (dev->id != device_id) continue;
-        rc = qvi_hwloc_bitmap_dup(dev->affinity.data, &icpuset);
+        rc = qvi_hwloc_bitmap_dup(dev->affinity.cdata(), &icpuset);
         if (rc != QV_SUCCESS) goto out;
     }
     if (!icpuset) rc = QV_ERR_NOT_FOUND;

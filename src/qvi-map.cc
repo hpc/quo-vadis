@@ -240,7 +240,7 @@ qvi_map_calc_shaffinity(
     for (uint_t cid = 0; cid < ncon; ++cid) {
         for (uint_t rid = 0; rid < nres; ++rid) {
             const int intersects = hwloc_bitmap_intersects(
-                faffs.at(cid).data, tores.at(rid).data
+                faffs.at(cid).cdata(), tores.at(rid).cdata()
             );
             if (intersects) {
                 res_affinity_map[rid].insert(cid);
@@ -306,7 +306,7 @@ qvi_map_cpuset_at(
     const qvi_hwloc_cpusets_t &cpusets,
     uint_t fid
 ) {
-    return cpusets.at(map.at(fid)).data;
+    return cpusets.at(map.at(fid)).cdata();
 }
 
 std::vector<uint_t>
