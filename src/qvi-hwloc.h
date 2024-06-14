@@ -436,7 +436,7 @@ public:
     {
         int rc = qvi_hwloc_bitmap_calloc(&m_data);
         if (rc != QV_SUCCESS) throw qvi_runtime_error();
-        rc = qvi_hwloc_bitmap_copy(src.m_data, m_data);
+        rc = set(src.m_data);
         if (rc != QV_SUCCESS) throw qvi_runtime_error();
     }
     /** Destructor. */
