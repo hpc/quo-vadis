@@ -66,9 +66,9 @@ qvi_scope_group_get(
 );
 
 /**
- *
+ * Returns a const reference to the provided scope's cpuset.
  */
-hwloc_const_cpuset_t
+const qvi_hwloc_bitmap_s &
 qvi_scope_cpuset_get(
     qv_scope_t *scope
 );

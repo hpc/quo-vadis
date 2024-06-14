@@ -199,7 +199,7 @@ get_nobjs_in_hwpool(
 ) {
     if (qvi_hwloc_obj_type_is_host_resource(obj)) {
         return qvi_rmi_get_nobjs_in_cpuset(
-            rmi, obj, hwpool->get_cpuset(), n
+            rmi, obj, hwpool->get_cpuset().data, n
         );
     }
     // TODO(skg) This should go through the RMI.
@@ -487,14 +487,13 @@ scope_split_coll_scatter(
 static int
 qvi_scope_split_agg_cpuset_dup(
     const qvi_scope_split_agg_s &splitagg,
-    hwloc_cpuset_t *result
+    qvi_hwloc_bitmap_s &result
 ) {
     // This shouldn't happen.
     if (splitagg.hwpools.size() == 0) qvi_abort();
 
-    return qvi_hwloc_bitmap_dup(
-        splitagg.hwpools[0]->get_cpuset(), result
-    );
+    result = splitagg.hwpools[0]->get_cpuset();
+    return QV_SUCCESS;
 }
 
 int
@@ -539,7 +538,7 @@ scope_init(
     return QV_SUCCESS;
 }
 
-hwloc_const_cpuset_t
+const qvi_hwloc_bitmap_s &
 qvi_scope_cpuset_get(
     qv_scope_t *scope
 ) {
@@ -807,8 +806,8 @@ agg_split_cpuset(
 ) {
     int rc = QV_SUCCESS;
     // The cpuset that we are going to split.
-    hwloc_cpuset_t base_cpuset = nullptr;
-    rc = qvi_scope_split_agg_cpuset_dup(splitagg, &base_cpuset);
+    qvi_hwloc_bitmap_s base_cpuset;
+    rc = qvi_scope_split_agg_cpuset_dup(splitagg, base_cpuset);
     if (rc != QV_SUCCESS) return rc;
     // Pointer to my hwloc instance.
     qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc_get(splitagg.rmi);
@@ -819,12 +818,11 @@ agg_split_cpuset(
     // algorithm.
     for (uint_t chunkid = 0; chunkid < splitagg.split_size; ++chunkid) {
         rc = qvi_hwloc_split_cpuset_by_chunk_id(
-            hwloc, base_cpuset, splitagg.split_size,
+            hwloc, base_cpuset.data, splitagg.split_size,
             chunkid, result[chunkid].data
         );
         if (rc != QV_SUCCESS) break;
     }
-    qvi_hwloc_bitmap_free(&base_cpuset);
     return rc;
 }
 
@@ -1260,7 +1258,7 @@ qvi_scope_create(
     // TODO(skg) We need to acquire these resources.
     int rc = qvi_rmi_get_cpuset_for_nobjs(
         parent->rmi,
-        parent->hwpool->get_cpuset(),
+        parent->hwpool->get_cpuset().data,
         type, nobjs, &cpuset
     );
     if (rc != QV_SUCCESS) goto out;

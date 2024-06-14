@@ -103,21 +103,14 @@ qv_mpi_context_create(
     qvi_catch_and_return();
 }
 
-static int
-qvi_mpi_context_free(
-    qv_context_t *ctx
-) {
-    qvi_delete(&ctx);
-    return QV_SUCCESS;
-}
-
 int
 qv_mpi_context_free(
     qv_context_t *ctx
 ) {
     if (!ctx) return QV_ERR_INVLD_ARG;
     try {
-        return qvi_mpi_context_free(ctx);
+        qvi_delete(&ctx);
+        return QV_SUCCESS;
     }
     qvi_catch_and_return();
 }

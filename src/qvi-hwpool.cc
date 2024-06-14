@@ -135,7 +135,7 @@ pool_release_cpus_by_cpuset(
 #endif
 
 int
-qvi_hwpool_s::obtain_new_hwpool_by_cpuset(
+qvi_hwpool_s::new_hwpool_by_cpuset(
     qvi_hwloc_t *hwloc,
     hwloc_const_cpuset_t cpuset,
     qvi_hwpool_s **opool
