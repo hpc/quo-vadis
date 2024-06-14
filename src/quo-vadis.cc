@@ -45,7 +45,7 @@ qv_bind_push(
     try {
         std::lock_guard<std::mutex> guard(ctx->mutex);
         return qvi_bind_push(
-            ctx->bind_stack, qvi_scope_cpuset_get(scope).data
+            ctx->bind_stack, qvi_scope_cpuset_get(scope).cdata()
         );
     }
     qvi_catch_and_return();

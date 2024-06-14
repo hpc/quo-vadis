@@ -36,7 +36,7 @@ qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
     if (!qvi_hwloc_topo_is_this_system(hwl)) {
         return qvi_hwloc_bitmap_copy(
             hwloc_topology_get_topology_cpuset(qvi_hwloc_topo_get(hwl)),
-            cpuset.data
+            cpuset.data()
         );
     }
     // Else get the real thing.
@@ -50,7 +50,7 @@ qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
     }
 
     hrc = hwloc_rsmi_get_device_cpuset(
-        qvi_hwloc_topo_get(hwl), devid, cpuset.data
+        qvi_hwloc_topo_get(hwl), devid, cpuset.data()
     );
     if (hrc != 0) {
         rc = QV_ERR_HWLOC;
