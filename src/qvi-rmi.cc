@@ -734,10 +734,11 @@ int
 qvi_rmi_server_new(
     qvi_rmi_server_t **server
 ) {
-    int rc = QV_SUCCESS;
     cstr_t ers = nullptr;
 
-    qvi_rmi_server_t *iserver = new qvi_rmi_server_t();
+    qvi_rmi_server_t *iserver = nullptr;
+    int rc = qvi_new_rc(&iserver);
+    if (rc != QV_SUCCESS) goto out;
 
     iserver->zctx = zmq_ctx_new();
     if (!iserver->zctx) {
@@ -894,11 +895,11 @@ int
 qvi_rmi_client_new(
     qvi_rmi_client_t **client
 ) {
-    int rc = QV_SUCCESS;
     cstr_t ers = nullptr;
 
-    qvi_rmi_client_t *icli = new qvi_rmi_client_t();
-
+    qvi_rmi_client_t *icli = nullptr;
+    int rc = qvi_new_rc(&icli);
+    if (rc != QV_SUCCESS) goto out;
     // Remember clients own the hwloc data, unlike the server.
     rc = qvi_hwloc_new(&icli->config.hwloc);
     if (rc != QV_SUCCESS) {

@@ -92,7 +92,7 @@ next_group_tab_id(
     qvi_mpi_t *,
     qvi_mpi_group_id_t *gid
 ) {
-    return qvi_group_next_id(gid);
+    return qvi_group_t::next_id(gid);
 }
 
 /**

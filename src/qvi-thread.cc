@@ -90,7 +90,7 @@ next_group_tab_id(
     qvi_thread_group_id_t *gid
 ) {
     QVI_UNUSED(th);
-    return qvi_group_next_id(gid);
+    return qvi_group_t::next_id(gid);
 }
 
 /**
@@ -280,7 +280,7 @@ qvi_thread_group_create_size(
     int size
 ) {
     qvi_thread_group_t *igroup = nullptr;
-    qvi_thread_group_id_t gtid;
+    qvi_thread_group_id_t gtid = 0;
     int rc, irc;
 
     rc = qvi_thread_group_new(&igroup);
