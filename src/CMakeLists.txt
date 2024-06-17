@@ -43,7 +43,6 @@ add_library(
       qvi-rmi.cc
       qvi-context.cc
       qvi-task.cc
-      qvi-group.cc
       qvi-map.cc
       qvi-scope.cc
       qvi-bind.cc
