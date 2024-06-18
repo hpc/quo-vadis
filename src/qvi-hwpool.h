@@ -183,7 +183,7 @@ struct qvi_hwpool_s {
      */
     static int
     unpack(
-        void *buff,
+        qvi_bbuff_t *buff,
         qvi_hwpool_s **hwp
     );
 };
