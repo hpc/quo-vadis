@@ -281,7 +281,7 @@ gather_hwpools(
         // Unpack the hwpools.
         for (uint_t i = 0; i < group_size; ++i) {
             rc = qvi_hwpool_s::unpack(
-                qvi_bbuff_data(bbuffs[i]), &rxpools[i]
+                bbuffs[i], &rxpools[i]
             );
             if (rc != QV_SUCCESS) break;
         }
@@ -377,7 +377,7 @@ scatter_hwpools(
     rc = group->scatter(txbuffs.data(), root, &rxbuff);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_hwpool_s::unpack(qvi_bbuff_data(rxbuff), pool);
+    rc = qvi_hwpool_s::unpack(rxbuff, pool);
 out:
     for (auto &buff : txbuffs) {
         qvi_bbuff_free(&buff);

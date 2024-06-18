@@ -167,10 +167,10 @@ qvi_hwpool_s::pack(
 
 int
 qvi_hwpool_s::unpack(
-    void *buff,
+    qvi_bbuff_t *buff,
     qvi_hwpool_s **hwp
 ) {
-    return qvi_bbuff_rmi_unpack(buff, hwp);
+    return qvi_bbuff_rmi_unpack(qvi_bbuff_data(buff), hwp);
 }
 
 /**
