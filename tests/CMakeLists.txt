@@ -154,6 +154,18 @@ if(MPI_FOUND)
         test-progress-thread
         quo-vadis
         quo-vadis-mpi
+	)
+
+    add_executable(
+        test-pthread-split
+        qvi-test-common.h
+        test-pthread-split.c
+    )
+
+    target_link_libraries(
+        test-pthread-split
+	quo-vadis
+        quo-vadis-mpi
     )
 
     add_executable(
