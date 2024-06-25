@@ -67,6 +67,7 @@ typedef enum qvi_rpc_funid_e {
     FID_TASK_SET_CPUBIND_FROM_CPUSET,
     FID_OBJ_TYPE_DEPTH,
     FID_GET_NOBJS_IN_CPUSET,
+    FID_GET_OBJ_TYPE_IN_CPUSET,
     FID_GET_DEVICE_IN_CPUSET,
     FID_SCOPE_GET_INTRINSIC_HWPOOL
 } qvi_rpc_funid_t;
@@ -538,6 +539,31 @@ rpc_ssi_get_nobjs_in_cpuset(
 }
 
 static int
+rpc_ssi_get_obj_type_in_cpuset(
+    qvi_rmi_server_t *server,
+    qvi_msg_header_t *hdr,
+    void *input,
+    qvi_bbuff_t **output
+) {
+    int npieces = 0;
+    hwloc_cpuset_t cpuset = nullptr;
+    int qvrc = qvi_bbuff_rmi_unpack(
+        input, &npieces, &cpuset
+    );
+    if (qvrc != QV_SUCCESS) return qvrc;
+
+    qv_hw_obj_type_t target_obj;
+    const int rpcrc = qvi_hwloc_get_obj_type_in_cpuset(
+        server->config.hwloc, npieces, cpuset, &target_obj
+    );
+
+    qvrc = rpc_pack(output, hdr->fid, rpcrc, target_obj);
+
+    hwloc_bitmap_free(cpuset);
+    return qvrc;
+}
+
+static int
 rpc_ssi_get_device_in_cpuset(
     qvi_rmi_server_t *server,
     qvi_msg_header_t *hdr,
@@ -656,6 +682,7 @@ static const qvi_rpc_fun_ptr_t rpc_dispatch_table[] = {
     rpc_ssi_task_set_cpubind_from_cpuset,
     rpc_ssi_obj_type_depth,
     rpc_ssi_get_nobjs_in_cpuset,
+    rpc_ssi_get_obj_type_in_cpuset,
     rpc_ssi_get_device_in_cpuset,
     rpc_ssi_scope_get_intrinsic_hwpool
 };
@@ -1101,6 +1128,30 @@ qvi_rmi_get_nobjs_in_cpuset(
 
     return rpcrc;
 }
+
+int
+qvi_rmi_get_obj_type_in_cpuset(
+    qvi_rmi_client_t *client,
+    int npieces,
+    hwloc_const_cpuset_t cpuset,
+    qv_hw_obj_type_t *target_obj
+) {
+    int qvrc = rpc_req(
+        client->zsock,
+        FID_GET_OBJ_TYPE_IN_CPUSET,
+        npieces,
+        cpuset
+    );
+    if (qvrc != QV_SUCCESS) return qvrc;
+
+    // Should be set by rpc_rep, so assume an error.
+    int rpcrc = QV_ERR_MSG;
+    qvrc = rpc_rep(client->zsock, &rpcrc, target_obj);
+    if (qvrc != QV_SUCCESS) return qvrc;
+
+    return rpcrc;
+}
+
 
 int
 qvi_rmi_get_device_in_cpuset(

@@ -1,4 +1,4 @@
- /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
+/* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
  * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
@@ -22,6 +22,11 @@
 #include "qvi-group-thread.h"
 #include "qvi-group-thread.h" // IWYU pragma: keep
 #include "qvi-utils.h"
+
+
+#include "qvi-scope.h"
+//#include "qvi-hwpool.h"
+//#include "qvi-map.h"
 
 #ifdef OPENMP_FOUND
 #include <omp.h>
@@ -76,6 +81,51 @@ out:
     return rc;
 }
 
+int
+qv_thread_scope_split(
+    qv_context_t *ctxt,
+    qv_scope_t *scope,
+    int npieces,
+    int *color_array,
+    int nthreads,
+    qv_scope_t ***subscope
+){
+    int rc = QV_SUCCESS;
+
+    QVI_UNUSED(ctxt);
+
+    qv_hw_obj_type_t type;
+
+    rc = qvi_scope_obj_type(scope, npieces, &type);
+    if (rc != QV_SUCCESS) {
+        rc = QV_ERR_INVLD_ARG;
+        goto out;
+    }
+    //fprintf(stdout,"=================== Type for split is %i\n",(int)type);
+    rc = qvi_scope_ksplit_at(scope, type, color_array, nthreads, subscope);
+
+ out:
+    return rc;
+}
+
+int
+qv_thread_scope_split_at(
+    qv_context_t *ctxt,
+    qv_scope_t *scope,
+    qv_hw_obj_type_t type,
+    int *color_array,
+    int nthreads,
+    qv_scope_t ***subscope
+){
+    int rc = QV_SUCCESS;
+
+    QVI_UNUSED(ctxt);
+
+    rc = qvi_scope_ksplit_at(scope, type, color_array, nthreads, subscope);
+
+    return rc;
+}
+
 #ifndef USE_LAYOUTS
 //New interface
 void *
@@ -83,19 +133,18 @@ qv_thread_routine(
     void * arg
 ) {
     qv_thread_args_t *arg_ptr = (qv_thread_args_t *) arg;
-    //  fprintf(stdout,"qv_thread_routine: ctx=%p scope=%p\n", qvp->ctx, qvp->scope);
 
     int rc = qv_bind_push(arg_ptr->ctx, arg_ptr->scope);
+
+
     if (rc != QV_SUCCESS) {
-        // char const *ers = "qv_bind_push() failed";
-        // qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        fprintf(stdout,"==== Bind Push error \n");
         pthread_exit(NULL);
     }
 
     void *ret = arg_ptr->thread_routine(arg_ptr->arg);
 
     // Free memory allocated in qv_pthread_create
-    //free(arg_ptr);
     delete arg_ptr;
     pthread_exit(ret);
 }
@@ -111,13 +160,12 @@ qv_pthread_create(
 ) {
      // Memory will be freed in qv_thread_routine to avoid  memory leaks
      qv_thread_args_t *arg_ptr = qvi_new qv_thread_args_t();
-     //(qv_thread_args_t *)malloc(sizeof(qv_thread_args_t));
+
      arg_ptr->ctx = ctx;
      arg_ptr->scope = scope;
      arg_ptr->thread_routine = thread_routine;
      arg_ptr->arg = arg;
 
-    // fprintf(stdout,"qv_pthread_create: ctx=%p scope=%p\n", ctx, scope);
     return pthread_create(thread, attr, qv_thread_routine, arg_ptr);
 }
 #else // USE_LAYOUTS
@@ -267,7 +315,7 @@ qv_thread_layout_apply( //use map interface if necessary
   int rc = QV_SUCCESS;
   qv_context_t *parent_ctx = th_args.ctx;
   qv_scope_t *parent_scope = th_args.scope;
-  qv_layout_t *thread_layout = th_args.thread_layout;                                                                                                                                                              int thr_idx = th_args.th_id;
+  qv_layout_t *thread_layout = th_args.thread_layout;
   int num_thr = th_args.num_th;
 
   /* Brand new case: compute and cache as much as possible*/

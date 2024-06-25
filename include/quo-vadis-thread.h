@@ -97,6 +97,29 @@ qv_pthread_create(
     qv_context_t *ctx,
     qv_scope_t *scope
 );
+
+
+int
+qv_thread_scope_split_at(
+    qv_context_t *ctxt,
+    qv_scope_t *scope,
+    qv_hw_obj_type_t type,
+    int *color_array,
+    int nthreads,
+    qv_scope_t ***subscope
+);
+
+
+int
+qv_thread_scope_split(
+    qv_context_t *ctxt,
+    qv_scope_t *scope,
+    int npieces,
+    int *color_array,
+    int nthreads,
+    qv_scope_t ***subscope
+);
+
 #else
 /**                                                                                                     
  * Layout for fine-grain binding                                                                        

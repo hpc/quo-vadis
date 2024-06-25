@@ -290,6 +290,17 @@ qvi_hwloc_get_nobjs_in_cpuset(
  *
  */
 int
+qvi_hwloc_get_obj_type_in_cpuset(
+    qvi_hwloc_t *hwl,
+    int npieces,
+    hwloc_const_cpuset_t cpuset,
+    qv_hw_obj_type_t *target_obj
+);
+
+/**
+ *
+ */
+int
 qvi_hwloc_obj_type_depth(
     qvi_hwloc_t *hwloc,
     qv_hw_obj_type_t type,

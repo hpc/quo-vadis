@@ -178,6 +178,15 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
+    qv_hw_obj_type_t *
+) {
+    picture += "i";
+}
+
+template<>
+inline void
+qvi_bbuff_rmi_pack_type_picture(
+    std::string &picture,
     qv_device_id_type_t
 ) {
     picture += "i";
