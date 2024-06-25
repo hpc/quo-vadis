@@ -22,6 +22,8 @@ void *thread_work(void *arg)
     fprintf(stdout,"Thread running on %s\n", binds);
     free(binds);
 
+    //int toto = 0;
+    //while(++toto);
 
     return NULL;
 }
@@ -110,23 +112,22 @@ main(void)
     }
     fprintf(stdout,"[%d] Number of PUs in mpi_numa_scope is %d\n", wrank, n_pus);
 
-    int nthreads = 1*n_cores;
-    assert(nthreads <= n_pus);
-
-    fprintf(stdout,"[%d] Number of threads : %i\n", wrank, nthreads);
-
-    int colors[nthreads];
-    for(int i = 0 ; i < nthreads ; i++)
-        colors[i] = i%n_cores;
 
     qv_scope_t **th_scopes = NULL;
+    
+    //test qv_thread_scope_split
+    int npieces  = n_cores/2;
+    int nthreads = n_cores;
 
-    rc = qv_thread_scope_split_at(mpi_ctx, mpi_numa_scope, QV_HW_OBJ_CORE, colors, nthreads, &th_scopes);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_thread_scope_split_at() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
+    assert(nthreads <= n_pus);
+    
+    fprintf(stdout,"[%d] ====== Testing thread_scope_split (number of threads : %i)\n", wrank, nthreads);
+    
+    int colors[nthreads];
+    for(int i = 0 ; i < nthreads ; i++)
+        colors[i] = i%2;//n_cores;
+    
+    rc = qv_thread_scope_split(mpi_ctx, mpi_numa_scope, npieces , colors , nthreads, &th_scopes);
     assert(th_scopes);
 
     pthread_t thid[nthreads];
@@ -149,7 +150,48 @@ main(void)
         fprintf(stdout,"Thread finished with '%s'\n", (char *)ret);
     }
 
-    fprintf(stdout,"===================== Coucou\n");
+    /* Clean up */
+    for(int i  = 0 ; i < nthreads; i ++){
+        rc = qv_scope_free(mpi_ctx, th_scopes[i]);
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_free() failed";
+            qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
+    }
+    free(th_scopes);
+
+    //Test qv_thread_scope_split_at
+    nthreads = 2*n_cores;
+    assert(nthreads <= n_pus);
+
+    fprintf(stdout,"[%d] ====== Testing thread_scope_split_at (number of threads : %i)\n", wrank, nthreads);
+
+    int colors2[nthreads];
+    for(int i = 0 ; i < nthreads ; i++)
+        colors2[i] = i%n_cores;
+
+    rc = qv_thread_scope_split_at(mpi_ctx, mpi_numa_scope, QV_HW_OBJ_CORE, colors2, nthreads, &th_scopes);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_thread_scope_split_at() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }    
+    assert(th_scopes);
+
+    pthread_t thid2[nthreads];
+    for(int i  = 0 ; i < nthreads; i ++){
+        if (qv_pthread_create(&thid2[i], attr, thread_work, (void *)(mpi_ctx), mpi_ctx, th_scopes[i]) != 0) {
+            perror("pthread_create() error");
+            exit(1);
+        }
+    }
+
+    for(int i  = 0 ; i < nthreads; i ++){
+        if (pthread_join(thid2[i], &ret) != 0) {
+            perror("pthread_create() error");
+            exit(3);
+        }
+        fprintf(stdout,"Thread finished with '%s'\n", (char *)ret);
+    }
 
     /* Clean up */
     for(int i  = 0 ; i < nthreads; i ++){
@@ -161,23 +203,17 @@ main(void)
     }
     free(th_scopes);
 
-    fprintf(stdout,"===================== Coucou 2\n");
-
     rc = qv_scope_free(mpi_ctx, mpi_numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    fprintf(stdout,"===================== Coucou 3\n");
-
     rc = qv_scope_free(mpi_ctx, mpi_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
-    fprintf(stdout,"===================== Coucou 4\n");
 
     MPI_Finalize();
 

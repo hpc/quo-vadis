@@ -207,6 +207,20 @@ get_nobjs_in_hwpool(
     return QV_SUCCESS;
 }
 
+// This too
+static int
+get_obj_type_in_hwpool(
+    qvi_rmi_client_t *rmi,
+    qvi_hwpool_s *hwpool,
+    int npieces,
+    qv_hw_obj_type_t *obj
+) {
+    return qvi_rmi_get_obj_type_in_cpuset(
+       rmi, npieces, qvi_hwpool_cpuset_get(hwpool), obj
+    );  
+}
+
+
 template <typename TYPE>
 static int
 gather_values(
@@ -1124,6 +1138,7 @@ out:
     return rc;
 }
 
+
 int
 qvi_scope_ksplit(
     qv_scope_t *parent,
@@ -1303,6 +1318,17 @@ qvi_scope_nobjs(
     );
 }
 
+int
+qvi_scope_obj_type(
+    qv_scope_t *scope,
+    int npieces,
+    qv_hw_obj_type_t *obj
+) {
+    return get_obj_type_in_hwpool(
+       scope->rmi, scope->hwpool, npieces, obj
+    );
+}
+                   
 int
 qvi_scope_get_device_id(
     qv_scope_t *scope,

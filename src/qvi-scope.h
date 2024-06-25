@@ -170,6 +170,13 @@ qvi_scope_nobjs(
 );
 
 int
+qvi_scope_obj_type(
+    qv_scope_t *scope,
+    int npieces,
+    qv_hw_obj_type_t *obj
+); 
+
+int
 qvi_scope_get_device_id(
     qv_scope_t *scope,
     qv_hw_obj_type_t dev_obj,

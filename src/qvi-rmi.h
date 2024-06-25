@@ -154,6 +154,20 @@ qvi_rmi_get_nobjs_in_cpuset(
     int *nobjs
 );
 
+
+/**
+ *
+ */
+int
+qvi_rmi_get_obj_type_in_cpuset(
+    qvi_rmi_client_t *client,
+    int npieces,
+    hwloc_const_cpuset_t cpuset,
+    qv_hw_obj_type_t *target_obj
+);
+
+
+    
 /**
  *
  */

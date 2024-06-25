@@ -111,6 +111,39 @@ qvi_hwloc_get_obj_type(
     }
 }
 
+static qv_hw_obj_type_t
+qvi_hwloc_convert_obj_type(
+   hwloc_obj_type_t external
+) {
+    switch(external) {
+        case(HWLOC_OBJ_MACHINE):
+             return QV_HW_OBJ_MACHINE;
+        case(HWLOC_OBJ_PACKAGE):
+             return QV_HW_OBJ_PACKAGE;
+        case(HWLOC_OBJ_CORE):
+             return QV_HW_OBJ_CORE;
+        case(HWLOC_OBJ_PU):
+             return QV_HW_OBJ_PU;
+        case(HWLOC_OBJ_L1CACHE):
+             return QV_HW_OBJ_L1CACHE;
+        case(HWLOC_OBJ_L2CACHE):
+             return QV_HW_OBJ_L2CACHE;
+        case(HWLOC_OBJ_L3CACHE):
+             return QV_HW_OBJ_L3CACHE;
+        case(HWLOC_OBJ_L4CACHE):
+             return QV_HW_OBJ_L4CACHE; 
+        case(HWLOC_OBJ_L5CACHE):
+             return QV_HW_OBJ_L5CACHE; 
+        case(HWLOC_OBJ_NUMANODE):
+            return QV_HW_OBJ_NUMANODE;
+        case(HWLOC_OBJ_OS_DEVICE):
+            return QV_HW_OBJ_GPU;
+        default:
+            // This is an internal development error.
+            qvi_abort();
+    }
+}
+
 bool
 qvi_hwloc_obj_type_is_host_resource(
     qv_hw_obj_type_t type
@@ -1079,6 +1112,28 @@ qvi_hwloc_get_nobjs_in_cpuset(
             return get_nobjs_in_cpuset(hwl, target_obj, cpuset, nobjs);
     }
     return QV_ERR_INTERNAL;
+}
+
+int
+qvi_hwloc_get_obj_type_in_cpuset(
+    qvi_hwloc_t *hwl,
+    int npieces,
+    hwloc_const_cpuset_t cpuset,
+    qv_hw_obj_type_t *target_obj
+) {
+    hwloc_topology_t topo = hwl->topo;
+    hwloc_obj_t obj =  hwloc_get_first_largest_obj_inside_cpuset (topo, cpuset);
+    int num = hwloc_get_nbobjs_inside_cpuset_by_type (topo, cpuset, obj->type);
+    int depth = obj->depth;
+    
+    while(!((num > npieces) && (!hwloc_obj_type_is_cache(obj->type)))){
+        depth++;
+        obj = hwloc_get_obj_inside_cpuset_by_depth (topo, cpuset, depth, 0);
+        num = hwloc_get_nbobjs_inside_cpuset_by_type (topo, cpuset, obj->type);
+    }
+
+    *target_obj = qvi_hwloc_convert_obj_type(obj->type);
+    return QV_SUCCESS;
 }
 
 int
