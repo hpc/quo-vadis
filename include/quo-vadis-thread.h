@@ -1,10 +1,13 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c)      2022 Triad National Security, LLC
+ * Copyright (c) 2022-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c) Inria 2022-2023.  All rights reserved.
- * Copyright (c) Bordeaux INP 2022-2023. All rights reserved.
+ * Copyright (c) 2022-2024 Inria
+ *                         All rights reserved.
+ *
+ * Copyright (c) 2022-2024 Bordeaux INP
+ *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
  * top-level directory of this distribution.
@@ -18,14 +21,16 @@
 #define QUO_VADIS_THREAD_H
 
 #include "quo-vadis.h"
+// TODO(skg) This shouldn't be exported at the interface level. This means that
+// we will have to hide the details requiring this header elsewhere.
 #include "qvi-hwloc.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/**                                                                                                     
- * Mapping policies types.                                                                              
+/**
+ * Mapping policies types.
  */
 /*
 typedef enum qv_policy_s {
@@ -53,7 +58,6 @@ typedef enum qv_policy_s {
   QV_POLICY_CHOOSE
 } qv_policy_t;
 
-
 /**
  * Creates a thread context.
  */
@@ -61,7 +65,6 @@ int
 qv_thread_context_create(
     qv_context_t **ctx
 );
-
 
 /**
  * Frees resources associated with a context created by
@@ -72,7 +75,6 @@ qv_thread_context_free(
     qv_context_t *ctx
 );
 
-
 #ifndef USE_LAYOUTS
 typedef struct {
     qv_context_t *ctx;
@@ -81,12 +83,10 @@ typedef struct {
     void *arg;
 } qv_thread_args_t;
 
-
 void *
 qv_thread_routine(
     void * arg
 );
-
 
 int
 qv_pthread_create(
@@ -101,18 +101,18 @@ qv_pthread_create(
 
 int
 qv_thread_scope_split_at(
-    qv_context_t *ctxt,
+    qv_context_t *ctx,
     qv_scope_t *scope,
     qv_hw_obj_type_t type,
     int *color_array,
     int nthreads,
-    qv_scope_t ***subscope
+    qv_scope_t ***subscopes
 );
 
 
 int
 qv_thread_scope_split(
-    qv_context_t *ctxt,
+    qv_context_t *ctx,
     qv_scope_t *scope,
     int npieces,
     int *color_array,
@@ -121,9 +121,9 @@ qv_thread_scope_split(
 );
 
 #else
-/**                                                                                                     
- * Layout for fine-grain binding                                                                        
- * with default behaviour                                                                               
+/**
+ * Layout for fine-grain binding
+ * with default behaviour
  */
 
 typedef struct qv_layout_params_s {

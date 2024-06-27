@@ -18,11 +18,9 @@
  */
 
 #include "qvi-common.h" // IWYU pragma: keep
-
 #include "qvi-thread.h"
 #include "qvi-group.h"
 #include "qvi-utils.h"
-
 #ifdef OPENMP_FOUND
 #include <omp.h>
 #endif
@@ -34,10 +32,10 @@ using qvi_thread_group_tab_t = std::unordered_map<
     qvi_thread_group_id_t, qvi_thread_group_t
 >;
 
-
 // We need to have one structure for fields
 // shared by all threads included in another
 // with fields specific to each thread
+// TODO(skg) Add atomic access.
 struct qvi_thread_group_shared_s {
     /** for resource freeing */
     int in_use = 0;
@@ -67,7 +65,7 @@ struct qvi_thread_s {
     /** Group table (ID to internal structure mapping) */
     qvi_thread_group_tab_t *group_tab = nullptr;
     /** Barrier object (used in context) */
-    pthread_barrier_t *barrier;
+    pthread_barrier_t *barrier = nullptr;
 };
 
 /**
@@ -100,14 +98,13 @@ int
 qvi_thread_new(
     qvi_thread_t **th
 ) {
-    int rc = QV_SUCCESS;
-
-    qvi_thread_t *ith = qvi_new qvi_thread_t();
-    if (!ith) {
-        rc = QV_ERR_OOR;
+    qvi_thread_t *ith = nullptr;
+    int rc = qvi_new_rc(&ith);
+    if (rc != QV_SUCCESS) {
         goto out;
     }
     // Task
+    // TODO(skg) Rename, remove from source.
     rc = qvi_task_new(&ith->task);
     if (rc != QV_SUCCESS) goto out;
     // Groups
