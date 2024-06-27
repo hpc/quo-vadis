@@ -47,15 +47,15 @@ typedef enum qv_policy_s {
 */
 
 typedef enum qv_policy_s {
-  QV_POLICY_PACKED     = 1,
-  QV_POLICY_COMPACT, /* same as QV_POLICY_PACKED */
-  QV_POLICY_CLOSE,   /* same as QV_POLICY_PACKED */
-  QV_POLICY_SPREAD,
-  QV_POLICY_DISTRIBUTE,
-  QV_POLICY_ALTERNATE, /* same as QV_POLICY_DISTRIBUTE */
-  QV_POLICY_CORESFIRST,/* same as QV_POLICY_DISTRIBUTE */
-  QV_POLICY_SCATTER,
-  QV_POLICY_CHOOSE
+    QV_POLICY_PACKED     = 1,
+    QV_POLICY_COMPACT, /* same as QV_POLICY_PACKED */
+    QV_POLICY_CLOSE,   /* same as QV_POLICY_PACKED */
+    QV_POLICY_SPREAD,
+    QV_POLICY_DISTRIBUTE,
+    QV_POLICY_ALTERNATE, /* same as QV_POLICY_DISTRIBUTE */
+    QV_POLICY_CORESFIRST,/* same as QV_POLICY_DISTRIBUTE */
+    QV_POLICY_SCATTER,
+    QV_POLICY_CHOOSE
 } qv_policy_t;
 
 /**
@@ -85,7 +85,7 @@ typedef struct {
 
 void *
 qv_thread_routine(
-    void * arg
+    void *arg
 );
 
 int
@@ -98,7 +98,6 @@ qv_pthread_create(
     qv_scope_t *scope
 );
 
-
 int
 qv_thread_scope_split_at(
     qv_context_t *ctx,
@@ -108,7 +107,6 @@ qv_thread_scope_split_at(
     int nthreads,
     qv_scope_t ***subscopes
 );
-
 
 int
 qv_thread_scope_split(
@@ -120,12 +118,11 @@ qv_thread_scope_split(
     qv_scope_t ***subscope
 );
 
-#else
+#else // TODO(skg) Can we get rid of the old interface?
 /**
  * Layout for fine-grain binding
  * with default behaviour
  */
-
 typedef struct qv_layout_params_s {
   qv_policy_t policy;
   qv_hw_obj_type_t obj_type;
@@ -178,7 +175,6 @@ qv_thread_layout_apply(
     qv_thread_args_t th_args
 );
 
-
 /**
  * Used for args to pthreads.
  */
@@ -210,7 +206,6 @@ qv_thread_layout_set_stride(
    int stride
 );
 #endif // USE_LAYOUTS
-
 
 #ifdef __cplusplus
 }

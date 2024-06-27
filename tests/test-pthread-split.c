@@ -162,6 +162,8 @@ main(void)
             qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
     }
+    // TODO(skg) Needs to be delete, but don't want to expose that. Update the
+    // API.
     free(th_scopes);
 
     //Test qv_thread_scope_split_at
