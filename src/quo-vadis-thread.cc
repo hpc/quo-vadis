@@ -111,7 +111,7 @@ qv_thread_scope_split_at(
     int *color_array,
     int nthreads,
     qv_scope_t ***subscopes
-){
+) {
     return qvi_scope_ksplit_at(scope, type, color_array, nthreads, subscopes);
 }
 
@@ -249,8 +249,14 @@ qv_thread_layout_set_stride(
 // - scatter: threads are distributed as evenly as possible across the entire system.
 //            (opposite of compact).
 // - explicit: threads are placed according to a list of OS proc IDs (required)
-static int compute(int *array, int nb_threads, int nb_objs, int stride, qv_policy_t policy)
-{
+static int
+compute(
+    int *array,
+    int nb_threads,
+    int nb_objs,
+    int stride,
+    qv_policy_t policy
+) {
     int rc = QV_SUCCESS;
     switch(policy)
       {
@@ -289,8 +295,7 @@ static int compute(int *array, int nb_threads, int nb_objs, int stride, qv_polic
 int
 qv_thread_layout_apply( //use map interface if necessary
     qv_thread_args_t th_args
-)
-{
+) {
   int rc = QV_SUCCESS;
   qv_context_t *parent_ctx = th_args.ctx;
   qv_scope_t *parent_scope = th_args.scope;

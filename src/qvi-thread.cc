@@ -1,12 +1,12 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2022-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c) 2022      Inria.
+ * Copyright (c) 2022-2024 Inria
  *                         All rights reserved.
  *
- * Copyright (c) 2022      Bordeaux INP.
+ * Copyright (c) 2022-2024 Bordeaux INP
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -66,6 +66,15 @@ struct qvi_thread_s {
     qvi_thread_group_tab_t *group_tab = nullptr;
     /** Barrier object (used in context) */
     pthread_barrier_t *barrier = nullptr;
+    /** Constructor. */
+    qvi_thread_s(void)
+    {
+        int rc = qvi_task_new(&task);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        // Groups
+        rc = qvi_new_rc(&group_tab);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+    }
 };
 
 /**
@@ -98,26 +107,7 @@ int
 qvi_thread_new(
     qvi_thread_t **th
 ) {
-    qvi_thread_t *ith = nullptr;
-    int rc = qvi_new_rc(&ith);
-    if (rc != QV_SUCCESS) {
-        goto out;
-    }
-    // Task
-    // TODO(skg) Rename, remove from source.
-    rc = qvi_task_new(&ith->task);
-    if (rc != QV_SUCCESS) goto out;
-    // Groups
-    ith->group_tab = qvi_new qvi_thread_group_tab_t();
-    if (!ith->group_tab) {
-        rc = QV_ERR_OOR;
-    }
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_thread_free(&ith);
-    }
-    *th = ith;
-    return rc;
+    return qvi_new_rc(th);
 }
 
 /**
@@ -185,9 +175,8 @@ qvi_thread_init(
  */
 int
 qvi_thread_finalize(
-    qvi_thread_t *th
+    qvi_thread_t *
 ) {
-    QVI_UNUSED(th);
     return QV_SUCCESS;
 }
 
@@ -198,11 +187,11 @@ int
 qvi_thread_node_barrier(
     qvi_thread_t *th
 ) {
-    int rc = pthread_barrier_wait(th->barrier);
+    const int rc = pthread_barrier_wait(th->barrier);
     if ((rc != 0) && (rc != PTHREAD_BARRIER_SERIAL_THREAD)) {
-      rc = QV_ERR_INTERNAL;
-    } else rc = QV_SUCCESS;
-    return rc;
+      return QV_ERR_INTERNAL;
+    }
+    return QV_SUCCESS;
 }
 
 /**
@@ -400,12 +389,12 @@ qvi_thread_group_barrier(
 
 #ifdef OPENMP_FOUND
 /**
- * Internal data structure for rank and size computing
+ * Internal data structure for rank and size computing.
  */
 typedef struct color_key_id_s {
-  int   color;
-  int   key;
-  int   rank;
+    int color;
+    int key;
+    int rank;
 } color_key_id_t;
 
 /**
@@ -415,7 +404,7 @@ static void swap_elts(
     color_key_id_t *el1,
     color_key_id_t *el2
 ) {
-    color_key_id_t tmp = *el1;
+    const color_key_id_t tmp = *el1;
     *el1 = *el2;
     *el2 = tmp;
 }
@@ -423,9 +412,10 @@ static void swap_elts(
 /**
  *
  */
-static void bubble_sort_by_color(
-     color_key_id_t tab[],
-     int size_tab
+static void
+bubble_sort_by_color(
+    color_key_id_t tab[],
+    int size_tab
 ) {
      if (size_tab > 1) {
        for(int i = 0 ; i < size_tab - 1 ; i++)
@@ -500,7 +490,8 @@ static void display_tab(
 /**
  *
  */
-static int qvi_get_subgroup_info(
+static int
+qvi_get_subgroup_info(
     const qvi_thread_group_t *parent,
     int color,
     int key,
@@ -508,7 +499,7 @@ static int qvi_get_subgroup_info(
     int *sgrp_size,
     int *sgrp_rank,
     int *num_of_sgrp
- ){
+) {
     int color_val= 0;
     int num_colors = 0;
     int idx = 0;
