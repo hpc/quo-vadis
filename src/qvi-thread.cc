@@ -35,18 +35,17 @@ using qvi_thread_group_tab_t = std::unordered_map<
 // We need to have one structure for fields
 // shared by all threads included in another
 // with fields specific to each thread
-// TODO(skg) Add atomic access.
 struct qvi_thread_group_shared_s {
-    /** for resource freeing */
-    int in_use = 0;
+    /** Atomic reference count used for resource freeing. */
+    std::atomic<int> in_use{0};
     /** UNUSED : ID (rank) in group */
     /* probably need a LIST of IDs ...*/
     int id = -1;
-    /** ID used for table lookups */
+    /** ID used for table lookups. */
     qvi_thread_group_id_t tabid = 0;
-    /** Size of group */
+    /** Group size. */
      int size = 0;
-    /** Barrier object (used in scope) */
+    /** Barrier object (used in scope). */
     pthread_barrier_t barrier;
 };
 
@@ -60,7 +59,7 @@ struct qvi_thread_group_s {
 };
 
 struct qvi_thread_s {
-    /** Task associated with this thread */
+    /** Task associated with this thread. */
     qvi_task_t *task = nullptr;
     /** Group table (ID to internal structure mapping) */
     qvi_thread_group_tab_t *group_tab = nullptr;
@@ -74,6 +73,19 @@ struct qvi_thread_s {
         // Groups
         rc = qvi_new_rc(&group_tab);
         if (rc != QV_SUCCESS) throw qvi_runtime_error();
+    }
+    /** Destructor. */
+    ~qvi_thread_s(void)
+    {
+        delete group_tab;
+        // Both pragmas should be okay since finalize is called from zgroups.
+        #pragma omp barrier // Ensure that no thread need this anymore.
+        #pragma omp single
+        {
+            pthread_barrier_destroy(barrier);
+            delete barrier;
+        }
+        qvi_task_free(&task);
     }
 };
 
@@ -93,10 +105,9 @@ cp_thread_group(
  */
 static int
 next_group_tab_id(
-    qvi_thread_t *th,
+    qvi_thread_t *,
     qvi_thread_group_id_t *gid
 ) {
-    QVI_UNUSED(th);
     return qvi_group_t::next_id(gid);
 }
 
@@ -117,27 +128,7 @@ void
 qvi_thread_free(
     qvi_thread_t **th
 ) {
-    if (!th) return;
-    qvi_thread_t *ith = *th;
-
-    if (!ith) goto out;
-
-    if (ith->group_tab) {
-        delete ith->group_tab;
-        ith->group_tab = nullptr;
-    }
-      // both pragma should be OK since finalize is called from zgroups
-#pragma omp barrier // ensure that no thread need this anymore
-#pragma omp single
-    {
-      pthread_barrier_destroy(ith->barrier);
-      delete ith->barrier;
-    }
-
-    qvi_task_free(&ith->task);
-    delete ith;
-out:
-    *th = nullptr;
+    qvi_delete(th);
 }
 
 /**
@@ -160,9 +151,9 @@ qvi_thread_init(
     /* GM: since all spawned threads are in the zgroup */
     /* using omp_get_num_threads is OK */
 #pragma omp single
-     pthread_barrier_init(th->barrier,NULL,omp_get_num_threads());
+     pthread_barrier_init(th->barrier, NULL, omp_get_num_threads());
 #else
-     pthread_barrier_init(th->barrier,NULL, 1); /* FIXME, thread number not right*/
+     pthread_barrier_init(th->barrier, NULL, 1); /* FIXME, thread number not right*/
 #endif
 
     return qvi_task_init(
@@ -223,7 +214,7 @@ qvi_thread_group_new(
     sdata = qvi_new qvi_thread_group_shared_t();
     if (!sdata) {
         qvi_thread_group_free(&ithgrp);
-	*thgrp = nullptr;
+        *thgrp = nullptr;
         return QV_ERR_OOR;;
     }
 
@@ -246,7 +237,7 @@ qvi_thread_group_free(
     qvi_thread_group_t *ithgrp = *thgrp;
     if (!ithgrp) goto out;
 
-    if ( --(ithgrp->sdata->in_use) == 0) {
+    if (--(ithgrp->sdata->in_use) == 0) {
       pthread_barrier_destroy(&(ithgrp->sdata->barrier));
       delete ithgrp->sdata;
     }
@@ -380,11 +371,11 @@ int
 qvi_thread_group_barrier(
     qvi_thread_group_t *group
 ) {
-    int rc = pthread_barrier_wait(&(group->sdata->barrier));
+    const int rc = pthread_barrier_wait(&(group->sdata->barrier));
     if ((rc != 0) && (rc != PTHREAD_BARRIER_SERIAL_THREAD)) {
-      rc = QV_ERR_INTERNAL;
-    } else rc = QV_SUCCESS;
-    return rc;
+        return QV_ERR_INTERNAL;
+    }
+    return QV_SUCCESS;
 }
 
 #ifdef OPENMP_FOUND
@@ -400,7 +391,8 @@ typedef struct color_key_id_s {
 /**
  *
  */
-static void swap_elts(
+static void
+swap_elts(
     color_key_id_t *el1,
     color_key_id_t *el2
 ) {
