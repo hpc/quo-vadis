@@ -46,13 +46,13 @@ qvi_thread_context_create(
 ) {
     // Create base context.
     qv_context_t *ictx = nullptr;
-    int rc = qvi_new_rc(&ictx);
+    int rc = qvi_new(&ictx);
     if (rc != QV_SUCCESS) {
         goto out;
     }
     // Create and initialize the base group.
     qvi_zgroup_thread_s *izgroup;
-    rc = qvi_new_rc(&izgroup);
+    rc = qvi_new(&izgroup);
     if (rc != QV_SUCCESS) {
         goto out;
     }
@@ -95,7 +95,7 @@ qv_thread_scope_split(
     int *color_array,
     int nthreads,
     qv_scope_t ***subscope
-){
+) {
     qv_hw_obj_type_t type;
     const int rc = qvi_scope_obj_type(scope, npieces, &type);
     if (rc != QV_SUCCESS) return rc;
@@ -117,7 +117,7 @@ qv_thread_scope_split_at(
 
 void *
 qv_thread_routine(
-    void * arg
+    void *arg
 ) {
     qv_thread_args_t *arg_ptr = (qv_thread_args_t *)arg;
     int rc = qv_bind_push(arg_ptr->ctx, arg_ptr->scope);
@@ -128,6 +128,8 @@ qv_thread_routine(
 
     void *ret = arg_ptr->thread_routine(arg_ptr->arg);
     // Free memory allocated in qv_pthread_create
+    // TODO(skg) Should we consider adding a free call-back? Are there any data
+    // here that may require user-level control?
     delete arg_ptr;
     pthread_exit(ret);
 }
@@ -143,7 +145,7 @@ qv_pthread_create(
 ) {
      // Memory will be freed in qv_thread_routine to avoid memory leaks.
      qv_thread_args_t *arg_ptr = nullptr;
-     int rc = qvi_new_rc(&arg_ptr);
+     int rc = qvi_new(&arg_ptr);
      if (rc != QV_SUCCESS) return rc;
 
      arg_ptr->ctx = ctx;

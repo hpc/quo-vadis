@@ -43,7 +43,7 @@ int
 qvi_bind_stack_new(
     qvi_bind_stack_t **bstack
 ) {
-    return qvi_new_rc(bstack);
+    return qvi_new(bstack);
 }
 
 void

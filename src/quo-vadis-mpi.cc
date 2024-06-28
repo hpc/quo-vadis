@@ -60,11 +60,11 @@ qvi_mpi_context_create(
 ) {
     // Create base context.
     qv_context_t *ictx = nullptr;
-    int rc = qvi_new_rc(&ictx);
+    int rc = qvi_new(&ictx);
     if (rc != QV_SUCCESS) goto out;
     // Create and initialize the base group.
     qvi_zgroup_mpi_s *izgroup;
-    rc = qvi_new_rc(&izgroup);
+    rc = qvi_new(&izgroup);
     if (rc != QV_SUCCESS) goto out;
 
     rc = izgroup->initialize(comm);

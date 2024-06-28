@@ -56,12 +56,6 @@ do {                                                                           \
     abort();                                                                   \
 } while (0)
 
-/**
- * Convenience macro for new(std::nothrow).
- */
-// TODO(skg) Remove
-#define qvi_new new(std::nothrow)
-
 #endif
 
 /*

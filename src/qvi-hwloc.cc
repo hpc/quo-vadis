@@ -212,7 +212,7 @@ int
 qvi_hwloc_new(
     qvi_hwloc_t **hwl
 ) {
-    return qvi_new_rc(hwl);
+    return qvi_new(hwl);
 }
 
 void
@@ -1177,7 +1177,7 @@ int
 qvi_hwloc_device_new(
     qvi_hwloc_device_t **dev
 ) {
-    return qvi_new_rc(dev);
+    return qvi_new(dev);
 }
 
 void

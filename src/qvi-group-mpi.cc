@@ -23,7 +23,7 @@ qvi_group_mpi_s::intrinsic(
     qvi_group_s **group
 ) {
     qvi_group_mpi_t *igroup = nullptr;
-    int rc = qvi_new_rc(&igroup);
+    int rc = qvi_new(&igroup);
     if (rc != QV_SUCCESS) goto out;
 
     rc = igroup->initialize(mpi);
@@ -62,7 +62,7 @@ qvi_group_mpi_s::self(
     qvi_group_t **child
 ) {
     qvi_group_mpi_t *ichild = nullptr;
-    int rc = qvi_new_rc(&ichild);
+    int rc = qvi_new(&ichild);
     if (rc != QV_SUCCESS) goto out;
     // Initialize the child with the parent's MPI instance.
     rc = ichild->initialize(mpi);
@@ -86,7 +86,7 @@ qvi_group_mpi_s::split(
     qvi_group_t **child
 ) {
     qvi_group_mpi_t *ichild = nullptr;
-    int rc = qvi_new_rc(&ichild);
+    int rc = qvi_new(&ichild);
     if (rc != QV_SUCCESS) goto out;
     // Initialize the child with the parent's MPI instance.
     rc = ichild->initialize(mpi);

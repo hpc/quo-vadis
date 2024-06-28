@@ -764,7 +764,7 @@ qvi_rmi_server_new(
     cstr_t ers = nullptr;
 
     qvi_rmi_server_t *iserver = nullptr;
-    int rc = qvi_new_rc(&iserver);
+    int rc = qvi_new(&iserver);
     if (rc != QV_SUCCESS) goto out;
 
     iserver->zctx = zmq_ctx_new();
@@ -774,7 +774,7 @@ qvi_rmi_server_new(
         goto out;
     }
 
-    rc = qvi_new_rc(&iserver->hwpool);
+    rc = qvi_new(&iserver->hwpool);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwpool_new() failed";
         goto out;
@@ -925,7 +925,7 @@ qvi_rmi_client_new(
     cstr_t ers = nullptr;
 
     qvi_rmi_client_t *icli = nullptr;
-    int rc = qvi_new_rc(&icli);
+    int rc = qvi_new(&icli);
     if (rc != QV_SUCCESS) goto out;
     // Remember clients own the hwloc data, unlike the server.
     rc = qvi_hwloc_new(&icli->config.hwloc);

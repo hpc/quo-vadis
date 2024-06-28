@@ -23,13 +23,13 @@ qvi_process_context_create(
     int rc = QV_SUCCESS;
     // Create base context.
     qv_context_t *ictx = nullptr;
-    rc = qvi_new_rc(&ictx);
+    rc = qvi_new(&ictx);
     if (rc != QV_SUCCESS) {
         goto out;
     }
     // Create and initialize the base group.
     qvi_zgroup_process_s *izgroup;
-    rc = qvi_new_rc(&izgroup);
+    rc = qvi_new(&izgroup);
     if (rc != QV_SUCCESS) {
         goto out;
     }

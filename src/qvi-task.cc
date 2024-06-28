@@ -36,7 +36,7 @@ int
 qvi_task_new(
     qvi_task_t **task
 ) {
-    return qvi_new_rc(task);
+    return qvi_new(task);
 }
 
 void

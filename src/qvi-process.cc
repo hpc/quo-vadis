@@ -74,7 +74,7 @@ int
 qvi_process_new(
     qvi_process_t **proc
 ) {
-    return qvi_new_rc(proc);
+    return qvi_new(proc);
 }
 
 void
@@ -103,7 +103,7 @@ int
 qvi_process_group_new(
     qvi_process_group_t **procgrp
 ) {
-    return qvi_new_rc(procgrp);
+    return qvi_new(procgrp);
 }
 
 void
