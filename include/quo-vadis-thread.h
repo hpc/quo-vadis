@@ -21,9 +21,7 @@
 #define QUO_VADIS_THREAD_H
 
 #include "quo-vadis.h"
-// TODO(skg) This shouldn't be exported at the interface level. This means that
-// we will have to hide the details requiring this header elsewhere.
-#include "qvi-hwloc.h"
+#include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {
