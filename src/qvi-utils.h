@@ -28,7 +28,7 @@
 // TODO(skg) Rename to qvi_new
 template <class T>
 int
-qvi_new_rc(
+qvi_new(
     T **t
 ) {
     try {

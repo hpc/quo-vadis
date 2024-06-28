@@ -231,7 +231,7 @@ int
 qvi_mpi_new(
     qvi_mpi_t **mpi
 ) {
-    return qvi_new_rc(mpi);
+    return qvi_new(mpi);
 }
 
 void
@@ -421,7 +421,7 @@ int
 qvi_mpi_group_new(
     qvi_mpi_group_t **group
 ) {
-    return qvi_new_rc(group);
+    return qvi_new(group);
 }
 
 void

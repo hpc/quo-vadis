@@ -513,7 +513,7 @@ int
 qvi_scope_new(
     qv_scope_t **scope
 ) {
-    return qvi_new_rc(scope);
+    return qvi_new(scope);
 }
 
 void
@@ -1275,7 +1275,7 @@ qvi_scope_create(
     if (rc != QV_SUCCESS) goto out;
     // Now that we have the desired cpuset,
     // create a corresponding hardware pool.
-    rc = qvi_new_rc(&hwpool);
+    rc = qvi_new(&hwpool);
     if (rc != QV_SUCCESS) goto out;
 
     rc = hwpool->initialize(cpuset);

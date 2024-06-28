@@ -142,7 +142,7 @@ qvi_hwpool_s::new_hwpool_by_cpuset(
 ) {
     // We obtained the CPUs, so create the new pool.
     qvi_hwpool_s *ipool = nullptr;
-    int rc = qvi_new_rc(&ipool);
+    int rc = qvi_new(&ipool);
     if (rc != QV_SUCCESS) goto out;
     // Initialize the hardware pool.
     rc = ipool->initialize(cpuset);

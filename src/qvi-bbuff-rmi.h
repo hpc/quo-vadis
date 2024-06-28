@@ -1046,7 +1046,7 @@ qvi_bbuff_rmi_unpack_item(
     size_t *bytes_written
 ) {
     qvi_hwpool_s *ihwp = nullptr;
-    int rc = qvi_new_rc(&ihwp);
+    int rc = qvi_new(&ihwp);
     if (rc != QV_SUCCESS) return rc;
 
     size_t bw = 0, total_bw = 0;

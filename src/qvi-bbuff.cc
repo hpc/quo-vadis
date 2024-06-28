@@ -44,7 +44,7 @@ int
 qvi_bbuff_new(
     qvi_bbuff_t **buff
 ) {
-    return qvi_new_rc(buff);
+    return qvi_new(buff);
 }
 
 void

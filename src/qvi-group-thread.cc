@@ -29,7 +29,7 @@ qvi_group_thread_s::intrinsic(
     // NOTE: the provided scope doesn't affect how
     // we create the thread group, so we ignore it.
     qvi_group_thread_t *igroup = nullptr;
-    int rc = qvi_new_rc(&igroup);
+    int rc = qvi_new(&igroup);
     if (rc != QV_SUCCESS) goto out;
 
     rc = igroup->initialize(th);
@@ -51,7 +51,7 @@ qvi_group_thread_s::self(
     qvi_group_t **child
 ) {
     qvi_group_thread_t *ichild = nullptr;
-    int rc = qvi_new_rc(&ichild);
+    int rc = qvi_new(&ichild);
     if (rc != QV_SUCCESS) goto out;
     // Initialize the child with the parent's thread instance.
     rc = ichild->initialize(th);
@@ -75,7 +75,7 @@ qvi_group_thread_s::split(
     qvi_group_t **child
 ) {
     qvi_group_thread_t *ichild = nullptr;
-    int rc = qvi_new_rc(&ichild);
+    int rc = qvi_new(&ichild);
     if (rc != QV_SUCCESS) goto out;
     // Initialize the child with the parent's MPI instance.
     rc = ichild->initialize(th);
