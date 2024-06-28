@@ -28,22 +28,6 @@ extern "C" {
 #endif
 
 /**
- * Mapping policies types.
- */
-
-typedef enum qv_policy_s {
-    QV_POLICY_PACKED     = 1,
-    QV_POLICY_COMPACT, /* same as QV_POLICY_PACKED */
-    QV_POLICY_CLOSE,   /* same as QV_POLICY_PACKED */
-    QV_POLICY_SPREAD,
-    QV_POLICY_DISTRIBUTE,
-    QV_POLICY_ALTERNATE, /* same as QV_POLICY_DISTRIBUTE */
-    QV_POLICY_CORESFIRST,/* same as QV_POLICY_DISTRIBUTE */
-    QV_POLICY_SCATTER,
-    QV_POLICY_CHOOSE
-} qv_policy_t;
-
-/**
  * Creates a thread context.
  */
 int
