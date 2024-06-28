@@ -206,7 +206,7 @@ qvi_thread_group_new(
     qvi_thread_group_shared_t *sdata = nullptr;
 
     if (!ithgrp) {
-	*thgrp = nullptr;
+    *thgrp = nullptr;
         return QV_ERR_OOR;
     }
 
@@ -409,26 +409,31 @@ bubble_sort_by_color(
     color_key_id_t tab[],
     int size_tab
 ) {
-     if (size_tab > 1) {
-       for(int i = 0 ; i < size_tab - 1 ; i++)
-	 if (tab[i].color > tab[i+1].color)
-	   swap_elts(&tab[i],&tab[i+1]);
-       bubble_sort_by_color(tab,size_tab-1);
-     }
+    if (size_tab > 1) {
+        for(int i = 0 ; i < size_tab - 1 ; i++) {
+            if (tab[i].color > tab[i+1].color) {
+                swap_elts(&tab[i],&tab[i+1]);
+            }
+        }
+        bubble_sort_by_color(tab, size_tab - 1);
+    }
 }
 
 /**
  *
  */
-static void bubble_sort_by_key(
+static void
+bubble_sort_by_key(
     color_key_id_t tab[],
     int size_tab
 ) {
     if (size_tab > 1) {
-      for(int i = 0 ; i < size_tab - 1 ; i++)
-        if ((tab[i].color == tab[i+1].color) &&
-            (tab[i].key > tab[i+1].key))
-	  swap_elts(&tab[i],&tab[i+1]);
+      for(int i = 0 ; i < size_tab - 1 ; i++) {
+          if ((tab[i].color == tab[i+1].color) &&
+              (tab[i].key > tab[i+1].key)) {
+              swap_elts(&tab[i],&tab[i+1]);
+          }
+      }
       bubble_sort_by_key(tab,size_tab-1);
     }
 }
@@ -441,12 +446,14 @@ static void bubble_sort_by_rank(
     int size_tab
 ) {
     if (size_tab > 1) {
-      for(int i = 0 ; i < size_tab - 1 ; i++)
-        if ((tab[i].color == tab[i+1].color) &&
-            (tab[i].key == tab[i+1].key)     &&
-            (tab[i].rank >  tab[i+1].rank))
-          swap_elts(&tab[i],&tab[i+1]);
-      bubble_sort_by_key(tab,size_tab-1);
+        for(int i = 0 ; i < size_tab - 1 ; i++) {
+            if ((tab[i].color == tab[i+1].color) &&
+                (tab[i].key == tab[i+1].key)     &&
+                (tab[i].rank > tab[i+1].rank)) {
+                swap_elts(&tab[i],&tab[i+1]);
+            }
+        }
+        bubble_sort_by_key(tab, size_tab - 1);
     }
 }
 
@@ -539,12 +546,12 @@ qvi_get_subgroup_info(
     color_val = lptr[0].color;
     for(int idx = 0 ; idx < size ; idx++) {
       if(lptr[idx].color != color_val) {
-	num_colors++;
-	color_val = lptr[idx].color;
+    num_colors++;
+    color_val = lptr[idx].color;
       }
       if(lptr[idx].color == color) {
-	*sgrp_rank = num_colors;
-	break;
+    *sgrp_rank = num_colors;
+    break;
       }
     }
 
@@ -613,13 +620,13 @@ qvi_thread_group_create_from_split(
     }
 
     rc = qvi_get_subgroup_info(
-	 parent,
-	 color,
-	 key,
-	 &newid,
-	 &sgrp_size,
-	 &sgrp_rank,
-	 &num_sgrp );
+     parent,
+     color,
+     key,
+     &newid,
+     &sgrp_size,
+     &sgrp_rank,
+     &num_sgrp );
     if (rc != QV_SUCCESS) {
       *child = nullptr;
       return QV_ERR_SPLIT;
@@ -634,8 +641,8 @@ qvi_thread_group_create_from_split(
     /* Equivalent to (sub)group "new" (cf qvi_thread_group_new) */
     new_group = qvi_new qvi_thread_group_t();
     if (!new_group) {
-      	*child = nullptr;
-    	return QV_ERR_OOR;
+          *child = nullptr;
+        return QV_ERR_OOR;
     }
 
     /* sdata pointer allocation */
@@ -651,15 +658,15 @@ qvi_thread_group_create_from_split(
 #pragma omp single copyprivate(tmp_sdata)
       tmp_sdata = qvi_new qvi_thread_group_shared_t();
       if (!tmp_sdata) {
-	delete new_group;
+    delete new_group;
 #pragma omp single
-	delete [] sdata_ptr_array;
-	*child = nullptr;
-	return QV_ERR_OOR;
+    delete [] sdata_ptr_array;
+    *child = nullptr;
+    return QV_ERR_OOR;
       }
       /* Since it's shared, only the root(s) need(s) to set this */
       if ((newid == 0) && (i == sgrp_rank))
-	sdata_ptr_array[i] = tmp_sdata;
+    sdata_ptr_array[i] = tmp_sdata;
     }
 
 #pragma omp single copyprivate(lock_ptr)
