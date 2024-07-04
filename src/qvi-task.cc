@@ -18,7 +18,7 @@
 #include "qvi-rmi.h"
 #include "qvi-utils.h"
 
-using qvi_task_bind_stack_t = std::stack<hwloc_cpuset_t>;
+using qvi_task_bind_stack_t = std::stack<qvi_hwloc_bitmap_s>;
 
 struct qvi_task_s {
     /** Client-side connection to the RMI. */
@@ -54,7 +54,8 @@ struct qvi_task_s {
         );
         if (rc != QV_SUCCESS) return rc;
 
-        stack.push(current_bind);
+        stack.push(qvi_hwloc_bitmap_s(current_bind));
+        hwloc_bitmap_free(current_bind);
         return rc;
     }
     /** Default constructor. */
@@ -75,7 +76,6 @@ struct qvi_task_s {
     ~qvi_task_s(void)
     {
         while (!stack.empty()) {
-            hwloc_bitmap_free(stack.top());
             stack.pop();
         }
         qvi_rmi_client_free(&rmi);
@@ -86,31 +86,24 @@ struct qvi_task_s {
         hwloc_const_cpuset_t cpuset
     ) {
         // Copy input bitmap because we don't want to directly modify it.
-        hwloc_cpuset_t bitmap_copy = nullptr;
-        int rc = qvi_hwloc_bitmap_dup(cpuset, &bitmap_copy);
-        if (rc != QV_SUCCESS) return rc;
+        qvi_hwloc_bitmap_s bitmap_copy(cpuset);
         // Change policy
-        rc = qvi_rmi_task_set_cpubind_from_cpuset(
-            rmi, me(), bitmap_copy
+        const int rc = qvi_rmi_task_set_cpubind_from_cpuset(
+            rmi, me(), bitmap_copy.cdata()
         );
-        if (rc != QV_SUCCESS) goto out;
+        if (rc != QV_SUCCESS) return rc;
         // Push bitmap onto stack.
         stack.push(bitmap_copy);
-    out:
-        if (rc != QV_SUCCESS) {
-            hwloc_bitmap_free(bitmap_copy);
-        }
         return rc;
     }
     /** */
     int
     bind_pop(void)
     {
-        hwloc_bitmap_free(stack.top());
         stack.pop();
 
         return qvi_rmi_task_set_cpubind_from_cpuset(
-            rmi, me(), stack.top()
+            rmi, me(), stack.top().cdata()
         );
     }
     /** */
