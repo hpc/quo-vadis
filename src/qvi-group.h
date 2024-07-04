@@ -21,14 +21,14 @@
 #include "qvi-task.h"
 
 /** Group ID type. */
-typedef uint64_t qvi_group_id_t;
+using qvi_group_id_t = uint64_t;
 
 /**
  * Virtual base group class.
  */
 struct qvi_group_s {
 protected:
-    /** Task associated with this MPI process */
+    /** Task associated with this group. */
     qvi_task_t *m_task = nullptr;
 public:
     /** Constructor. */
