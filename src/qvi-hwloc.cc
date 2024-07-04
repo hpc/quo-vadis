@@ -817,7 +817,7 @@ qvi_hwloc_emit_cpubind(
 
     qvi_log_info(
         "[pid={} tid={}] cpubind={}",
-        qvi_task_id_get_pid(task_id),
+        task_id.sid,
         qvi_gettid(),
         cpusets
     );
@@ -900,7 +900,7 @@ get_task_cpubind_flags(
     qvi_task_type_t task_type
 ) {
 #ifdef __linux__
-    if (task_type == QV_TASK_TYPE_THREAD) return HWLOC_CPUBIND_THREAD;
+    if (task_type == QVI_TASK_TYPE_THREAD) return HWLOC_CPUBIND_THREAD;
     return HWLOC_CPUBIND_PROCESS;
 #else
     return HWLOC_CPUBIND_PROCESS;
@@ -915,7 +915,7 @@ get_proc_cpubind(
 ) {
     int rc = hwloc_get_proc_cpubind(
         hwl->topo,
-        task_id.who,
+        task_id.sid,
         cpuset,
         get_task_cpubind_flags(task_id.type)
     );
@@ -961,7 +961,7 @@ qvi_hwloc_task_set_cpubind_from_cpuset(
 ) {
     const int rc = hwloc_set_proc_cpubind(
         hwl->topo,
-        qvi_task_id_get_pid(task_id),
+        task_id.sid,
         cpuset,
         get_task_cpubind_flags(task_id.type)
     );

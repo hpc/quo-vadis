@@ -30,7 +30,7 @@
 //#define MY_INTRINSIC_SCOPE QV_SCOPE_SYSTEM
 #define MY_INTRINSIC_SCOPE QV_SCOPE_PROCESS
 
-
+#if 0
 void *thread_work(void *arg)
 {
     qv_context_t *ctx = (qv_context_t *) arg;
@@ -49,7 +49,7 @@ void *thread_work(void *arg)
 
     return NULL;
 }
-
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -76,30 +76,23 @@ int main(int argc, char *argv[])
         qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
-    qv_context_t *ctx;
-    rc = qv_mpi_context_create(comm, &ctx);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_context_create() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
     qv_scope_t *user_scope;
-    rc = qv_scope_get(ctx, QV_SCOPE_USER, &user_scope);
+    rc = qv_mpi_scope_get(comm, QV_SCOPE_USER, &user_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_get() failed";
+        ers = "qv_mpi_scope_get() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     /* Split user scope evenly across tasks */
     qv_scope_t *task_scope;
-    rc = qv_scope_split(ctx, user_scope, wsize, wrank, &task_scope);
+    rc = qv_scope_split(user_scope, wsize, wrank, &task_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     /* Push into my task scope */
-    rc = qv_bind_push(ctx, task_scope);
+    rc = qv_scope_bind_push(task_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -107,7 +100,7 @@ int main(int argc, char *argv[])
 
     /* Where did I end up? */
     char *binds;
-    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
+    rc = qv_scope_bind_string(task_scope, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -138,14 +131,14 @@ int main(int argc, char *argv[])
      */
 
     int ncores;
-    rc = qv_scope_nobjs(ctx, task_scope, QV_HW_OBJ_CORE, &ncores);
+    rc = qv_scope_nobjs(task_scope, QV_HW_OBJ_CORE, &ncores);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     qv_scope_t *wk_scope;
-    rc = qv_scope_create(ctx, task_scope, QV_HW_OBJ_CORE, ncores-1, 0,
+    rc = qv_scope_create(task_scope, QV_HW_OBJ_CORE, ncores-1, 0,
             &wk_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_create() failed";
@@ -153,59 +146,58 @@ int main(int argc, char *argv[])
     }
 
     qv_scope_t *ut_scope;
-    rc = qv_scope_create(ctx, task_scope, QV_HW_OBJ_CORE, 1, 0,
-            &ut_scope);
+    rc = qv_scope_create(task_scope, QV_HW_OBJ_CORE, 1, 0, &ut_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_create() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     /* Test work scope */
-    rc = qv_bind_push(ctx, wk_scope);
+    rc = qv_scope_bind_push(wk_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
+    rc = qv_scope_bind_string(wk_scope, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Work scope: running on %s\n", wrank, binds);
     free(binds);
-    rc = qv_bind_pop(ctx);
+    rc = qv_scope_bind_pop(wk_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_pop() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     /* Test utility scope */
-    rc = qv_bind_push(ctx, ut_scope);
+    rc = qv_scope_bind_push(ut_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
+    rc = qv_scope_bind_string(ut_scope, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Utility scope: running on %s\n", wrank, binds);
     free(binds);
-    rc = qv_bind_pop(ctx);
+    rc = qv_scope_bind_pop(ut_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_pop() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     /* Clean up for now */
-    rc = qv_scope_free(ctx, ut_scope);
+    rc = qv_scope_free(ut_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(ctx, wk_scope);
+    rc = qv_scope_free(wk_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -221,6 +213,7 @@ int main(int argc, char *argv[])
        this is likely a library with its own interface
        and we don't want to modify the library's interface.
        Shall I create a new context? */
+#if 0
     qv_context_t *ctx2;
     rc = qv_mpi_context_create(comm, &ctx2);
     if (rc != QV_SUCCESS) {
@@ -305,7 +298,7 @@ int main(int argc, char *argv[])
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
+#endif
     MPI_Finalize();
 
     return EXIT_SUCCESS;

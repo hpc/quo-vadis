@@ -25,14 +25,14 @@
  * Constructs a new object of a given type. *t will be valid if successful,
  * undefined otherwise. Returns QV_SUCCESS if successful.
  */
-// TODO(skg) Rename to qvi_new
-template <class T>
+template <class T, typename... Types>
 int
 qvi_new(
-    T **t
+    T **t,
+    Types&&... args
 ) {
     try {
-        *t = new T();
+        *t = new T(std::forward<Types>(args)...);
         return QV_SUCCESS;
     }
     qvi_catch_and_return();

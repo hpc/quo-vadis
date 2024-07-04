@@ -60,46 +60,38 @@ main(
 
     setbuf(stdout, NULL);
 
-    qv_context_t *ctx;
-    rc = qv_mpi_context_create(comm, &ctx);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_context_create() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
     qv_scope_t *self_scope;
-    rc = qv_scope_get(
-        ctx,
+    rc = qv_mpi_scope_get(
+        comm,
         QV_SCOPE_PROCESS,
         &self_scope
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_get(QV_SCOPE_PROCESS) failed";
+        ers = "qv_mpi_scope_get(QV_SCOPE_PROCESS) failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    qvi_test_scope_report(ctx, self_scope, "self_scope");
+    qvi_test_scope_report(self_scope, "self_scope");
 
-    rc = qv_scope_free(ctx, self_scope);
+    rc = qv_scope_free(self_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     qv_scope_t *base_scope;
-    rc = qv_scope_get(
-        ctx,
+    rc = qv_mpi_scope_get(
+        comm,
         QV_SCOPE_USER,
         &base_scope
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_get() failed";
+        ers = "qv_mpi_scope_get() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    qvi_test_scope_report(ctx, base_scope, "base_scope");
+    qvi_test_scope_report(base_scope, "base_scope");
 
     int base_scope_ntasks;
     rc = qv_scope_ntasks(
-        ctx,
         base_scope,
         &base_scope_ntasks
     );
@@ -110,7 +102,6 @@ main(
 
     int base_scope_id;
     rc = qv_scope_taskid(
-        ctx,
         base_scope,
         &base_scope_id
     );
@@ -121,7 +112,6 @@ main(
 
     int n_pu;
     rc = qv_scope_nobjs(
-        ctx,
         base_scope,
         QV_HW_OBJ_PU,
         &n_pu
@@ -142,7 +132,6 @@ main(
 
     qv_scope_t *sub_scope;
     rc = qv_scope_split(
-        ctx,
         base_scope,
         npieces,
         gid,
@@ -154,7 +143,6 @@ main(
     }
 
     rc = qv_scope_nobjs(
-        ctx,
         sub_scope,
         QV_HW_OBJ_PU,
         &n_pu
@@ -165,13 +153,13 @@ main(
     }
     printf("[%d] Number of PUs in sub_scope is %d\n", wrank, n_pu);
 
-    qvi_test_scope_report(ctx, sub_scope, "sub_scope");
-    qvi_test_change_bind(ctx, sub_scope);
+    qvi_test_scope_report(sub_scope, "sub_scope");
+    qvi_test_change_bind(sub_scope);
 
     if (base_scope_id == 0) {
         qv_scope_t *create_scope;
         rc = qv_scope_create(
-            ctx, sub_scope, QV_HW_OBJ_CORE,
+            sub_scope, QV_HW_OBJ_CORE,
             1, 0, &create_scope
         );
         if (rc != QV_SUCCESS) {
@@ -181,7 +169,6 @@ main(
 
         int n_core;
         rc = qv_scope_nobjs(
-            ctx,
             create_scope,
             QV_HW_OBJ_PU,
             &n_core
@@ -192,9 +179,9 @@ main(
         }
         printf("[%d] Number of PUs in create_scope is %d\n", wrank, n_core);
 
-        qvi_test_scope_report(ctx, create_scope, "create_scope");
+        qvi_test_scope_report(create_scope, "create_scope");
 
-        rc = qv_scope_free(ctx, create_scope);
+        rc = qv_scope_free(create_scope);
         if (rc != QV_SUCCESS) {
             ers = "qv_scope_free() failed";
             qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -203,7 +190,6 @@ main(
 
     qv_scope_t *sub_sub_scope;
     rc = qv_scope_split(
-        ctx,
         sub_scope,
         npieces,
         gid,
@@ -215,7 +201,6 @@ main(
     }
 
     rc = qv_scope_nobjs(
-        ctx,
         sub_sub_scope,
         QV_HW_OBJ_PU,
         &n_pu
@@ -226,34 +211,22 @@ main(
     }
     printf("[%d] Number of PUs in sub_sub_scope is %d\n", wrank, n_pu);
 
-    rc = qv_scope_free(ctx, base_scope);
+    rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(ctx, sub_scope);
+    rc = qv_scope_free(sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(ctx, sub_sub_scope);
+    rc = qv_scope_free(sub_sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    rc = qv_context_barrier(ctx);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_context_barrier() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    rc = qv_mpi_context_free(ctx);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_context_free() failed";
-        qvi_test_panic("%s", ers);
     }
 
     MPI_Finalize();

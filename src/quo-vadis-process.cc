@@ -12,73 +12,35 @@
  */
 
 #include "quo-vadis-process.h"
-#include "qvi-context.h"
 #include "qvi-group-process.h"
+#include "qvi-scope.h"
 #include "qvi-utils.h"
 
 static int
-qvi_process_context_create(
-    qv_context_t **ctx
+qvi_process_scope_get(
+    qv_scope_intrinsic_t iscope,
+    qv_scope_t **scope
 ) {
-    int rc = QV_SUCCESS;
-    // Create base context.
-    qv_context_t *ictx = nullptr;
-    rc = qvi_new(&ictx);
+    // Create the base process group.
+    qvi_group_process_s *zgroup = nullptr;
+    int rc = qvi_new(&zgroup);
     if (rc != QV_SUCCESS) {
-        goto out;
+        *scope = nullptr;
+        return rc;
     }
-    // Create and initialize the base group.
-    qvi_zgroup_process_s *izgroup;
-    rc = qvi_new(&izgroup);
-    if (rc != QV_SUCCESS) {
-        goto out;
-    }
-    ictx->zgroup = izgroup;
-    // Connect to RMI server.
-    rc = qvi_context_connect_to_server(ictx);
-    if (rc != QV_SUCCESS) {
-        goto out;
-    }
-
-    rc = qvi_bind_stack_init(
-        ictx->bind_stack,
-        ictx->zgroup->task(),
-        ictx->rmi
-    );
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_delete(&ictx);
-    }
-    *ctx = ictx;
-    return rc;
+    return qvi_scope_get(zgroup, iscope, scope);
 }
 
 int
-qv_process_context_create(
-    qv_context_t **ctx
+qv_process_scope_get(
+    qv_scope_intrinsic_t iscope,
+    qv_scope_t **scope
 ) {
-    if (!ctx) return QV_ERR_INVLD_ARG;
-    try {
-        return qvi_process_context_create(ctx);
+    if (!scope) {
+        return QV_ERR_INVLD_ARG;
     }
-    qvi_catch_and_return();
-}
-
-static int
-qvi_process_context_free(
-    qv_context_t *ctx
-) {
-    qvi_delete(&ctx);
-    return QV_SUCCESS;
-}
-
-int
-qv_process_context_free(
-    qv_context_t *ctx
-) {
-    if (!ctx) return QV_ERR_INVLD_ARG;
     try {
-        return qvi_process_context_free(ctx);
+        return qvi_process_scope_get(iscope, scope);
     }
     qvi_catch_and_return();
 }

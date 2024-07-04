@@ -32,27 +32,15 @@ struct qvi_group_thread_s : public qvi_group_s {
     /** Underlying group instance. */
     qvi_thread_group_t *th_group = nullptr;
     /** Constructor. */
-    qvi_group_thread_s(void) = default;
+    qvi_group_thread_s(void)
+    {
+        int rc = qvi_thread_new(&th);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+    }
     /** Destructor. */
     virtual ~qvi_group_thread_s(void)
     {
         qvi_thread_group_free(&th_group);
-    }
-    /** Initializes the instance. */
-    int
-    initialize(
-        qvi_thread_t *th_a
-    ) {
-        if (!th_a) qvi_abort();
-
-        th = th_a;
-        return QV_SUCCESS;
-    }
-
-    virtual qvi_task_t *
-    task(void)
-    {
-        return qvi_thread_task_get(th);
     }
 
     virtual int
@@ -70,13 +58,13 @@ struct qvi_group_thread_s : public qvi_group_s {
     virtual int
     barrier(void)
     {
-        return qvi_thread_group_barrier(th_group);
+        // TODO(skg) FIXME
+        return QV_SUCCESS;
     }
 
     virtual int
-    intrinsic(
-        qv_scope_intrinsic_t intrinsic,
-        qvi_group_s **group
+    make_intrinsic(
+        qv_scope_intrinsic_t intrinsic
     );
 
     virtual int
@@ -115,28 +103,6 @@ struct qvi_group_thread_s : public qvi_group_s {
     }
 };
 typedef qvi_group_thread_s qvi_group_thread_t;
-
-struct qvi_zgroup_thread_s : public qvi_group_thread_s {
-    /** Constructor. */
-    qvi_zgroup_thread_s(void)
-    {
-        int rc = qvi_thread_new(&th);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
-        rc = qvi_thread_init(th);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
-    }
-    /** Destructor. */
-    virtual ~qvi_zgroup_thread_s(void)
-    {
-        qvi_thread_free(&th);
-    }
-    /** Node-local task barrier. */
-    virtual int
-    barrier(void)
-    {
-        return qvi_thread_node_barrier(th);
-    }
-};
 
 #endif
 

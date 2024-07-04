@@ -18,7 +18,7 @@
 #ifndef QVI_GROUP_MPI_H
 #define QVI_GROUP_MPI_H
 
-#include "qvi-common.h" // IWYU pragma: keep
+#include "qvi-common.h"
 #include "qvi-group.h"
 #include "qvi-mpi.h"
 
@@ -45,12 +45,6 @@ struct qvi_group_mpi_s : public qvi_group_s {
         return QV_SUCCESS;
     }
 
-    virtual qvi_task_t *
-    task(void)
-    {
-        return qvi_mpi_task_get(mpi);
-    }
-
     virtual int
     id(void)
     {
@@ -70,9 +64,8 @@ struct qvi_group_mpi_s : public qvi_group_s {
     }
 
     virtual int
-    intrinsic(
-        qv_scope_intrinsic_t intrinsic,
-        qvi_group_s **group
+    make_intrinsic(
+        qv_scope_intrinsic_t intrinsic
     );
 
     virtual int

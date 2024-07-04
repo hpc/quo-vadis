@@ -68,29 +68,20 @@ main(
 
     setbuf(stdout, NULL);
 
-    /* Create a QV context */
-    qv_context_t *ctx;
-    rc = qv_mpi_context_create(comm, &ctx);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_context_create() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
     /* Get base scope: RM-given resources */
     qv_scope_t *base_scope;
-    rc = qv_scope_get(
-        ctx,
+    rc = qv_mpi_scope_get(
+        comm,
         QV_SCOPE_USER,
         &base_scope
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_get() failed";
+        ers = "qv_mpi_scope_get() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int ncores;
     rc = qv_scope_nobjs(
-        ctx,
         base_scope,
         QV_HW_OBJ_CORE,
         &ncores
@@ -104,7 +95,7 @@ main(
       printf("\n===Phase 1: Regular split===\n");
 
     char *binds;
-    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
+    rc = qv_scope_bind_string(base_scope, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -116,7 +107,6 @@ main(
     /* Split the base scope evenly across workers */
     qv_scope_t *sub_scope;
     rc = qv_scope_split(
-        ctx,
         base_scope,
         wsize,        // Number of workers
 #ifdef USE_AFFINITY_PRESERVING
@@ -133,7 +123,6 @@ main(
 
     /* What resources did I get? */
     rc = qv_scope_nobjs(
-        ctx,
         sub_scope,
         QV_HW_OBJ_CORE,
         &ncores
@@ -147,14 +136,14 @@ main(
      * Phase 1: Everybody works
      ***************************************/
 
-    rc = qv_bind_push(ctx, sub_scope);
+    rc = qv_scope_bind_push(sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     /* Where did I end up? */
-    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
+    rc = qv_scope_bind_string(sub_scope, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -170,7 +159,6 @@ main(
     /* Launch one kernel per GPU */
     int ngpus;
     rc = qv_scope_nobjs(
-        ctx,
         sub_scope,
         QV_HW_OBJ_GPU,
         &ngpus
@@ -183,7 +171,7 @@ main(
 
     char *gpu;
     for (int i = 0; i < ngpus; i++) {
-        qv_scope_get_device_id(ctx, sub_scope, QV_HW_OBJ_GPU, i, QV_DEVICE_ID_PCI_BUS_ID, &gpu);
+        qv_scope_get_device_id(sub_scope, QV_HW_OBJ_GPU, i, QV_DEVICE_ID_PCI_BUS_ID, &gpu);
         printf("GPU %d PCI Bus ID = %s\n", i, gpu);
         //cudaDeviceGetByPCIBusId(&dev, gpu);
         //cudaSetDevice(dev);
@@ -192,13 +180,13 @@ main(
     }
 #endif
 
-    rc = qv_bind_pop(ctx);
+    rc = qv_scope_bind_pop(sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_pop() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
+    rc = qv_scope_bind_string(base_scope, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -207,7 +195,7 @@ main(
     free(binds);
 
     /* Keep printouts separate for each phase */
-    rc = qv_context_barrier(ctx);
+    rc = qv_scope_barrier(base_scope);
     if (rc != QV_SUCCESS) {
       ers = "qv_context_barrier() failed";
       qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -234,7 +222,6 @@ main(
     /* Get the number of NUMA domains so that we can
        specify the color/groupid of split_at */
     rc = qv_scope_nobjs(
-        ctx,
         base_scope,
         QV_HW_OBJ_NUMANODE,
         &nnumas
@@ -246,7 +233,6 @@ main(
 
     /* Split at NUMA domains */
     rc = qv_scope_split_at(
-        ctx,
         base_scope,
         QV_HW_OBJ_NUMANODE,
 #ifdef USE_AFFINITY_PRESERVING
@@ -263,7 +249,6 @@ main(
 
     /* Allow selecting a leader per NUMA */
     rc = qv_scope_taskid(
-        ctx,
         numa_scope,
         &my_numa_id
     );
@@ -275,14 +260,14 @@ main(
     printf("[%d]: #NUMAs=%d numa_scope_id=%d\n",
        wrank, nnumas, my_numa_id);
 
-    rc = qv_bind_push(ctx, numa_scope);
+    rc = qv_scope_bind_push(numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int my_nnumas;
-    rc = qv_scope_nobjs(ctx,
+    rc = qv_scope_nobjs(
             numa_scope,
             QV_HW_OBJ_NUMANODE,
             &my_nnumas);
@@ -292,7 +277,7 @@ main(
     }
 
     /* Where did I end up? */
-    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
+    rc = qv_scope_bind_string(numa_scope, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -306,7 +291,6 @@ main(
     if (my_numa_id == 0) {
         /* I am the process lead */
         rc = qv_scope_nobjs(
-            ctx,
             numa_scope,
             QV_HW_OBJ_PU,
             &npus
@@ -320,19 +304,19 @@ main(
     }
 
     /* Everybody else waits... */
-    rc = qv_scope_barrier(ctx, numa_scope);
+    rc = qv_scope_barrier(numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_context_barrier() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_bind_pop(ctx);
+    rc = qv_scope_bind_pop(numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_pop() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
+    rc = qv_scope_bind_string(base_scope, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -341,7 +325,7 @@ main(
     free(binds);
 
     /* Keep printouts separate for each phase */
-    rc = qv_context_barrier(ctx);
+    rc = qv_scope_barrier(base_scope);
     if (rc != QV_SUCCESS) {
       ers = "qv_context_barrier() failed";
       qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -360,7 +344,7 @@ main(
 
     /* Get the number of GPUs so that we can
        specify the color/groupid of split_at */
-    rc = qv_scope_nobjs(ctx, base_scope,
+    rc = qv_scope_nobjs(base_scope,
             QV_HW_OBJ_GPU, &ngpus);
     if (rc != QV_SUCCESS) {
       ers = "qv_scope_nobjs() failed";
@@ -374,7 +358,6 @@ main(
 
     /* Split at GPUs */
     rc = qv_scope_split_at(
-        ctx,
         base_scope,
         QV_HW_OBJ_GPU,
 #ifdef USE_AFFINITY_PRESERVING
@@ -391,7 +374,6 @@ main(
 
     /* Allow selecting a leader per NUMA */
     rc = qv_scope_taskid(
-        ctx,
         gpu_scope,
         &my_gpu_id
     );
@@ -400,14 +382,14 @@ main(
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_bind_push(ctx, gpu_scope);
+    rc = qv_scope_bind_push(gpu_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int my_ngpus;
-    rc = qv_scope_nobjs(ctx,
+    rc = qv_scope_nobjs(
             gpu_scope,
             QV_HW_OBJ_GPU,
             &my_ngpus);
@@ -417,7 +399,7 @@ main(
     }
 
     /* Where did I end up? */
-    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
+    rc = qv_scope_bind_string(gpu_scope, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -427,7 +409,7 @@ main(
     free(binds);
 
     for (int i=0; i<my_ngpus; i++) {
-      qv_scope_get_device_id(ctx, gpu_scope, QV_HW_OBJ_GPU,
+      qv_scope_get_device_id(gpu_scope, QV_HW_OBJ_GPU,
               i, QV_DEVICE_ID_PCI_BUS_ID, &gpu);
       printf("   [%d] GPU %d PCI Bus ID = %s\n", wrank, i, gpu);
       free(gpu);
@@ -436,40 +418,29 @@ main(
     /***************************************
      * Clean up
      ***************************************/
-    rc = qv_scope_free(ctx, gpu_scope);
+    rc = qv_scope_free(gpu_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
 done:
-    rc = qv_scope_free(ctx, numa_scope);
+    rc = qv_scope_free(numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(ctx, sub_scope);
+    rc = qv_scope_free(sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(ctx, base_scope);
+    rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    rc = qv_context_barrier(ctx);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_context_barrier() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    if (qv_mpi_context_free(ctx) != QV_SUCCESS) {
-        ers = "qv_mpi_context_free() failed";
-        qvi_test_panic("%s", ers);
     }
 
     MPI_Finalize();

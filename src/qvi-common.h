@@ -59,9 +59,26 @@
 #endif
 // IWYU pragma: end_keep
 
+// Internal types.
 typedef uint8_t byte_t;
 typedef char const* cstr_t;
 typedef unsigned int uint_t;
+
+/** Opaque bind stack. */
+struct qvi_bind_stack_s;
+typedef struct qvi_bind_stack_s qvi_bind_stack_t;
+
+/** Opaque RMI client. */
+struct qvi_rmi_client_s;
+typedef struct qvi_rmi_client_s qvi_rmi_client_t;
+
+/** Opaque byte buffer. */
+struct qvi_bbuff_s;
+typedef struct qvi_bbuff_s qvi_bbuff_t;
+
+/** Opaque task. */
+struct qvi_task_s;
+typedef struct qvi_task_s qvi_task_t;
 
 #endif
 

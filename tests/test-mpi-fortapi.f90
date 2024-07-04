@@ -22,7 +22,7 @@ program mpi_fortapi
     integer(c_int) ntasks, taskid, n_cores, n_gpu
     integer(c_int) vmajor, vminor, vpatch
     integer cwrank, cwsize, scope_comm, scope_comm_size
-    type(c_ptr) ctx, scope_user
+    type(c_ptr) scope_user, sub_scope
     character(len=:),allocatable :: bstr(:)
     character(len=:),allocatable :: dev_pci(:)
     character, pointer, dimension(:) :: strerr
@@ -53,17 +53,12 @@ program mpi_fortapi
         print *, 'cwsize', cwsize
     end if
 
-    call qv_mpi_context_create(MPI_COMM_WORLD, ctx, info)
+    call qv_mpi_scope_get(MPI_COMM_WORLD, QV_SCOPE_USER, scope_user, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
 
-    call qv_scope_get(ctx, QV_SCOPE_USER, scope_user, info)
-    if (info .ne. QV_SUCCESS) then
-        error stop
-    end if
-
-    call qv_mpi_scope_comm_dup(ctx, scope_user, scope_comm, info)
+    call qv_mpi_scope_comm_dup(scope_user, scope_comm, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
@@ -81,32 +76,44 @@ program mpi_fortapi
         error stop
     end if
 
-    call qv_scope_ntasks(ctx, scope_user, ntasks, info)
+    call qv_scope_ntasks(scope_user, ntasks, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
     print *, 'ntasks', ntasks
 
-    call qv_scope_taskid(ctx, scope_user, taskid, info)
+    call qv_scope_taskid(scope_user, taskid, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
     print *, 'taskid', taskid
 
-    call qv_scope_nobjs(ctx, scope_user, QV_HW_OBJ_CORE, n_cores, info)
+    call qv_scope_nobjs(scope_user, QV_HW_OBJ_CORE, n_cores, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
     print *, 'ncores', n_cores
 
-    call qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, bstr, info)
+    call qv_scope_split(scope_user, 2, taskid, sub_scope, info)
+
+    call qv_scope_bind_push(sub_scope, info)
+    if (info .ne. QV_SUCCESS) then
+        error stop
+    end if
+
+    call qv_scope_bind_string(sub_scope, QV_BIND_STRING_AS_LIST, bstr, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
     print *, 'bstr ', bstr
     deallocate(bstr)
 
-    call qv_scope_nobjs(ctx, scope_user, QV_HW_OBJ_GPU, n_gpu, info)
+    call qv_scope_bind_pop(sub_scope, info)
+    if (info .ne. QV_SUCCESS) then
+        error stop
+    end if
+
+    call qv_scope_nobjs(scope_user, QV_HW_OBJ_GPU, n_gpu, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
@@ -114,7 +121,7 @@ program mpi_fortapi
 
     do n = 0, n_gpu - 1
         call qv_scope_get_device_id( &
-            ctx, scope_user, QV_HW_OBJ_GPU, n, &
+            scope_user, QV_HW_OBJ_GPU, n, &
             QV_DEVICE_ID_PCI_BUS_ID, dev_pci, info &
         )
         if (info .ne. QV_SUCCESS) then
@@ -131,12 +138,12 @@ program mpi_fortapi
     strerr => qv_strerr(QV_ERR_OOR)
     print *, 'err oor is ', strerr
 
-    call qv_scope_free(ctx, scope_user, info)
+    call qv_scope_free(scope_user, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
 
-    call qv_mpi_context_free(ctx, info)
+    call qv_scope_free(sub_scope, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if

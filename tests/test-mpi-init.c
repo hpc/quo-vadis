@@ -45,16 +45,16 @@ main(
         qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
-    qv_context_t *ctx = NULL;
-    rc = qv_mpi_context_create(comm, &ctx);
+    qv_scope_t *scope = NULL;
+    rc = qv_mpi_scope_get(comm, QV_SCOPE_USER, &scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_context_create() failed";
+        ers = "qv_mpi_scope_get() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_mpi_context_free(ctx);
+    rc = qv_scope_free(scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_context_free() failed";
+        ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 

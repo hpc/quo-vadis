@@ -14,8 +14,7 @@
 #ifndef QVI_PROCESS_H
 #define QVI_PROCESS_H
 
-#include "qvi-common.h" // IWYU pragma: keep
-#include "qvi-task.h"
+#include "qvi-common.h"
 #include "qvi-bbuff.h"
 
 #ifdef __cplusplus
@@ -50,14 +49,6 @@ qvi_process_free(
  */
 int
 qvi_process_node_barrier(
-    qvi_process_t *proc
-);
-
-/**
- *
- */
-qvi_task_t *
-qvi_process_task_get(
     qvi_process_t *proc
 );
 

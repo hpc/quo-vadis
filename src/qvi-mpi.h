@@ -186,14 +186,6 @@ qvi_mpi_group_barrier(
 /**
  *
  */
-qvi_task_t *
-qvi_mpi_task_get(
-    qvi_mpi_t *mpi
-);
-
-/**
- *
- */
 int
 qvi_mpi_group_gather_bbuffs(
     qvi_mpi_group_t *group,

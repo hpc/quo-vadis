@@ -27,12 +27,10 @@ add_library(
       qvi-hwpool.h
       qvi-rmi.h
       qvi-bbuff-rmi.h
-      qvi-context.h
       qvi-task.h
       qvi-group.h
       qvi-map.h
       qvi-scope.h
-      qvi-bind.h
       qvi-log.cc
       qvi-utils.cc
       qvi-bbuff.cc
@@ -41,11 +39,9 @@ add_library(
       qvi-rsmi.cc
       qvi-hwpool.cc
       qvi-rmi.cc
-      qvi-context.cc
       qvi-task.cc
       qvi-map.cc
       qvi-scope.cc
-      qvi-bind.cc
       quo-vadis.cc
 )
 

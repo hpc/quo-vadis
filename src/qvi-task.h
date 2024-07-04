@@ -17,31 +17,28 @@
 #ifndef QVI_TASK_H
 #define QVI_TASK_H
 
-#include "qvi-common.h" // IWYU pragma: keep
+#include "qvi-common.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-struct qvi_task_s;
-typedef struct qvi_task_s qvi_task_t;
-
 /**
  * Supported task types.
  */
 typedef enum qvi_task_type_e {
-    QV_TASK_TYPE_PROCESS = 0,
-    QV_TASK_TYPE_THREAD
+    QVI_TASK_TYPE_PROCESS = 0,
+    QVI_TASK_TYPE_THREAD
 } qvi_task_type_t;
 
 /**
  * Task identification.
  */
 typedef struct qvi_task_id_s {
-    /** Task type (OS process or OS thread) */
+    /** Task type (OS process or OS thread). */
     qvi_task_type_t type;
-    /** Process ID or Thread ID */
-    pid_t who;
+    /** System ID: process or thread ID. */
+    pid_t sid;
 } qvi_task_id_t;
 
 /**
@@ -52,81 +49,35 @@ qvi_task_new(
     qvi_task_t **task
 );
 
-/**
- *
- */
 void
 qvi_task_free(
     qvi_task_t **task
 );
 
-/**
- *
- */
-int
-qvi_task_init(
-    qvi_task_t *task,
-    qvi_task_type_t type,
-    pid_t who,
-    int64_t gid,
-    int lid
+qvi_rmi_client_t *
+qvi_task_rmi(
+    qvi_task_t *task
 );
 
-/**
- *
- */
-// TODO(skg) Rename to qvi_task_id
 qvi_task_id_t
-qvi_task_task_id(
-    qvi_task_t *task
-);
+qvi_task_id(void);
 
-/**
- *
- */
-qvi_task_type_t
-qvi_task_type(
-    qvi_task_t *task
-);
-
-/**
- *
- */
-pid_t
-qvi_task_pid(
-    qvi_task_t *task
-);
-
-/**
- *
- */
-int64_t
-qvi_task_gid(
-    qvi_task_t *task
-);
-
-/**
- *
- */
 int
-qvi_task_lid(
+qvi_task_bind_push(
+    qvi_task_t *task,
+    hwloc_const_cpuset_t cpuset
+);
+
+int
+qvi_task_bind_pop(
     qvi_task_t *task
 );
 
-/**
- *
- */
-qvi_task_type_t
-qvi_task_id_get_type(
-    qvi_task_id_t task_id
-);
-
-/**
- *
- */
-pid_t
-qvi_task_id_get_pid(
-    qvi_task_id_t task_id
+int
+qvi_task_bind_string(
+    qvi_task_t *task,
+    qv_bind_string_format_t format,
+    char **str
 );
 
 #ifdef __cplusplus

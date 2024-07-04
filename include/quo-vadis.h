@@ -38,10 +38,6 @@ extern "C" {
  */
 #define QUO_VADIS_API_VERSION 0x00000001
 
-/** Opaque quo-vadis context. */
-struct qv_context_s;
-typedef struct qv_context_s qv_context_t;
-
 /** Opaque quo-vadis scope. */
 struct qv_scope_s;
 typedef struct qv_scope_s qv_scope_t;
@@ -173,18 +169,35 @@ qv_version(
  *
  */
 int
-qv_scope_get(
-    qv_context_t *ctx,
-    qv_scope_intrinsic_t iscope,
-    qv_scope_t **scope
+qv_scope_nobjs(
+    qv_scope_t *scope,
+    qv_hw_obj_type_t obj,
+    int *nobjs
 );
 
 /**
  *
  */
 int
-qv_scope_free(
-    qv_context_t *ctx,
+qv_scope_taskid(
+    qv_scope_t *scope,
+    int *taskid
+);
+
+/**
+ *
+ */
+int
+qv_scope_ntasks(
+    qv_scope_t *scope,
+    int *ntasks
+);
+
+/**
+ *
+ */
+int
+qv_scope_barrier(
     qv_scope_t *scope
 );
 
@@ -192,24 +205,12 @@ qv_scope_free(
  *
  */
 int
-qv_scope_split(
-    qv_context_t *ctx,
+qv_scope_get_device_id(
     qv_scope_t *scope,
-    int npieces,
-    int group_id,
-    qv_scope_t **subscope
-);
-
-/**
- *
- */
-int
-qv_scope_split_at(
-    qv_context_t *ctx,
-    qv_scope_t *scope,
-    qv_hw_obj_type_t type,
-    int group_id,
-    qv_scope_t **subscope
+    qv_hw_obj_type_t dev_obj,
+    int dev_index,
+    qv_device_id_type_t id_type,
+    char **dev_id
 );
 
 /**
@@ -218,7 +219,6 @@ qv_scope_split_at(
 // TODO(skg) Add to Fortran interface.
 int
 qv_scope_create(
-    qv_context_t *ctx,
     qv_scope_t *scope,
     qv_hw_obj_type_t type,
     int nobjs,
@@ -230,39 +230,29 @@ qv_scope_create(
  *
  */
 int
-qv_scope_nobjs(
-    qv_context_t *ctx,
+qv_scope_split(
     qv_scope_t *scope,
-    qv_hw_obj_type_t obj,
-    int *nobjs
+    int npieces,
+    int group_id,
+    qv_scope_t **subscope
 );
 
 /**
  *
  */
 int
-qv_scope_taskid(
-    qv_context_t *ctx,
+qv_scope_split_at(
     qv_scope_t *scope,
-    int *taskid
+    qv_hw_obj_type_t type,
+    int group_id,
+    qv_scope_t **subscope
 );
 
 /**
  *
  */
 int
-qv_scope_ntasks(
-    qv_context_t *ctx,
-    qv_scope_t *scope,
-    int *ntasks
-);
-
-/**
- *
- */
-int
-qv_scope_barrier(
-    qv_context_t *ctx,
+qv_scope_free(
     qv_scope_t *scope
 );
 
@@ -270,21 +260,7 @@ qv_scope_barrier(
  *
  */
 int
-qv_scope_get_device_id(
-    qv_context_t *ctx,
-    qv_scope_t *scope,
-    qv_hw_obj_type_t dev_obj,
-    int dev_index,
-    qv_device_id_type_t id_type,
-    char **dev_id
-);
-
-/**
- *
- */
-int
-qv_bind_push(
-    qv_context_t *ctx,
+qv_scope_bind_push(
     qv_scope_t *scope
 );
 
@@ -292,26 +268,18 @@ qv_bind_push(
  *
  */
 int
-qv_bind_pop(
-    qv_context_t *ctx
+qv_scope_bind_pop(
+    qv_scope_t *scope
 );
 
 /**
  *
  */
 int
-qv_bind_string(
-    qv_context_t *ctx,
+qv_scope_bind_string(
+    qv_scope_t *scope,
     qv_bind_string_format_t format,
     char **str
-);
-
-/**
- *
- */
-int
-qv_context_barrier(
-    qv_context_t *ctx
 );
 
 /**

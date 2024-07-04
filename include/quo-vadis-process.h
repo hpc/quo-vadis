@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c)      2022 Triad National Security, LLC
+ * Copyright (c) 2022-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -24,17 +24,9 @@ extern "C" {
  * Creates a process context.
  */
 int
-qv_process_context_create(
-    qv_context_t **ctx
-);
-
-/**
- * Frees resources associated with a context created by
- * qv_process_context_create().
- */
-int
-qv_process_context_free(
-    qv_context_t *ctx
+qv_process_scope_get(
+    qv_scope_intrinsic_t iscope,
+    qv_scope_t **scope
 );
 
 #ifdef __cplusplus

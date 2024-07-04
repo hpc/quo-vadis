@@ -16,10 +16,8 @@
 #ifndef QVI_THREAD_H
 #define QVI_THREAD_H
 
-#include "qvi-common.h" // IWYU pragma: keep
-
-#include "qvi-task.h"
-#include "qvi-bbuff.h"
+#include "qvi-common.h"
+#include "qvi-bbuff.h" // IWYU pragma: keep
 
 #ifdef __cplusplus
 extern "C" {
@@ -83,14 +81,6 @@ qvi_thread_free(
  *
  */
 int
-qvi_thread_init(
-    qvi_thread_t *th
-);
-
-/**
- *
- */
-int
 qvi_thread_finalize(
     qvi_thread_t *th
 );
@@ -100,14 +90,6 @@ qvi_thread_finalize(
  */
 int
 qvi_thread_node_barrier(
-    qvi_thread_t *th
-);
-
-/**
- *
- */
-qvi_task_t *
-qvi_thread_task_get(
     qvi_thread_t *th
 );
 
@@ -159,14 +141,6 @@ int
 qvi_thread_group_create_single(
     qvi_thread_t *proc,
     qvi_thread_group_t **group
-);
-
-/**
- *
- */
-int
-qvi_thread_group_barrier(
-    qvi_thread_group_t *group
 );
 
 /**

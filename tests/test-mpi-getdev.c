@@ -16,13 +16,12 @@ static const device_name_type_t devnts[] = {
 // TODO(skg) Merge with others
 static void
 emit_gpu_info(
-    qv_context_t *ctx,
     qv_scope_t *scope,
     const char *scope_name
 ) {
     /* Get number of GPUs */
     int ngpus;
-    int rc = qv_scope_nobjs(ctx, scope, QV_HW_OBJ_GPU, &ngpus);
+    int rc = qv_scope_nobjs(scope, QV_HW_OBJ_GPU, &ngpus);
     if (rc != QV_SUCCESS) {
         const char *ers = "qv_scope_nobjs() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -39,7 +38,6 @@ emit_gpu_info(
         for (unsigned j = 0; j < ndevids; ++j) {
             char *devids = NULL;
             int rc = qv_scope_get_device_id(
-                ctx,
                 scope,
                 QV_HW_OBJ_GPU,
                 i,
@@ -85,29 +83,21 @@ main(
         qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
-    /* Create a QV context */
-    qv_context_t *ctx;
-    rc = qv_mpi_context_create(comm, &ctx);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_context_create() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
     /* Get base scope: RM-given resources */
     qv_scope_t *base_scope;
-    rc = qv_scope_get(ctx, QV_SCOPE_USER, &base_scope);
+    rc = qv_mpi_scope_get(comm, QV_SCOPE_USER, &base_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_get() failed";
+        ers = "qv_mpi_scope_get() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     if (wrank == 0) {
-        emit_gpu_info(ctx, base_scope, "Base Scope");
+        emit_gpu_info(base_scope, "Base Scope");
     }
 
     /* Get number of GPUs */
     int ngpus;
-    rc = qv_scope_nobjs(ctx, base_scope, QV_HW_OBJ_GPU, &ngpus);
+    rc = qv_scope_nobjs(base_scope, QV_HW_OBJ_GPU, &ngpus);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -119,7 +109,6 @@ main(
     /* Split the base scope evenly across workers */
     qv_scope_t *rank_scope;
     rc = qv_scope_split(
-            ctx,
             base_scope,
             wsize,        // Number of workers
             //wrank,        // My group color
@@ -132,7 +121,7 @@ main(
     }
 
     /* Move to my subscope */
-    rc = qv_bind_push(ctx, rank_scope);
+    rc = qv_scope_bind_push(rank_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -140,14 +129,14 @@ main(
 
     /* Get num GPUs */
     int rank_ngpus;
-    rc = qv_scope_nobjs(ctx, rank_scope, QV_HW_OBJ_GPU, &rank_ngpus);
+    rc = qv_scope_nobjs(rank_scope, QV_HW_OBJ_GPU, &rank_ngpus);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d]: Local scope has %d GPUs\n", wrank, rank_ngpus);
     // TODO(skg) Improve this test.
-    emit_gpu_info(ctx, rank_scope, "Rank Scope");
+    emit_gpu_info(rank_scope, "Rank Scope");
 
     int total_ngpus;
     MPI_Reduce(&rank_ngpus, &total_ngpus, 1, MPI_INT, MPI_SUM, 0, comm);
@@ -162,9 +151,8 @@ main(
         }
     }
 
-    qv_scope_free(ctx, rank_scope);
-    qv_scope_free(ctx, base_scope);
-    qv_mpi_context_free(ctx);
+    qv_scope_free(rank_scope);
+    qv_scope_free(base_scope);
 
     MPI_Finalize();
 

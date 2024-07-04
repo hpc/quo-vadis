@@ -146,32 +146,20 @@ interface
     end function qv_version_c
 
     integer(c_int) &
-    function qv_scope_get_c(ctx, iscope, scope) &
-        bind(c, name='qv_scope_get')
-        use, intrinsic :: iso_c_binding, only: c_ptr, c_int
-        implicit none
-        type(c_ptr), value :: ctx
-        integer(c_int), value :: iscope
-        type(c_ptr), intent(out) :: scope
-    end function qv_scope_get_c
-
-    integer(c_int) &
-    function qv_scope_free_c(ctx, scope) &
+    function qv_scope_free_c(scope) &
         bind(c, name='qv_scope_free')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
     end function qv_scope_free_c
 
     integer(c_int) &
     function qv_scope_split_c( &
-        ctx, scope, npieces, group_id, subscope &
+        scope, npieces, group_id, subscope &
     ) &
         bind(c, name='qv_scope_split')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
         integer(c_int), value :: npieces
         integer(c_int), value :: group_id
@@ -180,12 +168,11 @@ interface
 
     integer(c_int) &
     function qv_scope_split_at_c( &
-        ctx, scope, obj_type, group_id, subscope &
+        scope, obj_type, group_id, subscope &
     ) &
         bind(c, name='qv_scope_split_at')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
         integer(c_int), value :: obj_type
         integer(c_int), value :: group_id
@@ -193,53 +180,48 @@ interface
     end function qv_scope_split_at_c
 
     integer(c_int) &
-    function qv_scope_nobjs_c(ctx, scope, obj, n) &
+    function qv_scope_nobjs_c(scope, obj, n) &
         bind(c, name='qv_scope_nobjs')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
         integer(c_int), value :: obj
         integer(c_int), intent(out) :: n
     end function qv_scope_nobjs_c
 
     integer(c_int) &
-    function qv_scope_taskid_c(ctx, scope, taskid) &
+    function qv_scope_taskid_c(scope, taskid) &
         bind(c, name='qv_scope_taskid')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: taskid
     end function qv_scope_taskid_c
 
     integer(c_int) &
-    function qv_scope_ntasks_c(ctx, scope, ntasks) &
+    function qv_scope_ntasks_c(scope, ntasks) &
         bind(c, name='qv_scope_ntasks')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: ntasks
     end function qv_scope_ntasks_c
 
     integer(c_int) &
-    function qv_scope_barrier_c(ctx, scope) &
+    function qv_scope_barrier_c(scope) &
         bind(c, name='qv_scope_barrier')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
     end function qv_scope_barrier_c
 
     integer(c_int) &
     function qv_scope_get_device_id_c( &
-        ctx, scope, dev_obj, i, id_type, dev_id &
+        scope, dev_obj, i, id_type, dev_id &
     ) &
         bind(c, name='qv_scope_get_device_id')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
         integer(c_int), value :: dev_obj
         integer(c_int), value :: i
@@ -248,39 +230,30 @@ interface
     end function qv_scope_get_device_id_c
 
     integer(c_int) &
-    function qv_bind_push_c(ctx, scope) &
-        bind(c, name='qv_bind_push')
+    function qv_scope_bind_push_c(scope) &
+        bind(c, name='qv_scope_bind_push')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
-    end function qv_bind_push_c
+    end function qv_scope_bind_push_c
 
     integer(c_int) &
-    function qv_bind_pop_c(ctx) &
-        bind(c, name='qv_bind_pop')
+    function qv_scope_bind_pop_c(scope) &
+        bind(c, name='qv_scope_bind_pop')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
-    end function qv_bind_pop_c
+        type(c_ptr), value :: scope
+    end function qv_scope_bind_pop_c
 
     integer(c_int) &
-    function qv_bind_string_c(ctx, sformat, str) &
-        bind(c, name='qv_bind_string')
+    function qv_scope_bind_string_c(scope, sformat, str) &
+        bind(c, name='qv_scope_bind_string')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
+        type(c_ptr), value :: scope
         integer(c_int), value :: sformat
         type(c_ptr), intent(out) :: str
-    end function qv_bind_string_c
-
-    integer(c_int) &
-    function qv_context_barrier_c(ctx) &
-        bind(c, name='qv_context_barrier')
-        use, intrinsic :: iso_c_binding, only: c_ptr, c_int
-        implicit none
-        type(c_ptr), value :: ctx
-    end function qv_context_barrier_c
+    end function qv_scope_bind_string_c
 
     type(c_ptr) &
     function qv_strerr_c(ec) &
@@ -322,103 +295,85 @@ contains
         info = qv_version_c(major, minor, patch)
     end subroutine qv_version
 
-    subroutine qv_scope_get(ctx, iscope, scope, info)
+    subroutine qv_scope_free(scope, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
-        integer(c_int), value :: iscope
-        type(c_ptr), intent(out) :: scope
-        integer(c_int), intent(out) :: info
-        info = qv_scope_get_c(ctx, iscope, scope)
-    end subroutine qv_scope_get
-
-    subroutine qv_scope_free(ctx, scope, info)
-        use, intrinsic :: iso_c_binding, only: c_ptr, c_int
-        implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: info
-        info = qv_scope_free_c(ctx, scope)
+        info = qv_scope_free_c(scope)
     end subroutine qv_scope_free
 
     subroutine qv_scope_split( &
-        ctx, scope, npieces, group_id, subscope, info &
+        scope, npieces, group_id, subscope, info &
     )
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
         integer(c_int), value :: npieces
         integer(c_int), value :: group_id
         type(c_ptr), intent(out) :: subscope
         integer(c_int), intent(out) :: info
         info = qv_scope_split_c( &
-            ctx, scope, npieces, group_id, subscope &
+            scope, npieces, group_id, subscope &
         )
     end subroutine qv_scope_split
 
     subroutine qv_scope_split_at( &
-        ctx, scope, obj_type, group_id, subscope, info &
+        scope, obj_type, group_id, subscope, info &
     )
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
         integer(c_int), value :: obj_type
         integer(c_int), value :: group_id
         type(c_ptr), intent(out) :: subscope
         integer(c_int), intent(out) :: info
         info = qv_scope_split_at_c( &
-            ctx, scope, obj_type, group_id, subscope &
+            scope, obj_type, group_id, subscope &
         )
     end subroutine qv_scope_split_at
 
-    subroutine qv_scope_nobjs(ctx, scope, obj, n, info)
+    subroutine qv_scope_nobjs(scope, obj, n, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
         integer(c_int), value :: obj
         integer(c_int), intent(out) :: n
         integer(c_int), intent(out) :: info
-        info = qv_scope_nobjs_c(ctx, scope, obj, n)
+        info = qv_scope_nobjs_c(scope, obj, n)
     end subroutine qv_scope_nobjs
 
-    subroutine qv_scope_taskid(ctx, scope, taskid, info)
+    subroutine qv_scope_taskid(scope, taskid, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: taskid
         integer(c_int), intent(out) :: info
-        info = qv_scope_taskid_c(ctx, scope, taskid)
+        info = qv_scope_taskid_c(scope, taskid)
     end subroutine qv_scope_taskid
 
-    subroutine qv_scope_ntasks(ctx, scope, ntasks, info)
+    subroutine qv_scope_ntasks(scope, ntasks, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: ntasks
         integer(c_int), intent(out) :: info
-        info = qv_scope_ntasks_c(ctx, scope, ntasks)
+        info = qv_scope_ntasks_c(scope, ntasks)
     end subroutine qv_scope_ntasks
 
-    subroutine qv_scope_barrier(ctx, scope, info)
+    subroutine qv_scope_barrier(scope, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: info
-        info = qv_scope_barrier_c(ctx, scope)
+        info = qv_scope_barrier_c(scope)
     end subroutine qv_scope_barrier
 
     subroutine qv_scope_get_device_id( &
-        ctx, scope, dev_obj, i, id_type, dev_id, info &
+        scope, dev_obj, i, id_type, dev_id, info &
     )
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
         integer(c_int), value :: dev_obj
         integer(c_int), value :: i
@@ -431,7 +386,7 @@ contains
         character, pointer, dimension(:) :: fstrp
 
         info = qv_scope_get_device_id_c( &
-            ctx, scope, dev_obj, i, id_type, cstr &
+            scope, dev_obj, i, id_type, cstr &
         )
         ! Now deal with the string
         strlen = qvif_strlen_c(cstr)
@@ -441,27 +396,26 @@ contains
         call qvif_free_c(cstr)
     end subroutine qv_scope_get_device_id
 
-    subroutine qv_bind_push(ctx, scope, info)
+    subroutine qv_scope_bind_push(scope, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: info
-        info = qv_bind_push_c(ctx, scope)
-    end subroutine qv_bind_push
+        info = qv_scope_bind_push_c(scope)
+    end subroutine qv_scope_bind_push
 
-    subroutine qv_bind_pop(ctx, info)
+    subroutine qv_scope_bind_pop(scope, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
-        type(c_ptr), value :: ctx
+        type(c_ptr), value :: scope
         integer(c_int), intent(out) :: info
-        info = qv_bind_pop_c(ctx)
-    end subroutine qv_bind_pop
+        info = qv_scope_bind_pop_c(scope)
+    end subroutine qv_scope_bind_pop
 
-    subroutine qv_bind_string(ctx, sformat, fstr, info)
+    subroutine qv_scope_bind_string(scope, sformat, fstr, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_size_t
         implicit none
-        type(c_ptr), value :: ctx
+        type(c_ptr), value :: scope
         integer(c_int), value :: sformat
         character(len=:), allocatable, intent(out) :: fstr(:)
         integer(c_int), intent(out) :: info
@@ -470,7 +424,7 @@ contains
         integer(c_size_t) :: strlen
         character, pointer, dimension(:) :: fstrp
 
-        info = qv_bind_string_c(ctx, sformat, cstr)
+        info = qv_scope_bind_string_c(scope, sformat, cstr)
         ! Now deal with the string
         strlen = qvif_strlen_c(cstr)
         call c_f_pointer(cstr, fstrp, [strlen])
@@ -478,14 +432,6 @@ contains
         fstr = fstrp
         call qvif_free_c(cstr)
     end subroutine
-
-    subroutine qv_context_barrier(ctx, info)
-        use, intrinsic :: iso_c_binding, only: c_ptr, c_int
-        implicit none
-        type(c_ptr), value :: ctx
-        integer(c_int), intent(out) :: info
-        info = qv_context_barrier_c(ctx)
-    end subroutine qv_context_barrier
 
 end module quo_vadisf
 

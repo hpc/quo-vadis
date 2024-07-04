@@ -15,7 +15,6 @@
  */
 
 #include "quo-vadis-mpi.h"
-#include "qvi-context.h"
 #include "qvi-group-mpi.h"
 #include "qvi-scope.h"
 #include "qvi-utils.h"
@@ -29,22 +28,22 @@ extern "C" {
 #endif
 
 int
-qvi_mpi_context_create_f2c(
+qvi_mpi_scope_get_f2c(
     MPI_Fint comm,
-    qv_context_t **ctx
+    qv_scope_intrinsic_t iscope,
+    qv_scope_t **scope
 ) {
     MPI_Comm c_comm = MPI_Comm_f2c(comm);
-    return qv_mpi_context_create(c_comm, ctx);
+    return qv_mpi_scope_get(c_comm, iscope, scope);
 }
 
 int
 qvi_mpi_scope_comm_dup_f2c(
-    qv_context_t *ctx,
     qv_scope_t *scope,
     MPI_Fint *comm
 ) {
     MPI_Comm c_comm = MPI_COMM_NULL;
-    const int rc = qv_mpi_scope_comm_dup(ctx, scope, &c_comm);
+    const int rc = qv_mpi_scope_comm_dup(scope, &c_comm);
     *comm = MPI_Comm_c2f(c_comm);
     return rc;
 }
@@ -53,70 +52,41 @@ qvi_mpi_scope_comm_dup_f2c(
 }
 #endif
 
-static int
-qvi_mpi_context_create(
+int
+qvi_mpi_scope_get(
     MPI_Comm comm,
-    qv_context_t **ctx
+    qv_scope_intrinsic_t iscope,
+    qv_scope_t **scope
 ) {
-    // Create base context.
-    qv_context_t *ictx = nullptr;
-    int rc = qvi_new(&ictx);
-    if (rc != QV_SUCCESS) goto out;
+    *scope = nullptr;
     // Create and initialize the base group.
-    qvi_zgroup_mpi_s *izgroup;
-    rc = qvi_new(&izgroup);
-    if (rc != QV_SUCCESS) goto out;
+    qvi_zgroup_mpi_s *izgroup = nullptr;
+    int rc = qvi_new(&izgroup);
+    if (rc != QV_SUCCESS) return rc;
 
     rc = izgroup->initialize(comm);
-    if (rc != QV_SUCCESS) goto out;
+    if (rc != QV_SUCCESS) return rc;
 
-    ictx->zgroup = izgroup;
-    // Connect to RMI server.
-    rc = qvi_context_connect_to_server(ictx);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_bind_stack_init(
-        ictx->bind_stack,
-        ictx->zgroup->task(),
-        ictx->rmi
-    );
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_delete(&ictx);
-    }
-    *ctx = ictx;
-    return rc;
+    return qvi_scope_get(izgroup, iscope, scope);
 }
 
 int
-qv_mpi_context_create(
+qv_mpi_scope_get(
     MPI_Comm comm,
-    qv_context_t **ctx
+    qv_scope_intrinsic_t iscope,
+    qv_scope_t **scope
 ) {
-    if (!ctx || comm == MPI_COMM_NULL) {
+    if (comm == MPI_COMM_NULL || !scope) {
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_mpi_context_create(comm, ctx);
-    }
-    qvi_catch_and_return();
-}
-
-int
-qv_mpi_context_free(
-    qv_context_t *ctx
-) {
-    if (!ctx) return QV_ERR_INVLD_ARG;
-    try {
-        qvi_delete(&ctx);
-        return QV_SUCCESS;
+        return qvi_mpi_scope_get(comm, iscope, scope);
     }
     qvi_catch_and_return();
 }
 
 static int
 qvi_mpi_scope_comm_dup(
-    qv_context_t *,
     qv_scope_t *scope,
     MPI_Comm *comm
 ) {
@@ -128,16 +98,14 @@ qvi_mpi_scope_comm_dup(
 
 int
 qv_mpi_scope_comm_dup(
-    qv_context_t *ctx,
     qv_scope_t *scope,
     MPI_Comm *comm
 ) {
-    if (!ctx || !scope || !comm) {
+    if (!scope || !comm) {
         return QV_ERR_INVLD_ARG;
     }
     try {
-        std::lock_guard<std::mutex> guard(ctx->mutex);
-        return qvi_mpi_scope_comm_dup(ctx, scope, comm);
+        return qvi_mpi_scope_comm_dup(scope, comm);
     }
     qvi_catch_and_return();
 }

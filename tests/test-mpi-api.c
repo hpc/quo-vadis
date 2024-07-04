@@ -53,24 +53,17 @@ main(
         printf("QV Version: %d.%d.%d\n", vmajor, vminor, vpatch);
     }
 
-    qv_context_t *ctx = NULL;
-    rc = qv_mpi_context_create(comm, &ctx);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
     qv_scope_t *world_scope = NULL;
-    rc = qv_scope_get(
-        ctx, QV_SCOPE_USER, &world_scope
+    rc = qv_mpi_scope_get(
+        comm, QV_SCOPE_USER, &world_scope
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_get() failed";
+        ers = "qv_mpi_scope_get() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     MPI_Comm wscope_comm = MPI_COMM_NULL;
-    rc = qv_mpi_scope_comm_dup(ctx, world_scope, &wscope_comm);
+    rc = qv_mpi_scope_comm_dup(world_scope, &wscope_comm);
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_scope_comm_dup() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -102,7 +95,7 @@ main(
 
     qv_scope_t *sub_scope = NULL;
     rc = qv_scope_split(
-        ctx, world_scope, wsize, wrank, &sub_scope
+        world_scope, wsize, wrank, &sub_scope
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split() failed";
@@ -110,7 +103,7 @@ main(
     }
 
     MPI_Comm split_wscope_comm = MPI_COMM_NULL;
-    rc = qv_mpi_scope_comm_dup(ctx, sub_scope, &split_wscope_comm);
+    rc = qv_mpi_scope_comm_dup(sub_scope, &split_wscope_comm);
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_scope_comm_dup() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -132,22 +125,16 @@ main(
         );
     }
 
-    rc = qv_scope_free(ctx, sub_scope);
+    rc = qv_scope_free(sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(ctx, world_scope);
+    rc = qv_scope_free(world_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    rc = qv_mpi_context_free(ctx);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_context_free() failed";
-        qvi_test_panic("%s (rc=%d)", ers, rc);
     }
 
     rc = MPI_Comm_free(&wscope_comm);

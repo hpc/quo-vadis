@@ -1,5 +1,5 @@
 !
-! Copyright (c) 2013-2022 Triad National Security, LLC
+! Copyright (c) 2013-2024 Triad National Security, LLC
 !                         All rights reserved.
 !
 ! This file is part of the quo-vadis project. See the LICENSE file at the
@@ -19,47 +19,42 @@ program process_fortapi
 
     integer(c_int) info, n
     integer(c_int) ntasks, taskid, n_cores, n_gpu
-    type(c_ptr) ctx, scope_user
+    type(c_ptr) scope_user
     character(len=:),allocatable :: bstr(:)
     character(len=:),allocatable :: dev_pci(:)
     character, pointer, dimension(:) :: strerr
 
-    call qv_process_context_create(ctx, info)
+    call qv_process_scope_get(QV_SCOPE_USER, scope_user, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
 
-    call qv_scope_get(ctx, QV_SCOPE_USER, scope_user, info)
-    if (info .ne. QV_SUCCESS) then
-        error stop
-    end if
-
-    call qv_scope_ntasks(ctx, scope_user, ntasks, info)
+    call qv_scope_ntasks(scope_user, ntasks, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
     print *, 'ntasks', ntasks
 
-    call qv_scope_taskid(ctx, scope_user, taskid, info)
+    call qv_scope_taskid(scope_user, taskid, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
     print *, 'taskid', taskid
 
-    call qv_scope_nobjs(ctx, scope_user, QV_HW_OBJ_CORE, n_cores, info)
+    call qv_scope_nobjs(scope_user, QV_HW_OBJ_CORE, n_cores, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
     print *, 'ncores', n_cores
 
-    call qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, bstr, info)
+    call qv_scope_bind_string(scope_user, QV_BIND_STRING_AS_LIST, bstr, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
     print *, 'bstr ', bstr
     deallocate(bstr)
 
-    call qv_scope_nobjs(ctx, scope_user, QV_HW_OBJ_GPU, n_gpu, info)
+    call qv_scope_nobjs(scope_user, QV_HW_OBJ_GPU, n_gpu, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
@@ -67,7 +62,7 @@ program process_fortapi
 
     do n = 0, n_gpu - 1
         call qv_scope_get_device_id( &
-            ctx, scope_user, QV_HW_OBJ_GPU, n, &
+            scope_user, QV_HW_OBJ_GPU, n, &
             QV_DEVICE_ID_PCI_BUS_ID, dev_pci, info &
         )
         if (info .ne. QV_SUCCESS) then
@@ -84,12 +79,7 @@ program process_fortapi
     strerr => qv_strerr(QV_ERR_OOR)
     print *, 'err oor is ', strerr
 
-    call qv_scope_free(ctx, scope_user, info)
-    if (info .ne. QV_SUCCESS) then
-        error stop
-    end if
-
-    call qv_process_context_free(ctx, info)
+    call qv_scope_free(scope_user, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
