@@ -6,12 +6,14 @@
 #include "qvi-test-common.h"
 #include <assert.h>
 
-void *thread_work(void *arg)
-{
+void *
+thread_work(
+    void *arg
+) {
     char const *ers = NULL;
     qv_scope_t *scope = (qv_scope_t *)arg;
 
-    char *binds;
+    char *binds = NULL;
     int rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
@@ -20,9 +22,6 @@ void *thread_work(void *arg)
 
     fprintf(stdout,"Thread running on %s\n", binds);
     free(binds);
-
-    //int toto = 0;
-    //while(++toto);
 
     return NULL;
 }
@@ -91,7 +90,7 @@ main(void)
     pthread_t thid[nthreads];
     pthread_attr_t *attr = NULL;
 
-    for(int i = 0 ; i < nthreads; i ++){
+    for (int i = 0 ; i < nthreads; i ++) {
         //sleep(1);
         if (qv_pthread_create(&thid[i], attr, thread_work, (void *)(th_scopes[i]), th_scopes[i]) != 0) {
             perror("pthread_create() error");
