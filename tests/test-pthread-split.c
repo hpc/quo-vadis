@@ -8,12 +8,11 @@
 
 void *thread_work(void *arg)
 {
-    qv_scope_t *ctx = (qv_scope_t *)arg;
-    char *binds;
     char const *ers = NULL;
+    qv_scope_t *scope = (qv_scope_t *)arg;
 
-    int rc = qv_scope_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
-
+    char *binds;
+    int rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -28,8 +27,6 @@ void *thread_work(void *arg)
     return NULL;
 }
 
-
-//int main(int argc, char *argv[])
 int
 main(void)
 {
@@ -37,10 +34,8 @@ main(void)
     MPI_Comm comm = MPI_COMM_WORLD;
     int wrank, wsize;
     int n_cores = 0;
-    int rc = QV_SUCCESS;
 
-
-    rc = MPI_Init(NULL, NULL);
+    int rc = MPI_Init(NULL, NULL);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Init() failed";
         qvi_test_panic("%s (rc=%d)", ers, rc);
@@ -76,19 +71,17 @@ main(void)
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-
-    qv_scope_t **th_scopes = NULL;
-
     //test qv_thread_scope_split
-    int npieces  = n_cores/2;
+    int npieces  = n_cores / 2;
     int nthreads = n_cores;
 
     fprintf(stdout,"[%d] ====== Testing thread_scope_split (number of threads : %i)\n", wrank, nthreads);
 
     int colors[nthreads];
     for(int i = 0 ; i < nthreads ; i++)
-        colors[i] = i%2;//n_cores;
+        colors[i] = i % npieces;
 
+    qv_scope_t **th_scopes = NULL;
     rc = qv_thread_scope_split(mpi_scope, npieces , colors , nthreads, &th_scopes);
     if (rc != QV_SUCCESS) {
         ers = "qv_thread_scope_split() failed";
@@ -150,7 +143,7 @@ main(void)
         }
     }
 
-    for(int i  = 0 ; i < nthreads; i ++){
+    for(int i  = 0 ; i < nthreads; i ++) {
         if (pthread_join(thid2[i], &ret) != 0) {
             perror("pthread_create() error");
             exit(3);
