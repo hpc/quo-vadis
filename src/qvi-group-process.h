@@ -15,37 +15,26 @@
 #ifndef QVI_GROUP_PROCESS_H
 #define QVI_GROUP_PROCESS_H
 
-#include "qvi-common.h" // IWYU pragma: keep
+#include "qvi-common.h"
 #include "qvi-group.h"
 #include "qvi-process.h"
 
 struct qvi_group_process_s : public qvi_group_s {
-    /** Process instance pointer. */
+    /** Process instance. */
     qvi_process_t *proc = nullptr;
     /** Underlying group instance. */
     qvi_process_group_t *proc_group = nullptr;
     /** Constructor. */
-    qvi_group_process_s(void) = default;
+    qvi_group_process_s(void)
+    {
+        const int rc = qvi_process_new(&proc);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+    }
     /** Destructor. */
     virtual ~qvi_group_process_s(void)
     {
         qvi_process_group_free(&proc_group);
-    }
-
-    int
-    initialize(
-        qvi_process_t *proc_a
-    ) {
-        if (!proc_a) qvi_abort();
-
-        proc = proc_a;
-        return QV_SUCCESS;
-    }
-
-    virtual qvi_task_t *
-    task(void)
-    {
-        return qvi_process_task_get(proc);
+        qvi_process_free(&proc);
     }
 
     virtual int
@@ -67,9 +56,8 @@ struct qvi_group_process_s : public qvi_group_s {
     }
 
     virtual int
-    intrinsic(
-        qv_scope_intrinsic_t intrinsic,
-        qvi_group_s **group
+    make_intrinsic(
+        qv_scope_intrinsic_t intrinsic
     );
 
     virtual int
@@ -114,20 +102,6 @@ struct qvi_group_process_s : public qvi_group_s {
     }
 };
 typedef qvi_group_process_s qvi_group_process_t;
-
-struct qvi_zgroup_process_s : public qvi_group_process_s {
-    /** Constructor. */
-    qvi_zgroup_process_s(void)
-    {
-        const int rc = qvi_process_new(&proc);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
-    }
-    /** Destructor. */
-    virtual ~qvi_zgroup_process_s(void)
-    {
-        qvi_process_free(&proc);
-    }
-};
 
 #endif
 

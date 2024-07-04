@@ -33,17 +33,10 @@ extern "C" {
  * communicator.
  */
 int
-qv_mpi_context_create(
+qv_mpi_scope_get(
     MPI_Comm comm,
-    qv_context_t **ctx
-);
-
-/**
- * Frees resources associated with a context created by qv_mpi_context_create().
- */
-int
-qv_mpi_context_free(
-    qv_context_t *ctx
+    qv_scope_intrinsic_t iscope,
+    qv_scope_t **scope
 );
 
 /**
@@ -52,7 +45,6 @@ qv_mpi_context_free(
  */
 int
 qv_mpi_scope_comm_dup(
-    qv_context_t *ctx,
     qv_scope_t *scope,
     MPI_Comm *comm
 );

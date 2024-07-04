@@ -429,7 +429,7 @@ scope_split_coll_gather(
     int rc = gather_values(
         parent->group,
         qvi_scope_split_coll_s::rootid,
-        qvi_task_task_id(parent->group->task()),
+        qvi_task_id(),
         splitcoll.gsplit.taskids
     );
     if (rc != QV_SUCCESS) return rc;
@@ -598,31 +598,26 @@ qvi_scope_barrier(
 int
 qvi_scope_get(
     qvi_group_t *zgroup,
-    qvi_rmi_client_t *rmi,
     qv_scope_intrinsic_t iscope,
     qv_scope_t **scope
 ) {
-    qvi_group_t *group = nullptr;
     qvi_hwpool_s *hwpool = nullptr;
+    qvi_rmi_client_t *rmi = qvi_task_rmi(zgroup->task());
     // Get the requested intrinsic group.
-    int rc = zgroup->intrinsic(iscope, &group);
+    int rc = zgroup->make_intrinsic(iscope);
     if (rc != QV_SUCCESS) goto out;
     // Get the requested intrinsic hardware pool.
     rc = qvi_rmi_scope_get_intrinsic_hwpool(
-        rmi,
-        qvi_task_task_id(zgroup->task()),
-        iscope,
-        &hwpool
+        rmi, qvi_task_id(), iscope, &hwpool
     );
     if (rc != QV_SUCCESS) goto out;
     // Create the scope.
     rc = qvi_scope_new(scope);
     if (rc != QV_SUCCESS) goto out;
     // Initialize the scope.
-    rc = scope_init(*scope, rmi, group, hwpool);
+    rc = scope_init(*scope, rmi, zgroup, hwpool);
 out:
     if (rc != QV_SUCCESS) {
-        qvi_delete(&group);
         qvi_delete(&hwpool);
         qvi_scope_free(scope);
     }
@@ -1151,7 +1146,7 @@ qvi_scope_ksplit(
     // Since this is called by a single task, get its ID and associated hardware
     // affinity here, and replicate them in the following loop that populates
     // splitagg. No point in doing this in a loop.
-    const qvi_task_id_t taskid = qvi_task_task_id(parent->group->task());
+    const qvi_task_id_t taskid = qvi_task_id();
     hwloc_cpuset_t task_affinity = nullptr;
     rc = qvi_rmi_task_get_cpubind(
         parent->rmi, taskid, &task_affinity
@@ -1206,7 +1201,9 @@ qvi_scope_ksplit(
             qvi_scope_free(&child);
             break;
         }
-        rc = scope_init(child, parent->rmi, group, hwpool);
+        // TODO(skg) We need to rethink how we deal with RMI in scopes.
+        auto test_rmi = qvi_task_rmi(group->task());
+        rc = scope_init(child, test_rmi, group, hwpool);
         if (rc != QV_SUCCESS) {
             qvi_delete(&hwpool);
             qvi_delete(&group);
@@ -1363,6 +1360,34 @@ out:
         *dev_id = nullptr;
     }
     return rc;
+}
+
+int
+qvi_scope_bind_push(
+    qv_scope_t *scope
+) {
+    return qvi_task_bind_push(
+        scope->group->task(),
+        scope->hwpool->get_cpuset().cdata()
+    );
+}
+
+int
+qvi_scope_bind_pop(
+    qv_scope_t *scope
+) {
+    return qvi_task_bind_pop(scope->group->task());
+}
+
+int
+qvi_scope_bind_string(
+    qv_scope_t *scope,
+    qv_bind_string_format_t format,
+    char **str
+) {
+    return qvi_task_bind_string(
+        scope->group->task(), format, str
+    );
 }
 
 /*

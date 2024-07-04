@@ -19,14 +19,11 @@
 #ifndef QVI_BBUFF_H
 #define QVI_BBUFF_H
 
-#include "qvi-common.h" // IWYU pragma: keep
+#include "qvi-common.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-struct qvi_bbuff_s;
-typedef struct qvi_bbuff_s qvi_bbuff_t;
 
 /**
  *

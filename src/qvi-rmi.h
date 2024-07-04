@@ -19,9 +19,11 @@
 #ifndef QVI_RMI_H
 #define QVI_RMI_H
 
-#include "qvi-common.h" // IWYU pragma: keep
+#include "qvi-common.h"
 #include "qvi-hwloc.h"
 #include "qvi-hwpool.h"
+
+// TODO(skg) Just pass a pointer to the task in the interfaces here.
 
 #ifdef __cplusplus
 
@@ -40,9 +42,6 @@ extern "C" {
 // Forward declarations
 struct qvi_rmi_server_s;
 typedef struct qvi_rmi_server_s qvi_rmi_server_t;
-
-struct qvi_rmi_client_s;
-typedef struct qvi_rmi_client_s qvi_rmi_client_t;
 
 /**
  *

@@ -22,39 +22,23 @@
 #include "qvi-utils.h"
 
 int
-qvi_group_thread_s::intrinsic(
-    qv_scope_intrinsic_t,
-    qvi_group_s **group
+qvi_group_thread_s::make_intrinsic(
+    qv_scope_intrinsic_t
 ) {
     // NOTE: the provided scope doesn't affect how
     // we create the thread group, so we ignore it.
-    qvi_group_thread_t *igroup = nullptr;
-    int rc = qvi_new(&igroup);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = igroup->initialize(th);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_thread_group_create(
-        th, &igroup->th_group
+    return qvi_thread_group_create(
+        th, &th_group
     );
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_delete(&igroup);
-    }
-    *group = igroup;
-    return rc;
 }
 
 int
 qvi_group_thread_s::self(
     qvi_group_t **child
 ) {
+    qvi_log_debug("=======================SELF");
     qvi_group_thread_t *ichild = nullptr;
     int rc = qvi_new(&ichild);
-    if (rc != QV_SUCCESS) goto out;
-    // Initialize the child with the parent's thread instance.
-    rc = ichild->initialize(th);
     if (rc != QV_SUCCESS) goto out;
     // Create a group containing a single thread
     rc = qvi_thread_group_create_single(
@@ -76,9 +60,6 @@ qvi_group_thread_s::split(
 ) {
     qvi_group_thread_t *ichild = nullptr;
     int rc = qvi_new(&ichild);
-    if (rc != QV_SUCCESS) goto out;
-    // Initialize the child with the parent's MPI instance.
-    rc = ichild->initialize(th);
     if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_thread_group_create_from_split(

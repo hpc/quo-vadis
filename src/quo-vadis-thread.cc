@@ -18,10 +18,7 @@
  */
 
 #include "qvi-common.h" // IWYU pragma: keep
-
 #include "quo-vadis-thread.h"
-#include "qvi-context.h"
-#include "qvi-group-thread.h"
 #include "qvi-scope.h"
 #include "qvi-utils.h"
 #ifdef OPENMP_FOUND
@@ -29,90 +26,29 @@
 #endif
 
 int
-qv_thread_context_free(
-    qv_context_t *ctx
-) {
-    if (!ctx) return QV_ERR_INVLD_ARG;
-    try {
-        qvi_delete(&ctx);
-        return QV_SUCCESS;
-    }
-    qvi_catch_and_return();
-}
-
-static int
-qvi_thread_context_create(
-    qv_context_t **ctx
-) {
-    // Create base context.
-    qv_context_t *ictx = nullptr;
-    int rc = qvi_new(&ictx);
-    if (rc != QV_SUCCESS) {
-        goto out;
-    }
-    // Create and initialize the base group.
-    qvi_zgroup_thread_s *izgroup;
-    rc = qvi_new(&izgroup);
-    if (rc != QV_SUCCESS) {
-        goto out;
-    }
-    ictx->zgroup = izgroup;
-    // Connect to RMI server.
-    rc = qvi_context_connect_to_server(ictx);
-    if (rc != QV_SUCCESS) {
-        goto out;
-    }
-
-    rc = qvi_bind_stack_init(
-        ictx->bind_stack,
-        ictx->zgroup->task(),
-        ictx->rmi
-    );
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_delete(&ictx);
-    }
-    *ctx = ictx;
-    return rc;
-}
-
-int
-qv_thread_context_create(
-    qv_context_t **ctx
-) {
-    if (!ctx) return QV_ERR_INVLD_ARG;
-    try {
-        return qvi_thread_context_create(ctx);
-    }
-    qvi_catch_and_return();
-}
-
-int
 qv_thread_scope_split(
-    qv_context_t *,
     qv_scope_t *scope,
     int npieces,
     int *color_array,
     int nthreads,
     qv_scope_t ***subscope
 ) {
-    qv_hw_obj_type_t type;
-    const int rc = qvi_scope_obj_type(scope, npieces, &type);
-    if (rc != QV_SUCCESS) return rc;
-    //qvi_log_info("=================== Type for split is {}",(int)type);
-    return qvi_scope_ksplit_at(scope, type, color_array, nthreads, subscope);
+    return qvi_scope_ksplit(
+        scope, npieces, color_array, nthreads, QV_HW_OBJ_LAST, subscope
+    );
 }
 
 int
 qv_thread_scope_split_at(
-    qv_context_t *,
     qv_scope_t *scope,
     qv_hw_obj_type_t type,
     int *color_array,
     int nthreads,
     qv_scope_t ***subscopes
 ) {
-    return qvi_scope_ksplit_at(scope, type, color_array, nthreads, subscopes);
+    return qvi_scope_ksplit_at(
+        scope, type, color_array, nthreads, subscopes
+    );
 }
 
 void *
@@ -120,11 +56,7 @@ qv_thread_routine(
     void *arg
 ) {
     qv_thread_args_t *arg_ptr = (qv_thread_args_t *)arg;
-    int rc = qv_bind_push(arg_ptr->ctx, arg_ptr->scope);
-    if (rc != QV_SUCCESS) {
-        qvi_log_error("qv_bind_push() failed");
-        pthread_exit(NULL);
-    }
+    qvi_scope_bind_push(arg_ptr->scope);
 
     void *ret = arg_ptr->thread_routine(arg_ptr->arg);
     // Free memory allocated in qv_pthread_create
@@ -140,7 +72,6 @@ qv_pthread_create(
      pthread_attr_t *attr,
      void *(*thread_routine)(void *arg),
      void *arg,
-     qv_context_t *ctx,
      qv_scope_t *scope
 ) {
      // Memory will be freed in qv_thread_routine to avoid memory leaks.
@@ -148,7 +79,6 @@ qv_pthread_create(
      int rc = qvi_new(&arg_ptr);
      if (rc != QV_SUCCESS) return rc;
 
-     arg_ptr->ctx = ctx;
      arg_ptr->scope = scope;
      arg_ptr->thread_routine = thread_routine;
      arg_ptr->arg = arg;

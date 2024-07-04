@@ -12,6 +12,7 @@
  */
 
 #include "qvi-process.h"
+#include "qvi-task.h"
 #include "qvi-utils.h"
 #include "qvi-group.h"
 
@@ -36,27 +37,12 @@ struct qvi_process_group_s {
 };
 
 struct qvi_process_s {
-    /** Task associated with this process. */
-    qvi_task_t *task = nullptr;
     /** Maintains the next available group ID value. */
     qvi_process_group_tab_t group_tab;
     /** Constructor. */
-    qvi_process_s(void)
-    {
-        int rc = qvi_task_new(&task);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
-        // For now these are always fixed.
-        const int world_id = 0, node_id = 0;
-        rc = qvi_task_init(
-            task, QV_TASK_TYPE_PROCESS, getpid(), world_id, node_id
-        );
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
-    }
+    qvi_process_s(void) = default;
     /** Destructor. */
-    ~qvi_process_s(void)
-    {
-        qvi_task_free(&task);
-    }
+    ~qvi_process_s(void) = default;
 };
 
 /**
@@ -92,13 +78,6 @@ qvi_process_node_barrier(
     return QV_SUCCESS;
 }
 
-qvi_task_t *
-qvi_process_task_get(
-    qvi_process_t *proc
-) {
-    return proc->task;
-}
-
 int
 qvi_process_group_new(
     qvi_process_group_t **procgrp
@@ -128,8 +107,8 @@ qvi_process_group_create(
     if (rc != QV_SUCCESS) goto out;
 
     igroup->tabid = gtid;
-    igroup->id    = 0;
-    igroup->size  = 1;
+    igroup->id = 0;
+    igroup->size = 1;
 
     proc->group_tab.insert({gtid, *igroup});
 out:

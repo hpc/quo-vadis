@@ -45,16 +45,9 @@ main(void)
     // Helps with flushing MPI process output.
     setbuf(stdout, NULL);
 
-    qv_context_t *ctx = nullptr;
-    rc = qv_mpi_context_create(comm, &ctx);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_context_create() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
     qv_scope_t *base_scope = nullptr;
-    rc = qv_scope_get(
-        ctx, QV_SCOPE_USER, &base_scope
+    rc = qv_mpi_scope_get(
+        comm, QV_SCOPE_USER, &base_scope
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_get() failed";
@@ -63,7 +56,7 @@ main(void)
 
     int ncores = 0;
     rc = qv_scope_nobjs(
-        ctx, base_scope, QV_HW_OBJ_CORE, &ncores
+        base_scope, QV_HW_OBJ_CORE, &ncores
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
@@ -94,13 +87,13 @@ main(void)
 
     for (uint_t i = 0; i < k; ++i) {
         qvi_test_scope_report(
-            ctx, subscopes[i], std::to_string(i).c_str()
+            subscopes[i], std::to_string(i).c_str()
         );
         qvi_test_bind_push(
-            ctx, subscopes[i]
+            subscopes[i]
         );
         qvi_test_bind_pop(
-            ctx, subscopes[i]
+            subscopes[i]
         );
     }
     // Done with all the subscopes, so clean-up everything.
@@ -118,28 +111,22 @@ main(void)
 
     for (uint_t i = 0; i < k; ++i) {
         qvi_test_scope_report(
-            ctx, subscopes[i], std::to_string(i).c_str()
+            subscopes[i], std::to_string(i).c_str()
         );
         qvi_test_bind_push(
-            ctx, subscopes[i]
+            subscopes[i]
         );
         qvi_test_bind_pop(
-            ctx, subscopes[i]
+            subscopes[i]
         );
     }
     // Done with all the subscopes, so clean-up everything.
     qvi_scope_kfree(&subscopes, k);
 
-    rc = qv_scope_free(ctx, base_scope);
+    rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    rc = qv_mpi_context_free(ctx);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_context_free() failed";
-        qvi_test_panic("%s", ers);
     }
 
     rc = MPI_Finalize();

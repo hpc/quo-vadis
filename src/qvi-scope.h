@@ -18,7 +18,7 @@
 #define QVI_SCOPE_H
 
 #include "qvi-common.h" // IWYU pragma: keep
-#include "qvi-rmi.h"
+#include "qvi-hwloc.h"
 #include "qvi-group.h"
 
 /**
@@ -52,7 +52,6 @@ qvi_scope_kfree(
 int
 qvi_scope_get(
     qvi_group_t *group,
-    qvi_rmi_client_t *rmi,
     qv_scope_intrinsic_t iscope,
     qv_scope_t **scope
 );
@@ -183,6 +182,23 @@ qvi_scope_get_device_id(
     int i,
     qv_device_id_type_t id_type,
     char **dev_id
+);
+
+int
+qvi_scope_bind_push(
+    qv_scope_t *scope
+);
+
+int
+qvi_scope_bind_pop(
+    qv_scope_t *scope
+);
+
+int
+qvi_scope_bind_string(
+    qv_scope_t *scope,
+    qv_bind_string_format_t format,
+    char **str
 );
 
 #endif

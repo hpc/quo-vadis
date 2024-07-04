@@ -77,7 +77,7 @@ echo_task_intersections(
     char *bitmap_str
 ) {
     const int num_nts = sizeof(nts) / sizeof(hw_name_type_t);
-    const qvi_task_id_t me = {.type = QV_TASK_TYPE_PROCESS, .who = getpid()};
+    const qvi_task_id_t me = {.type = QVI_TASK_TYPE_PROCESS, .sid = getpid()};
 
     printf("\n# Task Intersection Overview ------------\n");
     for (int i = 0; i < num_nts; ++i) {
@@ -162,8 +162,8 @@ main(void)
     qvi_hwloc_t *hwl;
     hwloc_bitmap_t bitmap = NULL;
     qvi_task_id_t who = {
-        .type = QV_TASK_TYPE_PROCESS,
-        .who = getpid()
+        .type = QVI_TASK_TYPE_PROCESS,
+        .sid = getpid()
     };
 
     int rc = qvi_hwloc_new(&hwl);

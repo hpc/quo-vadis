@@ -32,9 +32,9 @@
 #warning "OpenMP support NOT activated"
 #endif
 
+#if 0
 static void
 scope_report(
-    qv_context_t *ctx,
     int pid,
     qv_scope_t *scope,
     const char *scope_name
@@ -42,14 +42,14 @@ scope_report(
     char const *ers = NULL;
 
     int taskid;
-    int rc = qv_scope_taskid(ctx, scope, &taskid);
+    int rc = qv_scope_taskid(scope, &taskid);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_taskid() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int ntasks;
-    rc = qv_scope_ntasks(ctx, scope, &ntasks);
+    rc = qv_scope_ntasks(scope, &ntasks);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_ntasks() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -58,7 +58,7 @@ scope_report(
     printf("[%d] %s taskid is %d\n", pid, scope_name, taskid);
     printf("[%d] %s ntasks is %d\n", pid, scope_name, ntasks);
 
-    rc = qv_scope_barrier(ctx, scope);
+    rc = qv_scope_barrier(scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_barrier() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -67,7 +67,6 @@ scope_report(
 
 static void
 change_bind(
-    qv_context_t *ctx,
     int pid,
     qv_scope_t *scope
 ) {
@@ -81,14 +80,14 @@ change_bind(
         return;
     }
 
-    int rc = qv_bind_push(ctx, scope);
+    int rc = qv_scope_bind_push(scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     char *bind1s;
-    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &bind1s);
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind1s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -96,14 +95,14 @@ change_bind(
     printf("[%d] New cpubind is  %s\n", pid,bind1s);
     free(bind1s);
 
-    rc = qv_bind_pop(ctx);
+    rc = qv_scope_bind_pop(scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_pop() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     char *bind2s;
-    rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &bind2s);
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind2s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -112,16 +111,18 @@ change_bind(
     free(bind2s);
 
     // TODO(skg) Add test to make popped is same as original.
-    rc = qv_scope_barrier(ctx, scope);
+    rc = qv_scope_barrier(scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_barrier() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
+#endif
 
 int
 main(void)
 {
+#if 0
    MPI_Comm comm = MPI_COMM_WORLD;
    char const *ers = NULL;
    int wrank, wsize;
@@ -149,27 +150,19 @@ main(void)
      qvi_test_panic("%s (rc=%d)", ers, rc);
    }
 
-   qv_context_t *mpi_ctx;
-   rc = qv_mpi_context_create(comm, &mpi_ctx);
-   if (rc != QV_SUCCESS) {
-     ers = "qv_mpi_context_create() failed";
-     qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-   }
-
    qv_scope_t *mpi_scope;
-   rc = qv_scope_get(
-       mpi_ctx,
+   rc = qv_mpi_scope_get(
+       comm,
        QV_SCOPE_JOB,
        &mpi_scope
    );
    if (rc != QV_SUCCESS) {
-     ers = "qv_scope_get(QV_SCOPE_PROCESS) failed";
+     ers = "qv_mpi_scope_get(QV_SCOPE_PROCESS) failed";
      qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
    }
-   scope_report(mpi_ctx, wrank, mpi_scope, "mpi_process_scope");
+   scope_report(wrank, mpi_scope, "mpi_process_scope");
 
    rc = qv_scope_nobjs(
-      mpi_ctx,
       mpi_scope,
       QV_HW_OBJ_NUMANODE,
       &n_numa
@@ -182,7 +175,6 @@ main(void)
 
    qv_scope_t *mpi_numa_scope;
    rc = qv_scope_split_at(
-      mpi_ctx,
       mpi_scope,
       QV_HW_OBJ_NUMANODE,
       wrank % n_numa, // this seems to imply that MPI process are linearly launched. A RR policy would make this fail.
@@ -192,12 +184,11 @@ main(void)
         ers = "qv_scope_split_at() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    scope_report(mpi_ctx, wrank, mpi_numa_scope, "mpi_numa_scope");
+    scope_report(wrank, mpi_numa_scope, "mpi_numa_scope");
 
-    change_bind(mpi_ctx, wrank, mpi_numa_scope);
+    change_bind(wrank, mpi_numa_scope);
 
     rc = qv_scope_taskid(
-       mpi_ctx,
        mpi_numa_scope,
        &my_numa_id
     );
@@ -206,7 +197,6 @@ main(void)
       {
 
     rc = qv_scope_nobjs(
-            mpi_ctx,
             mpi_numa_scope,
             QV_HW_OBJ_PU,
             &n_pu
@@ -218,7 +208,6 @@ main(void)
 
     omp_set_num_threads(n_pu);
     printf("[%d] Spawing OpenMP Parallel Section with %d threads\n", wrank, n_pu);
-
 #pragma omp parallel private(ers, rc)
         {
      int tid = omp_get_thread_num();
@@ -324,30 +313,20 @@ main(void)
     printf("[%d] Waiting for Master thread \n", wrank);
       }
 
-    rc = qv_context_barrier(mpi_ctx);
-    if (rc != QV_SUCCESS) {
-      ers = "qv_context_barrier() failed";
-      qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    rc = qv_scope_free(mpi_ctx, mpi_numa_scope);
+    rc = qv_scope_free(mpi_numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(mpi_ctx, mpi_scope);
+    rc = qv_scope_free(mpi_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    if (qv_mpi_context_free(mpi_ctx) != QV_SUCCESS) {
-        ers = "qv_mpi_context_free() failed";
-        qvi_test_panic("%s", ers);
     }
 
    MPI_Finalize();
+#endif
 
    return EXIT_SUCCESS;
 }

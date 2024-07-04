@@ -27,25 +27,7 @@
 extern "C" {
 #endif
 
-/**
- * Creates a thread context.
- */
-int
-qv_thread_context_create(
-    qv_context_t **ctx
-);
-
-/**
- * Frees resources associated with a context created by
- * qv_thread_context_create().
- */
-int
-qv_thread_context_free(
-    qv_context_t *ctx
-);
-
 typedef struct {
-    qv_context_t *ctx;
     qv_scope_t *scope;
     void *(*thread_routine)(void *);
     void *arg;
@@ -62,13 +44,11 @@ qv_pthread_create(
     pthread_attr_t *attr,
     void *(*thread_routine)(void *arg),
     void *arg,
-    qv_context_t *ctx,
     qv_scope_t *scope
 );
 
 int
 qv_thread_scope_split_at(
-    qv_context_t *ctx,
     qv_scope_t *scope,
     qv_hw_obj_type_t type,
     int *color_array,
@@ -78,7 +58,6 @@ qv_thread_scope_split_at(
 
 int
 qv_thread_scope_split(
-    qv_context_t *ctx,
     qv_scope_t *scope,
     int npieces,
     int *color_array,

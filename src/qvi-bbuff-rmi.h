@@ -629,7 +629,7 @@ qvi_bbuff_rmi_pack_item_impl(
     const int rc = qvi_bbuff_rmi_pack_item(buff, data.type);
     if (rc != QV_SUCCESS) return rc;
     // Pack pid
-    return qvi_bbuff_rmi_pack_item(buff, data.who);
+    return qvi_bbuff_rmi_pack_item(buff, data.sid);
 }
 
 /**
@@ -1107,7 +1107,7 @@ qvi_bbuff_rmi_unpack_item(
     buffpos += bw;
 
     rc = qvi_bbuff_rmi_unpack_item(
-        &taski->who, buffpos, &bw
+        &taski->sid, buffpos, &bw
     );
     if (rc != QV_SUCCESS) goto out;
     total_bw += bw;

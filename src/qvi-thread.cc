@@ -60,33 +60,19 @@ struct qvi_thread_group_s {
 };
 
 struct qvi_thread_s {
-    /** Task associated with this thread. */
-    qvi_task_t *task = nullptr;
     /** Group table (ID to internal structure mapping) */
     qvi_thread_group_tab_t *group_tab = nullptr;
-    /** Used for context-level barrier. */
-    pthread_barrier_t *barrier = nullptr;
     /** Constructor. */
     qvi_thread_s(void)
     {
-        int rc = qvi_task_new(&task);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
         // Groups
-        rc = qvi_new(&group_tab);
+        const int rc = qvi_new(&group_tab);
         if (rc != QV_SUCCESS) throw qvi_runtime_error();
     }
     /** Destructor. */
     ~qvi_thread_s(void)
     {
         qvi_delete(&group_tab);
-        // Both pragmas should be okay since finalize is called from zgroups.
-        #pragma omp barrier // Ensure that no thread need this anymore.
-        #pragma omp single
-        {
-            pthread_barrier_destroy(barrier);
-            delete barrier;
-        }
-        qvi_task_free(&task);
     }
 };
 
@@ -137,64 +123,10 @@ qvi_thread_free(
  *
  */
 int
-qvi_thread_init(
-    qvi_thread_t *th
-) {
-    // For now these are always fixed.
-    const int world_id = 0, node_id = 0;
-    pthread_barrier_t *barrier = nullptr;
-
-#pragma omp single copyprivate(barrier)
-    barrier = new pthread_barrier_t();
-
-    th->barrier = barrier;
-
-#ifdef OPENMP_FOUND
-    /* GM: since all spawned threads are in the zgroup */
-    /* using omp_get_num_threads is OK */
-#pragma omp single
-     pthread_barrier_init(th->barrier, NULL, omp_get_num_threads());
-#else
-     pthread_barrier_init(th->barrier, NULL, 1); /* FIXME, thread number not right*/
-#endif
-
-    return qvi_task_init(
-        th->task, QV_TASK_TYPE_THREAD, qvi_gettid(), world_id, node_id
-    );
-}
-
-/**
- *
- */
-int
 qvi_thread_finalize(
     qvi_thread_t *
 ) {
     return QV_SUCCESS;
-}
-
-/**
- *
- */
-int
-qvi_thread_node_barrier(
-    qvi_thread_t *th
-) {
-    const int rc = pthread_barrier_wait(th->barrier);
-    if ((rc != 0) && (rc != PTHREAD_BARRIER_SERIAL_THREAD)) {
-        return QV_ERR_INTERNAL;
-    }
-    return QV_SUCCESS;
-}
-
-/**
- *
- */
-qvi_task_t *
-qvi_thread_task_get(
-    qvi_thread_t *th
-) {
-    return th->task;
 }
 
 /**

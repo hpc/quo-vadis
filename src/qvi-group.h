@@ -17,8 +17,7 @@
 #ifndef QVI_GROUP_H
 #define QVI_GROUP_H
 
-#include "qvi-common.h" // IWYU pragma: keep
-#include "qvi-bbuff.h"
+#include "qvi-common.h"
 #include "qvi-task.h"
 
 /** Group ID type. */
@@ -28,23 +27,36 @@ typedef uint64_t qvi_group_id_t;
  * Virtual base group class.
  */
 struct qvi_group_s {
+protected:
+    /** Task associated with this MPI process */
+    qvi_task_t *m_task = nullptr;
+public:
     /** Constructor. */
-    qvi_group_s(void) = default;
+    qvi_group_s(void)
+    {
+        const int rc = qvi_task_new(&m_task);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+    }
     /** Virtual destructor. */
-    virtual ~qvi_group_s(void) = default;
+    virtual ~qvi_group_s(void)
+    {
+        qvi_task_free(&m_task);
+    }
     /** Returns pointer to the caller's task information. */
-    virtual qvi_task_t *task(void) = 0;
+    qvi_task_t *task(void)
+    {
+        return m_task;
+    }
     /** Returns the caller's group ID. */
     virtual int id(void) = 0;
     /** Returns the number of members in this group. */
     virtual int size(void) = 0;
     /** Performs node-local group barrier. */
     virtual int barrier(void) = 0;
-    /** Creates a new intrinsic group from an intrinsic identifier. */
+    /** Makes the calling instance an intrinsic group. */
     virtual int
-    intrinsic(
-        qv_scope_intrinsic_t intrinsic,
-        qvi_group_s **group
+    make_intrinsic(
+        qv_scope_intrinsic_t intrinsic
     ) = 0;
     /**
      * Creates a new self group with a single member: the caller.

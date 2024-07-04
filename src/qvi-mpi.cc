@@ -37,8 +37,6 @@ struct qvi_mpi_group_s {
 };
 
 struct qvi_mpi_s {
-    /** Task associated with this MPI process */
-    qvi_task_t *task = nullptr;
     /** Node size */
     int node_size = 0;
     /** World size */
@@ -52,11 +50,7 @@ struct qvi_mpi_s {
     /** Group table (ID to internal structure mapping) */
     qvi_mpi_group_tab_t group_tab;
     /** Constructor */
-    qvi_mpi_s(void)
-    {
-        const int rc = qvi_task_new(&task);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
-    }
+    qvi_mpi_s(void) = default;
     /** Destructor */
     ~qvi_mpi_s(void)
     {
@@ -69,7 +63,6 @@ struct qvi_mpi_s {
         if (world_comm != MPI_COMM_NULL) {
             MPI_Comm_free(&world_comm);
         }
-        qvi_task_free(&task);
     }
 };
 
@@ -241,13 +234,6 @@ qvi_mpi_free(
     qvi_delete(mpi);
 }
 
-qvi_task_t *
-qvi_mpi_task_get(
-    qvi_mpi_t *mpi
-) {
-    return mpi->task;
-}
-
 /**
  * Creates the node communicator. Returns the MPI status.
  */
@@ -331,15 +317,17 @@ out:
 /**
  * Returns the underlying representation of an MPI process.
  */
+#if 0
 static qvi_task_type_t
 get_mpi_process_type(void)
 {
 #ifdef MPI_PROCESSES_ARE_THREADS
-    return QV_TASK_TYPE_THREAD;
+    return QVI_TASK_TYPE_THREAD;
 #else
-    return QV_TASK_TYPE_PROCESS;
+    return QVI_TASK_TYPE_PROCESS;
 #endif
 }
+#endif
 
 int
 qvi_mpi_init(
@@ -392,15 +380,6 @@ qvi_mpi_init(
     rc = create_intrinsic_groups(mpi);
     if (rc != MPI_SUCCESS) {
         ers = "create_intrinsic_groups() failed";
-        goto out;
-    }
-    // Task initialization
-    rc = qvi_task_init(
-        mpi->task, get_mpi_process_type(),
-        getpid(), world_id, node_id
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_task_init() failed";
     }
 out:
     if (ers) {
