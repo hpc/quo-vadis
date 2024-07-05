@@ -66,9 +66,7 @@ enum {
     QV_ERR_NOT_FOUND,
     QV_ERR_SPLIT,
     /** Resources unavailable. */
-    QV_RES_UNAVAILABLE,
-    /** Sentinel value. */
-    QV_RC_LAST
+    QV_RES_UNAVAILABLE
 };
 
 /**
