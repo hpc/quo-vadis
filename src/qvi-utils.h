@@ -91,7 +91,7 @@ cstr_t
 qvi_strerr(int ec);
 
 /**
- *
+ * See gettid(2) for details.
  */
 pid_t
 qvi_gettid(void);
