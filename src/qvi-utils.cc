@@ -67,7 +67,7 @@ qvi_strerr(int ec)
 
 pid_t
 qvi_gettid(void) {
-    return (pid_t)syscall(SYS_gettid);
+    return gettid();
 }
 
 double
