@@ -42,8 +42,7 @@ static const std::map<uint_t, std::string> qvi_rc2str = {
     {QV_ERR_POP, "Pop operation error"},
     {QV_ERR_NOT_FOUND, "Not found"},
     {QV_ERR_SPLIT, "Split error"},
-    {QV_RES_UNAVAILABLE, "Resources unavailable"},
-    {QV_RC_LAST, ""}
+    {QV_RES_UNAVAILABLE, "Resources unavailable"}
 };
 
 const char *

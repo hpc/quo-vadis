@@ -31,7 +31,6 @@ module quo_vadisf
     integer(c_int) QV_ERR_NOT_FOUND
     integer(c_int) QV_ERR_SPLIT
     integer(c_int) QV_RES_UNAVAILABLE
-    integer(c_int) QV_RC_LAST
 
     parameter (QV_SUCCESS = 0)
     parameter (QV_SUCCESS_ALREADY_DONE = 1)
@@ -53,7 +52,6 @@ module quo_vadisf
     parameter (QV_ERR_NOT_FOUND = 18)
     parameter (QV_ERR_SPLIT = 19)
     parameter (QV_RES_UNAVAILABLE = 20)
-    parameter (QV_RC_LAST = 21)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Intrinsic Scopes
