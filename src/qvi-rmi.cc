@@ -457,7 +457,7 @@ rpc_ssi_task_get_cpubind(
     void *input,
     qvi_bbuff_t **output
 ) {
-    qvi_task_id_t who;
+    pid_t who;
     int qvrc = qvi_bbuff_rmi_unpack(input, &who);
     if (qvrc != QV_SUCCESS) return qvrc;
 
@@ -479,7 +479,7 @@ rpc_ssi_task_set_cpubind_from_cpuset(
     void *input,
     qvi_bbuff_t **output
 ) {
-    qvi_task_id_t who;
+    pid_t who;
     hwloc_cpuset_t cpuset = nullptr;
     const int qvrc = qvi_bbuff_rmi_unpack(input, &who, &cpuset);
     if (qvrc != QV_SUCCESS) return qvrc;
@@ -594,7 +594,7 @@ rpc_ssi_get_device_in_cpuset(
 static int
 get_intrinsic_scope_user(
     qvi_rmi_server_t *server,
-    qvi_task_id_t,
+    pid_t,
     qvi_hwpool_s **hwpool
 ) {
     // TODO(skg) Is the cpuset the best way to do this?
@@ -608,7 +608,7 @@ get_intrinsic_scope_user(
 static int
 get_intrinsic_scope_proc(
     qvi_rmi_server_t *server,
-    qvi_task_id_t who,
+    pid_t who,
     qvi_hwpool_s **hwpool
 ) {
     hwloc_cpuset_t cpuset = nullptr;
@@ -638,7 +638,7 @@ rpc_ssi_scope_get_intrinsic_hwpool(
 ) {
     // Get requestor task id (type and pid) and intrinsic scope as integers
     // from client request.
-    qvi_task_id_t requestor;
+    pid_t requestor;
     qv_scope_intrinsic_t iscope;
     int rc = qvi_bbuff_rmi_unpack(input, &requestor, &iscope);
     if (rc != QV_SUCCESS) return rc;
@@ -1015,7 +1015,7 @@ qvi_rmi_client_hwloc_get(
 int
 qvi_rmi_task_get_cpubind(
     qvi_rmi_client_t *client,
-    qvi_task_id_t who,
+    pid_t who,
     hwloc_cpuset_t *cpuset
 ) {
     int qvrc = rpc_req(
@@ -1040,7 +1040,7 @@ qvi_rmi_task_get_cpubind(
 int
 qvi_rmi_task_set_cpubind_from_cpuset(
     qvi_rmi_client_t *client,
-    qvi_task_id_t who,
+    pid_t who,
     hwloc_const_cpuset_t cpuset
 ) {
     int qvrc = rpc_req(
@@ -1062,7 +1062,7 @@ qvi_rmi_task_set_cpubind_from_cpuset(
 int
 qvi_rmi_scope_get_intrinsic_hwpool(
     qvi_rmi_client_t *client,
-    qvi_task_id_t who,
+    pid_t who,
     qv_scope_intrinsic_t iscope,
     qvi_hwpool_s **hwpool
 ) {

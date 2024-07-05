@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2023 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -14,8 +14,9 @@
  * @file test-hwloc.c
  */
 
-#include "qvi-macros.h"
+#include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-hwloc.h"
+#include "qvi-utils.h"
 
 #include "quo-vadis.h"
 #include "qvi-test-common.h"
@@ -77,7 +78,7 @@ echo_task_intersections(
     char *bitmap_str
 ) {
     const int num_nts = sizeof(nts) / sizeof(hw_name_type_t);
-    const qvi_task_id_t me = {.type = QVI_TASK_TYPE_PROCESS, .sid = getpid()};
+    const pid_t me = qvi_gettid();
 
     printf("\n# Task Intersection Overview ------------\n");
     for (int i = 0; i < num_nts; ++i) {
@@ -161,10 +162,7 @@ main(void)
     char *binds = NULL;
     qvi_hwloc_t *hwl;
     hwloc_bitmap_t bitmap = NULL;
-    qvi_task_id_t who = {
-        .type = QVI_TASK_TYPE_PROCESS,
-        .sid = getpid()
-    };
+    pid_t who = qvi_gettid();
 
     int rc = qvi_hwloc_new(&hwl);
     if (rc != QV_SUCCESS) {

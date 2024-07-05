@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Triad National Security, LLC
+ * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -35,10 +35,6 @@
 
 /** Set by find_package(MPI) */
 #cmakedefine MPI_FOUND
-/**
- * When defined assume that MPI processes are built atop threads, not OS processes.
- */
-#cmakedefine MPI_PROCESSES_ARE_THREADS
 /** Set by find_package(OpenMP) */
 #cmakedefine OPENMP_FOUND
 

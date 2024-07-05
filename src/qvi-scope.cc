@@ -85,7 +85,7 @@ struct qvi_scope_split_agg_s {
      * index corresponds to a task ID. It is handy to have the task IDs for
      * splitting so we can query task characteristics during a splitting.
      */
-    std::vector<qvi_task_id_t> taskids{};
+    std::vector<pid_t> taskids{};
     /**
      * Vector of hardware pools, one for each member of the group. Note that the
      * number of hardware pools will always match the group size and that their
@@ -1146,7 +1146,7 @@ qvi_scope_ksplit(
     // Since this is called by a single task, get its ID and associated hardware
     // affinity here, and replicate them in the following loop that populates
     // splitagg. No point in doing this in a loop.
-    const qvi_task_id_t taskid = qvi_task_id();
+    const pid_t taskid = qvi_task_id();
     hwloc_cpuset_t task_affinity = nullptr;
     rc = qvi_rmi_task_get_cpubind(
         parent->rmi, taskid, &task_affinity

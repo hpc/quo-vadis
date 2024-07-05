@@ -102,7 +102,7 @@ client(
     printf("# [%d] Starting Client (%s)\n", getpid(), url);
 
     char const *ers = NULL;
-    qvi_task_id_t who = { QVI_TASK_TYPE_PROCESS, getpid() };
+    pid_t who = qvi_gettid();
     hwloc_bitmap_t bitmap = NULL;
 
     qvi_rmi_client_t *client = NULL;
@@ -125,7 +125,7 @@ client(
     }
     char *res;
     qvi_hwloc_bitmap_asprintf(&res, bitmap);
-    printf("# [%d] cpubind = %s\n", who.sid, res);
+    printf("# [%d] cpubind = %s\n", who, res);
     hwloc_bitmap_free(bitmap);
     free(res);
 out:
