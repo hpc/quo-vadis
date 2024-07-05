@@ -88,12 +88,6 @@ find_package(ZMQ REQUIRED)
 ################################################################################
 option(QV_MPI_SUPPORT "Toggle MPI support" ON)
 
-option(
-    QV_MPI_PROCESSES_ARE_THREADS
-    "Set to TRUE when the MPI library implements MPI processes as threads"
-    FALSE
-)
-
 message(CHECK_START "Determining MPI support status")
 if(QV_MPI_SUPPORT)
     message(CHECK_PASS "enabled")
@@ -114,15 +108,6 @@ if(QV_MPI_SUPPORT)
                 FATAL_ERROR
                 "Minimum MPI version not met: ${QV_MPI_VER} < ${QV_MPI_VER_MIN}"
             )
-        endif()
-        # By default we assume MPI processes are implemented as OS processes.
-        message(CHECK_START "Determining underlying MPI process type")
-        set(MPI_PROCESSES_ARE_THREADS FALSE)
-        if(QV_MPI_PROCESSES_ARE_THREADS)
-            set(MPI_PROCESSES_ARE_THREADS TRUE)
-            message(CHECK_PASS "threads")
-        else()
-            message(CHECK_PASS "OS processes")
         endif()
     endif()
 endif()

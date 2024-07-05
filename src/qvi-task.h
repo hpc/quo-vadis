@@ -24,24 +24,6 @@ extern "C" {
 #endif
 
 /**
- * Supported task types.
- */
-typedef enum qvi_task_type_e {
-    QVI_TASK_TYPE_PROCESS = 0,
-    QVI_TASK_TYPE_THREAD
-} qvi_task_type_t;
-
-/**
- * Task identification.
- */
-typedef struct qvi_task_id_s {
-    /** Task type (OS process or OS thread). */
-    qvi_task_type_t type;
-    /** System ID: process or thread ID. */
-    pid_t sid;
-} qvi_task_id_t;
-
-/**
  *
  */
 int
@@ -59,7 +41,7 @@ qvi_task_rmi(
     qvi_task_t *task
 );
 
-qvi_task_id_t
+pid_t
 qvi_task_id(void);
 
 int

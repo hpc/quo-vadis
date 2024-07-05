@@ -314,21 +314,6 @@ out:
     return rc;
 }
 
-/**
- * Returns the underlying representation of an MPI process.
- */
-#if 0
-static qvi_task_type_t
-get_mpi_process_type(void)
-{
-#ifdef MPI_PROCESSES_ARE_THREADS
-    return QVI_TASK_TYPE_THREAD;
-#else
-    return QVI_TASK_TYPE_PROCESS;
-#endif
-}
-#endif
-
 int
 qvi_mpi_init(
     qvi_mpi_t *mpi,

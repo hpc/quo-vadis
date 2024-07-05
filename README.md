@@ -31,7 +31,6 @@ cmake -DQV_GPU_SUPPORT=OFF -DQV_FORTRAN_SUPPORT=OFF ..
 | QV_GPU_SUPPORT               | ON      | Toggle GPU support                  |
 | QV_MPI_SUPPORT               | ON      | Toggle MPI support                  |
 | QV_OMP_SUPPORT               | ON      | Toggle OpenMP support               |
-| QV_MPI_PROCESSES_ARE_THREADS | FALSE   | Affirm MPI processes are threads    |
 
 
 ### Developer Build Options

@@ -25,11 +25,13 @@ struct qvi_task_s {
     qvi_rmi_client_t *rmi = nullptr;
     /** The task's bind stack. */
     qvi_task_bind_stack_t stack;
-
-    static qvi_task_id_t
+    /**
+     * Returns the caller's thread ID.
+     */
+    static pid_t
     me(void)
     {
-        return {QVI_TASK_TYPE_THREAD, qvi_gettid()};
+        return qvi_gettid();
     }
 
     int
@@ -158,7 +160,7 @@ qvi_task_rmi(
     return task->rmi;
 }
 
-qvi_task_id_t
+pid_t
 qvi_task_id(void)
 {
     return qvi_task_s::me();
