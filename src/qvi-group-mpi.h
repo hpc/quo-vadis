@@ -23,26 +23,23 @@
 #include "qvi-mpi.h"
 
 struct qvi_group_mpi_s : public qvi_group_s {
-    /** Initialized qvi_mpi_t instance embedded in MPI group instances. */
+    /** Points to the base MPI context information. */
     qvi_mpi_t *mpi = nullptr;
     /** Underlying group instance. */
     qvi_mpi_group_t *mpi_group = nullptr;
-    /** Constructor. */
+    /** Default constructor. */
     qvi_group_mpi_s(void) = default;
+    /** Constructor. */
+    qvi_group_mpi_s(
+        qvi_mpi_t *mpi_ctx
+    ) {
+        if (!mpi_ctx) throw qvi_runtime_error();
+        mpi = mpi_ctx;
+    }
     /** Destructor. */
     virtual ~qvi_group_mpi_s(void)
     {
         qvi_mpi_group_free(&mpi_group);
-    }
-    /** Initializes the instance. */
-    int
-    initialize(
-        qvi_mpi_t *mpi_a
-    ) {
-        if (!mpi_a) qvi_abort();
-
-        mpi = mpi_a;
-        return QV_SUCCESS;
     }
 
     virtual int
@@ -113,29 +110,22 @@ struct qvi_group_mpi_s : public qvi_group_s {
 typedef qvi_group_mpi_s qvi_group_mpi_t;
 
 struct qvi_zgroup_mpi_s : public qvi_group_mpi_s {
+    /** Default constructor. */
+    qvi_zgroup_mpi_s(void) = delete;
     /** Constructor. */
-    qvi_zgroup_mpi_s(void)
-    {
-        const int rc = qvi_mpi_new(&mpi);
+    qvi_zgroup_mpi_s(
+        MPI_Comm comm
+    ) {
+        int rc = qvi_mpi_new(&mpi);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        /** Initialize the MPI group with the provided communicator. */
+        rc = qvi_mpi_init(mpi, comm);
         if (rc != QV_SUCCESS) throw qvi_runtime_error();
     }
     /** Destructor. */
     virtual ~qvi_zgroup_mpi_s(void)
     {
         qvi_mpi_free(&mpi);
-    }
-    /** Initializes the MPI group with the provided communicator. */
-    int
-    initialize(
-        MPI_Comm comm
-    ) {
-        return qvi_mpi_init(mpi, comm);
-    }
-    /** Node-local task barrier. */
-    virtual int
-    barrier(void)
-    {
-        return qvi_mpi_node_barrier(mpi);
     }
 };
 
