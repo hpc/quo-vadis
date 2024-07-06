@@ -25,15 +25,13 @@ struct qvi_task_s {
     qvi_rmi_client_t *rmi = nullptr;
     /** The task's bind stack. */
     qvi_task_bind_stack_t stack;
-    /**
-     * Returns the caller's thread ID.
-     */
+    /** Returns the caller's thread ID. */
     static pid_t
     me(void)
     {
         return qvi_gettid();
     }
-
+    /** Connects to the RMI server. */
     int
     connect_to_server(void)
     {
@@ -108,36 +106,20 @@ struct qvi_task_s {
             rmi, me(), stack.top().cdata()
         );
     }
-    /** */
+    /** Returns the task's current cpuset. */
     int
-    bind_string(
-        qv_bind_string_format_t format,
-        char **str
+    bind_top(
+        hwloc_cpuset_t *dest
     ) {
-        char *istr = nullptr;
-
-        hwloc_cpuset_t cpuset = nullptr;
-        int rc = qvi_rmi_task_get_cpubind(
-            rmi, me(), &cpuset
-        );
-        if (rc != QV_SUCCESS) goto out;
-
-        switch (format) {
-            case QV_BIND_STRING_AS_BITMAP:
-                rc = qvi_hwloc_bitmap_asprintf(&istr, cpuset);
-                break;
-            case QV_BIND_STRING_AS_LIST:
-                rc = qvi_hwloc_bitmap_list_asprintf(&istr, cpuset);
-                break;
-            default:
-                rc = QV_ERR_INVLD_ARG;
-        }
-    out:
-        hwloc_bitmap_free(cpuset);
-        *str = istr;
-        return rc;
+        return qvi_hwloc_bitmap_dup(stack.top().cdata(), dest);
     }
 };
+
+pid_t
+qvi_task_id(void)
+{
+    return qvi_task_s::me();
+}
 
 int
 qvi_task_new(
@@ -160,12 +142,6 @@ qvi_task_rmi(
     return task->rmi;
 }
 
-pid_t
-qvi_task_id(void)
-{
-    return qvi_task_s::me();
-}
-
 int
 qvi_task_bind_push(
     qvi_task_t *task,
@@ -182,12 +158,11 @@ qvi_task_bind_pop(
 }
 
 int
-qvi_task_bind_string(
+qvi_task_bind_top(
     qvi_task_t *task,
-    qv_bind_string_format_t format,
-    char **str
+    hwloc_cpuset_t *dest
 ) {
-    return task->bind_string(format, str);
+    return task->bind_top(dest);
 }
 
 /*

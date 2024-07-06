@@ -23,9 +23,9 @@
 extern "C" {
 #endif
 
-/**
- *
- */
+pid_t
+qvi_task_id(void);
+
 int
 qvi_task_new(
     qvi_task_t **task
@@ -41,9 +41,6 @@ qvi_task_rmi(
     qvi_task_t *task
 );
 
-pid_t
-qvi_task_id(void);
-
 int
 qvi_task_bind_push(
     qvi_task_t *task,
@@ -56,10 +53,9 @@ qvi_task_bind_pop(
 );
 
 int
-qvi_task_bind_string(
+qvi_task_bind_top(
     qvi_task_t *task,
-    qv_bind_string_format_t format,
-    char **str
+    hwloc_cpuset_t *dest
 );
 
 #ifdef __cplusplus

@@ -23,8 +23,6 @@
 #include "qvi-hwloc.h"
 #include "qvi-hwpool.h"
 
-// TODO(skg) Just pass a pointer to the task in the interfaces here.
-
 #ifdef __cplusplus
 
 struct qvi_rmi_config_s {
