@@ -61,10 +61,7 @@ qvi_mpi_scope_get(
     *scope = nullptr;
     // Create and initialize the base group.
     qvi_zgroup_mpi_s *izgroup = nullptr;
-    int rc = qvi_new(&izgroup);
-    if (rc != QV_SUCCESS) return rc;
-
-    rc = izgroup->initialize(comm);
+    int rc = qvi_new(&izgroup, comm);
     if (rc != QV_SUCCESS) return rc;
 
     return qvi_scope_get(izgroup, iscope, scope);

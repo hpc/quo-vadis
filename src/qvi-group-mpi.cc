@@ -48,11 +48,9 @@ int
 qvi_group_mpi_s::self(
     qvi_group_t **child
 ) {
+    // Create and initialize the child with the parent's MPI context.
     qvi_group_mpi_t *ichild = nullptr;
-    int rc = qvi_new(&ichild);
-    if (rc != QV_SUCCESS) goto out;
-    // Initialize the child with the parent's MPI instance.
-    rc = ichild->initialize(mpi);
+    int rc = qvi_new(&ichild, mpi);
     if (rc != QV_SUCCESS) goto out;
     // Create the underlying group using MPI_COMM_SELF.
     rc = qvi_mpi_group_create_from_mpi_comm(
@@ -72,11 +70,9 @@ qvi_group_mpi_s::split(
     int key,
     qvi_group_t **child
 ) {
+    // Create and initialize the child with the parent's MPI context.
     qvi_group_mpi_t *ichild = nullptr;
-    int rc = qvi_new(&ichild);
-    if (rc != QV_SUCCESS) goto out;
-    // Initialize the child with the parent's MPI instance.
-    rc = ichild->initialize(mpi);
+    int rc = qvi_new(&ichild, mpi);
     if (rc != QV_SUCCESS) goto out;
     // Split this group using MPI.
     rc = qvi_mpi_group_create_from_split(
