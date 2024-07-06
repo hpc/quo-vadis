@@ -1385,9 +1385,26 @@ qvi_scope_bind_string(
     qv_bind_string_format_t format,
     char **str
 ) {
-    return qvi_task_bind_string(
-        scope->group->task(), format, str
-    );
+    char *istr = nullptr;
+
+    hwloc_cpuset_t cpuset = nullptr;
+    int rc = qvi_task_bind_top(scope->group->task(), &cpuset);
+    if (rc != QV_SUCCESS) return rc;
+
+    switch (format) {
+        case QV_BIND_STRING_AS_BITMAP:
+            rc = qvi_hwloc_bitmap_asprintf(&istr, cpuset);
+            break;
+        case QV_BIND_STRING_AS_LIST:
+            rc = qvi_hwloc_bitmap_list_asprintf(&istr, cpuset);
+            break;
+        default:
+            rc = QV_ERR_INVLD_ARG;
+            break;
+    }
+    qvi_hwloc_bitmap_free(&cpuset);
+    *str = istr;
+    return rc;
 }
 
 /*
