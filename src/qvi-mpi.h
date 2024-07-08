@@ -41,10 +41,11 @@ typedef struct qvi_mpi_group_s qvi_mpi_group_t;
 static const qvi_mpi_group_id_t QVI_MPI_GROUP_NULL = 0;
 static const qvi_mpi_group_id_t QVI_MPI_GROUP_SELF = 1;
 static const qvi_mpi_group_id_t QVI_MPI_GROUP_NODE = 2;
+static const qvi_mpi_group_id_t QVI_MPI_GROUP_WORLD = 3;
 // Sentinel value marking first available group ID. This is expected to be the
 // very last item, so don't change its relative position without carefully
 // modifying at the code that uses this value.
-static const qvi_mpi_group_id_t QVI_MPI_GROUP_INTRINSIC_END = 3;
+static const qvi_mpi_group_id_t QVI_MPI_GROUP_INTRINSIC_END = 4;
 
 /**
  *
@@ -121,18 +122,6 @@ qvi_mpi_group_create_from_group_id(
     qvi_mpi_t *mpi,
     qvi_mpi_group_id_t id,
     qvi_mpi_group_t **group
-);
-
-/**
- *
- */
-int
-qvi_mpi_group_create_from_ids(
-    qvi_mpi_t *mpi,
-    const qvi_mpi_group_t *group,
-    int num_group_ids,
-    const int *group_ids,
-    qvi_mpi_group_t **maybe_group
 );
 
 /**
