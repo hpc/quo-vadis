@@ -15,38 +15,62 @@
  */
 
 #include "qvi-mpi.h"
-#include "qvi-utils.h" // IWYU pragma: keep
+#include "qvi-bbuff.h"
+#include "qvi-utils.h"
 
 using qvi_mpi_group_tab_t = std::unordered_map<
     qvi_mpi_group_id_t, qvi_mpi_group_t
 >;
 
+struct qvi_mpi_comm_s {
+    /** Underlying MPI communicator. */
+    MPI_Comm mpi_comm = MPI_COMM_NULL;
+    /** Communicator size. */
+    int size = 0;
+    /** Communicator rank. */
+    int rank = 0;
+    /** Constructor. */
+    qvi_mpi_comm_s(void) = default;
+    /** Constructor. */
+    qvi_mpi_comm_s(
+        MPI_Comm comm
+    ) {
+        int rc = MPI_Comm_dup(comm, &mpi_comm);
+        if (rc != MPI_SUCCESS) throw qvi_runtime_error();
+        rc = MPI_Comm_size(mpi_comm, &size);
+        if (rc != MPI_SUCCESS) throw qvi_runtime_error();
+        rc = MPI_Comm_rank(mpi_comm, &rank);
+        if (rc != MPI_SUCCESS) throw qvi_runtime_error();
+    }
+    /** Destructor. */
+    ~qvi_mpi_comm_s(void) = default;
+    /** Frees the resources associated with the provided instance. */
+    static void
+    free(
+        qvi_mpi_comm_s &comm
+    ) {
+        MPI_Comm mpi_comm = comm.mpi_comm;
+        if (mpi_comm != MPI_COMM_NULL) {
+            MPI_Comm_free(&mpi_comm);
+            comm.mpi_comm = MPI_COMM_NULL;
+        }
+    }
+};
+
 struct qvi_mpi_group_s {
     /** ID used for table lookups */
     qvi_mpi_group_id_t tabid = 0;
-    /** ID (rank) in group */
-    int id = 0;
-    /** Size of group */
-    int size = 0;
-    /** MPI communicator */
-    MPI_Comm mpi_comm = MPI_COMM_NULL;
-    /** Constructor */
-    qvi_mpi_group_s(void) = default;
-    /** Destructor */
-    ~qvi_mpi_group_s(void) = default;
+    /** The group's communicator info. */
+    qvi_mpi_comm_s qvcomm;
 };
 
 struct qvi_mpi_s {
-    /** Node size */
-    int node_size = 0;
-    /** World size */
-    int world_size = 0;
     /** Duplicate of MPI_COMM_SELF */
-    MPI_Comm self_comm = MPI_COMM_NULL;
-    /** Duplicate of initializing communicator */
-    MPI_Comm world_comm = MPI_COMM_NULL;
+    qvi_mpi_comm_s self_comm;
     /** Node communicator */
-    MPI_Comm node_comm = MPI_COMM_NULL;
+    qvi_mpi_comm_s node_comm;
+    /** Duplicate of initializing communicator */
+    qvi_mpi_comm_s world_comm;
     /** Group table (ID to internal structure mapping) */
     qvi_mpi_group_tab_t group_tab;
     /** Constructor */
@@ -55,14 +79,9 @@ struct qvi_mpi_s {
     ~qvi_mpi_s(void)
     {
         for (auto &i : group_tab) {
-            auto &mpi_comm = i.second.mpi_comm;
-            if (mpi_comm != MPI_COMM_NULL) {
-                MPI_Comm_free(&mpi_comm);
-            }
+            qvi_mpi_comm_s::free(i.second.qvcomm);
         }
-        if (world_comm != MPI_COMM_NULL) {
-            MPI_Comm_free(&world_comm);
-        }
+        qvi_mpi_comm_s::free(world_comm);
     }
 };
 
@@ -97,7 +116,7 @@ mpi_comm_to_new_node_comm(
     MPI_Comm comm,
     MPI_Comm *node_comm
 ) {
-    int rc = MPI_Comm_split_type(
+    const int rc = MPI_Comm_split_type(
         comm,
         MPI_COMM_TYPE_SHARED,
         0,
@@ -120,11 +139,11 @@ group_init_from_mpi_comm(
 ) {
     cstr_t ers = nullptr;
 
-    new_group->mpi_comm = comm;
+    new_group->qvcomm.mpi_comm = comm;
 
     int rc = MPI_Comm_rank(
-        new_group->mpi_comm,
-        &new_group->id
+        new_group->qvcomm.mpi_comm,
+        &new_group->qvcomm.rank
     );
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_rank() failed";
@@ -132,12 +151,11 @@ group_init_from_mpi_comm(
     }
 
     rc = MPI_Comm_size(
-        new_group->mpi_comm,
-        &new_group->size
+        new_group->qvcomm.mpi_comm,
+        &new_group->qvcomm.size
     );
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_size() failed";
-        goto out;
     }
 out:
     if (ers) {
@@ -157,12 +175,11 @@ group_create_from_mpi_group(
     qvi_mpi_group_t **maybe_group
 ) {
     cstr_t ers = nullptr;
-
     int qvrc = QV_SUCCESS;
 
     MPI_Comm group_comm;
     int rc = MPI_Comm_create_group(
-        mpi->node_comm, group, 0, &group_comm
+        mpi->node_comm.mpi_comm, group, 0, &group_comm
     );
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_create_group() failed";
@@ -189,7 +206,6 @@ group_create_from_mpi_group(
         ers = "group_init_from_mpi_comm() failed";
         goto out;
     }
-
 out:
     if (ers) {
         qvi_log_error(ers);
@@ -234,6 +250,16 @@ qvi_mpi_free(
     qvi_delete(mpi);
 }
 
+int
+qvi_mpi_group_comm_dup(
+    qvi_mpi_group_t *group,
+    MPI_Comm *comm
+) {
+    const int rc = MPI_Comm_dup(group->qvcomm.mpi_comm, comm);
+    if (rc != MPI_SUCCESS) return QV_ERR_MPI;
+    return QV_SUCCESS;
+}
+
 /**
  * Creates the node communicator. Returns the MPI status.
  */
@@ -243,31 +269,23 @@ create_intrinsic_comms(
     MPI_Comm comm
 ) {
     cstr_t ers = nullptr;
-    // MPI_COMM_SELF duplicate
-    int rc = MPI_Comm_dup(
-        MPI_COMM_SELF,
-        &mpi->self_comm
-    );
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_dup(MPI_COMM_SELF) failed";
-        goto out;
-    }
-    // 'World' (aka initializing communicator) duplicate
-    rc = MPI_Comm_dup(
-        comm,
-        &mpi->world_comm
-    );
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_dup() failed";
-        goto out;
-    }
-    // Node communicator
-    rc = mpi_comm_to_new_node_comm(comm, &mpi->node_comm);
+    // Create node communicator.
+    MPI_Comm node_comm = MPI_COMM_NULL;
+    int rc = mpi_comm_to_new_node_comm(comm, &node_comm);
     if (rc != MPI_SUCCESS) {
         ers = "mpi_comm_to_new_node_comm() failed";
         goto out;
     }
+    // MPI_COMM_SELF duplicate.
+    mpi->self_comm = qvi_mpi_comm_s(MPI_COMM_SELF);
+    // Node duplicate.
+    mpi->node_comm = qvi_mpi_comm_s(node_comm);
+    // 'World' (aka initializing communicator) duplicate.
+    mpi->world_comm = qvi_mpi_comm_s(comm);
 out:
+    if (node_comm != MPI_COMM_NULL) {
+        MPI_Comm_free(&node_comm);
+    }
     if (ers) {
         qvi_log_error(ers);
     }
@@ -281,27 +299,15 @@ create_intrinsic_groups(
     cstr_t ers = nullptr;
 
     qvi_mpi_group_t self_group, node_group;
-    int rc = group_init_from_mpi_comm(
-        mpi->self_comm,
-        &self_group
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "group_create_from_mpi_comm(self_comm) failed";
-        goto out;
-    }
-    rc = group_init_from_mpi_comm(
-        mpi->node_comm,
-        &node_group
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "group_create_from_mpi_comm(node_comm) failed";
-        goto out;
-    }
-    rc = group_add(mpi, &self_group, QVI_MPI_GROUP_SELF);
+    self_group.qvcomm = mpi->self_comm;
+    node_group.qvcomm = mpi->node_comm;
+
+    int rc = group_add(mpi, &self_group, QVI_MPI_GROUP_SELF);
     if (rc != QV_SUCCESS) {
         ers = "group_add(self) failed";
         goto out;
     }
+
     rc = group_add(mpi, &node_group, QVI_MPI_GROUP_NODE);
     if (rc != QV_SUCCESS) {
         ers = "group_add(node) failed";
@@ -320,7 +326,7 @@ qvi_mpi_init(
     MPI_Comm comm
 ) {
     cstr_t ers = nullptr;
-    int inited;
+    int inited = 0;
     // If MPI isn't initialized, then we can't continue.
     int rc = MPI_Initialized(&inited);
     if (rc != MPI_SUCCESS) return QV_ERR_MPI;
@@ -329,36 +335,10 @@ qvi_mpi_init(
         qvi_log_error(ers);
         return QV_ERR_MPI;
     }
-    // MPI is initialized.
-    rc = MPI_Comm_size(comm, &mpi->world_size);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_size() failed";
-        goto out;
-    }
-
-    int world_id;
-    rc = MPI_Comm_rank(comm, &world_id);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_rank() failed";
-        goto out;
-    }
 
     rc = create_intrinsic_comms(mpi, comm);
     if (rc != MPI_SUCCESS) {
         ers = "create_intrinsic_comms() failed";
-        goto out;
-    }
-
-    rc = MPI_Comm_size(mpi->node_comm, &mpi->node_size);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_size(node_comm) failed";
-        goto out;
-    }
-
-    int node_id;
-    rc = MPI_Comm_rank(mpi->node_comm, &node_id);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_rank(node_comm) failed";
         goto out;
     }
 
@@ -371,13 +351,6 @@ out:
         qvi_log_error("{} with rc={}", ers, rc);
         return QV_ERR_MPI;
     }
-    return QV_SUCCESS;
-}
-
-int
-qvi_mpi_finalize(
-    qvi_mpi_t *
-) {
     return QV_SUCCESS;
 }
 
@@ -399,14 +372,14 @@ int
 qvi_mpi_group_size(
     const qvi_mpi_group_t *group
 ) {
-    return group->size;
+    return group->qvcomm.size;
 }
 
 int
 qvi_mpi_group_id(
     const qvi_mpi_group_t *group
 ) {
-    return group->id;
+    return group->qvcomm.rank;
 }
 
 int
@@ -437,7 +410,7 @@ qvi_mpi_group_create_from_group_id(
     if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_mpi_group_create_from_mpi_comm(
-        mpi, tmp_group->mpi_comm, group
+        mpi, tmp_group->qvcomm.mpi_comm, group
     );
 out:
     qvi_mpi_group_free(&tmp_group);
@@ -459,7 +432,7 @@ qvi_mpi_group_create_from_ids(
     MPI_Group old_mpi_group = MPI_GROUP_NULL;
 
     int rc = MPI_Comm_group(
-        group->mpi_comm,
+        group->qvcomm.mpi_comm,
         &old_mpi_group
     );
     if (rc != MPI_SUCCESS) {
@@ -522,7 +495,7 @@ qvi_mpi_group_create_from_split(
 
     MPI_Comm split_comm = MPI_COMM_NULL;
     int rc = MPI_Comm_split(
-        parent->mpi_comm, color, key, &split_comm
+        parent->qvcomm.mpi_comm, color, key, &split_comm
     );
     if (rc != MPI_SUCCESS) {
         qvrc = QV_ERR_MPI;
@@ -580,7 +553,8 @@ out:
 }
 
 /**
- *
+ * Performs a low-noise, high latency node-level barrier across the given
+ * communicator.
  */
 static int
 sleepy_node_barrier(
@@ -601,17 +575,10 @@ sleepy_node_barrier(
 }
 
 int
-qvi_mpi_node_barrier(
-    qvi_mpi_t *mpi
-) {
-    return sleepy_node_barrier(mpi->node_comm);
-}
-
-int
 qvi_mpi_group_barrier(
     qvi_mpi_group_t *group
 ) {
-    return sleepy_node_barrier(group->mpi_comm);
+    return sleepy_node_barrier(group->qvcomm.mpi_comm);
 }
 
 int
@@ -623,8 +590,8 @@ qvi_mpi_group_gather_bbuffs(
     int *shared_alloc
 ) {
     const int send_count = (int)qvi_bbuff_size(txbuff);
-    const int group_id = group->id;
-    const int group_size = group->size;
+    const int group_id = group->qvcomm.rank;
+    const int group_size = group->qvcomm.size;
 
     int rc = QV_SUCCESS, mpirc = MPI_SUCCESS;
     std::vector<int> rxcounts, displs;
@@ -638,7 +605,7 @@ qvi_mpi_group_gather_bbuffs(
     mpirc = MPI_Gather(
         &send_count, 1, MPI_INT,
         rxcounts.data(), 1, MPI_INT,
-        root, group->mpi_comm
+        root, group->qvcomm.mpi_comm
     );
     if (mpirc != MPI_SUCCESS) {
         rc = QV_ERR_MPI;
@@ -659,7 +626,7 @@ qvi_mpi_group_gather_bbuffs(
     mpirc = MPI_Gatherv(
         qvi_bbuff_data(txbuff), send_count, MPI_UINT8_T,
         allbytes.data(), rxcounts.data(), displs.data(), MPI_UINT8_T,
-        root, group->mpi_comm
+        root, group->qvcomm.mpi_comm
     );
     if (mpirc != MPI_SUCCESS) {
         rc = QV_ERR_MPI;
@@ -701,8 +668,8 @@ qvi_mpi_group_scatter_bbuffs(
     int root,
     qvi_bbuff_t **rxbuff
 ) {
-    const int group_size = group->size;
-    const int group_id = group->id;
+    const int group_size = group->qvcomm.size;
+    const int group_id = group->qvcomm.rank;
 
     int rc = QV_SUCCESS, mpirc = MPI_SUCCESS, rxcount = 0;
     int total_bytes = 0;
@@ -732,7 +699,7 @@ qvi_mpi_group_scatter_bbuffs(
     mpirc = MPI_Scatter(
         txcounts.data(), 1, MPI_INT,
         &rxcount, 1, MPI_INT,
-        root, group->mpi_comm
+        root, group->qvcomm.mpi_comm
     );
     if (mpirc != MPI_SUCCESS) {
         rc = QV_ERR_MPI;
@@ -743,7 +710,7 @@ qvi_mpi_group_scatter_bbuffs(
 
     mpirc = MPI_Scatterv(
         txbytes.data(), txcounts.data(), displs.data(), MPI_UINT8_T,
-        mybytes.data(), rxcount, MPI_UINT8_T, root, group->mpi_comm
+        mybytes.data(), rxcount, MPI_UINT8_T, root, group->qvcomm.mpi_comm
     );
     if (mpirc != MPI_SUCCESS) {
         rc = QV_ERR_MPI;
@@ -759,16 +726,6 @@ out:
     }
     *rxbuff = mybbuff;
     return rc;
-}
-
-int
-qvi_mpi_group_comm_dup(
-    qvi_mpi_group_t *group,
-    MPI_Comm *comm
-) {
-    const int rc = MPI_Comm_dup(group->mpi_comm, comm);
-    if (rc != MPI_SUCCESS) return QV_ERR_MPI;
-    return QV_SUCCESS;
 }
 
 /*

@@ -12,7 +12,6 @@
 
 /**
  * @file qvi-group-mpi.h
- *
  */
 
 #ifndef QVI_GROUP_MPI_H

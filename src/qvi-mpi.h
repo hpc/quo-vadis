@@ -17,10 +17,8 @@
 #ifndef QVI_MPI_H
 #define QVI_MPI_H
 
-#include "qvi-common.h" // IWYU pragma: keep
-#include "qvi-task.h"
+#include "qvi-common.h"
 #include "qvi-group.h"
-#include "qvi-bbuff.h"
 #include "quo-vadis-mpi.h" // IWYU pragma: keep
 
 #ifdef __cplusplus
@@ -71,14 +69,6 @@ int
 qvi_mpi_init(
     qvi_mpi_t *mpi,
     MPI_Comm comm
-);
-
-/**
- *
- */
-int
-qvi_mpi_finalize(
-    qvi_mpi_t *mpi
 );
 
 /**
@@ -165,14 +155,6 @@ qvi_mpi_group_create_from_split(
     int color,
     int key,
     qvi_mpi_group_t **child
-);
-
-/**
- *
- */
-int
-qvi_mpi_node_barrier(
-    qvi_mpi_t *mpi
 );
 
 /**
