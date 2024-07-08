@@ -9,7 +9,6 @@
 
 /**
  * @file qvi-group-process.h
- *
  */
 
 #ifndef QVI_GROUP_PROCESS_H
@@ -20,21 +19,14 @@
 #include "qvi-process.h"
 
 struct qvi_group_process_s : public qvi_group_s {
-    /** Process instance. */
-    qvi_process_t *proc = nullptr;
     /** Underlying group instance. */
     qvi_process_group_t *proc_group = nullptr;
     /** Constructor. */
-    qvi_group_process_s(void)
-    {
-        const int rc = qvi_process_new(&proc);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
-    }
+    qvi_group_process_s(void) = default;
     /** Destructor. */
     virtual ~qvi_group_process_s(void)
     {
         qvi_process_group_free(&proc_group);
-        qvi_process_free(&proc);
     }
 
     virtual int
@@ -57,8 +49,12 @@ struct qvi_group_process_s : public qvi_group_s {
 
     virtual int
     make_intrinsic(
-        qv_scope_intrinsic_t intrinsic
-    );
+        qv_scope_intrinsic_t
+    ) {
+        // NOTE: the provided scope doesn't affect how
+        // we create the process group, so we ignore it.
+        return qvi_process_group_new(&proc_group);
+    }
 
     virtual int
     self(

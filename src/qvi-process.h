@@ -15,50 +15,14 @@
 #define QVI_PROCESS_H
 
 #include "qvi-common.h"
-#include "qvi-bbuff.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 // Forward declarations.
-struct qvi_process_s;
-typedef struct qvi_process_s qvi_process_t;
-
 struct qvi_process_group_s;
 typedef struct qvi_process_group_s qvi_process_group_t;
-
-/**
- *
- */
-int
-qvi_process_new(
-    qvi_process_t **proc
-);
-
-/**
- *
- */
-void
-qvi_process_free(
-    qvi_process_t **proc
-);
-
-/**
- *
- */
-int
-qvi_process_node_barrier(
-    qvi_process_t *proc
-);
-
-/**
- *
- */
-int
-qvi_process_group_size(
-    const qvi_process_group_t *group
-);
 
 /**
  *
@@ -80,7 +44,7 @@ qvi_process_group_free(
  *
  */
 int
-qvi_process_group_id(
+qvi_process_group_size(
     const qvi_process_group_t *group
 );
 
@@ -88,9 +52,8 @@ qvi_process_group_id(
  *
  */
 int
-qvi_process_group_create(
-    qvi_process_t *proc,
-    qvi_process_group_t **group
+qvi_process_group_id(
+    const qvi_process_group_t *group
 );
 
 /**
