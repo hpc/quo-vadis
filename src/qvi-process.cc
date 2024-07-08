@@ -12,71 +12,15 @@
  */
 
 #include "qvi-process.h"
-#include "qvi-task.h"
+#include "qvi-bbuff.h"
 #include "qvi-utils.h"
-#include "qvi-group.h"
-
-// Type definitions.
-typedef qvi_group_id_t qvi_process_group_id_t;
-
-using qvi_process_group_tab_t = std::unordered_map<
-    qvi_process_group_id_t, qvi_process_group_t
->;
 
 struct qvi_process_group_s {
-    /** ID used for table lookups */
-    qvi_process_group_id_t tabid = 0;
-    /** ID (rank) in group */
-    int id = 0;
-    /** Size of group */
-    int size = 0;
-    /** Constructor. */
-    qvi_process_group_s(void) = default;
-    /** Destructor. */
-    ~qvi_process_group_s(void) = default;
+    /** Size of group. This is fixed. */
+    static constexpr int size = 1;
+    /** ID (rank) in group. This is fixed. */
+    static constexpr int rank = 0;
 };
-
-struct qvi_process_s {
-    /** Maintains the next available group ID value. */
-    qvi_process_group_tab_t group_tab;
-    /** Constructor. */
-    qvi_process_s(void) = default;
-    /** Destructor. */
-    ~qvi_process_s(void) = default;
-};
-
-/**
- * Returns the next available group ID.
- */
-static int
-next_group_tab_id(
-    qvi_process_t *,
-    qvi_process_group_id_t *gid
-) {
-    return qvi_group_t::next_id(gid);
-}
-
-int
-qvi_process_new(
-    qvi_process_t **proc
-) {
-    return qvi_new(proc);
-}
-
-void
-qvi_process_free(
-    qvi_process_t **proc
-) {
-    return qvi_delete(proc);
-}
-
-int
-qvi_process_node_barrier(
-    qvi_process_t *
-) {
-    // Nothing to do since process groups contain a single member.
-    return QV_SUCCESS;
-}
 
 int
 qvi_process_group_new(
@@ -93,37 +37,10 @@ qvi_process_group_free(
 }
 
 int
-qvi_process_group_create(
-    qvi_process_t *proc,
-    qvi_process_group_t **group
-) {
-    qvi_process_group_t *igroup = nullptr;
-    qvi_process_group_id_t gtid;
-
-    int rc = next_group_tab_id(proc, &gtid);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_process_group_new(&igroup);
-    if (rc != QV_SUCCESS) goto out;
-
-    igroup->tabid = gtid;
-    igroup->id = 0;
-    igroup->size = 1;
-
-    proc->group_tab.insert({gtid, *igroup});
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_process_group_free(&igroup);
-    }
-    *group = igroup;
-    return QV_SUCCESS;
-}
-
-int
 qvi_process_group_id(
     const qvi_process_group_t *group
 ) {
-    return group->id;
+    return group->rank;
 }
 
 int
