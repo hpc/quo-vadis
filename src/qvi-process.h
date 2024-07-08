@@ -16,10 +16,6 @@
 
 #include "qvi-common.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // Forward declarations.
 struct qvi_process_group_s;
 typedef struct qvi_process_group_s qvi_process_group_t;
@@ -86,10 +82,6 @@ qvi_process_group_scatter_bbuffs(
     int root,
     qvi_bbuff_t **rxbuff
 );
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 

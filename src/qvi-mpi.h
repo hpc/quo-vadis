@@ -21,10 +21,6 @@
 #include "qvi-group.h"
 #include "quo-vadis-mpi.h" // IWYU pragma: keep
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // Type definitions.
 typedef qvi_group_id_t qvi_mpi_group_id_t;
 
@@ -111,7 +107,7 @@ int
 qvi_mpi_group_lookup_by_id(
     qvi_mpi_t *mpi,
     qvi_mpi_group_id_t id,
-    qvi_mpi_group_t *group
+    qvi_mpi_group_t &group
 );
 
 /**
@@ -185,10 +181,6 @@ qvi_mpi_group_comm_dup(
     qvi_mpi_group_t *group,
     MPI_Comm *comm
 );
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 
