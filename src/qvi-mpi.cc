@@ -58,43 +58,31 @@ struct qvi_mpi_comm_s {
 };
 
 struct qvi_mpi_group_s {
-    /** ID used for table lookups */
+    /** ID used for table lookups. */
     qvi_mpi_group_id_t tabid = 0;
     /** The group's communicator info. */
     qvi_mpi_comm_s qvcomm;
 };
 
 struct qvi_mpi_s {
-    /** Duplicate of MPI_COMM_SELF */
+    /** Duplicate of MPI_COMM_SELF. */
     qvi_mpi_comm_s self_comm;
-    /** Node communicator */
+    /** Node communicator. */
     qvi_mpi_comm_s node_comm;
-    /** Duplicate of initializing communicator */
+    /** Duplicate of initializing communicator. */
     qvi_mpi_comm_s world_comm;
-    /** Group table (ID to internal structure mapping) */
+    /** Group table (ID to internal structure mapping). */
     qvi_mpi_group_tab_t group_tab;
-    /** Constructor */
+    /** Constructor. */
     qvi_mpi_s(void) = default;
-    /** Destructor */
+    /** Destructor. */
     ~qvi_mpi_s(void)
     {
         for (auto &i : group_tab) {
             qvi_mpi_comm_s::free(i.second.qvcomm);
         }
-        qvi_mpi_comm_s::free(world_comm);
     }
 };
-
-/**
- * Copies contents of internal structure from src to dst.
- */
-static void
-cp_mpi_group(
-    const qvi_mpi_group_t *src,
-    qvi_mpi_group_t *dst
-) {
-    *dst = *src;
-}
 
 /**
  * Returns the next available group ID.
@@ -163,54 +151,6 @@ out:
         return QV_ERR_MPI;
     }
     return QV_SUCCESS;
-}
-
-/**
- * Creates a QV group from an MPI group.
- */
-static int
-group_create_from_mpi_group(
-    qvi_mpi_t *mpi,
-    MPI_Group group,
-    qvi_mpi_group_t **maybe_group
-) {
-    cstr_t ers = nullptr;
-    int qvrc = QV_SUCCESS;
-
-    MPI_Comm group_comm;
-    int rc = MPI_Comm_create_group(
-        mpi->node_comm.mpi_comm, group, 0, &group_comm
-    );
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_create_group() failed";
-        qvrc = QV_ERR_MPI;
-        goto out;
-    }
-    // Not in the group, so return NULL and bail.
-    if (group_comm == MPI_COMM_NULL) {
-        *maybe_group = nullptr;
-        return QV_SUCCESS;
-    }
-    // In the group.
-    qvrc = qvi_mpi_group_new(maybe_group);
-    if (qvrc != QV_SUCCESS) {
-        ers = "qvi_mpi_group_new() failed";
-        goto out;
-    }
-
-    qvrc = group_init_from_mpi_comm(
-        group_comm,
-        *maybe_group
-    );
-    if (qvrc != QV_SUCCESS) {
-        ers = "group_init_from_mpi_comm() failed";
-        goto out;
-    }
-out:
-    if (ers) {
-        qvi_log_error(ers);
-    }
-    return qvrc;
 }
 
 /**
@@ -298,9 +238,10 @@ create_intrinsic_groups(
 ) {
     cstr_t ers = nullptr;
 
-    qvi_mpi_group_t self_group, node_group;
+    qvi_mpi_group_t self_group, node_group, wrld_group;
     self_group.qvcomm = mpi->self_comm;
     node_group.qvcomm = mpi->node_comm;
+    wrld_group.qvcomm = mpi->world_comm;
 
     int rc = group_add(mpi, &self_group, QVI_MPI_GROUP_SELF);
     if (rc != QV_SUCCESS) {
@@ -311,6 +252,12 @@ create_intrinsic_groups(
     rc = group_add(mpi, &node_group, QVI_MPI_GROUP_NODE);
     if (rc != QV_SUCCESS) {
         ers = "group_add(node) failed";
+        goto out;
+    }
+
+    rc = group_add(mpi, &wrld_group, QVI_MPI_GROUP_WORLD);
+    if (rc != QV_SUCCESS) {
+        ers = "group_add(world) failed";
         goto out;
     }
 out:
@@ -392,7 +339,7 @@ qvi_mpi_group_lookup_by_id(
     if (got == mpi->group_tab.end()) {
         return QV_ERR_NOT_FOUND;
     }
-    cp_mpi_group(&got->second, group);
+    *group = got->second;
     return QV_SUCCESS;
 }
 
@@ -415,72 +362,6 @@ qvi_mpi_group_create_from_group_id(
 out:
     qvi_mpi_group_free(&tmp_group);
     return rc;
-}
-
-int
-qvi_mpi_group_create_from_ids(
-    qvi_mpi_t *mpi,
-    const qvi_mpi_group_t *group,
-    int num_group_ids,
-    const int *group_ids,
-    qvi_mpi_group_t **maybe_group
-) {
-    cstr_t ers = nullptr;
-    int qvrc = QV_SUCCESS;
-
-    MPI_Group new_mpi_group = MPI_GROUP_NULL;
-    MPI_Group old_mpi_group = MPI_GROUP_NULL;
-
-    int rc = MPI_Comm_group(
-        group->qvcomm.mpi_comm,
-        &old_mpi_group
-    );
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_group() failed";
-        qvrc = QV_ERR_MPI;
-        goto out;
-    }
-
-    rc = MPI_Group_incl(
-        old_mpi_group,
-        num_group_ids,
-        group_ids,
-        &new_mpi_group
-    );
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Group_incl() failed";
-        qvrc = QV_ERR_MPI;
-        goto out;
-    }
-
-    qvrc = group_create_from_mpi_group(
-        mpi,
-        new_mpi_group,
-        maybe_group
-    );
-    if (qvrc != QV_SUCCESS) {
-        ers = "group_create_from_mpi_group() failed";
-        goto out;
-    }
-    // Not in the group and no errors.
-    if (*maybe_group == nullptr) {
-        qvrc = QV_SUCCESS;
-        goto out;
-    }
-    // In the group.
-    qvrc = group_add(mpi, *maybe_group);
-    if (qvrc != QV_SUCCESS) {
-        ers = "group_add() failed";
-        goto out;
-    }
-out:
-    if (new_mpi_group != MPI_GROUP_NULL) {
-        (void)MPI_Group_free(&new_mpi_group);
-    }
-    if (ers) {
-        qvi_log_error(ers);
-    }
-    return qvrc;
 }
 
 int
