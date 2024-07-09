@@ -17,9 +17,9 @@
  * @file qvi-thread.cc
  */
 
-#include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-thread.h"
 #include "qvi-group.h"
+#include "qvi-bbuff.h"
 #include "qvi-utils.h"
 #ifdef OPENMP_FOUND
 #include <omp.h>
@@ -76,6 +76,20 @@ struct qvi_thread_s {
     }
 };
 
+int
+qvi_thread_new(
+    qvi_thread_t **th
+) {
+    return qvi_new(th);
+}
+
+void
+qvi_thread_free(
+    qvi_thread_t **th
+) {
+    qvi_delete(th);
+}
+
 /**
  * Copies contents of internal structure from src to dst.
  */
@@ -97,36 +111,6 @@ next_group_tab_id(
     qvi_thread_group_id_t *gid
 ) {
     return qvi_group_t::next_id(gid);
-}
-
-/**
- *
- */
-int
-qvi_thread_new(
-    qvi_thread_t **th
-) {
-    return qvi_new(th);
-}
-
-/**
- *
- */
-void
-qvi_thread_free(
-    qvi_thread_t **th
-) {
-    qvi_delete(th);
-}
-
-/**
- *
- */
-int
-qvi_thread_finalize(
-    qvi_thread_t *
-) {
-    return QV_SUCCESS;
 }
 
 /**
