@@ -25,11 +25,8 @@
 #include <omp.h>
 #endif
 
-// Type definitions.
-typedef qvi_group_id_t qvi_thread_group_id_t;
-
 using qvi_thread_group_tab_t = std::unordered_map<
-    qvi_thread_group_id_t, qvi_thread_group_t
+    qvi_group_id_t, qvi_thread_group_t
 >;
 
 // We need to have one structure for fields
@@ -38,11 +35,8 @@ using qvi_thread_group_tab_t = std::unordered_map<
 struct qvi_thread_group_shared_s {
     /** Atomic reference count used for resource freeing. */
     std::atomic<int> in_use{0};
-    /** UNUSED : ID (rank) in group */
-    /* probably need a LIST of IDs ...*/
-    int id = -1;
     /** ID used for table lookups. */
-    qvi_thread_group_id_t tabid = 0;
+    qvi_group_id_t tabid = 0;
     /** Group size. */
      int size = 0;
     /** Barrier object (used in scope). */
@@ -102,20 +96,14 @@ cp_thread_group(
     memmove(dst, src, sizeof(*src));
 }
 
-/**
- *
- */
 static int
 next_group_tab_id(
     qvi_thread_t *,
-    qvi_thread_group_id_t *gid
+    qvi_group_id_t *gid
 ) {
     return qvi_group_t::next_id(gid);
 }
 
-/**
- *
- */
 int
 qvi_thread_group_new(
     qvi_thread_group_t **thgrp
@@ -135,9 +123,6 @@ qvi_thread_group_new(
     return QV_SUCCESS;
 }
 
-/**
- *
- */
 void
 qvi_thread_group_free(
     qvi_thread_group_t **thgrp
@@ -155,9 +140,6 @@ out:
     *thgrp = nullptr;
 }
 
-/**
- *
- */
 static int
 qvi_thread_group_create_size(
     qvi_thread_t *th,
@@ -165,7 +147,7 @@ qvi_thread_group_create_size(
     int size
 ) {
     qvi_thread_group_t *igroup = nullptr;
-    qvi_thread_group_id_t gtid = 0;
+    qvi_group_id_t gtid = 0;
     int rc, irc;
 
     rc = qvi_thread_group_new(&igroup);
@@ -209,9 +191,6 @@ out:
     return QV_SUCCESS;
 }
 
-/**
- *
- */
 int
 qvi_thread_group_create(
     qvi_thread_t *th,
@@ -224,9 +203,6 @@ qvi_thread_group_create(
 #endif
 }
 
-/**
- *
- */
 int
 qvi_thread_group_create_single(
     qvi_thread_t *th,
@@ -235,13 +211,10 @@ qvi_thread_group_create_single(
     return qvi_thread_group_create_size(th, group, 1);
 }
 
-/**
- *
- */
 int
 qvi_thread_group_lookup_by_id(
     qvi_thread_t *th,
-    qvi_thread_group_id_t id,
+    qvi_group_id_t id,
     qvi_thread_group_t *group
 ) {
     auto got = th->group_tab->find(id);
@@ -252,9 +225,6 @@ qvi_thread_group_lookup_by_id(
     return QV_SUCCESS;
 }
 
-/**
- *
- */
 int
 qvi_thread_group_id(
     const qvi_thread_group_t *group
@@ -262,9 +232,6 @@ qvi_thread_group_id(
     return group->id;
 }
 
-/**
- *
- */
 int
 qvi_thread_group_size(
     const qvi_thread_group_t *group
@@ -272,9 +239,6 @@ qvi_thread_group_size(
     return group->sdata->size;
 }
 
-/**
- *
- */
 int
 qvi_thread_group_barrier(
     qvi_thread_group_t *group
@@ -296,9 +260,6 @@ typedef struct color_key_id_s {
     int rank;
 } color_key_id_t;
 
-/**
- *
- */
 static void
 swap_elts(
     color_key_id_t *el1,
@@ -309,9 +270,6 @@ swap_elts(
     *el2 = tmp;
 }
 
-/**
- *
- */
 static void
 bubble_sort_by_color(
     color_key_id_t tab[],
@@ -327,9 +285,6 @@ bubble_sort_by_color(
     }
 }
 
-/**
- *
- */
 static void
 bubble_sort_by_key(
     color_key_id_t tab[],
@@ -346,10 +301,8 @@ bubble_sort_by_key(
     }
 }
 
-/**
- *
- */
-static void bubble_sort_by_rank(
+static void
+bubble_sort_by_rank(
     color_key_id_t tab[],
     int size_tab
 ) {
@@ -394,9 +347,6 @@ static void display_tab(
 */
 #endif
 
-/**
- *
- */
 static int
 qvi_get_subgroup_info(
     const qvi_thread_group_t *parent,
@@ -483,9 +433,6 @@ qvi_get_subgroup_info(
     return QV_SUCCESS;
 }
 
-/**
- *
- */
 int
 qvi_thread_group_create_from_split(
     qvi_thread_t *th,
@@ -507,7 +454,7 @@ qvi_thread_group_create_from_split(
     int sgrp_rank = -1; /* subgroup rank */
     int num_sgrp = -1;  /* number of subgroups */
     qvi_thread_group_t *new_group = nullptr;
-    qvi_thread_group_id_t gtid;
+    qvi_group_id_t gtid;
 
     /* this used to internally allocate things */
     /* in a copyprivate fashion */
@@ -599,9 +546,6 @@ qvi_thread_group_create_from_split(
 }
 #endif
 
-/**
- *
- */
 int
 qvi_thread_group_gather_bbuffs(
     qvi_thread_group_t *group,
@@ -648,9 +592,6 @@ out:
     return rc;
 }
 
-/**
- *
- */
 int
 qvi_thread_group_scatter_bbuffs(
     qvi_thread_group_t *group,

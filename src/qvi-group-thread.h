@@ -20,6 +20,7 @@
 #ifndef QVI_GROUP_THREAD_H
 #define QVI_GROUP_THREAD_H
 
+#include "qvi-common.h"
 #include "qvi-group.h"
 #include "qvi-thread.h"
 
