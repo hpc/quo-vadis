@@ -19,15 +19,8 @@
 #include "qvi-common.h"
 
 // Forward declarations.
-
-struct qvi_thread_group_shared_s;
-typedef struct qvi_thread_group_shared_s qvi_thread_group_shared_t;
-
 struct qvi_thread_group_s;
 typedef struct qvi_thread_group_s qvi_thread_group_t;
-
-struct qvi_thread_s;
-typedef struct qvi_thread_s qvi_thread_t;
 
 /**
  * Mapping policies types.
@@ -58,16 +51,6 @@ typedef struct qv_layout_s {
 */
 
 int
-qvi_thread_new(
-    qvi_thread_t **th
-);
-
-void
-qvi_thread_free(
-    qvi_thread_t **th
-);
-
-int
 qvi_thread_group_size(
     const qvi_thread_group_t *group
 );
@@ -83,25 +66,27 @@ qvi_thread_group_free(
 );
 
 int
+qvi_thread_group_barrier(
+    qvi_thread_group_t *group
+);
+
+int
 qvi_thread_group_id(
     const qvi_thread_group_t *group
 );
 
 int
 qvi_thread_group_create(
-    qvi_thread_t *proc,
     qvi_thread_group_t **group
 );
 
 int
 qvi_thread_group_create_single(
-    qvi_thread_t *proc,
     qvi_thread_group_t **group
 );
 
 int
 qvi_thread_group_create_from_split(
-    qvi_thread_t *th,
     const qvi_thread_group_t *parent,
     int color,
     int key,

@@ -18,29 +18,64 @@
  */
 
 #include "qvi-thread.h"
-#include "qvi-group.h"
 #include "qvi-bbuff.h"
 #include "qvi-utils.h"
 #ifdef OPENMP_FOUND
 #include <omp.h>
 #endif
 
-using qvi_thread_group_tab_t = std::unordered_map<
-    qvi_group_id_t, qvi_thread_group_t
->;
+static int
+qvi_thread_omp_get_num_threads(void)
+{
+#ifdef OPENMP_FOUND
+    return omp_get_num_threads();
+#else
+    return 1;
+#endif
+}
 
-// We need to have one structure for fields
-// shared by all threads included in another
-// with fields specific to each thread
+static int
+qvi_thread_omp_get_thread_num(void)
+{
+#ifdef OPENMP_FOUND
+    return omp_get_thread_num();
+#else
+    return 0;
+#endif
+}
+
+/**
+ * We need to have one structure for fields shared by all threads included in
+ * another with fields specific to each thread.
+ */
 struct qvi_thread_group_shared_s {
     /** Atomic reference count used for resource freeing. */
     std::atomic<int> in_use{0};
-    /** ID used for table lookups. */
-    qvi_group_id_t tabid = 0;
     /** Group size. */
-     int size = 0;
+    int size = 0;
     /** Barrier object (used in scope). */
     pthread_barrier_t barrier;
+    /** Constructor. */
+    qvi_thread_group_shared_s(void) = delete;
+    /** Constructor. */
+    qvi_thread_group_shared_s(
+        int group_size
+    ) : in_use(group_size)
+      , size(group_size)
+    {
+        const int rc = pthread_barrier_init(&barrier, NULL, group_size);
+        if (rc != 0) throw qvi_runtime_error();
+    }
+
+    static void
+    destruct(
+        qvi_thread_group_shared_s *sgroup
+    ) {
+        if (--sgroup->in_use == 0) {
+            pthread_barrier_destroy(&sgroup->barrier);
+            delete sgroup;
+        }
+    }
 };
 
 struct qvi_thread_group_s {
@@ -48,181 +83,77 @@ struct qvi_thread_group_s {
      * Shared data between threads in the group:
      * ALL threads point to the same region.
      */
-    qvi_thread_group_shared_t *sdata = nullptr;
+    qvi_thread_group_shared_s *sdata = nullptr;
     /** ID (rank) in group: this ID is unique to each thread. */
     int id = 0;
-};
-
-struct qvi_thread_s {
-    /** Group table (ID to internal structure mapping) */
-    qvi_thread_group_tab_t *group_tab = nullptr;
+    /** Performs object construction, called by the real constructors. */
+    void
+    construct(
+        int group_size
+    ) {
+        qvi_thread_group_shared_s *isdata = nullptr;
+        #pragma omp single copyprivate(isdata)
+        {
+            const int rc = qvi_new(&isdata, group_size);
+            if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        }
+        sdata = isdata;
+        id = qvi_thread_omp_get_thread_num();
+    }
     /** Constructor. */
-    qvi_thread_s(void)
+    qvi_thread_group_s(void)
     {
-        // Groups
-        const int rc = qvi_new(&group_tab);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        construct(qvi_thread_omp_get_num_threads());
+    }
+    /** Constructor. */
+    qvi_thread_group_s(
+        int group_size
+    ) {
+        construct(group_size);
     }
     /** Destructor. */
-    ~qvi_thread_s(void)
+    ~qvi_thread_group_s(void)
     {
-        qvi_delete(&group_tab);
+        qvi_thread_group_shared_s::destruct(sdata);
     }
 };
-
-int
-qvi_thread_new(
-    qvi_thread_t **th
-) {
-    return qvi_new(th);
-}
-
-void
-qvi_thread_free(
-    qvi_thread_t **th
-) {
-    qvi_delete(th);
-}
-
-/**
- * Copies contents of internal structure from src to dst.
- */
-// TODO(skg) Do we need this?
-static void
-cp_thread_group(
-    const qvi_thread_group_t *src,
-    qvi_thread_group_t *dst
-) {
-    memmove(dst, src, sizeof(*src));
-}
-
-static int
-next_group_tab_id(
-    qvi_thread_t *,
-    qvi_group_id_t *gid
-) {
-    return qvi_group_t::next_id(gid);
-}
 
 int
 qvi_thread_group_new(
-    qvi_thread_group_t **thgrp
+    qvi_thread_group_t **group
 ) {
-    qvi_thread_group_t *ithgrp = new qvi_thread_group_t();
-    qvi_thread_group_shared_t *sdata = nullptr;
-
-#pragma omp single copyprivate(sdata)
-    sdata = new qvi_thread_group_shared_t();
-
-#pragma omp single
-    sdata->in_use = omp_get_num_threads();
-
-    ithgrp->sdata = sdata;
-
-    *thgrp = ithgrp;
-    return QV_SUCCESS;
+    return qvi_new(group);
 }
 
 void
 qvi_thread_group_free(
-    qvi_thread_group_t **thgrp
+    qvi_thread_group_t **group
 ) {
-    qvi_thread_group_t *ithgrp = *thgrp;
-    if (!ithgrp) goto out;
-
-    if (--(ithgrp->sdata->in_use) == 0) {
-      pthread_barrier_destroy(&(ithgrp->sdata->barrier));
-      delete ithgrp->sdata;
-    }
-
-    delete ithgrp;
-out:
-    *thgrp = nullptr;
+    qvi_delete(group);
 }
 
 static int
 qvi_thread_group_create_size(
-    qvi_thread_t *th,
     qvi_thread_group_t **group,
     int size
 ) {
-    qvi_thread_group_t *igroup = nullptr;
-    qvi_group_id_t gtid = 0;
-    int rc, irc;
-
-    rc = qvi_thread_group_new(&igroup);
-    if (rc != QV_SUCCESS) {
-      *group = nullptr;
-      return rc;
-    }
-
-#pragma omp single copyprivate(gtid, rc)
-    rc = next_group_tab_id(th, &gtid);
-    if (rc != QV_SUCCESS) goto out;
-
-#pragma omp single
-    {
-      igroup->sdata->tabid = gtid;
-      igroup->sdata->size = size;
-    }
-#ifdef OPENMP_FOUND
-    igroup->id = omp_get_thread_num();
-#else
-    igroup->id = 0;
-#endif
-
-#pragma omp single copyprivate(irc)
-    irc = pthread_barrier_init(&(igroup->sdata->barrier),NULL,igroup->sdata->size);
-    if (irc != 0) {
-      rc = QV_ERR_INTERNAL;
-      goto out;
-    }
-
-    //Insert the whole group structure or just the shared part??
-#pragma omp single
-    th->group_tab->insert({gtid, *igroup});
-
-out:
-    if (rc != QV_SUCCESS) {
-      qvi_thread_group_free(&igroup);
-    }
-
-    *group = igroup;
-    return QV_SUCCESS;
+    return qvi_new(group, size);
 }
 
 int
 qvi_thread_group_create(
-    qvi_thread_t *th,
     qvi_thread_group_t **group
 ) {
-#ifdef OPENMP_FOUND
-    return qvi_thread_group_create_size(th, group, omp_get_num_threads());
-#else
-    return qvi_thread_group_create_size(th, group, 1); /* Size to fix here */
-#endif
+    return qvi_thread_group_create_size(
+        group, qvi_thread_omp_get_num_threads()
+    );
 }
 
 int
 qvi_thread_group_create_single(
-    qvi_thread_t *th,
     qvi_thread_group_t **group
 ) {
-    return qvi_thread_group_create_size(th, group, 1);
-}
-
-int
-qvi_thread_group_lookup_by_id(
-    qvi_thread_t *th,
-    qvi_group_id_t id,
-    qvi_thread_group_t *group
-) {
-    auto got = th->group_tab->find(id);
-    if (got == th->group_tab->end()) {
-        return QV_ERR_NOT_FOUND;
-    }
-    cp_thread_group(&got->second, group);
-    return QV_SUCCESS;
+    return qvi_thread_group_create_size(group, 1);
 }
 
 int
@@ -435,7 +366,6 @@ qvi_get_subgroup_info(
 
 int
 qvi_thread_group_create_from_split(
-    qvi_thread_t *th,
     const qvi_thread_group_t *parent,
     int color,
     int key,
@@ -443,6 +373,7 @@ qvi_thread_group_create_from_split(
 )
 #ifndef OPENMP_FOUND
 {
+    // TODO(skg) This should return self.
     *child = nullptr;
     return QV_SUCCESS;
 }
@@ -454,14 +385,13 @@ qvi_thread_group_create_from_split(
     int sgrp_rank = -1; /* subgroup rank */
     int num_sgrp = -1;  /* number of subgroups */
     qvi_thread_group_t *new_group = nullptr;
-    qvi_group_id_t gtid;
 
     /* this used to internally allocate things */
     /* in a copyprivate fashion */
     //qvi_thread_group_t **new_group_ptr_array = nullptr;
     //qvi_thread_group_t *tmp_group = nullptr;
-    qvi_thread_group_shared_t **sdata_ptr_array = nullptr;
-    qvi_thread_group_shared_t *tmp_sdata = nullptr;
+    qvi_thread_group_shared_s **sdata_ptr_array = nullptr;
+    qvi_thread_group_shared_s *tmp_sdata = nullptr;
     omp_lock_t *lock_ptr = nullptr; // use pthread_mutex instead ??*/
 
     if (!parent) {
@@ -493,11 +423,11 @@ qvi_thread_group_create_from_split(
 
     /* sdata pointer allocation */
 #pragma omp single copyprivate(sdata_ptr_array)
-    sdata_ptr_array = new qvi_thread_group_shared_t *[num_sgrp]();
+    sdata_ptr_array = new qvi_thread_group_shared_s *[num_sgrp]();
 
     for(int i = 0 ; i < num_sgrp ; i++) {
 #pragma omp single copyprivate(tmp_sdata)
-        tmp_sdata = new qvi_thread_group_shared_t();
+        //tmp_sdata = new qvi_thread_group_shared_s();
         /* Since it's shared, only the root(s) need(s) to set this */
         if ((newid == 0) && (i == sgrp_rank)) {
             sdata_ptr_array[i] = tmp_sdata;
@@ -512,28 +442,14 @@ qvi_thread_group_create_from_split(
 
     /* Only the root(s) need(s) to initialize this */
     if (newid == 0) {
-      omp_set_lock(lock_ptr);
-      rc = next_group_tab_id(th, &gtid);
-      omp_unset_lock(lock_ptr);
-
-      sdata_ptr_array[sgrp_rank]->tabid = gtid;
-
       sdata_ptr_array[sgrp_rank]->size = sgrp_size;
-      sdata_ptr_array[sgrp_rank]->in_use = sgrp_size;
-
+      //sdata_ptr_array[sgrp_rank]->in_use = sgrp_size;
       pthread_barrier_init(&(sdata_ptr_array[sgrp_rank]->barrier),NULL,sgrp_size);
     }
 #pragma omp barrier
     /* All threads set their own (sub)group sdata pointer */
     new_group->sdata = sdata_ptr_array[sgrp_rank];
     new_group->id = newid;
-
-    /* Only the root(s) need(s) to insert groups */
-    if (newid == 0) {
-      omp_set_lock(lock_ptr);
-      th->group_tab->insert({gtid, *new_group});
-      omp_unset_lock(lock_ptr);
-    }
 
     *child = new_group;
 #pragma omp barrier // to prevent the quickest thread to remove data before all others have used it

@@ -26,9 +26,7 @@ qvi_group_thread_s::make_intrinsic(
 ) {
     // NOTE: the provided scope doesn't affect how
     // we create the thread group, so we ignore it.
-    return qvi_thread_group_create(
-        th, &th_group
-    );
+    return qvi_thread_group_create(&th_group);
 }
 
 int
@@ -40,9 +38,7 @@ qvi_group_thread_s::self(
     int rc = qvi_new(&ichild);
     if (rc != QV_SUCCESS) goto out;
     // Create a group containing a single thread
-    rc = qvi_thread_group_create_single(
-        th, &ichild->th_group
-    );
+    rc = qvi_thread_group_create_single(&ichild->th_group);
 out:
     if (rc != QV_SUCCESS) {
         qvi_delete(&ichild);
@@ -62,8 +58,7 @@ qvi_group_thread_s::split(
     if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_thread_group_create_from_split(
-        th, th_group, color,
-        key, &ichild->th_group
+        th_group, color, key, &ichild->th_group
     );
 out:
     if (rc != QV_SUCCESS) {

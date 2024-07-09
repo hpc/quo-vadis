@@ -48,6 +48,12 @@ qv_pthread_create(
 );
 
 int
+qv_thread_scope_get(
+    qv_scope_intrinsic_t iscope,
+    qv_scope_t **scope
+);
+
+int
 qv_thread_scope_split_at(
     qv_scope_t *scope,
     qv_hw_obj_type_t type,

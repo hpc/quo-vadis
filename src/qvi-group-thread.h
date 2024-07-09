@@ -25,19 +25,10 @@
 #include "qvi-thread.h"
 
 struct qvi_group_thread_s : public qvi_group_s {
-    /**
-     * Initialized qvi_thread_t instance
-     * embedded in thread group instances.
-     */
-    qvi_thread_t *th = nullptr;
     /** Underlying group instance. */
     qvi_thread_group_t *th_group = nullptr;
     /** Constructor. */
-    qvi_group_thread_s(void)
-    {
-        int rc = qvi_thread_new(&th);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
-    }
+    qvi_group_thread_s(void) = default;
     /** Destructor. */
     virtual ~qvi_group_thread_s(void)
     {
@@ -59,8 +50,7 @@ struct qvi_group_thread_s : public qvi_group_s {
     virtual int
     barrier(void)
     {
-        // TODO(skg) FIXME
-        return QV_SUCCESS;
+        return qvi_thread_group_barrier(th_group);
     }
 
     virtual int
