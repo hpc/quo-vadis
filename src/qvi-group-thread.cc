@@ -17,7 +17,6 @@
  * @file qvi-group-thread.cc
  */
 
-#include "qvi-common.h" // IWYU pragma: keep
 #include "qvi-group-thread.h"
 #include "qvi-utils.h"
 
