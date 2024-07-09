@@ -19,7 +19,7 @@
 #include "qvi-utils.h"
 
 using qvi_mpi_group_tab_t = std::unordered_map<
-    qvi_mpi_group_id_t, qvi_mpi_group_t
+    qvi_group_id_t, qvi_mpi_group_t
 >;
 
 struct qvi_mpi_comm_s {
@@ -65,8 +65,6 @@ struct qvi_mpi_comm_s {
 };
 
 struct qvi_mpi_group_s {
-    /** ID used for table lookups. */
-    qvi_mpi_group_id_t tabid = 0;
     /** The group's communicator info. */
     qvi_mpi_comm_s qvcomm;
 };
@@ -93,17 +91,15 @@ struct qvi_mpi_s {
     int
     add_group(
         qvi_mpi_group_s &group,
-        qvi_mpi_group_id_t given_id = QVI_MPI_GROUP_NULL
+        qvi_group_id_t given_id = QVI_MPI_GROUP_NULL
     ) {
+        qvi_group_id_t gid = given_id;
         // Marker used to differentiate between intrinsic and automatic IDs.
-        if (given_id != QVI_MPI_GROUP_NULL) {
-            group.tabid = given_id;
-        }
-        else {
-            const int rc = qvi_group_t::next_id(&group.tabid);
+        if (given_id == QVI_MPI_GROUP_NULL) {
+            const int rc = qvi_group_t::next_id(&gid);
             if (rc != QV_SUCCESS) return rc;
         }
-        group_tab.insert({group.tabid, group});
+        group_tab.insert({gid, group});
         return QV_SUCCESS;
     }
 };
@@ -255,7 +251,7 @@ qvi_mpi_group_id(
 int
 qvi_mpi_group_lookup_by_id(
     qvi_mpi_t *mpi,
-    qvi_mpi_group_id_t id,
+    qvi_group_id_t id,
     qvi_mpi_group_t &group
 ) {
     auto got = mpi->group_tab.find(id);
@@ -269,7 +265,7 @@ qvi_mpi_group_lookup_by_id(
 int
 qvi_mpi_group_create_from_group_id(
     qvi_mpi_t *mpi,
-    qvi_mpi_group_id_t id,
+    qvi_group_id_t id,
     qvi_mpi_group_t **group
 ) {
     qvi_mpi_group_s tmp_group;

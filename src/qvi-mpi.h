@@ -21,9 +21,6 @@
 #include "qvi-group.h"
 #include "quo-vadis-mpi.h" // IWYU pragma: keep
 
-// Type definitions.
-typedef qvi_group_id_t qvi_mpi_group_id_t;
-
 // Forward declarations.
 struct qvi_mpi_s;
 typedef struct qvi_mpi_s qvi_mpi_t;
@@ -34,14 +31,10 @@ typedef struct qvi_mpi_group_s qvi_mpi_group_t;
 /**
  * Intrinsic group IDs.
  */
-static const qvi_mpi_group_id_t QVI_MPI_GROUP_NULL = 0;
-static const qvi_mpi_group_id_t QVI_MPI_GROUP_SELF = 1;
-static const qvi_mpi_group_id_t QVI_MPI_GROUP_NODE = 2;
-static const qvi_mpi_group_id_t QVI_MPI_GROUP_WORLD = 3;
-// Sentinel value marking first available group ID. This is expected to be the
-// very last item, so don't change its relative position without carefully
-// modifying at the code that uses this value.
-static const qvi_mpi_group_id_t QVI_MPI_GROUP_INTRINSIC_END = 4;
+static constexpr qvi_group_id_t QVI_MPI_GROUP_NULL = 0;
+static constexpr qvi_group_id_t QVI_MPI_GROUP_SELF = 1;
+static constexpr qvi_group_id_t QVI_MPI_GROUP_NODE = 2;
+static constexpr qvi_group_id_t QVI_MPI_GROUP_WORLD = 3;
 
 /**
  *
@@ -106,7 +99,7 @@ qvi_mpi_group_id(
 int
 qvi_mpi_group_lookup_by_id(
     qvi_mpi_t *mpi,
-    qvi_mpi_group_id_t id,
+    qvi_group_id_t id,
     qvi_mpi_group_t &group
 );
 
@@ -116,7 +109,7 @@ qvi_mpi_group_lookup_by_id(
 int
 qvi_mpi_group_create_from_group_id(
     qvi_mpi_t *mpi,
-    qvi_mpi_group_id_t id,
+    qvi_group_id_t id,
     qvi_mpi_group_t **group
 );
 

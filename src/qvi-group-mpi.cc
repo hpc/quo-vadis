@@ -22,7 +22,7 @@ qvi_group_mpi_s::make_intrinsic(
     qv_scope_intrinsic_t scope
 ) {
     int rc = QV_SUCCESS;
-    qvi_mpi_group_id_t mpi_group_type;
+    qvi_group_id_t mpi_group_type;
     // TODO(skg) Finish implementation.
     switch (scope) {
         case QV_SCOPE_SYSTEM:
