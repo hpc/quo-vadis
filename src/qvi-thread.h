@@ -86,7 +86,7 @@ qvi_thread_group_create_single(
 
 int
 qvi_thread_group_create_from_split(
-    const qvi_thread_group_t *parent,
+    qvi_thread_group_t *parent,
     int color,
     int key,
     qvi_thread_group_t **child
