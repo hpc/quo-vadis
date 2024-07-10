@@ -22,10 +22,10 @@
 struct qvi_thread_group_s;
 typedef struct qvi_thread_group_s qvi_thread_group_t;
 
+#if 0
 /**
  * Mapping policies types.
  */
-/*
 typedef enum qv_policy_s {
   QV_POLICY_PACKED     = 1,
   QV_POLICY_COMPACT    = 1,
@@ -37,23 +37,17 @@ typedef enum qv_policy_s {
   QV_POLICY_SCATTER    = 4,
   QV_POLICY_CHOOSE     = 5,
 } qv_policy_t;
-*/
+
 /**
  * Layout for fine-grain binding
  * with default behaviour
  */
-/*
 typedef struct qv_layout_s {
   qv_policy_t policy;
   qv_hw_obj_type_t obj_type;
   int stride;
 } qv_layout_t;
-*/
-
-int
-qvi_thread_group_size(
-    const qvi_thread_group_t *group
-);
+#endif
 
 int
 qvi_thread_group_new(
@@ -66,13 +60,18 @@ qvi_thread_group_free(
 );
 
 int
-qvi_thread_group_barrier(
-    qvi_thread_group_t *group
+qvi_thread_group_size(
+    const qvi_thread_group_t *group
 );
 
 int
 qvi_thread_group_id(
     const qvi_thread_group_t *group
+);
+
+int
+qvi_thread_group_barrier(
+    qvi_thread_group_t *group
 );
 
 int
