@@ -44,16 +44,11 @@ qvi_thread_omp_get_thread_num(void)
 #endif
 }
 
-/** Used to indicate that the rank shall be calculated automatically. */
-static constexpr int automatic_rank = -1;
-
 /**
  * We need to have one structure for fields shared by all threads included in
  * another with fields specific to each thread.
  */
 struct qvi_thread_group_shared_s {
-    /** Atomic reference count used for resource freeing. */
-    std::atomic_int refc;
     /** Barrier object (used in scope). */
     pthread_barrier_t barrier;
     /** Constructor. */
@@ -61,20 +56,14 @@ struct qvi_thread_group_shared_s {
     /** Constructor. */
     qvi_thread_group_shared_s(
         int group_size
-    ) : refc(group_size)
-    {
+    ) {
         const int rc = pthread_barrier_init(&barrier, NULL, group_size);
         if (rc != 0) throw qvi_runtime_error();
     }
-
-    static void
-    destruct(
-        qvi_thread_group_shared_s *sgroup
-    ) {
-        if (!sgroup->refc--) {
-            pthread_barrier_destroy(&sgroup->barrier);
-            delete sgroup;
-        }
+    /** Destructor. */
+    ~qvi_thread_group_shared_s(void)
+    {
+        pthread_barrier_destroy(&barrier);
     }
 };
 
@@ -94,23 +83,23 @@ struct qvi_thread_group_s {
         int group_size,
         int group_rank
     ) {
-        qvi_thread_group_shared_s *isdata = nullptr;
-        #pragma omp single copyprivate(isdata)
+        qvi_thread_group_shared_s *ishdata = nullptr;
+        #pragma omp single copyprivate(ishdata)
         {
-            const int rc = qvi_new(&isdata, group_size);
+            const int rc = qvi_new(&ishdata, group_size);
             if (rc != QV_SUCCESS) throw qvi_runtime_error();
         }
-        shdata = isdata;
+        shdata = ishdata;
         size = group_size;
         rank = group_rank;
-        if (group_rank == automatic_rank) {
-            rank = qvi_thread_omp_get_thread_num();
-        }
     }
     /** Constructor. */
     qvi_thread_group_s(void)
     {
-        construct(qvi_thread_omp_get_num_threads(), automatic_rank);
+        construct(
+            qvi_thread_omp_get_num_threads(),
+            qvi_thread_omp_get_thread_num()
+        );
     }
     /** Constructor. */
     qvi_thread_group_s(
@@ -122,7 +111,12 @@ struct qvi_thread_group_s {
     /** Destructor. */
     ~qvi_thread_group_s(void)
     {
-        qvi_thread_group_shared_s::destruct(shdata);
+        // TODO(skg) FIXME
+        qvi_thread_group_barrier(this);
+        if (rank == 0) {
+            //qvi_log_debug("ADDR={}", (void *)shdata);
+            //delete shdata;
+        }
     }
 };
 
@@ -145,7 +139,7 @@ qvi_thread_group_create_size(
     qvi_thread_group_t **group,
     int size
 ) {
-    return qvi_new(group, size, automatic_rank);
+    return qvi_new(group, size, qvi_thread_omp_get_thread_num());
 }
 
 int
@@ -256,7 +250,7 @@ static void display_tab(
 
 static int
 qvi_get_subgroup_info(
-    const qvi_thread_group_t *parent,
+    qvi_thread_group_t *parent,
     int color,
     int key,
     int *sgrp_size,
@@ -273,8 +267,11 @@ qvi_get_subgroup_info(
     ckrs[rank].color = color;
     ckrs[rank].key = key;
     ckrs[rank].rank = rank;
-    // Barrier to be sure that all threads have contributed their values.
-    #pragma omp barrier
+    // Barrier to be sure that all threads have contributed their values. We use
+    // the parent's barrier because we may be working with a strict subset of
+    // the threads in this context.
+    int rc = qvi_thread_group_barrier(parent);
+    if (rc != QV_SUCCESS) return rc;
     // Since these data are shared, only one thread has to sort them. The same
     // goes for calculating the number of distinct colors provided.
     int ncolors = 0;
@@ -313,16 +310,18 @@ qvi_get_subgroup_info(
         break;
     }
     // Barrier to sync for array deletion.
-    #pragma omp barrier
+    rc = qvi_thread_group_barrier(parent);
+    if (rc != QV_SUCCESS) return rc;
     // Only one task deletes.
-    #pragma omp single
-    delete[] ckrs;
+    if (parent->rank == 0) {
+        delete[] ckrs;
+    }
     return QV_SUCCESS;
 }
 
 int
 qvi_thread_group_create_from_split(
-    const qvi_thread_group_t *parent,
+    qvi_thread_group_t *parent,
     int color,
     int key,
     qvi_thread_group_t **child

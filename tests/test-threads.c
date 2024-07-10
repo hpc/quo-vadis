@@ -37,7 +37,7 @@ main(void)
     }
 
     qvi_test_scope_report(base_scope, "base_scope");
-
+#if 1
     qv_scope_t *sub_scope;
     rc = qv_scope_split(
         base_scope, 2, taskid, &sub_scope
@@ -54,7 +54,7 @@ main(void)
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
+#endif
     rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
