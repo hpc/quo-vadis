@@ -16,6 +16,7 @@ add_library(
     quo-vadis-core
     OBJECT
       ../include/quo-vadis.h
+      ../include/quo-vadis-pthread.h
       qvi-common.h
       qvi-macros.h
       qvi-log.h
@@ -43,6 +44,7 @@ add_library(
       qvi-map.cc
       qvi-scope.cc
       quo-vadis.cc
+      quo-vadis-pthread.cc
 )
 
 set_target_properties(
@@ -89,20 +91,6 @@ set(
     quo-vadis-process.cc
 )
 
-# TODO(skg) We need to fix this. OpenMP builds versus Pthread.
-if(OpenMP_C_FOUND)
-set(
-    QUO_VADIS_SOURCE
-    ${QUO_VADIS_SOURCE}
-    qvi-thread.h
-    qvi-group-thread.h
-    ../include/quo-vadis-thread.h
-    qvi-thread.cc
-    qvi-group-thread.cc
-    quo-vadis-thread.cc
-)
-endif()
-
 add_library(
     quo-vadis
     SHARED
@@ -110,11 +98,57 @@ add_library(
 )
 
 if(OpenMP_C_FOUND)
+    add_library(
+        quo-vadis-omp
+        SHARED
+          qvi-omp.h
+          qvi-group-omp.h
+          ../include/quo-vadis-omp.h
+          qvi-omp.cc
+          qvi-group-omp.cc
+          quo-vadis-omp.cc
+    )
+
     set_target_properties(
-        quo-vadis
+        quo-vadis-omp
         PROPERTIES
           COMPILE_FLAGS ${OpenMP_C_FLAGS}
           LINK_FLAGS ${OpenMP_C_FLAGS}
+    )
+
+    target_include_directories(
+        quo-vadis-omp
+        PUBLIC
+          $<TARGET_PROPERTY:quo-vadis-core,INCLUDE_DIRECTORIES>
+          ${MPI_C_INCLUDE_DIRS}
+    )
+
+    target_link_libraries(
+        quo-vadis-omp
+        quo-vadis-core
+        ${MPI_C_LIBRARIES}
+    )
+
+    install(
+        TARGETS
+          quo-vadis-omp
+        DESTINATION
+          lib
+    )
+
+    # pkg-config ###############################################################
+    set(QV_PKG_LIBRARIES "-lquo-vadis-omp")
+    configure_file(
+        "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config.pc.in"
+        "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-omp.pc"
+        @ONLY
+    )
+
+    install(
+        FILES
+          "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-omp.pc"
+        DESTINATION
+          lib/pkgconfig
     )
 endif()
 

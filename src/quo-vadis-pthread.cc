@@ -14,32 +14,13 @@
  */
 
 /**
- * @file quo-vadis-thread.cc
+ * @file quo-vadis-pthread.cc
  */
 
 #include "qvi-common.h" // IWYU pragma: keep
-#include "qvi-group-thread.h"
-#include "quo-vadis-thread.h"
+#include "quo-vadis-pthread.h"
 #include "qvi-scope.h"
 #include "qvi-utils.h"
-#ifdef OPENMP_FOUND
-#include <omp.h>
-#endif
-
-int
-qv_thread_scope_get(
-    qv_scope_intrinsic_t iscope,
-    qv_scope_t **scope
-) {
-    // Create the base process group.
-    qvi_group_thread_s *zgroup = nullptr;
-    const int rc = qvi_new(&zgroup);
-    if (rc != QV_SUCCESS) {
-        *scope = nullptr;
-        return rc;
-    }
-    return qvi_scope_get(zgroup, iscope, scope);
-}
 
 int
 qv_thread_scope_split(

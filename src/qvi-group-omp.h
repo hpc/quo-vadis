@@ -14,43 +14,43 @@
  */
 
 /**
- * @file qvi-group-thread.h
+ * @file qvi-group-omp.h
  */
 
-#ifndef QVI_GROUP_THREAD_H
-#define QVI_GROUP_THREAD_H
+#ifndef QVI_GROUP_OMP_H
+#define QVI_GROUP_OMP_H
 
 #include "qvi-common.h"
 #include "qvi-group.h"
-#include "qvi-thread.h"
+#include "qvi-omp.h"
 
-struct qvi_group_thread_s : public qvi_group_s {
+struct qvi_group_omp_s : public qvi_group_s {
     /** Underlying group instance. */
-    qvi_thread_group_t *th_group = nullptr;
+    qvi_omp_group_t *th_group = nullptr;
     /** Constructor. */
-    qvi_group_thread_s(void) = default;
+    qvi_group_omp_s(void) = default;
     /** Destructor. */
-    virtual ~qvi_group_thread_s(void)
+    virtual ~qvi_group_omp_s(void)
     {
-        qvi_thread_group_free(&th_group);
+        qvi_omp_group_free(&th_group);
     }
 
     virtual int
     id(void)
     {
-        return qvi_thread_group_id(th_group);
+        return qvi_omp_group_id(th_group);
     }
 
     virtual int
     size(void)
     {
-        return qvi_thread_group_size(th_group);
+        return qvi_omp_group_size(th_group);
     }
 
     virtual int
     barrier(void)
     {
-        return qvi_thread_group_barrier(th_group);
+        return qvi_omp_group_barrier(th_group);
     }
 
     virtual int
@@ -77,7 +77,7 @@ struct qvi_group_thread_s : public qvi_group_s {
         qvi_bbuff_t ***rxbuffs,
         int *shared
     ) {
-        return qvi_thread_group_gather_bbuffs(
+        return qvi_omp_group_gather_bbuffs(
            th_group, txbuff, root, rxbuffs, shared
         );
     }
@@ -88,12 +88,12 @@ struct qvi_group_thread_s : public qvi_group_s {
         int root,
         qvi_bbuff_t **rxbuff
     ) {
-        return qvi_thread_group_scatter_bbuffs(
+        return qvi_omp_group_scatter_bbuffs(
             th_group, txbuffs, root, rxbuff
         );
     }
 };
-typedef qvi_group_thread_s qvi_group_thread_t;
+typedef qvi_group_omp_s qvi_group_omp_t;
 
 #endif
 

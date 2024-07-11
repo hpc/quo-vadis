@@ -14,30 +14,30 @@
  */
 
 /**
- * @file qvi-group-thread.cc
+ * @file qvi-group-omp.cc
  */
 
-#include "qvi-group-thread.h"
+#include "qvi-group-omp.h"
 #include "qvi-utils.h"
 
 int
-qvi_group_thread_s::make_intrinsic(
+qvi_group_omp_s::make_intrinsic(
     qv_scope_intrinsic_t
 ) {
     // NOTE: the provided scope doesn't affect how
     // we create the thread group, so we ignore it.
-    return qvi_thread_group_create(&th_group);
+    return qvi_omp_group_create(&th_group);
 }
 
 int
-qvi_group_thread_s::self(
+qvi_group_omp_s::self(
     qvi_group_t **child
 ) {
-    qvi_group_thread_t *ichild = nullptr;
+    qvi_group_omp_t *ichild = nullptr;
     int rc = qvi_new(&ichild);
     if (rc != QV_SUCCESS) goto out;
     // Create a group containing a single thread
-    rc = qvi_thread_group_create_single(&ichild->th_group);
+    rc = qvi_omp_group_create_single(&ichild->th_group);
 out:
     if (rc != QV_SUCCESS) {
         qvi_delete(&ichild);
@@ -47,16 +47,16 @@ out:
 }
 
 int
-qvi_group_thread_s::split(
+qvi_group_omp_s::split(
     int color,
     int key,
     qvi_group_t **child
 ) {
-    qvi_group_thread_t *ichild = nullptr;
+    qvi_group_omp_t *ichild = nullptr;
     int rc = qvi_new(&ichild);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_thread_group_create_from_split(
+    rc = qvi_omp_group_create_from_split(
         th_group, color, key, &ichild->th_group
     );
 out:

@@ -14,11 +14,11 @@
  */
 
 /**
- * @file quo-vadis-thread.h
+ * @file quo-vadis-pthread.h
  */
 
-#ifndef QUO_VADIS_THREAD_H
-#define QUO_VADIS_THREAD_H
+#ifndef QUO_VADIS_PTHREAD_H
+#define QUO_VADIS_PTHREAD_H
 
 #include "quo-vadis.h"
 #include <pthread.h>
@@ -45,12 +45,6 @@ qv_pthread_create(
     void *(*thread_routine)(void *arg),
     void *arg,
     qv_scope_t *scope
-);
-
-int
-qv_thread_scope_get(
-    qv_scope_intrinsic_t iscope,
-    qv_scope_t **scope
 );
 
 int

@@ -47,49 +47,33 @@ set_tests_properties(
 ################################################################################
 if (OPENMP_FOUND)
     add_executable(
-        test-threads
-        test-threads.c
+        test-omp
+        test-omp.c
     )
 
     target_link_libraries(
-        test-threads
+        test-omp
         quo-vadis
+        quo-vadis-omp
         OpenMP::OpenMP_C
-    )
-
-    add_executable(
-        test-openmp
-        test-openmp.c
-    )
-
-    target_link_libraries(
-        test-openmp
-        OpenMP::OpenMP_C
-    )
-
-    set_target_properties(
-        test-threads
-        test-openmp
-        PROPERTIES LINKER_LANGUAGE C
     )
 
     add_test(
         NAME
-          threads
+          omp
         COMMAND
           bash -c "export QV_PORT=\"55999\" && \
           ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh ../src/quo-vadisd 5 & ) && \
-            ${CMAKE_CURRENT_BINARY_DIR}/test-threads"
+            ${CMAKE_CURRENT_BINARY_DIR}/test-omp"
     )
 
-    # Set threads test properties.
-    # TODO(skg) ASAN detects a leak sometimes, so remove from core for now.
-    #    set_tests_properties(
-    #        threads
-    #        PROPERTIES
-    #          TIMEOUT 60
-    #          LABELS "threads"
-    #    )
+    # Set omp test properties.
+    set_tests_properties(
+        omp
+        PROPERTIES
+          TIMEOUT 60
+          LABELS "omp"
+    )
 endif()
 
 ################################################################################

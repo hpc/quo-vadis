@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include "quo-vadis-mpi.h"
-#include "quo-vadis-thread.h"
+#include "quo-vadis-pthread.h"
 #include "qvi-test-common.h"
 
 /*

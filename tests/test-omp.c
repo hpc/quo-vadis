@@ -5,7 +5,7 @@
  */
 
 #include "qvi-test-common.h"
-#include "quo-vadis-thread.h"
+#include "quo-vadis-omp.h"
 #include <omp.h>
 
 typedef struct {
@@ -72,7 +72,7 @@ scopei_base(
     scopei *sinfo
 ) {
     char *ers = NULL;
-    const int rc = qv_thread_scope_get(
+    const int rc = qv_omp_scope_get(
         QV_SCOPE_PROCESS, &sinfo->scope
     );
     if (rc != QV_SUCCESS) {
