@@ -8,14 +8,22 @@
 #include "quo-vadis-thread.h"
 #include <omp.h>
 
+typedef struct {
+    qv_scope_t *scope;
+    int size;
+    int id;
+} scopei;
+
 static void
 emit_iter_info(
-    qv_scope_t *scope,
+    scopei *sinfo,
     int i
 ) {
     char const *ers = NULL;
     char *binds;
-    const int rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &binds);
+    const int rc = qv_scope_bind_string(
+        sinfo->scope, QV_BIND_STRING_AS_LIST, &binds
+    );
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -28,81 +36,126 @@ emit_iter_info(
     free(binds);
 }
 
-int
-main(void)
-{
-    // Make sure nested parallism is on.
-    omp_set_nested(1);
-#pragma omp parallel
-#pragma omp master
-    printf("# Starting OpenMP Test (nthreads=%d)\n", omp_get_num_threads());
-
-#pragma omp parallel
-{
+static void
+scopei_fill(
+    scopei *sinfo
+) {
     char *ers = NULL;
-    int rc = QV_SUCCESS;
-    qv_scope_t *base_scope = NULL;
-    rc = qv_thread_scope_get(
-        QV_SCOPE_PROCESS,
-        &base_scope
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_thread_scope_get() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
-    int taskid = 0;
-    rc = qv_scope_taskid(base_scope, &taskid);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_taskid() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    qv_scope_t *sub_scope;
-    rc = qv_scope_split(
-        base_scope, 2, taskid, &sub_scope
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_split_at() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    int nsubtasks = 0;
-    rc = qv_scope_ntasks(base_scope, &nsubtasks);
+    int rc = qv_scope_ntasks(sinfo->scope, &sinfo->size);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_ntasks() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    qv_scope_bind_push(sub_scope);
-    #pragma omp task
-    #pragma omp parallel for num_threads(nsubtasks)
-    for (int i = 0; i < 8; ++i) {
-        emit_iter_info(sub_scope, i);
-    }
-    qv_scope_bind_pop(sub_scope);
-
-    qv_scope_bind_push(sub_scope);
-    #pragma omp task
-    #pragma omp parallel num_threads(1)
-    {
-        //qvi_test_emit_task_bind(sub_scope);
-    }
-    #pragma omp barrier
-    qv_scope_bind_pop(sub_scope);
-
-    rc = qv_scope_free(sub_scope);
+    rc = qv_scope_taskid(sinfo->scope, &sinfo->id);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_scope_taskid() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+}
 
-    rc = qv_scope_free(base_scope);
+static void
+scopei_free(
+    scopei *sinfo
+) {
+    char *ers = NULL;
+    const int rc = qv_scope_free(sinfo->scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
+
+static void
+scopei_base(
+    scopei *sinfo
+) {
+    char *ers = NULL;
+    const int rc = qv_thread_scope_get(
+        QV_SCOPE_PROCESS, &sinfo->scope
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_thread_scope_get() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    scopei_fill(sinfo);
+}
+
+/**
+ * Creates the execution policy scope.
+ */
+static void
+scopei_ep(
+    scopei *sinfo
+) {
+    // Get the base (parent) scope.
+    scopei pinfo;
+    scopei_base(&pinfo);
+
+    char *ers = NULL;
+    int rc = qv_scope_split(
+        pinfo.scope, 2, pinfo.id, &sinfo->scope
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_split_at() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    scopei_fill(sinfo);
+    // We don't need this anymore.
+    scopei_free(&pinfo);
+}
+
+static void
+scopei_ep_push(
+    scopei *sinfo
+) {
+    char *ers = NULL;
+    const int rc = qv_scope_bind_push(sinfo->scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_bind_push() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+}
+
+static void
+scopei_ep_pop(
+    scopei *sinfo
+) {
+    // Make sure everyone is done with the execution policy before we pop.
+    #pragma omp barrier
+    char *ers = NULL;
+    const int rc = qv_scope_bind_pop(sinfo->scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_bind_pop() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+}
+
+int
+main(void)
+{
+    // Make sure nested parallism is on.
+    omp_set_nested(1);
+    #pragma omp parallel
+    #pragma omp master
+    printf("# Starting OpenMP Test (nthreads=%d)\n", omp_get_num_threads());
+
+    #pragma omp parallel
+    {
+        scopei ep_sinfo;
+        scopei_ep(&ep_sinfo);
+
+        scopei_ep_push(&ep_sinfo);
+        #pragma omp task
+        #pragma omp parallel for num_threads(ep_sinfo.size)
+        for (int i = 0; i < 8; ++i) {
+            emit_iter_info(&ep_sinfo, i);
+        }
+        scopei_ep_pop(&ep_sinfo);
+
+        scopei_free(&ep_sinfo);
+    }
     return EXIT_SUCCESS;
 }
 
