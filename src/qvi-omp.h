@@ -2,8 +2,12 @@
 /*
  * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
- * Copyright (c) 2022      Inria. All rights reserved.
- * Copyright (c) 2022      Bordeaux INP. All rights reserved.
+ *
+ * Copyright (c) 2022      Inria
+ *                         All rights reserved.
+ *
+ * Copyright (c) 2022      Bordeaux INP
+ *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
  * top-level directory of this distribution.
@@ -13,14 +17,14 @@
  * @file qvi-thread.h
  */
 
-#ifndef QVI_THREAD_H
-#define QVI_THREAD_H
+#ifndef QVI_OMP_H
+#define QVI_OMP_H
 
 #include "qvi-common.h"
 
 // Forward declarations.
-struct qvi_thread_group_s;
-typedef struct qvi_thread_group_s qvi_thread_group_t;
+struct qvi_omp_group_s;
+typedef struct qvi_omp_group_s qvi_omp_group_t;
 
 #if 0
 /**
@@ -50,46 +54,46 @@ typedef struct qv_layout_s {
 #endif
 
 void
-qvi_thread_group_free(
-    qvi_thread_group_t **group
+qvi_omp_group_free(
+    qvi_omp_group_t **group
 );
 
 int
-qvi_thread_group_size(
-    const qvi_thread_group_t *group
+qvi_omp_group_size(
+    const qvi_omp_group_t *group
 );
 
 int
-qvi_thread_group_id(
-    const qvi_thread_group_t *group
+qvi_omp_group_id(
+    const qvi_omp_group_t *group
 );
 
 int
-qvi_thread_group_barrier(
-    qvi_thread_group_t *group
+qvi_omp_group_barrier(
+    qvi_omp_group_t *group
 );
 
 int
-qvi_thread_group_create(
-    qvi_thread_group_t **group
+qvi_omp_group_create(
+    qvi_omp_group_t **group
 );
 
 int
-qvi_thread_group_create_single(
-    qvi_thread_group_t **group
+qvi_omp_group_create_single(
+    qvi_omp_group_t **group
 );
 
 int
-qvi_thread_group_create_from_split(
-    qvi_thread_group_t *parent,
+qvi_omp_group_create_from_split(
+    qvi_omp_group_t *parent,
     int color,
     int key,
-    qvi_thread_group_t **child
+    qvi_omp_group_t **child
 );
 
 int
-qvi_thread_group_gather_bbuffs(
-    qvi_thread_group_t *group,
+qvi_omp_group_gather_bbuffs(
+    qvi_omp_group_t *group,
     qvi_bbuff_t *txbuff,
     int root,
     qvi_bbuff_t ***rxbuffs,
@@ -97,8 +101,8 @@ qvi_thread_group_gather_bbuffs(
 );
 
 int
-qvi_thread_group_scatter_bbuffs(
-    qvi_thread_group_t *group,
+qvi_omp_group_scatter_bbuffs(
+    qvi_omp_group_t *group,
     qvi_bbuff_t **txbuffs,
     int root,
     qvi_bbuff_t **rxbuff
