@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/syscall.h>
 #include <unistd.h>
 
 #define QVI_TEST_STRINGIFY(x) #x
@@ -42,6 +43,29 @@ do {                                                                           \
 // We assume that the quo-vadis.h is included before us.
 #ifdef QUO_VADIS
 
+static inline pid_t
+qvi_test_gettid(void)
+{
+    return (pid_t)syscall(SYS_gettid);
+}
+
+static inline void
+qvi_test_emit_task_bind(
+    qv_scope_t *scope
+) {
+    const int pid = qvi_test_gettid();
+    char const *ers = NULL;
+    // Get new, current binding.
+    char *binds = NULL;
+    int rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &binds);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    printf("[%d] cpubind=%s\n", pid, binds);
+    free(binds);
+}
+
 static inline void
 qvi_test_scope_report(
     qv_scope_t *scope,
@@ -49,7 +73,7 @@ qvi_test_scope_report(
 ) {
     char const *ers = NULL;
 
-    const int pid = getpid();
+    const int pid = qvi_test_gettid();
 
     int taskid;
     int rc = qv_scope_taskid(scope, &taskid);
@@ -87,8 +111,7 @@ qvi_test_bind_push(
     qv_scope_t *scope
 ) {
     char const *ers = NULL;
-
-    const int pid = getpid();
+    const int pid = qvi_test_gettid();
 
     int taskid;
     int rc = qv_scope_taskid(scope, &taskid);
@@ -143,7 +166,7 @@ qvi_test_bind_pop(
 ) {
     char const *ers = NULL;
 
-    const int pid = getpid();
+    const int pid = qvi_test_gettid();
 
     int taskid;
     int rc = qv_scope_taskid(scope, &taskid);
@@ -199,7 +222,7 @@ qvi_test_change_bind(
 ) {
     char const *ers = NULL;
 
-    const int pid = getpid();
+    const int pid = qvi_test_gettid();
 
     int taskid;
     int rc = qv_scope_taskid(scope, &taskid);
