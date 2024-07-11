@@ -44,93 +44,26 @@ qvi_thread_omp_get_thread_num(void)
 #endif
 }
 
-/**
- * We need to have one structure for fields shared by all threads included in
- * another with fields specific to each thread.
- */
-struct qvi_thread_group_shared_s {
-    /** Barrier object (used in scope). */
-    pthread_barrier_t barrier;
-    /** Constructor. */
-    qvi_thread_group_shared_s(void) = delete;
-    /** Constructor. */
-    qvi_thread_group_shared_s(
-        int group_size
-    ) {
-        const int rc = pthread_barrier_init(&barrier, NULL, group_size);
-        if (rc != 0) throw qvi_runtime_error();
-    }
-    /** Destructor. */
-    ~qvi_thread_group_shared_s(void)
-    {
-        pthread_barrier_destroy(&barrier);
-    }
-};
-
 struct qvi_thread_group_s {
-    /**
-     * Shared data between threads in the group:
-     * ALL threads point to the same region.
-     */
-    qvi_thread_group_shared_s *shdata = nullptr;
     /** Group size. */
     int size = 0;
     /** ID (rank) in group: this ID is unique to each thread. */
     int rank = 0;
-    /** Performs object construction, called by the real constructors. */
-    void
-    construct(
-        int group_size,
-        int group_rank
-    ) {
-        qvi_thread_group_shared_s *ishdata = nullptr;
-        #pragma omp single copyprivate(ishdata)
-        {
-            const int rc = qvi_new(&ishdata, group_size);
-            if (rc != QV_SUCCESS) throw qvi_runtime_error();
-        }
-        shdata = ishdata;
-        size = group_size;
-        rank = group_rank;
-    }
     /** Constructor. */
-    qvi_thread_group_s(void)
-    {
-        construct(
-            qvi_thread_omp_get_num_threads(),
-            qvi_thread_omp_get_thread_num()
-        );
-    }
+    qvi_thread_group_s(void) = delete;
     /** Constructor. */
     qvi_thread_group_s(
         int group_size,
         int group_rank
-    ) {
-        construct(group_size, group_rank);
-    }
-    /** Destructor. */
-    ~qvi_thread_group_s(void)
-    {
-        // TODO(skg) FIXME
-        qvi_thread_group_barrier(this);
-        if (rank == 0) {
-            //qvi_log_debug("ADDR={}", (void *)shdata);
-            //delete shdata;
-        }
-    }
+    ) : size(group_size)
+      , rank(group_rank) { }
 };
-
-int
-qvi_thread_group_new(
-    qvi_thread_group_t **group
-) {
-    return qvi_new(group);
-}
 
 void
 qvi_thread_group_free(
     qvi_thread_group_t **group
 ) {
+    #pragma omp barrier
     qvi_delete(group);
 }
 
@@ -174,12 +107,8 @@ qvi_thread_group_size(
 
 int
 qvi_thread_group_barrier(
-    qvi_thread_group_t *group
+    qvi_thread_group_t *
 ) {
-    const int rc = pthread_barrier_wait(&(group->shdata->barrier));
-    if ((rc != 0) && (rc != PTHREAD_BARRIER_SERIAL_THREAD)) {
-        return QV_ERR_INTERNAL;
-    }
     return QV_SUCCESS;
 }
 
@@ -187,24 +116,36 @@ qvi_thread_group_barrier(
 /**
  * Internal data structure for rank and size computing.
  */
-struct color_key_rank_s {
+struct qvi_thread_color_key_rank_s {
     int color = 0;
     int key = 0;
     int rank = 0;
 };
 
+/**
+ *
+ */
+struct qvi_thread_subgroup_info_s {
+    /** Number of sub-groups created from split. */
+    int num_sgrp = 0;
+    /** Number of members in this sub-group. */
+    int sgrp_size = 0;
+    /** My rank in this sub-group. */
+    int sgrp_rank = 0;
+};
+
 static bool
 ckr_compare_by_color(
-    const color_key_rank_s &a,
-    const color_key_rank_s &b
+    const qvi_thread_color_key_rank_s &a,
+    const qvi_thread_color_key_rank_s &b
 ) {
     return a.color < b.color;
 }
 
 static bool
 ckr_compare_by_key(
-    const color_key_rank_s &a,
-    const color_key_rank_s &b
+    const qvi_thread_color_key_rank_s &a,
+    const qvi_thread_color_key_rank_s &b
 ) {
     // If colors are the same, sort by key.
     return a.color == b.color && a.key < b.key;
@@ -212,40 +153,13 @@ ckr_compare_by_key(
 
 static bool
 ckr_compare_by_rank(
-    const color_key_rank_s &a,
-    const color_key_rank_s &b
+    const qvi_thread_color_key_rank_s &a,
+    const qvi_thread_color_key_rank_s &b
 ) {
     // If colors and keys are the same, sort by rank.
     return a.color == b.color && a.key == b.key && a.rank < b.rank;
 }
 
-/**
- *
- */
-/*
-static void display_tab(
-    pid_t tid,
-    color_key_id_s lptr[],
-    int size
-) {
-    fprintf(stdout,"=============================================================================\n");
-    fprintf(stdout, "[%6i] COLORS = ",tid);
-    for(int i = 0 ; i < size ; i++)
-       fprintf(stdout, "[%i]:%6i | ", i,lptr[i].color);
-    fprintf(stdout,"\n");
-    fprintf(stdout, "[%6i] KEYS   = ",tid);
-    for(int i = 0 ; i < size ; i++)
-       fprintf(stdout, "[%i]:%6i | ", i,lptr[i].key);
-    fprintf(stdout,"\n");
-    fprintf(stdout, "[%6i] RANK   = ",tid);
-    for(int i = 0 ; i < size ; i++)
-       fprintf(stdout, "[%i]:%6i | ", i,lptr[i].rank);
-    fprintf(stdout,"\n");
-    fprintf(stdout,"\n");
-    fprintf(stdout,"=============================================================================\n");
-    fprintf(stdout,"\n\n");
-}
-*/
 #endif
 
 static int
@@ -253,25 +167,20 @@ qvi_get_subgroup_info(
     qvi_thread_group_t *parent,
     int color,
     int key,
-    int *sgrp_size,
-    int *sgrp_rank,
-    int *num_of_sgrp
+    qvi_thread_subgroup_info_s *sginfo
 ) {
     const int size = parent->size;
     const int rank = parent->rank;
-    color_key_rank_s *ckrs = nullptr;
+    qvi_thread_color_key_rank_s *ckrs = nullptr;
 
     #pragma omp single copyprivate(ckrs)
-    ckrs = new color_key_rank_s[size];
+    ckrs = new qvi_thread_color_key_rank_s[size];
     // Gather colors and keys from ALL threads.
     ckrs[rank].color = color;
     ckrs[rank].key = key;
     ckrs[rank].rank = rank;
-    // Barrier to be sure that all threads have contributed their values. We use
-    // the parent's barrier because we may be working with a strict subset of
-    // the threads in this context.
-    int rc = qvi_thread_group_barrier(parent);
-    if (rc != QV_SUCCESS) return rc;
+    // Barrier to be sure that all threads have contributed their values.
+    #pragma omp barrier
     // Since these data are shared, only one thread has to sort them. The same
     // goes for calculating the number of distinct colors provided.
     int ncolors = 0;
@@ -291,7 +200,7 @@ qvi_get_subgroup_info(
         ncolors = color_set.size();
     }
     // The number of distinct colors is the number of subgroups.
-    *num_of_sgrp = ncolors;
+    sginfo->num_sgrp = ncolors;
     // Compute my sub-group size and sub-group rank.
     int group_rank = 0;
     int group_size = 0;
@@ -301,17 +210,16 @@ qvi_get_subgroup_info(
         const int current_color = ckrs[i].color;
         for (int j = i; j < size && current_color == ckrs[j].color; ++j) {
             if (ckrs[j].rank == rank) {
-                *sgrp_rank = group_rank;
+                sginfo->sgrp_rank = group_rank;
             }
             group_size++;
             group_rank++;
         }
-        *sgrp_size = group_size;
+        sginfo->sgrp_size = group_size;
         break;
     }
     // Barrier to sync for array deletion.
-    rc = qvi_thread_group_barrier(parent);
-    if (rc != QV_SUCCESS) return rc;
+    #pragma omp barrier
     // Only one task deletes.
     if (parent->rank == 0) {
         delete[] ckrs;
@@ -325,25 +233,15 @@ qvi_thread_group_create_from_split(
     int color,
     int key,
     qvi_thread_group_t **child
-)
+) {
 #ifndef OPENMP_FOUND
-{
     // TODO(skg) This should return self.
     *child = nullptr;
     return QV_SUCCESS;
-}
 #else
-{
-    int sgrp_size = -1; /* size of this thread subgroup */
-    int sgrp_rank = -1; /* subgroup rank */
-    int num_sgrp = -1;  /* number of subgroups */
+    qvi_thread_subgroup_info_s sginfo;
     int rc = qvi_get_subgroup_info(
-        parent,
-        color,
-        key,
-        &sgrp_size,
-        &sgrp_rank,
-        &num_sgrp
+        parent, color, key, &sginfo
     );
     if (rc != QV_SUCCESS) {
         *child = nullptr;
@@ -351,13 +249,13 @@ qvi_thread_group_create_from_split(
     }
 
     qvi_thread_group_t *ichild = nullptr;
-    rc = qvi_new(&ichild, sgrp_size, sgrp_rank);
+    rc = qvi_new(&ichild, sginfo.sgrp_size, sginfo.sgrp_rank);
     if (rc != QV_SUCCESS) {
         *child = nullptr;
         return rc;
     }
-
     *child = ichild;
+
     return rc;
 }
 #endif

@@ -97,6 +97,7 @@ endif()
 if(MPI_FOUND)
     add_executable(
         test-mpi-init
+        qvi-test-common.h
         test-mpi-init.c
     )
 

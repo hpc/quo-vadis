@@ -49,11 +49,6 @@ typedef struct qv_layout_s {
 } qv_layout_t;
 #endif
 
-int
-qvi_thread_group_new(
-    qvi_thread_group_t **group
-);
-
 void
 qvi_thread_group_free(
     qvi_thread_group_t **group
