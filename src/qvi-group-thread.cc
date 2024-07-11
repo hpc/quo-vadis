@@ -33,7 +33,6 @@ int
 qvi_group_thread_s::self(
     qvi_group_t **child
 ) {
-    qvi_log_debug("=======================SELF");
     qvi_group_thread_t *ichild = nullptr;
     int rc = qvi_new(&ichild);
     if (rc != QV_SUCCESS) goto out;
