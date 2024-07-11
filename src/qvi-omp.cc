@@ -273,11 +273,11 @@ qvi_omp_group_scatter_bbuffs(
     qvi_bbuff_t **rxbuff
 ) {
     qvi_bbuff_t ***tmp = nullptr;
-#pragma omp single copyprivate(tmp)
+    #pragma omp single copyprivate(tmp)
     tmp = new qvi_bbuff_t**();
-#pragma omp master
+    #pragma omp master
     *tmp = txbuffs;
-#pragma omp barrier
+    #pragma omp barrier
     const int group_id = group->rank;
     qvi_bbuff_t *inbuff = (*tmp)[group_id];
     const size_t data_size = qvi_bbuff_size(inbuff);
@@ -288,8 +288,8 @@ qvi_omp_group_scatter_bbuffs(
     if (rc == QV_SUCCESS) {
         rc = qvi_bbuff_append(mybbuff, data, data_size);
     }
-#pragma omp barrier
-#pragma omp single
+    #pragma omp barrier
+    #pragma omp single
     delete tmp;
 
     if (rc != QV_SUCCESS) {
