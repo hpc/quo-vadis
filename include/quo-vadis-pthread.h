@@ -31,10 +31,10 @@ typedef struct {
     qv_scope_t *scope;
     void *(*thread_routine)(void *);
     void *arg;
-} qv_thread_args_t;
+} qv_pthread_args_t;
 
 void *
-qv_thread_routine(
+qv_pthread_routine(
     void *arg
 );
 
@@ -48,7 +48,7 @@ qv_pthread_create(
 );
 
 int
-qv_thread_scope_split_at(
+qv_pthread_scope_split_at(
     qv_scope_t *scope,
     qv_hw_obj_type_t type,
     int *color_array,
@@ -57,7 +57,7 @@ qv_thread_scope_split_at(
 );
 
 int
-qv_thread_scope_split(
+qv_pthread_scope_split(
     qv_scope_t *scope,
     int npieces,
     int *color_array,

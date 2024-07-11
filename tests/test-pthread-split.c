@@ -70,7 +70,7 @@ main(void)
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    //test qv_thread_scope_split
+    //test qv_pthread_scope_split
     int npieces  = n_cores / 2;
     int nthreads = n_cores;
 
@@ -81,9 +81,9 @@ main(void)
         colors[i] = i % npieces;
 
     qv_scope_t **th_scopes = NULL;
-    rc = qv_thread_scope_split(mpi_scope, npieces , colors , nthreads, &th_scopes);
+    rc = qv_pthread_scope_split(mpi_scope, npieces , colors , nthreads, &th_scopes);
     if (rc != QV_SUCCESS) {
-        ers = "qv_thread_scope_split() failed";
+        ers = "qv_pthread_scope_split() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -119,7 +119,7 @@ main(void)
     // API.
     //free(th_scopes);
 
-    //Test qv_thread_scope_split_at
+    //Test qv_pthread_scope_split_at
     nthreads = 2*n_cores;
 
     fprintf(stdout,"[%d] ====== Testing thread_scope_split_at (number of threads : %i)\n", wrank, nthreads);
@@ -128,9 +128,9 @@ main(void)
     for(int i = 0 ; i < nthreads ; i++)
         colors2[i] = i%n_cores;
 
-    rc = qv_thread_scope_split_at(mpi_scope, QV_HW_OBJ_CORE, colors2, nthreads, &th_scopes);
+    rc = qv_pthread_scope_split_at(mpi_scope, QV_HW_OBJ_CORE, colors2, nthreads, &th_scopes);
     if (rc != QV_SUCCESS) {
-        ers = "qv_thread_scope_split_at() failed";
+        ers = "qv_pthread_scope_split_at() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 

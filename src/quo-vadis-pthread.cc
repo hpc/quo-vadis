@@ -23,7 +23,7 @@
 #include "qvi-utils.h"
 
 int
-qv_thread_scope_split(
+qv_pthread_scope_split(
     qv_scope_t *scope,
     int npieces,
     int *color_array,
@@ -36,7 +36,7 @@ qv_thread_scope_split(
 }
 
 int
-qv_thread_scope_split_at(
+qv_pthread_scope_split_at(
     qv_scope_t *scope,
     qv_hw_obj_type_t type,
     int *color_array,
@@ -49,10 +49,10 @@ qv_thread_scope_split_at(
 }
 
 void *
-qv_thread_routine(
+qv_pthread_routine(
     void *arg
 ) {
-    qv_thread_args_t *arg_ptr = (qv_thread_args_t *)arg;
+    qv_pthread_args_t *arg_ptr = (qv_pthread_args_t *)arg;
     qvi_scope_bind_push(arg_ptr->scope);
 
     void *ret = arg_ptr->thread_routine(arg_ptr->arg);
@@ -71,8 +71,8 @@ qv_pthread_create(
      void *arg,
      qv_scope_t *scope
 ) {
-     // Memory will be freed in qv_thread_routine to avoid memory leaks.
-     qv_thread_args_t *arg_ptr = nullptr;
+     // Memory will be freed in qv_pthread_routine to avoid memory leaks.
+     qv_pthread_args_t *arg_ptr = nullptr;
      int rc = qvi_new(&arg_ptr);
      if (rc != QV_SUCCESS) return rc;
 
@@ -80,7 +80,7 @@ qv_pthread_create(
      arg_ptr->thread_routine = thread_routine;
      arg_ptr->arg = arg;
 
-    return pthread_create(thread, attr, qv_thread_routine, arg_ptr);
+    return pthread_create(thread, attr, qv_pthread_routine, arg_ptr);
 }
 
 /*
