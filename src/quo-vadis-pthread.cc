@@ -113,7 +113,7 @@ qv_pthread_create(
 }
 
 int
-qv_pthread_scope_free(
+qv_pthread_scopes_free(
     int nscopes,
     qv_scope_t **scopes
 ) {
