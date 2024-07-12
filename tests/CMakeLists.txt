@@ -41,6 +41,7 @@ set_tests_properties(
     process-scopes
     PROPERTIES
       TIMEOUT 60
+    LABELS "process"
 )
 
 ################################################################################
@@ -278,7 +279,7 @@ if(QV_FORTRAN_HAPPY)
         process-fortapi
         PROPERTIES
           TIMEOUT 60
-          LABELS "fortran"
+          LABELS "process-fortran"
     )
 
     if(MPI_Fortran_FOUND)
