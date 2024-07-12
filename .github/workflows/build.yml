@@ -48,7 +48,6 @@ jobs:
 
     - name: Run All Tests
       working-directory: ${{github.workspace}}/build
-      if: ${{ matrix.build-type == 'Release' }}
       run: ctest -C ${{matrix.build-type}} --output-on-failure
 
     - name: Test Packaging
