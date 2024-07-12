@@ -27,17 +27,6 @@
 extern "C" {
 #endif
 
-typedef struct {
-    qv_scope_t *scope;
-    void *(*thread_routine)(void *);
-    void *arg;
-} qv_pthread_args_t;
-
-void *
-qv_pthread_routine(
-    void *arg
-);
-
 int
 qv_pthread_create(
     pthread_t *thread,

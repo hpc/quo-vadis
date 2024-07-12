@@ -22,6 +22,36 @@
 #include "qvi-scope.h"
 #include "qvi-utils.h"
 
+typedef void *(*qvi_pthread_routine_fun_ptr_t)(void *);
+
+struct qvi_pthread_args_s {
+    qv_scope_t *scope = nullptr;
+    qvi_pthread_routine_fun_ptr_t th_routine = nullptr;
+    void *th_routine_argp = nullptr;
+    /** Constructor. */
+    qvi_pthread_args_s(void) = delete;
+    /** Constructor. */
+    qvi_pthread_args_s(
+        qv_scope_t *scope_a,
+        qvi_pthread_routine_fun_ptr_t th_routine_a,
+        void *th_routine_argp_a
+    ) : scope(scope_a)
+      , th_routine(th_routine_a)
+      , th_routine_argp(th_routine_argp_a) { }
+};
+
+static void *
+qvi_pthread_routine(
+    void *arg
+) {
+    qvi_pthread_args_s *arg_ptr = (qvi_pthread_args_s *)arg;
+    qvi_scope_bind_push(arg_ptr->scope);
+
+    void *const ret = arg_ptr->th_routine(arg_ptr->th_routine_argp);
+    qvi_delete(&arg_ptr);
+    pthread_exit(ret);
+}
+
 int
 qv_pthread_scope_split(
     qv_scope_t *scope,
@@ -61,18 +91,6 @@ qv_pthread_scope_split_at(
     qvi_catch_and_return();
 }
 
-void *
-qv_pthread_routine(
-    void *arg
-) {
-    qv_pthread_args_t *arg_ptr = (qv_pthread_args_t *)arg;
-    qvi_scope_bind_push(arg_ptr->scope);
-
-    void *ret = arg_ptr->thread_routine(arg_ptr->arg);
-    qvi_delete(&arg_ptr);
-    pthread_exit(ret);
-}
-
 /**
  * Similar to pthread_create(3).
  */
@@ -85,16 +103,13 @@ qv_pthread_create(
     qv_scope_t *scope
 ) {
     // Memory will be freed in qv_pthread_routine to avoid memory leaks.
-    qv_pthread_args_t *arg_ptr = nullptr;
-    const int rc = qvi_new(&arg_ptr);
+    qvi_pthread_args_s *arg_ptr = nullptr;
+    const int rc = qvi_new(&arg_ptr, scope, thread_routine, arg);
     // Since this is meant to behave similarly to
     // pthread_create(), return a reasonable errno.
     if (rc != QV_SUCCESS) return ENOMEM;
 
-    arg_ptr->scope = scope;
-    arg_ptr->thread_routine = thread_routine;
-    arg_ptr->arg = arg;
-    return pthread_create(thread, attr, qv_pthread_routine, arg_ptr);
+    return pthread_create(thread, attr, qvi_pthread_routine, arg_ptr);
 }
 
 int
