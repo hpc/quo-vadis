@@ -14,7 +14,7 @@
  */
 
 /**
- * @file quo-vadis-thread.cc
+ * @file quo-vadis-omp.cc
  */
 
 #include "qvi-common.h" // IWYU pragma: keep
@@ -23,8 +23,8 @@
 #include "qvi-scope.h"
 #include "qvi-utils.h"
 
-int
-qv_omp_scope_get(
+static int
+qvi_omp_scope_get(
     qv_scope_intrinsic_t iscope,
     qv_scope_t **scope
 ) {
@@ -36,6 +36,18 @@ qv_omp_scope_get(
         return rc;
     }
     return qvi_scope_get(zgroup, iscope, scope);
+}
+
+int
+qv_omp_scope_get(
+    qv_scope_intrinsic_t iscope,
+    qv_scope_t **scope
+) {
+    if (!scope) return QV_ERR_INVLD_ARG;
+    try {
+        return qvi_omp_scope_get(iscope, scope);
+    }
+    qvi_catch_and_return();
 }
 
 /*
