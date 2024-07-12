@@ -53,7 +53,7 @@ main(void)
     }
 
     if (wrank == 0) {
-        fprintf(stdout,"# Starting Hybrid MPI + Pthreads test\n");
+        fprintf(stdout,"# Starting Hybrid MPI + Pthreads test.\n");
     }
 
     qv_scope_t *mpi_scope;
@@ -108,16 +108,11 @@ main(void)
     }
 
     /* Clean up */
-    for(int i  = 0 ; i < nthreads; i ++){
-        rc = qv_scope_free(th_scopes[i]);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_scope_free() failed";
-            qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
+    rc = qv_pthread_scope_free(nthreads, th_scopes);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_pthread_scope_free() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    // TODO(skg) Needs to be delete, but don't want to expose that. Update the
-    // API.
-    //free(th_scopes);
 
     //Test qv_pthread_scope_split_at
     nthreads = 2*n_cores;
@@ -151,14 +146,11 @@ main(void)
     }
 
     /* Clean up */
-    for(int i  = 0 ; i < nthreads; i ++){
-        rc = qv_scope_free(th_scopes[i]);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_scope_free() failed";
-            qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
+    rc = qv_pthread_scope_free(nthreads, th_scopes);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_pthread_scope_free() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    //free(th_scopes);
 
     rc = qv_scope_free(mpi_scope);
     if (rc != QV_SUCCESS) {

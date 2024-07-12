@@ -83,6 +83,16 @@ qv_pthread_create(
     return pthread_create(thread, attr, qv_pthread_routine, arg_ptr);
 }
 
+int
+qv_pthread_scope_free(
+    int nscopes,
+    qv_scope_t **scopes
+) {
+    if (nscopes < 0 || !scopes) return QV_ERR_INVLD_ARG;
+    qvi_scope_kfree(&scopes, nscopes);
+    return QV_SUCCESS;
+}
+
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
  */
