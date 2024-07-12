@@ -41,7 +41,7 @@ qv_pthread_routine(
 int
 qv_pthread_create(
     pthread_t *thread,
-    pthread_attr_t *attr,
+    const pthread_attr_t *attr,
     void *(*thread_routine)(void *arg),
     void *arg,
     qv_scope_t *scope

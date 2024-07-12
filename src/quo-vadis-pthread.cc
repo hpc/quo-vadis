@@ -30,9 +30,16 @@ qv_pthread_scope_split(
     int nthreads,
     qv_scope_t ***subscope
 ) {
-    return qvi_scope_ksplit(
-        scope, npieces, color_array, nthreads, QV_HW_OBJ_LAST, subscope
-    );
+    if (!scope || npieces < 0 || !color_array || nthreads < 0 || !subscope) {
+        return QV_ERR_INVLD_ARG;
+    }
+    try {
+        return qvi_scope_ksplit(
+            scope, npieces, color_array, nthreads,
+            QV_HW_OBJ_LAST, subscope
+        );
+    }
+    qvi_catch_and_return();
 }
 
 int
@@ -43,9 +50,15 @@ qv_pthread_scope_split_at(
     int nthreads,
     qv_scope_t ***subscopes
 ) {
-    return qvi_scope_ksplit_at(
-        scope, type, color_array, nthreads, subscopes
-    );
+    if (!scope || !color_array || nthreads < 0 || !subscopes) {
+        return QV_ERR_INVLD_ARG;
+    }
+    try {
+        return qvi_scope_ksplit_at(
+            scope, type, color_array, nthreads, subscopes
+        );
+    }
+    qvi_catch_and_return();
 }
 
 void *
@@ -56,30 +69,31 @@ qv_pthread_routine(
     qvi_scope_bind_push(arg_ptr->scope);
 
     void *ret = arg_ptr->thread_routine(arg_ptr->arg);
-    // Free memory allocated in qv_pthread_create
-    // TODO(skg) Should we consider adding a free call-back? Are there any data
-    // here that may require user-level control?
-    delete arg_ptr;
+    qvi_delete(&arg_ptr);
     pthread_exit(ret);
 }
 
+/**
+ * Similar to pthread_create(3).
+ */
 int
 qv_pthread_create(
-     pthread_t *thread,
-     pthread_attr_t *attr,
-     void *(*thread_routine)(void *arg),
-     void *arg,
-     qv_scope_t *scope
+    pthread_t *thread,
+    const pthread_attr_t *attr,
+    void *(*thread_routine)(void *arg),
+    void *arg,
+    qv_scope_t *scope
 ) {
-     // Memory will be freed in qv_pthread_routine to avoid memory leaks.
-     qv_pthread_args_t *arg_ptr = nullptr;
-     int rc = qvi_new(&arg_ptr);
-     if (rc != QV_SUCCESS) return rc;
+    // Memory will be freed in qv_pthread_routine to avoid memory leaks.
+    qv_pthread_args_t *arg_ptr = nullptr;
+    const int rc = qvi_new(&arg_ptr);
+    // Since this is meant to behave similarly to
+    // pthread_create(), return a reasonable errno.
+    if (rc != QV_SUCCESS) return ENOMEM;
 
-     arg_ptr->scope = scope;
-     arg_ptr->thread_routine = thread_routine;
-     arg_ptr->arg = arg;
-
+    arg_ptr->scope = scope;
+    arg_ptr->thread_routine = thread_routine;
+    arg_ptr->arg = arg;
     return pthread_create(thread, attr, qv_pthread_routine, arg_ptr);
 }
 
@@ -89,8 +103,11 @@ qv_pthread_scope_free(
     qv_scope_t **scopes
 ) {
     if (nscopes < 0 || !scopes) return QV_ERR_INVLD_ARG;
-    qvi_scope_kfree(&scopes, nscopes);
-    return QV_SUCCESS;
+    try {
+        qvi_scope_kfree(&scopes, nscopes);
+        return QV_SUCCESS;
+    }
+    qvi_catch_and_return();
 }
 
 /*
