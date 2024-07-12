@@ -48,6 +48,15 @@ qv_pthread_create(
 );
 
 int
+qv_pthread_scope_split(
+    qv_scope_t *scope,
+    int npieces,
+    int *color_array,
+    int nthreads,
+    qv_scope_t ***subscope
+);
+
+int
 qv_pthread_scope_split_at(
     qv_scope_t *scope,
     qv_hw_obj_type_t type,
@@ -56,13 +65,13 @@ qv_pthread_scope_split_at(
     qv_scope_t ***subscopes
 );
 
+/**
+ * Frees resources allocated by calls to qv_pthread_scope_split*.
+ */
 int
-qv_pthread_scope_split(
-    qv_scope_t *scope,
-    int npieces,
-    int *color_array,
-    int nthreads,
-    qv_scope_t ***subscope
+qv_pthread_scope_free(
+    int nscopes,
+    qv_scope_t **scopes
 );
 
 #ifdef __cplusplus
