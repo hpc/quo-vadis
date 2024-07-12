@@ -108,7 +108,7 @@ main(void)
     }
 
     /* Clean up */
-    rc = qv_pthread_scope_free(nthreads, th_scopes);
+    rc = qv_pthread_scopes_free(nthreads, th_scopes);
     if (rc != QV_SUCCESS) {
         ers = "qv_pthread_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -146,7 +146,7 @@ main(void)
     }
 
     /* Clean up */
-    rc = qv_pthread_scope_free(nthreads, th_scopes);
+    rc = qv_pthread_scopes_free(nthreads, th_scopes);
     if (rc != QV_SUCCESS) {
         ers = "qv_pthread_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));

@@ -58,7 +58,7 @@ qv_pthread_scope_split_at(
  * Frees resources allocated by calls to qv_pthread_scope_split*.
  */
 int
-qv_pthread_scope_free(
+qv_pthread_scopes_free(
     int nscopes,
     qv_scope_t **scopes
 );
