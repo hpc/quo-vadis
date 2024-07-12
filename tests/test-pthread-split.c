@@ -1,16 +1,15 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
-#include <stdio.h>
-#include <pthread.h>
+
 #include "quo-vadis-mpi.h"
 #include "quo-vadis-pthread.h"
 #include "qvi-test-common.h"
-#include <assert.h>
 
 void *
 thread_work(
     void *arg
 ) {
     char const *ers = NULL;
+    const pid_t tid = qvi_test_gettid();
     qv_scope_t *scope = (qv_scope_t *)arg;
 
     char *binds = NULL;
@@ -20,7 +19,7 @@ thread_work(
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    fprintf(stdout,"Thread running on %s\n", binds);
+    fprintf(stdout,"[%d] Thread running on %s\n", tid, binds);
     free(binds);
 
     return NULL;
@@ -30,6 +29,7 @@ int
 main(void)
 {
     char const *ers = NULL;
+    const pid_t tid = qvi_test_gettid();
     MPI_Comm comm = MPI_COMM_WORLD;
     int wrank, wsize;
     int n_cores = 0;
@@ -62,7 +62,6 @@ main(void)
         ers = "qv_scope_get() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    qvi_test_scope_report(mpi_scope, "mpi_job_scope");
 
     rc = qv_scope_nobjs(mpi_scope, QV_HW_OBJ_CORE, &n_cores);
     if (rc != QV_SUCCESS) {
@@ -74,14 +73,15 @@ main(void)
     int npieces  = n_cores / 2;
     int nthreads = n_cores;
 
-    fprintf(stdout,"[%d] ====== Testing thread_scope_split (number of threads : %i)\n", wrank, nthreads);
+    fprintf(stdout,"[%d] ====== Testing thread_scope_split (number of threads : %i)\n", tid, nthreads);
 
     int colors[nthreads];
-    for(int i = 0 ; i < nthreads ; i++)
+    for(int i = 0 ; i < nthreads ; i++) {
         colors[i] = i % npieces;
+    }
 
     qv_scope_t **th_scopes = NULL;
-    rc = qv_pthread_scope_split(mpi_scope, npieces , colors , nthreads, &th_scopes);
+    rc = qv_pthread_scope_split(mpi_scope, npieces, colors, nthreads, &th_scopes);
     if (rc != QV_SUCCESS) {
         ers = "qv_pthread_scope_split() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -104,7 +104,7 @@ main(void)
             perror("pthread_create() error");
             exit(3);
         }
-        fprintf(stdout,"Thread finished with '%s'\n", (char *)ret);
+        //fprintf(stdout,"Thread finished with '%s'\n", (char *)ret);
     }
 
     /* Clean up */
@@ -117,7 +117,7 @@ main(void)
     //Test qv_pthread_scope_split_at
     nthreads = 2*n_cores;
 
-    fprintf(stdout,"[%d] ====== Testing thread_scope_split_at (number of threads : %i)\n", wrank, nthreads);
+    fprintf(stdout,"[%d] ====== Testing thread_scope_split_at (number of threads : %i)\n", tid, nthreads);
 
     int colors2[nthreads];
     for(int i = 0 ; i < nthreads ; i++)
@@ -142,7 +142,7 @@ main(void)
             perror("pthread_create() error");
             exit(3);
         }
-        fprintf(stdout,"Thread finished with '%s'\n", (char *)ret);
+        //fprintf(stdout,"Thread finished with '%s'\n", (char *)ret);
     }
 
     /* Clean up */

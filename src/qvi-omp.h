@@ -53,6 +53,13 @@ typedef struct qv_layout_s {
 } qv_layout_t;
 #endif
 
+int
+qvi_omp_group_new(
+    int group_size,
+    int group_rank,
+    qvi_omp_group_t **group
+);
+
 void
 qvi_omp_group_free(
     qvi_omp_group_t **group
@@ -71,16 +78,6 @@ qvi_omp_group_id(
 int
 qvi_omp_group_barrier(
     qvi_omp_group_t *group
-);
-
-int
-qvi_omp_group_create(
-    qvi_omp_group_t **group
-);
-
-int
-qvi_omp_group_create_single(
-    qvi_omp_group_t **group
 );
 
 int
