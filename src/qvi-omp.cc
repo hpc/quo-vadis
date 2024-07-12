@@ -81,36 +81,21 @@ struct qvi_omp_group_s {
       , rank(group_rank) { }
 };
 
+int
+qvi_omp_group_new(
+    int group_size,
+    int group_rank,
+    qvi_omp_group_t **group
+) {
+    return qvi_new(group, group_size, group_rank);
+}
+
 void
 qvi_omp_group_free(
     qvi_omp_group_t **group
 ) {
     #pragma omp barrier
     qvi_delete(group);
-}
-
-static int
-qvi_omp_group_create_size(
-    qvi_omp_group_t **group,
-    int size
-) {
-    return qvi_new(group, size, omp_get_thread_num());
-}
-
-int
-qvi_omp_group_create(
-    qvi_omp_group_t **group
-) {
-    return qvi_omp_group_create_size(
-        group, omp_get_num_threads()
-    );
-}
-
-int
-qvi_omp_group_create_single(
-    qvi_omp_group_t **group
-) {
-    return qvi_omp_group_create_size(group, 1);
 }
 
 int
