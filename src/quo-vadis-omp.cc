@@ -43,7 +43,9 @@ qv_omp_scope_get(
     qv_scope_intrinsic_t iscope,
     qv_scope_t **scope
 ) {
-    if (!scope) return QV_ERR_INVLD_ARG;
+    if (!scope) {
+        return QV_ERR_INVLD_ARG;
+    }
     try {
         return qvi_omp_scope_get(iscope, scope);
     }
