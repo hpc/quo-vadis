@@ -143,8 +143,13 @@ main(void)
 
     #pragma omp parallel
     {
+        const double tick = omp_get_wtime();
         scopei ep_sinfo;
         scopei_ep(&ep_sinfo);
+        const double tock = omp_get_wtime();
+
+        #pragma omp master
+        printf("# Scope creation took %lf seconds\n", tock - tick);
 
         scopei_ep_push(&ep_sinfo);
         #pragma omp task

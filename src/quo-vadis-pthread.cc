@@ -91,9 +91,6 @@ qv_pthread_scope_split_at(
     qvi_catch_and_return();
 }
 
-/**
- * Similar to pthread_create(3).
- */
 int
 qv_pthread_create(
     pthread_t *thread,

@@ -27,6 +27,9 @@
 extern "C" {
 #endif
 
+/**
+ * Similar to pthread_create(3).
+ */
 int
 qv_pthread_create(
     pthread_t *thread,
