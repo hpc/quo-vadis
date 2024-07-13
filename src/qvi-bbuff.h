@@ -33,6 +33,12 @@ qvi_bbuff_new(
     qvi_bbuff_t **buff
 );
 
+int
+qvi_bbuff_dup(
+    const qvi_bbuff_t *const src,
+    qvi_bbuff_t **buff
+);
+
 /**
  *
  */

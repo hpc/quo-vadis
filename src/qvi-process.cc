@@ -72,25 +72,13 @@ qvi_process_group_gather_bbuffs(
     if (root != 0 || group_size != 1) {
         qvi_abort();
     }
-
-    int rc = QV_SUCCESS;
-    std::vector<size_t> rxcounts = {qvi_bbuff_size(txbuff)};
     // Zero initialize array of pointers to nullptr.
     qvi_bbuff_t **bbuffs = new qvi_bbuff_t *[group_size]();
 
-    byte_t *bytepos = (byte_t *)qvi_bbuff_data(txbuff);
-    for (int i = 0; i < group_size; ++i) {
-        rc = qvi_bbuff_new(&bbuffs[i]);
-        if (rc != QV_SUCCESS) break;
-        rc = qvi_bbuff_append(bbuffs[i], bytepos, rxcounts[i]);
-        if (rc != QV_SUCCESS) break;
-        bytepos += rxcounts[i];
-    }
+    const int rc = qvi_bbuff_dup(txbuff, &bbuffs[0]);
     if (rc != QV_SUCCESS) {
         if (bbuffs) {
-            for (int i = 0; i < group_size; ++i) {
-                qvi_bbuff_free(&bbuffs[i]);
-            }
+            qvi_bbuff_free(&bbuffs[0]);
             delete[] bbuffs;
         }
         bbuffs = nullptr;

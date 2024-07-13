@@ -117,7 +117,9 @@ qv_pthread_scopes_free(
     int nscopes,
     qv_scope_t **scopes
 ) {
-    if (nscopes < 0 || !scopes) return QV_ERR_INVLD_ARG;
+    if (nscopes < 0 || !scopes) {
+        return QV_ERR_INVLD_ARG;
+    }
     try {
         qvi_scope_kfree(&scopes, nscopes);
         return QV_SUCCESS;

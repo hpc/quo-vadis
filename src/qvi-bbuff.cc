@@ -33,6 +33,14 @@ struct qvi_bbuff_s {
         data = calloc(capacity, sizeof(byte_t));
         if (!data) throw qvi_runtime_error();
     }
+    /** Copy constructor. */
+    qvi_bbuff_s(
+        const qvi_bbuff_s &src
+    ) : qvi_bbuff_s()
+    {
+        const int rc = qvi_bbuff_append(this, src.data, src.size);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+    }
     /** Destructor. */
     ~qvi_bbuff_s(void)
     {
@@ -45,6 +53,14 @@ qvi_bbuff_new(
     qvi_bbuff_t **buff
 ) {
     return qvi_new(buff);
+}
+
+int
+qvi_bbuff_dup(
+    const qvi_bbuff_t *const src,
+    qvi_bbuff_t **buff
+) {
+    return qvi_dup(*src, buff);
 }
 
 void
