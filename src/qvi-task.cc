@@ -37,7 +37,7 @@ struct qvi_task_s {
     {
         std::string url;
         const int rc = qvi_url(url);
-        if (rc != QV_SUCCESS) {
+        if (qvi_unlikely(rc != QV_SUCCESS)) {
             qvi_log_error("{}", qvi_conn_ers());
             return rc;
         }
@@ -52,7 +52,7 @@ struct qvi_task_s {
         const int rc = qvi_rmi_task_get_cpubind(
             rmi, me(), &current_bind
         );
-        if (rc != QV_SUCCESS) return rc;
+        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
         stack.push(qvi_hwloc_bitmap_s(current_bind));
         hwloc_bitmap_free(current_bind);
@@ -62,13 +62,13 @@ struct qvi_task_s {
     qvi_task_s(void)
     {
         int rc = qvi_rmi_client_new(&rmi);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
         // Connect to our server.
         rc = connect_to_server();
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
         // Initialize our bind stack.
         rc = bind_stack_init();
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
     }
     /** Copy constructor. */
     qvi_task_s(const qvi_task_s &src) = delete;
@@ -91,7 +91,7 @@ struct qvi_task_s {
         const int rc = qvi_rmi_task_set_cpubind_from_cpuset(
             rmi, me(), bitmap_copy.cdata()
         );
-        if (rc != QV_SUCCESS) return rc;
+        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
         // Push bitmap onto stack.
         stack.push(bitmap_copy);
         return rc;

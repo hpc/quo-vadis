@@ -31,7 +31,7 @@ struct qvi_bbuff_s {
     {
         capacity = min_growth;
         data = calloc(capacity, sizeof(byte_t));
-        if (!data) throw qvi_runtime_error();
+        if (qvi_unlikely(!data)) throw qvi_runtime_error();
     }
     /** Copy constructor. */
     qvi_bbuff_s(
@@ -39,7 +39,7 @@ struct qvi_bbuff_s {
     ) : qvi_bbuff_s()
     {
         const int rc = qvi_bbuff_append(this, src.data, src.size);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
     }
     /** Destructor. */
     ~qvi_bbuff_s(void)
@@ -95,7 +95,7 @@ qvi_bbuff_append(
         // New capacity.
         const size_t new_capacity = req_capacity + buff->min_growth;
         void *new_data = calloc(new_capacity, sizeof(byte_t));
-        if (!new_data) return QV_ERR_OOR;
+        if (qvi_unlikely(!new_data)) return QV_ERR_OOR;
         // Memory allocation successful.
         memmove(new_data, buff->data, buff->size);
         free(buff->data);

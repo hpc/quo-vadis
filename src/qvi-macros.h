@@ -18,6 +18,16 @@
 #define QVI_MACROS_H
 
 /**
+ * Add branch prediction information: will likely happen.
+ */
+#define qvi_likely(x) __builtin_expect(!!(x), 1)
+
+/**
+ * Add branch prediction information: won't likely happen.
+ */
+#define qvi_unlikely(x) __builtin_expect(!!(x), 0)
+
+/**
  * Convenience macro used to silence warnings about unused variables.
  *
  * @param[in] x Unused variable.
