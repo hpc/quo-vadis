@@ -102,16 +102,8 @@ qvi_process_group_scatter_bbuffs(
         qvi_abort();
     }
     // There should always be only one at the root (us).
-    qvi_bbuff_t *inbuff = txbuffs[root];
-    const size_t data_size = qvi_bbuff_size(inbuff);
-    const void *data = qvi_bbuff_data(inbuff);
-
     qvi_bbuff_t *mybbuff = nullptr;
-    int rc = qvi_bbuff_new(&mybbuff);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_bbuff_append(mybbuff, data, data_size);
-out:
+    const int rc = qvi_bbuff_dup(txbuffs[root], &mybbuff);
     if (rc != QV_SUCCESS) {
         qvi_bbuff_free(&mybbuff);
     }
