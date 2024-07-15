@@ -80,11 +80,11 @@ struct qvi_group_mpi_s : public qvi_group_s {
     gather(
         qvi_bbuff_t *txbuff,
         int root,
-        qvi_bbuff_t ***rxbuffs,
-        int *shared
+        bool *shared,
+        qvi_bbuff_t ***rxbuffs
     ) {
         return qvi_mpi_group_gather_bbuffs(
-            mpi_group, txbuff, root, rxbuffs, shared
+            mpi_group, txbuff, root, shared, rxbuffs
         );
     }
 

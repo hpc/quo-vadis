@@ -78,11 +78,11 @@ struct qvi_group_process_s : public qvi_group_s {
     gather(
         qvi_bbuff_t *txbuff,
         int root,
-        qvi_bbuff_t ***rxbuffs,
-        int *shared
+        bool *shared,
+        qvi_bbuff_t ***rxbuffs
     ) {
         return qvi_process_group_gather_bbuffs(
-            proc_group, txbuff, root, rxbuffs, shared
+            proc_group, txbuff, root, shared, rxbuffs
         );
     }
 

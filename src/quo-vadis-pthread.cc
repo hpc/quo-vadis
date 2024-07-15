@@ -60,7 +60,9 @@ qv_pthread_scope_split(
     int nthreads,
     qv_scope_t ***subscope
 ) {
-    if (!scope || npieces < 0 || !color_array || nthreads < 0 || !subscope) {
+    const bool invld_args = !scope || npieces < 0 ||
+                            !color_array || nthreads < 0 || !subscope;
+    if (qvi_unlikely(invld_args)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
@@ -80,7 +82,7 @@ qv_pthread_scope_split_at(
     int nthreads,
     qv_scope_t ***subscopes
 ) {
-    if (!scope || !color_array || nthreads < 0 || !subscopes) {
+    if (qvi_unlikely(!scope || !color_array || nthreads < 0 || !subscopes)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
@@ -95,7 +97,7 @@ int
 qv_pthread_create(
     pthread_t *thread,
     const pthread_attr_t *attr,
-    void *(*thread_routine)(void *arg),
+    qvi_pthread_routine_fun_ptr_t thread_routine,
     void *arg,
     qv_scope_t *scope
 ) {
@@ -104,7 +106,7 @@ qv_pthread_create(
     const int rc = qvi_new(&arg_ptr, scope, thread_routine, arg);
     // Since this is meant to behave similarly to
     // pthread_create(), return a reasonable errno.
-    if (rc != QV_SUCCESS) return ENOMEM;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return ENOMEM;
 
     return pthread_create(thread, attr, qvi_pthread_routine, arg_ptr);
 }
@@ -114,7 +116,7 @@ qv_pthread_scopes_free(
     int nscopes,
     qv_scope_t **scopes
 ) {
-    if (nscopes < 0 || !scopes) {
+    if (qvi_unlikely(nscopes < 0 || !scopes)) {
         return QV_ERR_INVLD_ARG;
     }
     try {

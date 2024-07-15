@@ -212,33 +212,31 @@ qvi_omp_group_gather_bbuffs(
     qvi_omp_group_t *group,
     qvi_bbuff_t *txbuff,
     int,
-    qvi_bbuff_t ***rxbuffs,
-    int *shared_alloc
+    bool *shared_alloc,
+    qvi_bbuff_t ***rxbuffs
 ) {
     const int group_size = group->size;
-    const int group_id = group->rank;
+    const int group_rank = group->rank;
 
     qvi_bbuff_t **bbuffs = nullptr;
     #pragma omp single copyprivate(bbuffs)
     bbuffs = new qvi_bbuff_t *[group_size]();
 
-    const int rc = qvi_bbuff_dup(txbuff, &bbuffs[group_id]);
+    const int rc = qvi_bbuff_dup(txbuff, &bbuffs[group_rank]);
     // Need to ensure that all threads have contributed to bbuffs.
     #pragma omp barrier
     if (rc != QV_SUCCESS) {
         #pragma omp single
-        {
-            if (bbuffs) {
-                for (int i = 0; i < group_size; ++i) {
-                    qvi_bbuff_free(&bbuffs[i]);
-                }
-                delete[] bbuffs;
+        if (bbuffs) {
+            for (int i = 0; i < group_size; ++i) {
+                qvi_bbuff_free(&bbuffs[i]);
             }
+            delete[] bbuffs;
         }
         bbuffs = nullptr;
     }
     *rxbuffs = bbuffs;
-    *shared_alloc = 1;
+    *shared_alloc = true;
     return rc;
 }
 

@@ -31,7 +31,7 @@ qvi_omp_scope_get(
     // Create the base process group.
     qvi_group_omp_s *zgroup = nullptr;
     const int rc = qvi_new(&zgroup);
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         *scope = nullptr;
         return rc;
     }
@@ -43,7 +43,7 @@ qv_omp_scope_get(
     qv_scope_intrinsic_t iscope,
     qv_scope_t **scope
 ) {
-    if (!scope) {
+    if (qvi_unlikely(!scope)) {
         return QV_ERR_INVLD_ARG;
     }
     try {

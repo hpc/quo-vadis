@@ -92,9 +92,9 @@ int
 qvi_omp_group_gather_bbuffs(
     qvi_omp_group_t *group,
     qvi_bbuff_t *txbuff,
-    int root,
-    qvi_bbuff_t ***rxbuffs,
-    int *shared_alloc
+    int,
+    bool *shared_alloc,
+    qvi_bbuff_t ***rxbuffs
 );
 
 int

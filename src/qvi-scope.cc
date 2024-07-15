@@ -230,11 +230,11 @@ gather_values(
 ) {
     static_assert(std::is_trivially_copyable<TYPE>::value, "");
 
-    int rc = QV_SUCCESS, shared = 0;
+    bool shared = false;
     const uint_t group_size = group->size();
     qvi_bbuff_t *txbuff = nullptr, **bbuffs = nullptr;
 
-    rc = qvi_bbuff_new(&txbuff);
+    int rc = qvi_bbuff_new(&txbuff);
     if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_bbuff_append(
@@ -242,7 +242,7 @@ gather_values(
     );
     if (rc != QV_SUCCESS) goto out;
 
-    rc = group->gather(txbuff, root, &bbuffs, &shared);
+    rc = group->gather(txbuff, root, &shared, &bbuffs);
     if (rc != QV_SUCCESS) goto out;
 
     if (group->id() == root) {
@@ -276,17 +276,17 @@ gather_hwpools(
     qvi_hwpool_s *txpool,
     std::vector<qvi_hwpool_s *> &rxpools
 ) {
-    int rc = QV_SUCCESS, shared = 0;
+    bool shared = false;
     const uint_t group_size = group->size();
     qvi_bbuff_t *txbuff = nullptr, **bbuffs = nullptr;
 
-    rc = qvi_bbuff_new(&txbuff);
+    int rc = qvi_bbuff_new(&txbuff);
     if (rc != QV_SUCCESS) goto out;
 
     rc = txpool->pack(txbuff);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = group->gather(txbuff, root, &bbuffs, &shared);
+    rc = group->gather(txbuff, root, &shared, &bbuffs);
     if (rc != QV_SUCCESS) goto out;
 
     if (group->id() == root) {

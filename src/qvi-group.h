@@ -81,8 +81,8 @@ public:
     gather(
         qvi_bbuff_t *txbuff,
         int root,
-        qvi_bbuff_t ***rxbuffs,
-        int *shared
+        bool *shared,
+        qvi_bbuff_t ***rxbuffs
     ) = 0;
     /** Scatters bbuffs from specified root. */
     virtual int
