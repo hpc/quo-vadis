@@ -363,8 +363,8 @@ qvi_mpi_group_gather_bbuffs(
     qvi_mpi_group_t *group,
     qvi_bbuff_t *txbuff,
     int root,
-    qvi_bbuff_t ***rxbuffs,
-    int *shared_alloc
+    bool *shared_alloc,
+    qvi_bbuff_t ***rxbuffs
 ) {
     const int send_count = (int)qvi_bbuff_size(txbuff);
     const int group_id = group->qvcomm.rank;
@@ -434,7 +434,7 @@ out:
         bbuffs = nullptr;
     }
     *rxbuffs = bbuffs;
-    *shared_alloc = 0;
+    *shared_alloc = false;
     return rc;
 }
 

@@ -22,7 +22,7 @@ qv_version(
     int *minor,
     int *patch
 ) {
-    if (!major || !minor || !patch) {
+    if (qvi_unlikely(!major || !minor || !patch)) {
         return QV_ERR_INVLD_ARG;
     }
 
@@ -37,7 +37,7 @@ int
 qv_scope_bind_push(
     qv_scope_t *scope
 ) {
-    if (!scope) {
+    if (qvi_unlikely(!scope)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
@@ -50,7 +50,7 @@ int
 qv_scope_bind_pop(
     qv_scope_t *scope
 ) {
-    if (!scope) {
+    if (qvi_unlikely(!scope)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
@@ -65,7 +65,7 @@ qv_scope_bind_string(
     qv_bind_string_format_t format,
     char **str
 ) {
-    if (!scope || !str) {
+    if (qvi_unlikely(!scope || !str)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
@@ -78,7 +78,7 @@ int
 qv_scope_free(
     qv_scope_t *scope
 ) {
-    if (!scope) {
+    if (qvi_unlikely(!scope)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
@@ -94,7 +94,7 @@ qv_scope_nobjs(
     qv_hw_obj_type_t obj,
     int *nobjs
 ) {
-    if (!scope || !nobjs) {
+    if (qvi_unlikely(!scope || !nobjs)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
@@ -108,7 +108,7 @@ qv_scope_taskid(
     qv_scope_t *scope,
     int *taskid
 ) {
-    if (!scope || !taskid) {
+    if (qvi_unlikely(!scope || !taskid)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
@@ -122,7 +122,7 @@ qv_scope_ntasks(
     qv_scope_t *scope,
     int *ntasks
 ) {
-    if (!scope || !ntasks) {
+    if (qvi_unlikely(!scope || !ntasks)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
@@ -135,7 +135,7 @@ int
 qv_scope_barrier(
     qv_scope_t *scope
 ) {
-    if (!scope) {
+    if (qvi_unlikely(!scope)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
@@ -153,7 +153,7 @@ qv_scope_create(
     qv_scope_create_hints_t hints,
     qv_scope_t **subscope
 ) {
-    if (!scope || (nobjs < 0) || !subscope) {
+    if (qvi_unlikely(!scope || (nobjs < 0) || !subscope)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
@@ -171,7 +171,7 @@ qv_scope_split(
     int color,
     qv_scope_t **subscope
 ) {
-    if (!scope || (npieces <= 0) | !subscope) {
+    if (qvi_unlikely(!scope || (npieces <= 0) | !subscope)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
@@ -192,7 +192,7 @@ qv_scope_split_at(
     int group_id,
     qv_scope_t **subscope
 ) {
-    if (!scope || !subscope) {
+    if (qvi_unlikely(!scope || !subscope)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
@@ -211,7 +211,7 @@ qv_scope_get_device_id(
     qv_device_id_type_t id_type,
     char **dev_id
 ) {
-    if (!scope || (dev_index < 0) || !dev_id) {
+    if (qvi_unlikely(!scope || (dev_index < 0) || !dev_id)) {
         return QV_ERR_INVLD_ARG;
     }
     try {

@@ -63,8 +63,8 @@ qvi_process_group_gather_bbuffs(
     qvi_process_group_t *group,
     qvi_bbuff_t *txbuff,
     int root,
-    qvi_bbuff_t ***rxbuffs,
-    int *shared_alloc
+    bool *shared,
+    qvi_bbuff_t ***rxbuffs
 ) {
     const int group_size = qvi_process_group_size(group);
     // Make sure that we are dealing with a valid process group.
@@ -84,7 +84,7 @@ qvi_process_group_gather_bbuffs(
         bbuffs = nullptr;
     }
     *rxbuffs = bbuffs;
-    *shared_alloc = 0;
+    *shared = false;
     return rc;
 }
 

@@ -61,8 +61,8 @@ qvi_mpi_scope_get(
     *scope = nullptr;
     // Create and initialize the base group.
     qvi_zgroup_mpi_s *izgroup = nullptr;
-    int rc = qvi_new(&izgroup, comm);
-    if (rc != QV_SUCCESS) return rc;
+    const int rc = qvi_new(&izgroup, comm);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     return qvi_scope_get(izgroup, iscope, scope);
 }
@@ -73,7 +73,7 @@ qv_mpi_scope_get(
     qv_scope_intrinsic_t iscope,
     qv_scope_t **scope
 ) {
-    if (comm == MPI_COMM_NULL || !scope) {
+    if (qvi_unlikely(comm == MPI_COMM_NULL || !scope)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
@@ -87,7 +87,7 @@ qvi_mpi_scope_comm_dup(
     qv_scope_t *scope,
     MPI_Comm *comm
 ) {
-    qvi_group_mpi_t *mpi_group = dynamic_cast<qvi_group_mpi_t *>(
+    qvi_group_mpi_t *const mpi_group = dynamic_cast<qvi_group_mpi_t *>(
         qvi_scope_group_get(scope)
     );
     return mpi_group->comm_dup(comm);
@@ -98,7 +98,7 @@ qv_mpi_scope_comm_dup(
     qv_scope_t *scope,
     MPI_Comm *comm
 ) {
-    if (!scope || !comm) {
+    if (qvi_unlikely(!scope || !comm)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
