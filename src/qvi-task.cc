@@ -18,151 +18,97 @@
 #include "qvi-rmi.h"
 #include "qvi-utils.h"
 
-using qvi_task_bind_stack_t = std::stack<qvi_hwloc_bitmap_s>;
-
-struct qvi_task_s {
-    /** Client-side connection to the RMI. */
-    qvi_rmi_client_t *rmi = nullptr;
-    /** The task's bind stack. */
-    qvi_task_bind_stack_t stack;
-    /** Returns the caller's thread ID. */
-    static pid_t
-    me(void)
-    {
-        return qvi_gettid();
-    }
-    /** Connects to the RMI server. */
-    int
-    connect_to_server(void)
-    {
-        std::string url;
-        const int rc = qvi_url(url);
-        if (qvi_unlikely(rc != QV_SUCCESS)) {
-            qvi_log_error("{}", qvi_conn_ers());
-            return rc;
-        }
-        return qvi_rmi_client_connect(rmi, url);
-    }
-    /** Initializes the bind stack. */
-    int
-    bind_stack_init(void)
-    {
-        // Cache current binding.
-        hwloc_cpuset_t current_bind = nullptr;
-        const int rc = qvi_rmi_task_get_cpubind(
-            rmi, me(), &current_bind
-        );
-        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-
-        stack.push(qvi_hwloc_bitmap_s(current_bind));
-        hwloc_bitmap_free(current_bind);
-        return rc;
-    }
-    /** Default constructor. */
-    qvi_task_s(void)
-    {
-        int rc = qvi_rmi_client_new(&rmi);
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
-        // Connect to our server.
-        rc = connect_to_server();
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
-        // Initialize our bind stack.
-        rc = bind_stack_init();
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
-    }
-    /** Copy constructor. */
-    qvi_task_s(const qvi_task_s &src) = delete;
-    /** Destructor. */
-    ~qvi_task_s(void)
-    {
-        while (!stack.empty()) {
-            stack.pop();
-        }
-        qvi_rmi_client_free(&rmi);
-    }
-    /** Changes the task's affinity. */
-    int
-    bind_push(
-        hwloc_const_cpuset_t cpuset
-    ) {
-        // Copy input bitmap because we don't want to directly modify it.
-        qvi_hwloc_bitmap_s bitmap_copy(cpuset);
-        // Change policy
-        const int rc = qvi_rmi_task_set_cpubind_from_cpuset(
-            rmi, me(), bitmap_copy.cdata()
-        );
-        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-        // Push bitmap onto stack.
-        stack.push(bitmap_copy);
-        return rc;
-    }
-    /** */
-    int
-    bind_pop(void)
-    {
-        stack.pop();
-
-        return qvi_rmi_task_set_cpubind_from_cpuset(
-            rmi, me(), stack.top().cdata()
-        );
-    }
-    /** Returns the task's current cpuset. */
-    int
-    bind_top(
-        hwloc_cpuset_t *dest
-    ) {
-        return qvi_hwloc_bitmap_dup(stack.top().cdata(), dest);
-    }
-};
-
 pid_t
-qvi_task_id(void)
+qvi_task_s::mytid(void)
 {
-    return qvi_task_s::me();
+    return qvi_gettid();
 }
 
 int
-qvi_task_new(
-    qvi_task_t **task
-) {
-    return qvi_new(task);
+qvi_task_s::connect_to_server(void)
+{
+    std::string url;
+    const int rc = qvi_url(url);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        qvi_log_error("{}", qvi_conn_ers());
+        return rc;
+    }
+    return qvi_rmi_client_connect(myrmi, url);
 }
 
-void
-qvi_task_free(
-    qvi_task_t **task
-) {
-    qvi_delete(task);
+int
+qvi_task_s::bind_stack_init(void)
+{
+    // Cache current binding.
+    hwloc_cpuset_t current_bind = nullptr;
+    const int rc = qvi_rmi_task_get_cpubind(
+        myrmi, mytid(), &current_bind
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+
+    mystack.push(qvi_hwloc_bitmap_s(current_bind));
+    hwloc_bitmap_free(current_bind);
+    return rc;
+}
+
+qvi_task_s::qvi_task_s(void)
+{
+    int rc = qvi_rmi_client_new(&myrmi);
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+    // Connect to our server.
+    rc = connect_to_server();
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+    // Initialize our bind stack.
+    rc = bind_stack_init();
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+}
+
+qvi_task_s::~qvi_task_s(void)
+{
+    while (!mystack.empty()) {
+        mystack.pop();
+    }
+    qvi_rmi_client_free(&myrmi);
 }
 
 qvi_rmi_client_t *
-qvi_task_rmi(
-    qvi_task_t *task
-) {
-    return task->rmi;
+qvi_task_s::rmi(void)
+{
+    assert(myrmi);
+    return myrmi;
 }
 
 int
-qvi_task_bind_push(
-    qvi_task_t *task,
+qvi_task_s::bind_push(
     hwloc_const_cpuset_t cpuset
 ) {
-    return task->bind_push(cpuset);
+    // Copy input bitmap because we don't want to directly modify it.
+    qvi_hwloc_bitmap_s bitmap_copy(cpuset);
+    // Change policy
+    const int rc = qvi_rmi_task_set_cpubind_from_cpuset(
+        myrmi, mytid(), bitmap_copy.cdata()
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // Push bitmap onto stack.
+    mystack.push(bitmap_copy);
+    return rc;
 }
 
 int
-qvi_task_bind_pop(
-    qvi_task_t *task
-) {
-    return task->bind_pop();
+qvi_task_s::bind_pop(void)
+{
+    mystack.pop();
+
+    return qvi_rmi_task_set_cpubind_from_cpuset(
+        myrmi, mytid(), mystack.top().cdata()
+    );
 }
 
 int
-qvi_task_bind_top(
-    qvi_task_t *task,
+qvi_task_s::bind_top(
     hwloc_cpuset_t *dest
 ) {
-    return task->bind_top(dest);
+    return qvi_hwloc_bitmap_dup(mystack.top().cdata(), dest);
 }
 
 /*

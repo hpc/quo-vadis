@@ -18,49 +18,49 @@
 #define QVI_TASK_H
 
 #include "qvi-common.h"
+#include "qvi-hwloc.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+using qvi_task_bind_stack_t = std::stack<qvi_hwloc_bitmap_s>;
 
-pid_t
-qvi_task_id(void);
-
-int
-qvi_task_new(
-    qvi_task_t **task
-);
-
-void
-qvi_task_free(
-    qvi_task_t **task
-);
-
-qvi_rmi_client_t *
-qvi_task_rmi(
-    qvi_task_t *task
-);
-
-int
-qvi_task_bind_push(
-    qvi_task_t *task,
-    hwloc_const_cpuset_t cpuset
-);
-
-int
-qvi_task_bind_pop(
-    qvi_task_t *task
-);
-
-int
-qvi_task_bind_top(
-    qvi_task_t *task,
-    hwloc_cpuset_t *dest
-);
-
-#ifdef __cplusplus
-}
-#endif
+struct qvi_task_s {
+private:
+    /** Client-side connection to the RMI. */
+    qvi_rmi_client_t *myrmi = nullptr;
+    /** The task's bind stack. */
+    qvi_task_bind_stack_t mystack;
+    /** Initializes the bind stack. */
+    int
+    bind_stack_init(void);
+    /** Connects to the RMI server. */
+    int
+    connect_to_server(void);
+public:
+    /** Returns the caller's thread ID. */
+    static pid_t
+    mytid(void);
+    /** Default constructor. */
+    qvi_task_s(void);
+    /** Copy constructor. */
+    qvi_task_s(const qvi_task_s &src) = delete;
+    /** Destructor. */
+    ~qvi_task_s(void);
+    /** Returns a pointer to the task's RMI. */
+    qvi_rmi_client_t *
+    rmi(void);
+    /** Changes the task's affinity. */
+    int
+    bind_push(
+        hwloc_const_cpuset_t cpuset
+    );
+    /** */
+    int
+    bind_pop(void);
+    /** Returns the task's current cpuset. */
+    int
+    bind_top(
+        hwloc_cpuset_t *dest
+    );
+};
 
 #endif
 
