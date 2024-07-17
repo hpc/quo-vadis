@@ -28,12 +28,12 @@ private:
     qvi_rmi_client_t *myrmi = nullptr;
     /** The task's bind stack. */
     qvi_task_bind_stack_t mystack;
-    /** Initializes the bind stack. */
-    int
-    bind_stack_init(void);
     /** Connects to the RMI server. */
     int
     connect_to_server(void);
+    /** Initializes the bind stack. */
+    int
+    bind_stack_init(void);
 public:
     /** Returns the caller's thread ID. */
     static pid_t

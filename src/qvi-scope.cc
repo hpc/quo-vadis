@@ -28,8 +28,6 @@ using id_devinfo_multimap_t = std::multimap<int, const qvi_hwpool_dev_s *>;
 
 /** Scope type definition. */
 struct qv_scope_s {
-    /** Pointer to initialized RMI infrastructure. */
-    qvi_rmi_client_t *rmi = nullptr;
     /** Task group associated with this scope instance. */
     qvi_group_t *group = nullptr;
     /** Hardware resource pool. */
@@ -39,7 +37,6 @@ struct qv_scope_s {
     /** Destructor */
     ~qv_scope_s(void)
     {
-        rmi = nullptr;
         qvi_delete(&hwpool);
         qvi_delete(&group);
     }
@@ -181,7 +178,7 @@ struct qvi_scope_split_coll_s {
         if (myid == qvi_scope_split_coll_s::rootid) {
             const uint_t group_size = parent_scope->group->size();
             gsplit.init(
-                parent_scope->rmi, parent_scope->hwpool,
+                parent_scope->group->task()->rmi(), parent_scope->hwpool,
                 group_size, split_size_a, split_at_type_a
             );
         }
@@ -218,7 +215,6 @@ get_obj_type_in_hwpool(
        rmi, npieces, hwpool->get_cpuset().cdata(), obj
     );
 }
-
 
 template <typename TYPE>
 static int
@@ -457,7 +453,8 @@ scope_split_coll_gather(
         for (uint_t tid = 0; tid < group_size; ++tid) {
             hwloc_cpuset_t cpuset = nullptr;
             rc = qvi_rmi_task_get_cpubind(
-                parent->rmi, splitcoll.gsplit.taskids[tid], &cpuset
+                parent->group->task()->rmi(),
+                splitcoll.gsplit.taskids[tid], &cpuset
             );
             if (rc != QV_SUCCESS) break;
 
@@ -540,12 +537,10 @@ qvi_scope_kfree(
 static int
 scope_init(
     qv_scope_t *scope,
-    qvi_rmi_client_t *rmi,
     qvi_group_t *group,
     qvi_hwpool_s *hwpool
 ) {
-    if (!rmi || !hwpool || !scope) qvi_abort();
-    scope->rmi = rmi;
+    if (!hwpool || !scope) qvi_abort();
     scope->group = group;
     scope->hwpool = hwpool;
     return QV_SUCCESS;
@@ -615,7 +610,7 @@ qvi_scope_get(
     rc = qvi_scope_new(scope);
     if (rc != QV_SUCCESS) goto out;
     // Initialize the scope.
-    rc = scope_init(*scope, rmi, zgroup, hwpool);
+    rc = scope_init(*scope, zgroup, hwpool);
 out:
     if (rc != QV_SUCCESS) {
         qvi_delete(&hwpool);
@@ -1113,7 +1108,7 @@ qvi_scope_split(
     rc = qvi_scope_new(&ichild);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = scope_init(ichild, parent->rmi, group, hwpool);
+    rc = scope_init(ichild, group, hwpool);
 out:
     if (rc != QV_SUCCESS) {
         qvi_delete(&hwpool);
@@ -1140,7 +1135,8 @@ qvi_scope_ksplit(
     const uint_t group_size = k;
     qvi_scope_split_agg_s splitagg{};
     int rc = splitagg.init(
-        parent->rmi, parent->hwpool, group_size, npieces, maybe_obj_type
+        parent->group->task()->rmi(), parent->hwpool,
+        group_size, npieces, maybe_obj_type
     );
     if (rc != QV_SUCCESS) return rc;
     // Since this is called by a single task, get its ID and associated hardware
@@ -1149,7 +1145,7 @@ qvi_scope_ksplit(
     const pid_t taskid = qvi_task_s::mytid();
     hwloc_cpuset_t task_affinity = nullptr;
     rc = qvi_rmi_task_get_cpubind(
-        parent->rmi, taskid, &task_affinity
+        parent->group->task()->rmi(), taskid, &task_affinity
     );
     if (rc != QV_SUCCESS) return rc;
     // Now populate the relevant data before attempting a split.
@@ -1201,9 +1197,7 @@ qvi_scope_ksplit(
             qvi_scope_free(&child);
             break;
         }
-        // TODO(skg) We need to rethink how we deal with RMI in scopes.
-        auto test_rmi = group->task()->rmi();
-        rc = scope_init(child, test_rmi, group, hwpool);
+        rc = scope_init(child, group, hwpool);
         if (rc != QV_SUCCESS) {
             qvi_delete(&hwpool);
             qvi_delete(&group);
@@ -1265,7 +1259,7 @@ qvi_scope_create(
     hwloc_cpuset_t cpuset = nullptr;
     // TODO(skg) We need to acquire these resources.
     int rc = qvi_rmi_get_cpuset_for_nobjs(
-        parent->rmi,
+        parent->group->task()->rmi(),
         parent->hwpool->get_cpuset().cdata(),
         type, nobjs, &cpuset
     );
@@ -1284,7 +1278,7 @@ qvi_scope_create(
     rc = qvi_scope_new(&ichild);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = scope_init(ichild, parent->rmi, group, hwpool);
+    rc = scope_init(ichild, group, hwpool);
 out:
     qvi_hwloc_bitmap_free(&cpuset);
     if (rc != QV_SUCCESS) {
@@ -1302,7 +1296,7 @@ qvi_scope_nobjs(
     int *n
 ) {
     return get_nobjs_in_hwpool(
-        scope->rmi, scope->hwpool, obj, n
+        scope->group->task()->rmi(), scope->hwpool, obj, n
     );
 }
 
@@ -1313,7 +1307,7 @@ qvi_scope_obj_type(
     qv_hw_obj_type_t *obj
 ) {
     return get_obj_type_in_hwpool(
-       scope->rmi, scope->hwpool, npieces, obj
+       scope->group->task()->rmi(), scope->hwpool, npieces, obj
     );
 }
 
