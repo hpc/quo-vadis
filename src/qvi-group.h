@@ -18,7 +18,7 @@
 #define QVI_GROUP_H
 
 #include "qvi-common.h"
-#include "qvi-task.h"
+#include "qvi-task.h" // IWYU pragma: keep
 #include "qvi-utils.h"
 
 /** Group ID type. */
@@ -44,16 +44,20 @@ public:
         qvi_delete(&m_task);
     }
     /** Returns pointer to the caller's task information. */
-    qvi_task_t *task(void)
+    qvi_task_t *
+    task(void)
     {
         return m_task;
     }
     /** Returns the caller's group rank. */
-    virtual int rank(void) = 0;
+    virtual int
+    rank(void) = 0;
     /** Returns the number of members in this group. */
-    virtual int size(void) = 0;
+    virtual int
+    size(void) = 0;
     /** Performs node-local group barrier. */
-    virtual int barrier(void) = 0;
+    virtual int
+    barrier(void) = 0;
     /** Makes the calling instance an intrinsic group. */
     virtual int
     make_intrinsic(
