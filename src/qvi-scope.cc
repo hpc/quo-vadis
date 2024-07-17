@@ -429,7 +429,7 @@ scope_split_coll_gather(
     int rc = gather_values(
         parent->group,
         qvi_scope_split_coll_s::rootid,
-        qvi_task_id(),
+        qvi_task_t::mytid(),
         splitcoll.gsplit.taskids
     );
     if (rc != QV_SUCCESS) return rc;
@@ -602,13 +602,13 @@ qvi_scope_get(
     qv_scope_t **scope
 ) {
     qvi_hwpool_s *hwpool = nullptr;
-    qvi_rmi_client_t *rmi = qvi_task_rmi(zgroup->task());
+    qvi_rmi_client_t *rmi = zgroup->task()->rmi();
     // Get the requested intrinsic group.
     int rc = zgroup->make_intrinsic(iscope);
     if (rc != QV_SUCCESS) goto out;
     // Get the requested intrinsic hardware pool.
     rc = qvi_rmi_scope_get_intrinsic_hwpool(
-        rmi, qvi_task_id(), iscope, &hwpool
+        rmi, qvi_task_s::mytid(), iscope, &hwpool
     );
     if (rc != QV_SUCCESS) goto out;
     // Create the scope.
@@ -1146,7 +1146,7 @@ qvi_scope_ksplit(
     // Since this is called by a single task, get its ID and associated hardware
     // affinity here, and replicate them in the following loop that populates
     // splitagg. No point in doing this in a loop.
-    const pid_t taskid = qvi_task_id();
+    const pid_t taskid = qvi_task_s::mytid();
     hwloc_cpuset_t task_affinity = nullptr;
     rc = qvi_rmi_task_get_cpubind(
         parent->rmi, taskid, &task_affinity
@@ -1202,7 +1202,7 @@ qvi_scope_ksplit(
             break;
         }
         // TODO(skg) We need to rethink how we deal with RMI in scopes.
-        auto test_rmi = qvi_task_rmi(group->task());
+        auto test_rmi = group->task()->rmi();
         rc = scope_init(child, test_rmi, group, hwpool);
         if (rc != QV_SUCCESS) {
             qvi_delete(&hwpool);
@@ -1366,8 +1366,7 @@ int
 qvi_scope_bind_push(
     qv_scope_t *scope
 ) {
-    return qvi_task_bind_push(
-        scope->group->task(),
+    return scope->group->task()->bind_push(
         scope->hwpool->get_cpuset().cdata()
     );
 }
@@ -1376,7 +1375,7 @@ int
 qvi_scope_bind_pop(
     qv_scope_t *scope
 ) {
-    return qvi_task_bind_pop(scope->group->task());
+    return scope->group->task()->bind_pop();
 }
 
 int
@@ -1388,7 +1387,7 @@ qvi_scope_bind_string(
     char *istr = nullptr;
 
     hwloc_cpuset_t cpuset = nullptr;
-    int rc = qvi_task_bind_top(scope->group->task(), &cpuset);
+    int rc = scope->group->task()->bind_top(&cpuset);
     if (rc != QV_SUCCESS) return rc;
 
     switch (format) {

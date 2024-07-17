@@ -19,6 +19,7 @@
 
 #include "qvi-common.h"
 #include "qvi-task.h"
+#include "qvi-utils.h"
 
 /** Group ID type. */
 using qvi_group_id_t = uint64_t;
@@ -34,13 +35,13 @@ public:
     /** Constructor. */
     qvi_group_s(void)
     {
-        const int rc = qvi_task_new(&m_task);
+        const int rc = qvi_new(&m_task);
         if (rc != QV_SUCCESS) throw qvi_runtime_error();
     }
     /** Virtual destructor. */
     virtual ~qvi_group_s(void)
     {
-        qvi_task_free(&m_task);
+        qvi_delete(&m_task);
     }
     /** Returns pointer to the caller's task information. */
     qvi_task_t *task(void)
