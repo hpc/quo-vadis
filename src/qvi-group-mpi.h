@@ -42,7 +42,7 @@ struct qvi_group_mpi_s : public qvi_group_s {
     }
 
     virtual int
-    id(void)
+    rank(void)
     {
         return qvi_mpi_group_id(mpi_group);
     }

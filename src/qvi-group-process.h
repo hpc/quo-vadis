@@ -30,7 +30,7 @@ struct qvi_group_process_s : public qvi_group_s {
     }
 
     virtual int
-    id(void)
+    rank(void)
     {
         return qvi_process_group_id(proc_group);
     }

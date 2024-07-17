@@ -36,7 +36,7 @@ struct qvi_group_omp_s : public qvi_group_s {
     }
 
     virtual int
-    id(void)
+    rank(void)
     {
         return qvi_omp_group_id(th_group);
     }
