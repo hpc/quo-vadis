@@ -175,7 +175,7 @@ struct qvi_scope_split_coll_s {
         int mycolor_a,
         qv_hw_obj_type_t split_at_type_a
     ) {
-        const int myid = parent_scope_a->group->id();
+        const int myid = parent_scope_a->group->rank();
         parent_scope = parent_scope_a;
         mycolor = mycolor_a;
         if (myid == qvi_scope_split_coll_s::rootid) {
@@ -245,7 +245,7 @@ gather_values(
     rc = group->gather(txbuff, root, &shared, &bbuffs);
     if (rc != QV_SUCCESS) goto out;
 
-    if (group->id() == root) {
+    if (group->rank() == root) {
         outvals.resize(group_size);
         // Unpack the values.
         for (uint_t i = 0; i < group_size; ++i) {
@@ -253,7 +253,7 @@ gather_values(
         }
     }
 out:
-    if (!shared || (shared && (group->id() == root))) {
+    if (!shared || (shared && (group->rank() == root))) {
         if (bbuffs) {
             for (uint_t i = 0; i < group_size; ++i) {
                 qvi_bbuff_free(&bbuffs[i]);
@@ -289,7 +289,7 @@ gather_hwpools(
     rc = group->gather(txbuff, root, &shared, &bbuffs);
     if (rc != QV_SUCCESS) goto out;
 
-    if (group->id() == root) {
+    if (group->rank() == root) {
         rxpools.resize(group_size);
         // Unpack the hwpools.
         for (uint_t i = 0; i < group_size; ++i) {
@@ -300,7 +300,7 @@ gather_hwpools(
         }
     }
 out:
-    if (!shared || (shared && (group->id() == root))) {
+    if (!shared || (shared && (group->rank() == root))) {
         if (bbuffs) {
             for (uint_t i = 0; i < group_size; ++i) {
                 qvi_bbuff_free(&bbuffs[i]);
@@ -330,7 +330,7 @@ scatter_values(
     std::vector<qvi_bbuff_t *> txbuffs{};
     qvi_bbuff_t *rxbuff = nullptr;
 
-    if (root == group->id()) {
+    if (root == group->rank()) {
         const uint_t group_size = group->size();
         txbuffs.resize(group_size);
         // Pack the values.
@@ -373,7 +373,7 @@ scatter_hwpools(
     std::vector<qvi_bbuff_t *> txbuffs{};
     qvi_bbuff_t *rxbuff = nullptr;
 
-    if (root == group->id()) {
+    if (root == group->rank()) {
         const uint_t group_size = group->size();
         txbuffs.resize(group_size);
         // Pack the hwpools.
@@ -413,7 +413,7 @@ bcast_value(
 
     std::vector<TYPE> values{};
 
-    if (root == group->id()) {
+    if (root == group->rank()) {
         values.resize(group->size());
         std::fill(values.begin(), values.end(), *value);
     }
@@ -450,7 +450,7 @@ scope_split_coll_gather(
     );
     if (rc != QV_SUCCESS) return rc;
 
-    const int myid = parent->group->id();
+    const int myid = parent->group->rank();
     const uint_t group_size = parent->group->size();
     if (myid == qvi_scope_split_coll_s::rootid) {
         splitcoll.gsplit.affinities.resize(group_size);
@@ -573,7 +573,7 @@ qvi_scope_taskid(
     int *taskid
 ) {
     if (!scope) qvi_abort();
-    *taskid = scope->group->id();
+    *taskid = scope->group->rank();
     return QV_SUCCESS;
 }
 
@@ -1050,7 +1050,7 @@ coll_split_hardware_resources(
     qvi_hwpool_s **result
 ) {
     int rc = QV_SUCCESS, rc2 = QV_SUCCESS;
-    const int rootid = qvi_scope_split_coll_s::rootid, myid = parent->group->id();
+    const int rootid = qvi_scope_split_coll_s::rootid, myid = parent->group->rank();
     // Information relevant to hardware resource splitting. Note that
     // aggregated data are only valid for the task whose id is equal to
     // qvi_global_split_t::rootid after gather has completed.
@@ -1106,7 +1106,7 @@ qvi_scope_split(
     if (rc != QV_SUCCESS) goto out;
     // Split underlying group. Notice the use of colorp here.
     rc = parent->group->split(
-        colorp, parent->group->id(), &group
+        colorp, parent->group->rank(), &group
     );
     if (rc != QV_SUCCESS) goto out;
     // Create and initialize the new scope.
