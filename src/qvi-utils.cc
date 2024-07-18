@@ -64,11 +64,6 @@ qvi_strerr(int ec)
     return strerror_r(ec, sb, sizeof(sb));
 }
 
-pid_t
-qvi_gettid(void) {
-    return gettid();
-}
-
 double
 qvi_time(void)
 {

@@ -85,16 +85,19 @@ extern "C" {
 #endif
 
 /**
+ * See gettid(2) for details.
+ */
+static inline pid_t
+qvi_gettid(void)
+{
+    return gettid();
+}
+
+/**
  *
  */
 cstr_t
 qvi_strerr(int ec);
-
-/**
- * See gettid(2) for details.
- */
-pid_t
-qvi_gettid(void);
 
 /**
  *
