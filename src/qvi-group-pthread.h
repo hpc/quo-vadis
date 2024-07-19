@@ -22,7 +22,14 @@ struct qvi_group_pthread_s : public qvi_group_s {
     /** Underlying group instance. */
     qvi_pthread_group_t *thgroup = nullptr;
     /** Constructor. */
-    qvi_group_pthread_s(void) = default;
+    qvi_group_pthread_s(void) = delete;
+    /** Constructor. */
+    qvi_group_pthread_s(
+        int group_size
+    ) {
+        const int rc = qvi_new(&thgroup, group_size);
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+    }
     /** Destructor. */
     virtual ~qvi_group_pthread_s(void)
     {
@@ -106,15 +113,6 @@ struct qvi_group_pthread_s : public qvi_group_s {
     }
 };
 typedef qvi_group_pthread_s qvi_group_pthread_t;
-
-struct qvi_zgroup_pthread_s : public qvi_group_pthread_s {
-    /** Default constructor. */
-    qvi_zgroup_pthread_s(void) = delete;
-    /** Constructor. */
-    qvi_zgroup_pthread_s(
-        int group_size
-    );
-};
 
 #endif
 
