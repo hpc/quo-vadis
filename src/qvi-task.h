@@ -38,7 +38,7 @@ public:
     /** Returns the caller's thread ID. */
     static pid_t
     mytid(void);
-    /** Default constructor. */
+    /** Constructor. */
     qvi_task_s(void);
     /** Copy constructor. */
     qvi_task_s(const qvi_task_s &src) = delete;

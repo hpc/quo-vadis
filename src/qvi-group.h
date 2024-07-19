@@ -28,28 +28,13 @@ using qvi_group_id_t = uint64_t;
  * Virtual base group class.
  */
 struct qvi_group_s : qvi_refc_s {
-protected:
-    // TODO(skg) Remove from base.
-    /** Task associated with this group. */
-    qvi_task_t *m_task = nullptr;
-public:
     /** Constructor. */
-    qvi_group_s(void)
-    {
-        const int rc = qvi_new(&m_task);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
-    }
+    qvi_group_s(void) = default;
     /** Virtual destructor. */
-    virtual ~qvi_group_s(void)
-    {
-        qvi_delete(&m_task);
-    }
+    virtual ~qvi_group_s(void) = default;
     /** Returns pointer to the caller's task information. */
     virtual qvi_task_t *
-    task(void)
-    {
-        return m_task;
-    }
+    task(void) = 0;
     /** Returns the caller's group rank. */
     virtual int
     rank(void) = 0;

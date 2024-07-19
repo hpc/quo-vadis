@@ -25,14 +25,29 @@
 #include "qvi-omp.h"
 
 struct qvi_group_omp_s : public qvi_group_s {
+protected:
+    /** Task associated with this group. */
+    qvi_task_t *m_task = nullptr;
     /** Underlying group instance. */
     qvi_omp_group_t *th_group = nullptr;
+public:
     /** Constructor. */
-    qvi_group_omp_s(void) = default;
+    qvi_group_omp_s(void)
+    {
+        const int rc = qvi_new(&m_task);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+    }
     /** Destructor. */
     virtual ~qvi_group_omp_s(void)
     {
         qvi_omp_group_free(&th_group);
+        qvi_delete(&m_task);
+    }
+
+    virtual qvi_task_t *
+    task(void)
+    {
+        return m_task;
     }
 
     virtual int
