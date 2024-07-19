@@ -84,18 +84,6 @@ set_target_properties(
 
 ################################################################################
 ################################################################################
-if(MPI_FOUND)
-    add_executable(
-        test-mpi-scope-ksplit
-        test-mpi-scope-ksplit.cc
-    )
-
-    target_link_libraries(
-        test-mpi-scope-ksplit
-        quo-vadis-mpi
-    )
-endif()
-
 # Set core test properties.
 set_tests_properties(
     hwloc

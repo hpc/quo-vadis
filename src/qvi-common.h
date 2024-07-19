@@ -47,6 +47,7 @@
 #include "qvi-log.h"
 #include <chrono>
 #include <map>
+#include <mutex>
 #include <new>
 #include <numeric>
 #include <set>
