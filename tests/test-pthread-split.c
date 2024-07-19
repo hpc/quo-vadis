@@ -108,7 +108,7 @@ main(void)
 
     pthread_t thid[nthreads];
     pthread_attr_t *attr = NULL;
-    for (int i = 0 ; i < nthreads; i ++) {
+    for (int i = 0 ; i < nthreads; ++i) {
         const int ptrc = qv_pthread_create(
             &thid[i], attr, thread_work, &thargs[i], th_scopes[i]
         );
@@ -119,7 +119,7 @@ main(void)
     }
 
     void *ret = NULL;
-    for (int i  = 0 ; i < nthreads; i ++){
+    for (int i  = 0 ; i < nthreads; i ++) {
         if (pthread_join(thid[i], &ret) != 0) {
             perror("pthread_create() error");
             exit(3);
@@ -159,7 +159,7 @@ main(void)
     }
 
     pthread_t thid2[nthreads];
-    for(int i  = 0 ; i < nthreads; i ++){
+    for(int i  = 0 ; i < nthreads; ++i) {
         const int ptrc = qv_pthread_create(
             &thid2[i], attr, thread_work, &thargs2[i], th_scopes[i]
         );
@@ -169,7 +169,7 @@ main(void)
         }
     }
 
-    for (int i  = 0 ; i < nthreads; i ++) {
+    for (int i  = 0 ; i < nthreads; ++i) {
         if (pthread_join(thid2[i], &ret) != 0) {
             perror("pthread_create() error");
             exit(3);

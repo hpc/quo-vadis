@@ -19,10 +19,10 @@
 
 #include "qvi-common.h" // IWYU pragma: keep
 #include "quo-vadis-pthread.h"
+#include "qvi-pthread.h"
+#include "qvi-group-pthread.h"
 #include "qvi-scope.h"
 #include "qvi-utils.h"
-
-typedef void *(*qvi_pthread_routine_fun_ptr_t)(void *);
 
 struct qvi_pthread_args_s {
     qv_scope_t *scope = nullptr;
@@ -66,7 +66,7 @@ qv_pthread_scope_split(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_ksplit(
+        return qvi_scope_thsplit(
             scope, npieces, color_array, nthreads,
             QV_HW_OBJ_LAST, subscope
         );
@@ -86,7 +86,7 @@ qv_pthread_scope_split_at(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_ksplit_at(
+        return qvi_scope_thsplit_at(
             scope, type, color_array, nthreads, subscopes
         );
     }
@@ -103,12 +103,26 @@ qv_pthread_create(
 ) {
     // Memory will be freed in qv_pthread_routine to avoid memory leaks.
     qvi_pthread_args_s *arg_ptr = nullptr;
-    const int rc = qvi_new(&arg_ptr, scope, thread_routine, arg);
+    int rc = qvi_new(&arg_ptr, scope, thread_routine, arg);
     // Since this is meant to behave similarly to
     // pthread_create(), return a reasonable errno.
     if (qvi_unlikely(rc != QV_SUCCESS)) return ENOMEM;
+    // TODO(skg) Cleanup.
+    qvi_pthread_group_pthread_create_args_s *cargs = nullptr;
+    rc = qvi_new(&cargs);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        qvi_delete(&arg_ptr);
+        return ENOMEM;
+    }
+    // TODO(skg) Cleanup.
+    auto gt = dynamic_cast<qvi_group_pthread_t *>(qvi_scope_group_get(scope));
+    cargs->group = gt->thgroup;
+    cargs->th_routine = qvi_pthread_routine;
+    cargs->th_routine_argp = arg_ptr;
 
-    return pthread_create(thread, attr, qvi_pthread_routine, arg_ptr);
+    return pthread_create(
+        thread, attr, qvi_pthread_group_s::call_first_from_pthread_create, cargs
+    );
 }
 
 int
@@ -120,7 +134,7 @@ qv_pthread_scopes_free(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        qvi_scope_kfree(&scopes, nscopes);
+        qvi_scope_thfree(&scopes, nscopes);
         return QV_SUCCESS;
     }
     qvi_catch_and_return();

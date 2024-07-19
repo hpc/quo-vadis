@@ -22,6 +22,30 @@
 #ifdef __cplusplus
 
 /**
+ * Reference counting base class that provides retain/release semantics.
+ */
+struct qvi_refc_s {
+private:
+    mutable std::atomic<int64_t> refc = {1};
+public:
+    virtual ~qvi_refc_s(void) = default;
+
+    void
+    retain(void) const
+    {
+        ++refc;
+    }
+
+    void
+    release(void) const
+    {
+        if (--refc == 0) {
+            delete this;
+        }
+    }
+};
+
+/**
  * Constructs a new object of a given type. *t will be valid if successful,
  * undefined otherwise. Returns QV_SUCCESS if successful.
  */

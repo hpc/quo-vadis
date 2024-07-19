@@ -38,7 +38,7 @@ struct qv_scope_s {
     ~qv_scope_s(void)
     {
         qvi_delete(&hwpool);
-        qvi_delete(&group);
+        group->release();
     }
 };
 
@@ -521,7 +521,7 @@ qvi_scope_free(
 }
 
 void
-qvi_scope_kfree(
+qvi_scope_thfree(
     qv_scope_t ***kscopes,
     uint_t k
 ) {
@@ -1119,9 +1119,8 @@ out:
     return rc;
 }
 
-
 int
-qvi_scope_ksplit(
+qvi_scope_thsplit(
     qv_scope_t *parent,
     uint_t npieces,
     int *kcolors,
@@ -1142,10 +1141,11 @@ qvi_scope_ksplit(
     // Since this is called by a single task, get its ID and associated hardware
     // affinity here, and replicate them in the following loop that populates
     // splitagg. No point in doing this in a loop.
-    const pid_t taskid = qvi_task_s::mytid();
+    const pid_t taskid = qvi_task_t::mytid();
     hwloc_cpuset_t task_affinity = nullptr;
     rc = qvi_rmi_task_get_cpubind(
-        parent->group->task()->rmi(), taskid, &task_affinity
+        parent->group->task()->rmi(),
+        taskid, &task_affinity
     );
     if (rc != QV_SUCCESS) return rc;
     // Now populate the relevant data before attempting a split.
@@ -1175,42 +1175,65 @@ qvi_scope_ksplit(
     // Now populate the children.
     qv_scope_t **ikchildren = new qv_scope_t*[group_size];
 
+    qvi_group_t *thgroup = nullptr;
+    // Split off from our parent group. This call is called from a context in
+    // which a process is splitting its resources across threads, so create a
+    // new thread group for each child.
+    rc = parent->group->thsplit(group_size, &thgroup);
+    if (rc != QV_SUCCESS) {
+        qvi_scope_thfree(&ikchildren, group_size);
+        return rc;
+    }
+
     for (uint_t i = 0; i < group_size; ++i) {
-        // Split off from our parent group. This call is usually called from a
-        // context in which a process is splitting its resources across its
-        // threads, so create a new self group for each child.
-        qvi_group_t *group = nullptr;
-        rc = parent->group->self(&group);
-        if (rc != QV_SUCCESS) break;
         // Create and initialize the new scope.
         qv_scope_t *child = nullptr;
         rc = qvi_scope_new(&child);
         if (rc != QV_SUCCESS) {
-            qvi_delete(&group);
+            qvi_delete(&thgroup);
             break;
         }
         // Copy out, since the hardware pools in splitagg will get freed.
         qvi_hwpool_s *hwpool = nullptr;
         rc = qvi_dup(*splitagg.hwpools[i], &hwpool);
         if (rc != QV_SUCCESS) {
-            qvi_delete(&group);
+            qvi_delete(&thgroup);
             qvi_scope_free(&child);
             break;
         }
-        rc = scope_init(child, group, hwpool);
+        rc = scope_init(child, thgroup, hwpool);
         if (rc != QV_SUCCESS) {
             qvi_delete(&hwpool);
-            qvi_delete(&group);
+            qvi_delete(&thgroup);
             qvi_scope_free(&child);
             break;
         }
+        thgroup->retain();
         ikchildren[i] = child;
     }
     if (rc != QV_SUCCESS) {
-        qvi_scope_kfree(&ikchildren, k);
+        qvi_scope_thfree(&ikchildren, k);
     }
+    // Subtract one to account for the parent's implicit retain during
+    // construct.
+    thgroup->release();
     *kchildren = ikchildren;
     return rc;
+}
+
+int
+qvi_scope_thsplit_at(
+    qv_scope_t *parent,
+    qv_hw_obj_type_t type,
+    int *kgroup_ids,
+    uint_t k,
+    qv_scope_t ***kchildren
+) {
+    int nobj = 0;
+    int rc = qvi_scope_nobjs(parent, type, &nobj);
+    if (rc != QV_SUCCESS) return rc;
+
+    return qvi_scope_thsplit(parent, nobj, kgroup_ids, k, type, kchildren);
 }
 
 int
@@ -1225,21 +1248,6 @@ qvi_scope_split_at(
     if (rc != QV_SUCCESS) return rc;
 
     return qvi_scope_split(parent, nobj, color, type, child);
-}
-
-int
-qvi_scope_ksplit_at(
-    qv_scope_t *parent,
-    qv_hw_obj_type_t type,
-    int *kgroup_ids,
-    uint_t k,
-    qv_scope_t ***kchildren
-) {
-    int nobj = 0;
-    int rc = qvi_scope_nobjs(parent, type, &nobj);
-    if (rc != QV_SUCCESS) return rc;
-
-    return qvi_scope_ksplit(parent, nobj, kgroup_ids, k, type, kchildren);
 }
 
 int

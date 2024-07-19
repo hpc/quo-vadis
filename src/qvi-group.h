@@ -27,8 +27,9 @@ using qvi_group_id_t = uint64_t;
 /**
  * Virtual base group class.
  */
-struct qvi_group_s {
+struct qvi_group_s : qvi_refc_s {
 protected:
+    // TODO(skg) Remove from base.
     /** Task associated with this group. */
     qvi_task_t *m_task = nullptr;
 public:
@@ -44,7 +45,7 @@ public:
         qvi_delete(&m_task);
     }
     /** Returns pointer to the caller's task information. */
-    qvi_task_t *
+    virtual qvi_task_t *
     task(void)
     {
         return m_task;
@@ -71,6 +72,14 @@ public:
     self(
         qvi_group_s **child
     ) = 0;
+    /**
+     * Creates a new thread group by splitting off of the caller's group.
+     */
+    virtual int
+    thsplit(
+        int nthreads,
+        qvi_group_s **child
+    );
     /**
      * Creates new groups by splitting this group based on color, key.
      * Returns the appropriate newly created child group to the caller.

@@ -29,7 +29,9 @@ add_library(
       qvi-rmi.h
       qvi-bbuff-rmi.h
       qvi-task.h
+      qvi-pthread.h
       qvi-group.h
+      qvi-group-pthread.h
       qvi-map.h
       qvi-scope.h
       qvi-log.cc
@@ -41,6 +43,9 @@ add_library(
       qvi-hwpool.cc
       qvi-rmi.cc
       qvi-task.cc
+      qvi-group.cc
+      qvi-pthread.cc
+      qvi-group-pthread.cc
       qvi-map.cc
       qvi-scope.cc
       quo-vadis.cc

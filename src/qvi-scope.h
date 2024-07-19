@@ -38,10 +38,10 @@ qvi_scope_free(
 );
 
 /**
- * Frees scope resources and container.
+ * Frees scope resources and container created by qvi_scope_thsplit*.
  */
 void
-qvi_scope_kfree(
+qvi_scope_thfree(
     qv_scope_t ***kscopes,
     uint_t k
 );
@@ -98,6 +98,25 @@ qvi_scope_barrier(
     qv_scope_t *scope
 );
 
+int
+qvi_scope_thsplit(
+    qv_scope_t *parent,
+    uint_t npieces,
+    int *kcolors,
+    uint_t k,
+    qv_hw_obj_type_t maybe_obj_type,
+    qv_scope_t ***kchildren
+);
+
+int
+qvi_scope_thsplit_at(
+    qv_scope_t *parent,
+    qv_hw_obj_type_t type,
+    int *kgroup_ids,
+    uint_t k,
+    qv_scope_t ***kchildren
+);
+
 /**
  *
  */
@@ -114,36 +133,11 @@ qvi_scope_split(
  *
  */
 int
-qvi_scope_ksplit(
-    qv_scope_t *parent,
-    uint_t npieces,
-    int *kcolors,
-    uint_t k,
-    qv_hw_obj_type_t maybe_obj_type,
-    qv_scope_t ***kchildren
-);
-
-/**
- *
- */
-int
 qvi_scope_split_at(
     qv_scope_t *parent,
     qv_hw_obj_type_t type,
     int group_id,
     qv_scope_t **child
-);
-
-/**
- *
- */
-int
-qvi_scope_ksplit_at(
-    qv_scope_t *parent,
-    qv_hw_obj_type_t type,
-    int *kgroup_ids,
-    uint_t k,
-    qv_scope_t ***kchildren
 );
 
 /**

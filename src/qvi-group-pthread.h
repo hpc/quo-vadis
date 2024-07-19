@@ -3,60 +3,63 @@
  * Copyright (c) 2020-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
- * Copyright (c) 2022      Inria
- *                         All rights reserved.
- *
- * Copyright (c) 2022      Bordeaux INP
- *                         All rights reserved.
- *
  * This file is part of the quo-vadis project. See the LICENSE file at the
  * top-level directory of this distribution.
  */
 
 /**
- * @file qvi-group-omp.h
+ * @file qvi-group-pthread.h
  */
 
-#ifndef QVI_GROUP_OMP_H
-#define QVI_GROUP_OMP_H
+#ifndef QVI_GROUP_PTHREAD_H
+#define QVI_GROUP_PTHREAD_H
 
 #include "qvi-common.h"
 #include "qvi-group.h"
-#include "qvi-omp.h"
+#include "qvi-pthread.h"
 
-struct qvi_group_omp_s : public qvi_group_s {
+struct qvi_group_pthread_s : public qvi_group_s {
     /** Underlying group instance. */
-    qvi_omp_group_t *th_group = nullptr;
+    qvi_pthread_group_t *thgroup = nullptr;
     /** Constructor. */
-    qvi_group_omp_s(void) = default;
+    qvi_group_pthread_s(void) = default;
     /** Destructor. */
-    virtual ~qvi_group_omp_s(void)
+    virtual ~qvi_group_pthread_s(void)
     {
-        qvi_omp_group_free(&th_group);
+        qvi_delete(&thgroup);
+    }
+
+    virtual qvi_task_t *
+    task(void)
+    {
+        return thgroup->task();
     }
 
     virtual int
     rank(void)
     {
-        return qvi_omp_group_id(th_group);
+        return thgroup->rank();
     }
 
     virtual int
     size(void)
     {
-        return qvi_omp_group_size(th_group);
+        return thgroup->size();
     }
 
     virtual int
     barrier(void)
     {
-        return qvi_omp_group_barrier(th_group);
+        return thgroup->barrier();
     }
 
     virtual int
     make_intrinsic(
-        qv_scope_intrinsic_t intrinsic
-    );
+        qv_scope_intrinsic_t
+    ) {
+        // Nothing to do.
+        return QV_SUCCESS;
+    }
 
     virtual int
     self(
@@ -86,8 +89,8 @@ struct qvi_group_omp_s : public qvi_group_s {
         bool *shared,
         qvi_bbuff_t ***rxbuffs
     ) {
-        return qvi_omp_group_gather_bbuffs(
-           th_group, txbuff, root, shared, rxbuffs
+        return thgroup->gather_bbuffs(
+           txbuff, root, shared, rxbuffs
         );
     }
 
@@ -97,12 +100,21 @@ struct qvi_group_omp_s : public qvi_group_s {
         int root,
         qvi_bbuff_t **rxbuff
     ) {
-        return qvi_omp_group_scatter_bbuffs(
-            th_group, txbuffs, root, rxbuff
+        return thgroup->scatter_bbuffs(
+            txbuffs, root, rxbuff
         );
     }
 };
-typedef qvi_group_omp_s qvi_group_omp_t;
+typedef qvi_group_pthread_s qvi_group_pthread_t;
+
+struct qvi_zgroup_pthread_s : public qvi_group_pthread_s {
+    /** Default constructor. */
+    qvi_zgroup_pthread_s(void) = delete;
+    /** Constructor. */
+    qvi_zgroup_pthread_s(
+        int group_size
+    );
+};
 
 #endif
 
