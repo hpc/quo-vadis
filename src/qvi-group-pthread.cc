@@ -20,12 +20,9 @@ qvi_group_pthread_s::self(
 ) {
     constexpr int group_size = 1;
     qvi_group_pthread_t *ichild = nullptr;
-    int rc = qvi_new(&ichild);
-    if (rc != QV_SUCCESS) goto out;
     // Create a group containing a single thread.
-    rc = qvi_new(&ichild->thgroup, group_size);
-out:
-    if (rc != QV_SUCCESS) {
+    const int rc = qvi_new(&ichild, group_size);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);
     }
     *child = ichild;
@@ -38,15 +35,8 @@ qvi_group_pthread_s::split(
     int,
     qvi_group_t **
 ) {
-    // TODO(skg)
+    // TODO(skg) Test to see if we can do this.
     return QV_ERR_NOT_SUPPORTED;
-}
-
-qvi_zgroup_pthread_s::qvi_zgroup_pthread_s(
-    int group_size
-) {
-    int rc = qvi_new(&thgroup, group_size);
-    if (rc != QV_SUCCESS) throw qvi_runtime_error();
 }
 
 /*

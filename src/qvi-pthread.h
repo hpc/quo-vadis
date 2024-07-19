@@ -15,7 +15,6 @@
 #define QVI_PTHREAD_H
 
 #include "qvi-common.h"
-#include "qvi-task.h" // IWYU pragma: keep
 #include "qvi-utils.h"
 
 // TODO(skg) Rename
@@ -36,9 +35,9 @@ private:
     int m_size = 0;
     /** Holds the thread TIDs in this group. */
     std::vector<pid_t> m_tids;
-    /** Holds tid to rank mapping. */
+    /** Holds TID to rank mapping. */
     std::map<pid_t, int> m_tid2rank;
-    /** Holds tid to task mapping. */
+    /** Holds TID to task mapping. */
     std::map<pid_t, qvi_task_t *> m_tid2task;
     /** Used for mutexy things. */
     std::mutex m_mutex;
@@ -47,7 +46,12 @@ private:
 public:
     /** Constructor. */
     qvi_pthread_group_s(void) = delete;
-    /** Constructor. */
+    /**
+     * Constructor. This is called by the parent process to construct the
+     * maximum amount of infrastructure possible. The rest of group construction
+     * has to be performed after pthread_create() time. See
+     * call_first_from_pthread_create() for more details.
+     */
     qvi_pthread_group_s(
         int group_size
     ) : m_size(group_size)
@@ -55,69 +59,22 @@ public:
         const int rc = pthread_barrier_init(&m_barrier, NULL, group_size);
         if (qvi_unlikely(rc != 0)) throw qvi_runtime_error();
     }
-    /** */
+    /**
+     * This function shall be called by pthread_create() to finish group
+     * construction. This function is called by the pthreads and NOT their
+     * parent.
+     */
     static void *
     call_first_from_pthread_create(
         void *arg
-    ) {
-        // TODO(skg) Cleanup.
-        auto args = (qvi_pthread_group_pthread_create_args_s *)arg;
-        auto group = args->group;
-        auto thread_routine = args->th_routine;
-        auto th_routine_argp = args->th_routine_argp;
-        // Let the threads add their TIDs to the vector.
-        {
-            std::lock_guard<std::mutex> guard(group->m_mutex);
-            group->m_tids.push_back(qvi_gettid());
-        }
-        // Make sure they all contribute before continuing.
-        pthread_barrier_wait(&group->m_barrier);
-        // Elect one thread to be the worker.
-        bool worker = false;
-        {
-            std::lock_guard<std::mutex> guard(group->m_mutex);
-            worker = group->m_tids.at(0) == qvi_gettid();
-        }
-        // The worker populates the TID to rank mapping, while the others wait.
-        if (worker) {
-            std::sort(group->m_tids.begin(), group->m_tids.end());
-
-            for (int i = 0; i < group->m_size; ++i) {
-                const pid_t tid = group->m_tids[i];
-                group->m_tid2rank.insert({tid, i});
-            }
-            pthread_barrier_wait(&group->m_barrier);
-        }
-        else {
-            pthread_barrier_wait(&group->m_barrier);
-        }
-        // Everyone can now create their task and populate the mapping table.
-        {
-            std::lock_guard<std::mutex> guard(group->m_mutex);
-            qvi_task_t *task = nullptr;
-            const int rc = qvi_new(&task);
-            if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
-            group->m_tid2task.insert({qvi_gettid(), task});
-        }
-        // Make sure they all finish before continuing.
-        pthread_barrier_wait(&group->m_barrier);
-        // Free the provided argument container.
-        qvi_delete(&args);
-        // Finally, call the specified thread routine.
-        return thread_routine(th_routine_argp);
-    }
+    );
     /** Destructor. */
-    ~qvi_pthread_group_s(void)
-    {
-        for (auto &tt : m_tid2task) {
-            qvi_delete(&tt.second);
-        }
-        pthread_barrier_destroy(&m_barrier);
-    }
+    ~qvi_pthread_group_s(void);
 
     int
     size(void)
     {
+        std::lock_guard<std::mutex> guard(m_mutex);
         return m_size;
     }
 

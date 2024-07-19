@@ -21,12 +21,8 @@ qvi_group_s::thsplit(
     qvi_group_s **child
 ) {
     qvi_group_pthread_t *ichild = nullptr;
-    int rc = qvi_new(&ichild);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_new(&ichild->thgroup, nthreads);
-out:
-    if (rc != QV_SUCCESS) {
+    const int rc = qvi_new(&ichild, nthreads);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);
     }
     *child = ichild;
