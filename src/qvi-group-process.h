@@ -19,14 +19,29 @@
 #include "qvi-process.h"
 
 struct qvi_group_process_s : public qvi_group_s {
+protected:
+    /** Task associated with this group. */
+    qvi_task_t *m_task = nullptr;
     /** Underlying group instance. */
     qvi_process_group_t *proc_group = nullptr;
+public:
     /** Constructor. */
-    qvi_group_process_s(void) = default;
+    qvi_group_process_s(void)
+    {
+        const int rc = qvi_new(&m_task);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+    }
     /** Destructor. */
     virtual ~qvi_group_process_s(void)
     {
         qvi_process_group_free(&proc_group);
+        qvi_delete(&m_task);
+    }
+
+    virtual qvi_task_t *
+    task(void)
+    {
+        return m_task;
     }
 
     virtual int

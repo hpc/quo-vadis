@@ -22,16 +22,25 @@
 #include "qvi-mpi.h"
 
 struct qvi_group_mpi_s : public qvi_group_s {
+protected:
+    /** Task associated with this group. */
+    qvi_task_t *m_task = nullptr;
     /** Points to the base MPI context information. */
     qvi_mpi_t *mpi = nullptr;
     /** Underlying group instance. */
     qvi_mpi_group_t *mpi_group = nullptr;
+public:
     /** Default constructor. */
-    qvi_group_mpi_s(void) = default;
+    qvi_group_mpi_s(void)
+    {
+        const int rc = qvi_new(&m_task);
+        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+    }
     /** Constructor. */
     qvi_group_mpi_s(
         qvi_mpi_t *mpi_ctx
-    ) {
+    ) : qvi_group_mpi_s()
+    {
         if (!mpi_ctx) throw qvi_runtime_error();
         mpi = mpi_ctx;
     }
@@ -39,6 +48,13 @@ struct qvi_group_mpi_s : public qvi_group_s {
     virtual ~qvi_group_mpi_s(void)
     {
         qvi_mpi_group_free(&mpi_group);
+        qvi_delete(&m_task);
+    }
+
+    virtual qvi_task_t *
+    task(void)
+    {
+        return m_task;
     }
 
     virtual int
