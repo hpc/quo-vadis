@@ -17,16 +17,28 @@
 #include "qvi-common.h"
 #include "qvi-utils.h"
 
-// TODO(skg) Rename
 typedef void *(*qvi_pthread_routine_fun_ptr_t)(void *);
 
 struct qvi_pthread_group_s;
 typedef struct qvi_pthread_group_s qvi_pthread_group_t;
 
 struct qvi_pthread_group_pthread_create_args_s {
+    /** Thread group. */
     qvi_pthread_group_t *group = nullptr;
-    qvi_pthread_routine_fun_ptr_t th_routine = nullptr;
-    void *th_routine_argp = nullptr;
+    /** The routine to call after group construction. */
+    qvi_pthread_routine_fun_ptr_t throutine = nullptr;
+    /** Thread routine arguments. */
+    void *throutine_argp = nullptr;
+    /** Constructor. */
+    qvi_pthread_group_pthread_create_args_s(void) = delete;
+    /** Constructor. */
+    qvi_pthread_group_pthread_create_args_s(
+        qvi_pthread_group_t *group_a,
+        qvi_pthread_routine_fun_ptr_t throutine_a,
+        void *throutine_argp_a
+    ) : group(group_a)
+      , throutine(throutine_a)
+      , throutine_argp(throutine_argp_a) { }
 };
 
 struct qvi_pthread_group_s {
@@ -93,11 +105,7 @@ public:
     }
 
     int
-    barrier(void)
-    {
-        pthread_barrier_wait(&m_barrier);
-        return QV_SUCCESS;
-    }
+    barrier(void);
 
     int
     create_from_split(

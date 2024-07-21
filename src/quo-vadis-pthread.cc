@@ -60,8 +60,8 @@ qv_pthread_scope_split(
     int nthreads,
     qv_scope_t ***subscope
 ) {
-    const bool invld_args = !scope || npieces < 0 ||
-                            !color_array || nthreads < 0 || !subscope;
+    const bool invld_args = !scope || npieces < 0 || !color_array ||
+                            nthreads < 0 || !subscope;
     if (qvi_unlikely(invld_args)) {
         return QV_ERR_INVLD_ARG;
     }
@@ -107,19 +107,14 @@ qv_pthread_create(
     // Since this is meant to behave similarly to
     // pthread_create(), return a reasonable errno.
     if (qvi_unlikely(rc != QV_SUCCESS)) return ENOMEM;
-    // TODO(skg) Cleanup.
+
+    auto group = dynamic_cast<qvi_group_pthread_t *>(qvi_scope_group_get(scope));
     qvi_pthread_group_pthread_create_args_s *cargs = nullptr;
-    rc = qvi_new(&cargs);
+    rc = qvi_new(&cargs, group->thgroup, qvi_pthread_routine, arg_ptr);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&arg_ptr);
         return ENOMEM;
     }
-    // TODO(skg) Cleanup.
-    auto gt = dynamic_cast<qvi_group_pthread_t *>(qvi_scope_group_get(scope));
-    cargs->group = gt->thgroup;
-    cargs->th_routine = qvi_pthread_routine;
-    cargs->th_routine_argp = arg_ptr;
-
     return pthread_create(
         thread, attr, qvi_pthread_group_s::call_first_from_pthread_create, cargs
     );
