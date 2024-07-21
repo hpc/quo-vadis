@@ -20,15 +20,15 @@ void *
 qvi_pthread_group_s::call_first_from_pthread_create(
     void *arg
 ) {
-    // TODO(skg) Cleanup.
+    const pid_t mytid = qvi_gettid();
     auto args = (qvi_pthread_group_pthread_create_args_s *)arg;
-    auto group = args->group;
-    auto thread_routine = args->th_routine;
-    auto th_routine_argp = args->th_routine_argp;
+    qvi_pthread_group_t *const group = args->group;
+    const qvi_pthread_routine_fun_ptr_t thread_routine = args->throutine;
+    void *const th_routine_argp = args->throutine_argp;
     // Let the threads add their TIDs to the vector.
     {
         std::lock_guard<std::mutex> guard(group->m_mutex);
-        group->m_tids.push_back(qvi_gettid());
+        group->m_tids.push_back(mytid);
     }
     // Make sure they all contribute before continuing.
     pthread_barrier_wait(&group->m_barrier);
@@ -36,7 +36,7 @@ qvi_pthread_group_s::call_first_from_pthread_create(
     bool worker = false;
     {
         std::lock_guard<std::mutex> guard(group->m_mutex);
-        worker = group->m_tids.at(0) == qvi_gettid();
+        worker = (group->m_tids.at(0) == mytid);
     }
     // The worker populates the TID to rank mapping, while the others wait.
     if (worker) {
@@ -57,7 +57,7 @@ qvi_pthread_group_s::call_first_from_pthread_create(
         qvi_task_t *task = nullptr;
         const int rc = qvi_new(&task);
         if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
-        group->m_tid2task.insert({qvi_gettid(), task});
+        group->m_tid2task.insert({mytid, task});
     }
     // Make sure they all finish before continuing.
     pthread_barrier_wait(&group->m_barrier);
@@ -74,6 +74,16 @@ qvi_pthread_group_s::~qvi_pthread_group_s(void)
         qvi_delete(&tt.second);
     }
     pthread_barrier_destroy(&m_barrier);
+}
+
+int
+qvi_pthread_group_s::barrier(void)
+{
+    const int rc = pthread_barrier_wait(&(m_barrier));
+    if (qvi_unlikely((rc != 0) && (rc != PTHREAD_BARRIER_SERIAL_THREAD))) {
+        return QV_ERR_INTERNAL;
+    }
+    return QV_SUCCESS;
 }
 
 /*
