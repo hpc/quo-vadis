@@ -26,30 +26,18 @@ protected:
     /** Task associated with this group. */
     qvi_task_t *m_task = nullptr;
     /** Points to the base MPI context information. */
-    qvi_mpi_t *mpi = nullptr;
+    qvi_mpi_t *m_mpi = nullptr;
     /** Underlying group instance. */
-    qvi_mpi_group_t *mpi_group = nullptr;
+    qvi_mpi_group_t *m_mpi_group = nullptr;
 public:
     /** Default constructor. */
-    qvi_group_mpi_s(void)
-    {
-        const int rc = qvi_new(&m_task);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
-    }
+    qvi_group_mpi_s(void);
     /** Constructor. */
     qvi_group_mpi_s(
         qvi_mpi_t *mpi_ctx
-    ) : qvi_group_mpi_s()
-    {
-        if (!mpi_ctx) throw qvi_runtime_error();
-        mpi = mpi_ctx;
-    }
+    );
     /** Destructor. */
-    virtual ~qvi_group_mpi_s(void)
-    {
-        qvi_mpi_group_free(&mpi_group);
-        qvi_delete(&m_task);
-    }
+    virtual ~qvi_group_mpi_s(void);
 
     virtual qvi_task_t *
     task(void)
@@ -60,19 +48,19 @@ public:
     virtual int
     rank(void)
     {
-        return qvi_mpi_group_id(mpi_group);
+        return qvi_mpi_group_id(m_mpi_group);
     }
 
     virtual int
     size(void)
     {
-        return qvi_mpi_group_size(mpi_group);
+        return qvi_mpi_group_size(m_mpi_group);
     }
 
     virtual int
     barrier(void)
     {
-        return qvi_mpi_group_barrier(mpi_group);
+        return qvi_mpi_group_barrier(m_mpi_group);
     }
 
     virtual int
@@ -100,7 +88,7 @@ public:
         qvi_bbuff_t ***rxbuffs
     ) {
         return qvi_mpi_group_gather_bbuffs(
-            mpi_group, txbuff, root, shared, rxbuffs
+            m_mpi_group, txbuff, root, shared, rxbuffs
         );
     }
 
@@ -111,7 +99,7 @@ public:
         qvi_bbuff_t **rxbuff
     ) {
         return qvi_mpi_group_scatter_bbuffs(
-            mpi_group, txbuffs, root, rxbuff
+            m_mpi_group, txbuffs, root, rxbuff
         );
     }
     /** Returns a duplicate of the underlying MPI group communicator. */
@@ -119,7 +107,7 @@ public:
     comm_dup(
         MPI_Comm *comm
     ) {
-        return qvi_mpi_group_comm_dup(mpi_group, comm);
+        return qvi_mpi_group_comm_dup(m_mpi_group, comm);
     }
 };
 typedef qvi_group_mpi_s qvi_group_mpi_t;
@@ -131,16 +119,16 @@ struct qvi_zgroup_mpi_s : public qvi_group_mpi_s {
     qvi_zgroup_mpi_s(
         MPI_Comm comm
     ) {
-        int rc = qvi_mpi_new(&mpi);
+        int rc = qvi_mpi_new(&m_mpi);
         if (rc != QV_SUCCESS) throw qvi_runtime_error();
         /** Initialize the MPI group with the provided communicator. */
-        rc = qvi_mpi_init(mpi, comm);
+        rc = qvi_mpi_init(m_mpi, comm);
         if (rc != QV_SUCCESS) throw qvi_runtime_error();
     }
     /** Destructor. */
     virtual ~qvi_zgroup_mpi_s(void)
     {
-        qvi_mpi_free(&mpi);
+        qvi_mpi_free(&m_mpi);
     }
 };
 

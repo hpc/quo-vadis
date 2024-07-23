@@ -29,20 +29,12 @@ protected:
     /** Task associated with this group. */
     qvi_task_t *m_task = nullptr;
     /** Underlying group instance. */
-    qvi_omp_group_t *th_group = nullptr;
+    qvi_omp_group_t *m_ompgroup = nullptr;
 public:
     /** Constructor. */
-    qvi_group_omp_s(void)
-    {
-        const int rc = qvi_new(&m_task);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
-    }
+    qvi_group_omp_s(void);
     /** Destructor. */
-    virtual ~qvi_group_omp_s(void)
-    {
-        qvi_omp_group_free(&th_group);
-        qvi_delete(&m_task);
-    }
+    virtual ~qvi_group_omp_s(void);
 
     virtual qvi_task_t *
     task(void)
@@ -53,19 +45,19 @@ public:
     virtual int
     rank(void)
     {
-        return qvi_omp_group_id(th_group);
+        return qvi_omp_group_id(m_ompgroup);
     }
 
     virtual int
     size(void)
     {
-        return qvi_omp_group_size(th_group);
+        return qvi_omp_group_size(m_ompgroup);
     }
 
     virtual int
     barrier(void)
     {
-        return qvi_omp_group_barrier(th_group);
+        return qvi_omp_group_barrier(m_ompgroup);
     }
 
     virtual int
@@ -102,7 +94,7 @@ public:
         qvi_bbuff_t ***rxbuffs
     ) {
         return qvi_omp_group_gather_bbuffs(
-           th_group, txbuff, root, shared, rxbuffs
+           m_ompgroup, txbuff, root, shared, rxbuffs
         );
     }
 
@@ -113,7 +105,7 @@ public:
         qvi_bbuff_t **rxbuff
     ) {
         return qvi_omp_group_scatter_bbuffs(
-            th_group, txbuffs, root, rxbuff
+            m_ompgroup, txbuffs, root, rxbuff
         );
     }
 };

@@ -18,14 +18,13 @@
 #define QVI_GROUP_H
 
 #include "qvi-common.h"
-#include "qvi-task.h" // IWYU pragma: keep
 #include "qvi-utils.h"
 
 /** Group ID type. */
 using qvi_group_id_t = uint64_t;
 
 /**
- * Virtual base group class.
+ * Virtual base group class. Notice that groups are reference counted.
  */
 struct qvi_group_s : qvi_refc_s {
     /** Constructor. */

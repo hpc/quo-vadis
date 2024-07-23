@@ -18,6 +18,7 @@
 // TODO(skg) Add RMI to acquire/release resources.
 
 #include "qvi-scope.h"
+#include "qvi-task.h"
 #include "qvi-rmi.h"
 #include "qvi-hwpool.h"
 #include "qvi-map.h"
