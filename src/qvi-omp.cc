@@ -18,53 +18,10 @@
  */
 
 #include "qvi-omp.h"
+#include "qvi-subgroup.h"
 #include "qvi-bbuff.h"
 #include "qvi-utils.h"
 #include <omp.h>
-
-/**
- * Internal data structure for rank and size computing.
- */
-struct qvi_omp_color_key_rank_s {
-    int color = 0;
-    int key = 0;
-    int rank = 0;
-
-    static bool
-    by_color(
-        const qvi_omp_color_key_rank_s &a,
-        const qvi_omp_color_key_rank_s &b
-    ) {
-        return a.color < b.color;
-    }
-
-    static bool
-    by_key(
-        const qvi_omp_color_key_rank_s &a,
-        const qvi_omp_color_key_rank_s &b
-    ) {
-        // If colors are the same, sort by key.
-        return a.color == b.color && a.key < b.key;
-    }
-
-    static bool
-    by_rank(
-        const qvi_omp_color_key_rank_s &a,
-        const qvi_omp_color_key_rank_s &b
-    ) {
-        // If colors and keys are the same, sort by rank.
-        return a.color == b.color && a.key == b.key && a.rank < b.rank;
-    }
-};
-
-struct qvi_omp_subgroup_info_s {
-    /** Number of sub-groups created from split. */
-    int ngroups = 0;
-    /** Number of members in this sub-group. */
-    int size = 0;
-    /** My rank in this sub-group. */
-    int rank = 0;
-};
 
 struct qvi_omp_group_s {
     /** Group size. */
@@ -124,14 +81,14 @@ qvi_get_subgroup_info(
     qvi_omp_group_t *parent,
     int color,
     int key,
-    qvi_omp_subgroup_info_s *sginfo
+    qvi_subgroup_info_s *sginfo
 ) {
     const int size = parent->size;
     const int rank = parent->rank;
-    qvi_omp_color_key_rank_s *ckrs = nullptr;
+    qvi_subgroup_color_key_rank_s *ckrs = nullptr;
 
     #pragma omp single copyprivate(ckrs)
-    ckrs = new qvi_omp_color_key_rank_s[size];
+    ckrs = new qvi_subgroup_color_key_rank_s[size];
     // Gather colors and keys from ALL threads.
     ckrs[rank].color = color;
     ckrs[rank].key = key;
@@ -146,9 +103,9 @@ qvi_get_subgroup_info(
         // Sort the color/key/rank array. First according to color, then by key,
         // but in the same color realm. If color and key are identical, sort by
         // the rank from given group.
-        std::sort(ckrs, ckrs + size, qvi_omp_color_key_rank_s::by_color);
-        std::sort(ckrs, ckrs + size, qvi_omp_color_key_rank_s::by_key);
-        std::sort(ckrs, ckrs + size, qvi_omp_color_key_rank_s::by_rank);
+        std::sort(ckrs, ckrs + size, qvi_subgroup_color_key_rank_s::by_color);
+        std::sort(ckrs, ckrs + size, qvi_subgroup_color_key_rank_s::by_key);
+        std::sort(ckrs, ckrs + size, qvi_subgroup_color_key_rank_s::by_rank);
         // Calculate the number of distinct colors provided.
         std::set<int> color_set;
         for (int i = 0; i < size; ++i) {
@@ -192,14 +149,13 @@ qvi_omp_group_create_from_split(
 ) {
     qvi_omp_group_t *ichild = nullptr;
 
-    qvi_omp_subgroup_info_s sginfo;
+    qvi_subgroup_info_s sginfo;
     int rc = qvi_get_subgroup_info(
         parent, color, key, &sginfo
     );
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_new(&ichild, sginfo.size, sginfo.rank);
-out:
+    if (qvi_likely(rc == QV_SUCCESS)) {
+        rc = qvi_new(&ichild, sginfo.size, sginfo.rank);
+    }
     if (rc != QV_SUCCESS) {
         qvi_delete(&ichild);
     }

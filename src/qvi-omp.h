@@ -14,7 +14,7 @@
  */
 
 /**
- * @file qvi-thread.h
+ * @file qvi-omp.h
  */
 
 #ifndef QVI_OMP_H
