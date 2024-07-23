@@ -93,18 +93,7 @@ struct qvi_group_s : qvi_refc_s {
     static int
     next_id(
         qvi_group_id_t *gid
-    ) {
-        // Global group ID. Note that we pad its initial value so that other
-        // infrastructure (e.g., QVI_MPI_GROUP_WORLD) will never equal or exceed
-        // this value.
-        static std::atomic<qvi_group_id_t> group_id(64);
-        if (group_id == UINT64_MAX) {
-            qvi_log_error("Group ID space exhausted");
-            return QV_ERR_OOR;
-        }
-        *gid = group_id++;
-        return QV_SUCCESS;
-    }
+    );
 };
 typedef struct qvi_group_s qvi_group_t;
 
