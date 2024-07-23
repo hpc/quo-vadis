@@ -18,8 +18,21 @@
  */
 
 #include "qvi-group-omp.h"
+#include "qvi-task.h" // IWYU pragma: keep
 #include "qvi-utils.h"
 #include <omp.h>
+
+qvi_group_omp_s::qvi_group_omp_s(void)
+{
+    const int rc = qvi_new(&m_task);
+    if (rc != QV_SUCCESS) throw qvi_runtime_error();
+}
+
+qvi_group_omp_s::~qvi_group_omp_s(void)
+{
+    qvi_omp_group_free(&m_ompgroup);
+    qvi_delete(&m_task);
+}
 
 int
 qvi_group_omp_s::make_intrinsic(
@@ -29,7 +42,7 @@ qvi_group_omp_s::make_intrinsic(
     const int group_rank = omp_get_thread_num();
     // NOTE: the provided scope doesn't affect how
     // we create the thread group, so we ignore it.
-    return qvi_omp_group_new(group_size, group_rank, &th_group);
+    return qvi_omp_group_new(group_size, group_rank, &m_ompgroup);
 }
 
 int
@@ -42,7 +55,7 @@ qvi_group_omp_s::self(
     int rc = qvi_new(&ichild);
     if (rc != QV_SUCCESS) goto out;
     // Create a group containing a single thread.
-    rc = qvi_omp_group_new(group_size, group_rank, &ichild->th_group);
+    rc = qvi_omp_group_new(group_size, group_rank, &ichild->m_ompgroup);
 out:
     if (rc != QV_SUCCESS) {
         qvi_delete(&ichild);
@@ -62,7 +75,7 @@ qvi_group_omp_s::split(
     if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_omp_group_create_from_split(
-        th_group, color, key, &ichild->th_group
+        m_ompgroup, color, key, &ichild->m_ompgroup
     );
 out:
     if (rc != QV_SUCCESS) {

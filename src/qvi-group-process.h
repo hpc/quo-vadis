@@ -23,20 +23,12 @@ protected:
     /** Task associated with this group. */
     qvi_task_t *m_task = nullptr;
     /** Underlying group instance. */
-    qvi_process_group_t *proc_group = nullptr;
+    qvi_process_group_t *m_proc_group = nullptr;
 public:
     /** Constructor. */
-    qvi_group_process_s(void)
-    {
-        const int rc = qvi_new(&m_task);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
-    }
+    qvi_group_process_s(void);
     /** Destructor. */
-    virtual ~qvi_group_process_s(void)
-    {
-        qvi_process_group_free(&proc_group);
-        qvi_delete(&m_task);
-    }
+    virtual ~qvi_group_process_s(void);
 
     virtual qvi_task_t *
     task(void)
@@ -47,19 +39,19 @@ public:
     virtual int
     rank(void)
     {
-        return qvi_process_group_id(proc_group);
+        return qvi_process_group_id(m_proc_group);
     }
 
     virtual int
     size(void)
     {
-        return qvi_process_group_size(proc_group);
+        return qvi_process_group_size(m_proc_group);
     }
 
     virtual int
     barrier(void)
     {
-        return qvi_process_group_barrier(proc_group);
+        return qvi_process_group_barrier(m_proc_group);
     }
 
     virtual int
@@ -68,7 +60,7 @@ public:
     ) {
         // NOTE: the provided scope doesn't affect how
         // we create the process group, so we ignore it.
-        return qvi_process_group_new(&proc_group);
+        return qvi_process_group_new(&m_proc_group);
     }
 
     virtual int
@@ -97,7 +89,7 @@ public:
         qvi_bbuff_t ***rxbuffs
     ) {
         return qvi_process_group_gather_bbuffs(
-            proc_group, txbuff, root, shared, rxbuffs
+            m_proc_group, txbuff, root, shared, rxbuffs
         );
     }
 
@@ -108,7 +100,7 @@ public:
         qvi_bbuff_t **rxbuff
     ) {
         return qvi_process_group_scatter_bbuffs(
-            proc_group, txbuffs, root, rxbuff
+            m_proc_group, txbuffs, root, rxbuff
         );
     }
 };
