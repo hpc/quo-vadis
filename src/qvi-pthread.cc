@@ -43,8 +43,8 @@ qvi_pthread_group_s::call_first_from_pthread_create(
         std::sort(group->m_tids.begin(), group->m_tids.end());
 
         for (int i = 0; i < group->m_size; ++i) {
-            const pid_t tid = group->m_tids[i];
-            group->m_tid2rank.insert({tid, i});
+            const pid_t tidi = group->m_tids[i];
+            group->m_tid2rank.insert({tidi, i});
         }
         pthread_barrier_wait(&group->m_barrier);
     }

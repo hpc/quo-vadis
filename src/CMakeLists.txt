@@ -31,6 +31,7 @@ add_library(
       qvi-task.h
       qvi-pthread.h
       qvi-group.h
+      qvi-subgroup.h
       qvi-group-pthread.h
       qvi-map.h
       qvi-scope.h
