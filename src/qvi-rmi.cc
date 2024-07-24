@@ -141,7 +141,6 @@ typedef enum qvi_rpc_funid_e {
     FID_TASK_SET_CPUBIND_FROM_CPUSET,
     FID_OBJ_TYPE_DEPTH,
     FID_GET_NOBJS_IN_CPUSET,
-    FID_GET_OBJ_TYPE_IN_CPUSET,
     FID_GET_DEVICE_IN_CPUSET,
     FID_SCOPE_GET_INTRINSIC_HWPOOL
 } qvi_rpc_funid_t;
@@ -582,31 +581,6 @@ rpc_ssi_get_nobjs_in_cpuset(
 }
 
 static int
-rpc_ssi_get_obj_type_in_cpuset(
-    qvi_rmi_server_t *server,
-    qvi_msg_header_t *hdr,
-    void *input,
-    qvi_bbuff_t **output
-) {
-    int npieces = 0;
-    hwloc_cpuset_t cpuset = nullptr;
-    int qvrc = qvi_bbuff_rmi_unpack(
-        input, &npieces, &cpuset
-    );
-    if (qvrc != QV_SUCCESS) return qvrc;
-
-    qv_hw_obj_type_t target_obj;
-    const int rpcrc = qvi_hwloc_get_obj_type_in_cpuset(
-        server->config.hwloc, npieces, cpuset, &target_obj
-    );
-
-    qvrc = rpc_pack(output, hdr->fid, rpcrc, target_obj);
-
-    hwloc_bitmap_free(cpuset);
-    return qvrc;
-}
-
-static int
 rpc_ssi_get_device_in_cpuset(
     qvi_rmi_server_t *server,
     qvi_msg_header_t *hdr,
@@ -713,21 +687,19 @@ rpc_ssi_scope_get_intrinsic_hwpool(
 }
 
 /**
- * Maps a given qvi_rpc_funid_t to a given function pointer. Must be kept in
- * sync with qvi_rpc_funid_t.
+ * Maps a given qvi_rpc_funid_t to a given function pointer.
  */
-static const qvi_rpc_fun_ptr_t rpc_dispatch_table[] = {
-    rpc_ssi_invalid,
-    rpc_ssi_shutdown,
-    rpc_ssi_hello,
-    rpc_ssi_gbye,
-    rpc_ssi_task_get_cpubind,
-    rpc_ssi_task_set_cpubind_from_cpuset,
-    rpc_ssi_obj_type_depth,
-    rpc_ssi_get_nobjs_in_cpuset,
-    rpc_ssi_get_obj_type_in_cpuset,
-    rpc_ssi_get_device_in_cpuset,
-    rpc_ssi_scope_get_intrinsic_hwpool
+static const std::map<qvi_rpc_funid_t, qvi_rpc_fun_ptr_t> rpc_dispatch_table = {
+    {FID_INVALID, rpc_ssi_invalid},
+    {FID_SERVER_SHUTDOWN, rpc_ssi_shutdown},
+    {FID_HELLO, rpc_ssi_hello},
+    {FID_GBYE, rpc_ssi_gbye},
+    {FID_TASK_GET_CPUBIND, rpc_ssi_task_get_cpubind},
+    {FID_TASK_SET_CPUBIND_FROM_CPUSET, rpc_ssi_task_set_cpubind_from_cpuset},
+    {FID_OBJ_TYPE_DEPTH, rpc_ssi_obj_type_depth},
+    {FID_GET_NOBJS_IN_CPUSET, rpc_ssi_get_nobjs_in_cpuset},
+    {FID_GET_DEVICE_IN_CPUSET, rpc_ssi_get_device_in_cpuset},
+    {FID_SCOPE_GET_INTRINSIC_HWPOOL, rpc_ssi_scope_get_intrinsic_hwpool}
 };
 
 static int
@@ -744,8 +716,15 @@ server_rpc_dispatch(
     const size_t trim = unpack_msg_header(data, &hdr);
     void *body = data_trim(data, trim);
 
+    auto fidfunp = rpc_dispatch_table.find(hdr.fid);
+    if (qvi_unlikely(fidfunp == rpc_dispatch_table.end())) {
+        qvi_log_error("Unknown function ID ({}) in RPC. Aborting.", hdr.fid);
+        rc = QV_ERR_RPC;
+        goto out;
+    }
+
     qvi_bbuff_t *res;
-    rc = rpc_dispatch_table[hdr.fid](server, &hdr, body, &res);
+    rc = fidfunp->second(server, &hdr, body, &res);
     if (rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN) {
         cstr_t ers = "RPC dispatch failed";
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
@@ -767,24 +746,24 @@ static void *
 server_go(
     void *data
 ) {
-    qvi_rmi_server_t *server = (qvi_rmi_server_t *)data;
+    qvi_rmi_server_t *const server = (qvi_rmi_server_t *)data;
 
     void *zworksock = zsocket_create_and_connect(
         server->zctx, ZMQ_REP, ZINPROC_ADDR
     );
-    if (!zworksock) return nullptr;
+    if (qvi_unlikely(!zworksock)) return nullptr;
 
     int rc, bsent, bsentt = 0;
-    volatile bool active = true;
+    volatile std::atomic<bool> active{true};
     do {
         zmq_msg_t mrx, mtx;
         rc = zmsg_recv(zworksock, &mrx);
-        if (rc != QV_SUCCESS) break;
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
         rc = server_rpc_dispatch(server, &mrx, &mtx);
-        if (rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN) break;
-        if (rc == QV_SUCCESS_SHUTDOWN) active = false;
+        if (qvi_unlikely(rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN)) break;
+        if (qvi_unlikely(rc == QV_SUCCESS_SHUTDOWN)) active = false;
         rc = zmsg_send(zworksock, &mtx, &bsent);
-        if (rc != QV_SUCCESS) break;
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
         bsentt += bsent;
     } while(active);
 #if QVI_DEBUG_MODE == 1
@@ -956,16 +935,16 @@ qvi_rmi_client_connect(
     client->zsock = zsocket_create_and_connect(
         client->zctx, ZMQ_REQ, url.c_str()
     );
-    if (!client->zsock) return QV_ERR_MSG;
+    if (qvi_unlikely(!client->zsock)) return QV_ERR_MSG;
 
     int rc = hello_handshake(client);
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     rc = qvi_hwloc_topology_init(
         client->config.hwloc,
         client->config.hwtopo_path.c_str()
     );
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     return qvi_hwloc_topology_load(client->config.hwloc);
 }
@@ -1096,30 +1075,6 @@ qvi_rmi_get_nobjs_in_cpuset(
 
     return rpcrc;
 }
-
-int
-qvi_rmi_get_obj_type_in_cpuset(
-    qvi_rmi_client_t *client,
-    int npieces,
-    hwloc_const_cpuset_t cpuset,
-    qv_hw_obj_type_t *target_obj
-) {
-    int qvrc = rpc_req(
-        client->zsock,
-        FID_GET_OBJ_TYPE_IN_CPUSET,
-        npieces,
-        cpuset
-    );
-    if (qvrc != QV_SUCCESS) return qvrc;
-
-    // Should be set by rpc_rep, so assume an error.
-    int rpcrc = QV_ERR_MSG;
-    qvrc = rpc_rep(client->zsock, &rpcrc, target_obj);
-    if (qvrc != QV_SUCCESS) return qvrc;
-
-    return rpcrc;
-}
-
 
 int
 qvi_rmi_get_device_in_cpuset(

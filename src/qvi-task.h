@@ -25,15 +25,15 @@ using qvi_task_bind_stack_t = std::stack<qvi_hwloc_bitmap_s>;
 struct qvi_task_s {
 private:
     /** Client-side connection to the RMI. */
-    qvi_rmi_client_t *myrmi = nullptr;
+    qvi_rmi_client_t *m_rmi = nullptr;
     /** The task's bind stack. */
-    qvi_task_bind_stack_t mystack;
+    qvi_task_bind_stack_t m_stack;
     /** Connects to the RMI server. */
     int
     connect_to_server(void);
     /** Initializes the bind stack. */
     int
-    bind_stack_init(void);
+    init_bind_stack(void);
 public:
     /** Returns the caller's thread ID. */
     static pid_t
@@ -47,12 +47,18 @@ public:
     /** Returns a pointer to the task's RMI. */
     qvi_rmi_client_t *
     rmi(void);
-    /** Changes the task's affinity. */
+    /**
+     * Changes the task's affinity based on the provided cpuset.
+     * Also stores the cpuset to the top of the task's bind stack.
+     */
     int
     bind_push(
         hwloc_const_cpuset_t cpuset
     );
-    /** */
+    /**
+     * Removes the cpuset from the top of the bind stack
+     * and changes the task's affinity to that value.
+     */
     int
     bind_pop(void);
     /** Returns the task's current cpuset. */
