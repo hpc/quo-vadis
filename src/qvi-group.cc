@@ -29,6 +29,22 @@ qvi_group_s::thsplit(
     return rc;
 }
 
+int
+qvi_group_s::next_id(
+    qvi_group_id_t *gid
+) {
+    // Global group ID. Note that we pad its initial value so that other
+    // infrastructure (e.g., QVI_MPI_GROUP_WORLD) will never equal or exceed
+    // this value.
+    static std::atomic<qvi_group_id_t> group_id(64);
+    if (group_id == UINT64_MAX) {
+        qvi_log_error("Group ID space exhausted");
+        return QV_ERR_OOR;
+    }
+    *gid = group_id++;
+    return QV_SUCCESS;
+}
+
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
  */

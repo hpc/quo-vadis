@@ -15,7 +15,6 @@
 #define QVI_PTHREAD_H
 
 #include "qvi-common.h"
-#include "qvi-utils.h"
 
 typedef void *(*qvi_pthread_routine_fun_ptr_t)(void *);
 
@@ -66,11 +65,7 @@ public:
      */
     qvi_pthread_group_s(
         int group_size
-    ) : m_size(group_size)
-    {
-        const int rc = pthread_barrier_init(&m_barrier, NULL, group_size);
-        if (qvi_unlikely(rc != 0)) throw qvi_runtime_error();
-    }
+    );
     /**
      * This function shall be called by pthread_create() to finish group
      * construction. This function is called by the pthreads and NOT their
@@ -83,60 +78,39 @@ public:
     /** Destructor. */
     ~qvi_pthread_group_s(void);
 
-    int
-    size(void)
-    {
-        std::lock_guard<std::mutex> guard(m_mutex);
-        return m_size;
-    }
-
-    int
-    rank(void)
-    {
-        std::lock_guard<std::mutex> guard(m_mutex);
-        return m_tid2rank.at(qvi_gettid());
-    }
-
     qvi_task_t *
-    task(void)
-    {
-        std::lock_guard<std::mutex> guard(m_mutex);
-        return m_tid2task.at(qvi_gettid());
-    }
+    task(void);
+
+    int
+    size(void);
+
+    int
+    rank(void);
 
     int
     barrier(void);
 
     int
-    create_from_split(
-        int,
-        int,
-        qvi_pthread_group_s **
-    ) {
-        // TODO(skg)
-        return QV_ERR_NOT_SUPPORTED;
-    }
+    split(
+        int color,
+        int key,
+        qvi_pthread_group_s **child
+    );
 
     int
-    gather_bbuffs(
-        qvi_bbuff_t *,
-        int,
-        bool *,
-        qvi_bbuff_t ***
-    ) {
-        // TODO(skg)
-        return QV_ERR_NOT_SUPPORTED;
-    }
+    gather(
+        qvi_bbuff_t *txbuff,
+        int root,
+        bool *shared,
+        qvi_bbuff_t ***rxbuffs
+    );
 
     int
-    scatter_bbuffs(
-        qvi_bbuff_t **,
-        int,
-        qvi_bbuff_t **
-    ) {
-        // TODO(skg)
-        return QV_ERR_NOT_SUPPORTED;
-    }
+    scatter(
+        qvi_bbuff_t **txbuffs,
+        int root,
+        qvi_bbuff_t **rxbuff
+    );
 };
 typedef struct qvi_pthread_group_s qvi_pthread_group_t;
 

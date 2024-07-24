@@ -159,7 +159,7 @@ main(void)
     }
 
     pthread_t thid2[nthreads];
-    for(int i  = 0 ; i < nthreads; ++i) {
+    for (int i  = 0 ; i < nthreads; ++i) {
         const int ptrc = qv_pthread_create(
             &thid2[i], attr, thread_work, &thargs2[i], th_scopes[i]
         );
@@ -177,7 +177,7 @@ main(void)
         //fprintf(stdout,"Thread finished with '%s'\n", (char *)ret);
     }
 
-    /* Clean up */
+    // Clean up.
     rc = qv_pthread_scopes_free(nthreads, th_scopes);
     if (rc != QV_SUCCESS) {
         ers = "qv_pthread_scope_free() failed";

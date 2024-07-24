@@ -26,15 +26,9 @@ struct qvi_group_pthread_s : public qvi_group_s {
     /** Constructor. */
     qvi_group_pthread_s(
         int group_size
-    ) {
-        const int rc = qvi_new(&thgroup, group_size);
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
-    }
+    );
     /** Destructor. */
-    virtual ~qvi_group_pthread_s(void)
-    {
-        qvi_delete(&thgroup);
-    }
+    virtual ~qvi_group_pthread_s(void);
 
     virtual qvi_task_t *
     task(void)
@@ -78,7 +72,7 @@ struct qvi_group_pthread_s : public qvi_group_s {
         int,
         qvi_group_s **
     ) {
-        // TODO(skg) Need to test this.
+        // TODO(skg)
         return QV_ERR_NOT_SUPPORTED;
     }
 
@@ -96,7 +90,7 @@ struct qvi_group_pthread_s : public qvi_group_s {
         bool *shared,
         qvi_bbuff_t ***rxbuffs
     ) {
-        return thgroup->gather_bbuffs(
+        return thgroup->gather(
            txbuff, root, shared, rxbuffs
         );
     }
@@ -107,7 +101,7 @@ struct qvi_group_pthread_s : public qvi_group_s {
         int root,
         qvi_bbuff_t **rxbuff
     ) {
-        return thgroup->scatter_bbuffs(
+        return thgroup->scatter(
             txbuffs, root, rxbuff
         );
     }

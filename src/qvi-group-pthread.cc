@@ -14,28 +14,33 @@
 #include "qvi-group-pthread.h"
 #include "qvi-utils.h"
 
+qvi_group_pthread_s::qvi_group_pthread_s(
+    int group_size
+) {
+    const int rc = qvi_new(&thgroup, group_size);
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+}
+
+qvi_group_pthread_s::~qvi_group_pthread_s(void)
+{
+    qvi_delete(&thgroup);
+}
+
 int
 qvi_group_pthread_s::self(
-    qvi_group_t **child
+    qvi_group_t **
 ) {
-    constexpr int group_size = 1;
-    qvi_group_pthread_t *ichild = nullptr;
-    // Create a group containing a single thread.
-    const int rc = qvi_new(&ichild, group_size);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_delete(&ichild);
-    }
-    *child = ichild;
-    return rc;
+    // TODO(skg)
+    return QV_ERR_NOT_SUPPORTED;
 }
 
 int
 qvi_group_pthread_s::split(
     int,
     int,
-    qvi_group_t **
+    qvi_group_s **
 ) {
-    // TODO(skg) Test to see if we can do this.
+    // TODO(skg)
     return QV_ERR_NOT_SUPPORTED;
 }
 

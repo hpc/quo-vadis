@@ -13,8 +13,15 @@
 
 #include "qvi-pthread.h"
 #include "qvi-task.h" // IWYU pragma: keep
-#include "qvi-bbuff.h"
 #include "qvi-utils.h"
+
+qvi_pthread_group_s::qvi_pthread_group_s(
+    int group_size
+) : m_size(group_size)
+{
+    const int rc = pthread_barrier_init(&m_barrier, NULL, group_size);
+    if (qvi_unlikely(rc != 0)) throw qvi_runtime_error();
+}
 
 void *
 qvi_pthread_group_s::call_first_from_pthread_create(
@@ -77,6 +84,27 @@ qvi_pthread_group_s::~qvi_pthread_group_s(void)
 }
 
 int
+qvi_pthread_group_s::size(void)
+{
+    std::lock_guard<std::mutex> guard(m_mutex);
+    return m_size;
+}
+
+int
+qvi_pthread_group_s::rank(void)
+{
+    std::lock_guard<std::mutex> guard(m_mutex);
+    return m_tid2rank.at(qvi_gettid());
+}
+
+qvi_task_t *
+qvi_pthread_group_s::task(void)
+{
+    std::lock_guard<std::mutex> guard(m_mutex);
+    return m_tid2task.at(qvi_gettid());
+}
+
+int
 qvi_pthread_group_s::barrier(void)
 {
     const int rc = pthread_barrier_wait(&(m_barrier));
@@ -84,6 +112,37 @@ qvi_pthread_group_s::barrier(void)
         return QV_ERR_INTERNAL;
     }
     return QV_SUCCESS;
+}
+
+int
+qvi_pthread_group_s::split(
+    int,
+    int,
+    qvi_pthread_group_s **
+) {
+    // TODO(skg)
+    return QV_ERR_NOT_SUPPORTED;
+}
+
+int
+qvi_pthread_group_s::gather(
+    qvi_bbuff_t *,
+    int,
+    bool *,
+    qvi_bbuff_t ***
+) {
+    // TODO(skg)
+    return QV_ERR_NOT_SUPPORTED;
+}
+
+int
+qvi_pthread_group_s::scatter(
+    qvi_bbuff_t **,
+    int,
+    qvi_bbuff_t **
+) {
+    // TODO(skg)
+    return QV_ERR_NOT_SUPPORTED;
 }
 
 /*

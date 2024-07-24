@@ -413,7 +413,7 @@ qvi_mpi_group_gather_bbuffs(
     if (group_id == root) {
         // Zero initialize array of pointers to nullptr.
         bbuffs = new qvi_bbuff_t*[group_size]();
-
+        // TODO(skg) Use dup.
         byte_t *bytepos = allbytes.data();
         for (int i = 0; i < group_size; ++i) {
             rc = qvi_bbuff_new(&bbuffs[i]);
