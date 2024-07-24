@@ -85,47 +85,10 @@ using qvi_hwpool_devs_t = std::multimap<
 
 struct qvi_hwpool_s {
     /** The hardware pool's CPU. */
-    qvi_hwpool_cpu_s cpu;
+    qvi_hwpool_cpu_s m_cpu;
     /** The hardware pool's devices. */
-    qvi_hwpool_devs_t devs;
-    /**
-     * Initializes a hardware pool with the given cpuset.
-     */
-    int
-    initialize(
-        hwloc_const_bitmap_t cpuset
-    ) {
-        return cpu.cpuset.set(cpuset);
-    }
-    /**
-     * Creates a new, initialized hardware pool based
-     * on the affinity encoded in the provided cpuset.
-     */
-    static int
-    new_hwpool_by_cpuset(
-        qvi_hwloc_t *hwloc,
-        hwloc_const_cpuset_t cpuset,
-        qvi_hwpool_s **opool
-    );
-    /**
-     * Returns a pointer to the hwpool's cpuset.
-     */
-    const qvi_hwloc_bitmap_s &
-    get_cpuset(void)
-    {
-        return cpu.cpuset;
-    }
-    /**
-     * Adds a qvi_hwpool_dev_s device.
-     */
-    int
-    add_device(
-        const qvi_hwpool_dev_s &dev
-    ) {
-        auto shdev = std::make_shared<qvi_hwpool_dev_s>(dev);
-        devs.insert({dev.type, shdev});
-        return QV_SUCCESS;
-    }
+    qvi_hwpool_devs_t m_devs;
+private:
     /**
      * Adds all devices with affinity to the
      * provided, initialized hardware resource pool.
@@ -133,39 +96,58 @@ struct qvi_hwpool_s {
     int
     add_devices_with_affinity(
         qvi_hwloc_t *hwloc
-    ) {
-        int rc = QV_SUCCESS;
-        // Iterate over the supported device types.
-        for (const auto devt : qvi_hwloc_supported_devices()) {
-            qvi_hwloc_dev_list_t devs;
-            rc = qvi_hwloc_get_devices_in_bitmap(
-                hwloc, devt, cpu.cpuset, devs
-            );
-            if (rc != QV_SUCCESS) return rc;
-            for (const auto &dev : devs) {
-                rc = add_device(qvi_hwpool_dev_s(dev));
-                if (rc != QV_SUCCESS) return rc;
-            }
-        }
-        return rc;
-    }
+    );
+public:
     /**
-     * Releases all devices in the hwpool.
+     * Creates a new, initialized hardware pool based
+     * on the affinity encoded in the provided cpuset.
+     */
+    static int
+    new_hwpool(
+        qvi_hwloc_t *hwloc,
+        hwloc_const_cpuset_t cpuset,
+        qvi_hwpool_s **opool
+    );
+    /**
+     * Initializes a hardware pool from the given
+     * hardare locality information and cpuset.
      */
     int
-    release_devices(void)
-    {
-        devs.clear();
-        return QV_SUCCESS;
-    }
+    initialize(
+        qvi_hwloc_t *hwloc,
+        hwloc_const_bitmap_t cpuset
+    );
+    /**
+     * Returns a const reference to the hardware pool's cpuset.
+     */
+    const qvi_hwloc_bitmap_s &
+    cpuset(void);
     /**
      * Returns a const reference to the hardware pool's devices.
      */
     const qvi_hwpool_devs_t &
-    get_devices(void)
-    {
-        return devs;
-    }
+    devices(void);
+    /**
+     * Returns the number of objects in the hardware pool.
+     */
+    int
+    nobjects(
+        qvi_hwloc_t *hwloc,
+        qv_hw_obj_type_t obj_type,
+        int *result
+    );
+    /**
+     * Adds a qvi_hwpool_dev_s device.
+     */
+    int
+    add_device(
+        const qvi_hwpool_dev_s &dev
+    );
+    /**
+     * Releases all devices in the hwpool.
+     */
+    int
+    release_devices(void);
     /**
      * Packs the instance into a bbuff.
      */

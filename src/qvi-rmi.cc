@@ -616,7 +616,7 @@ get_intrinsic_scope_user(
     qvi_hwpool_s **hwpool
 ) {
     // TODO(skg) Is the cpuset the best way to do this?
-    return qvi_hwpool_s::new_hwpool_by_cpuset(
+    return qvi_hwpool_s::new_hwpool(
         server->config.hwloc,
         qvi_hwloc_topo_get_cpuset(server->config.hwloc),
         hwpool
@@ -635,7 +635,7 @@ get_intrinsic_scope_proc(
     );
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_hwpool_s::new_hwpool_by_cpuset(
+    rc = qvi_hwpool_s::new_hwpool(
         server->config.hwloc, cpuset, hwpool
     );
 out:
@@ -812,7 +812,7 @@ qvi_rmi_server_config(
 }
 
 /**
- *
+ * Populates base hardware pool.
  */
 static int
 server_populate_base_hwpool(
@@ -820,11 +820,8 @@ server_populate_base_hwpool(
 ) {
     qvi_hwloc_t *const hwloc = server->config.hwloc;
     hwloc_const_cpuset_t cpuset = qvi_hwloc_topo_get_cpuset(hwloc);
-    // The base resource pool will contain all available processors.
-    const int rc = server->hwpool->initialize(cpuset);
-    if (rc != QV_SUCCESS) return rc;
-    // Add all the discovered devices since the cpuset is the root.
-    return server->hwpool->add_devices_with_affinity(hwloc);
+    // The base resource pool will contain all available processors and devices.
+    return server->hwpool->initialize(hwloc, cpuset);
 }
 
 static void *

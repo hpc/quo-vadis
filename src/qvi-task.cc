@@ -78,6 +78,13 @@ qvi_task_s::rmi(void)
     return m_rmi;
 }
 
+qvi_hwloc_t *
+qvi_task_s::hwloc(void)
+{
+    assert(m_rmi);
+    return qvi_rmi_client_hwloc(m_rmi);
+}
+
 int
 qvi_task_s::bind_push(
     hwloc_const_cpuset_t cpuset
