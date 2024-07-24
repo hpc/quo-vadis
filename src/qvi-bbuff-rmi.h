@@ -554,14 +554,14 @@ qvi_bbuff_rmi_pack_item_impl(
     const qvi_hwpool_s *data
 ) {
     // Pack CPU.
-    int rc = qvi_bbuff_rmi_pack_item(buff, data->cpu);
+    int rc = qvi_bbuff_rmi_pack_item(buff, data->m_cpu);
     if (rc != QV_SUCCESS) return rc;
     // Pack ndevinfos
-    const size_t ndev = data->devs.size();
+    const size_t ndev = data->m_devs.size();
     rc = qvi_bbuff_rmi_pack_item(buff, ndev);
     if (rc != QV_SUCCESS) return rc;
     // Pack devices.
-    for (const auto &dev : data->devs) {
+    for (const auto &dev : data->m_devs) {
         rc = qvi_bbuff_rmi_pack_item(buff, dev.second.get());
         if (rc != QV_SUCCESS) return rc;
     }
@@ -961,7 +961,7 @@ qvi_bbuff_rmi_unpack_item(
 
     // Unpack CPU.
     rc = qvi_bbuff_rmi_unpack_item(
-        ihwp->cpu, buffpos, &bw
+        ihwp->m_cpu, buffpos, &bw
     );
     if (rc != QV_SUCCESS) return rc;
     total_bw += bw;

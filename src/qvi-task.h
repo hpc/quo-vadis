@@ -47,6 +47,9 @@ public:
     /** Returns a pointer to the task's RMI. */
     qvi_rmi_client_t *
     rmi(void);
+    /** Returns a pointer to the task's hwloc. */
+    qvi_hwloc_t *
+    hwloc(void);
     /**
      * Changes the task's affinity based on the provided cpuset.
      * Also stores the cpuset to the top of the task's bind stack.

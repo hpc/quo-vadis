@@ -135,28 +135,98 @@ pool_release_cpus_by_cpuset(
 }
 #endif
 
+ // TODO(skg) Acquire devices.
 int
-qvi_hwpool_s::new_hwpool_by_cpuset(
+qvi_hwpool_s::add_devices_with_affinity(
+    qvi_hwloc_t *hwloc
+) {
+    int rc = QV_SUCCESS;
+    // Iterate over the supported device types.
+    for (const auto devt : qvi_hwloc_supported_devices()) {
+        qvi_hwloc_dev_list_t devs;
+        rc = qvi_hwloc_get_devices_in_bitmap(
+            hwloc, devt, m_cpu.cpuset, devs
+        );
+        if (rc != QV_SUCCESS) return rc;
+        for (const auto &dev : devs) {
+            rc = add_device(qvi_hwpool_dev_s(dev));
+            if (rc != QV_SUCCESS) return rc;
+        }
+    }
+    return rc;
+}
+
+int
+qvi_hwpool_s::new_hwpool(
     qvi_hwloc_t *hwloc,
     hwloc_const_cpuset_t cpuset,
     qvi_hwpool_s **opool
 ) {
-    // We obtained the CPUs, so create the new pool.
     qvi_hwpool_s *ipool = nullptr;
     int rc = qvi_new(&ipool);
-    if (rc != QV_SUCCESS) goto out;
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Initialize the hardware pool.
-    rc = ipool->initialize(cpuset);
-    if (rc != QV_SUCCESS) goto out;
-    // Add devices with affinity to the new hardware pool.
-    // TODO(skg) Acquire devices.
-    rc = ipool->add_devices_with_affinity(hwloc);
+    rc = ipool->initialize(hwloc, cpuset);
 out:
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ipool);
     }
     *opool = ipool;
     return rc;
+}
+
+int
+qvi_hwpool_s::initialize(
+    qvi_hwloc_t *hwloc,
+    hwloc_const_bitmap_t cpuset
+) {
+    const int rc = m_cpu.cpuset.set(cpuset);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // Add devices with affinity to the hardware pool.
+    return add_devices_with_affinity(hwloc);
+}
+
+const qvi_hwloc_bitmap_s &
+qvi_hwpool_s::cpuset(void)
+{
+    return m_cpu.cpuset;
+}
+
+const qvi_hwpool_devs_t &
+qvi_hwpool_s::devices(void)
+{
+    return m_devs;
+}
+
+int
+qvi_hwpool_s::nobjects(
+    qvi_hwloc_t *hwloc,
+    qv_hw_obj_type_t obj_type,
+    int *result
+) {
+    if (qvi_hwloc_obj_type_is_host_resource(obj_type)) {
+        return qvi_hwloc_get_nobjs_in_cpuset(
+            hwloc, obj_type, m_cpu.cpuset.cdata(), result
+        );
+    }
+    *result = m_devs.count(obj_type);
+    return QV_SUCCESS;
+}
+
+int
+qvi_hwpool_s::add_device(
+    const qvi_hwpool_dev_s &dev
+) {
+    auto shdev = std::make_shared<qvi_hwpool_dev_s>(dev);
+    m_devs.insert({dev.type, shdev});
+    return QV_SUCCESS;
+}
+
+int
+qvi_hwpool_s::release_devices(void)
+{
+    m_devs.clear();
+    return QV_SUCCESS;
 }
 
 int
