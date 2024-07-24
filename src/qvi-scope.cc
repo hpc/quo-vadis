@@ -21,6 +21,7 @@
 #include "qvi-bbuff.h"
 #include "qvi-task.h"
 #include "qvi-rmi.h"
+#include "qvi-bbuff-rmi.h"
 #include "qvi-hwpool.h"
 #include "qvi-map.h"
 #include "qvi-utils.h"
@@ -475,8 +476,8 @@ gather_hwpools(
         rxpools.resize(group_size);
         // Unpack the hwpools.
         for (uint_t i = 0; i < group_size; ++i) {
-            rc = qvi_hwpool_s::unpack(
-                bbuffs[i], &rxpools[i]
+            rc = qvi_bbuff_rmi_unpack(
+                qvi_bbuff_data(bbuffs[i]), &rxpools[i]
             );
             if (rc != QV_SUCCESS) break;
         }
@@ -572,7 +573,7 @@ scatter_hwpools(
     rc = group->scatter(txbuffs.data(), root, &rxbuff);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_hwpool_s::unpack(rxbuff, pool);
+    rc = qvi_bbuff_rmi_unpack(qvi_bbuff_data(rxbuff), pool);
 out:
     for (auto &buff : txbuffs) {
         qvi_bbuff_free(&buff);
