@@ -112,7 +112,6 @@ struct qvi_scope_split_agg_s {
         for (auto &hwpool : hwpools) {
             qvi_delete(&hwpool);
         }
-        hwpools.clear();
     }
     /**
      * Minimally initializes instance.
@@ -203,18 +202,6 @@ get_nobjs_in_hwpool(
     // TODO(skg) This should go through the RMI.
     *n = hwpool->get_devices().count(obj);
     return QV_SUCCESS;
-}
-
-static int
-get_obj_type_in_hwpool(
-    qvi_rmi_client_t *rmi,
-    qvi_hwpool_s *hwpool,
-    int npieces,
-    qv_hw_obj_type_t *obj
-) {
-    return qvi_rmi_get_obj_type_in_cpuset(
-       rmi, npieces, hwpool->get_cpuset().cdata(), obj
-    );
 }
 
 template <typename TYPE>
@@ -1127,10 +1114,10 @@ qvi_scope_thsplit(
     int *kcolors,
     uint_t k,
     qv_hw_obj_type_t maybe_obj_type,
-    qv_scope_t ***kchildren
+    qv_scope_t ***thchildren
 ) {
-    if (k == 0 || !kchildren) return QV_ERR_INVLD_ARG;
-    *kchildren = nullptr;
+    if (k == 0 || !thchildren) return QV_ERR_INVLD_ARG;
+    *thchildren = nullptr;
 
     const uint_t group_size = k;
     qvi_scope_split_agg_s splitagg{};
@@ -1174,7 +1161,7 @@ qvi_scope_thsplit(
     if (rc != QV_SUCCESS) return rc;
 
     // Now populate the children.
-    qv_scope_t **ikchildren = new qv_scope_t*[group_size];
+    qv_scope_t **ithchildren = new qv_scope_t *[group_size];
 
     qvi_group_t *thgroup = nullptr;
     // Split off from our parent group. This call is called from a context in
@@ -1182,7 +1169,7 @@ qvi_scope_thsplit(
     // new thread group for each child.
     rc = parent->group->thsplit(group_size, &thgroup);
     if (rc != QV_SUCCESS) {
-        qvi_scope_thfree(&ikchildren, group_size);
+        qvi_scope_thfree(&ithchildren, group_size);
         return rc;
     }
 
@@ -1210,15 +1197,17 @@ qvi_scope_thsplit(
             break;
         }
         thgroup->retain();
-        ikchildren[i] = child;
+        ithchildren[i] = child;
     }
     if (rc != QV_SUCCESS) {
-        qvi_scope_thfree(&ikchildren, k);
+        qvi_scope_thfree(&ithchildren, k);
     }
-    // Subtract one to account for the parent's implicit retain during
-    // construct.
-    thgroup->release();
-    *kchildren = ikchildren;
+    else {
+        // Subtract one to account for the parent's
+        // implicit retain during construct.
+        thgroup->release();
+    }
+    *thchildren = ithchildren;
     return rc;
 }
 
@@ -1306,17 +1295,6 @@ qvi_scope_nobjs(
 ) {
     return get_nobjs_in_hwpool(
         scope->group->task()->rmi(), scope->hwpool, obj, n
-    );
-}
-
-int
-qvi_scope_obj_type(
-    qv_scope_t *scope,
-    int npieces,
-    qv_hw_obj_type_t *obj
-) {
-    return get_obj_type_in_hwpool(
-       scope->group->task()->rmi(), scope->hwpool, npieces, obj
     );
 }
 

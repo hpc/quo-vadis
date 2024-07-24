@@ -72,9 +72,9 @@ qvi_delete(
 ) {
     if (!t) return;
     T *it = *t;
-    if (!it) goto out;
-    delete it;
-out:
+    if (it) {
+        delete it;
+    }
     *t = nullptr;
 }
 
