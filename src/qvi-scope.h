@@ -18,19 +18,11 @@
 #define QVI_SCOPE_H
 
 #include "qvi-common.h" // IWYU pragma: keep
-#include "qvi-hwloc.h"
 #include "qvi-group.h"
+#include "qvi-hwloc.h"
 
 /**
- *
- */
-int
-qvi_scope_new(
-    qv_scope_t **scope
-);
-
-/**
- *
+ * Frees a scope.
  */
 void
 qvi_scope_free(
@@ -47,7 +39,50 @@ qvi_scope_thfree(
 );
 
 /**
+ * Returns the caller's group rank in the provided scope.
+ */
+int
+qvi_scope_group_rank(
+    qv_scope_t *scope,
+    int *taskid
+);
+
+/**
  *
+ */
+int
+qvi_scope_group_size(
+    qv_scope_t *scope,
+    int *ntasks
+);
+
+/**
+ *
+ */
+int
+qvi_scope_barrier(
+    qv_scope_t *scope
+);
+
+int
+qvi_scope_bind_push(
+    qv_scope_t *scope
+);
+
+int
+qvi_scope_bind_pop(
+    qv_scope_t *scope
+);
+
+int
+qvi_scope_bind_string(
+    qv_scope_t *scope,
+    qv_bind_string_format_t format,
+    char **str
+);
+
+/**
+ * Returns a new intrinsic scope.
  */
 int
 qvi_scope_get(
@@ -57,7 +92,7 @@ qvi_scope_get(
 );
 
 /**
- *
+ * Returns a pointer to the scope's underlying group.
  */
 qvi_group_t *
 qvi_scope_group_get(
@@ -69,32 +104,6 @@ qvi_scope_group_get(
  */
 const qvi_hwloc_bitmap_s &
 qvi_scope_cpuset_get(
-    qv_scope_t *scope
-);
-
-/**
- *
- */
-int
-qvi_scope_taskid(
-    qv_scope_t *scope,
-    int *taskid
-);
-
-/**
- *
- */
-int
-qvi_scope_ntasks(
-    qv_scope_t *scope,
-    int *ntasks
-);
-
-/**
- *
- */
-int
-qvi_scope_barrier(
     qv_scope_t *scope
 );
 
@@ -169,23 +178,6 @@ qvi_scope_get_device_id(
     int i,
     qv_device_id_type_t id_type,
     char **dev_id
-);
-
-int
-qvi_scope_bind_push(
-    qv_scope_t *scope
-);
-
-int
-qvi_scope_bind_pop(
-    qv_scope_t *scope
-);
-
-int
-qvi_scope_bind_string(
-    qv_scope_t *scope,
-    qv_bind_string_format_t format,
-    char **str
 );
 
 #endif

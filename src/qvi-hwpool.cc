@@ -43,6 +43,7 @@
 // approach using the device IDs instead of the bit positions.
 
 #include "qvi-hwpool.h"
+#include "qvi-bbuff.h"
 #include "qvi-bbuff-rmi.h"
 #include "qvi-utils.h"
 

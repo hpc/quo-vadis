@@ -95,7 +95,7 @@ qvi_rmi_client_free(
  *
  */
 qvi_hwloc_t *
-qvi_rmi_client_hwloc_get(
+qvi_rmi_client_hwloc(
     qvi_rmi_client_t *client
 );
 

@@ -26,6 +26,7 @@
 // TODO(skg) We need to implement timeouts.
 
 #include "qvi-rmi.h"
+#include "qvi-bbuff.h"
 #include "qvi-bbuff-rmi.h"
 #include "qvi-hwpool.h"
 #include "qvi-utils.h"
@@ -950,7 +951,7 @@ qvi_rmi_client_connect(
 }
 
 qvi_hwloc_t *
-qvi_rmi_client_hwloc_get(
+qvi_rmi_client_hwloc(
     qvi_rmi_client_t *client
 ) {
     return client->config.hwloc;
