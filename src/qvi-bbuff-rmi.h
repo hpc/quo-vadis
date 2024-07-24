@@ -30,9 +30,9 @@
 #define QVI_BBUFF_RMI_H
 
 #include "qvi-common.h"
+#include "qvi-bbuff.h"
 #include "qvi-hwloc.h"
 #include "qvi-hwpool.h"
-#include "qvi-utils.h"
 
 // 'Null' cpuset representation as a string.
 static constexpr cstr_t QV_BUFF_RMI_NULL_CPUSET = "";
@@ -553,30 +553,7 @@ qvi_bbuff_rmi_pack_item_impl(
     qvi_bbuff_t *buff,
     const qvi_hwpool_s *data
 ) {
-    // Pack CPU.
-    int rc = qvi_bbuff_rmi_pack_item(buff, data->m_cpu);
-    if (rc != QV_SUCCESS) return rc;
-    // Pack ndevinfos
-    const size_t ndev = data->m_devs.size();
-    rc = qvi_bbuff_rmi_pack_item(buff, ndev);
-    if (rc != QV_SUCCESS) return rc;
-    // Pack devices.
-    for (const auto &dev : data->m_devs) {
-        rc = qvi_bbuff_rmi_pack_item(buff, dev.second.get());
-        if (rc != QV_SUCCESS) return rc;
-    }
-    return rc;
-}
-
-/**
- * Packs const qvi_hwpool_s *
- */
-inline int
-qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
-    const qvi_hwpool_s *data
-) {
-    return qvi_bbuff_rmi_pack_item_impl(buff, data);
+    return data->pack(buff);
 }
 
 /**
@@ -953,47 +930,7 @@ qvi_bbuff_rmi_unpack_item(
     byte_t *buffpos,
     size_t *bytes_written
 ) {
-    qvi_hwpool_s *ihwp = nullptr;
-    int rc = qvi_new(&ihwp);
-    if (rc != QV_SUCCESS) return rc;
-
-    size_t bw = 0, total_bw = 0;
-
-    // Unpack CPU.
-    rc = qvi_bbuff_rmi_unpack_item(
-        ihwp->m_cpu, buffpos, &bw
-    );
-    if (rc != QV_SUCCESS) return rc;
-    total_bw += bw;
-    buffpos += bw;
-    // Unpack number of devices.
-    size_t ndev = 0;
-    rc = qvi_bbuff_rmi_unpack_item(
-        &ndev, buffpos, &bw
-    );
-    if (rc != QV_SUCCESS) goto out;
-    total_bw += bw;
-    buffpos += bw;
-    // Unpack devices.
-    for (size_t i = 0; i < ndev; ++i) {
-        qvi_hwpool_dev_s dev;
-        rc = qvi_bbuff_rmi_unpack_item(
-            &dev, buffpos, &bw
-        );
-        total_bw += bw;
-        buffpos += bw;
-        if (rc != QV_SUCCESS) break;
-
-        rc = ihwp->add_device(dev);
-        if (rc != QV_SUCCESS) break;
-    }
-out:
-    if (rc != QV_SUCCESS) {
-        total_bw = 0;
-    }
-    *bytes_written = total_bw;
-    *hwp = ihwp;
-    return rc;
+    return qvi_hwpool_s::unpack(buffpos, bytes_written, hwp);
 }
 
 /**

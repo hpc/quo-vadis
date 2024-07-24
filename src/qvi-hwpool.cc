@@ -43,7 +43,6 @@
 // approach using the device IDs instead of the bit positions.
 
 #include "qvi-hwpool.h"
-#include "qvi-bbuff.h"
 #include "qvi-bbuff-rmi.h"
 #include "qvi-utils.h"
 
@@ -187,13 +186,13 @@ qvi_hwpool_s::initialize(
 }
 
 const qvi_hwloc_bitmap_s &
-qvi_hwpool_s::cpuset(void)
+qvi_hwpool_s::cpuset(void) const
 {
     return m_cpu.cpuset;
 }
 
 const qvi_hwpool_devs_t &
-qvi_hwpool_s::devices(void)
+qvi_hwpool_s::devices(void) const
 {
     return m_devs;
 }
@@ -232,16 +231,69 @@ qvi_hwpool_s::release_devices(void)
 int
 qvi_hwpool_s::pack(
     qvi_bbuff_t *buff
-) {
-    return qvi_bbuff_rmi_pack(buff, this);
+) const {
+    // Pack the CPU.
+    int rc = qvi_bbuff_rmi_pack_item(buff, m_cpu);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // Pack the number of devices.
+    const size_t ndev = m_devs.size();
+    rc = qvi_bbuff_rmi_pack_item(buff, ndev);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // Pack the devices.
+    for (const auto &dev : m_devs) {
+        rc = qvi_bbuff_rmi_pack_item(buff, dev.second.get());
+        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    }
+    return rc;
 }
 
 int
 qvi_hwpool_s::unpack(
-    qvi_bbuff_t *buff,
+    byte_t *buffpos,
+    size_t *bytes_written,
     qvi_hwpool_s **hwp
 ) {
-    return qvi_bbuff_rmi_unpack(qvi_bbuff_data(buff), hwp);
+    size_t bw = 0, total_bw = 0;
+    // Create the new hardware pool.
+    qvi_hwpool_s *ihwp = nullptr;
+    int rc = qvi_new(&ihwp);
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    // Unpack the CPU into the hardare pool.
+    rc = qvi_bbuff_rmi_unpack_item(
+        ihwp->m_cpu, buffpos, &bw
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    total_bw += bw;
+    buffpos += bw;
+    // Unpack the number of devices.
+    size_t ndev;
+    rc = qvi_bbuff_rmi_unpack_item(
+        &ndev, buffpos, &bw
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    total_bw += bw;
+    buffpos += bw;
+    // Unpack and add the devices.
+    for (size_t i = 0; i < ndev; ++i) {
+        qvi_hwpool_dev_s dev;
+        rc = qvi_bbuff_rmi_unpack_item(
+            &dev, buffpos, &bw
+        );
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
+        total_bw += bw;
+        buffpos += bw;
+        //
+        rc = ihwp->add_device(dev);
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
+    }
+out:
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        total_bw = 0;
+        qvi_delete(&ihwp);
+    }
+    *bytes_written = total_bw;
+    *hwp = ihwp;
+    return rc;
 }
 
 /**

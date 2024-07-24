@@ -84,11 +84,11 @@ using qvi_hwpool_devs_t = std::multimap<
 >;
 
 struct qvi_hwpool_s {
+private:
     /** The hardware pool's CPU. */
     qvi_hwpool_cpu_s m_cpu;
     /** The hardware pool's devices. */
     qvi_hwpool_devs_t m_devs;
-private:
     /**
      * Adds all devices with affinity to the
      * provided, initialized hardware resource pool.
@@ -121,12 +121,12 @@ public:
      * Returns a const reference to the hardware pool's cpuset.
      */
     const qvi_hwloc_bitmap_s &
-    cpuset(void);
+    cpuset(void) const;
     /**
      * Returns a const reference to the hardware pool's devices.
      */
     const qvi_hwpool_devs_t &
-    devices(void);
+    devices(void) const;
     /**
      * Returns the number of objects in the hardware pool.
      */
@@ -154,13 +154,14 @@ public:
     int
     pack(
         qvi_bbuff_t *buff
-    );
+    ) const;
     /**
      * Unpacks the buffer and creates a new hardware pool instance.
      */
     static int
     unpack(
-        qvi_bbuff_t *buff,
+        byte_t *buffpos,
+        size_t *bytes_written,
         qvi_hwpool_s **hwp
     );
 };
