@@ -17,7 +17,6 @@
 #define QVI_HWPOOL_H
 
 #include "qvi-common.h" // IWYU pragma: keep
-#include "qvi-bbuff.h"
 #include "qvi-hwloc.h"
 
 /**
@@ -61,15 +60,11 @@ struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
       , affinity(dev.affinity)
       , id(dev.id)
       , pci_bus_id(dev.pci_bus_id)
-      , uuid(dev.uuid)
-    {
-    }
+      , uuid(dev.uuid) { }
     /** Constructor using std::shared_ptr<qvi_hwloc_device_s>. */
     explicit qvi_hwpool_dev_s(
         const std::shared_ptr<qvi_hwloc_device_s> &shdev
-    ) : qvi_hwpool_dev_s(*shdev.get())
-    {
-    }
+    ) : qvi_hwpool_dev_s(*shdev.get()) { }
     /** Destructor. */
     virtual ~qvi_hwpool_dev_s(void) = default;
     /** Equality operator. */

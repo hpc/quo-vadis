@@ -103,6 +103,7 @@ qv_scope_nobjs(
     qvi_catch_and_return();
 }
 
+// TODO(skg) Rename to qv_scope_group_rank.
 int
 qv_scope_taskid(
     qv_scope_t *scope,
@@ -112,11 +113,12 @@ qv_scope_taskid(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_taskid(scope, taskid);
+        return qvi_scope_group_rank(scope, taskid);
     }
     qvi_catch_and_return();
 }
 
+// TODO(skg) Rename to qv_scope_group_size.
 int
 qv_scope_ntasks(
     qv_scope_t *scope,
@@ -126,7 +128,7 @@ qv_scope_ntasks(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_ntasks(scope, ntasks);
+        return qvi_scope_group_size(scope, ntasks);
     }
     qvi_catch_and_return();
 }
