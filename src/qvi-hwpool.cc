@@ -135,6 +135,34 @@ pool_release_cpus_by_cpuset(
 #endif
 
 int
+qvi_hwpool_dev_s::id(
+    qv_device_id_type_t format,
+    char **result
+) {
+    int rc = QV_SUCCESS, nw = 0;
+    switch (format) {
+        case (QV_DEVICE_ID_UUID):
+            nw = asprintf(result, "%s", uuid.c_str());
+            break;
+        case (QV_DEVICE_ID_PCI_BUS_ID):
+            nw = asprintf(result, "%s", pci_bus_id.c_str());
+            break;
+        case (QV_DEVICE_ID_ORDINAL):
+            nw = asprintf(result, "%d", m_id);
+            break;
+        default:
+            rc = QV_ERR_INVLD_ARG;
+            break;
+    }
+    if (qvi_unlikely(nw == -1)) rc = QV_ERR_OOR;
+
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        *result = nullptr;
+    }
+    return rc;
+}
+
+int
 qvi_hwpool_s::add_devices_with_affinity(
     qvi_hwloc_t *hwloc
 ) {
@@ -306,7 +334,7 @@ namespace std {
         size_t
         operator()(const qvi_hwpool_dev_s &x) const
         {
-            const int a = x.id;
+            const int a = x.m_id;
             const int b = (int)x.type;
             const int64_t c = qvi_cantor_pairing(a, b);
             return hash<int64_t>()(c);

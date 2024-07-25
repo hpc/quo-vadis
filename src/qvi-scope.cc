@@ -201,11 +201,12 @@ qvi_scope_device_id(
     qv_scope_t *scope,
     qv_hw_obj_type_t dev_type,
     int dev_index,
-    qv_device_id_type_t id_type,
-    char **dev_id
+    qv_device_id_type_t format,
+    char **result
 ) {
-    int rc = QV_SUCCESS, id = 0, nw = 0;
+    *result = nullptr;
     // Look for the requested device.
+    int id = 0;
     qvi_hwpool_dev_s *finfo = nullptr;
     for (const auto &dinfo : scope->hwpool->devices()) {
         if (dev_type != dinfo.first) continue;
@@ -214,31 +215,9 @@ qvi_scope_device_id(
             break;
         }
     }
-    if (qvi_unlikely(!finfo)) {
-        rc = QV_ERR_NOT_FOUND;
-        goto out;
-    }
+    if (qvi_unlikely(!finfo)) return QV_ERR_NOT_FOUND;
     // Format the device ID based on the caller's request.
-    switch (id_type) {
-        case (QV_DEVICE_ID_UUID):
-            nw = asprintf(dev_id, "%s", finfo->uuid.c_str());
-            break;
-        case (QV_DEVICE_ID_PCI_BUS_ID):
-            nw = asprintf(dev_id, "%s", finfo->pci_bus_id.c_str());
-            break;
-        case (QV_DEVICE_ID_ORDINAL):
-            nw = asprintf(dev_id, "%d", finfo->id);
-            break;
-        default:
-            rc = QV_ERR_INVLD_ARG;
-            break;
-    }
-    if (qvi_unlikely(nw == -1)) rc = QV_ERR_OOR;
-out:
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        *dev_id = nullptr;
-    }
-    return rc;
+    return finfo->id(format, result);
 }
 
 int
