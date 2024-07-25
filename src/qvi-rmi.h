@@ -20,18 +20,29 @@
 #define QVI_RMI_H
 
 #include "qvi-common.h"
-#include "qvi-hwpool.h"
 
 #ifdef __cplusplus
 
+/**
+ * Maintains RMI configuration information.
+ */
 struct qvi_rmi_config_s {
-    /** Not sent, initialized elsewhere. */
+    /** Maintains hardware locality information. */
     qvi_hwloc_t *hwloc = nullptr;
     /** Connection URL. */
     std::string url;
     /** Path to hardware topology file. */
     std::string hwtopo_path;
 };
+
+/**
+ * Connects a client to to the server specified by the provided URL.
+ */
+int
+qvi_rmi_client_connect(
+    qvi_rmi_client_t *client,
+    const std::string &url
+);
 
 extern "C" {
 #endif
@@ -52,7 +63,7 @@ qvi_rmi_server_new(
  *
  */
 void
-qvi_rmi_server_free(
+qvi_rmi_server_delete(
     qvi_rmi_server_t **server
 );
 
@@ -86,7 +97,7 @@ qvi_rmi_client_new(
  *
  */
 void
-qvi_rmi_client_free(
+qvi_rmi_client_delete(
     qvi_rmi_client_t **client
 );
 
@@ -99,10 +110,21 @@ qvi_rmi_client_hwloc(
 );
 
 /**
+ * Returns a new hardware pool based on the intrinsic scope specifier.
+ */
+int
+qvi_rmi_get_intrinsic_hwpool(
+    qvi_rmi_client_t *client,
+    pid_t task_id,
+    qv_scope_intrinsic_t iscope,
+    qvi_hwpool_s **hwpool
+);
+
+/**
  *
  */
 int
-qvi_rmi_task_get_cpubind(
+qvi_rmi_cpubind(
     qvi_rmi_client_t *client,
     pid_t task_id,
     hwloc_cpuset_t *cpuset
@@ -112,21 +134,10 @@ qvi_rmi_task_get_cpubind(
  *
  */
 int
-qvi_rmi_task_set_cpubind_from_cpuset(
+qvi_rmi_set_cpubind(
     qvi_rmi_client_t *client,
     pid_t task_id,
     hwloc_const_cpuset_t cpuset
-);
-
-/**
- *
- */
-int
-qvi_rmi_scope_get_intrinsic_hwpool(
-    qvi_rmi_client_t *client,
-    pid_t task_id,
-    qv_scope_intrinsic_t iscope,
-    qvi_hwpool_s **hwpool
 );
 
 /**
@@ -174,15 +185,6 @@ qvi_rmi_get_cpuset_for_nobjs(
 
 #ifdef __cplusplus
 }
-
-/**
- *
- */
-int
-qvi_rmi_client_connect(
-    qvi_rmi_client_t *client,
-    const std::string &url
-);
 #endif
 
 #endif

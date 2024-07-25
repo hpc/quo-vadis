@@ -82,7 +82,7 @@ qv_scope_free(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        qvi_scope_free(&scope);
+        qvi_scope_delete(&scope);
         return QV_SUCCESS;
     }
     qvi_catch_and_return();
@@ -98,7 +98,7 @@ qv_scope_nobjs(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_nobjs(scope, obj, nobjs);
+        return qvi_scope_nobjects(scope, obj, nobjs);
     }
     qvi_catch_and_return();
 }

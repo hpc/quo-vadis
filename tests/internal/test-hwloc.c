@@ -223,7 +223,7 @@ main(void)
 
     if (binds) free(binds);
     if (bitmap) hwloc_bitmap_free(bitmap);
-    qvi_hwloc_free(&hwl);
+    qvi_hwloc_delete(&hwl);
 
     printf("# Done\n");
     return EXIT_SUCCESS;

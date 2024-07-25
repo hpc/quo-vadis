@@ -45,8 +45,8 @@ struct context_s {
     /** Destructor */
     ~context_s(void)
     {
-        qvi_rmi_server_free(&rmi);
-        qvi_hwloc_free(&hwloc);
+        qvi_rmi_server_delete(&rmi);
+        qvi_hwloc_delete(&hwloc);
     }
 };
 

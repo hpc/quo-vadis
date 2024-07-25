@@ -34,7 +34,7 @@ qvi_group_mpi_s::qvi_group_mpi_s(
 
 qvi_group_mpi_s::~qvi_group_mpi_s(void)
 {
-    qvi_mpi_group_free(&m_mpi_group);
+    qvi_mpi_group_delete(&m_mpi_group);
     qvi_delete(&m_task);
 }
 

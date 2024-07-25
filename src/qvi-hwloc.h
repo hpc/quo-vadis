@@ -67,7 +67,7 @@ qvi_hwloc_new(
  *
  */
 void
-qvi_hwloc_free(
+qvi_hwloc_delete(
     qvi_hwloc_t **hwl
 );
 
@@ -132,7 +132,7 @@ qvi_hwloc_bitmap_calloc(
  *
  */
 void
-qvi_hwloc_bitmap_free(
+qvi_hwloc_bitmap_delete(
     hwloc_cpuset_t *cpuset
 );
 
@@ -327,7 +327,7 @@ qvi_hwloc_device_new(
  *
  */
 void
-qvi_hwloc_device_free(
+qvi_hwloc_device_delete(
     qvi_hwloc_device_t **dev
 );
 
@@ -449,7 +449,7 @@ public:
     /** Destructor. */
     ~qvi_hwloc_bitmap_s(void)
     {
-        qvi_hwloc_bitmap_free(&m_data);
+        qvi_hwloc_bitmap_delete(&m_data);
     }
     /** Assignment operator. */
     void

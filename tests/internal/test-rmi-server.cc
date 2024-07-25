@@ -88,8 +88,8 @@ server(
     printf("# [%d] Server Start Time %lf seconds\n", getpid(), end - start);
 out:
     sleep(4);
-    qvi_rmi_server_free(&server);
-    qvi_hwloc_free(&hwloc);
+    qvi_rmi_server_delete(&server);
+    qvi_hwloc_delete(&hwloc);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         return EXIT_FAILURE;

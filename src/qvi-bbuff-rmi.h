@@ -793,7 +793,7 @@ qvi_bbuff_rmi_unpack_item(
     *bytes_written = strlen(cpusets) + 1;
 out:
     if (rc != QV_SUCCESS) {
-        qvi_hwloc_bitmap_free(cpuset);
+        qvi_hwloc_bitmap_delete(cpuset);
     }
     return rc;
 }
@@ -814,7 +814,7 @@ qvi_bbuff_rmi_unpack_item(
     if (rc != QV_SUCCESS) return rc;
 
     rc = bitmap.set(raw_cpuset);
-    qvi_hwloc_bitmap_free(&raw_cpuset);
+    qvi_hwloc_bitmap_delete(&raw_cpuset);
     return rc;
 }
 

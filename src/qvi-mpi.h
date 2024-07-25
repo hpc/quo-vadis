@@ -48,7 +48,7 @@ qvi_mpi_new(
  *
  */
 void
-qvi_mpi_free(
+qvi_mpi_delete(
     qvi_mpi_t **mpi
 );
 
@@ -73,7 +73,7 @@ qvi_mpi_group_new(
  *
  */
 void
-qvi_mpi_group_free(
+qvi_mpi_group_delete(
     qvi_mpi_group_t **group
 );
 
@@ -89,7 +89,7 @@ qvi_mpi_group_size(
  *
  */
 int
-qvi_mpi_group_id(
+qvi_mpi_group_rank(
     const qvi_mpi_group_t *group
 );
 

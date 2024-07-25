@@ -30,7 +30,7 @@ qvi_group_omp_s::qvi_group_omp_s(void)
 
 qvi_group_omp_s::~qvi_group_omp_s(void)
 {
-    qvi_omp_group_free(&m_ompgroup);
+    qvi_omp_group_delete(&m_ompgroup);
     qvi_delete(&m_task);
 }
 

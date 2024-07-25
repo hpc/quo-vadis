@@ -23,7 +23,7 @@ qvi_group_process_s::qvi_group_process_s(void)
 
 qvi_group_process_s::~qvi_group_process_s(void)
 {
-    qvi_process_group_free(&m_proc_group);
+    qvi_process_group_delete(&m_proc_group);
     qvi_delete(&m_task);
 }
 
