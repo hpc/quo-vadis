@@ -46,7 +46,7 @@ struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
     /** The bitmap encoding CPU affinity. */
     qvi_hwloc_bitmap_s affinity;
     /** Device ID (ordinal). */
-    int id = QVI_HWLOC_DEVICE_INVALID_ID;
+    int m_id = QVI_HWLOC_DEVICE_INVALID_ID;
     /** The PCI bus ID. */
     std::string pci_bus_id;
     /** Universally Unique Identifier. */
@@ -58,7 +58,7 @@ struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
         const qvi_hwloc_device_s &dev
     ) : type(dev.type)
       , affinity(dev.affinity)
-      , id(dev.id)
+      , m_id(dev.id)
       , pci_bus_id(dev.pci_bus_id)
       , uuid(dev.uuid) { }
     /** Constructor using std::shared_ptr<qvi_hwloc_device_s>. */
@@ -74,6 +74,12 @@ struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
     ) const {
         return uuid == x.uuid;
     }
+    /** Returns the device's ID string formatted as specified. */
+    int
+    id(
+        qv_device_id_type_t format,
+        char **result
+    );
 };
 
 /**

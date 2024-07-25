@@ -105,8 +105,8 @@ qvi_scope_device_id(
     qv_scope_t *scope,
     qv_hw_obj_type_t dev_type,
     int dev_index,
-    qv_device_id_type_t id_type,
-    char **dev_id
+    qv_device_id_type_t format,
+    char **result
 );
 
 /**
