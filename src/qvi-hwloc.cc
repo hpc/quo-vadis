@@ -57,9 +57,20 @@ typedef struct qvi_hwloc_s {
     }
 } qvi_hwloc_t;
 
-/**
- *
- */
+int
+qvi_hwloc_new(
+    qvi_hwloc_t **hwl
+) {
+    return qvi_new(hwl);
+}
+
+void
+qvi_hwloc_free(
+    qvi_hwloc_t **hwl
+) {
+    qvi_delete(hwl);
+}
+
 hwloc_topology_t
 qvi_hwloc_get_topo_obj(
     qvi_hwloc_t *hwl
@@ -67,9 +78,6 @@ qvi_hwloc_get_topo_obj(
     return hwl->topo;
 }
 
-/**
- *
- */
 static bool
 dev_list_compare_by_visdev_id(
     const std::shared_ptr<qvi_hwloc_device_t> &a,
@@ -178,9 +186,9 @@ qvi_hwloc_bitmap_string(
 ) {
     switch (format) {
         case QV_BIND_STRING_AS_BITMAP:
-            return qvi_hwloc_bitmap_asprintf(result, bitmap);
+            return qvi_hwloc_bitmap_asprintf(bitmap, result);
         case QV_BIND_STRING_AS_LIST:
-            return qvi_hwloc_bitmap_list_asprintf(result, bitmap);
+            return qvi_hwloc_bitmap_list_asprintf(bitmap, result);
         default:
             *result = nullptr;
             return QV_ERR_INVLD_ARG;
@@ -193,8 +201,6 @@ qvi_hwloc_obj_type_depth(
     qv_hw_obj_type_t type,
     int *depth
 ) {
-    *depth = HWLOC_TYPE_DEPTH_UNKNOWN;
-
     const hwloc_obj_type_t obj_type = qvi_hwloc_get_obj_type(type);
     *depth = hwloc_get_type_depth(hwloc->topo, obj_type);
     return QV_SUCCESS;
@@ -211,7 +217,7 @@ obj_get_by_type(
     hwloc_obj_t iobj = hwloc_get_obj_by_type(
         hwloc->topo, obj_type, (uint_t)type_index
     );
-    if (!iobj) {
+    if (qvi_unlikely(!iobj)) {
         // There are a couple of reasons why target_obj may be NULL. If this
         // ever happens and the specified type and obj index are valid, then
         // improve this code.
@@ -225,27 +231,13 @@ obj_get_by_type(
     return QV_SUCCESS;
 }
 
-int
-qvi_hwloc_new(
-    qvi_hwloc_t **hwl
-) {
-    return qvi_new(hwl);
-}
-
-void
-qvi_hwloc_free(
-    qvi_hwloc_t **hwl
-) {
-    qvi_delete(hwl);
-}
-
 static int
 topo_set_from_xml(
     qvi_hwloc_t *hwl,
     const char *path
 ) {
     const int rc = hwloc_topology_set_xml(hwl->topo, path);
-    if (rc == -1) {
+    if (qvi_unlikely(rc == -1)) {
         qvi_log_error("hwloc_topology_set_xml() failed");
         return QV_ERR_HWLOC;
     }
@@ -258,7 +250,7 @@ qvi_hwloc_topology_init(
     const char *xml
 ) {
     const int rc = hwloc_topology_init(&hwl->topo);
-    if (rc != 0) {
+    if (qvi_unlikely(rc != 0)) {
         qvi_log_error("hwloc_topology_init() failed");
         return QV_ERR_HWLOC;
     }
@@ -300,7 +292,7 @@ get_pci_busid(
         pcidev->attr->pcidev.dev,
         pcidev->attr->pcidev.func
     );
-    if (nw >= PCI_BUS_ID_BUFF_SIZE) {
+    if (qvi_unlikely(nw >= PCI_BUS_ID_BUFF_SIZE)) {
         qvi_abort();
     }
     busid = std::string(busid_buffer);
@@ -551,37 +543,34 @@ qvi_hwloc_topology_load(
     // Set flags that influence hwloc's behavior.
     static const uint_t flags = HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM;
     int rc = hwloc_topology_set_flags(hwl->topo, flags);
-    if (rc != 0) {
+    if (qvi_unlikely(rc != 0)) {
         ers = "hwloc_topology_set_flags() failed";
         goto out;
     }
-
     rc = hwloc_topology_set_all_types_filter(
         hwl->topo,
         HWLOC_TYPE_FILTER_KEEP_IMPORTANT
     );
-    if (rc != 0) {
+    if (qvi_unlikely(rc != 0)) {
         ers = "hwloc_topology_set_all_types_filter() failed";
         goto out;
     }
-
     rc = hwloc_topology_set_type_filter(
         hwl->topo,
         HWLOC_OBJ_OS_DEVICE,
         HWLOC_TYPE_FILTER_KEEP_IMPORTANT
     );
-    if (rc != 0) {
+    if (qvi_unlikely(rc != 0)) {
         ers = "hwloc_topology_set_type_filter() failed";
         goto out;
     }
 
     rc = hwloc_topology_load(hwl->topo);
-    if (rc != 0) {
+    if (qvi_unlikely(rc != 0)) {
         ers = "hwloc_topology_load() failed";
-        goto out;
     }
 out:
-    if (ers) {
+    if (qvi_unlikely(ers)) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
         return QV_ERR_HWLOC;
     }
@@ -593,12 +582,10 @@ qvi_hwloc_discover_devices(
     qvi_hwloc_t *hwl
 ) {
     int rc = discover_all_devices(hwl);
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     rc = discover_gpu_devices(hwl);
-    if (rc != QV_SUCCESS) return rc;
-    rc = discover_nic_devices(hwl);
-    if (rc != QV_SUCCESS) return rc;
-    return QV_SUCCESS;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    return discover_nic_devices(hwl);
 }
 
 hwloc_topology_t
@@ -627,7 +614,7 @@ qvi_hwloc_bitmap_calloc(
     hwloc_cpuset_t *cpuset
 ) {
     *cpuset = hwloc_bitmap_alloc();
-    if (!*cpuset) return QV_ERR_OOR;
+    if (qvi_unlikely(!*cpuset)) return QV_ERR_OOR;
     hwloc_bitmap_zero(*cpuset);
     return QV_SUCCESS;
 }
@@ -647,8 +634,8 @@ qvi_hwloc_bitmap_copy(
     hwloc_cpuset_t dest
 ) {
     assert(src && dest);
-
-    if (hwloc_bitmap_copy(dest, src) != 0) {
+    const int rc = hwloc_bitmap_copy(dest, src);
+    if (qvi_unlikely(rc != 0)) {
         return QV_ERR_HWLOC;
     }
     return QV_SUCCESS;
@@ -661,11 +648,11 @@ qvi_hwloc_bitmap_dup(
 ) {
     hwloc_cpuset_t idest = nullptr;
     int rc = qvi_hwloc_bitmap_calloc(&idest);
-    if (rc != QV_SUCCESS) goto out;
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
 
     rc = qvi_hwloc_bitmap_copy(src, idest);
 out:
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_hwloc_bitmap_free(&idest);
     }
     *dest = idest;
@@ -680,7 +667,7 @@ qvi_hwloc_bitmap_nbits(
     *nbits = 0;
 
     const int inbits = hwloc_bitmap_last(cpuset);
-    if (inbits == -1) return QV_ERR_HWLOC;
+    if (qvi_unlikely(inbits == -1)) return QV_ERR_HWLOC;
 
     *nbits = size_t(inbits) + 1;
     return QV_SUCCESS;
@@ -829,7 +816,7 @@ qvi_hwloc_emit_cpubind(
     if (rc != QV_SUCCESS) return rc;
 
     char *cpusets = nullptr;
-    rc = qvi_hwloc_bitmap_asprintf(&cpusets, cpuset);
+    rc = qvi_hwloc_bitmap_asprintf(cpuset, &cpusets);
     if (rc != QV_SUCCESS) goto out;
 
     qvi_log_info(
@@ -844,36 +831,32 @@ out:
 
 int
 qvi_hwloc_bitmap_asprintf(
-    char **result,
-    hwloc_const_cpuset_t cpuset
+    hwloc_const_cpuset_t cpuset,
+    char **result
 ) {
-    int rc = QV_SUCCESS;
-    // Caller is responsible for freeing returned resources.
     char *iresult = nullptr;
     (void)hwloc_bitmap_asprintf(&iresult, cpuset);
-    if (!iresult) {
+    if (qvi_unlikely(!iresult)) {
         qvi_log_error("hwloc_bitmap_asprintf() failed");
-        rc = QV_ERR_OOR;
+        return QV_ERR_OOR;
     }
     *result = iresult;
-    return rc;
+    return QV_SUCCESS;
 }
 
 int
 qvi_hwloc_bitmap_list_asprintf(
-    char **result,
-    hwloc_const_cpuset_t cpuset
+    hwloc_const_cpuset_t cpuset,
+    char **result
 ) {
-    int rc = QV_SUCCESS;
-    // Caller is responsible for freeing returned resources.
     char *iresult = nullptr;
     (void)hwloc_bitmap_list_asprintf(&iresult, cpuset);
-    if (!iresult) {
+    if (qvi_unlikely(!iresult)) {
         qvi_log_error("hwloc_bitmap_list_asprintf() failed");
-        rc = QV_ERR_OOR;
+        return QV_ERR_OOR;
     }
     *result = iresult;
-    return rc;
+    return QV_SUCCESS;
 }
 
 void
@@ -884,17 +867,12 @@ qvi_hwloc_cpuset_debug(
 #if QVI_DEBUG_MODE == 0
     QVI_UNUSED(msg);
 #endif
-
-    if (!cpuset) {
-        qvi_abort();
-    }
-
+    assert(cpuset);
     char *cpusets = nullptr;
-    int rc = qvi_hwloc_bitmap_asprintf(&cpusets, cpuset);
+    int rc = qvi_hwloc_bitmap_asprintf(cpuset, &cpusets);
     if (rc != QV_SUCCESS) {
         qvi_abort();
     }
-
     qvi_log_debug("{} CPUSET={}", msg, cpusets);
     free(cpusets);
 }
@@ -963,14 +941,9 @@ qvi_hwloc_task_set_cpubind_from_cpuset(
     hwloc_const_cpuset_t cpuset
 ) {
     const int rc = hwloc_set_proc_cpubind(
-        hwl->topo,
-        task_id,
-        cpuset,
-        HWLOC_CPUBIND_THREAD
+        hwl->topo, task_id, cpuset, HWLOC_CPUBIND_THREAD
     );
-    if (rc == -1) {
-        return QV_ERR_NOT_SUPPORTED;
-    }
+    if (qvi_unlikely(rc == -1)) return QV_ERR_NOT_SUPPORTED;
     return QV_SUCCESS;
 }
 
@@ -984,7 +957,7 @@ qvi_hwloc_task_get_cpubind_as_string(
     int rc = qvi_hwloc_task_get_cpubind(hwl, task_id, &cpuset);
     if (rc != QV_SUCCESS) return rc;
 
-    rc = qvi_hwloc_bitmap_asprintf(cpusets, cpuset);
+    rc = qvi_hwloc_bitmap_asprintf(cpuset, cpusets);
     qvi_hwloc_bitmap_free(&cpuset);
     return rc;
 }
@@ -1070,11 +1043,10 @@ get_nosdevs_in_cpuset(
     int *nobjs
 ) {
     int ndevs = 0;
-    for (auto &dev : devs) {
+    for (const auto &dev : devs) {
         if (hwloc_bitmap_isincluded(dev->affinity.cdata(), cpuset)) ndevs++;
     }
     *nobjs = ndevs;
-
 
     return QV_SUCCESS;
 }
@@ -1088,7 +1060,7 @@ get_nobjs_in_cpuset(
 ) {
     int depth;
     int rc = qvi_hwloc_obj_type_depth(hwl, target_obj, &depth);
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     int n = 0;
     hwloc_topology_t topo = hwl->topo;
@@ -1116,7 +1088,6 @@ qvi_hwloc_get_nobjs_in_cpuset(
         default:
             return get_nobjs_in_cpuset(hwl, target_obj, cpuset, nobjs);
     }
-    return QV_ERR_INTERNAL;
 }
 
 int
@@ -1126,7 +1097,7 @@ qvi_hwloc_get_obj_type_in_cpuset(
     hwloc_const_cpuset_t cpuset,
     qv_hw_obj_type_t *target_obj
 ) {
-    hwloc_topology_t topo = hwl->topo;
+    const hwloc_topology_t topo = hwl->topo;
     hwloc_obj_t obj =  hwloc_get_first_largest_obj_inside_cpuset(topo, cpuset);
     int num = hwloc_get_nbobjs_inside_cpuset_by_type(topo, cpuset, obj->type);
     int depth = obj->depth;
@@ -1214,7 +1185,7 @@ qvi_hwloc_devices_emit(
     }
     for (auto &dev : *devlist) {
         char *cpusets = nullptr;
-        int rc = qvi_hwloc_bitmap_asprintf(&cpusets, dev->affinity.cdata());
+        int rc = qvi_hwloc_bitmap_asprintf(dev->affinity.cdata(), &cpusets);
         if (rc != QV_SUCCESS) return rc;
 
         qvi_log_info("  Device Name: {}", dev->name);

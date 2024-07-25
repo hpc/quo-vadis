@@ -124,7 +124,7 @@ client(
         goto out;
     }
     char *res;
-    qvi_hwloc_bitmap_asprintf(&res, bitmap);
+    qvi_hwloc_bitmap_asprintf(bitmap, &res);
     printf("# [%d] cpubind = %s\n", who, res);
     hwloc_bitmap_free(bitmap);
     free(res);
