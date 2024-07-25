@@ -22,6 +22,28 @@
 #include "qvi-hwloc.h"
 
 /**
+ * Returns a new intrinsic scope.
+ */
+int
+qvi_scope_get(
+    qvi_group_t *group,
+    qv_scope_intrinsic_t iscope,
+    qv_scope_t **scope
+);
+
+/**
+ *
+ */
+int
+qvi_scope_create(
+    qv_scope_t *parent,
+    qv_hw_obj_type_t type,
+    int nobjs,
+    qv_scope_create_hints_t hints,
+    qv_scope_t **child
+);
+
+/**
  * Frees a scope.
  */
 void
@@ -39,6 +61,22 @@ qvi_scope_thfree(
 );
 
 /**
+ * Returns a pointer to the scope's underlying group.
+ */
+qvi_group_t *
+qvi_scope_group(
+    qv_scope_t *scope
+);
+
+/**
+ * Returns a const reference to the provided scope's cpuset.
+ */
+const qvi_hwloc_bitmap_s &
+qvi_scope_cpuset(
+    qv_scope_t *scope
+);
+
+/**
  * Returns the caller's group rank in the provided scope.
  */
 int
@@ -48,7 +86,7 @@ qvi_scope_group_rank(
 );
 
 /**
- *
+ * Returns the scope's group size.
  */
 int
 qvi_scope_group_size(
@@ -57,7 +95,30 @@ qvi_scope_group_size(
 );
 
 /**
- *
+ * Returns the number of hardware objects in the provided scope.
+ */
+int
+qvi_scope_nobjs(
+    qv_scope_t *scope,
+    qv_hw_obj_type_t obj,
+    int *n
+);
+
+/**
+ * Returns the device ID string according to the ID type for the requested
+ * device type and index.
+ */
+int
+qvi_scope_device_id(
+    qv_scope_t *scope,
+    qv_hw_obj_type_t dev_type,
+    int dev_index,
+    qv_device_id_type_t id_type,
+    char **dev_id
+);
+
+/**
+ * Performs a scope-level barrier.
  */
 int
 qvi_scope_barrier(
@@ -78,33 +139,7 @@ int
 qvi_scope_bind_string(
     qv_scope_t *scope,
     qv_bind_string_format_t format,
-    char **str
-);
-
-/**
- * Returns a new intrinsic scope.
- */
-int
-qvi_scope_get(
-    qvi_group_t *group,
-    qv_scope_intrinsic_t iscope,
-    qv_scope_t **scope
-);
-
-/**
- * Returns a pointer to the scope's underlying group.
- */
-qvi_group_t *
-qvi_scope_group_get(
-    qv_scope_t *scope
-);
-
-/**
- * Returns a const reference to the provided scope's cpuset.
- */
-const qvi_hwloc_bitmap_s &
-qvi_scope_cpuset_get(
-    qv_scope_t *scope
+    char **result
 );
 
 int
@@ -147,37 +182,6 @@ qvi_scope_split_at(
     qv_hw_obj_type_t type,
     int group_id,
     qv_scope_t **child
-);
-
-/**
- *
- */
-int
-qvi_scope_create(
-    qv_scope_t *parent,
-    qv_hw_obj_type_t type,
-    int nobjs,
-    qv_scope_create_hints_t hints,
-    qv_scope_t **child
-);
-
-/**
- *
- */
-int
-qvi_scope_nobjs(
-    qv_scope_t *scope,
-    qv_hw_obj_type_t obj,
-    int *n
-);
-
-int
-qvi_scope_get_device_id(
-    qv_scope_t *scope,
-    qv_hw_obj_type_t dev_obj,
-    int i,
-    qv_device_id_type_t id_type,
-    char **dev_id
 );
 
 #endif

@@ -28,9 +28,6 @@ const int QVI_HWLOC_DEVICE_INVISIBLE_ID = -1;
 /** ID used to indicate an invalid or unset ID. */
 const int QVI_HWLOC_DEVICE_INVALID_ID = -1;
 
-struct qvi_hwloc_s;
-typedef struct qvi_hwloc_s qvi_hwloc_t;
-
 struct qvi_hwloc_device_s;
 typedef struct qvi_hwloc_device_s qvi_hwloc_device_t;
 
@@ -529,6 +526,13 @@ qvi_hwloc_get_devices_in_bitmap(
     qv_hw_obj_type_t dev_type,
     const qvi_hwloc_bitmap_s &bitmap,
     qvi_hwloc_dev_list_t &devs
+);
+
+int
+qvi_hwloc_bitmap_string(
+    hwloc_const_bitmap_t bitmap,
+    qv_bind_string_format_t format,
+    char **result
 );
 
 #endif

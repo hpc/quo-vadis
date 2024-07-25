@@ -171,6 +171,23 @@ qvi_hwloc_obj_type_is_host_resource(
 }
 
 int
+qvi_hwloc_bitmap_string(
+    hwloc_const_bitmap_t bitmap,
+    qv_bind_string_format_t format,
+    char **result
+) {
+    switch (format) {
+        case QV_BIND_STRING_AS_BITMAP:
+            return qvi_hwloc_bitmap_asprintf(result, bitmap);
+        case QV_BIND_STRING_AS_LIST:
+            return qvi_hwloc_bitmap_list_asprintf(result, bitmap);
+        default:
+            *result = nullptr;
+            return QV_ERR_INVLD_ARG;
+    }
+}
+
+int
 qvi_hwloc_obj_type_depth(
     qvi_hwloc_t *hwloc,
     qv_hw_obj_type_t type,

@@ -134,7 +134,6 @@ pool_release_cpus_by_cpuset(
 }
 #endif
 
- // TODO(skg) Acquire devices.
 int
 qvi_hwpool_s::add_devices_with_affinity(
     qvi_hwloc_t *hwloc
@@ -288,8 +287,8 @@ qvi_hwpool_s::unpack(
     }
 out:
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        total_bw = 0;
         qvi_delete(&ihwp);
+        total_bw = 0;
     }
     *bytes_written = total_bw;
     *hwp = ihwp;

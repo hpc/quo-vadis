@@ -18,8 +18,8 @@
 // TODO(skg) Add RMI to acquire/release resources.
 
 #include "qvi-scope.h"
-#include "qvi-bbuff.h"
 #include "qvi-task.h"
+#include "qvi-bbuff.h"
 #include "qvi-rmi.h"
 #include "qvi-bbuff-rmi.h"
 #include "qvi-hwpool.h"
@@ -29,7 +29,6 @@
 /** Maintains a mapping between IDs to device information. */
 using id_devinfo_multimap_t = std::multimap<int, const qvi_hwpool_dev_s *>;
 
-/** Scope type definition. */
 struct qv_scope_s {
     /** Task group associated with this scope instance. */
     qvi_group_t *group = nullptr;
@@ -60,6 +59,33 @@ qvi_scope_new(
     return qvi_new(scope, group, hwpool);
 }
 
+int
+qvi_scope_get(
+    qvi_group_t *group,
+    qv_scope_intrinsic_t iscope,
+    qv_scope_t **scope
+) {
+    qvi_hwpool_s *hwpool = nullptr;
+    // Get the requested intrinsic group.
+    int rc = group->make_intrinsic(iscope);
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    // Get the requested intrinsic hardware pool.
+    rc = qvi_rmi_scope_get_intrinsic_hwpool(
+        group->task()->rmi(),
+        qvi_task_s::mytid(),
+        iscope, &hwpool
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    // Create and initialize the scope.
+    rc = qvi_scope_new(group, hwpool, scope);
+out:
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        qvi_delete(&hwpool);
+        qvi_scope_free(scope);
+    }
+    return rc;
+}
+
 void
 qvi_scope_free(
     qv_scope_t **scope
@@ -82,7 +108,7 @@ qvi_scope_thfree(
 }
 
 qvi_group_t *
-qvi_scope_group_get(
+qvi_scope_group(
     qv_scope_t *scope
 ) {
     assert(scope);
@@ -90,7 +116,7 @@ qvi_scope_group_get(
 }
 
 const qvi_hwpool_s *
-qvi_scope_hwpool_get(
+qvi_scope_hwpool(
     qv_scope_t *scope
 ) {
     assert(scope);
@@ -98,7 +124,7 @@ qvi_scope_hwpool_get(
 }
 
 const qvi_hwloc_bitmap_s &
-qvi_scope_cpuset_get(
+qvi_scope_cpuset(
     qv_scope_t *scope
 ) {
     assert(scope);
@@ -140,33 +166,33 @@ qvi_scope_nobjs(
     int *n
 ) {
     return scope->hwpool->nobjects(
-        scope->group->task()->hwloc(), obj, n
+        scope->group->hwloc(), obj, n
     );
 }
 
 int
-qvi_scope_get_device_id(
+qvi_scope_device_id(
     qv_scope_t *scope,
-    qv_hw_obj_type_t dev_obj,
-    int i,
+    qv_hw_obj_type_t dev_type,
+    int dev_index,
     qv_device_id_type_t id_type,
     char **dev_id
 ) {
     int rc = QV_SUCCESS, id = 0, nw = 0;
-
+    // Look for the requested device.
     qvi_hwpool_dev_s *finfo = nullptr;
     for (const auto &dinfo : scope->hwpool->devices()) {
-        if (dev_obj != dinfo.first) continue;
-        if (id++ == i) {
+        if (dev_type != dinfo.first) continue;
+        if (id++ == dev_index) {
             finfo = dinfo.second.get();
             break;
         }
     }
-    if (!finfo) {
+    if (qvi_unlikely(!finfo)) {
         rc = QV_ERR_NOT_FOUND;
         goto out;
     }
-
+    // Format the device ID based on the caller's request.
     switch (id_type) {
         case (QV_DEVICE_ID_UUID):
             nw = asprintf(dev_id, "%s", finfo->uuid.c_str());
@@ -181,9 +207,9 @@ qvi_scope_get_device_id(
             rc = QV_ERR_INVLD_ARG;
             goto out;
     }
-    if (nw == -1) rc = QV_ERR_OOR;
+    if (qvi_unlikely(nw == -1)) rc = QV_ERR_OOR;
 out:
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         *dev_id = nullptr;
     }
     return rc;
@@ -209,54 +235,14 @@ int
 qvi_scope_bind_string(
     qv_scope_t *scope,
     qv_bind_string_format_t format,
-    char **str
+    char **result
 ) {
-    char *istr = nullptr;
+    hwloc_cpuset_t bitmap = nullptr;
+    int rc = scope->group->task()->bind_top(&bitmap);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    hwloc_cpuset_t cpuset = nullptr;
-    int rc = scope->group->task()->bind_top(&cpuset);
-    if (rc != QV_SUCCESS) return rc;
-
-    switch (format) {
-        case QV_BIND_STRING_AS_BITMAP:
-            rc = qvi_hwloc_bitmap_asprintf(&istr, cpuset);
-            break;
-        case QV_BIND_STRING_AS_LIST:
-            rc = qvi_hwloc_bitmap_list_asprintf(&istr, cpuset);
-            break;
-        default:
-            rc = QV_ERR_INVLD_ARG;
-            break;
-    }
-    qvi_hwloc_bitmap_free(&cpuset);
-    *str = istr;
-    return rc;
-}
-
-int
-qvi_scope_get(
-    qvi_group_t *group,
-    qv_scope_intrinsic_t iscope,
-    qv_scope_t **scope
-) {
-    qvi_hwpool_s *hwpool = nullptr;
-    // Get the requested intrinsic group.
-    int rc = group->make_intrinsic(iscope);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    // Get the requested intrinsic hardware pool.
-    rc = qvi_rmi_scope_get_intrinsic_hwpool(
-        group->task()->rmi(),
-        qvi_task_s::mytid(),
-        iscope, &hwpool
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    // Create and initialize the scope.
-    rc = qvi_scope_new(group, hwpool, scope);
-out:
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_delete(&hwpool);
-        qvi_scope_free(scope);
-    }
+    rc = qvi_hwloc_bitmap_string(bitmap, format, result);
+    qvi_hwloc_bitmap_free(&bitmap);
     return rc;
 }
 
@@ -1337,7 +1323,7 @@ qvi_scope_create(
     rc = qvi_new(&hwpool);
     if (rc != QV_SUCCESS) goto out;
 
-    rc = hwpool->initialize(parent->group->task()->hwloc(), cpuset);
+    rc = hwpool->initialize(parent->group->hwloc(), cpuset);
     if (rc != QV_SUCCESS) goto out;
     // Create underlying group. Notice the use of self here.
     rc = parent->group->self(&group);

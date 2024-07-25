@@ -21,10 +21,6 @@
 
 #include "qvi-common.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  *
  */
@@ -69,13 +65,9 @@ qvi_bbuff_size(
 int
 qvi_bbuff_append(
     qvi_bbuff_t *buff,
-    const void *data,
+    const void *const data,
     size_t size
 );
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 

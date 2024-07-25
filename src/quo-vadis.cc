@@ -217,7 +217,7 @@ qv_scope_get_device_id(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_get_device_id(
+        return qvi_scope_device_id(
             scope, dev_obj, dev_index, id_type, dev_id
         );
     }
