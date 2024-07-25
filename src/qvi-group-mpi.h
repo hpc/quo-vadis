@@ -48,7 +48,7 @@ public:
     virtual int
     rank(void)
     {
-        return qvi_mpi_group_id(m_mpi_group);
+        return qvi_mpi_group_rank(m_mpi_group);
     }
 
     virtual int
@@ -128,7 +128,7 @@ struct qvi_zgroup_mpi_s : public qvi_group_mpi_s {
     /** Destructor. */
     virtual ~qvi_zgroup_mpi_s(void)
     {
-        qvi_mpi_free(&m_mpi);
+        qvi_mpi_delete(&m_mpi);
     }
 };
 

@@ -86,8 +86,8 @@ server(
     printf("# [%d] Server Start Time %lf seconds\n", getpid(), end - start);
 out:
     sleep(4);
-    qvi_rmi_server_free(&server);
-    qvi_hwloc_free(&hwloc);
+    qvi_rmi_server_delete(&server);
+    qvi_hwloc_delete(&hwloc);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         return 1;
@@ -118,9 +118,9 @@ client(
         goto out;
     }
 
-    rc = qvi_rmi_task_get_cpubind(client, who, &bitmap);
+    rc = qvi_rmi_cpubind(client, who, &bitmap);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_rmi_task_get_cpubind() failed";
+        ers = "qvi_rmi_cpubind() failed";
         goto out;
     }
     char *res;
@@ -129,7 +129,7 @@ client(
     hwloc_bitmap_free(bitmap);
     free(res);
 out:
-    qvi_rmi_client_free(&client);
+    qvi_rmi_client_delete(&client);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         return 1;

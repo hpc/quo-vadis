@@ -145,10 +145,10 @@ qvi_hwpool_s::add_devices_with_affinity(
         rc = qvi_hwloc_get_devices_in_bitmap(
             hwloc, devt, m_cpu.cpuset, devs
         );
-        if (rc != QV_SUCCESS) return rc;
+        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
         for (const auto &dev : devs) {
             rc = add_device(qvi_hwpool_dev_s(dev));
-            if (rc != QV_SUCCESS) return rc;
+            if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
         }
     }
     return rc;

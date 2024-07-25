@@ -17,9 +17,8 @@
 #ifndef QVI_SCOPE_H
 #define QVI_SCOPE_H
 
-#include "qvi-common.h" // IWYU pragma: keep
+#include "qvi-common.h"
 #include "qvi-group.h"
-#include "qvi-hwloc.h"
 
 /**
  * Returns a new intrinsic scope.
@@ -32,7 +31,8 @@ qvi_scope_get(
 );
 
 /**
- *
+ * Creates a new scope based on the specified hardare type, number of resources,
+ * and creation hints.
  */
 int
 qvi_scope_create(
@@ -44,10 +44,10 @@ qvi_scope_create(
 );
 
 /**
- * Frees a scope.
+ * Destroys a scope.
  */
 void
-qvi_scope_free(
+qvi_scope_delete(
     qv_scope_t **scope
 );
 
@@ -69,11 +69,12 @@ qvi_scope_group(
 );
 
 /**
- * Returns a const reference to the provided scope's cpuset.
+ * Returns the scope's group size.
  */
-const qvi_hwloc_bitmap_s &
-qvi_scope_cpuset(
-    qv_scope_t *scope
+int
+qvi_scope_group_size(
+    qv_scope_t *scope,
+    int *ntasks
 );
 
 /**
@@ -86,22 +87,13 @@ qvi_scope_group_rank(
 );
 
 /**
- * Returns the scope's group size.
- */
-int
-qvi_scope_group_size(
-    qv_scope_t *scope,
-    int *ntasks
-);
-
-/**
  * Returns the number of hardware objects in the provided scope.
  */
 int
-qvi_scope_nobjs(
+qvi_scope_nobjects(
     qv_scope_t *scope,
     qv_hw_obj_type_t obj,
-    int *n
+    int *result
 );
 
 /**

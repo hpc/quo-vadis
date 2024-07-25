@@ -61,7 +61,7 @@ qvi_omp_group_new(
 );
 
 void
-qvi_omp_group_free(
+qvi_omp_group_delete(
     qvi_omp_group_t **group
 );
 

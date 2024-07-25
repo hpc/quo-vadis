@@ -65,7 +65,7 @@ qvi_hwloc_new(
 }
 
 void
-qvi_hwloc_free(
+qvi_hwloc_delete(
     qvi_hwloc_t **hwl
 ) {
     qvi_delete(hwl);
@@ -620,7 +620,7 @@ qvi_hwloc_bitmap_calloc(
 }
 
 void
-qvi_hwloc_bitmap_free(
+qvi_hwloc_bitmap_delete(
     hwloc_cpuset_t *cpuset
 ) {
     if (!cpuset) return;
@@ -653,7 +653,7 @@ qvi_hwloc_bitmap_dup(
     rc = qvi_hwloc_bitmap_copy(src, idest);
 out:
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_hwloc_bitmap_free(&idest);
+        qvi_hwloc_bitmap_delete(&idest);
     }
     *dest = idest;
     return rc;
@@ -824,7 +824,7 @@ qvi_hwloc_emit_cpubind(
         getpid(), task_id, cpusets
     );
 out:
-    qvi_hwloc_bitmap_free(&cpuset);
+    qvi_hwloc_bitmap_delete(&cpuset);
     if (cpusets) free(cpusets);
     return rc;
 }
@@ -928,7 +928,7 @@ qvi_hwloc_task_get_cpubind(
     rc = get_proc_cpubind(hwl, task_id, cur_bind);
 out:
     if (rc != QV_SUCCESS) {
-        qvi_hwloc_bitmap_free(&cur_bind);
+        qvi_hwloc_bitmap_delete(&cur_bind);
     }
     *out_cpuset = cur_bind;
     return rc;
@@ -958,7 +958,7 @@ qvi_hwloc_task_get_cpubind_as_string(
     if (rc != QV_SUCCESS) return rc;
 
     rc = qvi_hwloc_bitmap_asprintf(cpuset, cpusets);
-    qvi_hwloc_bitmap_free(&cpuset);
+    qvi_hwloc_bitmap_delete(&cpuset);
     return rc;
 }
 
@@ -992,7 +992,7 @@ task_obj_xop_by_type_id(
             break;
         }
     }
-    qvi_hwloc_bitmap_free(&cur_bind);
+    qvi_hwloc_bitmap_delete(&cur_bind);
     return QV_SUCCESS;
 }
 
@@ -1155,7 +1155,7 @@ qvi_hwloc_device_new(
 }
 
 void
-qvi_hwloc_device_free(
+qvi_hwloc_device_delete(
     qvi_hwloc_device_t **dev
 ) {
     qvi_delete(dev);
@@ -1389,7 +1389,7 @@ qvi_hwloc_get_cpuset_for_nobjs(
     }
 out:
     if (rc != QV_SUCCESS) {
-        qvi_hwloc_bitmap_free(&iresult);
+        qvi_hwloc_bitmap_delete(&iresult);
     }
     *result = iresult;
     return rc;
@@ -1450,7 +1450,7 @@ qvi_hwloc_get_device_affinity(
     if (!icpuset) rc = QV_ERR_NOT_FOUND;
 out:
     if (rc != QV_SUCCESS) {
-        qvi_hwloc_bitmap_free(cpuset);
+        qvi_hwloc_bitmap_delete(cpuset);
     }
     *cpuset = icpuset;
     return rc;

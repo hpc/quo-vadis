@@ -32,7 +32,7 @@ qvi_process_group_new(
  *
  */
 void
-qvi_process_group_free(
+qvi_process_group_delete(
     qvi_process_group_t **group
 );
 

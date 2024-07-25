@@ -50,8 +50,8 @@ struct qv_scope_s {
     }
 };
 
-int
-qvi_scope_new(
+static int
+scope_new(
     qvi_group_t *group,
     qvi_hwpool_s *hwpool,
     qv_scope_t **scope
@@ -65,29 +65,79 @@ qvi_scope_get(
     qv_scope_intrinsic_t iscope,
     qv_scope_t **scope
 ) {
-    qvi_hwpool_s *hwpool = nullptr;
+    *scope = nullptr;
     // Get the requested intrinsic group.
     int rc = group->make_intrinsic(iscope);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Get the requested intrinsic hardware pool.
-    rc = qvi_rmi_scope_get_intrinsic_hwpool(
-        group->task()->rmi(),
-        qvi_task_s::mytid(),
-        iscope, &hwpool
+    qvi_hwpool_s *hwpool = nullptr;
+    rc = qvi_rmi_get_intrinsic_hwpool(
+        group->task()->rmi(), qvi_task_s::mytid(), iscope, &hwpool
     );
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Create and initialize the scope.
-    rc = qvi_scope_new(group, hwpool, scope);
-out:
+    rc = scope_new(group, hwpool, scope);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_delete(&hwpool);
-        qvi_scope_free(scope);
+        qvi_scope_delete(scope);
     }
     return rc;
 }
 
+// TODO(skg) Implement use of hints.
+int
+qvi_scope_create(
+    qv_scope_t *parent,
+    qv_hw_obj_type_t type,
+    int nobjs,
+    qv_scope_create_hints_t,
+    qv_scope_t **child
+) {
+    *child = nullptr;
+    // Create underlying group. Notice the use of self here.
+    qvi_group_t *group = nullptr;
+    int rc = parent->group->self(&group);
+    if (rc != QV_SUCCESS) return rc;
+    // Create the hardware pool.
+    qvi_hwpool_s *hwpool = nullptr;
+    rc = qvi_new(&hwpool);
+    if (rc != QV_SUCCESS) {
+        qvi_delete(&group);
+        return rc;
+    }
+    // Get the appropriate cpuset based on the caller's request.
+    hwloc_cpuset_t cpuset = nullptr;
+    rc = qvi_rmi_get_cpuset_for_nobjs(
+        parent->group->task()->rmi(),
+        parent->hwpool->cpuset().cdata(),
+        type, nobjs, &cpuset
+    );
+    if (rc != QV_SUCCESS) {
+        qvi_delete(&group);
+        qvi_delete(&hwpool);
+        return rc;
+    }
+    // Now that we have the desired cpuset,
+    // initialize the new hardware pool.
+    rc = hwpool->initialize(parent->group->hwloc(), cpuset);
+    if (rc != QV_SUCCESS) {
+        qvi_delete(&group);
+        qvi_delete(&hwpool);
+        return rc;
+    }
+    // No longer needed.
+    qvi_hwloc_bitmap_delete(&cpuset);
+    // Create and initialize the new scope.
+    qv_scope_t *ichild = nullptr;
+    rc = scope_new(group, hwpool, &ichild);
+    if (rc != QV_SUCCESS) {
+        qvi_scope_delete(&ichild);
+    }
+    *child = ichild;
+    return rc;
+}
+
 void
-qvi_scope_free(
+qvi_scope_delete(
     qv_scope_t **scope
 ) {
     qvi_delete(scope);
@@ -101,7 +151,7 @@ qvi_scope_thfree(
     if (!kscopes) return;
     qv_scope_t **ikscopes = *kscopes;
     for (uint_t i = 0; i < k; ++i) {
-        qvi_scope_free(&ikscopes[i]);
+        qvi_scope_delete(&ikscopes[i]);
     }
     delete[] ikscopes;
     *kscopes = nullptr;
@@ -115,20 +165,14 @@ qvi_scope_group(
     return scope->group;
 }
 
-const qvi_hwpool_s *
-qvi_scope_hwpool(
-    qv_scope_t *scope
+int
+qvi_scope_group_size(
+    qv_scope_t *scope,
+    int *ntasks
 ) {
     assert(scope);
-    return scope->hwpool;
-}
-
-const qvi_hwloc_bitmap_s &
-qvi_scope_cpuset(
-    qv_scope_t *scope
-) {
-    assert(scope);
-    return scope->hwpool->cpuset();
+    *ntasks = scope->group->size();
+    return QV_SUCCESS;
 }
 
 int
@@ -142,31 +186,13 @@ qvi_scope_group_rank(
 }
 
 int
-qvi_scope_group_size(
-    qv_scope_t *scope,
-    int *ntasks
-) {
-    assert(scope);
-    *ntasks = scope->group->size();
-    return QV_SUCCESS;
-}
-
-int
-qvi_scope_barrier(
-    qv_scope_t *scope
-) {
-    assert(scope);
-    return scope->group->barrier();
-}
-
-int
-qvi_scope_nobjs(
+qvi_scope_nobjects(
     qv_scope_t *scope,
     qv_hw_obj_type_t obj,
-    int *n
+    int *result
 ) {
     return scope->hwpool->nobjects(
-        scope->group->hwloc(), obj, n
+        scope->group->hwloc(), obj, result
     );
 }
 
@@ -205,7 +231,7 @@ qvi_scope_device_id(
             break;
         default:
             rc = QV_ERR_INVLD_ARG;
-            goto out;
+            break;
     }
     if (qvi_unlikely(nw == -1)) rc = QV_ERR_OOR;
 out:
@@ -213,6 +239,14 @@ out:
         *dev_id = nullptr;
     }
     return rc;
+}
+
+int
+qvi_scope_barrier(
+    qv_scope_t *scope
+) {
+    assert(scope);
+    return scope->group->barrier();
 }
 
 int
@@ -242,7 +276,7 @@ qvi_scope_bind_string(
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     rc = qvi_hwloc_bitmap_string(bitmap, format, result);
-    qvi_hwloc_bitmap_free(&bitmap);
+    qvi_hwloc_bitmap_delete(&bitmap);
     return rc;
 }
 
@@ -425,12 +459,12 @@ out:
     if (!shared || (shared && (group->rank() == root))) {
         if (bbuffs) {
             for (uint_t i = 0; i < group_size; ++i) {
-                qvi_bbuff_free(&bbuffs[i]);
+                qvi_bbuff_delete(&bbuffs[i]);
             }
             delete[] bbuffs;
         }
     }
-    qvi_bbuff_free(&txbuff);
+    qvi_bbuff_delete(&txbuff);
     if (rc != QV_SUCCESS) {
         // If something went wrong, just zero-initialize the values.
         outvals = {};
@@ -472,12 +506,12 @@ out:
     if (!shared || (shared && (group->rank() == root))) {
         if (bbuffs) {
             for (uint_t i = 0; i < group_size; ++i) {
-                qvi_bbuff_free(&bbuffs[i]);
+                qvi_bbuff_delete(&bbuffs[i]);
             }
             delete[] bbuffs;
         }
     }
-    qvi_bbuff_free(&txbuff);
+    qvi_bbuff_delete(&txbuff);
     if (rc != QV_SUCCESS) {
         // If something went wrong, just zero-initialize the pools.
         rxpools = {};
@@ -521,9 +555,9 @@ scatter_values(
     *value = *(TYPE *)qvi_bbuff_data(rxbuff);
 out:
     for (auto &buff : txbuffs) {
-        qvi_bbuff_free(&buff);
+        qvi_bbuff_delete(&buff);
     }
-    qvi_bbuff_free(&rxbuff);
+    qvi_bbuff_delete(&rxbuff);
     if (rc != QV_SUCCESS) {
         // If something went wrong, just zero-initialize the value.
         *value = {};
@@ -562,9 +596,9 @@ scatter_hwpools(
     rc = qvi_bbuff_rmi_unpack(qvi_bbuff_data(rxbuff), pool);
 out:
     for (auto &buff : txbuffs) {
-        qvi_bbuff_free(&buff);
+        qvi_bbuff_delete(&buff);
     }
-    qvi_bbuff_free(&rxbuff);
+    qvi_bbuff_delete(&rxbuff);
     if (rc != QV_SUCCESS) {
         qvi_delete(pool);
     }
@@ -625,7 +659,7 @@ scope_split_coll_gather(
         splitcoll.gsplit.affinities.resize(group_size);
         for (uint_t tid = 0; tid < group_size; ++tid) {
             hwloc_cpuset_t cpuset = nullptr;
-            rc = qvi_rmi_task_get_cpubind(
+            rc = qvi_rmi_cpubind(
                 parent->group->task()->rmi(),
                 splitcoll.gsplit.taskids[tid], &cpuset
             );
@@ -633,7 +667,7 @@ scope_split_coll_gather(
 
             rc = splitcoll.gsplit.affinities[tid].set(cpuset);
             // Clean up.
-            qvi_hwloc_bitmap_free(&cpuset);
+            qvi_hwloc_bitmap_delete(&cpuset);
             if (rc != QV_SUCCESS) break;
         }
     }
@@ -1160,12 +1194,12 @@ qvi_scope_split(
     );
     if (rc != QV_SUCCESS) goto out;
     // Create and initialize the new scope.
-    rc = qvi_scope_new(group, hwpool, &ichild);
+    rc = scope_new(group, hwpool, &ichild);
 out:
     if (rc != QV_SUCCESS) {
         qvi_delete(&hwpool);
         qvi_delete(&group);
-        qvi_scope_free(&ichild);
+        qvi_scope_delete(&ichild);
     }
     *child = ichild;
     return rc;
@@ -1180,7 +1214,6 @@ qvi_scope_thsplit(
     qv_hw_obj_type_t maybe_obj_type,
     qv_scope_t ***thchildren
 ) {
-    if (k == 0 || !thchildren) return QV_ERR_INVLD_ARG;
     *thchildren = nullptr;
 
     const uint_t group_size = k;
@@ -1192,10 +1225,11 @@ qvi_scope_thsplit(
     if (rc != QV_SUCCESS) return rc;
     // Since this is called by a single task, get its ID and associated hardware
     // affinity here, and replicate them in the following loop that populates
-    // splitagg. No point in doing this in a loop.
+    // splitagg.
+    //No point in doing this in a loop.
     const pid_t taskid = qvi_task_t::mytid();
     hwloc_cpuset_t task_affinity = nullptr;
-    rc = qvi_rmi_task_get_cpubind(
+    rc = qvi_rmi_cpubind(
         parent->group->task()->rmi(),
         taskid, &task_affinity
     );
@@ -1217,26 +1251,21 @@ qvi_scope_thsplit(
         // Same goes for the task's affinity.
         splitagg.affinities[i].set(task_affinity);
     }
+    if (rc != QV_SUCCESS) return rc;
     // Cleanup: we don't need task_affinity anymore.
-    qvi_hwloc_bitmap_free(&task_affinity);
+    qvi_hwloc_bitmap_delete(&task_affinity);
     if (rc != QV_SUCCESS) return rc;
     // Split the hardware resources based on the provided split parameters.
     rc = agg_split(splitagg);
     if (rc != QV_SUCCESS) return rc;
-
-    // Now populate the children.
-    qv_scope_t **ithchildren = new qv_scope_t *[group_size];
-
-    qvi_group_t *thgroup = nullptr;
     // Split off from our parent group. This call is called from a context in
     // which a process is splitting its resources across threads, so create a
     // new thread group for each child.
+    qvi_group_t *thgroup = nullptr;
     rc = parent->group->thsplit(group_size, &thgroup);
-    if (rc != QV_SUCCESS) {
-        qvi_scope_thfree(&ithchildren, group_size);
-        return rc;
-    }
-
+    if (rc != QV_SUCCESS) return rc;
+    // Now create and populate the children.
+    qv_scope_t **ithchildren = new qv_scope_t *[group_size];
     for (uint_t i = 0; i < group_size; ++i) {
         // Copy out, since the hardware pools in splitagg will get freed.
         qvi_hwpool_s *hwpool = nullptr;
@@ -1247,7 +1276,7 @@ qvi_scope_thsplit(
         }
         // Create and initialize the new scope.
         qv_scope_t *child = nullptr;
-        rc = qvi_scope_new(thgroup, hwpool, &child);
+        rc = scope_new(thgroup, hwpool, &child);
         if (rc != QV_SUCCESS) {
             qvi_delete(&thgroup);
             break;
@@ -1276,7 +1305,7 @@ qvi_scope_thsplit_at(
     qv_scope_t ***kchildren
 ) {
     int nobj = 0;
-    const int rc = qvi_scope_nobjs(parent, type, &nobj);
+    const int rc = qvi_scope_nobjects(parent, type, &nobj);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     return qvi_scope_thsplit(parent, nobj, kgroup_ids, k, type, kchildren);
@@ -1290,54 +1319,10 @@ qvi_scope_split_at(
     qv_scope_t **child
 ) {
     int nobj = 0;
-    const int rc = qvi_scope_nobjs(parent, type, &nobj);
+    const int rc = qvi_scope_nobjects(parent, type, &nobj);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     return qvi_scope_split(parent, nobj, color, type, child);
-}
-
-int
-qvi_scope_create(
-    qv_scope_t *parent,
-    qv_hw_obj_type_t type,
-    int nobjs,
-    qv_scope_create_hints_t hints,
-    qv_scope_t **child
-) {
-    // TODO(skg) Implement use of hints.
-    QVI_UNUSED(hints);
-
-    qvi_group_t *group = nullptr;
-    qvi_hwpool_s *hwpool = nullptr;
-    qv_scope_t *ichild = nullptr;
-    hwloc_cpuset_t cpuset = nullptr;
-    // TODO(skg) We need to acquire these resources.
-    int rc = qvi_rmi_get_cpuset_for_nobjs(
-        parent->group->task()->rmi(),
-        parent->hwpool->cpuset().cdata(),
-        type, nobjs, &cpuset
-    );
-    if (rc != QV_SUCCESS) goto out;
-    // Now that we have the desired cpuset,
-    // create a corresponding hardware pool.
-    rc = qvi_new(&hwpool);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = hwpool->initialize(parent->group->hwloc(), cpuset);
-    if (rc != QV_SUCCESS) goto out;
-    // Create underlying group. Notice the use of self here.
-    rc = parent->group->self(&group);
-    if (rc != QV_SUCCESS) goto out;
-    // Create and initialize the new scope.
-    rc = qvi_scope_new(group, hwpool, &ichild);
-out:
-    qvi_hwloc_bitmap_free(&cpuset);
-    if (rc != QV_SUCCESS) {
-        qvi_delete(&hwpool);
-        qvi_scope_free(&ichild);
-    }
-    *child = ichild;
-    return rc;
 }
 
 /*

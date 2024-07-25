@@ -30,7 +30,7 @@ qvi_process_group_new(
 }
 
 void
-qvi_process_group_free(
+qvi_process_group_delete(
     qvi_process_group_t **procgrp
 ) {
     qvi_delete(procgrp);
@@ -78,7 +78,7 @@ qvi_process_group_gather_bbuffs(
     const int rc = qvi_bbuff_dup(txbuff, &bbuffs[0]);
     if (rc != QV_SUCCESS) {
         if (bbuffs) {
-            qvi_bbuff_free(&bbuffs[0]);
+            qvi_bbuff_delete(&bbuffs[0]);
             delete[] bbuffs;
         }
         bbuffs = nullptr;
@@ -105,7 +105,7 @@ qvi_process_group_scatter_bbuffs(
     qvi_bbuff_t *mybbuff = nullptr;
     const int rc = qvi_bbuff_dup(txbuffs[root], &mybbuff);
     if (rc != QV_SUCCESS) {
-        qvi_bbuff_free(&mybbuff);
+        qvi_bbuff_delete(&mybbuff);
     }
     *rxbuff = mybbuff;
     return rc;

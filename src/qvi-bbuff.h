@@ -39,7 +39,7 @@ qvi_bbuff_dup(
  *
  */
 void
-qvi_bbuff_free(
+qvi_bbuff_delete(
     qvi_bbuff_t **buff
 );
 

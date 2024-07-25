@@ -41,13 +41,13 @@ qvi_task_s::init_bind_stack(void)
 {
     // Cache current binding.
     hwloc_cpuset_t current_bind = nullptr;
-    const int rc = qvi_rmi_task_get_cpubind(
+    const int rc = qvi_rmi_cpubind(
         m_rmi, mytid(), &current_bind
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     m_stack.push(qvi_hwloc_bitmap_s(current_bind));
-    hwloc_bitmap_free(current_bind);
+    qvi_hwloc_bitmap_delete(&current_bind);
     return rc;
 }
 
@@ -68,7 +68,7 @@ qvi_task_s::~qvi_task_s(void)
     while (!m_stack.empty()) {
         m_stack.pop();
     }
-    qvi_rmi_client_free(&m_rmi);
+    qvi_rmi_client_delete(&m_rmi);
 }
 
 qvi_rmi_client_t *
@@ -92,7 +92,7 @@ qvi_task_s::bind_push(
     // Copy input bitmap because we don't want to directly modify it.
     qvi_hwloc_bitmap_s bitmap_copy(cpuset);
     // Change policy
-    const int rc = qvi_rmi_task_set_cpubind_from_cpuset(
+    const int rc = qvi_rmi_set_cpubind(
         m_rmi, mytid(), bitmap_copy.cdata()
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
@@ -106,7 +106,7 @@ qvi_task_s::bind_pop(void)
 {
     m_stack.pop();
 
-    return qvi_rmi_task_set_cpubind_from_cpuset(
+    return qvi_rmi_set_cpubind(
         m_rmi, mytid(), m_stack.top().cdata()
     );
 }

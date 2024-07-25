@@ -48,7 +48,7 @@ qvi_omp_group_new(
 }
 
 void
-qvi_omp_group_free(
+qvi_omp_group_delete(
     qvi_omp_group_t **group
 ) {
     #pragma omp barrier
@@ -185,7 +185,7 @@ qvi_omp_group_gather_bbuffs(
         #pragma omp single
         if (bbuffs) {
             for (int i = 0; i < group_size; ++i) {
-                qvi_bbuff_free(&bbuffs[i]);
+                qvi_bbuff_delete(&bbuffs[i]);
             }
             delete[] bbuffs;
         }
@@ -216,7 +216,7 @@ qvi_omp_group_scatter_bbuffs(
     #pragma omp single
     delete tmp;
     if (rc != QV_SUCCESS) {
-        qvi_bbuff_free(&mybbuff);
+        qvi_bbuff_delete(&mybbuff);
     }
     *rxbuff = mybbuff;
     return rc;

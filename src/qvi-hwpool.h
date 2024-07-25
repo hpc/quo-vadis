@@ -10,7 +10,7 @@
 /**
  * @file qvi-hwpool.h
  *
- * Hardware Resource Pool
+ * Hardware resource pool.
  */
 
 #ifndef QVI_HWPOOL_H

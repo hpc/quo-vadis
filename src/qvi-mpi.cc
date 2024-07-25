@@ -112,7 +112,7 @@ qvi_mpi_new(
 }
 
 void
-qvi_mpi_free(
+qvi_mpi_delete(
     qvi_mpi_t **mpi
 ) {
     qvi_delete(mpi);
@@ -228,7 +228,7 @@ qvi_mpi_group_new(
 }
 
 void
-qvi_mpi_group_free(
+qvi_mpi_group_delete(
     qvi_mpi_group_t **group
 ) {
     qvi_delete(group);
@@ -242,7 +242,7 @@ qvi_mpi_group_size(
 }
 
 int
-qvi_mpi_group_id(
+qvi_mpi_group_rank(
     const qvi_mpi_group_t *group
 ) {
     return group->qvcomm.rank;
@@ -321,7 +321,7 @@ qvi_mpi_group_create_from_mpi_comm(
     rc = mpi->add_group(**new_group);
 out:
     if (rc != QV_SUCCESS) {
-        qvi_mpi_group_free(new_group);
+        qvi_mpi_group_delete(new_group);
         if (node_comm != MPI_COMM_NULL) {
             MPI_Comm_free(&node_comm);
         }
@@ -427,7 +427,7 @@ out:
     if (rc != QV_SUCCESS) {
         if (bbuffs) {
             for (int i = 0; i < group_size; ++i) {
-                qvi_bbuff_free(&bbuffs[i]);
+                qvi_bbuff_delete(&bbuffs[i]);
             }
             delete[] bbuffs;
         }
@@ -499,7 +499,7 @@ qvi_mpi_group_scatter_bbuffs(
     rc = qvi_bbuff_append(mybbuff, mybytes.data(), rxcount);
 out:
     if (rc != QV_SUCCESS) {
-        qvi_bbuff_free(&mybbuff);
+        qvi_bbuff_delete(&mybbuff);
     }
     *rxbuff = mybbuff;
     return rc;
