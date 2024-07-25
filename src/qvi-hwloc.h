@@ -183,21 +183,21 @@ qvi_hwloc_emit_cpubind(
 );
 
 /**
- *
+ * Caller is responsible for freeing returned resources.
  */
 int
 qvi_hwloc_bitmap_asprintf(
-    char **result,
-    hwloc_const_cpuset_t cpuset
+    hwloc_const_cpuset_t cpuset,
+    char **result
 );
 
 /**
- *
+ * Caller is responsible for freeing returned resources.
  */
 int
 qvi_hwloc_bitmap_list_asprintf(
-    char **result,
-    hwloc_const_cpuset_t cpuset
+    hwloc_const_cpuset_t cpuset,
+    char **result
 );
 
 /**

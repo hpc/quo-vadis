@@ -452,7 +452,7 @@ qvi_bbuff_rmi_pack_item_impl(
     hwloc_const_cpuset_t data
 ) {
     // Protect against null data.
-    if (!data) {
+    if (qvi_unlikely(!data)) {
         return qvi_bbuff_append(
             buff, QV_BUFF_RMI_NULL_CPUSET,
             strlen(QV_BUFF_RMI_NULL_CPUSET) + 1
@@ -460,8 +460,8 @@ qvi_bbuff_rmi_pack_item_impl(
     }
     // Non-null data.
     char *datas = nullptr;
-    int rc = qvi_hwloc_bitmap_asprintf(&datas, data);
-    if (rc != QV_SUCCESS) return rc;
+    int rc = qvi_hwloc_bitmap_asprintf(data, &datas);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // We are sending the string representation of the cpuset.
     rc = qvi_bbuff_append(buff, datas, strlen(datas) + 1);
     free(datas);

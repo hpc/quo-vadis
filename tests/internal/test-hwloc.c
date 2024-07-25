@@ -208,7 +208,7 @@ main(void)
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qvi_hwloc_bitmap_asprintf(&binds, bitmap);
+    rc = qvi_hwloc_bitmap_asprintf(bitmap, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_bitmap_asprintf() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
