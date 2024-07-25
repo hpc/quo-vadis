@@ -55,7 +55,7 @@ qvi_scope_delete(
  * Frees scope resources and container created by qvi_scope_thsplit*.
  */
 void
-qvi_scope_thfree(
+qvi_scope_thdelete(
     qv_scope_t ***kscopes,
     uint_t k
 );

@@ -246,7 +246,7 @@ buffer_append_header(
 #else
     QVI_UNUSED(picture);
 #endif
-    return qvi_bbuff_append(buff, &hdr, sizeof(hdr));
+    return buff->append(&hdr, sizeof(hdr));
 }
 
 static inline void *
@@ -274,10 +274,10 @@ zmsg_init_from_bbuff(
     qvi_bbuff_t *bbuff,
     zmq_msg_t *zmsg
 ) {
-    const size_t buffer_size = qvi_bbuff_size(bbuff);
+    const size_t buffer_size = bbuff->size();
     const int zrc = zmq_msg_init_data(
         zmsg,
-        qvi_bbuff_data(bbuff),
+        bbuff->data(),
         buffer_size,
         msg_free_byte_buffer_cb,
         bbuff
@@ -409,7 +409,7 @@ rpc_req(
     // Cache buffer size here because our call to qvi_bbuff_size() after
     // zmsg_send() may be invalid because msg_free_byte_buffer_cb() may have
     // already been called.
-    buffer_size = (int)qvi_bbuff_size(buff);
+    buffer_size = (int)buff->size();
 
     int nbytes_sent;
     qvrc = zmsg_send(zsock, &msg, &nbytes_sent);

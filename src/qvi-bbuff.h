@@ -13,7 +13,7 @@
 /**
  * @file qvi-bbuff.h
  *
- * Base byte buffer infrastructure.
+ * Byte buffer infrastructure.
  */
 
 #ifndef QVI_BBUFF_H
@@ -21,9 +21,42 @@
 
 #include "qvi-common.h"
 
-/**
- *
- */
+struct qvi_bbuff_s {
+private:
+    /** Minimum growth in bytes for resizes, etc. */
+    static constexpr size_t s_min_growth = 256;
+    /** Current capacity of buffer. */
+    size_t m_capacity = 0;
+    /** Amount of data already stored. */
+    size_t m_size = 0;
+    /** Pointer to data backing store. */
+    void *m_data = nullptr;
+public:
+    /** Constructor. */
+    qvi_bbuff_s(void);
+    /** Copy constructor. */
+    qvi_bbuff_s(
+        const qvi_bbuff_s &src
+    );
+    /** Destructor. */
+    ~qvi_bbuff_s(void);
+    /** Returns the size of the data stored in the byte buffer. */
+    size_t
+    size(void) const;
+    /** Appends data to the buffer. */
+    int
+    append(
+        const void *const data,
+        size_t size
+    );
+    /**
+     * Returns a raw pointer to the flat data buffer
+     * maintained internally by the byte buffer.
+     */
+    void *
+    data(void);
+};
+
 int
 qvi_bbuff_new(
     qvi_bbuff_t **buff
@@ -31,42 +64,13 @@ qvi_bbuff_new(
 
 int
 qvi_bbuff_dup(
-    const qvi_bbuff_t *const src,
+    const qvi_bbuff_t &src,
     qvi_bbuff_t **buff
 );
 
-/**
- *
- */
 void
 qvi_bbuff_delete(
     qvi_bbuff_t **buff
-);
-
-/**
- *
- */
-void *
-qvi_bbuff_data(
-    qvi_bbuff_t *buff
-);
-
-/**
- *
- */
-size_t
-qvi_bbuff_size(
-    const qvi_bbuff_t *buff
-);
-
-/**
- *
- */
-int
-qvi_bbuff_append(
-    qvi_bbuff_t *buff,
-    const void *const data,
-    size_t size
 );
 
 #endif

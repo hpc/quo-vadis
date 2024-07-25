@@ -75,7 +75,7 @@ qvi_process_group_gather_bbuffs(
     // Zero initialize array of pointers to nullptr.
     qvi_bbuff_t **bbuffs = new qvi_bbuff_t *[group_size]();
 
-    const int rc = qvi_bbuff_dup(txbuff, &bbuffs[0]);
+    const int rc = qvi_bbuff_dup(*txbuff, &bbuffs[0]);
     if (rc != QV_SUCCESS) {
         if (bbuffs) {
             qvi_bbuff_delete(&bbuffs[0]);
@@ -103,7 +103,7 @@ qvi_process_group_scatter_bbuffs(
     }
     // There should always be only one at the root (us).
     qvi_bbuff_t *mybbuff = nullptr;
-    const int rc = qvi_bbuff_dup(txbuffs[root], &mybbuff);
+    const int rc = qvi_bbuff_dup(*txbuffs[root], &mybbuff);
     if (rc != QV_SUCCESS) {
         qvi_bbuff_delete(&mybbuff);
     }
