@@ -30,7 +30,7 @@
 #define QVI_BBUFF_RMI_H
 
 #include "qvi-common.h"
-#include "qvi-bbuff.h"
+#include "qvi-bbuff.h" // IWYU pragma: keep
 #include "qvi-hwloc.h"
 #include "qvi-hwpool.h"
 
@@ -299,7 +299,7 @@ qvi_bbuff_rmi_pack_item(
     qvi_bbuff_t *buff,
     size_t data
 ) {
-    return qvi_bbuff_append(buff, &data, sizeof(data));
+    return buff->append(&data, sizeof(data));
 }
 
 /**
@@ -310,7 +310,7 @@ qvi_bbuff_rmi_pack_item(
     qvi_bbuff_t *buff,
     int data
 ) {
-    return qvi_bbuff_append(buff, &data, sizeof(data));
+    return buff->append(&data, sizeof(data));
 }
 
 /**
@@ -322,7 +322,7 @@ qvi_bbuff_rmi_pack_item(
     qv_scope_create_hints_t data
 ) {
     const int dai = (int)data;
-    return qvi_bbuff_append(buff, &dai, sizeof(dai));
+    return buff->append(&dai, sizeof(dai));
 }
 
 /**
@@ -334,7 +334,7 @@ qvi_bbuff_rmi_pack_item(
     qv_hw_obj_type_t data
 ) {
     const int dai = (int)data;
-    return qvi_bbuff_append(buff, &dai, sizeof(dai));
+    return buff->append(&dai, sizeof(dai));
 }
 
 /**
@@ -346,7 +346,7 @@ qvi_bbuff_rmi_pack_item(
     qv_device_id_type_t data
 ) {
     const int dai = (int)data;
-    return qvi_bbuff_append(buff, &dai, sizeof(dai));
+    return buff->append(&dai, sizeof(dai));
 }
 
 /**
@@ -358,7 +358,7 @@ qvi_bbuff_rmi_pack_item(
     qv_scope_intrinsic_t data
 ) {
     const int dai = (int)data;
-    return qvi_bbuff_append(buff, &dai, sizeof(dai));
+    return buff->append(&dai, sizeof(dai));
 }
 
 #if QVI_SIZEOF_INT != QVI_SIZEOF_PID_T
@@ -371,7 +371,7 @@ qvi_bbuff_rmi_pack_item(
     pid_t data
 ) {
     const int dai = (int)data;
-    return qvi_bbuff_append(buff, &dai, sizeof(dai));
+    return buff->append(&dai, sizeof(dai));
 }
 #endif
 
@@ -380,7 +380,7 @@ qvi_bbuff_rmi_pack_item_impl(
     qvi_bbuff_t *buff,
     cstr_t data
 ) {
-    return qvi_bbuff_append(buff, data, strlen(data) + 1);
+    return buff->append(data, strlen(data) + 1);
 }
 
 /**
@@ -438,9 +438,9 @@ qvi_bbuff_rmi_pack_item(
     // We store size then data so unpack has an easier time, but keep
     // the user interface order as data then size.
     size_t dsize = data.second;
-    const int rc = qvi_bbuff_append(buff, &dsize, sizeof(dsize));
-    if (rc != QV_SUCCESS) return rc;
-    return qvi_bbuff_append(buff, data.first, dsize);
+    const int rc = buff->append(&dsize, sizeof(dsize));
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    return buff->append(data.first, dsize);
 }
 
 /**
@@ -453,8 +453,8 @@ qvi_bbuff_rmi_pack_item_impl(
 ) {
     // Protect against null data.
     if (qvi_unlikely(!data)) {
-        return qvi_bbuff_append(
-            buff, QV_BUFF_RMI_NULL_CPUSET,
+        return buff->append(
+            QV_BUFF_RMI_NULL_CPUSET,
             strlen(QV_BUFF_RMI_NULL_CPUSET) + 1
         );
     }
@@ -463,7 +463,7 @@ qvi_bbuff_rmi_pack_item_impl(
     int rc = qvi_hwloc_bitmap_asprintf(data, &datas);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // We are sending the string representation of the cpuset.
-    rc = qvi_bbuff_append(buff, datas, strlen(datas) + 1);
+    rc = buff->append(datas, strlen(datas) + 1);
     free(datas);
     return rc;
 }
@@ -511,7 +511,7 @@ qvi_bbuff_rmi_pack_item(
 ) {
     // Pack hints.
     const int rc = qvi_bbuff_rmi_pack_item(buff, data.hints);
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     return qvi_bbuff_rmi_pack_item(buff, data.cpuset);
 }
@@ -524,25 +524,24 @@ qvi_bbuff_rmi_pack_item(
     qvi_bbuff_t *buff,
     qvi_hwpool_dev_s *data
 ) {
+    // TODO(skg) Move to device code.
     // Pack device hints.
     int rc = qvi_bbuff_rmi_pack_item(buff, data->hints);
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Pack device affinity.
     rc = qvi_bbuff_rmi_pack_item(buff, data->affinity);
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Pack device type.
     rc = qvi_bbuff_rmi_pack_item(buff, data->type);
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Pack device ID.
     rc = qvi_bbuff_rmi_pack_item(buff, data->m_id);
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Pack device PCI bus ID.
     rc = qvi_bbuff_rmi_pack_item(buff, data->pci_bus_id);
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Pack device UUID.
-    rc = qvi_bbuff_rmi_pack_item(buff, data->uuid);
-    if (rc != QV_SUCCESS) return rc;
-    return rc;
+    return qvi_bbuff_rmi_pack_item(buff, data->uuid);
 }
 
 /**
@@ -583,7 +582,7 @@ qvi_bbuff_rmi_pack(
     Types&&... args
 ) {
     const int rc = qvi_bbuff_rmi_pack_item(buff, std::forward<T>(arg));
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     return qvi_bbuff_rmi_pack(buff, std::forward<Types>(args)...);
 }
 
@@ -871,6 +870,7 @@ qvi_bbuff_rmi_unpack_item(
     byte_t *buffpos,
     size_t *bytes_written
 ) {
+    // TODO(skg) Move to dev code.
     size_t bw = 0, total_bw = 0;
 
     int rc = qvi_bbuff_rmi_unpack_item(
@@ -957,7 +957,7 @@ qvi_bbuff_rmi_unpack(
         (byte_t *)data,
         &bytes_written
     );
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     pos += bytes_written;
     return qvi_bbuff_rmi_unpack(pos, std::forward<Types>(args)...);
 }

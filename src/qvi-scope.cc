@@ -144,7 +144,7 @@ qvi_scope_delete(
 }
 
 void
-qvi_scope_thfree(
+qvi_scope_thdelete(
     qv_scope_t ***kscopes,
     uint_t k
 ) {
@@ -257,6 +257,201 @@ qvi_scope_bind_string(
     rc = qvi_hwloc_bitmap_string(bitmap, format, result);
     qvi_hwloc_bitmap_delete(&bitmap);
     return rc;
+}
+
+template <typename TYPE>
+static int
+gather_values(
+    qvi_group_t *group,
+    int root,
+    TYPE invalue,
+    std::vector<TYPE> &outvals
+) {
+    static_assert(std::is_trivially_copyable<TYPE>::value, "");
+    const uint_t group_size = group->size();
+
+    qvi_bbuff_t *txbuff = nullptr;
+    int rc = qvi_bbuff_new(&txbuff);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+
+    rc = txbuff->append(&invalue, sizeof(TYPE));
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        qvi_bbuff_delete(&txbuff);
+        return rc;
+    }
+    // Gather the values to the root.
+    bool shared = false;
+    qvi_bbuff_t **bbuffs = nullptr;
+    rc = group->gather(txbuff, root, &shared, &bbuffs);
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    // The root fills in the output.
+    if (group->rank() == root) {
+        outvals.resize(group_size);
+        // Unpack the values.
+        for (uint_t i = 0; i < group_size; ++i) {
+            outvals[i] = *(TYPE *)bbuffs[i]->data();
+        }
+    }
+out:
+    if (!shared || (shared && (group->rank() == root))) {
+        if (bbuffs) {
+            for (uint_t i = 0; i < group_size; ++i) {
+                qvi_bbuff_delete(&bbuffs[i]);
+            }
+            delete[] bbuffs;
+        }
+    }
+    qvi_bbuff_delete(&txbuff);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        // If something went wrong, just zero-initialize the values.
+        outvals = {};
+    }
+    return rc;
+}
+
+static int
+gather_hwpools(
+    qvi_group_t *group,
+    int root,
+    qvi_hwpool_s *txpool,
+    std::vector<qvi_hwpool_s *> &rxpools
+) {
+    const uint_t group_size = group->size();
+    // Pack the hardware pool into a buffer.
+    qvi_bbuff_t txbuff;
+    int rc = txpool->pack(&txbuff);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // Gather the values to the root.
+    bool shared = false;
+    qvi_bbuff_t **bbuffs = nullptr;
+    rc = group->gather(&txbuff, root, &shared, &bbuffs);
+    if (rc != QV_SUCCESS) goto out;
+
+    if (group->rank() == root) {
+        rxpools.resize(group_size);
+        // Unpack the hwpools.
+        for (uint_t i = 0; i < group_size; ++i) {
+            rc = qvi_bbuff_rmi_unpack(
+                bbuffs[i]->data(), &rxpools[i]
+            );
+            if (qvi_unlikely(rc != QV_SUCCESS)) break;
+        }
+    }
+out:
+    if (!shared || (shared && (group->rank() == root))) {
+        if (bbuffs) {
+            for (uint_t i = 0; i < group_size; ++i) {
+                qvi_bbuff_delete(&bbuffs[i]);
+            }
+            delete[] bbuffs;
+        }
+    }
+    if (rc != QV_SUCCESS) {
+        // If something went wrong, just zero-initialize the pools.
+        rxpools = {};
+    }
+    return rc;
+}
+
+template <typename TYPE>
+static int
+scatter_values(
+    qvi_group_t *group,
+    int root,
+    const std::vector<TYPE> &values,
+    TYPE *value
+) {
+    static_assert(std::is_trivially_copyable<TYPE>::value, "");
+
+    int rc = QV_SUCCESS;
+    qvi_bbuff_t *rxbuff = nullptr;
+
+    std::vector<qvi_bbuff_t *> txbuffs(0);
+    if (root == group->rank()) {
+        const uint_t group_size = group->size();
+        txbuffs.resize(group_size);
+        // Pack the values.
+        for (uint_t i = 0; i < group_size; ++i) {
+            rc = qvi_bbuff_new(&txbuffs[i]);
+            if (qvi_unlikely(rc != QV_SUCCESS)) break;
+
+            rc = txbuffs[i]->append(&values[i], sizeof(TYPE));
+            if (qvi_unlikely(rc != QV_SUCCESS)) break;
+        }
+        if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    }
+
+    rc = group->scatter(txbuffs.data(), root, &rxbuff);
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+
+    *value = *(TYPE *)rxbuff->data();
+out:
+    for (auto &buff : txbuffs) {
+        qvi_bbuff_delete(&buff);
+    }
+    qvi_bbuff_delete(&rxbuff);
+    if (rc != QV_SUCCESS) {
+        // If something went wrong, just zero-initialize the value.
+        *value = {};
+    }
+    return rc;
+}
+
+static int
+scatter_hwpools(
+    qvi_group_t *group,
+    int root,
+    const std::vector<qvi_hwpool_s *> &pools,
+    qvi_hwpool_s **pool
+) {
+    int rc = QV_SUCCESS;
+    std::vector<qvi_bbuff_t *> txbuffs(0);
+    qvi_bbuff_t *rxbuff = nullptr;
+
+    if (root == group->rank()) {
+        const uint_t group_size = group->size();
+        txbuffs.resize(group_size);
+        // Pack the hwpools.
+        for (uint_t i = 0; i < group_size; ++i) {
+            rc = qvi_bbuff_new(&txbuffs[i]);
+            if (rc != QV_SUCCESS) break;
+
+            rc = pools[i]->pack(txbuffs[i]);
+            if (rc != QV_SUCCESS) break;
+        }
+        if (rc != QV_SUCCESS) goto out;
+    }
+
+    rc = group->scatter(txbuffs.data(), root, &rxbuff);
+    if (rc != QV_SUCCESS) goto out;
+
+    rc = qvi_bbuff_rmi_unpack(rxbuff->data(), pool);
+out:
+    for (auto &buff : txbuffs) {
+        qvi_bbuff_delete(&buff);
+    }
+    qvi_bbuff_delete(&rxbuff);
+    if (rc != QV_SUCCESS) {
+        qvi_delete(pool);
+    }
+    return rc;
+}
+
+template <typename TYPE>
+static int
+bcast_value(
+    qvi_group_t *group,
+    int root,
+    TYPE *value
+) {
+    static_assert(std::is_trivially_copyable<TYPE>::value, "");
+
+    std::vector<TYPE> values;
+    if (root == group->rank()) {
+        values.resize(group->size());
+        std::fill(values.begin(), values.end(), *value);
+    }
+    return scatter_values(group, root, values, value);
 }
 
 /**
@@ -402,206 +597,6 @@ struct qvi_scope_split_coll_s {
     }
 };
 
-template <typename TYPE>
-static int
-gather_values(
-    qvi_group_t *group,
-    int root,
-    TYPE invalue,
-    std::vector<TYPE> &outvals
-) {
-    static_assert(std::is_trivially_copyable<TYPE>::value, "");
-
-    bool shared = false;
-    const uint_t group_size = group->size();
-    qvi_bbuff_t *txbuff = nullptr, **bbuffs = nullptr;
-
-    int rc = qvi_bbuff_new(&txbuff);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_bbuff_append(
-        txbuff, &invalue, sizeof(TYPE)
-    );
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = group->gather(txbuff, root, &shared, &bbuffs);
-    if (rc != QV_SUCCESS) goto out;
-
-    if (group->rank() == root) {
-        outvals.resize(group_size);
-        // Unpack the values.
-        for (uint_t i = 0; i < group_size; ++i) {
-            outvals[i] = *(TYPE *)qvi_bbuff_data(bbuffs[i]);
-        }
-    }
-out:
-    if (!shared || (shared && (group->rank() == root))) {
-        if (bbuffs) {
-            for (uint_t i = 0; i < group_size; ++i) {
-                qvi_bbuff_delete(&bbuffs[i]);
-            }
-            delete[] bbuffs;
-        }
-    }
-    qvi_bbuff_delete(&txbuff);
-    if (rc != QV_SUCCESS) {
-        // If something went wrong, just zero-initialize the values.
-        outvals = {};
-    }
-    return rc;
-}
-
-static int
-gather_hwpools(
-    qvi_group_t *group,
-    int root,
-    qvi_hwpool_s *txpool,
-    std::vector<qvi_hwpool_s *> &rxpools
-) {
-    bool shared = false;
-    const uint_t group_size = group->size();
-    qvi_bbuff_t *txbuff = nullptr, **bbuffs = nullptr;
-
-    int rc = qvi_bbuff_new(&txbuff);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = txpool->pack(txbuff);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = group->gather(txbuff, root, &shared, &bbuffs);
-    if (rc != QV_SUCCESS) goto out;
-
-    if (group->rank() == root) {
-        rxpools.resize(group_size);
-        // Unpack the hwpools.
-        for (uint_t i = 0; i < group_size; ++i) {
-            rc = qvi_bbuff_rmi_unpack(
-                qvi_bbuff_data(bbuffs[i]), &rxpools[i]
-            );
-            if (rc != QV_SUCCESS) break;
-        }
-    }
-out:
-    if (!shared || (shared && (group->rank() == root))) {
-        if (bbuffs) {
-            for (uint_t i = 0; i < group_size; ++i) {
-                qvi_bbuff_delete(&bbuffs[i]);
-            }
-            delete[] bbuffs;
-        }
-    }
-    qvi_bbuff_delete(&txbuff);
-    if (rc != QV_SUCCESS) {
-        // If something went wrong, just zero-initialize the pools.
-        rxpools = {};
-    }
-    return rc;
-}
-
-template <typename TYPE>
-static int
-scatter_values(
-    qvi_group_t *group,
-    int root,
-    const std::vector<TYPE> &values,
-    TYPE *value
-) {
-    static_assert(std::is_trivially_copyable<TYPE>::value, "");
-
-    int rc = QV_SUCCESS;
-    std::vector<qvi_bbuff_t *> txbuffs{};
-    qvi_bbuff_t *rxbuff = nullptr;
-
-    if (root == group->rank()) {
-        const uint_t group_size = group->size();
-        txbuffs.resize(group_size);
-        // Pack the values.
-        for (uint_t i = 0; i < group_size; ++i) {
-            rc = qvi_bbuff_new(&txbuffs[i]);
-            if (rc != QV_SUCCESS) break;
-
-            rc = qvi_bbuff_append(
-                txbuffs[i], &values[i], sizeof(TYPE)
-            );
-            if (rc != QV_SUCCESS) break;
-        }
-        if (rc != QV_SUCCESS) goto out;
-    }
-
-    rc = group->scatter(txbuffs.data(), root, &rxbuff);
-    if (rc != QV_SUCCESS) goto out;
-
-    *value = *(TYPE *)qvi_bbuff_data(rxbuff);
-out:
-    for (auto &buff : txbuffs) {
-        qvi_bbuff_delete(&buff);
-    }
-    qvi_bbuff_delete(&rxbuff);
-    if (rc != QV_SUCCESS) {
-        // If something went wrong, just zero-initialize the value.
-        *value = {};
-    }
-    return rc;
-}
-
-static int
-scatter_hwpools(
-    qvi_group_t *group,
-    int root,
-    const std::vector<qvi_hwpool_s *> &pools,
-    qvi_hwpool_s **pool
-) {
-    int rc = QV_SUCCESS;
-    std::vector<qvi_bbuff_t *> txbuffs{};
-    qvi_bbuff_t *rxbuff = nullptr;
-
-    if (root == group->rank()) {
-        const uint_t group_size = group->size();
-        txbuffs.resize(group_size);
-        // Pack the hwpools.
-        for (uint_t i = 0; i < group_size; ++i) {
-            rc = qvi_bbuff_new(&txbuffs[i]);
-            if (rc != QV_SUCCESS) break;
-
-            rc = pools[i]->pack(txbuffs[i]);
-            if (rc != QV_SUCCESS) break;
-        }
-        if (rc != QV_SUCCESS) goto out;
-    }
-
-    rc = group->scatter(txbuffs.data(), root, &rxbuff);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_bbuff_rmi_unpack(qvi_bbuff_data(rxbuff), pool);
-out:
-    for (auto &buff : txbuffs) {
-        qvi_bbuff_delete(&buff);
-    }
-    qvi_bbuff_delete(&rxbuff);
-    if (rc != QV_SUCCESS) {
-        qvi_delete(pool);
-    }
-    return rc;
-}
-
-template <typename TYPE>
-static int
-bcast_value(
-    qvi_group_t *group,
-    int root,
-    TYPE *value
-) {
-    static_assert(std::is_trivially_copyable<TYPE>::value, "");
-
-    std::vector<TYPE> values{};
-
-    if (root == group->rank()) {
-        values.resize(group->size());
-        std::fill(values.begin(), values.end(), *value);
-    }
-    return scatter_values(group, root, values, value);
-}
-
 static int
 scope_split_coll_gather(
     qvi_scope_split_coll_s &splitcoll
@@ -665,7 +660,7 @@ scope_split_coll_scatter(
         splitcoll.gsplit.colors,
         colorp
     );
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     return scatter_hwpools(
         splitcoll.parent_scope->group,
@@ -686,7 +681,7 @@ qvi_scope_split_agg_cpuset_dup(
     qvi_hwloc_bitmap_s &result
 ) {
     // This shouldn't happen.
-    if (splitagg.hwpools.size() == 0) qvi_abort();
+    assert(splitagg.hwpools.size() != 0);
 
     result = splitagg.hwpools[0]->cpuset();
     return QV_SUCCESS;
@@ -1264,7 +1259,7 @@ qvi_scope_thsplit(
         ithchildren[i] = child;
     }
     if (rc != QV_SUCCESS) {
-        qvi_scope_thfree(&ithchildren, k);
+        qvi_scope_thdelete(&ithchildren, k);
     }
     else {
         // Subtract one to account for the parent's

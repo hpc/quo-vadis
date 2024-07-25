@@ -17,36 +17,61 @@
 #include "qvi-bbuff.h"
 #include "qvi-utils.h"
 
-struct qvi_bbuff_s {
-    /** Minimum growth in bytes for resizes, etc. */
-    static constexpr size_t min_growth = 256;
-    /** Current capacity of buffer. */
-    size_t capacity = 0;
-    /** Amount of data already stored. */
-    size_t size = 0;
-    /** Pointer to data backing store. */
-    void *data = nullptr;
-    /** Constructor. */
-    qvi_bbuff_s(void)
-    {
-        capacity = min_growth;
-        data = calloc(capacity, sizeof(byte_t));
-        if (qvi_unlikely(!data)) throw qvi_runtime_error();
+qvi_bbuff_s::qvi_bbuff_s(void)
+{
+    m_capacity = s_min_growth;
+    m_data = calloc(m_capacity, sizeof(byte_t));
+    if (qvi_unlikely(!m_data)) throw qvi_runtime_error();
+}
+
+qvi_bbuff_s::qvi_bbuff_s(
+    const qvi_bbuff_s &src
+) : qvi_bbuff_s()
+{
+    const int rc = append(src.m_data, src.m_size);
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+}
+
+qvi_bbuff_s::~qvi_bbuff_s(void)
+{
+    if (m_data) free(m_data);
+}
+
+size_t
+qvi_bbuff_s::size(void) const
+{
+    return m_size;
+}
+
+void *
+qvi_bbuff_s::data(void)
+{
+    return m_data;
+}
+
+int
+qvi_bbuff_s::append(
+    const void *const data,
+    size_t size
+) {
+    const size_t req_capacity = size + m_size;
+    if (req_capacity > m_capacity) {
+        // New capacity.
+        const size_t new_capacity = req_capacity + s_min_growth;
+        void *new_data = calloc(new_capacity, sizeof(byte_t));
+        if (qvi_unlikely(!new_data)) return QV_ERR_OOR;
+        // Memory allocation successful.
+        memmove(new_data, m_data, m_size);
+        free(m_data);
+        m_capacity = new_capacity;
+        m_data = new_data;
     }
-    /** Copy constructor. */
-    qvi_bbuff_s(
-        const qvi_bbuff_s &src
-    ) : qvi_bbuff_s()
-    {
-        const int rc = qvi_bbuff_append(this, src.data, src.size);
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
-    }
-    /** Destructor. */
-    ~qvi_bbuff_s(void)
-    {
-        if (data) free(data);
-    }
-};
+    byte_t *dest = (byte_t *)m_data;
+    dest += m_size;
+    memmove(dest, data, size);
+    m_size += size;
+    return QV_SUCCESS;
+}
 
 int
 qvi_bbuff_new(
@@ -57,10 +82,10 @@ qvi_bbuff_new(
 
 int
 qvi_bbuff_dup(
-    const qvi_bbuff_t *const src,
+    const qvi_bbuff_t &src,
     qvi_bbuff_t **buff
 ) {
-    return qvi_dup(*src, buff);
+    return qvi_dup(src, buff);
 }
 
 void
@@ -68,45 +93,6 @@ qvi_bbuff_delete(
     qvi_bbuff_t **buff
 ) {
     qvi_delete(buff);
-}
-
-void *
-qvi_bbuff_data(
-    qvi_bbuff_t *buff
-) {
-    return buff->data;
-}
-
-size_t
-qvi_bbuff_size(
-    const qvi_bbuff_t *buff
-) {
-    return buff->size;
-}
-
-int
-qvi_bbuff_append(
-    qvi_bbuff_t *buff,
-    const void *const data,
-    size_t size
-) {
-    const size_t req_capacity = size + buff->size;
-    if (req_capacity > buff->capacity) {
-        // New capacity.
-        const size_t new_capacity = req_capacity + buff->min_growth;
-        void *new_data = calloc(new_capacity, sizeof(byte_t));
-        if (qvi_unlikely(!new_data)) return QV_ERR_OOR;
-        // Memory allocation successful.
-        memmove(new_data, buff->data, buff->size);
-        free(buff->data);
-        buff->capacity = new_capacity;
-        buff->data = new_data;
-    }
-    byte_t *dest = (byte_t *)buff->data;
-    dest += buff->size;
-    memmove(dest, data, size);
-    buff->size += size;
-    return QV_SUCCESS;
 }
 
 /*

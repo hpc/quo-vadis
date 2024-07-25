@@ -178,7 +178,7 @@ qvi_omp_group_gather_bbuffs(
     #pragma omp single copyprivate(bbuffs)
     bbuffs = new qvi_bbuff_t *[group_size]();
 
-    const int rc = qvi_bbuff_dup(txbuff, &bbuffs[group_rank]);
+    const int rc = qvi_bbuff_dup(*txbuff, &bbuffs[group_rank]);
     // Need to ensure that all threads have contributed to bbuffs.
     #pragma omp barrier
     if (rc != QV_SUCCESS) {
@@ -211,7 +211,7 @@ qvi_omp_group_scatter_bbuffs(
     #pragma omp barrier
     qvi_bbuff_t *inbuff = (*tmp)[group->rank];
     qvi_bbuff_t *mybbuff = nullptr;
-    const int rc = qvi_bbuff_dup(inbuff, &mybbuff);
+    const int rc = qvi_bbuff_dup(*inbuff, &mybbuff);
     #pragma omp barrier
     #pragma omp single
     delete tmp;
