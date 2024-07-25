@@ -20,7 +20,6 @@
 #define QVI_RMI_H
 
 #include "qvi-common.h"
-#include "qvi-hwloc.h"
 #include "qvi-hwpool.h"
 
 #ifdef __cplusplus

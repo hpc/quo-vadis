@@ -65,6 +65,10 @@ typedef uint8_t byte_t;
 typedef char const* cstr_t;
 typedef unsigned int uint_t;
 
+/** Opaque hwloc instance. */
+struct qvi_hwloc_s;
+typedef struct qvi_hwloc_s qvi_hwloc_t;
+
 /** Opaque RMI client. */
 struct qvi_rmi_client_s;
 typedef struct qvi_rmi_client_s qvi_rmi_client_t;

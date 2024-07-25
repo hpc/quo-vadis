@@ -13,7 +13,14 @@
 
 #include "qvi-group.h"
 #include "qvi-group-pthread.h"
+#include "qvi-task.h" // IWYU pragma: keep
 #include "qvi-utils.h"
+
+qvi_hwloc_t *
+qvi_group_s::hwloc(void)
+{
+    return task()->hwloc();
+}
 
 int
 qvi_group_s::thsplit(

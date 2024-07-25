@@ -87,7 +87,7 @@ qvi_bbuff_size(
 int
 qvi_bbuff_append(
     qvi_bbuff_t *buff,
-    const void *data,
+    const void *const data,
     size_t size
 ) {
     const size_t req_capacity = size + buff->size;

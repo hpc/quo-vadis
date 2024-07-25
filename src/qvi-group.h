@@ -34,6 +34,9 @@ struct qvi_group_s : qvi_refc_s {
     /** Returns pointer to the caller's task information. */
     virtual qvi_task_t *
     task(void) = 0;
+    /** Returns pointer to the task's hwloc information. */
+    qvi_hwloc_t *
+    hwloc(void);
     /** Returns the number of members in this group. */
     virtual int
     size(void) = 0;

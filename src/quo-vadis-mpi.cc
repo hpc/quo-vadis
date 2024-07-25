@@ -88,7 +88,7 @@ qvi_mpi_scope_comm_dup(
     MPI_Comm *comm
 ) {
     qvi_group_mpi_t *const mpi_group = dynamic_cast<qvi_group_mpi_t *>(
-        qvi_scope_group_get(scope)
+        qvi_scope_group(scope)
     );
     return mpi_group->comm_dup(comm);
 }
