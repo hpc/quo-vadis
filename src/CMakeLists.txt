@@ -34,6 +34,7 @@ add_library(
       qvi-subgroup.h
       qvi-group-pthread.h
       qvi-map.h
+      qvi-split.h
       qvi-scope.h
       qvi-log.cc
       qvi-utils.cc
@@ -48,6 +49,7 @@ add_library(
       qvi-pthread.cc
       qvi-group-pthread.cc
       qvi-map.cc
+      qvi-split.cc
       qvi-scope.cc
       quo-vadis.cc
       quo-vadis-pthread.cc
