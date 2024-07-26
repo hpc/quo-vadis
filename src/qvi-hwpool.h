@@ -56,29 +56,39 @@ struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
     /** Constructor using qvi_hwloc_device_s. */
     explicit qvi_hwpool_dev_s(
         const qvi_hwloc_device_s &dev
-    ) : type(dev.type)
-      , affinity(dev.affinity)
-      , m_id(dev.id)
-      , pci_bus_id(dev.pci_bus_id)
-      , uuid(dev.uuid) { }
+    );
     /** Constructor using std::shared_ptr<qvi_hwloc_device_s>. */
     explicit qvi_hwpool_dev_s(
         const std::shared_ptr<qvi_hwloc_device_s> &shdev
-    ) : qvi_hwpool_dev_s(*shdev.get()) { }
+    );
     /** Destructor. */
     virtual ~qvi_hwpool_dev_s(void) = default;
     /** Equality operator. */
     bool
     operator==(
         const qvi_hwpool_dev_s &x
-    ) const {
-        return uuid == x.uuid;
-    }
+    ) const;
     /** Returns the device's ID string formatted as specified. */
     int
     id(
         qv_device_id_type_t format,
         char **result
+    );
+    /**
+     * Packs the instance into the provided buffer.
+     */
+    int
+    packinto(
+        qvi_bbuff_t *buff
+    ) const;
+    /**
+     * Unpacks the buffer and creates a new hardware pool device instance.
+     */
+    static int
+    unpack(
+        byte_t *buffpos,
+        size_t *bytes_written,
+        qvi_hwpool_dev_s *dev
     );
 };
 
@@ -158,7 +168,7 @@ public:
      * Packs the instance into the provided buffer.
      */
     int
-    packto(
+    packinto(
         qvi_bbuff_t *buff
     ) const;
     /**

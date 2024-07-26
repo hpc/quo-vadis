@@ -40,6 +40,9 @@ public:
     );
     /** Destructor. */
     ~qvi_bbuff_s(void);
+    /** Assignment operator. */
+    void
+    operator=(const qvi_bbuff_s &src) = delete;
     /** Returns the size of the data stored in the byte buffer. */
     size_t
     size(void) const;
