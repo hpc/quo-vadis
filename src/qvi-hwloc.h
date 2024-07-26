@@ -428,23 +428,23 @@ public:
     qvi_hwloc_bitmap_s(void)
     {
         const int rc = qvi_hwloc_bitmap_calloc(&m_data);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
     }
     /** Construct via hwloc_const_bitmap_t. */
     explicit qvi_hwloc_bitmap_s(hwloc_const_bitmap_t bitmap)
     {
         int rc = qvi_hwloc_bitmap_calloc(&m_data);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
         rc = set(bitmap);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
     }
     /** Copy constructor. */
     qvi_hwloc_bitmap_s(const qvi_hwloc_bitmap_s &src)
     {
         int rc = qvi_hwloc_bitmap_calloc(&m_data);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
         rc = set(src.m_data);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
     }
     /** Destructor. */
     ~qvi_hwloc_bitmap_s(void)
@@ -463,7 +463,7 @@ public:
     operator=(const qvi_hwloc_bitmap_s &src)
     {
         const int rc = qvi_hwloc_bitmap_copy(src.m_data, m_data);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
     }
     /** Sets the object's internal bitmap to match src's. */
     int
