@@ -23,8 +23,9 @@
  * Base hardware pool resource class.
  */
 struct qvi_hwpool_res_s {
+protected:
     /** Resource hint flags. */
-    qv_scope_create_hints_t hints = QV_SCOPE_CREATE_HINT_NONE;
+    qv_scope_create_hints_t m_hints = QV_SCOPE_CREATE_HINT_NONE;
 };
 
 /**
@@ -32,8 +33,34 @@ struct qvi_hwpool_res_s {
  * processing units (PUs), which are defined in the CPU's cpuset.
  */
 struct qvi_hwpool_cpu_s : qvi_hwpool_res_s {
+protected:
     /** The cpuset of the CPU's PUs. */
-    qvi_hwloc_bitmap_s cpuset;
+    qvi_hwloc_bitmap_s m_cpuset;
+public:
+    /**
+     * Returns a reference to the
+     * CPU's resources encoded by a bitmap.
+     */
+    qvi_hwloc_bitmap_s &
+    cpuset(void);
+    /**
+     * Returns a const reference to the
+     * CPU's resources encoded by a bitmap.
+     */
+    const qvi_hwloc_bitmap_s &
+    cpuset(void) const;
+    /** Packs the instance into the provided buffer. */
+    int
+    packinto(
+        qvi_bbuff_t *buff
+    ) const;
+    /** Unpacks the buffer and creates a new hardware pool instance. */
+    static int
+    unpack(
+        byte_t *buffpos,
+        size_t *bytes_written,
+        qvi_hwpool_cpu_s &cpu
+    );
 };
 
 /**
@@ -41,16 +68,20 @@ struct qvi_hwpool_cpu_s : qvi_hwpool_res_s {
  * because we only maintain information relevant for user-facing operations.
  */
 struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
+    /** Hardware pools are our friends. */
+    friend qvi_hwpool_s;
+private:
     /** Device type. */
-    qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
+    qv_hw_obj_type_t m_type = QV_HW_OBJ_LAST;
     /** The bitmap encoding CPU affinity. */
-    qvi_hwloc_bitmap_s affinity;
+    qvi_hwloc_bitmap_s m_affinity;
     /** Device ID (ordinal). */
     int m_id = QVI_HWLOC_DEVICE_INVALID_ID;
     /** The PCI bus ID. */
-    std::string pci_bus_id;
+    std::string m_pci_bus_id;
     /** Universally Unique Identifier. */
-    std::string uuid;
+    std::string m_uuid;
+public:
     /** Default constructor. */
     qvi_hwpool_dev_s(void) = default;
     /** Constructor using qvi_hwloc_device_s. */
@@ -75,15 +106,17 @@ struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
         char **result
     );
     /**
-     * Packs the instance into the provided buffer.
+     * Returns a const reference to the
+     * device's affinity encoded by a bitmap.
      */
+    const qvi_hwloc_bitmap_s &
+    affinity(void) const;
+    /** Packs the instance into the provided buffer. */
     int
     packinto(
         qvi_bbuff_t *buff
     ) const;
-    /**
-     * Unpacks the buffer and creates a new hardware pool device instance.
-     */
+    /** Unpacks the buffer and creates a new hardware pool device instance. */
     static int
     unpack(
         byte_t *buffpos,
@@ -164,16 +197,12 @@ public:
      */
     int
     release_devices(void);
-    /**
-     * Packs the instance into the provided buffer.
-     */
+    /** Packs the instance into the provided buffer. */
     int
     packinto(
         qvi_bbuff_t *buff
     ) const;
-    /**
-     * Unpacks the buffer and creates a new hardware pool instance.
-     */
+    /** Unpacks the buffer and creates a new hardware pool instance. */
     static int
     unpack(
         byte_t *buffpos,

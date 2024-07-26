@@ -134,13 +134,64 @@ pool_release_cpus_by_cpuset(
 }
 #endif
 
+qvi_hwloc_bitmap_s &
+qvi_hwpool_cpu_s::cpuset(void)
+{
+    return m_cpuset;
+}
+
+const qvi_hwloc_bitmap_s &
+qvi_hwpool_cpu_s::cpuset(void)
+    const {
+    return m_cpuset;
+}
+
+int
+qvi_hwpool_cpu_s::packinto(
+    qvi_bbuff_t *buff
+) const {
+    // Pack hints.
+    const int rc = qvi_bbuff_rmi_pack_item(buff, m_hints);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // Pack cpuset.
+    return qvi_bbuff_rmi_pack_item(buff, m_cpuset);
+}
+
+int
+qvi_hwpool_cpu_s::unpack(
+    byte_t *buffpos,
+    size_t *bytes_written,
+    qvi_hwpool_cpu_s &cpu
+) {
+    size_t bw = 0, total_bw = 0;
+    // Unpack hints.
+    int rc = qvi_bbuff_rmi_unpack_item(
+        &cpu.m_hints, buffpos, &bw
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    total_bw += bw;
+    buffpos += bw;
+    // Unpack bitmap.
+    rc = qvi_bbuff_rmi_unpack_item(
+        cpu.m_cpuset, buffpos, &bw
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    total_bw += bw;
+out:
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        total_bw = 0;
+    }
+    *bytes_written = total_bw;
+    return rc;
+}
+
 qvi_hwpool_dev_s::qvi_hwpool_dev_s(
     const qvi_hwloc_device_s &dev
-) : type(dev.type)
-  , affinity(dev.affinity)
+) : m_type(dev.type)
+  , m_affinity(dev.affinity)
   , m_id(dev.id)
-  , pci_bus_id(dev.pci_bus_id)
-  , uuid(dev.uuid) { }
+  , m_pci_bus_id(dev.pci_bus_id)
+  , m_uuid(dev.uuid) { }
 
 qvi_hwpool_dev_s::qvi_hwpool_dev_s(
     const std::shared_ptr<qvi_hwloc_device_s> &shdev
@@ -150,7 +201,7 @@ bool
 qvi_hwpool_dev_s::operator==(
     const qvi_hwpool_dev_s &x
 ) const {
-    return uuid == x.uuid;
+    return m_uuid == x.m_uuid;
 }
 
 int
@@ -161,10 +212,10 @@ qvi_hwpool_dev_s::id(
     int rc = QV_SUCCESS, nw = 0;
     switch (format) {
         case (QV_DEVICE_ID_UUID):
-            nw = asprintf(result, "%s", uuid.c_str());
+            nw = asprintf(result, "%s", m_uuid.c_str());
             break;
         case (QV_DEVICE_ID_PCI_BUS_ID):
-            nw = asprintf(result, "%s", pci_bus_id.c_str());
+            nw = asprintf(result, "%s", m_pci_bus_id.c_str());
             break;
         case (QV_DEVICE_ID_ORDINAL):
             nw = asprintf(result, "%d", m_id);
@@ -181,27 +232,33 @@ qvi_hwpool_dev_s::id(
     return rc;
 }
 
+const qvi_hwloc_bitmap_s &
+qvi_hwpool_dev_s::affinity(void)
+    const {
+    return m_affinity;
+}
+
 int
 qvi_hwpool_dev_s::packinto(
     qvi_bbuff_t *buff
 ) const {
     // Pack device hints.
-    int rc = qvi_bbuff_rmi_pack_item(buff, hints);
+    int rc = qvi_bbuff_rmi_pack_item(buff, m_hints);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Pack device affinity.
-    rc = qvi_bbuff_rmi_pack_item(buff, affinity);
+    rc = qvi_bbuff_rmi_pack_item(buff, m_affinity);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Pack device type.
-    rc = qvi_bbuff_rmi_pack_item(buff, type);
+    rc = qvi_bbuff_rmi_pack_item(buff, m_type);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Pack device ID.
     rc = qvi_bbuff_rmi_pack_item(buff, m_id);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Pack device PCI bus ID.
-    rc = qvi_bbuff_rmi_pack_item(buff, pci_bus_id);
+    rc = qvi_bbuff_rmi_pack_item(buff, m_pci_bus_id);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Pack device UUID.
-    return qvi_bbuff_rmi_pack_item(buff, uuid);
+    return qvi_bbuff_rmi_pack_item(buff, m_uuid);
 }
 
 int
@@ -213,21 +270,21 @@ qvi_hwpool_dev_s::unpack(
     size_t bw = 0, total_bw = 0;
 
     int rc = qvi_bbuff_rmi_unpack_item(
-        &dev->hints, buffpos, &bw
+        &dev->m_hints, buffpos, &bw
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     total_bw += bw;
     buffpos += bw;
 
     rc = qvi_bbuff_rmi_unpack_item(
-        dev->affinity, buffpos, &bw
+        dev->m_affinity, buffpos, &bw
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     total_bw += bw;
     buffpos += bw;
 
     rc = qvi_bbuff_rmi_unpack_item(
-        &dev->type, buffpos, &bw
+        &dev->m_type, buffpos, &bw
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     total_bw += bw;
@@ -241,14 +298,14 @@ qvi_hwpool_dev_s::unpack(
     buffpos += bw;
 
     rc = qvi_bbuff_rmi_unpack_item(
-        dev->pci_bus_id, buffpos, &bw
+        dev->m_pci_bus_id, buffpos, &bw
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     total_bw += bw;
     buffpos += bw;
 
     rc = qvi_bbuff_rmi_unpack_item(
-        dev->uuid, buffpos, &bw
+        dev->m_uuid, buffpos, &bw
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     total_bw += bw;
@@ -269,7 +326,7 @@ qvi_hwpool_s::add_devices_with_affinity(
     for (const auto devt : qvi_hwloc_supported_devices()) {
         qvi_hwloc_dev_list_t devs;
         rc = qvi_hwloc_get_devices_in_bitmap(
-            hwloc, devt, m_cpu.cpuset, devs
+            hwloc, devt, m_cpu.cpuset(), devs
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
         for (const auto &dev : devs) {
@@ -304,7 +361,7 @@ qvi_hwpool_s::initialize(
     qvi_hwloc_t *hwloc,
     hwloc_const_bitmap_t cpuset
 ) {
-    const int rc = m_cpu.cpuset.set(cpuset);
+    const int rc = m_cpu.cpuset().set(cpuset);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Add devices with affinity to the hardware pool.
     return add_devices_with_affinity(hwloc);
@@ -313,7 +370,7 @@ qvi_hwpool_s::initialize(
 const qvi_hwloc_bitmap_s &
 qvi_hwpool_s::cpuset(void) const
 {
-    return m_cpu.cpuset;
+    return m_cpu.cpuset();
 }
 
 const qvi_hwpool_devs_t &
@@ -330,7 +387,7 @@ qvi_hwpool_s::nobjects(
 ) {
     if (qvi_hwloc_obj_type_is_host_resource(obj_type)) {
         return qvi_hwloc_get_nobjs_in_cpuset(
-            hwloc, obj_type, m_cpu.cpuset.cdata(), result
+            hwloc, obj_type, m_cpu.cpuset().cdata(), result
         );
     }
     *result = m_devs.count(obj_type);
@@ -342,7 +399,7 @@ qvi_hwpool_s::add_device(
     const qvi_hwpool_dev_s &dev
 ) {
     auto shdev = std::make_shared<qvi_hwpool_dev_s>(dev);
-    m_devs.insert({dev.type, shdev});
+    m_devs.insert({dev.m_type, shdev});
     return QV_SUCCESS;
 }
 
@@ -421,6 +478,7 @@ out:
     return rc;
 }
 
+#if 0
 /**
  * Extend namespace std so we can easily add qvi_devinfo_ts to
  * unordered_sets.
@@ -439,6 +497,7 @@ namespace std {
         }
     };
 }
+#endif
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab

@@ -508,11 +508,7 @@ qvi_bbuff_rmi_pack_item(
     qvi_bbuff_t *buff,
     const qvi_hwpool_cpu_s &data
 ) {
-    // Pack hints.
-    const int rc = qvi_bbuff_rmi_pack_item(buff, data.hints);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-
-    return qvi_bbuff_rmi_pack_item(buff, data.cpuset);
+    return data.packinto(buff);
 }
 
 /**
@@ -825,26 +821,7 @@ qvi_bbuff_rmi_unpack_item(
     byte_t *buffpos,
     size_t *bytes_written
 ) {
-    size_t bw = 0, total_bw = 0;
-    // Unpack hints.
-    int rc = qvi_bbuff_rmi_unpack_item(
-        &cpu.hints, buffpos, &bw
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    total_bw += bw;
-    buffpos += bw;
-    // Unpack bitmap.
-    rc = qvi_bbuff_rmi_unpack_item(
-        cpu.cpuset, buffpos, &bw
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    total_bw += bw;
-out:
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        total_bw = 0;
-    }
-    *bytes_written = total_bw;
-    return rc;
+    return qvi_hwpool_cpu_s::unpack(buffpos, bytes_written, cpu);
 }
 
 /**

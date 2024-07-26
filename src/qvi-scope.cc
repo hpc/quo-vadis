@@ -834,7 +834,7 @@ agg_split_devices_affinity_preserving(
         // Store device affinities.
         qvi_hwloc_cpusets_t devaffs;
         for (auto &dev : devs) {
-            devaffs.push_back(dev->affinity);
+            devaffs.push_back(dev->affinity());
         }
 
         qvi_map_t map;
@@ -942,7 +942,7 @@ agg_split_get_new_osdev_cpusets(
         // Not the type we are looking to split.
         if (obj_type != dinfo.first) continue;
         // Copy the device's affinity to our list of device affinities.
-        result[affi++] = dinfo.second->affinity;
+        result[affi++] = dinfo.second->affinity();
     }
     return rc;
 }
