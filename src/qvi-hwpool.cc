@@ -48,17 +48,6 @@
 
 #if 0
 /**
- * Returns whether two cpusets are equal.
- */
-static bool
-cpusets_equal(
-    hwloc_const_cpuset_t a,
-    hwloc_const_cpuset_t b
-) {
-    return hwloc_bitmap_compare(a, b) == 0;
-}
-
-/**
  *
  */
 static int
