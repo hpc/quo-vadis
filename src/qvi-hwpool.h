@@ -155,10 +155,10 @@ public:
     int
     release_devices(void);
     /**
-     * Packs the instance into a bbuff.
+     * Packs the instance into the provided buffer.
      */
     int
-    pack(
+    packto(
         qvi_bbuff_t *buff
     ) const;
     /**

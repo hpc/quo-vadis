@@ -256,7 +256,7 @@ qvi_hwpool_s::release_devices(void)
 }
 
 int
-qvi_hwpool_s::pack(
+qvi_hwpool_s::packto(
     qvi_bbuff_t *buff
 ) const {
     // Pack the CPU.

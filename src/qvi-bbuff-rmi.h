@@ -19,7 +19,6 @@
  * c = qvi_hwloc_bitmap_s
  * d = qv_scope_create_hints_t
  * h = qvi_hwpool_s *
- * h = qvi_line_hwpool_t *
  * i = int
  * s = char *
  * s = std::string
@@ -552,7 +551,7 @@ qvi_bbuff_rmi_pack_item_impl(
     qvi_bbuff_t *buff,
     const qvi_hwpool_s *data
 ) {
-    return data->pack(buff);
+    return data->packto(buff);
 }
 
 /**
@@ -672,7 +671,7 @@ qvi_bbuff_rmi_unpack_item(
     size_t *bytes_written
 ) {
     const int nw = asprintf(s, "%s", buffpos);
-    if (nw == -1) {
+    if (qvi_unlikely(nw == -1)) {
         *s = nullptr;
         *bytes_written = 0;
         return QV_ERR_OOR;
@@ -762,7 +761,8 @@ qvi_bbuff_rmi_unpack_item(
 
     void **dbuff = data.first;
     *dbuff = calloc(*dsize, sizeof(byte_t));
-    if (!*dbuff) {
+    if (qvi_unlikely(!*dbuff)) {
+        *bytes_written = 0;
         return QV_ERR_OOR;
     }
     memmove(*dbuff, buffpos, *dsize);
@@ -781,17 +781,17 @@ qvi_bbuff_rmi_unpack_item(
     size_t *bytes_written
 ) {
     int rc = qvi_hwloc_bitmap_calloc(cpuset);
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    char *cpusets = (char *)buffpos;
+    char *const cpusets = (char *)buffpos;
     // Protect against empty data.
     if (strcmp(QV_BUFF_RMI_NULL_CPUSET, cpusets) != 0) {
         rc = qvi_hwloc_bitmap_sscanf(*cpuset, cpusets);
-        if (rc != QV_SUCCESS) goto out;
+        if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     }
     *bytes_written = strlen(cpusets) + 1;
 out:
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_hwloc_bitmap_delete(cpuset);
     }
     return rc;
@@ -810,8 +810,11 @@ qvi_bbuff_rmi_unpack_item(
     int rc = qvi_bbuff_rmi_unpack_item(
         &raw_cpuset, buffpos, bytes_written
     );
-    if (rc != QV_SUCCESS) return rc;
-
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        *bytes_written = 0;
+        return rc;
+    }
+    //
     rc = bitmap.set(raw_cpuset);
     qvi_hwloc_bitmap_delete(&raw_cpuset);
     return rc;
@@ -844,17 +847,17 @@ qvi_bbuff_rmi_unpack_item(
     int rc = qvi_bbuff_rmi_unpack_item(
         &cpu.hints, buffpos, &bw
     );
-    if (rc != QV_SUCCESS) goto out;
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     total_bw += bw;
     buffpos += bw;
     // Unpack bitmap.
     rc = qvi_bbuff_rmi_unpack_item(
         cpu.cpuset, buffpos, &bw
     );
-    if (rc != QV_SUCCESS) goto out;
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     total_bw += bw;
 out:
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         total_bw = 0;
     }
     *bytes_written = total_bw;
