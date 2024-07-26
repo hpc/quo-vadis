@@ -451,6 +451,13 @@ public:
     {
         qvi_hwloc_bitmap_delete(&m_data);
     }
+    /** Equality operator. */
+    bool
+    operator==(
+        const qvi_hwloc_bitmap_s &x
+    ) const {
+        return hwloc_bitmap_compare(cdata(), x.cdata()) == 0;
+    }
     /** Assignment operator. */
     void
     operator=(const qvi_hwloc_bitmap_s &src)
