@@ -19,6 +19,23 @@
 
 #include "qvi-common.h"
 #include "qvi-group.h"
+#include "qvi-hwpool.h"
+
+struct qv_scope_s {
+    /** Task group associated with this scope instance. */
+    qvi_group_t *group = nullptr;
+    /** Hardware resource pool. */
+    qvi_hwpool_s *hwpool = nullptr;
+    /** Constructor */
+    qv_scope_s(void) = delete;
+    /** Constructor */
+    qv_scope_s(
+        qvi_group_t *group_a,
+        qvi_hwpool_s *hwpool_a
+    );
+    /** Destructor */
+    ~qv_scope_s(void);
+};
 
 /**
  * Returns a new intrinsic scope.
