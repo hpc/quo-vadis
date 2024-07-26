@@ -465,21 +465,13 @@ bcast_value(
  * qvi_scope_split_agg_s, but that isn't a requirement.
  */
 struct qvi_scope_split_agg_s {
-    /**
-     * A pointer to my RMI.
-     */
+    /** A pointer to my RMI. */
     qvi_rmi_client_t *rmi = nullptr;
-    /**
-     * The base hardware pool we are splitting.
-     */
+    /** The base hardware pool we are splitting. */
     qvi_hwpool_s *base_hwpool = nullptr;
-    /**
-     * The number of members that are part of the split.
-     */
+    /** The number of members that are part of the split. */
     uint_t group_size = 0;
-    /**
-     * The number of pieces in the split.
-     */
+    /** The number of pieces in the split. */
     uint_t split_size = 0;
     /**
      * The potential hardware resource that we are splitting at. QV_HW_OBJ_LAST
@@ -487,37 +479,49 @@ struct qvi_scope_split_agg_s {
      * resource type indicates that we are splitting at that type: called from a
      * split_at() context.
      */
-    qv_hw_obj_type_t split_at_type{};
+    qv_hw_obj_type_t split_at_type;
     /**
      * Vector of task IDs, one for each member of the group. Note that the
      * number of task IDs will always match the group size and that their array
      * index corresponds to a task ID. It is handy to have the task IDs for
      * splitting so we can query task characteristics during a splitting.
      */
-    std::vector<pid_t> taskids{};
+    std::vector<pid_t> taskids;
     /**
      * Vector of hardware pools, one for each member of the group. Note that the
      * number of hardware pools will always match the group size and that their
      * array index corresponds to a task ID: 0 ... group_size - 1.
      */
-    std::vector<qvi_hwpool_s *> hwpools{};
+    std::vector<qvi_hwpool_s *> hwpools;
     /**
      * Vector of colors, one for each member of the group. Note that the number
      * of colors will always match the group size and that their array index
      * corresponds to a task ID.
      */
-    std::vector<int> colors{};
-    /**
-     * Vector of task affinities.
-     */
-    qvi_hwloc_cpusets_t affinities{};
-    /**
-     * Constructor.
-     */
+    std::vector<int> colors;
+    /** Vector of task affinities. */
+    qvi_hwloc_cpusets_t affinities;
+    /** Constructor. */
     qvi_scope_split_agg_s(void) = default;
-    /**
-     * Destructor
-     */
+    /** Constructor. */
+    qvi_scope_split_agg_s(
+        qv_scope_t *parent,
+        uint_t group_size_a,
+        uint_t split_size_a,
+        qv_hw_obj_type_t split_at_type_a
+    ) : rmi(parent->group->task()->rmi())
+      , base_hwpool(parent->hwpool)
+      , group_size(group_size_a)
+      , split_size(split_size_a)
+      , split_at_type(split_at_type_a)
+    {
+        // To save memory we don't eagerly resize our vectors to group_size
+        // since most processes will not use the storage. For example, in the
+        // collective case the root ID process will be the only one needing
+        // group_size elements in our vectors. We'll let the call paths enforce
+        // appropriate vector sizing.
+    }
+    /** Destructor. */
     ~qvi_scope_split_agg_s(void)
     {
         for (auto &hwpool : hwpools) {
@@ -525,27 +529,399 @@ struct qvi_scope_split_agg_s {
         }
     }
     /**
-     * Minimally initializes instance.
+     * Resizes the relevant containers to make
+     * room for |group size| number of elements.
+     */
+    void
+    reserve(void)
+    {
+        taskids.resize(group_size);
+        hwpools.resize(group_size);
+        colors.resize(group_size);
+        affinities.resize(group_size);
+    }
+    /**
+     * Returns a copy of the aggregate cpuset. Note that the cpuset will be shared
+     * among the aggregate, but other resources may be distributed differently.
+     * For example, some hardware pools may have GPUs, while others may not.
+     */
+    qvi_hwloc_bitmap_s
+    cpuset(void) const
+    {
+        // This shouldn't happen.
+        assert(hwpools.size() != 0);
+        return hwpools[0]->cpuset();
+    }
+    /**
+     * Performs a straightforward splitting of the provided cpuset: split the
+     * provided base cpuset into splitagg.split_size distinct pieces.
      */
     int
-    init(
-        qvi_rmi_client_t *rmi_a,
-        qvi_hwpool_s *base_hwpool_a,
-        uint_t group_size_a,
-        uint_t split_size_a,
-        qv_hw_obj_type_t split_at_type_a
+    split_cpuset(
+        qvi_hwloc_cpusets_t &result
+    ) const {
+        // The cpuset that we are going to split.
+        const qvi_hwloc_bitmap_s base_cpuset = cpuset();
+        // Pointer to my hwloc instance.
+        qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc(rmi);
+        // Holds the host's split cpusets.
+        result.resize(split_size);
+        // Notice that we do not go through the RMI for this because this is just an
+        // local, temporary splitting that is ultimately fed to another splitting
+        // algorithm.
+        int rc = QV_SUCCESS;
+        for (uint_t chunkid = 0; chunkid < split_size; ++chunkid) {
+            rc = qvi_hwloc_split_cpuset_by_chunk_id(
+                hwloc, base_cpuset.cdata(), split_size,
+                chunkid, result[chunkid].data()
+            );
+            if (rc != QV_SUCCESS) break;
+        }
+        return rc;
+    }
+    /**
+     * Returns device affinities that are part of the split.
+     */
+    int
+    osdev_cpusets(
+        qvi_hwloc_cpusets_t &result
+    ) const {
+        // Get the number of devices we have available in the provided scope.
+        int nobj = 0;
+        int rc = base_hwpool->nobjects(
+            qvi_rmi_client_hwloc(rmi), split_at_type, &nobj
+        );
+        if (rc != QV_SUCCESS) return rc;
+        // Holds the device affinities used for the split.
+        result.resize(nobj);
+        uint_t affi = 0;
+        for (const auto &dinfo : base_hwpool->devices()) {
+            // Not the type we are looking to split.
+            if (split_at_type != dinfo.first) continue;
+            // Copy the device's affinity to our list of device affinities.
+            result[affi++] = dinfo.second->affinity();
+        }
+        return rc;
+    }
+
+    int
+    primary_cpusets(
+        qvi_hwloc_cpusets_t &result
+    ) const {
+        // We were provided a real host resource type that we have to split. Or
+        // QV_HW_OBJ_LAST is instead provided to indicate that we were called from a
+        // split() context, which uses the host's cpuset to split the resources.
+        // TODO(skg) This looks suspicious to me. Make sure we want to do this.
+        // What about getting called from a split context for devices?
+        if (qvi_hwloc_obj_type_is_host_resource(split_at_type) ||
+            split_at_type == QV_HW_OBJ_LAST) {
+            return split_cpuset(result);
+        }
+        // An OS device.
+        else {
+            return osdev_cpusets(result);
+        }
+    }
+
+    qvi_map_fn_t
+    affinity_preserving_policy(void) const
+    {
+        switch (split_at_type) {
+            // For split()
+            case QV_HW_OBJ_LAST:
+                return qvi_map_packed;
+            // For split_at()
+            default:
+                return qvi_map_spread;
+        }
+    }
+    /** Releases all devices contained in the provided split aggregate. */
+    int
+    release_devices(void)
+    {
+        int rc = QV_SUCCESS;
+        for (auto &hwpool : hwpools) {
+            rc = hwpool->release_devices();
+            if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+        }
+        return rc;
+    }
+    /**
+     * Straightforward user-defined device splitting.
+     */
+    // TODO(skg) Plenty of opportunity for optimization.
+    // TODO(skg) Move lots of logic to map
+    int
+    split_devices_user_defined(void)
+    {
+        // Release devices from the hardware pools because
+        // they will be redistributed in the next step.
+        int rc = release_devices();
+        if (rc != QV_SUCCESS) return rc;
+        // Determine mapping of colors to task IDs. The array index i of colors is
+        // the color requested by task i. Also determine the number of distinct
+        // colors provided in the colors array.
+        std::set<int> color_set(colors.begin(), colors.end());
+        // Adjust the color set so that the distinct colors provided
+        // fall within the range of the number of splits requested.
+        std::set<int> color_setp;
+        uint_t ncolors_chosen = 0;
+        for (const auto &c : color_set) {
+            if (ncolors_chosen >= split_size) break;
+            color_setp.insert(c);
+            ncolors_chosen++;
+        }
+        // Cache all device infos associated with the parent hardware pool.
+        auto dinfos = base_hwpool->devices();
+        // Iterate over the supported device types and split them up round-robin.
+        // TODO(skg) Should this be a mapping operation in qvi-map?
+        for (const auto devt : qvi_hwloc_supported_devices()) {
+            // Get the number of devices.
+            const uint_t ndevs = dinfos.count(devt);
+            // Store device infos.
+            std::vector<const qvi_hwpool_dev_s *> devs;
+            for (const auto &dinfo : dinfos) {
+                // Not the type we are currently dealing with.
+                if (devt != dinfo.first) continue;
+                devs.push_back(dinfo.second.get());
+            }
+            // Maps colors to device information.
+            id_devinfo_multimap_t devmap;
+            uint_t devi = 0;
+            while (devi < ndevs) {
+                for (const auto &c : color_setp) {
+                    if (devi >= ndevs) break;
+                    devmap.insert(std::make_pair(c, devs[devi++]));
+                }
+            }
+            // Now that we have the mapping of colors to devices, assign devices to
+            // the associated hardware pools.
+            for (uint_t i = 0; i < group_size; ++i) {
+                const int color = colors[i];
+                for (const auto &c2d : devmap) {
+                    if (c2d.first != color) continue;
+                    rc = hwpools[i]->add_device(*c2d.second);
+                    if (rc != QV_SUCCESS) break;
+                }
+                if (rc != QV_SUCCESS) break;
+            }
+            if (rc != QV_SUCCESS) break;
+        }
+        return rc;
+    }
+    /**
+     * Affinity preserving device splitting.
+     */
+    int
+    split_devices_affinity_preserving(void)
+    {
+        // Release devices from the hardware pools because
+        // they will be redistributed in the next step.
+        int rc = release_devices();
+        if (rc != QV_SUCCESS) return rc;
+        // Get a pointer to device infos associated with the parent hardware pool.
+        auto dinfos = base_hwpool->devices();
+        // Iterate over the supported device types and split them up.
+        for (const auto devt : qvi_hwloc_supported_devices()) {
+            // Store device infos.
+            std::vector<const qvi_hwpool_dev_s *> devs;
+            for (const auto &dinfo : dinfos) {
+                // Not the type we are currently dealing with.
+                if (devt != dinfo.first) continue;
+                devs.push_back(dinfo.second.get());
+            }
+            // Store device affinities.
+            qvi_hwloc_cpusets_t devaffs;
+            for (auto &dev : devs) {
+                devaffs.push_back(dev->affinity());
+            }
+
+            qvi_map_t map;
+            const auto policy = affinity_preserving_policy();
+            rc = qvi_map_affinity_preserving(
+                map, policy, devaffs, affinities
+            );
+            if (rc != QV_SUCCESS) return rc;
+            //qvi_map_debug_dump(map);
+            // Now that we have the mapping, assign
+            // devices to the associated hardware pools.
+            for (const auto &mi : map) {
+                const uint_t devid = mi.first;
+                const uint_t pooli = mi.second;
+                rc = hwpools[pooli]->add_device(*devs[devid]);
+                if (rc != QV_SUCCESS) break;
+            }
+            if (rc != QV_SUCCESS) break;
+        }
+        return rc;
+    }
+
+    static int
+    apply_cpuset_mapping(
+        qvi_hwloc_t *hwloc,
+        const qvi_map_t &map,
+        const qvi_hwloc_cpusets_t cpusets,
+        std::vector<qvi_hwpool_s *> &hwpools,
+        std::vector<int> &colors
     ) {
-        rmi = rmi_a;
-        base_hwpool = base_hwpool_a;
-        group_size = group_size_a;
-        split_size = split_size_a;
-        split_at_type = split_at_type_a;
-        // To save memory we don't eagerly resize our vectors to group_size
-        // since most processes will not use the storage. For example, in the
-        // collective case the root ID process will be the only one needing
-        // group_size elements in our vectors. We'll let the call paths enforce
-        // appropriate vector sizing.
+        int rc = QV_SUCCESS;
+
+        const uint_t npools = hwpools.size();
+        for (uint_t pid = 0; pid < npools; ++pid) {
+            rc = hwpools.at(pid)->initialize(
+                hwloc, qvi_map_cpuset_at(map, cpusets, pid)
+            );
+            if (rc != QV_SUCCESS) break;
+        }
+        if (rc != QV_SUCCESS) {
+            // Invalidate colors
+            colors.clear();
+        }
+        else {
+            colors = qvi_map_flatten_to_colors(map);
+        }
+        return rc;
+    }
+    /**
+     * User-defined split.
+     */
+    int
+    split_user_defined(void)
+    {
+        // Split the base cpuset into the requested number of pieces.
+        qvi_hwloc_cpusets_t cpusets;
+        int rc = split_cpuset(cpusets);
+        if (rc != QV_SUCCESS) return rc;
+        // Developer sanity check.
+        assert(cpusets.size() == split_size);
+        // Maintains the mapping between task (consumer) IDs and resource IDs.
+        qvi_map_t map{};
+        rc = qvi_map_colors(map, colors, cpusets);
+        if (rc != QV_SUCCESS) return rc;
+        qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc(rmi);
+        // Update the hardware pools and colors to reflect the new mapping.
+        rc = apply_cpuset_mapping(
+            hwloc, map, cpusets, hwpools, colors
+        );
+        if (rc != QV_SUCCESS) return rc;
+        // Use a straightforward device splitting algorithm based on user's request.
+        return split_devices_user_defined();
+    }
+
+    int
+    split_affinity_preserving_pass1(void)
+    {
+        // cpusets used for first mapping pass.
+        qvi_hwloc_cpusets_t cpusets{};
+        // Get the primary cpusets used for the first pass of mapping.
+        int rc = primary_cpusets(cpusets);
+        if (rc != QV_SUCCESS) return rc;
+        // Maintains the mapping between task (consumer) IDs and resource IDs.
+        qvi_map_t map{};
+        // Map tasks based on their affinity to resources encoded by the cpusets.
+        const auto policy = affinity_preserving_policy();
+        rc = qvi_map_affinity_preserving(
+            map, policy, affinities, cpusets
+        );
+        if (rc != QV_SUCCESS) return rc;
+        // Make sure that we mapped all the tasks. If not, this is a bug.
+        if (qvi_map_nfids_mapped(map) != group_size) {
+            qvi_abort();
+        }
+        qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc(rmi);
+        // Update the hardware pools and colors to reflect the new mapping.
+        return apply_cpuset_mapping(
+            hwloc, map, cpusets, hwpools, colors
+        );
+    }
+
+    /**
+     * Affinity preserving split.
+     */
+    // TODO(skg) This needs more work.
+    int
+    split_affinity_preserving(void)
+    {
+        int rc = split_affinity_preserving_pass1();
+        if (rc != QV_SUCCESS) return rc;
+        // Finally, split the devices.
+        return split_devices_affinity_preserving();
+    }
+    /**
+     * Takes a vector of colors and clamps their values to [0, ndc)
+     * in place, where ndc is the number of distinct numbers found in values.
+     */
+    static int
+    clamp_colors(
+        std::vector<int> &values
+    ) {
+        // Recall: sets are ordered.
+        std::set<int> valset(values.begin(), values.end());
+        // Maps the input vector colors to their clamped values.
+        std::map<int, int> colors2clamped;
+        // color': the clamped color.
+        int colorp = 0;
+        for (auto val : valset) {
+            colors2clamped.insert({val, colorp++});
+        }
+        for (uint_t i = 0; i < values.size(); ++i) {
+            values[i] = colors2clamped[values[i]];
+        }
         return QV_SUCCESS;
+    }
+
+    /**
+     * Splits aggregate scope data.
+     */
+    int
+    split(void)
+    {
+        int rc = QV_SUCCESS;
+        bool auto_split = false;
+        // Make sure that the supplied colors are consistent and determine the type
+        // of coloring we are using. Positive values denote an explicit coloring
+        // provided by the caller. Negative values are reserved for internal
+        // use and shall be constants defined in quo-vadis.h. Note we don't sort the
+        // splitagg's colors directly because they are ordered by task ID.
+        std::vector<int> tcolors(colors);
+        std::sort(tcolors.begin(), tcolors.end());
+        // We have a few possibilities here:
+        // * The values are all positive: user-defined split, but we have to clamp
+        //   their values to a usable range for internal consumption.
+        // * The values are negative and equal:
+        //   - All the same, valid auto split constant: auto split
+        //   - All the same, undefined constant: user-defined split, but this is a
+        //     strange case since all participants will get empty sets.
+        // * A mix if positive and negative values:
+        //   - A strict subset is QV_SCOPE_SPLIT_UNDEFINED: user-defined split
+        //   - A strict subset is not QV_SCOPE_SPLIT_UNDEFINED: return error code.
+
+        // All colors are positive.
+        if (tcolors.front() >= 0) {
+            rc = clamp_colors(colors);
+            if (rc != QV_SUCCESS) return rc;
+        }
+        // Some values are negative.
+        else {
+            // TODO(skg) Implement the rest.
+            if (tcolors.front() != tcolors.back()) {
+                return QV_ERR_INVLD_ARG;
+            }
+            auto_split = true;
+        }
+        // User-defined splitting.
+        if (!auto_split) {
+            return split_user_defined();
+        }
+        // Automatic splitting.
+        switch (colors[0]) {
+            case QV_SCOPE_SPLIT_AFFINITY_PRESERVING:
+                return split_affinity_preserving();
+            default:
+                rc = QV_ERR_INVLD_ARG;
+                break;
+        }
+        return rc;
     }
 };
 
@@ -560,40 +936,32 @@ struct qvi_scope_split_coll_s {
      * Note: We use 0 as the root because 0 will always exist.
      */
     static constexpr int rootid = 0;
-    /**
-     * Points to the parent scope that we are splitting.
-     */
-    qv_scope_t *parent_scope = nullptr;
-    /**
-     * My color.
-     */
+    /** Points to the parent scope that we are splitting. */
+    qv_scope_t *parent = nullptr;
+    /** My color. */
     int mycolor = 0;
     /**
      * Stores group-global split information brought together by collective
      * operations across the members in parent_scope.
      */
-    qvi_scope_split_agg_s gsplit{};
-    /**
-     * Initializes instance.
-     */
-    int
-    init(
-        qv_scope_t *parent_scope_a,
+    qvi_scope_split_agg_s gsplit;
+    /** Constructor. */
+    qvi_scope_split_coll_s(void) = delete;
+    /** Constructor. */
+    qvi_scope_split_coll_s(
+        qv_scope_t *parent_a,
         uint_t split_size_a,
         int mycolor_a,
         qv_hw_obj_type_t split_at_type_a
-    ) {
-        const int myid = parent_scope_a->group->rank();
-        parent_scope = parent_scope_a;
-        mycolor = mycolor_a;
-        if (myid == qvi_scope_split_coll_s::rootid) {
-            const uint_t group_size = parent_scope->group->size();
-            gsplit.init(
-                parent_scope->group->task()->rmi(), parent_scope->hwpool,
-                group_size, split_size_a, split_at_type_a
+    ) : parent(parent_a)
+      , mycolor(mycolor_a)
+    {
+        const qvi_group_t *const pgroup = parent->group;
+        if (pgroup->rank() == qvi_scope_split_coll_s::rootid) {
+            gsplit = qvi_scope_split_agg_s(
+                parent, pgroup->size(), split_size_a, split_at_type_a
             );
         }
-        return QV_SUCCESS;
     }
 };
 
@@ -601,7 +969,7 @@ static int
 scope_split_coll_gather(
     qvi_scope_split_coll_s &splitcoll
 ) {
-    qv_scope_t *const parent = splitcoll.parent_scope;
+    qv_scope_t *const parent = splitcoll.parent;
 
     int rc = gather_values(
         parent->group,
@@ -633,10 +1001,7 @@ scope_split_coll_gather(
         splitcoll.gsplit.affinities.resize(group_size);
         for (uint_t tid = 0; tid < group_size; ++tid) {
             hwloc_cpuset_t cpuset = nullptr;
-            rc = qvi_rmi_cpubind(
-                parent->group->task()->rmi(),
-                splitcoll.gsplit.taskids[tid], &cpuset
-            );
+            rc = parent->group->task()->bind_top(&cpuset);
             if (rc != QV_SUCCESS) break;
 
             rc = splitcoll.gsplit.affinities[tid].set(cpuset);
@@ -655,7 +1020,7 @@ scope_split_coll_scatter(
     qvi_hwpool_s **result
 ) {
     const int rc = scatter_values(
-        splitcoll.parent_scope->group,
+        splitcoll.parent->group,
         qvi_scope_split_coll_s::rootid,
         splitcoll.gsplit.colors,
         colorp
@@ -663,428 +1028,11 @@ scope_split_coll_scatter(
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     return scatter_hwpools(
-        splitcoll.parent_scope->group,
+        splitcoll.parent->group,
         qvi_scope_split_coll_s::rootid,
         splitcoll.gsplit.hwpools,
         result
     );
-}
-
-/**
- * Returns a copy of the aggregate cpuset. Note that the cpuset will be shared
- * among the aggregate, but other resources may be distributed differently.
- * For example, some hardware pools may have GPUs, while others may not.
- */
-static int
-qvi_scope_split_agg_cpuset_dup(
-    const qvi_scope_split_agg_s &splitagg,
-    qvi_hwloc_bitmap_s &result
-) {
-    // This shouldn't happen.
-    assert(splitagg.hwpools.size() != 0);
-
-    result = splitagg.hwpools[0]->cpuset();
-    return QV_SUCCESS;
-}
-
-static int
-apply_cpuset_mapping(
-    qvi_hwloc_t *hwloc,
-    const qvi_map_t &map,
-    const qvi_hwloc_cpusets_t cpusets,
-    std::vector<qvi_hwpool_s *> &hwpools,
-    std::vector<int> &colors
-) {
-    int rc = QV_SUCCESS;
-
-    const uint_t npools = hwpools.size();
-    for (uint_t pid = 0; pid < npools; ++pid) {
-        rc = hwpools.at(pid)->initialize(
-            hwloc, qvi_map_cpuset_at(map, cpusets, pid)
-        );
-        if (rc != QV_SUCCESS) break;
-    }
-    if (rc != QV_SUCCESS) {
-        // Invalidate colors
-        colors.clear();
-    }
-    else {
-        colors = qvi_map_flatten_to_colors(map);
-    }
-    return rc;
-}
-
-static qvi_map_fn_t
-split_agg_get_affinity_preserving_policy(
-    const qvi_scope_split_agg_s &splitagg
-) {
-    switch (splitagg.split_at_type) {
-        // For split()
-        case QV_HW_OBJ_LAST:
-            return qvi_map_packed;
-        // For split_at()
-        default:
-            return qvi_map_spread;
-    }
-}
-
-/**
- * Releases all devices contained in the provided split aggregate.
- */
-static int
-agg_split_release_devices(
-    qvi_scope_split_agg_s &splitagg
-) {
-    int rc = QV_SUCCESS;
-    for (auto &hwpool : splitagg.hwpools) {
-        rc = hwpool->release_devices();
-        if (rc != QV_SUCCESS) return rc;
-    }
-    return rc;
-}
-
-/**
- * Straightforward user-defined device splitting.
- */
-// TODO(skg) Plenty of opportunity for optimization.
-// TODO(skg) Move lots of logic to map
-static int
-agg_split_devices_user_defined(
-    qvi_scope_split_agg_s &splitagg
-) {
-    const uint_t group_size = splitagg.group_size;
-    // Release devices from the hardware pools because
-    // they will be redistributed in the next step.
-    int rc = agg_split_release_devices(splitagg);
-    if (rc != QV_SUCCESS) return rc;
-    // Determine mapping of colors to task IDs. The array index i of colors is
-    // the color requested by task i. Also determine the number of distinct
-    // colors provided in the colors array.
-    std::set<int> color_set(splitagg.colors.begin(), splitagg.colors.end());
-    // Adjust the color set so that the distinct colors provided
-    // fall within the range of the number of splits requested.
-    std::set<int> color_setp;
-    uint_t ncolors_chosen = 0;
-    for (const auto &c : color_set) {
-        if (ncolors_chosen >= splitagg.split_size) break;
-        color_setp.insert(c);
-        ncolors_chosen++;
-    }
-    // Cache all device infos associated with the parent hardware pool.
-    auto dinfos = splitagg.base_hwpool->devices();
-    // Iterate over the supported device types and split them up round-robin.
-    // TODO(skg) Should this be a mapping operation in qvi-map?
-    for (const auto devt : qvi_hwloc_supported_devices()) {
-        // Get the number of devices.
-        const uint_t ndevs = dinfos.count(devt);
-        // Store device infos.
-        std::vector<const qvi_hwpool_dev_s *> devs;
-        for (const auto &dinfo : dinfos) {
-            // Not the type we are currently dealing with.
-            if (devt != dinfo.first) continue;
-            devs.push_back(dinfo.second.get());
-        }
-        // Maps colors to device information.
-        id_devinfo_multimap_t devmap;
-        uint_t devi = 0;
-        while (devi < ndevs) {
-            for (const auto &c : color_setp) {
-                if (devi >= ndevs) break;
-                devmap.insert(std::make_pair(c, devs[devi++]));
-            }
-        }
-        // Now that we have the mapping of colors to devices, assign devices to
-        // the associated hardware pools.
-        for (uint_t i = 0; i < group_size; ++i) {
-            const int color = splitagg.colors[i];
-            for (const auto &c2d : devmap) {
-                if (c2d.first != color) continue;
-                rc = splitagg.hwpools[i]->add_device(*c2d.second);
-                if (rc != QV_SUCCESS) break;
-            }
-            if (rc != QV_SUCCESS) break;
-        }
-        if (rc != QV_SUCCESS) break;
-    }
-    return rc;
-}
-
-/**
- * Affinity preserving device splitting.
- */
-static int
-agg_split_devices_affinity_preserving(
-    qvi_scope_split_agg_s &splitagg
-) {
-    // Release devices from the hardware pools because
-    // they will be redistributed in the next step.
-    int rc = agg_split_release_devices(splitagg);
-    if (rc != QV_SUCCESS) return rc;
-    // Get a pointer to device infos associated with the parent hardware pool.
-    auto dinfos = splitagg.base_hwpool->devices();
-    // Iterate over the supported device types and split them up.
-    for (const auto devt : qvi_hwloc_supported_devices()) {
-        // Store device infos.
-        std::vector<const qvi_hwpool_dev_s *> devs;
-        for (const auto &dinfo : dinfos) {
-            // Not the type we are currently dealing with.
-            if (devt != dinfo.first) continue;
-            devs.push_back(dinfo.second.get());
-        }
-        // Store device affinities.
-        qvi_hwloc_cpusets_t devaffs;
-        for (auto &dev : devs) {
-            devaffs.push_back(dev->affinity());
-        }
-
-        qvi_map_t map;
-        const auto policy = split_agg_get_affinity_preserving_policy(splitagg);
-        rc = qvi_map_affinity_preserving(
-            map, policy, devaffs, splitagg.affinities
-        );
-        if (rc != QV_SUCCESS) return rc;
-#if 0
-        qvi_map_debug_dump(map);
-#endif
-        // Now that we have the mapping, assign
-        // devices to the associated hardware pools.
-        for (const auto &mi : map) {
-            const uint_t devid = mi.first;
-            const uint_t pooli = mi.second;
-            rc = splitagg.hwpools[pooli]->add_device(*devs[devid]);
-            if (rc != QV_SUCCESS) break;
-        }
-        if (rc != QV_SUCCESS) break;
-    }
-    return rc;
-}
-
-/**
- * Performs a straightforward splitting of the provided cpuset: split the
- * provided base cpuset into splitagg.split_size distinct pieces.
- */
-static int
-agg_split_cpuset(
-    const qvi_scope_split_agg_s &splitagg,
-    qvi_hwloc_cpusets_t &result
-) {
-    int rc = QV_SUCCESS;
-    // The cpuset that we are going to split.
-    qvi_hwloc_bitmap_s base_cpuset;
-    rc = qvi_scope_split_agg_cpuset_dup(splitagg, base_cpuset);
-    if (rc != QV_SUCCESS) return rc;
-    // Pointer to my hwloc instance.
-    qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc(splitagg.rmi);
-    // Holds the host's split cpusets.
-    result.resize(splitagg.split_size);
-    // Notice that we do not go through the RMI for this because this is just an
-    // local, temporary splitting that is ultimately fed to another splitting
-    // algorithm.
-    for (uint_t chunkid = 0; chunkid < splitagg.split_size; ++chunkid) {
-        rc = qvi_hwloc_split_cpuset_by_chunk_id(
-            hwloc, base_cpuset.cdata(), splitagg.split_size,
-            chunkid, result[chunkid].data()
-        );
-        if (rc != QV_SUCCESS) break;
-    }
-    return rc;
-}
-
-/**
- * User-defined split.
- */
-static int
-agg_split_user_defined(
-    qvi_scope_split_agg_s &splitagg
-) {
-    const uint_t split_size = splitagg.split_size;
-    // Split the base cpuset into the requested number of pieces.
-    qvi_hwloc_cpusets_t cpusets;
-    int rc = agg_split_cpuset(splitagg, cpusets);
-    if (rc != QV_SUCCESS) return rc;
-    // Developer sanity check.
-    if (cpusets.size() != split_size) {
-        qvi_abort();
-    }
-    // Maintains the mapping between task (consumer) IDs and resource IDs.
-    qvi_map_t map{};
-    rc = qvi_map_colors(map, splitagg.colors, cpusets);
-    if (rc != QV_SUCCESS) return rc;
-    qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc(splitagg.rmi);
-    // Update the hardware pools and colors to reflect the new mapping.
-    rc = apply_cpuset_mapping(
-        hwloc, map, cpusets, splitagg.hwpools, splitagg.colors
-    );
-    if (rc != QV_SUCCESS) return rc;
-    // Use a straightforward device splitting algorithm based on user's request.
-    return agg_split_devices_user_defined(splitagg);
-}
-
-static int
-agg_split_get_new_osdev_cpusets(
-    const qvi_scope_split_agg_s &splitagg,
-    qvi_hwloc_cpusets_t &result
-) {
-    // The target object type.
-    const qv_hw_obj_type_t obj_type = splitagg.split_at_type;
-    // Get the number of devices we have available in the provided scope.
-    int nobj = 0;
-    int rc = splitagg.base_hwpool->nobjects(
-        qvi_rmi_client_hwloc(splitagg.rmi), obj_type, &nobj
-    );
-    if (rc != QV_SUCCESS) return rc;
-    // Holds the device affinities used for the split.
-    result.resize(nobj);
-    // Get a pointer to device infos associated with the base hardware pool.
-    auto dinfos = splitagg.base_hwpool->devices();
-    uint_t affi = 0;
-    for (const auto &dinfo : dinfos) {
-        // Not the type we are looking to split.
-        if (obj_type != dinfo.first) continue;
-        // Copy the device's affinity to our list of device affinities.
-        result[affi++] = dinfo.second->affinity();
-    }
-    return rc;
-}
-
-static int
-agg_split_get_primary_cpusets(
-    const qvi_scope_split_agg_s &splitagg,
-    qvi_hwloc_cpusets_t &result
-) {
-    const qv_hw_obj_type_t obj_type = splitagg.split_at_type;
-    // We were provided a real host resource type that we have to split. Or
-    // QV_HW_OBJ_LAST is instead provided to indicate that we were called from a
-    // split() context, which uses the host's cpuset to split the resources.
-    if (qvi_hwloc_obj_type_is_host_resource(obj_type) ||
-        obj_type == QV_HW_OBJ_LAST) {
-        return agg_split_cpuset(splitagg, result);
-    }
-    // An OS device.
-    else {
-        return agg_split_get_new_osdev_cpusets(splitagg, result);
-    }
-}
-
-static int
-agg_split_affinity_preserving_pass1(
-    qvi_scope_split_agg_s &splitagg
-) {
-    const uint_t group_size = splitagg.group_size;
-    // cpusets used for first mapping pass.
-    qvi_hwloc_cpusets_t cpusets{};
-    // Get the primary cpusets used for the first pass of mapping.
-    int rc = agg_split_get_primary_cpusets(splitagg, cpusets);
-    if (rc != QV_SUCCESS) return rc;
-    // Maintains the mapping between task (consumer) IDs and resource IDs.
-    qvi_map_t map{};
-    // Map tasks based on their affinity to resources encoded by the cpusets.
-    const auto policy = split_agg_get_affinity_preserving_policy(splitagg);
-    rc = qvi_map_affinity_preserving(
-        map, policy, splitagg.affinities, cpusets
-    );
-    if (rc != QV_SUCCESS) return rc;
-    // Make sure that we mapped all the tasks. If not, this is a bug.
-    if (qvi_map_nfids_mapped(map) != group_size) {
-        qvi_abort();
-    }
-    qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc(splitagg.rmi);
-    // Update the hardware pools and colors to reflect the new mapping.
-    return apply_cpuset_mapping(
-        hwloc, map, cpusets, splitagg.hwpools, splitagg.colors
-    );
-}
-
-/**
- * Affinity preserving split.
- */
-// TODO(skg) This needs more work.
-static int
-agg_split_affinity_preserving(
-    qvi_scope_split_agg_s &splitagg
-) {
-    int rc = agg_split_affinity_preserving_pass1(splitagg);
-    if (rc != QV_SUCCESS) return rc;
-    // Finally, split the devices.
-    return agg_split_devices_affinity_preserving(splitagg);
-}
-
-/**
- * Takes a vector of colors and clamps their values to [0, ndc)
- * in place, where ndc is the number of distinct numbers found in values.
- */
-static int
-clamp_colors(
-    std::vector<int> &values
-) {
-    // Recall: sets are ordered.
-    std::set<int> valset(values.begin(), values.end());
-    // Maps the input vector colors to their clamped values.
-    std::map<int, int> colors2clamped;
-    // color': the clamped color.
-    int colorp = 0;
-    for (auto val : valset) {
-        colors2clamped.insert({val, colorp++});
-    }
-    for (uint_t i = 0; i < values.size(); ++i) {
-        values[i] = colors2clamped[values[i]];
-    }
-    return QV_SUCCESS;
-}
-
-/**
- * Splits aggregate scope data.
- */
-static int
-agg_split(
-    qvi_scope_split_agg_s &splitagg
-) {
-    int rc = QV_SUCCESS;
-    bool auto_split = false;
-    // Make sure that the supplied colors are consistent and determine the type
-    // of coloring we are using. Positive values denote an explicit coloring
-    // provided by the caller. Negative values are reserved for internal
-    // use and shall be constants defined in quo-vadis.h. Note we don't sort the
-    // splitagg's colors directly because they are ordered by task ID.
-    std::vector<int> tcolors(splitagg.colors);
-    std::sort(tcolors.begin(), tcolors.end());
-    // We have a few possibilities here:
-    // * The values are all positive: user-defined split, but we have to clamp
-    //   their values to a usable range for internal consumption.
-    // * The values are negative and equal:
-    //   - All the same, valid auto split constant: auto split
-    //   - All the same, undefined constant: user-defined split, but this is a
-    //     strange case since all participants will get empty sets.
-    // * A mix if positive and negative values:
-    //   - A strict subset is QV_SCOPE_SPLIT_UNDEFINED: user-defined split
-    //   - A strict subset is not QV_SCOPE_SPLIT_UNDEFINED: return error code.
-
-    // All colors are positive.
-    if (tcolors.front() >= 0) {
-        rc = clamp_colors(splitagg.colors);
-        if (rc != QV_SUCCESS) return rc;
-    }
-    // Some values are negative.
-    else {
-        // TODO(skg) Implement the rest.
-        if (tcolors.front() != tcolors.back()) {
-            return QV_ERR_INVLD_ARG;
-        }
-        auto_split = true;
-    }
-    // User-defined splitting.
-    if (!auto_split) {
-        return agg_split_user_defined(splitagg);
-    }
-    // Automatic splitting.
-    switch (splitagg.colors[0]) {
-        case QV_SCOPE_SPLIT_AFFINITY_PRESERVING:
-            return agg_split_affinity_preserving(splitagg);
-        default:
-            rc = QV_ERR_INVLD_ARG;
-            break;
-    }
-    return rc;
 }
 
 /**
@@ -1107,31 +1055,31 @@ coll_split_hardware_resources(
     int *colorp,
     qvi_hwpool_s **result
 ) {
-    int rc = QV_SUCCESS, rc2 = QV_SUCCESS;
+    int rc2 = QV_SUCCESS;
     const int rootid = qvi_scope_split_coll_s::rootid, myid = parent->group->rank();
     // Information relevant to hardware resource splitting. Note that
     // aggregated data are only valid for the task whose id is equal to
     // qvi_global_split_t::rootid after gather has completed.
-    qvi_scope_split_coll_s splitcoll{};
-    rc = splitcoll.init(parent, npieces, color, maybe_obj_type);
-    if (rc != QV_SUCCESS) goto out;
+    qvi_scope_split_coll_s splitcoll(
+        parent, npieces, color, maybe_obj_type
+    );
     // First consolidate the provided information, as this is coming from a
     // SPMD-like context (e.g., splitting a resource shared by MPI processes).
     // In most cases it is easiest to have a single task calculate the split
     // based on global knowledge and later redistribute the calculated result to
     // its group members.
-    rc = scope_split_coll_gather(splitcoll);
+    int rc = scope_split_coll_gather(splitcoll);
     if (rc != QV_SUCCESS) goto out;
     // The root does this calculation.
     if (myid == rootid) {
-        rc2 = agg_split(splitcoll.gsplit);
+        rc2 = splitcoll.gsplit.split();
     }
     // Wait for the split information. Explicitly barrier here in case the
     // underlying broadcast implementation polls heavily for completion.
-    rc = splitcoll.parent_scope->group->barrier();
+    rc = splitcoll.parent->group->barrier();
     if (rc != QV_SUCCESS) goto out;
     // To avoid hangs in split error paths, share the split rc with everyone.
-    rc = bcast_value(splitcoll.parent_scope->group, rootid, &rc2);
+    rc = bcast_value(splitcoll.parent->group, rootid, &rc2);
     if (rc != QV_SUCCESS) goto out;
     // If the split failed, return the error to all callers.
     if (rc2 != QV_SUCCESS) {
@@ -1190,29 +1138,23 @@ qvi_scope_thsplit(
 ) {
     *thchildren = nullptr;
 
+    qvi_group_t *const pgroup = parent->group;
     const uint_t group_size = k;
-    qvi_scope_split_agg_s splitagg{};
-    int rc = splitagg.init(
-        parent->group->task()->rmi(), parent->hwpool,
-        group_size, npieces, maybe_obj_type
+
+    qvi_scope_split_agg_s splitagg(
+        parent, group_size, npieces, maybe_obj_type
     );
-    if (rc != QV_SUCCESS) return rc;
-    // Since this is called by a single task, get its ID and associated hardware
-    // affinity here, and replicate them in the following loop that populates
-    // splitagg.
+    // Eagerly make room for the group member information.
+    splitagg.reserve();
+    // Since this is called by a single task, get its ID and associated
+    // hardware affinity here, and replicate them in the following loop
+    // that populates splitagg.
     //No point in doing this in a loop.
     const pid_t taskid = qvi_task_t::mytid();
     hwloc_cpuset_t task_affinity = nullptr;
-    rc = qvi_rmi_cpubind(
-        parent->group->task()->rmi(),
-        taskid, &task_affinity
-    );
+    // Get the task's current affinity.
+    int rc = pgroup->task()->bind_top(&task_affinity);
     if (rc != QV_SUCCESS) return rc;
-    // Now populate the relevant data before attempting a split.
-    splitagg.colors.resize(group_size);
-    splitagg.hwpools.resize(group_size);
-    splitagg.taskids.resize(group_size);
-    splitagg.affinities.resize(group_size);
     for (uint_t i = 0; i < group_size; ++i) {
         // Store requested colors in aggregate.
         splitagg.colors[i] = kcolors[i];
@@ -1225,18 +1167,17 @@ qvi_scope_thsplit(
         // Same goes for the task's affinity.
         splitagg.affinities[i].set(task_affinity);
     }
-    if (rc != QV_SUCCESS) return rc;
     // Cleanup: we don't need task_affinity anymore.
     qvi_hwloc_bitmap_delete(&task_affinity);
     if (rc != QV_SUCCESS) return rc;
     // Split the hardware resources based on the provided split parameters.
-    rc = agg_split(splitagg);
+    rc = splitagg.split();
     if (rc != QV_SUCCESS) return rc;
     // Split off from our parent group. This call is called from a context in
     // which a process is splitting its resources across threads, so create a
     // new thread group for each child.
     qvi_group_t *thgroup = nullptr;
-    rc = parent->group->thsplit(group_size, &thgroup);
+    rc = pgroup->thsplit(group_size, &thgroup);
     if (rc != QV_SUCCESS) return rc;
     // Now create and populate the children.
     qv_scope_t **ithchildren = new qv_scope_t *[group_size];
@@ -1244,17 +1185,11 @@ qvi_scope_thsplit(
         // Copy out, since the hardware pools in splitagg will get freed.
         qvi_hwpool_s *hwpool = nullptr;
         rc = qvi_dup(*splitagg.hwpools[i], &hwpool);
-        if (rc != QV_SUCCESS) {
-            qvi_delete(&thgroup);
-            break;
-        }
+        if (rc != QV_SUCCESS) break;
         // Create and initialize the new scope.
         qv_scope_t *child = nullptr;
         rc = scope_new(thgroup, hwpool, &child);
-        if (rc != QV_SUCCESS) {
-            qvi_delete(&thgroup);
-            break;
-        }
+        if (rc != QV_SUCCESS) break;
         thgroup->retain();
         ithchildren[i] = child;
     }

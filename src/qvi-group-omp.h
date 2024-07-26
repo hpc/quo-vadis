@@ -43,13 +43,13 @@ public:
     }
 
     virtual int
-    rank(void)
+    rank(void) const
     {
         return qvi_omp_group_id(m_ompgroup);
     }
 
     virtual int
-    size(void)
+    size(void) const
     {
         return qvi_omp_group_size(m_ompgroup);
     }

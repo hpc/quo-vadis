@@ -39,10 +39,10 @@ struct qvi_group_s : qvi_refc_s {
     hwloc(void);
     /** Returns the number of members in this group. */
     virtual int
-    size(void) = 0;
+    size(void) const = 0;
     /** Returns the caller's group rank. */
     virtual int
-    rank(void) = 0;
+    rank(void) const = 0;
     /** Performs node-local group barrier. */
     virtual int
     barrier(void) = 0;

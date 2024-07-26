@@ -260,47 +260,47 @@ int
 qvi_hwpool_dev_s::unpack(
     byte_t *buffpos,
     size_t *bytes_written,
-    qvi_hwpool_dev_s *dev
+    qvi_hwpool_dev_s &dev
 ) {
     size_t bw = 0, total_bw = 0;
 
     int rc = qvi_bbuff_rmi_unpack_item(
-        &dev->m_hints, buffpos, &bw
+        &dev.m_hints, buffpos, &bw
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     total_bw += bw;
     buffpos += bw;
 
     rc = qvi_bbuff_rmi_unpack_item(
-        dev->m_affinity, buffpos, &bw
+        dev.m_affinity, buffpos, &bw
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     total_bw += bw;
     buffpos += bw;
 
     rc = qvi_bbuff_rmi_unpack_item(
-        &dev->m_type, buffpos, &bw
+        &dev.m_type, buffpos, &bw
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     total_bw += bw;
     buffpos += bw;
 
     rc = qvi_bbuff_rmi_unpack_item(
-        &dev->m_id, buffpos, &bw
+        &dev.m_id, buffpos, &bw
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     total_bw += bw;
     buffpos += bw;
 
     rc = qvi_bbuff_rmi_unpack_item(
-        dev->m_pci_bus_id, buffpos, &bw
+        dev.m_pci_bus_id, buffpos, &bw
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     total_bw += bw;
     buffpos += bw;
 
     rc = qvi_bbuff_rmi_unpack_item(
-        dev->m_uuid, buffpos, &bw
+        dev.m_uuid, buffpos, &bw
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     total_bw += bw;
@@ -453,9 +453,7 @@ qvi_hwpool_s::unpack(
     // Unpack and add the devices.
     for (size_t i = 0; i < ndev; ++i) {
         qvi_hwpool_dev_s dev;
-        rc = qvi_bbuff_rmi_unpack_item(
-            &dev, buffpos, &bw
-        );
+        rc = qvi_bbuff_rmi_unpack_item(dev, buffpos, &bw);
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
         total_bw += bw;
         buffpos += bw;
