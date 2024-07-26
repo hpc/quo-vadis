@@ -134,6 +134,25 @@ pool_release_cpus_by_cpuset(
 }
 #endif
 
+qvi_hwpool_dev_s::qvi_hwpool_dev_s(
+    const qvi_hwloc_device_s &dev
+) : type(dev.type)
+  , affinity(dev.affinity)
+  , m_id(dev.id)
+  , pci_bus_id(dev.pci_bus_id)
+  , uuid(dev.uuid) { }
+
+qvi_hwpool_dev_s::qvi_hwpool_dev_s(
+    const std::shared_ptr<qvi_hwloc_device_s> &shdev
+) : qvi_hwpool_dev_s(*shdev.get()) { }
+
+bool
+qvi_hwpool_dev_s::operator==(
+    const qvi_hwpool_dev_s &x
+) const {
+    return uuid == x.uuid;
+}
+
 int
 qvi_hwpool_dev_s::id(
     qv_device_id_type_t format,
@@ -159,6 +178,85 @@ qvi_hwpool_dev_s::id(
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         *result = nullptr;
     }
+    return rc;
+}
+
+int
+qvi_hwpool_dev_s::packinto(
+    qvi_bbuff_t *buff
+) const {
+    // Pack device hints.
+    int rc = qvi_bbuff_rmi_pack_item(buff, hints);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // Pack device affinity.
+    rc = qvi_bbuff_rmi_pack_item(buff, affinity);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // Pack device type.
+    rc = qvi_bbuff_rmi_pack_item(buff, type);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // Pack device ID.
+    rc = qvi_bbuff_rmi_pack_item(buff, m_id);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // Pack device PCI bus ID.
+    rc = qvi_bbuff_rmi_pack_item(buff, pci_bus_id);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // Pack device UUID.
+    return qvi_bbuff_rmi_pack_item(buff, uuid);
+}
+
+int
+qvi_hwpool_dev_s::unpack(
+    byte_t *buffpos,
+    size_t *bytes_written,
+    qvi_hwpool_dev_s *dev
+) {
+    size_t bw = 0, total_bw = 0;
+
+    int rc = qvi_bbuff_rmi_unpack_item(
+        &dev->hints, buffpos, &bw
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    total_bw += bw;
+    buffpos += bw;
+
+    rc = qvi_bbuff_rmi_unpack_item(
+        dev->affinity, buffpos, &bw
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    total_bw += bw;
+    buffpos += bw;
+
+    rc = qvi_bbuff_rmi_unpack_item(
+        &dev->type, buffpos, &bw
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    total_bw += bw;
+    buffpos += bw;
+
+    rc = qvi_bbuff_rmi_unpack_item(
+        &dev->m_id, buffpos, &bw
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    total_bw += bw;
+    buffpos += bw;
+
+    rc = qvi_bbuff_rmi_unpack_item(
+        dev->pci_bus_id, buffpos, &bw
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    total_bw += bw;
+    buffpos += bw;
+
+    rc = qvi_bbuff_rmi_unpack_item(
+        dev->uuid, buffpos, &bw
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    total_bw += bw;
+out:
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        total_bw = 0;
+    }
+    *bytes_written = total_bw;
     return rc;
 }
 
@@ -256,7 +354,7 @@ qvi_hwpool_s::release_devices(void)
 }
 
 int
-qvi_hwpool_s::packto(
+qvi_hwpool_s::packinto(
     qvi_bbuff_t *buff
 ) const {
     // Pack the CPU.
@@ -309,7 +407,7 @@ qvi_hwpool_s::unpack(
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
         total_bw += bw;
         buffpos += bw;
-        //
+        // Add the unpacked device.
         rc = ihwp->add_device(dev);
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
     }

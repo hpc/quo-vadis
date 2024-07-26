@@ -277,7 +277,7 @@ qvi_bbuff_rmi_get_picture
 (
     std::string &picture,
     T&& arg,
-    Types&&... args
+    Types &&...args
 ) {
     qvi_bbuff_rmi_pack_type_picture(picture, std::forward<T>(arg));
     qvi_bbuff_rmi_get_picture(picture, std::forward<Types>(args)...);
@@ -523,24 +523,7 @@ qvi_bbuff_rmi_pack_item(
     qvi_bbuff_t *buff,
     qvi_hwpool_dev_s *data
 ) {
-    // TODO(skg) Move to device code.
-    // Pack device hints.
-    int rc = qvi_bbuff_rmi_pack_item(buff, data->hints);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Pack device affinity.
-    rc = qvi_bbuff_rmi_pack_item(buff, data->affinity);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Pack device type.
-    rc = qvi_bbuff_rmi_pack_item(buff, data->type);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Pack device ID.
-    rc = qvi_bbuff_rmi_pack_item(buff, data->m_id);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Pack device PCI bus ID.
-    rc = qvi_bbuff_rmi_pack_item(buff, data->pci_bus_id);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Pack device UUID.
-    return qvi_bbuff_rmi_pack_item(buff, data->uuid);
+    return data->packinto(buff);
 }
 
 /**
@@ -551,7 +534,7 @@ qvi_bbuff_rmi_pack_item_impl(
     qvi_bbuff_t *buff,
     const qvi_hwpool_s *data
 ) {
-    return data->packto(buff);
+    return data->packinto(buff);
 }
 
 /**
@@ -578,7 +561,7 @@ inline int
 qvi_bbuff_rmi_pack(
     qvi_bbuff_t *buff,
     T&& arg,
-    Types&&... args
+    Types &&...args
 ) {
     const int rc = qvi_bbuff_rmi_pack_item(buff, std::forward<T>(arg));
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
@@ -873,55 +856,7 @@ qvi_bbuff_rmi_unpack_item(
     byte_t *buffpos,
     size_t *bytes_written
 ) {
-    // TODO(skg) Move to dev code.
-    size_t bw = 0, total_bw = 0;
-
-    int rc = qvi_bbuff_rmi_unpack_item(
-        &dev->hints, buffpos, &bw
-    );
-    if (rc != QV_SUCCESS) goto out;
-    total_bw += bw;
-    buffpos += bw;
-
-    rc = qvi_bbuff_rmi_unpack_item(
-        dev->affinity, buffpos, &bw
-    );
-    if (rc != QV_SUCCESS) goto out;
-    total_bw += bw;
-    buffpos += bw;
-
-    rc = qvi_bbuff_rmi_unpack_item(
-        &dev->type, buffpos, &bw
-    );
-    if (rc != QV_SUCCESS) goto out;
-    total_bw += bw;
-    buffpos += bw;
-
-    rc = qvi_bbuff_rmi_unpack_item(
-        &dev->m_id, buffpos, &bw
-    );
-    if (rc != QV_SUCCESS) goto out;
-    total_bw += bw;
-    buffpos += bw;
-
-    rc = qvi_bbuff_rmi_unpack_item(
-        dev->pci_bus_id, buffpos, &bw
-    );
-    if (rc != QV_SUCCESS) goto out;
-    total_bw += bw;
-    buffpos += bw;
-
-    rc = qvi_bbuff_rmi_unpack_item(
-        dev->uuid, buffpos, &bw
-    );
-    if (rc != QV_SUCCESS) goto out;
-    total_bw += bw;
-out:
-    if (rc != QV_SUCCESS) {
-        total_bw = 0;
-    }
-    *bytes_written = total_bw;
-    return rc;
+    return qvi_hwpool_dev_s::unpack(buffpos, bytes_written, dev);
 }
 
 /**
@@ -951,7 +886,7 @@ inline int
 qvi_bbuff_rmi_unpack(
     void *data,
     T&& arg,
-    Types&&... args
+    Types &&...args
 ) {
     byte_t *pos = (byte_t *)data;
     size_t bytes_written = 0;
