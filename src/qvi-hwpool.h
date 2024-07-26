@@ -68,8 +68,6 @@ public:
  * because we only maintain information relevant for user-facing operations.
  */
 struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
-    /** Hardware pools are our friends. */
-    friend qvi_hwpool_s;
 private:
     /** Device type. */
     qv_hw_obj_type_t m_type = QV_HW_OBJ_LAST;
@@ -99,6 +97,9 @@ public:
     operator==(
         const qvi_hwpool_dev_s &x
     ) const;
+    /** Returns the device's type. */
+    qv_hw_obj_type_t
+    type(void) const ;
     /** Returns the device's ID string formatted as specified. */
     int
     id(
