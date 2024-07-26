@@ -319,7 +319,7 @@ gather_hwpools(
     const uint_t group_size = group->size();
     // Pack the hardware pool into a buffer.
     qvi_bbuff_t txbuff;
-    int rc = txpool->pack(&txbuff);
+    int rc = txpool->packto(&txbuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Gather the values to the root.
     bool shared = false;
@@ -416,7 +416,7 @@ scatter_hwpools(
             rc = qvi_bbuff_new(&txbuffs[i]);
             if (rc != QV_SUCCESS) break;
 
-            rc = pools[i]->pack(txbuffs[i]);
+            rc = pools[i]->packto(txbuffs[i]);
             if (rc != QV_SUCCESS) break;
         }
         if (rc != QV_SUCCESS) goto out;

@@ -39,15 +39,17 @@ struct qvi_mpi_comm_s {
         int rc;
         if (dup) {
             rc = MPI_Comm_dup(comm, &mpi_comm);
-            if (rc != MPI_SUCCESS) throw qvi_runtime_error();
+            if (qvi_unlikely(rc != MPI_SUCCESS)) {
+                throw qvi_runtime_error();
+            }
         }
         else {
             mpi_comm = comm;
         }
         rc = MPI_Comm_size(mpi_comm, &size);
-        if (rc != MPI_SUCCESS) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != MPI_SUCCESS)) throw qvi_runtime_error();
         rc = MPI_Comm_rank(mpi_comm, &rank);
-        if (rc != MPI_SUCCESS) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != MPI_SUCCESS)) throw qvi_runtime_error();
     }
     /** Destructor. */
     ~qvi_mpi_comm_s(void) = default;
@@ -97,7 +99,7 @@ struct qvi_mpi_s {
         // Marker used to differentiate between intrinsic and automatic IDs.
         if (given_id == QVI_MPI_GROUP_NULL) {
             const int rc = qvi_group_t::next_id(&gid);
-            if (rc != QV_SUCCESS) return rc;
+            if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
         }
         group_tab.insert({gid, group});
         return QV_SUCCESS;
@@ -130,7 +132,7 @@ mpi_comm_to_new_node_comm(
         comm, MPI_COMM_TYPE_SHARED,
         0, MPI_INFO_NULL, node_comm
     );
-    if (rc != MPI_SUCCESS) {
+    if (qvi_unlikely(rc != MPI_SUCCESS)) {
         qvi_log_error("MPI_Comm_split_type(MPI_COMM_TYPE_SHARED) failed");
         *node_comm = MPI_COMM_NULL;
         return QV_ERR_MPI;
@@ -156,7 +158,7 @@ qvi_mpi_group_comm_dup(
     MPI_Comm *comm
 ) {
     const int rc = MPI_Comm_dup(group->qvcomm.mpi_comm, comm);
-    if (rc != MPI_SUCCESS) return QV_ERR_MPI;
+    if (qvi_unlikely(rc != MPI_SUCCESS)) return QV_ERR_MPI;
     return QV_SUCCESS;
 }
 
@@ -171,7 +173,7 @@ create_intrinsic_comms(
     // Create node communicator.
     MPI_Comm node_comm = MPI_COMM_NULL;
     const int rc = mpi_comm_to_new_node_comm(comm, &node_comm);
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // MPI_COMM_SELF duplicate.
     mpi->self_comm = qvi_mpi_comm_s(MPI_COMM_SELF, true);
     // Node communicator, no duplicate necessary here: created above.
@@ -339,12 +341,12 @@ sleepy_node_barrier(
 ) {
     MPI_Request request;
     int rc = MPI_Ibarrier(node_comm, &request);
-    if (rc != MPI_SUCCESS) return QV_ERR_MPI;
+    if (qvi_unlikely(rc != MPI_SUCCESS)) return QV_ERR_MPI;
 
     int done = 0;
     do {
         rc = MPI_Test(&request, &done, MPI_STATUS_IGNORE);
-        if (rc != MPI_SUCCESS) return QV_ERR_MPI;
+        if (qvi_unlikely(rc != MPI_SUCCESS)) return QV_ERR_MPI;
         usleep(50000);
     } while (!done);
 
@@ -411,9 +413,7 @@ qvi_mpi_group_gather_bbuffs(
     }
     // Root creates new buffers from data gathered from each participant.
     if (group_id == root) {
-        // Zero initialize array of pointers to nullptr.
-        bbuffs = new qvi_bbuff_t *[group_size]();
-        // TODO(skg) Use dup.
+        bbuffs = new qvi_bbuff_t *[group_size];
         byte_t *bytepos = allbytes.data();
         for (int i = 0; i < group_size; ++i) {
             rc = qvi_bbuff_new(&bbuffs[i]);

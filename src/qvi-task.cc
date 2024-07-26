@@ -113,9 +113,9 @@ qvi_task_s::bind_pop(void)
 
 int
 qvi_task_s::bind_top(
-    hwloc_cpuset_t *dest
+    hwloc_cpuset_t *result
 ) {
-    return qvi_hwloc_bitmap_dup(m_stack.top().cdata(), dest);
+    return qvi_hwloc_bitmap_dup(m_stack.top().cdata(), result);
 }
 
 /*

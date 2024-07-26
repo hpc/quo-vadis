@@ -67,7 +67,7 @@ public:
     /** Returns the task's current cpuset. */
     int
     bind_top(
-        hwloc_cpuset_t *dest
+        hwloc_cpuset_t *result
     );
 };
 
