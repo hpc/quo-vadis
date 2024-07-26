@@ -193,6 +193,12 @@ qvi_hwpool_dev_s::operator==(
     return m_uuid == x.m_uuid;
 }
 
+qv_hw_obj_type_t
+qvi_hwpool_dev_s::type(void)
+    const {
+    return m_type;
+}
+
 int
 qvi_hwpool_dev_s::id(
     qv_device_id_type_t format,
@@ -388,7 +394,7 @@ qvi_hwpool_s::add_device(
     const qvi_hwpool_dev_s &dev
 ) {
     auto shdev = std::make_shared<qvi_hwpool_dev_s>(dev);
-    m_devs.insert({dev.m_type, shdev});
+    m_devs.insert({dev.type(), shdev});
     return QV_SUCCESS;
 }
 
