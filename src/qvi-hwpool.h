@@ -122,7 +122,7 @@ public:
     unpack(
         byte_t *buffpos,
         size_t *bytes_written,
-        qvi_hwpool_dev_s *dev
+        qvi_hwpool_dev_s &dev
     );
 };
 

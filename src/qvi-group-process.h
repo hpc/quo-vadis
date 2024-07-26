@@ -37,13 +37,13 @@ public:
     }
 
     virtual int
-    rank(void)
+    rank(void) const
     {
         return qvi_process_group_id(m_proc_group);
     }
 
     virtual int
-    size(void)
+    size(void) const
     {
         return qvi_process_group_size(m_proc_group);
     }

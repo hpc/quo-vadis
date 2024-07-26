@@ -37,13 +37,13 @@ struct qvi_group_pthread_s : public qvi_group_s {
     }
 
     virtual int
-    rank(void)
+    rank(void) const
     {
         return thgroup->rank();
     }
 
     virtual int
-    size(void)
+    size(void) const
     {
         return thgroup->size();
     }

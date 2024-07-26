@@ -825,11 +825,11 @@ qvi_bbuff_rmi_unpack_item(
 }
 
 /**
- * Unpacks qvi_hwpool_dev_s *
+ * Unpacks qvi_hwpool_dev_s &
  */
 inline int
 qvi_bbuff_rmi_unpack_item(
-    qvi_hwpool_dev_s *dev,
+    qvi_hwpool_dev_s &dev,
     byte_t *buffpos,
     size_t *bytes_written
 ) {
