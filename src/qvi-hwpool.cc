@@ -130,8 +130,8 @@ qvi_hwpool_cpu_s::cpuset(void)
 }
 
 const qvi_hwloc_bitmap_s &
-qvi_hwpool_cpu_s::cpuset(void)
-    const {
+qvi_hwpool_cpu_s::cpuset(void) const
+{
     return m_cpuset;
 }
 
@@ -228,8 +228,8 @@ qvi_hwpool_dev_s::id(
 }
 
 const qvi_hwloc_bitmap_s &
-qvi_hwpool_dev_s::affinity(void)
-    const {
+qvi_hwpool_dev_s::affinity(void) const
+{
     return m_affinity;
 }
 
@@ -470,27 +470,6 @@ out:
     *hwp = ihwp;
     return rc;
 }
-
-#if 0
-/**
- * Extend namespace std so we can easily add qvi_devinfo_ts to
- * unordered_sets.
- */
-namespace std {
-    template <>
-    struct hash<qvi_hwpool_dev_s>
-    {
-        size_t
-        operator()(const qvi_hwpool_dev_s &x) const
-        {
-            const int a = x.m_id;
-            const int b = (int)x.type;
-            const int64_t c = qvi_cantor_pairing(a, b);
-            return hash<int64_t>()(c);
-        }
-    };
-}
-#endif
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
