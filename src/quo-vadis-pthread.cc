@@ -45,7 +45,8 @@ qvi_pthread_routine(
     void *arg
 ) {
     qvi_pthread_args_s *arg_ptr = (qvi_pthread_args_s *)arg;
-    qvi_scope_bind_push(arg_ptr->scope);
+    // TODO(skg) Check return code.
+    arg_ptr->scope->bind_push();
 
     void *const ret = arg_ptr->th_routine(arg_ptr->th_routine_argp);
     qvi_delete(&arg_ptr);
@@ -66,9 +67,8 @@ qv_pthread_scope_split(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_thsplit(
-            scope, npieces, color_array, nthreads,
-            QV_HW_OBJ_LAST, subscope
+        return scope->thsplit(
+            npieces, color_array, nthreads, QV_HW_OBJ_LAST, subscope
         );
     }
     qvi_catch_and_return();
@@ -86,8 +86,8 @@ qv_pthread_scope_split_at(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_thsplit_at(
-            scope, type, color_array, nthreads, subscopes
+        return scope->thsplit_at(
+            type, color_array, nthreads, subscopes
         );
     }
     qvi_catch_and_return();
@@ -108,7 +108,7 @@ qv_pthread_create(
     // pthread_create(), return a reasonable errno.
     if (qvi_unlikely(rc != QV_SUCCESS)) return ENOMEM;
 
-    auto group = dynamic_cast<qvi_group_pthread_t *>(qvi_scope_group(scope));
+    auto group = dynamic_cast<qvi_group_pthread_t *>(scope->group());
     qvi_pthread_group_pthread_create_args_s *cargs = nullptr;
     rc = qvi_new(&cargs, group->thgroup, qvi_pthread_routine, arg_ptr);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
@@ -129,7 +129,7 @@ qv_pthread_scopes_free(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        qvi_scope_thdelete(&scopes, nscopes);
+        qv_scope_s::thdel(&scopes, nscopes);
         return QV_SUCCESS;
     }
     qvi_catch_and_return();

@@ -41,7 +41,7 @@ qv_scope_bind_push(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_bind_push(scope);
+        return scope->bind_push();
     }
     qvi_catch_and_return();
 }
@@ -54,7 +54,7 @@ qv_scope_bind_pop(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_bind_pop(scope);
+        return scope->bind_pop();
     }
     qvi_catch_and_return();
 }
@@ -69,7 +69,7 @@ qv_scope_bind_string(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_bind_string(scope, format, str);
+        return scope->bind_string(format, str);
     }
     qvi_catch_and_return();
 }
@@ -82,7 +82,7 @@ qv_scope_free(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        qvi_scope_delete(&scope);
+        qv_scope_s::del(&scope);
         return QV_SUCCESS;
     }
     qvi_catch_and_return();
@@ -98,7 +98,8 @@ qv_scope_nobjs(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_nobjects(scope, obj, nobjs);
+        *nobjs = scope->nobjects(obj);
+        return QV_SUCCESS;
     }
     qvi_catch_and_return();
 }
@@ -107,13 +108,14 @@ qv_scope_nobjs(
 int
 qv_scope_taskid(
     qv_scope_t *scope,
-    int *taskid
+    int *rank
 ) {
-    if (qvi_unlikely(!scope || !taskid)) {
+    if (qvi_unlikely(!scope || !rank)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_group_rank(scope, taskid);
+        *rank = scope->group_rank();
+        return QV_SUCCESS;
     }
     qvi_catch_and_return();
 }
@@ -128,7 +130,8 @@ qv_scope_ntasks(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_group_size(scope, ntasks);
+        *ntasks = scope->group_size();
+        return QV_SUCCESS;
     }
     qvi_catch_and_return();
 }
@@ -141,7 +144,7 @@ qv_scope_barrier(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_barrier(scope);
+        return scope->barrier();
     }
     qvi_catch_and_return();
 }
@@ -159,9 +162,7 @@ qv_scope_create(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_create(
-            scope, type, nobjs, hints, subscope
-        );
+        return scope->create(type, nobjs, hints, subscope);
     }
     qvi_catch_and_return();
 }
@@ -180,9 +181,7 @@ qv_scope_split(
         // We use the sentinel value QV_HW_OBJ_LAST to differentiate between
         // calls from split() and split_at(). Since this call doesn't have a
         // hardware type argument, we use QV_HW_OBJ_LAST as the hardware type.
-        return qvi_scope_split(
-            scope, npieces, color, QV_HW_OBJ_LAST, subscope
-        );
+        return scope->split(npieces, color, QV_HW_OBJ_LAST, subscope);
     }
     qvi_catch_and_return();
 }
@@ -198,9 +197,7 @@ qv_scope_split_at(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_split_at(
-            scope, type, group_id, subscope
-        );
+        return scope->split_at(type, group_id, subscope);
     }
     qvi_catch_and_return();
 }
@@ -217,9 +214,7 @@ qv_scope_get_device_id(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_scope_device_id(
-            scope, dev_obj, dev_index, id_type, dev_id
-        );
+        return scope->device_id(dev_obj, dev_index, id_type, dev_id);
     }
     qvi_catch_and_return();
 }
