@@ -23,175 +23,120 @@
 
 struct qv_scope_s {
     /** Task group associated with this scope instance. */
-    qvi_group_t *group = nullptr;
+    qvi_group_t *m_group = nullptr;
     /** Hardware resource pool. */
-    qvi_hwpool_s *hwpool = nullptr;
+    qvi_hwpool_s *m_hwpool = nullptr;
     /** Constructor */
     qv_scope_s(void) = delete;
     /** Constructor */
     qv_scope_s(
-        qvi_group_t *group_a,
-        qvi_hwpool_s *hwpool_a
+        qvi_group_t *group,
+        qvi_hwpool_s *hwpool
     );
     /** Destructor */
     ~qv_scope_s(void);
+    /** Destroys a scope. */
+    static void
+    del(
+        qv_scope_t **scope
+    );
+    /** Frees scope resources and container created by thsplit*. */
+    static void
+    thdel(
+        qv_scope_t ***kscopes,
+        uint_t k
+    );
+    /** Takes the provided group and creates a new intrinsic scope from it. */
+    static int
+    makei(
+        qvi_group_t *group,
+        qv_scope_intrinsic_t iscope,
+        qv_scope_t **scope
+    );
+    /**
+     * Creates a new scope based on the specified hardware
+     * type, number of resources, and creation hints.
+     */
+    int
+    create(
+        qv_hw_obj_type_t type,
+        int nobjs,
+        qv_scope_create_hints_t hints,
+        qv_scope_t **child
+    );
+    /** Returns a pointer to the scope's underlying group. */
+    qvi_group_t *
+    group(void) const;
+    /** Returns the scope's group size. */
+    int
+    group_size(void) const;
+    /** Returns the caller's group rank in the provided scope. */
+    int
+    group_rank(void) const;
+    /** Returns the number of hardware objects in the provided scope. */
+    int
+    nobjects(
+        qv_hw_obj_type_t obj
+    ) const;
+    /**
+     * Returns the device ID string according to the ID
+     * type for the requested device type and index.
+     */
+    int
+    device_id(
+        qv_hw_obj_type_t dev_type,
+        int dev_index,
+        qv_device_id_type_t format,
+        char **result
+    ) const;
+    /** Performs a scope-level barrier. */
+    int
+    barrier(void);
+
+    int
+    bind_push(void);
+
+    int
+    bind_pop(void);
+
+    int
+    bind_string(
+        qv_bind_string_format_t format,
+        char **result
+    );
+
+    int
+    thsplit(
+        uint_t npieces,
+        int *kcolors,
+        uint_t k,
+        qv_hw_obj_type_t maybe_obj_type,
+        qv_scope_t ***kchildren
+    );
+
+    int
+    thsplit_at(
+        qv_hw_obj_type_t type,
+        int *kgroup_ids,
+        uint_t k,
+        qv_scope_t ***kchildren
+    );
+
+    int
+    split(
+        int ncolors,
+        int color,
+        qv_hw_obj_type_t maybe_obj_type,
+        qv_scope_t **child
+    );
+
+    int
+    split_at(
+        qv_hw_obj_type_t type,
+        int group_id,
+        qv_scope_t **child
+    );
 };
-
-/**
- * Returns a new intrinsic scope.
- */
-int
-qvi_scope_get(
-    qvi_group_t *group,
-    qv_scope_intrinsic_t iscope,
-    qv_scope_t **scope
-);
-
-/**
- * Creates a new scope based on the specified hardare type, number of resources,
- * and creation hints.
- */
-int
-qvi_scope_create(
-    qv_scope_t *parent,
-    qv_hw_obj_type_t type,
-    int nobjs,
-    qv_scope_create_hints_t hints,
-    qv_scope_t **child
-);
-
-/**
- * Destroys a scope.
- */
-void
-qvi_scope_delete(
-    qv_scope_t **scope
-);
-
-/**
- * Frees scope resources and container created by qvi_scope_thsplit*.
- */
-void
-qvi_scope_thdelete(
-    qv_scope_t ***kscopes,
-    uint_t k
-);
-
-/**
- * Returns a pointer to the scope's underlying group.
- */
-qvi_group_t *
-qvi_scope_group(
-    qv_scope_t *scope
-);
-
-/**
- * Returns the scope's group size.
- */
-int
-qvi_scope_group_size(
-    qv_scope_t *scope,
-    int *ntasks
-);
-
-/**
- * Returns the caller's group rank in the provided scope.
- */
-int
-qvi_scope_group_rank(
-    qv_scope_t *scope,
-    int *taskid
-);
-
-/**
- * Returns the number of hardware objects in the provided scope.
- */
-int
-qvi_scope_nobjects(
-    qv_scope_t *scope,
-    qv_hw_obj_type_t obj,
-    int *result
-);
-
-/**
- * Returns the device ID string according to the ID type for the requested
- * device type and index.
- */
-int
-qvi_scope_device_id(
-    qv_scope_t *scope,
-    qv_hw_obj_type_t dev_type,
-    int dev_index,
-    qv_device_id_type_t format,
-    char **result
-);
-
-/**
- * Performs a scope-level barrier.
- */
-int
-qvi_scope_barrier(
-    qv_scope_t *scope
-);
-
-int
-qvi_scope_bind_push(
-    qv_scope_t *scope
-);
-
-int
-qvi_scope_bind_pop(
-    qv_scope_t *scope
-);
-
-int
-qvi_scope_bind_string(
-    qv_scope_t *scope,
-    qv_bind_string_format_t format,
-    char **result
-);
-
-int
-qvi_scope_thsplit(
-    qv_scope_t *parent,
-    uint_t npieces,
-    int *kcolors,
-    uint_t k,
-    qv_hw_obj_type_t maybe_obj_type,
-    qv_scope_t ***kchildren
-);
-
-int
-qvi_scope_thsplit_at(
-    qv_scope_t *parent,
-    qv_hw_obj_type_t type,
-    int *kgroup_ids,
-    uint_t k,
-    qv_scope_t ***kchildren
-);
-
-/**
- *
- */
-int
-qvi_scope_split(
-    qv_scope_t *parent,
-    int ncolors,
-    int color,
-    qv_hw_obj_type_t maybe_obj_type,
-    qv_scope_t **child
-);
-
-/**
- *
- */
-int
-qvi_scope_split_at(
-    qv_scope_t *parent,
-    qv_hw_obj_type_t type,
-    int group_id,
-    qv_scope_t **child
-);
 
 #endif
 

@@ -179,7 +179,7 @@ qv_scope_nobjs(
 int
 qv_scope_taskid(
     qv_scope_t *scope,
-    int *taskid
+    int *rank
 );
 
 /**

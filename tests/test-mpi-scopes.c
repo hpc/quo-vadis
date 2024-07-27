@@ -181,6 +181,8 @@ main(
 
         qvi_test_scope_report(create_scope, "create_scope");
 
+        qvi_test_bind_push(create_scope);
+
         rc = qv_scope_free(create_scope);
         if (rc != QV_SUCCESS) {
             ers = "qv_scope_free() failed";
