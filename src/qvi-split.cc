@@ -429,26 +429,25 @@ qvi_hwsplit_s::split(void)
     return rc;
 }
 
-qvi_scope_split_coll_s::qvi_scope_split_coll_s(
-    qv_scope_t *parent_a,
-    uint_t split_size_a,
-    int mycolor_a,
-    qv_hw_obj_type_t split_at_type_a
-) : parent(parent_a)
-  , mycolor(mycolor_a)
+qvi_coll_hwsplit_s::qvi_coll_hwsplit_s(
+    qv_scope_t *parent,
+    uint_t npieces,
+    int color,
+    qv_hw_obj_type_t split_at_type
+) : m_parent(parent)
+  , m_color(color)
 {
-    const qvi_group_t *const pgroup = parent->group;
-    if (pgroup->rank() == qvi_scope_split_coll_s::s_rootid) {
-        hwsplit = qvi_hwsplit_s(
-            parent, pgroup->size(), split_size_a, split_at_type_a
+    const qvi_group_t *const pgroup = m_parent->group;
+    if (pgroup->rank() == qvi_coll_hwsplit_s::s_rootid) {
+        m_hwsplit = qvi_hwsplit_s(
+            m_parent, pgroup->size(), npieces, split_at_type
         );
     }
 }
 
 template <typename TYPE>
 int
-qvi_scope_split_coll_s::scatter_values(
-    int root,
+qvi_coll_hwsplit_s::scatter_values(
     const std::vector<TYPE> &values,
     TYPE *value
 ) {
@@ -457,9 +456,9 @@ qvi_scope_split_coll_s::scatter_values(
     int rc = QV_SUCCESS;
     qvi_bbuff_t *rxbuff = nullptr;
 
-    qvi_group_t *const group = parent->group;
+    qvi_group_t *const group = m_parent->group;
     std::vector<qvi_bbuff_t *> txbuffs(0);
-    if (root == group->rank()) {
+    if (group->rank() == s_rootid) {
         const uint_t group_size = group->size();
         txbuffs.resize(group_size);
         // Pack the values.
@@ -473,7 +472,7 @@ qvi_scope_split_coll_s::scatter_values(
         if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     }
 
-    rc = group->scatter(txbuffs.data(), root, &rxbuff);
+    rc = group->scatter(txbuffs.data(), s_rootid, &rxbuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
 
     *value = *(TYPE *)rxbuff->data();
@@ -491,30 +490,28 @@ out:
 
 template <typename TYPE>
 int
-qvi_scope_split_coll_s::bcast_value(
-    int root,
+qvi_coll_hwsplit_s::bcast_value(
     TYPE *value
 ) {
     static_assert(std::is_trivially_copyable<TYPE>::value, "");
-    qvi_group_t *const group = parent->group;
+    qvi_group_t *const group = m_parent->group;
 
     std::vector<TYPE> values;
-    if (root == group->rank()) {
+    if (group->rank() == s_rootid) {
         values.resize(group->size());
         std::fill(values.begin(), values.end(), *value);
     }
-    return scatter_values(root, values, value);
+    return scatter_values(values, value);
 }
 
 template <typename TYPE>
 int
-qvi_scope_split_coll_s::gather_values(
-    int root,
+qvi_coll_hwsplit_s::gather_values(
     TYPE invalue,
     std::vector<TYPE> &outvals
 ) {
     static_assert(std::is_trivially_copyable<TYPE>::value, "");
-    qvi_group_t *const group = parent->group;
+    qvi_group_t *const group = m_parent->group;
     const uint_t group_size = group->size();
 
     qvi_bbuff_t *txbuff = nullptr;
@@ -529,10 +526,10 @@ qvi_scope_split_coll_s::gather_values(
     // Gather the values to the root.
     bool shared = false;
     qvi_bbuff_t **bbuffs = nullptr;
-    rc = group->gather(txbuff, root, &shared, &bbuffs);
+    rc = group->gather(txbuff, s_rootid, &shared, &bbuffs);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // The root fills in the output.
-    if (group->rank() == root) {
+    if (group->rank() == s_rootid) {
         outvals.resize(group_size);
         // Unpack the values.
         for (uint_t i = 0; i < group_size; ++i) {
@@ -540,7 +537,7 @@ qvi_scope_split_coll_s::gather_values(
         }
     }
 out:
-    if (!shared || (shared && (group->rank() == root))) {
+    if (!shared || (shared && (group->rank() == s_rootid))) {
         if (bbuffs) {
             for (uint_t i = 0; i < group_size; ++i) {
                 qvi_bbuff_delete(&bbuffs[i]);
@@ -557,12 +554,11 @@ out:
 }
 
 int
-qvi_scope_split_coll_s::gather_hwpools(
-    int root,
+qvi_coll_hwsplit_s::gather_hwpools(
     qvi_hwpool_s *txpool,
     std::vector<qvi_hwpool_s *> &rxpools
 ) {
-    qvi_group_t *const group = parent->group;
+    qvi_group_t *const group = m_parent->group;
     const uint_t group_size = group->size();
     // Pack the hardware pool into a buffer.
     qvi_bbuff_t txbuff;
@@ -571,10 +567,10 @@ qvi_scope_split_coll_s::gather_hwpools(
     // Gather the values to the root.
     bool shared = false;
     qvi_bbuff_t **bbuffs = nullptr;
-    rc = group->gather(&txbuff, root, &shared, &bbuffs);
+    rc = group->gather(&txbuff, s_rootid, &shared, &bbuffs);
     if (rc != QV_SUCCESS) goto out;
 
-    if (group->rank() == root) {
+    if (group->rank() == s_rootid) {
         rxpools.resize(group_size);
         // Unpack the hwpools.
         for (uint_t i = 0; i < group_size; ++i) {
@@ -585,7 +581,7 @@ qvi_scope_split_coll_s::gather_hwpools(
         }
     }
 out:
-    if (!shared || (shared && (group->rank() == root))) {
+    if (!shared || (shared && (group->rank() == s_rootid))) {
         if (bbuffs) {
             for (uint_t i = 0; i < group_size; ++i) {
                 qvi_bbuff_delete(&bbuffs[i]);
@@ -601,33 +597,27 @@ out:
 }
 
 int
-qvi_scope_split_coll_s::gather(void)
+qvi_coll_hwsplit_s::gather(void)
 {
-    int rc = gather_values(
-        s_rootid, qvi_task_t::mytid(), hwsplit.m_taskids
-    );
+    int rc = gather_values(qvi_task_t::mytid(), m_hwsplit.m_taskids);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Note that the result hwpools are copies, so we can modify them freely.
-    rc = gather_hwpools(
-        s_rootid, parent->hwpool, hwsplit.m_hwpools
-    );
+    rc = gather_hwpools(m_parent->hwpool, m_hwsplit.m_hwpools);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    rc = gather_values(
-        s_rootid, mycolor, hwsplit.m_colors
-    );
+    rc = gather_values(m_color, m_hwsplit.m_colors);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    const int myid = parent->group->rank();
-    const uint_t group_size = parent->group->size();
-    if (myid == qvi_scope_split_coll_s::s_rootid) {
-        hwsplit.m_affinities.resize(group_size);
+    const int myid = m_parent->group->rank();
+    const uint_t group_size = m_parent->group->size();
+    if (myid == qvi_coll_hwsplit_s::s_rootid) {
+        m_hwsplit.m_affinities.resize(group_size);
         for (uint_t tid = 0; tid < group_size; ++tid) {
             hwloc_cpuset_t cpuset = nullptr;
-            rc = parent->group->task()->bind_top(&cpuset);
+            rc = m_parent->group->task()->bind_top(&cpuset);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
             //
-            rc = hwsplit.m_affinities[tid].set(cpuset);
+            rc = m_hwsplit.m_affinities[tid].set(cpuset);
             // Clean up.
             qvi_hwloc_bitmap_delete(&cpuset);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
@@ -637,8 +627,7 @@ qvi_scope_split_coll_s::gather(void)
 }
 
 int
-qvi_scope_split_coll_s::scatter_hwpools(
-    int root,
+qvi_coll_hwsplit_s::scatter_hwpools(
     const std::vector<qvi_hwpool_s *> &pools,
     qvi_hwpool_s **pool
 ) {
@@ -646,9 +635,9 @@ qvi_scope_split_coll_s::scatter_hwpools(
     std::vector<qvi_bbuff_t *> txbuffs(0);
     qvi_bbuff_t *rxbuff = nullptr;
 
-    qvi_group_t *const group = parent->group;
+    qvi_group_t *const group = m_parent->group;
 
-    if (root == group->rank()) {
+    if (group->rank() == s_rootid) {
         const uint_t group_size = group->size();
         txbuffs.resize(group_size);
         // Pack the hwpools.
@@ -662,7 +651,7 @@ qvi_scope_split_coll_s::scatter_hwpools(
         if (rc != QV_SUCCESS) goto out;
     }
 
-    rc = group->scatter(txbuffs.data(), root, &rxbuff);
+    rc = group->scatter(txbuffs.data(), s_rootid, &rxbuff);
     if (rc != QV_SUCCESS) goto out;
 
     rc = qvi_bbuff_rmi_unpack(rxbuff->data(), pool);
@@ -678,28 +667,26 @@ out:
 }
 
 int
-qvi_scope_split_coll_s::scatter(
+qvi_coll_hwsplit_s::scatter(
     int *colorp,
     qvi_hwpool_s **result
 ) {
-    const int rc = scatter_values(s_rootid, hwsplit.m_colors, colorp);
+    const int rc = scatter_values(m_hwsplit.m_colors, colorp);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    return scatter_hwpools(s_rootid, hwsplit.m_hwpools, result);
+    return scatter_hwpools(m_hwsplit.m_hwpools, result);
 }
 
 int
-qvi_scope_split_coll_s::barrier(void)
+qvi_coll_hwsplit_s::barrier(void)
 {
-    return parent->group->barrier();
+    return m_parent->group->barrier();
 }
 
 int
-qvi_scope_split_coll_s::split(
+qvi_coll_hwsplit_s::split(
     int *colorp,
     qvi_hwpool_s **result
 ) {
-    int rc2 = QV_SUCCESS;
-    const int myid = parent->group->rank();
     // First consolidate the provided information, as this is coming from a
     // SPMD-like context (e.g., splitting a resource shared by MPI processes).
     // In most cases it is easiest to have a single task calculate the split
@@ -708,28 +695,23 @@ qvi_scope_split_coll_s::split(
     // whose id is equal to qvi_global_split_t::rootid after gather has
     // completed.
     int rc = gather();
-    if (rc != QV_SUCCESS) goto out;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // The root does this calculation.
-    if (myid == s_rootid) {
-        rc2 = hwsplit.split();
+    int rc2 = QV_SUCCESS;
+    if (m_parent->group->rank() == s_rootid) {
+        rc2 = m_hwsplit.split();
     }
     // Wait for the split information. Explicitly barrier here in case the
     // underlying broadcast implementation polls heavily for completion.
     rc = barrier();
-    if (rc != QV_SUCCESS) goto out;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // To avoid hangs in split error paths, share the split rc with everyone.
-    rc = bcast_value(s_rootid, &rc2);
-    if (rc != QV_SUCCESS) goto out;
-    // If the split failed, return the error to all callers.
-    if (rc2 != QV_SUCCESS) {
-        rc = rc2;
-        goto out;
-    }
+    rc = bcast_value(&rc2);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // If the split failed, return the error to all participants.
+    if (qvi_unlikely(rc2 != QV_SUCCESS)) return rc2;
     // Scatter the results.
-    rc = scatter(colorp, result);
-    if (rc != QV_SUCCESS) goto out;
-out:
-    return rc;
+    return scatter(colorp, result);
 }
 
 /*

@@ -258,10 +258,10 @@ qvi_scope_split(
     qvi_group_t *group = nullptr;
     qv_scope_t *ichild = nullptr;
     // Split the hardware resources based on the provided split parameters.
-    qvi_scope_split_coll_s splitcoll(
+    qvi_coll_hwsplit_s chwsplit(
         parent, npieces, color, maybe_obj_type
     );
-    rc = splitcoll.split(&colorp, &hwpool);
+    rc = chwsplit.split(&colorp, &hwpool);
     if (rc != QV_SUCCESS) goto out;
     // Split underlying group. Notice the use of colorp here.
     rc = parent->group->split(

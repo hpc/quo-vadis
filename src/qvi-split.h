@@ -153,35 +153,42 @@ public:
  * split operations requiring aggregated resource knowledge AND coordination
  * between tasks in the parent scope to perform a split.
  */
-struct qvi_scope_split_coll_s {
+struct qvi_coll_hwsplit_s {
     /**
      * The root task ID used for collective operations.
      * We use 0 as the root because 0 will always exist.
      */
     static constexpr int s_rootid = 0;
     /** Points to the parent scope that we are splitting. */
-    qv_scope_t *parent = nullptr;
+    qv_scope_t *m_parent = nullptr;
     /** My color. */
-    int mycolor = 0;
+    int m_color = 0;
     /**
      * Stores group-global hardware split information brought together by
      * collective operations across the members in the parent scope.
      */
-    qvi_hwsplit_s hwsplit;
+    qvi_hwsplit_s m_hwsplit;
     /** Constructor. */
-    qvi_scope_split_coll_s(void) = delete;
+    qvi_coll_hwsplit_s(void) = delete;
     /** Constructor. */
-    qvi_scope_split_coll_s(
-        qv_scope_t *parent_a,
-        uint_t split_size_a,
-        int mycolor_a,
-        qv_hw_obj_type_t split_at_type_a
+    /**
+     * Hardware resources will be split based on the provided split parameters:
+     * - npieces: The number of splits requested.
+     * - color: Either user-supplied (explicitly set) or a value that requests
+     *   us to do the coloring for the callers.
+     *   maybe_obj_type: Potentially the object type that we are splitting at. This
+     *   value influences how the splitting algorithms perform their mapping.
+     */
+    qvi_coll_hwsplit_s(
+        qv_scope_t *parent,
+        uint_t npieces,
+        int color,
+        qv_hw_obj_type_t split_at_type
     );
     /** */
     template <typename TYPE>
     int
     scatter_values(
-        int root,
         const std::vector<TYPE> &values,
         TYPE *value
     );
@@ -189,21 +196,18 @@ struct qvi_scope_split_coll_s {
     template <typename TYPE>
     int
     bcast_value(
-        int root,
         TYPE *value
     );
     /** */
     template <typename TYPE>
     int
     gather_values(
-        int root,
         TYPE invalue,
         std::vector<TYPE> &outvals
     );
     /** */
     int
     gather_hwpools(
-        int root,
         qvi_hwpool_s *txpool,
         std::vector<qvi_hwpool_s *> &rxpools
     );
@@ -213,7 +217,6 @@ struct qvi_scope_split_coll_s {
     /** */
     int
     scatter_hwpools(
-        int root,
         const std::vector<qvi_hwpool_s *> &pools,
         qvi_hwpool_s **pool
     );
@@ -228,11 +231,6 @@ struct qvi_scope_split_coll_s {
     barrier(void);
     /**
      * Split the hardware resources based on the provided split parameters:
-     * - npieces: The number of splits requested.
-     * - color: Either user-supplied (explicitly set) or a value that requests
-     *   us to do the coloring for the callers.
-     *   maybe_obj_type: Potentially the object type that we are splitting at. This
-     *   value influences how the splitting algorithms perform their mapping.
      * - colorp: color' is potentially a new color assignment determined by one
      *   of our coloring algorithms. This value can be used to influence the
      *   group splitting that occurs after this call completes.
