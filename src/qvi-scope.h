@@ -22,10 +22,12 @@
 #include "qvi-hwpool.h"
 
 struct qv_scope_s {
+private:
     /** Task group associated with this scope instance. */
     qvi_group_t *m_group = nullptr;
     /** Hardware resource pool. */
     qvi_hwpool_s *m_hwpool = nullptr;
+public:
     /** Constructor */
     qv_scope_s(void) = delete;
     /** Constructor */
@@ -67,6 +69,9 @@ struct qv_scope_s {
     /** Returns a pointer to the scope's underlying group. */
     qvi_group_t *
     group(void) const;
+    /** Returns a pointer to the scope's underlying hardware pool. */
+    qvi_hwpool_s *
+    hwpool(void) const;
     /** Returns the scope's group size. */
     int
     group_size(void) const;

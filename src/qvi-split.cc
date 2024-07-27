@@ -26,8 +26,8 @@ qvi_hwsplit_s::qvi_hwsplit_s(
     uint_t group_size,
     uint_t split_size,
     qv_hw_obj_type_t split_at_type
-) : m_rmi(parent->m_group->task()->rmi())
-  , m_hwpool(parent->m_hwpool)
+) : m_rmi(parent->group()->task()->rmi())
+  , m_hwpool(parent->hwpool())
   , m_group_size(group_size)
   , m_split_size(split_size)
   , m_split_at_type(split_at_type)
@@ -437,7 +437,7 @@ qvi_coll_hwsplit_s::qvi_coll_hwsplit_s(
 ) : m_parent(parent)
   , m_color(color)
 {
-    const qvi_group_t *const pgroup = m_parent->m_group;
+    const qvi_group_t *const pgroup = m_parent->group();
     if (pgroup->rank() == qvi_coll_hwsplit_s::s_rootid) {
         m_hwsplit = qvi_hwsplit_s(
             m_parent, pgroup->size(), npieces, split_at_type
@@ -456,7 +456,7 @@ qvi_coll_hwsplit_s::scatter_values(
     int rc = QV_SUCCESS;
     qvi_bbuff_t *rxbuff = nullptr;
 
-    qvi_group_t *const group = m_parent->m_group;
+    qvi_group_t *const group = m_parent->group();
     std::vector<qvi_bbuff_t *> txbuffs(0);
     if (group->rank() == s_rootid) {
         const uint_t group_size = group->size();
@@ -494,7 +494,7 @@ qvi_coll_hwsplit_s::bcast_value(
     TYPE *value
 ) {
     static_assert(std::is_trivially_copyable<TYPE>::value, "");
-    qvi_group_t *const group = m_parent->m_group;
+    qvi_group_t *const group = m_parent->group();
 
     std::vector<TYPE> values;
     if (group->rank() == s_rootid) {
@@ -511,7 +511,7 @@ qvi_coll_hwsplit_s::gather_values(
     std::vector<TYPE> &outvals
 ) {
     static_assert(std::is_trivially_copyable<TYPE>::value, "");
-    qvi_group_t *const group = m_parent->m_group;
+    qvi_group_t *const group = m_parent->group();
     const uint_t group_size = group->size();
 
     qvi_bbuff_t *txbuff = nullptr;
@@ -558,7 +558,7 @@ qvi_coll_hwsplit_s::gather_hwpools(
     qvi_hwpool_s *txpool,
     std::vector<qvi_hwpool_s *> &rxpools
 ) {
-    qvi_group_t *const group = m_parent->m_group;
+    qvi_group_t *const group = m_parent->group();
     const uint_t group_size = group->size();
     // Pack the hardware pool into a buffer.
     qvi_bbuff_t txbuff;
@@ -602,19 +602,19 @@ qvi_coll_hwsplit_s::gather(void)
     int rc = gather_values(qvi_task_t::mytid(), m_hwsplit.m_taskids);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Note that the result hwpools are copies, so we can modify them freely.
-    rc = gather_hwpools(m_parent->m_hwpool, m_hwsplit.m_hwpools);
+    rc = gather_hwpools(m_parent->hwpool(), m_hwsplit.m_hwpools);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     rc = gather_values(m_color, m_hwsplit.m_colors);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    const int myid = m_parent->m_group->rank();
-    const uint_t group_size = m_parent->m_group->size();
+    const int myid = m_parent->group()->rank();
+    const uint_t group_size = m_parent->group()->size();
     if (myid == qvi_coll_hwsplit_s::s_rootid) {
         m_hwsplit.m_affinities.resize(group_size);
         for (uint_t tid = 0; tid < group_size; ++tid) {
             hwloc_cpuset_t cpuset = nullptr;
-            rc = m_parent->m_group->task()->bind_top(&cpuset);
+            rc = m_parent->group()->task()->bind_top(&cpuset);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
             //
             rc = m_hwsplit.m_affinities[tid].set(cpuset);
@@ -635,7 +635,7 @@ qvi_coll_hwsplit_s::scatter_hwpools(
     std::vector<qvi_bbuff_t *> txbuffs(0);
     qvi_bbuff_t *rxbuff = nullptr;
 
-    qvi_group_t *const group = m_parent->m_group;
+    qvi_group_t *const group = m_parent->group();
 
     if (group->rank() == s_rootid) {
         const uint_t group_size = group->size();
@@ -679,7 +679,7 @@ qvi_coll_hwsplit_s::scatter(
 int
 qvi_coll_hwsplit_s::barrier(void)
 {
-    return m_parent->m_group->barrier();
+    return m_parent->group()->barrier();
 }
 
 int
@@ -698,7 +698,7 @@ qvi_coll_hwsplit_s::split(
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // The root does this calculation.
     int rc2 = QV_SUCCESS;
-    if (m_parent->m_group->rank() == s_rootid) {
+    if (m_parent->group()->rank() == s_rootid) {
         rc2 = m_hwsplit.split();
     }
     // Wait for the split information. Explicitly barrier here in case the

@@ -148,6 +148,12 @@ qv_scope_s::group(void) const
     return m_group;
 }
 
+qvi_hwpool_s *
+qv_scope_s::hwpool(void) const
+{
+    return m_hwpool;
+}
+
 int
 qv_scope_s::group_size(void) const
 {
