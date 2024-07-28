@@ -188,13 +188,13 @@ interface
     end function qv_scope_nobjs_c
 
     integer(c_int) &
-    function qv_scope_taskid_c(scope, taskid) &
-        bind(c, name='qv_scope_taskid')
+    function qv_scope_group_rank_c(scope, taskid) &
+        bind(c, name='qv_scope_group_rank')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: taskid
-    end function qv_scope_taskid_c
+    end function qv_scope_group_rank_c
 
     integer(c_int) &
     function qv_scope_ntasks_c(scope, ntasks) &
@@ -341,14 +341,14 @@ contains
         info = qv_scope_nobjs_c(scope, obj, n)
     end subroutine qv_scope_nobjs
 
-    subroutine qv_scope_taskid(scope, taskid, info)
+    subroutine qv_scope_group_rank(scope, taskid, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: taskid
         integer(c_int), intent(out) :: info
-        info = qv_scope_taskid_c(scope, taskid)
-    end subroutine qv_scope_taskid
+        info = qv_scope_group_rank_c(scope, taskid)
+    end subroutine qv_scope_group_rank
 
     subroutine qv_scope_ntasks(scope, ntasks, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int

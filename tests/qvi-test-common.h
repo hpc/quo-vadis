@@ -75,10 +75,10 @@ qvi_test_scope_report(
 
     const int pid = qvi_test_gettid();
 
-    int taskid;
-    int rc = qv_scope_taskid(scope, &taskid);
+    int sgrank;
+    int rc = qv_scope_group_rank(scope, &sgrank);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_taskid() failed";
+        ers = "qv_scope_group_rank() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -90,9 +90,9 @@ qvi_test_scope_report(
     }
 
     printf(
-        "[%d] %s taskid is %d\n"
+        "[%d] %s sgrank is %d\n"
         "[%d] %s ntasks is %d\n",
-        pid, scope_name, taskid,
+        pid, scope_name, sgrank,
         pid, scope_name, ntasks
     );
 
@@ -113,21 +113,12 @@ qvi_test_bind_push(
     char const *ers = NULL;
     const int pid = qvi_test_gettid();
 
-    int taskid;
-    int rc = qv_scope_taskid(scope, &taskid);
+    int sgrank;
+    int rc = qv_scope_group_rank(scope, &sgrank);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_taskid() failed";
+        ers = "qv_scope_group_rank() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
-    if (getenv("HWLOC_XMLFILE")) {
-        if (taskid == 0) {
-            printf("*** Using synthetic topology. "
-                   "Skipping change_bind tests. ***\n");
-        }
-        return;
-    }
-
     // Get current binding.
     char *bind0s;
     rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind0s);
@@ -168,21 +159,12 @@ qvi_test_bind_pop(
 
     const int pid = qvi_test_gettid();
 
-    int taskid;
-    int rc = qv_scope_taskid(scope, &taskid);
+    int sgrank;
+    int rc = qv_scope_group_rank(scope, &sgrank);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_taskid() failed";
+        ers = "qv_scope_group_rank() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
-    if (getenv("HWLOC_XMLFILE")) {
-        if (taskid == 0) {
-            printf("*** Using synthetic topology. "
-                   "Skipping change_bind tests. ***\n");
-        }
-        return;
-    }
-
     // Get current binding.
     char *bind0s;
     rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind0s);
@@ -198,7 +180,6 @@ qvi_test_bind_pop(
         ers = "qv_bind_push() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
     // Get new, current binding.
     char *bind1s;
     rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind1s);
@@ -224,21 +205,12 @@ qvi_test_change_bind(
 
     const int pid = qvi_test_gettid();
 
-    int taskid;
-    int rc = qv_scope_taskid(scope, &taskid);
+    int sgrank;
+    int rc = qv_scope_group_rank(scope, &sgrank);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_taskid() failed";
+        ers = "qv_scope_group_rank() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
-    if (getenv("HWLOC_XMLFILE")) {
-        if (taskid == 0) {
-            printf("*** Using synthetic topology. "
-                   "Skipping change_bind tests. ***\n");
-        }
-        return;
-    }
-
     // Get current binding.
     char *bind0s;
     rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind0s);

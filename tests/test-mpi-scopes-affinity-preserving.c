@@ -71,13 +71,13 @@ main(
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int base_scope_id;
-    rc = qv_scope_taskid(
+    int base_scope_rank;
+    rc = qv_scope_group_rank(
         base_scope,
-        &base_scope_id
+        &base_scope_rank
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_taskid() failed";
+        ers = "qv_scope_group_rank() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 

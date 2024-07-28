@@ -11,7 +11,7 @@
 typedef struct {
     qv_scope_t *scope;
     int size;
-    int id;
+    int sgrank;
 } scopei;
 
 static void
@@ -48,9 +48,9 @@ scopei_fill(
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_taskid(sinfo->scope, &sinfo->id);
+    rc = qv_scope_group_rank(sinfo->scope, &sinfo->sgrank);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_taskid() failed";
+        ers = "qv_scope_group_rank() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
@@ -95,7 +95,7 @@ scopei_ep(
 
     char *ers = NULL;
     int rc = qv_scope_split(
-        pinfo.scope, 2, pinfo.id, &sinfo->scope
+        pinfo.scope, 2, pinfo.sgrank, &sinfo->scope
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split_at() failed";
