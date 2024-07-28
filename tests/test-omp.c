@@ -42,9 +42,9 @@ scopei_fill(
 ) {
     char *ers = NULL;
 
-    int rc = qv_scope_ntasks(sinfo->scope, &sinfo->size);
+    int rc = qv_scope_group_size(sinfo->scope, &sinfo->size);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_ntasks() failed";
+        ers = "qv_scope_group_size() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 

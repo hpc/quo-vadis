@@ -82,18 +82,18 @@ qvi_test_scope_report(
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int ntasks;
-    rc = qv_scope_ntasks(scope, &ntasks);
+    int sgsize;
+    rc = qv_scope_group_size(scope, &sgsize);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_ntasks() failed";
+        ers = "qv_scope_group_size() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     printf(
         "[%d] %s sgrank is %d\n"
-        "[%d] %s ntasks is %d\n",
+        "[%d] %s sgsize is %d\n",
         pid, scope_name, sgrank,
-        pid, scope_name, ntasks
+        pid, scope_name, sgsize
     );
 
     rc = qv_scope_barrier(scope);
