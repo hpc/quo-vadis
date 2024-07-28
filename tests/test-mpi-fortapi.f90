@@ -19,7 +19,7 @@ program mpi_fortapi
 
 
     integer(c_int) info, n
-    integer(c_int) ntasks, sgrank, n_cores, n_gpu
+    integer(c_int) sgsize, sgrank, n_cores, n_gpu
     integer(c_int) vmajor, vminor, vpatch
     integer cwrank, cwsize, scope_comm, scope_comm_size
     type(c_ptr) scope_user, sub_scope
@@ -76,11 +76,11 @@ program mpi_fortapi
         error stop
     end if
 
-    call qv_scope_ntasks(scope_user, ntasks, info)
+    call qv_scope_group_size(scope_user, sgsize, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
-    print *, 'ntasks', ntasks
+    print *, 'sgsize', sgsize
 
     call qv_scope_group_rank(scope_user, sgrank, info)
     if (info .ne. QV_SUCCESS) then

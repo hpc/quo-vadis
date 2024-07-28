@@ -186,7 +186,7 @@ qv_scope_group_rank(
  *
  */
 int
-qv_scope_ntasks(
+qv_scope_group_size(
     qv_scope_t *scope,
     int *ntasks
 );

@@ -48,15 +48,15 @@ scope_report(
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int ntasks;
-    rc = qv_scope_ntasks(scope, &ntasks);
+    int sgsize;
+    rc = qv_scope_group_size(scope, &sgsize);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_ntasks() failed";
+        ers = "qv_scope_group_size() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     printf("[%d] %s taskid is %d\n", pid, scope_name, taskid);
-    printf("[%d] %s ntasks is %d\n", pid, scope_name, ntasks);
+    printf("[%d] %s sgsize is %d\n", pid, scope_name, sgsize);
 
     rc = qv_scope_barrier(scope);
     if (rc != QV_SUCCESS) {

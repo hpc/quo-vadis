@@ -197,13 +197,13 @@ interface
     end function qv_scope_group_rank_c
 
     integer(c_int) &
-    function qv_scope_ntasks_c(scope, ntasks) &
-        bind(c, name='qv_scope_ntasks')
+    function qv_scope_group_size_c(scope, ntasks) &
+        bind(c, name='qv_scope_group_size')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: ntasks
-    end function qv_scope_ntasks_c
+    end function qv_scope_group_size_c
 
     integer(c_int) &
     function qv_scope_barrier_c(scope) &
@@ -350,14 +350,14 @@ contains
         info = qv_scope_group_rank_c(scope, taskid)
     end subroutine qv_scope_group_rank
 
-    subroutine qv_scope_ntasks(scope, ntasks, info)
+    subroutine qv_scope_group_size(scope, ntasks, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: ntasks
         integer(c_int), intent(out) :: info
-        info = qv_scope_ntasks_c(scope, ntasks)
-    end subroutine qv_scope_ntasks
+        info = qv_scope_group_size_c(scope, ntasks)
+    end subroutine qv_scope_group_size
 
     subroutine qv_scope_barrier(scope, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int

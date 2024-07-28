@@ -61,13 +61,13 @@ main(
 
     qvi_test_scope_report(base_scope, "base_scope");
 
-    int base_scope_ntasks;
-    rc = qv_scope_ntasks(
+    int base_scope_sgsize;
+    rc = qv_scope_group_size(
         base_scope,
-        &base_scope_ntasks
+        &base_scope_sgsize
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_ntasks() failed";
+        ers = "qv_scope_group_size() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 

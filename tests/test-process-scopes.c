@@ -64,13 +64,13 @@ main(void)
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int ntasks;
-    rc = qv_scope_ntasks(base_scope, &ntasks);
+    int sgsize;
+    rc = qv_scope_group_size(base_scope, &sgsize);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_ntasks() failed";
+        ers = "qv_scope_group_size() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    if (ntasks != 1) {
+    if (sgsize != 1) {
         ers = "Invalid number of tasks detected";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }

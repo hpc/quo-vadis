@@ -121,7 +121,7 @@ qv_scope_group_rank(
 
 // TODO(skg) Rename to qv_scope_group_size.
 int
-qv_scope_ntasks(
+qv_scope_group_size(
     qv_scope_t *scope,
     int *ntasks
 ) {
