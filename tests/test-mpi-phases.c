@@ -216,7 +216,7 @@ main(
       printf("\n===Phase 2: NUMA split===\n");
 
 #if 1
-    int nnumas, my_numa_id;
+    int nnumas, my_numa_rank;
     qv_scope_t *numa_scope;
 
     /* Get the number of NUMA domains so that we can
@@ -248,17 +248,17 @@ main(
     }
 
     /* Allow selecting a leader per NUMA */
-    rc = qv_scope_taskid(
+    rc = qv_scope_group_rank(
         numa_scope,
-        &my_numa_id
+        &my_numa_rank
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_taskid() failed";
+        ers = "qv_scope_group_rank() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     printf("[%d]: #NUMAs=%d numa_scope_id=%d\n",
-       wrank, nnumas, my_numa_id);
+       wrank, nnumas, my_numa_rank);
 
     rc = qv_scope_bind_push(numa_scope);
     if (rc != QV_SUCCESS) {
@@ -288,7 +288,7 @@ main(
 
 
     int npus;
-    if (my_numa_id == 0) {
+    if (my_numa_rank == 0) {
         /* I am the process lead */
         rc = qv_scope_nobjs(
             numa_scope,
@@ -339,7 +339,7 @@ main(
     if (wrank == 0)
         printf("\n===Phase 3: GPU split===\n");
 
-    int my_gpu_id;
+    int my_gpu_rank;
     qv_scope_t *gpu_scope;
 
     /* Get the number of GPUs so that we can
@@ -373,12 +373,12 @@ main(
     }
 
     /* Allow selecting a leader per NUMA */
-    rc = qv_scope_taskid(
+    rc = qv_scope_group_rank(
         gpu_scope,
-        &my_gpu_id
+        &my_gpu_rank
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_taskid() failed";
+        ers = "qv_scope_group_rank() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 

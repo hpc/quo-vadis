@@ -100,13 +100,13 @@ main(
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int base_scope_id;
-    rc = qv_scope_taskid(
+    int base_scope_rank;
+    rc = qv_scope_group_rank(
         base_scope,
-        &base_scope_id
+        &base_scope_rank
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_taskid() failed";
+        ers = "qv_scope_group_rank() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -124,7 +124,7 @@ main(
 
     const int npieces = 2;
     const int gid = get_group_id(
-        base_scope_id,
+        base_scope_rank,
         base_scope_ntasks,
         npieces
     );
@@ -156,7 +156,7 @@ main(
     qvi_test_scope_report(sub_scope, "sub_scope");
     qvi_test_change_bind(sub_scope);
 
-    if (base_scope_id == 0) {
+    if (base_scope_rank == 0) {
         qv_scope_t *create_scope;
         rc = qv_scope_create(
             sub_scope, QV_HW_OBJ_CORE,

@@ -53,13 +53,13 @@ main(void)
 
     qvi_test_scope_report(base_scope, "base_scope");
 
-    int taskid;
-    rc = qv_scope_taskid(base_scope, &taskid);
+    int srank;
+    rc = qv_scope_group_rank(base_scope, &srank);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_taskid() failed";
+        ers = "qv_scope_group_rank() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    if (taskid != 0) {
+    if (srank != 0) {
         ers = "Invalid task ID detected";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
@@ -88,7 +88,7 @@ main(void)
     const int npieces = 2;
     qv_scope_t *sub_scope;
     rc = qv_scope_split(
-        base_scope, npieces, taskid, &sub_scope
+        base_scope, npieces, srank, &sub_scope
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split() failed";

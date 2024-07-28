@@ -18,7 +18,7 @@ program process_fortapi
 
 
     integer(c_int) info, n
-    integer(c_int) ntasks, taskid, n_cores, n_gpu
+    integer(c_int) ntasks, sgrank, n_cores, n_gpu
     type(c_ptr) scope_user
     character(len=:),allocatable :: bstr(:)
     character(len=:),allocatable :: dev_pci(:)
@@ -35,11 +35,11 @@ program process_fortapi
     end if
     print *, 'ntasks', ntasks
 
-    call qv_scope_taskid(scope_user, taskid, info)
+    call qv_scope_group_rank(scope_user, sgrank, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
-    print *, 'taskid', taskid
+    print *, 'sgrank', sgrank
 
     call qv_scope_nobjs(scope_user, QV_HW_OBJ_CORE, n_cores, info)
     if (info .ne. QV_SUCCESS) then

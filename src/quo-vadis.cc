@@ -104,9 +104,8 @@ qv_scope_nobjs(
     qvi_catch_and_return();
 }
 
-// TODO(skg) Rename to qv_scope_group_rank.
 int
-qv_scope_taskid(
+qv_scope_group_rank(
     qv_scope_t *scope,
     int *rank
 ) {
