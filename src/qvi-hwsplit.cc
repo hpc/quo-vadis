@@ -8,10 +8,10 @@
  */
 
 /**
- * @file qvi-split.cc
+ * @file qvi-hwsplit.cc
  */
 
-#include "qvi-split.h"
+#include "qvi-hwsplit.h"
 #include "qvi-bbuff.h"
 #include "qvi-rmi.h"
 #include "qvi-bbuff-rmi.h"

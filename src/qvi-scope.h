@@ -50,7 +50,7 @@ public:
     );
     /** Takes the provided group and creates a new intrinsic scope from it. */
     static int
-    makei(
+    make_intrinsic(
         qvi_group_t *group,
         qv_scope_intrinsic_t iscope,
         qv_scope_t **scope

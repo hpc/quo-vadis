@@ -21,7 +21,7 @@
 #include "qvi-rmi.h"
 #include "qvi-task.h"
 #include "qvi-hwpool.h"
-#include "qvi-split.h"
+#include "qvi-hwsplit.h"
 #include "qvi-utils.h"
 
 qv_scope_s::qv_scope_s(
@@ -67,7 +67,7 @@ scope_new(
 }
 
 int
-qv_scope_s::makei(
+qv_scope_s::make_intrinsic(
     qvi_group_t *group,
     qv_scope_intrinsic_t iscope,
     qv_scope_t **scope

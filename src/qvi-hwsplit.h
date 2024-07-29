@@ -8,11 +8,11 @@
  */
 
 /**
- * @file qvi-split.h
+ * @file qvi-hwsplit.h
  */
 
-#ifndef QVI_SPLIT_H
-#define QVI_SPLIT_H
+#ifndef QVI_HWSPLIT_H
+#define QVI_HWSPLIT_H
 
 #include "qvi-common.h"
 #include "qvi-hwloc.h"

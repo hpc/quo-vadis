@@ -64,7 +64,7 @@ qvi_mpi_scope_get(
     const int rc = qvi_new(&izgroup, comm);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    return qv_scope_s::makei(izgroup, iscope, scope);
+    return qv_scope_s::make_intrinsic(izgroup, iscope, scope);
 }
 
 int

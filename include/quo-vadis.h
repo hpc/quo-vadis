@@ -167,16 +167,6 @@ qv_version(
  *
  */
 int
-qv_scope_nobjs(
-    qv_scope_t *scope,
-    qv_hw_obj_type_t obj,
-    int *nobjs
-);
-
-/**
- *
- */
-int
 qv_scope_group_rank(
     qv_scope_t *scope,
     int *rank
@@ -188,17 +178,20 @@ qv_scope_group_rank(
 int
 qv_scope_group_size(
     qv_scope_t *scope,
-    int *ntasks
+    int *group_size
 );
 
 /**
  *
  */
 int
-qv_scope_barrier(
-    qv_scope_t *scope
+qv_scope_nobjs(
+    qv_scope_t *scope,
+    qv_hw_obj_type_t obj,
+    int *nobjs
 );
 
+// TODO(skg) Rename to qv_scope_device_id_get?
 /**
  *
  */
@@ -209,6 +202,14 @@ qv_scope_get_device_id(
     int dev_index,
     qv_device_id_type_t id_type,
     char **dev_id
+);
+
+/**
+ *
+ */
+int
+qv_scope_barrier(
+    qv_scope_t *scope
 );
 
 /**

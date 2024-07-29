@@ -21,14 +21,14 @@
 qvi_group_mpi_s::qvi_group_mpi_s(void)
 {
     const int rc = qvi_new(&m_task);
-    if (rc != QV_SUCCESS) throw qvi_runtime_error();
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 }
 
 qvi_group_mpi_s::qvi_group_mpi_s(
     qvi_mpi_t *mpi_ctx
 ) : qvi_group_mpi_s()
 {
-    if (!mpi_ctx) throw qvi_runtime_error();
+    assert(mpi_ctx);
     m_mpi = mpi_ctx;
 }
 
@@ -72,13 +72,13 @@ qvi_group_mpi_s::self(
     // Create and initialize the child with the parent's MPI context.
     qvi_group_mpi_t *ichild = nullptr;
     int rc = qvi_new(&ichild, m_mpi);
-    if (rc != QV_SUCCESS) goto out;
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Create the underlying group using MPI_COMM_SELF.
     rc = qvi_mpi_group_create_from_mpi_comm(
         m_mpi, MPI_COMM_SELF, &ichild->m_mpi_group
     );
 out:
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);
     }
     *child = ichild;
@@ -94,14 +94,14 @@ qvi_group_mpi_s::split(
     // Create and initialize the child with the parent's MPI context.
     qvi_group_mpi_t *ichild = nullptr;
     int rc = qvi_new(&ichild, m_mpi);
-    if (rc != QV_SUCCESS) goto out;
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Split this group using MPI.
     rc = qvi_mpi_group_create_from_split(
         m_mpi, m_mpi_group, color,
         key, &ichild->m_mpi_group
     );
 out:
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);
     }
     *child = ichild;
