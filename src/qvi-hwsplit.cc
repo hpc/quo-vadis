@@ -49,7 +49,7 @@ qvi_hwsplit_s::~qvi_hwsplit_s(void)
 void
 qvi_hwsplit_s::reserve(void)
 {
-    m_taskids.resize(m_group_size);
+    m_group_tids.resize(m_group_size);
     m_hwpools.resize(m_group_size);
     m_colors.resize(m_group_size);
     m_affinities.resize(m_group_size);
@@ -237,7 +237,7 @@ qvi_hwsplit_s::split_devices_affinity_preserving(void)
         }
         // Store device affinities.
         qvi_hwloc_cpusets_t devaffs;
-        for (auto &dev : devs) {
+        for (const auto &dev : devs) {
             devaffs.push_back(dev->affinity());
         }
 
@@ -429,7 +429,7 @@ qvi_hwsplit_s::split(void)
     return rc;
 }
 
-qvi_coll_hwsplit_s::qvi_coll_hwsplit_s(
+qvi_hwsplit_coll_s::qvi_hwsplit_coll_s(
     qv_scope_t *parent,
     uint_t npieces,
     int color,
@@ -438,7 +438,7 @@ qvi_coll_hwsplit_s::qvi_coll_hwsplit_s(
   , m_color(color)
 {
     const qvi_group_t *const pgroup = m_parent->group();
-    if (pgroup->rank() == qvi_coll_hwsplit_s::s_rootid) {
+    if (pgroup->rank() == qvi_hwsplit_coll_s::s_rootid) {
         m_hwsplit = qvi_hwsplit_s(
             m_parent, pgroup->size(), npieces, split_at_type
         );
@@ -447,7 +447,7 @@ qvi_coll_hwsplit_s::qvi_coll_hwsplit_s(
 
 template <typename TYPE>
 int
-qvi_coll_hwsplit_s::scatter_values(
+qvi_hwsplit_coll_s::scatter_values(
     const std::vector<TYPE> &values,
     TYPE *value
 ) {
@@ -490,7 +490,7 @@ out:
 
 template <typename TYPE>
 int
-qvi_coll_hwsplit_s::bcast_value(
+qvi_hwsplit_coll_s::bcast_value(
     TYPE *value
 ) {
     static_assert(std::is_trivially_copyable<TYPE>::value, "");
@@ -506,7 +506,7 @@ qvi_coll_hwsplit_s::bcast_value(
 
 template <typename TYPE>
 int
-qvi_coll_hwsplit_s::gather_values(
+qvi_hwsplit_coll_s::gather_values(
     TYPE invalue,
     std::vector<TYPE> &outvals
 ) {
@@ -554,7 +554,7 @@ out:
 }
 
 int
-qvi_coll_hwsplit_s::gather_hwpools(
+qvi_hwsplit_coll_s::gather_hwpools(
     qvi_hwpool_s *txpool,
     std::vector<qvi_hwpool_s *> &rxpools
 ) {
@@ -597,20 +597,19 @@ out:
 }
 
 int
-qvi_coll_hwsplit_s::gather(void)
+qvi_hwsplit_coll_s::gather(void)
 {
-    int rc = gather_values(qvi_task_t::mytid(), m_hwsplit.m_taskids);
+    int rc = gather_values(qvi_task_t::mytid(), m_hwsplit.m_group_tids);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    rc = gather_values(m_color, m_hwsplit.m_colors);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Note that the result hwpools are copies, so we can modify them freely.
     rc = gather_hwpools(m_parent->hwpool(), m_hwsplit.m_hwpools);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    rc = gather_values(m_color, m_hwsplit.m_colors);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-
-    const int myid = m_parent->group()->rank();
+    const int myrank = m_parent->group()->rank();
     const uint_t group_size = m_parent->group()->size();
-    if (myid == qvi_coll_hwsplit_s::s_rootid) {
+    if (myrank == qvi_hwsplit_coll_s::s_rootid) {
         m_hwsplit.m_affinities.resize(group_size);
         for (uint_t tid = 0; tid < group_size; ++tid) {
             hwloc_cpuset_t cpuset = nullptr;
@@ -627,7 +626,7 @@ qvi_coll_hwsplit_s::gather(void)
 }
 
 int
-qvi_coll_hwsplit_s::scatter_hwpools(
+qvi_hwsplit_coll_s::scatter_hwpools(
     const std::vector<qvi_hwpool_s *> &pools,
     qvi_hwpool_s **pool
 ) {
@@ -667,7 +666,7 @@ out:
 }
 
 int
-qvi_coll_hwsplit_s::scatter(
+qvi_hwsplit_coll_s::scatter(
     int *colorp,
     qvi_hwpool_s **result
 ) {
@@ -677,13 +676,13 @@ qvi_coll_hwsplit_s::scatter(
 }
 
 int
-qvi_coll_hwsplit_s::barrier(void)
+qvi_hwsplit_coll_s::barrier(void)
 {
     return m_parent->group()->barrier();
 }
 
 int
-qvi_coll_hwsplit_s::split(
+qvi_hwsplit_coll_s::split(
     int *colorp,
     qvi_hwpool_s **result
 ) {

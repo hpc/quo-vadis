@@ -244,7 +244,7 @@ qv_scope_s::split(
     qvi_group_t *group = nullptr;
     qv_scope_t *ichild = nullptr;
     // Split the hardware resources based on the provided split parameters.
-    qvi_coll_hwsplit_s chwsplit(
+    qvi_hwsplit_coll_s chwsplit(
         this, npieces, color, maybe_obj_type
     );
     rc = chwsplit.split(&colorp, &hwpool);
@@ -307,7 +307,7 @@ qv_scope_s::thsplit(
         rc = qvi_dup(*m_hwpool, &hwsplit.m_hwpools[i]);
         if (rc != QV_SUCCESS) break;
         // Since this is called by a single task, replicate its task ID, too.
-        hwsplit.m_taskids[i] = taskid;
+        hwsplit.m_group_tids[i] = taskid;
         // Same goes for the task's affinity.
         hwsplit.m_affinities[i].set(task_affinity);
     }

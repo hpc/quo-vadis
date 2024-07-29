@@ -26,6 +26,10 @@ struct qvi_hwpool_res_s {
 protected:
     /** Resource hint flags. */
     qv_scope_create_hints_t m_hints = QV_SCOPE_CREATE_HINT_NONE;
+public:
+    /** Returns the resource's create hints. */
+    qv_scope_create_hints_t
+    hints(void);
 };
 
 /**
@@ -33,7 +37,7 @@ protected:
  * processing units (PUs), which are defined in the CPU's cpuset.
  */
 struct qvi_hwpool_cpu_s : qvi_hwpool_res_s {
-protected:
+private:
     /** The cpuset of the CPU's PUs. */
     qvi_hwloc_bitmap_s m_cpuset;
 public:

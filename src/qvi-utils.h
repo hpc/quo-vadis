@@ -39,6 +39,7 @@ public:
     void
     release(void) const
     {
+        assert(refc > 0);
         if (--refc == 0) {
             delete this;
         }
