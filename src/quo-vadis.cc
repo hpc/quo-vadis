@@ -119,17 +119,16 @@ qv_scope_group_rank(
     qvi_catch_and_return();
 }
 
-// TODO(skg) Rename to qv_scope_group_size.
 int
 qv_scope_group_size(
     qv_scope_t *scope,
-    int *ntasks
+    int *group_size
 ) {
-    if (qvi_unlikely(!scope || !ntasks)) {
+    if (qvi_unlikely(!scope || !group_size)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
-        *ntasks = scope->group_size();
+        *group_size = scope->group_size();
         return QV_SUCCESS;
     }
     qvi_catch_and_return();

@@ -28,7 +28,7 @@ qvi_process_scope_get(
         *scope = nullptr;
         return rc;
     }
-    return qv_scope_s::makei(zgroup, iscope, scope);
+    return qv_scope_s::make_intrinsic(zgroup, iscope, scope);
 }
 
 int
