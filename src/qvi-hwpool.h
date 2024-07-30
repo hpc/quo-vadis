@@ -26,33 +26,29 @@ struct qvi_hwpool_res_s {
 protected:
     /** Resource hint flags. */
     qv_scope_create_hints_t m_hints = QV_SCOPE_CREATE_HINT_NONE;
+    /** The resource's affinity encoded as a bitmap. */
+    qvi_hwloc_bitmap_s m_affinity;
 public:
     /** Returns the resource's create hints. */
     qv_scope_create_hints_t
     hints(void);
+    /**
+     * Returns a reference to the resource's affinity encoded by a bitmap.
+     */
+    qvi_hwloc_bitmap_s &
+    affinity(void);
+    /**
+     * Returns a const reference to the resource's affinity encoded by a bitmap.
+     */
+    const qvi_hwloc_bitmap_s &
+    affinity(void) const;
 };
 
 /**
  * Defines a hardware pool CPU. A CPU here may have multiple
- * processing units (PUs), which are defined in the CPU's cpuset.
+ * processing units (PUs), which are defined as the CPU's affinity.
  */
 struct qvi_hwpool_cpu_s : qvi_hwpool_res_s {
-private:
-    /** The cpuset of the CPU's PUs. */
-    qvi_hwloc_bitmap_s m_cpuset;
-public:
-    /**
-     * Returns a reference to the
-     * CPU's resources encoded by a bitmap.
-     */
-    qvi_hwloc_bitmap_s &
-    cpuset(void);
-    /**
-     * Returns a const reference to the
-     * CPU's resources encoded by a bitmap.
-     */
-    const qvi_hwloc_bitmap_s &
-    cpuset(void) const;
     /** Packs the instance into the provided buffer. */
     int
     packinto(
@@ -109,13 +105,7 @@ public:
     id(
         qv_device_id_type_t format,
         char **result
-    );
-    /**
-     * Returns a const reference to the
-     * device's affinity encoded by a bitmap.
-     */
-    const qvi_hwloc_bitmap_s &
-    affinity(void) const;
+    ) const;
     /** Packs the instance into the provided buffer. */
     int
     packinto(
@@ -157,7 +147,7 @@ public:
      * on the affinity encoded in the provided cpuset.
      */
     static int
-    new_hwpool(
+    create(
         qvi_hwloc_t *hwloc,
         hwloc_const_cpuset_t cpuset,
         qvi_hwpool_s **opool

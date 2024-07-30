@@ -35,19 +35,6 @@ public:
         qvi_group_t *group,
         qvi_hwpool_s *hwpool
     );
-    /** Destructor */
-    ~qv_scope_s(void);
-    /** Destroys a scope. */
-    static void
-    del(
-        qv_scope_t **scope
-    );
-    /** Frees scope resources and container created by thsplit*. */
-    static void
-    thdel(
-        qv_scope_t ***kscopes,
-        uint_t k
-    );
     /** Takes the provided group and creates a new intrinsic scope from it. */
     static int
     make_intrinsic(
@@ -66,6 +53,19 @@ public:
         qv_scope_create_hints_t hints,
         qv_scope_t **child
     );
+    /** Destructor */
+    ~qv_scope_s(void);
+    /** Destroys a scope. */
+    static void
+    destroy(
+        qv_scope_t **scope
+    );
+    /** Destroys scopes created by thsplit*. */
+    static void
+    thdestroy(
+        qv_scope_t ***kscopes,
+        uint_t k
+    );
     /** Returns a pointer to the scope's underlying group. */
     qvi_group_t *
     group(void) const;
@@ -78,9 +78,12 @@ public:
     /** Returns the caller's group rank in the provided scope. */
     int
     group_rank(void) const;
+    /** Performs a barrier across all members in the scope. */
+    int
+    group_barrier(void);
     /** Returns the number of hardware objects in the provided scope. */
     int
-    nobjects(
+    hwpool_nobjects(
         qv_hw_obj_type_t obj
     ) const;
     /**
@@ -94,9 +97,6 @@ public:
         qv_device_id_type_t format,
         char **result
     ) const;
-    /** Performs a scope-level barrier. */
-    int
-    barrier(void);
 
     int
     bind_push(void);

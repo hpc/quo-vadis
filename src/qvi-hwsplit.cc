@@ -18,6 +18,113 @@
 #include "qvi-task.h" // IWYU pragma: keep
 #include "qvi-scope.h" // IWYU pragma: keep
 
+#if 0
+/**
+ *
+ */
+static int
+cpus_available(
+    hwloc_const_cpuset_t which,
+    hwloc_const_cpuset_t from,
+    bool *avail
+) {
+    // TODO(skg) Cache storage for calculation?
+    hwloc_cpuset_t tcpus = nullptr;
+    int rc = qvi_hwloc_bitmap_calloc(&tcpus);
+    if (rc != QV_SUCCESS) return rc;
+
+    int hrc = hwloc_bitmap_and(tcpus, which, from);
+    if (hrc != 0) {
+        rc = QV_ERR_HWLOC;
+    }
+    if (rc == QV_SUCCESS) {
+        *avail = cpusets_equal(tcpus, which);
+    }
+    else {
+        *avail = false;
+    }
+    qvi_hwloc_bitmap_free(&tcpus);
+    return rc;
+}
+#endif
+
+/**
+ * Example:
+ * obcpuset  0110 0101
+ * request   1000 1010
+ * obcpuset' 1110 1111
+ */
+#if 0
+static int
+pool_obtain_cpus_by_cpuset(
+    qvi_hwpool_s *pool,
+    hwloc_const_cpuset_t request
+) {
+#if 0
+    int hwrc = hwloc_bitmap_or(
+        pool->obcpuset,
+        pool->obcpuset,
+        request
+    );
+    return (hwrc == 0 ? QV_SUCCESS : QV_ERR_HWLOC);
+#endif
+    QVI_UNUSED(pool);
+    QVI_UNUSED(request);
+    return QV_SUCCESS;
+}
+#endif
+
+/**
+ * Example:
+ * obcpuset  0110 0101
+ * release   0100 0100
+ * obcpuset' 0010 0001
+ */
+#if 0
+static int
+pool_release_cpus_by_cpuset(
+    qvi_hwpool_s *pool,
+    hwloc_const_cpuset_t release
+) {
+    int hwrc = hwloc_bitmap_andnot(
+        pool->obcpuset,
+        pool->obcpuset,
+        release
+    );
+    return (hwrc == 0 ? QV_SUCCESS : QV_ERR_HWLOC);
+}
+#endif
+
+// TODOs
+// * Resource reference counting.
+// * Need to deal with resource unavailability.
+// * Split and attach devices properly.
+// * Have bitmap scratch pad that is initialized once, then destroyed? This
+//   approach may be an nice allocation optimization, but in heavily threaded
+//   code may be a bottleneck.
+// TODO(skg) Use distance API for device affinity.
+// TODO(skg) Add RMI to acquire/release resources.
+
+// Notes:
+// * Does it make sense attempting resource exclusivity? Why not just let the
+// users get what they ask for and hope that the abstractions that we provide do
+// a good enough job most of the time. Making the user deal with resource
+// exhaustion and retries (which will eventually be the case with
+// QV_RES_UNAVAILABLE) is error prone and often frustrating.
+//
+// * Reference Counting: we should probably still implement a rudimentary
+// reference counting system, but perhaps not for enforcing resource
+// exclusivity. Rather we could use this information to guide a collection of
+// resource allocators that would use resource availability for their pool
+// management strategies.
+
+// A Straightforward Reference Counting Approach: Maintain an array of integers
+// with length number of cpuset bits. As each resource (bitmap) is obtained,
+// increment the internal counter of each corresponding position. When a
+// resource is released, decrement in a similar way. If a location in the array
+// is zero, then the resource is not in use. For devices, we can take a similar
+// approach using the device IDs instead of the bit positions.
+
 /** Maintains a mapping between IDs to device information. */
 using id2devs_t = std::multimap<int, const qvi_hwpool_dev_s *>;
 
@@ -140,6 +247,7 @@ qvi_hwsplit_s::affinity_preserving_policy(void) const
             return qvi_map_spread;
     }
 }
+
 /** Releases all devices contained in the provided split aggregate. */
 int
 qvi_hwsplit_s::release_devices(void)
@@ -151,6 +259,7 @@ qvi_hwsplit_s::release_devices(void)
     }
     return rc;
 }
+
 /**
  * Straightforward user-defined device splitting.
  */
@@ -214,6 +323,7 @@ qvi_hwsplit_s::split_devices_user_defined(void)
     }
     return rc;
 }
+
 /**
  * Affinity preserving device splitting.
  */
@@ -287,6 +397,7 @@ apply_cpuset_mapping(
     }
     return rc;
 }
+
 /**
  * User-defined split.
  */
@@ -352,6 +463,7 @@ qvi_hwsplit_s::split_affinity_preserving(void)
     // Finally, split the devices.
     return split_devices_affinity_preserving();
 }
+
 /**
  * Takes a vector of colors and clamps their values to [0, ndc)
  * in place, where ndc is the number of distinct numbers found in values.

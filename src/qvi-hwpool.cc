@@ -13,115 +13,9 @@
  * Hardware Resource Pool
  */
 
-// TODOs
-// * Resource reference counting.
-// * Need to deal with resource unavailability.
-// * Split and attach devices properly.
-// * Have bitmap scratch pad that is initialized once, then destroyed? This
-//   approach may be an nice allocation optimization, but in heavily threaded
-//   code may be a bottleneck.
-
-
-// Notes:
-// * Does it make sense attempting resource exclusivity? Why not just let the
-// users get what they ask for and hope that the abstractions that we provide do
-// a good enough job most of the time. Making the user deal with resource
-// exhaustion and retries (which will eventually be the case with
-// QV_RES_UNAVAILABLE) is error prone and often frustrating.
-//
-// * Reference Counting: we should probably still implement a rudimentary
-// reference counting system, but perhaps not for enforcing resource
-// exclusivity. Rather we could use this information to guide a collection of
-// resource allocators that would use resource availability for their pool
-// management strategies.
-
-// A Straightforward Reference Counting Approach: Maintain an array of integers
-// with length number of cpuset bits. As each resource (bitmap) is obtained,
-// increment the internal counter of each corresponding position. When a
-// resource is released, decrement in a similar way. If a location in the array
-// is zero, then the resource is not in use. For devices, we can take a similar
-// approach using the device IDs instead of the bit positions.
-
 #include "qvi-hwpool.h"
 #include "qvi-bbuff-rmi.h"
 #include "qvi-utils.h"
-
-#if 0
-/**
- *
- */
-static int
-cpus_available(
-    hwloc_const_cpuset_t which,
-    hwloc_const_cpuset_t from,
-    bool *avail
-) {
-    // TODO(skg) Cache storage for calculation?
-    hwloc_cpuset_t tcpus = nullptr;
-    int rc = qvi_hwloc_bitmap_calloc(&tcpus);
-    if (rc != QV_SUCCESS) return rc;
-
-    int hrc = hwloc_bitmap_and(tcpus, which, from);
-    if (hrc != 0) {
-        rc = QV_ERR_HWLOC;
-    }
-    if (rc == QV_SUCCESS) {
-        *avail = cpusets_equal(tcpus, which);
-    }
-    else {
-        *avail = false;
-    }
-    qvi_hwloc_bitmap_free(&tcpus);
-    return rc;
-}
-#endif
-
-/**
- * Example:
- * obcpuset  0110 0101
- * request   1000 1010
- * obcpuset' 1110 1111
- */
-#if 0
-static int
-pool_obtain_cpus_by_cpuset(
-    qvi_hwpool_s *pool,
-    hwloc_const_cpuset_t request
-) {
-#if 0
-    int hwrc = hwloc_bitmap_or(
-        pool->obcpuset,
-        pool->obcpuset,
-        request
-    );
-    return (hwrc == 0 ? QV_SUCCESS : QV_ERR_HWLOC);
-#endif
-    QVI_UNUSED(pool);
-    QVI_UNUSED(request);
-    return QV_SUCCESS;
-}
-#endif
-
-/**
- * Example:
- * obcpuset  0110 0101
- * release   0100 0100
- * obcpuset' 0010 0001
- */
-#if 0
-static int
-pool_release_cpus_by_cpuset(
-    qvi_hwpool_s *pool,
-    hwloc_const_cpuset_t release
-) {
-    int hwrc = hwloc_bitmap_andnot(
-        pool->obcpuset,
-        pool->obcpuset,
-        release
-    );
-    return (hwrc == 0 ? QV_SUCCESS : QV_ERR_HWLOC);
-}
-#endif
 
 qv_scope_create_hints_t
 qvi_hwpool_res_s::hints(void)
@@ -130,15 +24,15 @@ qvi_hwpool_res_s::hints(void)
 }
 
 qvi_hwloc_bitmap_s &
-qvi_hwpool_cpu_s::cpuset(void)
+qvi_hwpool_res_s::affinity(void)
 {
-    return m_cpuset;
+    return m_affinity;
 }
 
 const qvi_hwloc_bitmap_s &
-qvi_hwpool_cpu_s::cpuset(void) const
+qvi_hwpool_res_s::affinity(void) const
 {
-    return m_cpuset;
+    return m_affinity;
 }
 
 int
@@ -149,7 +43,7 @@ qvi_hwpool_cpu_s::packinto(
     const int rc = qvi_bbuff_rmi_pack_item(buff, m_hints);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Pack cpuset.
-    return qvi_bbuff_rmi_pack_item(buff, m_cpuset);
+    return qvi_bbuff_rmi_pack_item(buff, m_affinity);
 }
 
 int
@@ -168,7 +62,7 @@ qvi_hwpool_cpu_s::unpack(
     buffpos += bw;
     // Unpack bitmap.
     rc = qvi_bbuff_rmi_unpack_item(
-        cpu.m_cpuset, buffpos, &bw
+        cpu.m_affinity, buffpos, &bw
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     total_bw += bw;
@@ -209,7 +103,7 @@ int
 qvi_hwpool_dev_s::id(
     qv_device_id_type_t format,
     char **result
-) {
+) const {
     int rc = QV_SUCCESS, nw = 0;
     switch (format) {
         case (QV_DEVICE_ID_UUID):
@@ -231,12 +125,6 @@ qvi_hwpool_dev_s::id(
         *result = nullptr;
     }
     return rc;
-}
-
-const qvi_hwloc_bitmap_s &
-qvi_hwpool_dev_s::affinity(void) const
-{
-    return m_affinity;
 }
 
 int
@@ -327,7 +215,7 @@ qvi_hwpool_s::add_devices_with_affinity(
     for (const auto devt : qvi_hwloc_supported_devices()) {
         qvi_hwloc_dev_list_t devs;
         rc = qvi_hwloc_get_devices_in_bitmap(
-            hwloc, devt, m_cpu.cpuset(), devs
+            hwloc, devt, m_cpu.affinity(), devs
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
         for (const auto &dev : devs) {
@@ -339,7 +227,7 @@ qvi_hwpool_s::add_devices_with_affinity(
 }
 
 int
-qvi_hwpool_s::new_hwpool(
+qvi_hwpool_s::create(
     qvi_hwloc_t *hwloc,
     hwloc_const_cpuset_t cpuset,
     qvi_hwpool_s **opool
@@ -362,7 +250,7 @@ qvi_hwpool_s::initialize(
     qvi_hwloc_t *hwloc,
     hwloc_const_bitmap_t cpuset
 ) {
-    const int rc = m_cpu.cpuset().set(cpuset);
+    const int rc = m_cpu.affinity().set(cpuset);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Add devices with affinity to the hardware pool.
     return add_devices_with_affinity(hwloc);
@@ -371,7 +259,7 @@ qvi_hwpool_s::initialize(
 const qvi_hwloc_bitmap_s &
 qvi_hwpool_s::cpuset(void) const
 {
-    return m_cpu.cpuset();
+    return m_cpu.affinity();
 }
 
 const qvi_hwpool_devs_t &
@@ -388,7 +276,7 @@ qvi_hwpool_s::nobjects(
 ) {
     if (qvi_hwloc_obj_type_is_host_resource(obj_type)) {
         return qvi_hwloc_get_nobjs_in_cpuset(
-            hwloc, obj_type, m_cpu.cpuset().cdata(), result
+            hwloc, obj_type, m_cpu.affinity().cdata(), result
         );
     }
     *result = m_devs.count(obj_type);
