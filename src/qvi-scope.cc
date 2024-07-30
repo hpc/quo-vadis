@@ -14,9 +14,6 @@
  * @file qvi-scope.cc
  */
 
-// TODO(skg) Use distance API for device affinity.
-// TODO(skg) Add RMI to acquire/release resources.
-
 #include "qvi-scope.h"
 #include "qvi-rmi.h"
 #include "qvi-task.h"
@@ -37,21 +34,21 @@ qv_scope_s::~qv_scope_s(void)
 }
 
 void
-qv_scope_s::del(
+qv_scope_s::destroy(
     qv_scope_t **scope
 ) {
     qvi_delete(scope);
 }
 
 void
-qv_scope_s::thdel(
+qv_scope_s::thdestroy(
     qv_scope_t ***kscopes,
     uint_t k
 ) {
     if (!kscopes) return;
     qv_scope_t **ikscopes = *kscopes;
     for (uint_t i = 0; i < k; ++i) {
-        qv_scope_s::del(&ikscopes[i]);
+        qv_scope_s::destroy(&ikscopes[i]);
     }
     delete[] ikscopes;
     *kscopes = nullptr;
@@ -85,7 +82,7 @@ qv_scope_s::make_intrinsic(
     // Create and initialize the scope.
     rc = scope_new(group, hwpool, scope);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qv_scope_s::del(scope);
+        qv_scope_s::destroy(scope);
     }
     return rc;
 }
@@ -136,7 +133,7 @@ qv_scope_s::create(
     qv_scope_t *ichild = nullptr;
     rc = scope_new(group, hwpool, &ichild);
     if (rc != QV_SUCCESS) {
-        qv_scope_s::del(&ichild);
+        qv_scope_s::destroy(&ichild);
     }
     *child = ichild;
     return rc;
@@ -167,7 +164,7 @@ qv_scope_s::group_rank(void) const
 }
 
 int
-qv_scope_s::nobjects(
+qv_scope_s::hwpool_nobjects(
     qv_hw_obj_type_t obj
 ) const {
     int result = 0;
@@ -199,7 +196,7 @@ qv_scope_s::device_id(
 }
 
 int
-qv_scope_s::barrier(void)
+qv_scope_s::group_barrier(void)
 {
     return m_group->barrier();
 }
@@ -260,7 +257,7 @@ out:
     if (rc != QV_SUCCESS) {
         qvi_delete(&hwpool);
         qvi_delete(&group);
-        qv_scope_s::del(&ichild);
+        qv_scope_s::destroy(&ichild);
     }
     *child = ichild;
     return rc;
@@ -272,7 +269,7 @@ qv_scope_s::split_at(
     int color,
     qv_scope_t **child
 ) {
-    return split(nobjects(type), color, type, child);
+    return split(hwpool_nobjects(type), color, type, child);
 }
 
 int
@@ -338,7 +335,7 @@ qv_scope_s::thsplit(
         ithchildren[i] = child;
     }
     if (rc != QV_SUCCESS) {
-        qv_scope_s::thdel(&ithchildren, k);
+        qv_scope_s::thdestroy(&ithchildren, k);
     }
     else {
         // Subtract one to account for the parent's
@@ -356,7 +353,7 @@ qv_scope_s::thsplit_at(
     uint_t k,
     qv_scope_t ***kchildren
 ) {
-    return thsplit(nobjects(type), kgroup_ids, k, type, kchildren);
+    return thsplit(hwpool_nobjects(type), kgroup_ids, k, type, kchildren);
 }
 
 /*

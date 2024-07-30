@@ -129,7 +129,7 @@ qv_pthread_scopes_free(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        qv_scope_s::thdel(&scopes, nscopes);
+        qv_scope_s::thdestroy(&scopes, nscopes);
         return QV_SUCCESS;
     }
     qvi_catch_and_return();

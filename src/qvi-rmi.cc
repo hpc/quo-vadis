@@ -644,7 +644,7 @@ get_intrinsic_scope_user(
     qvi_hwpool_s **hwpool
 ) {
     // TODO(skg) Is the cpuset the best way to do this?
-    return qvi_hwpool_s::new_hwpool(
+    return qvi_hwpool_s::create(
         server->config.hwloc,
         qvi_hwloc_topo_get_cpuset(server->config.hwloc),
         hwpool
@@ -663,7 +663,7 @@ get_intrinsic_scope_proc(
     );
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_hwpool_s::new_hwpool(
+    rc = qvi_hwpool_s::create(
         server->config.hwloc, cpuset, hwpool
     );
 out:

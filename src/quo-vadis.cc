@@ -82,7 +82,7 @@ qv_scope_free(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        qv_scope_s::del(&scope);
+        qv_scope_s::destroy(&scope);
         return QV_SUCCESS;
     }
     qvi_catch_and_return();
@@ -98,7 +98,7 @@ qv_scope_nobjs(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        *nobjs = scope->nobjects(obj);
+        *nobjs = scope->hwpool_nobjects(obj);
         return QV_SUCCESS;
     }
     qvi_catch_and_return();
@@ -142,7 +142,7 @@ qv_scope_barrier(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return scope->barrier();
+        return scope->group_barrier();
     }
     qvi_catch_and_return();
 }
