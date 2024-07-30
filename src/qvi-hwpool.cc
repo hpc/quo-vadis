@@ -123,6 +123,12 @@ pool_release_cpus_by_cpuset(
 }
 #endif
 
+qv_scope_create_hints_t
+qvi_hwpool_res_s::hints(void)
+{
+    return m_hints;
+}
+
 qvi_hwloc_bitmap_s &
 qvi_hwpool_cpu_s::cpuset(void)
 {

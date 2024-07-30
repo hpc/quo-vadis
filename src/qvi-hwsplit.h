@@ -20,14 +20,14 @@
 #include "qvi-map.h"
 
 /**
- * Split aggregation: a collection of data relevant to split operations
- * requiring aggregated (e.g., global) knowledge to perform a split.
+ * Hardware split aggregation: a collection of information relevant to split
+ * operations requiring aggregated (e.g., global) knowledge to perform a split.
  *
  * NOTE: since splitting and mapping operations are performed by a single
  * process, this structure does not support collective operations that require
  * coordination between cooperating tasks. The structure for that is
- * qvi_scope_coll_data_s. Typically, collective operations will fill in a
- * qvi_scope_split_agg_s, but that isn't a requirement.
+ * qvi_hwsplit_coll_s. Typically, collective operations will fill in a
+ * this structure, but that isn't a requirement.
  */
 struct qvi_hwsplit_s {
 //private:
@@ -47,12 +47,12 @@ struct qvi_hwsplit_s {
      */
     qv_hw_obj_type_t m_split_at_type;
     /**
-     * Vector of task IDs, one for each member of the group. Note that the
+     * Vector of task TIDs, one for each member of the group. Note that the
      * number of task IDs will always match the group size and that their array
      * index corresponds to a task ID. It is handy to have the task IDs for
-     * splitting so we can query task characteristics during a splitting.
+     * splitting so we can query task characteristics during a split.
      */
-    std::vector<pid_t> m_taskids;
+    std::vector<pid_t> m_group_tids;
     /**
      * Vector of hardware pools, one for each member of the group. Note that the
      * number of hardware pools will always match the group size and that their
@@ -153,7 +153,7 @@ public:
  * split operations requiring aggregated resource knowledge AND coordination
  * between tasks in the parent scope to perform a split.
  */
-struct qvi_coll_hwsplit_s {
+struct qvi_hwsplit_coll_s {
     /**
      * The root task ID used for collective operations.
      * We use 0 as the root because 0 will always exist.
@@ -169,7 +169,7 @@ struct qvi_coll_hwsplit_s {
      */
     qvi_hwsplit_s m_hwsplit;
     /** Constructor. */
-    qvi_coll_hwsplit_s(void) = delete;
+    qvi_hwsplit_coll_s(void) = delete;
     /** Constructor. */
     /**
      * Hardware resources will be split based on the provided split parameters:
@@ -179,7 +179,7 @@ struct qvi_coll_hwsplit_s {
      *   maybe_obj_type: Potentially the object type that we are splitting at. This
      *   value influences how the splitting algorithms perform their mapping.
      */
-    qvi_coll_hwsplit_s(
+    qvi_hwsplit_coll_s(
         qv_scope_t *parent,
         uint_t npieces,
         int color,

@@ -73,6 +73,8 @@ int
 qvi_omp_group_barrier(
     qvi_omp_group_t *
 ) {
+    // TODO(skg) What should we do about barriers here? In particular, we need
+    // to be careful about sub-groups, etc.
     return QV_SUCCESS;
 }
 
