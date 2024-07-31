@@ -18,26 +18,26 @@
 #include "qvi-utils.h"
 
 qv_scope_create_hints_t
-qvi_hwpool_res_s::hints(void)
+qvi_hwpool_res::hints(void)
 {
     return m_hints;
 }
 
 qvi_hwloc_bitmap_s &
-qvi_hwpool_res_s::affinity(void)
+qvi_hwpool_res::affinity(void)
 {
     return m_affinity;
 }
 
 const qvi_hwloc_bitmap_s &
-qvi_hwpool_res_s::affinity(void) const
+qvi_hwpool_res::affinity(void) const
 {
     return m_affinity;
 }
 
 int
-qvi_hwpool_cpu_s::packinto(
-    qvi_bbuff_t *buff
+qvi_hwpool_cpu::packinto(
+    qvi_bbuff *buff
 ) const {
     // Pack hints.
     const int rc = qvi_bbuff_rmi_pack_item(buff, m_hints);
@@ -47,10 +47,10 @@ qvi_hwpool_cpu_s::packinto(
 }
 
 int
-qvi_hwpool_cpu_s::unpack(
+qvi_hwpool_cpu::unpack(
     byte_t *buffpos,
     size_t *bytes_written,
-    qvi_hwpool_cpu_s &cpu
+    qvi_hwpool_cpu &cpu
 ) {
     size_t bw = 0, total_bw = 0;
     // Unpack hints.
@@ -74,7 +74,7 @@ out:
     return rc;
 }
 
-qvi_hwpool_dev_s::qvi_hwpool_dev_s(
+qvi_hwpool_dev::qvi_hwpool_dev(
     const qvi_hwloc_device_s &dev
 ) : m_type(dev.type)
   , m_affinity(dev.affinity)
@@ -82,25 +82,25 @@ qvi_hwpool_dev_s::qvi_hwpool_dev_s(
   , m_pci_bus_id(dev.pci_bus_id)
   , m_uuid(dev.uuid) { }
 
-qvi_hwpool_dev_s::qvi_hwpool_dev_s(
+qvi_hwpool_dev::qvi_hwpool_dev(
     const std::shared_ptr<qvi_hwloc_device_s> &shdev
-) : qvi_hwpool_dev_s(*shdev.get()) { }
+) : qvi_hwpool_dev(*shdev.get()) { }
 
 bool
-qvi_hwpool_dev_s::operator==(
-    const qvi_hwpool_dev_s &x
+qvi_hwpool_dev::operator==(
+    const qvi_hwpool_dev &x
 ) const {
     return m_uuid == x.m_uuid;
 }
 
 qv_hw_obj_type_t
-qvi_hwpool_dev_s::type(void)
+qvi_hwpool_dev::type(void)
     const {
     return m_type;
 }
 
 int
-qvi_hwpool_dev_s::id(
+qvi_hwpool_dev::id(
     qv_device_id_type_t format,
     char **result
 ) const {
@@ -128,8 +128,8 @@ qvi_hwpool_dev_s::id(
 }
 
 int
-qvi_hwpool_dev_s::packinto(
-    qvi_bbuff_t *buff
+qvi_hwpool_dev::packinto(
+    qvi_bbuff *buff
 ) const {
     // Pack device hints.
     int rc = qvi_bbuff_rmi_pack_item(buff, m_hints);
@@ -151,10 +151,10 @@ qvi_hwpool_dev_s::packinto(
 }
 
 int
-qvi_hwpool_dev_s::unpack(
+qvi_hwpool_dev::unpack(
     byte_t *buffpos,
     size_t *bytes_written,
-    qvi_hwpool_dev_s &dev
+    qvi_hwpool_dev &dev
 ) {
     size_t bw = 0, total_bw = 0;
 
@@ -207,7 +207,7 @@ out:
 }
 
 int
-qvi_hwpool_s::add_devices_with_affinity(
+qvi_hwpool::add_devices_with_affinity(
     qvi_hwloc_t *hwloc
 ) {
     int rc = QV_SUCCESS;
@@ -219,7 +219,7 @@ qvi_hwpool_s::add_devices_with_affinity(
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
         for (const auto &dev : devs) {
-            rc = add_device(qvi_hwpool_dev_s(dev));
+            rc = add_device(qvi_hwpool_dev(dev));
             if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
         }
     }
@@ -227,26 +227,26 @@ qvi_hwpool_s::add_devices_with_affinity(
 }
 
 int
-qvi_hwpool_s::create(
+qvi_hwpool::create(
     qvi_hwloc_t *hwloc,
     hwloc_const_cpuset_t cpuset,
-    qvi_hwpool_s **opool
+    qvi_hwpool **hwpool
 ) {
-    qvi_hwpool_s *ipool = nullptr;
-    int rc = qvi_new(&ipool);
+    qvi_hwpool *ihwpool = nullptr;
+    int rc = qvi_new(&ihwpool);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Initialize the hardware pool.
-    rc = ipool->initialize(hwloc, cpuset);
+    rc = ihwpool->initialize(hwloc, cpuset);
 out:
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_delete(&ipool);
+        qvi_delete(&ihwpool);
     }
-    *opool = ipool;
+    *hwpool = ihwpool;
     return rc;
 }
 
 int
-qvi_hwpool_s::initialize(
+qvi_hwpool::initialize(
     qvi_hwloc_t *hwloc,
     hwloc_const_bitmap_t cpuset
 ) {
@@ -257,19 +257,19 @@ qvi_hwpool_s::initialize(
 }
 
 const qvi_hwloc_bitmap_s &
-qvi_hwpool_s::cpuset(void) const
+qvi_hwpool::cpuset(void) const
 {
     return m_cpu.affinity();
 }
 
 const qvi_hwpool_devs_t &
-qvi_hwpool_s::devices(void) const
+qvi_hwpool::devices(void) const
 {
     return m_devs;
 }
 
 int
-qvi_hwpool_s::nobjects(
+qvi_hwpool::nobjects(
     qvi_hwloc_t *hwloc,
     qv_hw_obj_type_t obj_type,
     int *result
@@ -284,24 +284,24 @@ qvi_hwpool_s::nobjects(
 }
 
 int
-qvi_hwpool_s::add_device(
-    const qvi_hwpool_dev_s &dev
+qvi_hwpool::add_device(
+    const qvi_hwpool_dev &dev
 ) {
-    auto shdev = std::make_shared<qvi_hwpool_dev_s>(dev);
+    auto shdev = std::make_shared<qvi_hwpool_dev>(dev);
     m_devs.insert({dev.type(), shdev});
     return QV_SUCCESS;
 }
 
 int
-qvi_hwpool_s::release_devices(void)
+qvi_hwpool::release_devices(void)
 {
     m_devs.clear();
     return QV_SUCCESS;
 }
 
 int
-qvi_hwpool_s::packinto(
-    qvi_bbuff_t *buff
+qvi_hwpool::packinto(
+    qvi_bbuff *buff
 ) const {
     // Pack the CPU.
     int rc = qvi_bbuff_rmi_pack_item(buff, m_cpu);
@@ -319,14 +319,14 @@ qvi_hwpool_s::packinto(
 }
 
 int
-qvi_hwpool_s::unpack(
+qvi_hwpool::unpack(
     byte_t *buffpos,
     size_t *bytes_written,
-    qvi_hwpool_s **hwp
+    qvi_hwpool **hwp
 ) {
     size_t bw = 0, total_bw = 0;
     // Create the new hardware pool.
-    qvi_hwpool_s *ihwp = nullptr;
+    qvi_hwpool *ihwp = nullptr;
     int rc = qvi_new(&ihwp);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Unpack the CPU into the hardare pool.
@@ -346,7 +346,7 @@ qvi_hwpool_s::unpack(
     buffpos += bw;
     // Unpack and add the devices.
     for (size_t i = 0; i < ndev; ++i) {
-        qvi_hwpool_dev_s dev;
+        qvi_hwpool_dev dev;
         rc = qvi_bbuff_rmi_unpack_item(dev, buffpos, &bw);
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
         total_bw += bw;

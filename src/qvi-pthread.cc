@@ -61,7 +61,7 @@ qvi_pthread_group_s::call_first_from_pthread_create(
     // Everyone can now create their task and populate the mapping table.
     {
         std::lock_guard<std::mutex> guard(group->m_mutex);
-        qvi_task_t *task = nullptr;
+        qvi_task *task = nullptr;
         const int rc = qvi_new(&task);
         if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
         group->m_tid2task.insert({mytid, task});
@@ -97,7 +97,7 @@ qvi_pthread_group_s::rank(void)
     return m_tid2rank.at(qvi_gettid());
 }
 
-qvi_task_t *
+qvi_task *
 qvi_pthread_group_s::task(void)
 {
     std::lock_guard<std::mutex> guard(m_mutex);
@@ -126,10 +126,10 @@ qvi_pthread_group_s::split(
 
 int
 qvi_pthread_group_s::gather(
-    qvi_bbuff_t *,
+    qvi_bbuff *,
     int,
     bool *,
-    qvi_bbuff_t ***
+    qvi_bbuff ***
 ) {
     // TODO(skg)
     return QV_ERR_NOT_SUPPORTED;
@@ -137,9 +137,9 @@ qvi_pthread_group_s::gather(
 
 int
 qvi_pthread_group_s::scatter(
-    qvi_bbuff_t **,
+    qvi_bbuff **,
     int,
-    qvi_bbuff_t **
+    qvi_bbuff **
 ) {
     // TODO(skg)
     return QV_ERR_NOT_SUPPORTED;

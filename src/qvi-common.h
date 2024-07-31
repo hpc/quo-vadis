@@ -66,19 +66,17 @@ typedef char const * cstr_t;
 typedef unsigned int uint_t;
 
 // Forward declarations.
+struct qvi_bbuff;
+
 struct qvi_hwloc_s;
 typedef struct qvi_hwloc_s qvi_hwloc_t;
-
-struct qvi_hwpool_s;
 
 struct qvi_rmi_client_s;
 typedef struct qvi_rmi_client_s qvi_rmi_client_t;
 
-struct qvi_bbuff_s;
-typedef struct qvi_bbuff_s qvi_bbuff_t;
+struct qvi_task;
 
-struct qvi_task_s;
-typedef struct qvi_task_s qvi_task_t;
+struct qvi_hwpool;
 
 #endif
 

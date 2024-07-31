@@ -22,20 +22,20 @@
 #include "qvi-utils.h"
 #include <omp.h>
 
-qvi_group_omp_s::qvi_group_omp_s(void)
+qvi_group_omp::qvi_group_omp(void)
 {
     const int rc = qvi_new(&m_task);
     if (rc != QV_SUCCESS) throw qvi_runtime_error();
 }
 
-qvi_group_omp_s::~qvi_group_omp_s(void)
+qvi_group_omp::~qvi_group_omp(void)
 {
     qvi_omp_group_delete(&m_ompgroup);
     qvi_delete(&m_task);
 }
 
 int
-qvi_group_omp_s::make_intrinsic(
+qvi_group_omp::make_intrinsic(
     qv_scope_intrinsic_t
 ) {
     const int group_size = omp_get_num_threads();
@@ -46,12 +46,12 @@ qvi_group_omp_s::make_intrinsic(
 }
 
 int
-qvi_group_omp_s::self(
-    qvi_group_t **child
+qvi_group_omp::self(
+    qvi_group **child
 ) {
     const int group_size = 1;
     const int group_rank = 0;
-    qvi_group_omp_t *ichild = nullptr;
+    qvi_group_omp *ichild = nullptr;
     int rc = qvi_new(&ichild);
     if (rc != QV_SUCCESS) goto out;
     // Create a group containing a single thread.
@@ -65,12 +65,12 @@ out:
 }
 
 int
-qvi_group_omp_s::split(
+qvi_group_omp::split(
     int color,
     int key,
-    qvi_group_t **child
+    qvi_group **child
 ) {
-    qvi_group_omp_t *ichild = nullptr;
+    qvi_group_omp *ichild = nullptr;
     int rc = qvi_new(&ichild);
     if (rc != QV_SUCCESS) goto out;
 

@@ -14,31 +14,31 @@
 #include "qvi-group-pthread.h"
 #include "qvi-utils.h"
 
-qvi_group_pthread_s::qvi_group_pthread_s(
+qvi_group_pthread::qvi_group_pthread(
     int group_size
 ) {
     const int rc = qvi_new(&thgroup, group_size);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 }
 
-qvi_group_pthread_s::~qvi_group_pthread_s(void)
+qvi_group_pthread::~qvi_group_pthread(void)
 {
     qvi_delete(&thgroup);
 }
 
 int
-qvi_group_pthread_s::self(
-    qvi_group_t **
+qvi_group_pthread::self(
+    qvi_group **
 ) {
     // TODO(skg)
     return QV_ERR_NOT_SUPPORTED;
 }
 
 int
-qvi_group_pthread_s::split(
+qvi_group_pthread::split(
     int,
     int,
-    qvi_group_s **
+    qvi_group **
 ) {
     // TODO(skg)
     return QV_ERR_NOT_SUPPORTED;

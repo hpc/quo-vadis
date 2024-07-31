@@ -18,28 +18,28 @@
 #include "qvi-task.h" // IWYU pragma: keep
 #include "qvi-utils.h"
 
-qvi_group_mpi_s::qvi_group_mpi_s(void)
+qvi_group_mpi::qvi_group_mpi(void)
 {
     const int rc = qvi_new(&m_task);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 }
 
-qvi_group_mpi_s::qvi_group_mpi_s(
+qvi_group_mpi::qvi_group_mpi(
     qvi_mpi_t *mpi_ctx
-) : qvi_group_mpi_s()
+) : qvi_group_mpi()
 {
     assert(mpi_ctx);
     m_mpi = mpi_ctx;
 }
 
-qvi_group_mpi_s::~qvi_group_mpi_s(void)
+qvi_group_mpi::~qvi_group_mpi(void)
 {
     qvi_mpi_group_delete(&m_mpi_group);
     qvi_delete(&m_task);
 }
 
 int
-qvi_group_mpi_s::make_intrinsic(
+qvi_group_mpi::make_intrinsic(
     qv_scope_intrinsic_t scope
 ) {
     int rc = QV_SUCCESS;
@@ -66,11 +66,11 @@ qvi_group_mpi_s::make_intrinsic(
 }
 
 int
-qvi_group_mpi_s::self(
-    qvi_group_t **child
+qvi_group_mpi::self(
+    qvi_group **child
 ) {
     // Create and initialize the child with the parent's MPI context.
-    qvi_group_mpi_t *ichild = nullptr;
+    qvi_group_mpi *ichild = nullptr;
     int rc = qvi_new(&ichild, m_mpi);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Create the underlying group using MPI_COMM_SELF.
@@ -86,13 +86,13 @@ out:
 }
 
 int
-qvi_group_mpi_s::split(
+qvi_group_mpi::split(
     int color,
     int key,
-    qvi_group_t **child
+    qvi_group **child
 ) {
     // Create and initialize the child with the parent's MPI context.
-    qvi_group_mpi_t *ichild = nullptr;
+    qvi_group_mpi *ichild = nullptr;
     int rc = qvi_new(&ichild, m_mpi);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Split this group using MPI.

@@ -22,7 +22,7 @@
 
 using qvi_task_bind_stack_t = std::stack<qvi_hwloc_bitmap_s>;
 
-struct qvi_task_s {
+struct qvi_task {
 private:
     /** Client-side connection to the RMI. */
     qvi_rmi_client_t *m_rmi = nullptr;
@@ -39,11 +39,11 @@ public:
     static pid_t
     mytid(void);
     /** Constructor. */
-    qvi_task_s(void);
+    qvi_task(void);
     /** Copy constructor. */
-    qvi_task_s(const qvi_task_s &src) = delete;
+    qvi_task(const qvi_task &src) = delete;
     /** Destructor. */
-    ~qvi_task_s(void);
+    ~qvi_task(void);
     /** Returns a pointer to the task's RMI. */
     qvi_rmi_client_t *
     rmi(void);

@@ -17,40 +17,40 @@
 #include "qvi-bbuff.h"
 #include "qvi-utils.h"
 
-qvi_bbuff_s::qvi_bbuff_s(void)
+qvi_bbuff::qvi_bbuff(void)
 {
     m_capacity = s_min_growth;
     m_data = calloc(m_capacity, sizeof(byte_t));
     if (qvi_unlikely(!m_data)) throw qvi_runtime_error();
 }
 
-qvi_bbuff_s::qvi_bbuff_s(
-    const qvi_bbuff_s &src
-) : qvi_bbuff_s()
+qvi_bbuff::qvi_bbuff(
+    const qvi_bbuff &src
+) : qvi_bbuff()
 {
     const int rc = append(src.m_data, src.m_size);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 }
 
-qvi_bbuff_s::~qvi_bbuff_s(void)
+qvi_bbuff::~qvi_bbuff(void)
 {
     if (m_data) free(m_data);
 }
 
 size_t
-qvi_bbuff_s::size(void) const
+qvi_bbuff::size(void) const
 {
     return m_size;
 }
 
 void *
-qvi_bbuff_s::data(void)
+qvi_bbuff::data(void)
 {
     return m_data;
 }
 
 int
-qvi_bbuff_s::append(
+qvi_bbuff::append(
     const void *const data,
     size_t size
 ) {
@@ -75,22 +75,22 @@ qvi_bbuff_s::append(
 
 int
 qvi_bbuff_new(
-    qvi_bbuff_t **buff
+    qvi_bbuff **buff
 ) {
     return qvi_new(buff);
 }
 
 int
 qvi_bbuff_dup(
-    const qvi_bbuff_t &src,
-    qvi_bbuff_t **buff
+    const qvi_bbuff &src,
+    qvi_bbuff **buff
 ) {
     return qvi_dup(src, buff);
 }
 
 void
 qvi_bbuff_delete(
-    qvi_bbuff_t **buff
+    qvi_bbuff **buff
 ) {
     qvi_delete(buff);
 }

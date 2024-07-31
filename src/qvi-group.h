@@ -26,13 +26,13 @@ using qvi_group_id_t = uint64_t;
 /**
  * Virtual base group class. Notice that groups are reference counted.
  */
-struct qvi_group_s : qvi_refc_s {
+struct qvi_group : qvi_refc {
     /** Constructor. */
-    qvi_group_s(void) = default;
+    qvi_group(void) = default;
     /** Virtual destructor. */
-    virtual ~qvi_group_s(void) = default;
+    virtual ~qvi_group(void) = default;
     /** Returns pointer to the caller's task information. */
-    virtual qvi_task_t *
+    virtual qvi_task *
     task(void) = 0;
     /** Returns pointer to the task's hwloc information. */
     qvi_hwloc_t *
@@ -57,7 +57,7 @@ struct qvi_group_s : qvi_refc_s {
      */
     virtual int
     self(
-        qvi_group_s **child
+        qvi_group **child
     ) = 0;
     /**
      * Creates a new thread group by splitting off of the caller's group.
@@ -65,7 +65,7 @@ struct qvi_group_s : qvi_refc_s {
     virtual int
     thsplit(
         int nthreads,
-        qvi_group_s **child
+        qvi_group **child
     );
     /**
      * Creates new groups by splitting this group based on color, key.
@@ -75,22 +75,22 @@ struct qvi_group_s : qvi_refc_s {
     split(
         int color,
         int key,
-        qvi_group_s **child
+        qvi_group **child
     ) = 0;
     /** Gathers bbuffs to specified root. */
     virtual int
     gather(
-        qvi_bbuff_t *txbuff,
+        qvi_bbuff *txbuff,
         int root,
         bool *shared,
-        qvi_bbuff_t ***rxbuffs
+        qvi_bbuff ***rxbuffs
     ) = 0;
     /** Scatters bbuffs from specified root. */
     virtual int
     scatter(
-        qvi_bbuff_t **txbuffs,
+        qvi_bbuff **txbuffs,
         int root,
-        qvi_bbuff_t **rxbuff
+        qvi_bbuff **rxbuff
     ) = 0;
     /** Returns a unique group ID after each call. */
     static int
@@ -98,7 +98,6 @@ struct qvi_group_s : qvi_refc_s {
         qvi_group_id_t *gid
     );
 };
-typedef struct qvi_group_s qvi_group_t;
 
 #endif
 

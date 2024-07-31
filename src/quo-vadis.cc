@@ -82,7 +82,7 @@ qv_scope_free(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        qv_scope_s::destroy(&scope);
+        qv_scope::destroy(&scope);
         return QV_SUCCESS;
     }
     qvi_catch_and_return();

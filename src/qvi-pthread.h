@@ -49,7 +49,7 @@ private:
     /** Holds TID to rank mapping. */
     std::map<pid_t, int> m_tid2rank;
     /** Holds TID to task mapping. */
-    std::map<pid_t, qvi_task_t *> m_tid2task;
+    std::map<pid_t, qvi_task *> m_tid2task;
     /** Used for mutexy things. */
     std::mutex m_mutex;
     /** Used for barrier things. */
@@ -78,7 +78,7 @@ public:
     /** Destructor. */
     ~qvi_pthread_group_s(void);
 
-    qvi_task_t *
+    qvi_task *
     task(void);
 
     int
@@ -99,17 +99,17 @@ public:
 
     int
     gather(
-        qvi_bbuff_t *txbuff,
+        qvi_bbuff *txbuff,
         int root,
         bool *shared,
-        qvi_bbuff_t ***rxbuffs
+        qvi_bbuff ***rxbuffs
     );
 
     int
     scatter(
-        qvi_bbuff_t **txbuffs,
+        qvi_bbuff **txbuffs,
         int root,
-        qvi_bbuff_t **rxbuff
+        qvi_bbuff **rxbuff
     );
 };
 typedef struct qvi_pthread_group_s qvi_pthread_group_t;

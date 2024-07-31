@@ -38,8 +38,8 @@ using qvi_map_shaffinity_t = std::map<uint_t, std::set<uint_t>>;
  */
 uint_t
 qvi_map_maxfit(
-    uint_t space_left,
-    uint_t max_chunk
+    uint_t max_chunk,
+    uint_t space_left
 );
 
 /**

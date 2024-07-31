@@ -15,23 +15,23 @@
 #include "qvi-task.h" // IWYU pragma: keep
 #include "qvi-utils.h"
 
-qvi_group_process_s::qvi_group_process_s(void)
+qvi_group_process::qvi_group_process(void)
 {
     const int rc = qvi_new(&m_task);
     if (rc != QV_SUCCESS) throw qvi_runtime_error();
 }
 
-qvi_group_process_s::~qvi_group_process_s(void)
+qvi_group_process::~qvi_group_process(void)
 {
     qvi_process_group_delete(&m_proc_group);
     qvi_delete(&m_task);
 }
 
 int
-qvi_group_process_s::self(
-    qvi_group_t **child
+qvi_group_process::self(
+    qvi_group **child
 ) {
-    qvi_group_process_t *ichild = nullptr;
+    qvi_group_process *ichild = nullptr;
     int rc = qvi_new(&ichild);
     if (rc != QV_SUCCESS) goto out;
     // Because this is in the context of a process, the concept of splitting

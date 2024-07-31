@@ -82,7 +82,7 @@ typedef int (*qvi_rpc_fun_ptr_t)(
     qvi_rmi_server_t *,
     qvi_msg_header_t *,
     void *,
-    qvi_bbuff_t **
+    qvi_bbuff **
 );
 
 static void
@@ -124,7 +124,7 @@ struct qvi_rmi_server_s {
     /** Server configuration. */
     qvi_rmi_config_s config;
     /** The base resource pool maintained by the server. */
-    qvi_hwpool_s *hwpool = nullptr;
+    qvi_hwpool *hwpool = nullptr;
     /** ZMQ context. */
     void *zctx = nullptr;
     /** Loopback socket for managerial messages. */
@@ -265,13 +265,13 @@ msg_free_byte_buffer_cb(
     void *,
     void *hint
 ) {
-    qvi_bbuff_t *buff = (qvi_bbuff_t *)hint;
+    qvi_bbuff *buff = (qvi_bbuff *)hint;
     qvi_bbuff_delete(&buff);
 }
 
 static int
 buffer_append_header(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     qvi_rpc_funid_t fid,
     cstr_t picture
 ) {
@@ -310,7 +310,7 @@ unpack_msg_header(
 
 static inline int
 zmsg_init_from_bbuff(
-    qvi_bbuff_t *bbuff,
+    qvi_bbuff *bbuff,
     zmq_msg_t *zmsg
 ) {
     const size_t buffer_size = bbuff->size();
@@ -367,13 +367,13 @@ out:
 template <typename... Types>
 static int
 rpc_pack(
-    qvi_bbuff_t **buff,
+    qvi_bbuff **buff,
     qvi_rpc_funid_t fid,
     Types &&...args
 ) {
     std::string picture;
 
-    qvi_bbuff_t *ibuff = nullptr;
+    qvi_bbuff *ibuff = nullptr;
     int rc = qvi_bbuff_new(&ibuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Get the picture based on the types passed.
@@ -427,7 +427,7 @@ rpc_req(
 ) {
     int buffer_size = 0;
 
-    qvi_bbuff_t *buff = nullptr;
+    qvi_bbuff *buff = nullptr;
     int rc = rpc_pack(&buff, fid, std::forward<Types>(args)...);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_bbuff_delete(&buff);
@@ -476,7 +476,7 @@ rpc_ssi_invalid(
     qvi_rmi_server_t *,
     qvi_msg_header_t *,
     void *,
-    qvi_bbuff_t **
+    qvi_bbuff **
 ) {
     qvi_log_error("Something bad happened in RPC dispatch.");
     qvi_abort();
@@ -488,7 +488,7 @@ rpc_ssi_shutdown(
     qvi_rmi_server_t *,
     qvi_msg_header_t *hdr,
     void *,
-    qvi_bbuff_t **output
+    qvi_bbuff **output
 ) {
     (void)rpc_pack(output, hdr->fid, QVI_BBUFF_RMI_ZERO_MSG);
     return QV_SUCCESS_SHUTDOWN;
@@ -499,7 +499,7 @@ rpc_ssi_hello(
     qvi_rmi_server_t *server,
     qvi_msg_header_t *hdr,
     void *input,
-    qvi_bbuff_t **output
+    qvi_bbuff **output
 ) {
     // TODO(skg) This will go into some registry somewhere.
     pid_t whoisit;
@@ -518,7 +518,7 @@ rpc_ssi_gbye(
     qvi_rmi_server_t *,
     qvi_msg_header_t *,
     void *,
-    qvi_bbuff_t **
+    qvi_bbuff **
 ) {
     return QV_ERR_INVLD_ARG;
 }
@@ -528,7 +528,7 @@ rpc_ssi_cpubind(
     qvi_rmi_server_t *server,
     qvi_msg_header_t *hdr,
     void *input,
-    qvi_bbuff_t **output
+    qvi_bbuff **output
 ) {
     pid_t who;
     int qvrc = qvi_bbuff_rmi_unpack(input, &who);
@@ -549,7 +549,7 @@ rpc_ssi_set_cpubind(
     qvi_rmi_server_t *server,
     qvi_msg_header_t *hdr,
     void *input,
-    qvi_bbuff_t **output
+    qvi_bbuff **output
 ) {
     pid_t who;
     hwloc_cpuset_t cpuset = nullptr;
@@ -568,7 +568,7 @@ rpc_ssi_obj_type_depth(
     qvi_rmi_server_t *server,
     qvi_msg_header_t *hdr,
     void *input,
-    qvi_bbuff_t **output
+    qvi_bbuff **output
 ) {
     qv_hw_obj_type_t obj;
     const int qvrc = qvi_bbuff_rmi_unpack(
@@ -589,7 +589,7 @@ rpc_ssi_get_nobjs_in_cpuset(
     qvi_rmi_server_t *server,
     qvi_msg_header_t *hdr,
     void *input,
-    qvi_bbuff_t **output
+    qvi_bbuff **output
 ) {
     qv_hw_obj_type_t target_obj;
     hwloc_cpuset_t cpuset = nullptr;
@@ -614,7 +614,7 @@ rpc_ssi_get_device_in_cpuset(
     qvi_rmi_server_t *server,
     qvi_msg_header_t *hdr,
     void *input,
-    qvi_bbuff_t **output
+    qvi_bbuff **output
 ) {
     qv_hw_obj_type_t dev_obj;
     int dev_i;
@@ -641,10 +641,10 @@ static int
 get_intrinsic_scope_user(
     qvi_rmi_server_t *server,
     pid_t,
-    qvi_hwpool_s **hwpool
+    qvi_hwpool **hwpool
 ) {
     // TODO(skg) Is the cpuset the best way to do this?
-    return qvi_hwpool_s::create(
+    return qvi_hwpool::create(
         server->config.hwloc,
         qvi_hwloc_topo_get_cpuset(server->config.hwloc),
         hwpool
@@ -655,7 +655,7 @@ static int
 get_intrinsic_scope_proc(
     qvi_rmi_server_t *server,
     pid_t who,
-    qvi_hwpool_s **hwpool
+    qvi_hwpool **hwpool
 ) {
     hwloc_cpuset_t cpuset = nullptr;
     int rc = qvi_hwloc_task_get_cpubind(
@@ -663,7 +663,7 @@ get_intrinsic_scope_proc(
     );
     if (rc != QV_SUCCESS) goto out;
 
-    rc = qvi_hwpool_s::create(
+    rc = qvi_hwpool::create(
         server->config.hwloc, cpuset, hwpool
     );
 out:
@@ -680,7 +680,7 @@ rpc_ssi_scope_get_intrinsic_hwpool(
     qvi_rmi_server_t *server,
     qvi_msg_header_t *hdr,
     void *input,
-    qvi_bbuff_t **output
+    qvi_bbuff **output
 ) {
     // Get requestor task id (type and pid) and intrinsic scope as integers
     // from client request.
@@ -691,7 +691,7 @@ rpc_ssi_scope_get_intrinsic_hwpool(
 
     int rpcrc = QV_SUCCESS;
     // TODO(skg) Implement the rest.
-    qvi_hwpool_s *hwpool = nullptr;
+    qvi_hwpool *hwpool = nullptr;
     switch (iscope) {
         case QV_SCOPE_SYSTEM:
         case QV_SCOPE_USER:
@@ -752,7 +752,7 @@ server_rpc_dispatch(
         goto out;
     }
 
-    qvi_bbuff_t *res;
+    qvi_bbuff *res;
     rc = fidfunp->second(server, &hdr, body, &res);
     if (rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN) {
         cstr_t ers = "RPC dispatch failed";
@@ -988,7 +988,7 @@ qvi_rmi_get_intrinsic_hwpool(
     qvi_rmi_client_t *client,
     pid_t who,
     qv_scope_intrinsic_t iscope,
-    qvi_hwpool_s **hwpool
+    qvi_hwpool **hwpool
 ) {
     *hwpool = nullptr;
 

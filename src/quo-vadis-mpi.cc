@@ -64,7 +64,7 @@ qvi_mpi_scope_get(
     const int rc = qvi_new(&izgroup, comm);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    return qv_scope_s::make_intrinsic(izgroup, iscope, scope);
+    return qv_scope::make_intrinsic(izgroup, iscope, scope);
 }
 
 int
@@ -87,7 +87,7 @@ qvi_mpi_scope_comm_dup(
     qv_scope_t *scope,
     MPI_Comm *comm
 ) {
-    return dynamic_cast<qvi_group_mpi_t *>(scope->group())->comm_dup(comm);
+    return dynamic_cast<qvi_group_mpi *>(scope->group())->comm_dup(comm);
 }
 
 int

@@ -57,7 +57,7 @@ cpus_available(
 #if 0
 static int
 pool_obtain_cpus_by_cpuset(
-    qvi_hwpool_s *pool,
+    qvi_hwpool *pool,
     hwloc_const_cpuset_t request
 ) {
 #if 0
@@ -83,7 +83,7 @@ pool_obtain_cpus_by_cpuset(
 #if 0
 static int
 pool_release_cpus_by_cpuset(
-    qvi_hwpool_s *pool,
+    qvi_hwpool *pool,
     hwloc_const_cpuset_t release
 ) {
     int hwrc = hwloc_bitmap_andnot(
@@ -126,7 +126,7 @@ pool_release_cpus_by_cpuset(
 // approach using the device IDs instead of the bit positions.
 
 /** Maintains a mapping between IDs to device information. */
-using id2devs_t = std::multimap<int, const qvi_hwpool_dev_s *>;
+using id2devs_t = std::multimap<int, const qvi_hwpool_dev *>;
 
 qvi_hwsplit_s::qvi_hwsplit_s(
     qv_scope_t *parent,
@@ -293,7 +293,7 @@ qvi_hwsplit_s::split_devices_user_defined(void)
         // Get the number of devices.
         const uint_t ndevs = dinfos.count(devt);
         // Store device infos.
-        std::vector<const qvi_hwpool_dev_s *> devs;
+        std::vector<const qvi_hwpool_dev *> devs;
         for (const auto &dinfo : dinfos) {
             // Not the type we are currently dealing with.
             if (devt != dinfo.first) continue;
@@ -339,7 +339,7 @@ qvi_hwsplit_s::split_devices_affinity_preserving(void)
     // Iterate over the supported device types and split them up.
     for (const auto devt : qvi_hwloc_supported_devices()) {
         // Store device infos.
-        std::vector<const qvi_hwpool_dev_s *> devs;
+        std::vector<const qvi_hwpool_dev *> devs;
         for (const auto &dinfo : dinfos) {
             // Not the type we are currently dealing with.
             if (devt != dinfo.first) continue;
@@ -376,7 +376,7 @@ apply_cpuset_mapping(
     qvi_hwloc_t *hwloc,
     const qvi_map_t &map,
     const qvi_hwloc_cpusets_t cpusets,
-    std::vector<qvi_hwpool_s *> &hwpools,
+    std::vector<qvi_hwpool *> &hwpools,
     std::vector<int> &colors
 ) {
     int rc = QV_SUCCESS;
@@ -549,7 +549,7 @@ qvi_hwsplit_coll_s::qvi_hwsplit_coll_s(
 ) : m_parent(parent)
   , m_color(color)
 {
-    const qvi_group_t *const pgroup = m_parent->group();
+    const qvi_group *const pgroup = m_parent->group();
     if (pgroup->rank() == qvi_hwsplit_coll_s::s_rootid) {
         m_hwsplit = qvi_hwsplit_s(
             m_parent, pgroup->size(), npieces, split_at_type
@@ -566,10 +566,10 @@ qvi_hwsplit_coll_s::scatter_values(
     static_assert(std::is_trivially_copyable<TYPE>::value, "");
 
     int rc = QV_SUCCESS;
-    qvi_bbuff_t *rxbuff = nullptr;
+    qvi_bbuff *rxbuff = nullptr;
 
-    qvi_group_t *const group = m_parent->group();
-    std::vector<qvi_bbuff_t *> txbuffs(0);
+    qvi_group *const group = m_parent->group();
+    std::vector<qvi_bbuff *> txbuffs(0);
     if (group->rank() == s_rootid) {
         const uint_t group_size = group->size();
         txbuffs.resize(group_size);
@@ -606,7 +606,7 @@ qvi_hwsplit_coll_s::bcast_value(
     TYPE *value
 ) {
     static_assert(std::is_trivially_copyable<TYPE>::value, "");
-    qvi_group_t *const group = m_parent->group();
+    qvi_group *const group = m_parent->group();
 
     std::vector<TYPE> values;
     if (group->rank() == s_rootid) {
@@ -623,10 +623,10 @@ qvi_hwsplit_coll_s::gather_values(
     std::vector<TYPE> &outvals
 ) {
     static_assert(std::is_trivially_copyable<TYPE>::value, "");
-    qvi_group_t *const group = m_parent->group();
+    qvi_group *const group = m_parent->group();
     const uint_t group_size = group->size();
 
-    qvi_bbuff_t *txbuff = nullptr;
+    qvi_bbuff *txbuff = nullptr;
     int rc = qvi_bbuff_new(&txbuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
@@ -637,7 +637,7 @@ qvi_hwsplit_coll_s::gather_values(
     }
     // Gather the values to the root.
     bool shared = false;
-    qvi_bbuff_t **bbuffs = nullptr;
+    qvi_bbuff **bbuffs = nullptr;
     rc = group->gather(txbuff, s_rootid, &shared, &bbuffs);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // The root fills in the output.
@@ -667,18 +667,18 @@ out:
 
 int
 qvi_hwsplit_coll_s::gather_hwpools(
-    qvi_hwpool_s *txpool,
-    std::vector<qvi_hwpool_s *> &rxpools
+    qvi_hwpool *txpool,
+    std::vector<qvi_hwpool *> &rxpools
 ) {
-    qvi_group_t *const group = m_parent->group();
+    qvi_group *const group = m_parent->group();
     const uint_t group_size = group->size();
     // Pack the hardware pool into a buffer.
-    qvi_bbuff_t txbuff;
+    qvi_bbuff txbuff;
     int rc = txpool->packinto(&txbuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Gather the values to the root.
     bool shared = false;
-    qvi_bbuff_t **bbuffs = nullptr;
+    qvi_bbuff **bbuffs = nullptr;
     rc = group->gather(&txbuff, s_rootid, &shared, &bbuffs);
     if (rc != QV_SUCCESS) goto out;
 
@@ -711,7 +711,7 @@ out:
 int
 qvi_hwsplit_coll_s::gather(void)
 {
-    int rc = gather_values(qvi_task_t::mytid(), m_hwsplit.m_group_tids);
+    int rc = gather_values(qvi_task::mytid(), m_hwsplit.m_group_tids);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     rc = gather_values(m_color, m_hwsplit.m_colors);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
@@ -739,14 +739,14 @@ qvi_hwsplit_coll_s::gather(void)
 
 int
 qvi_hwsplit_coll_s::scatter_hwpools(
-    const std::vector<qvi_hwpool_s *> &pools,
-    qvi_hwpool_s **pool
+    const std::vector<qvi_hwpool *> &pools,
+    qvi_hwpool **pool
 ) {
     int rc = QV_SUCCESS;
-    std::vector<qvi_bbuff_t *> txbuffs(0);
-    qvi_bbuff_t *rxbuff = nullptr;
+    std::vector<qvi_bbuff *> txbuffs(0);
+    qvi_bbuff *rxbuff = nullptr;
 
-    qvi_group_t *const group = m_parent->group();
+    qvi_group *const group = m_parent->group();
 
     if (group->rank() == s_rootid) {
         const uint_t group_size = group->size();
@@ -780,7 +780,7 @@ out:
 int
 qvi_hwsplit_coll_s::scatter(
     int *colorp,
-    qvi_hwpool_s **result
+    qvi_hwpool **result
 ) {
     const int rc = scatter_values(m_hwsplit.m_colors, colorp);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
@@ -796,7 +796,7 @@ qvi_hwsplit_coll_s::barrier(void)
 int
 qvi_hwsplit_coll_s::split(
     int *colorp,
-    qvi_hwpool_s **result
+    qvi_hwpool **result
 ) {
     // First consolidate the provided information, as this is coming from a
     // SPMD-like context (e.g., splitting a resource shared by MPI processes).

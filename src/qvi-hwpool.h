@@ -22,7 +22,7 @@
 /**
  * Base hardware pool resource class.
  */
-struct qvi_hwpool_res_s {
+struct qvi_hwpool_res {
 protected:
     /** Resource hint flags. */
     qv_scope_create_hints_t m_hints = QV_SCOPE_CREATE_HINT_NONE;
@@ -48,18 +48,18 @@ public:
  * Defines a hardware pool CPU. A CPU here may have multiple
  * processing units (PUs), which are defined as the CPU's affinity.
  */
-struct qvi_hwpool_cpu_s : qvi_hwpool_res_s {
+struct qvi_hwpool_cpu : qvi_hwpool_res {
     /** Packs the instance into the provided buffer. */
     int
     packinto(
-        qvi_bbuff_t *buff
+        qvi_bbuff *buff
     ) const;
     /** Unpacks the buffer and creates a new hardware pool instance. */
     static int
     unpack(
         byte_t *buffpos,
         size_t *bytes_written,
-        qvi_hwpool_cpu_s &cpu
+        qvi_hwpool_cpu &cpu
     );
 };
 
@@ -67,7 +67,7 @@ struct qvi_hwpool_cpu_s : qvi_hwpool_res_s {
  * Defines a hardware pool device. This differs from a qvi_hwloc_device_s
  * because we only maintain information relevant for user-facing operations.
  */
-struct qvi_hwpool_dev_s : qvi_hwpool_res_s {
+struct qvi_hwpool_dev : qvi_hwpool_res {
 private:
     /** Device type. */
     qv_hw_obj_type_t m_type = QV_HW_OBJ_LAST;
@@ -81,21 +81,21 @@ private:
     std::string m_uuid;
 public:
     /** Default constructor. */
-    qvi_hwpool_dev_s(void) = default;
+    qvi_hwpool_dev(void) = default;
     /** Constructor using qvi_hwloc_device_s. */
-    explicit qvi_hwpool_dev_s(
+    explicit qvi_hwpool_dev(
         const qvi_hwloc_device_s &dev
     );
     /** Constructor using std::shared_ptr<qvi_hwloc_device_s>. */
-    explicit qvi_hwpool_dev_s(
+    explicit qvi_hwpool_dev(
         const std::shared_ptr<qvi_hwloc_device_s> &shdev
     );
     /** Destructor. */
-    virtual ~qvi_hwpool_dev_s(void) = default;
+    virtual ~qvi_hwpool_dev(void) = default;
     /** Equality operator. */
     bool
     operator==(
-        const qvi_hwpool_dev_s &x
+        const qvi_hwpool_dev &x
     ) const;
     /** Returns the device's type. */
     qv_hw_obj_type_t
@@ -109,14 +109,14 @@ public:
     /** Packs the instance into the provided buffer. */
     int
     packinto(
-        qvi_bbuff_t *buff
+        qvi_bbuff *buff
     ) const;
     /** Unpacks the buffer and creates a new hardware pool device instance. */
     static int
     unpack(
         byte_t *buffpos,
         size_t *bytes_written,
-        qvi_hwpool_dev_s &dev
+        qvi_hwpool_dev &dev
     );
 };
 
@@ -124,13 +124,13 @@ public:
  * Maintains a mapping between device types and devices of those types.
  */
 using qvi_hwpool_devs_t = std::multimap<
-    qv_hw_obj_type_t, std::shared_ptr<qvi_hwpool_dev_s>
+    qv_hw_obj_type_t, std::shared_ptr<qvi_hwpool_dev>
 >;
 
-struct qvi_hwpool_s {
+struct qvi_hwpool {
 private:
     /** The hardware pool's CPU. */
-    qvi_hwpool_cpu_s m_cpu;
+    qvi_hwpool_cpu m_cpu;
     /** The hardware pool's devices. */
     qvi_hwpool_devs_t m_devs;
     /**
@@ -150,7 +150,7 @@ public:
     create(
         qvi_hwloc_t *hwloc,
         hwloc_const_cpuset_t cpuset,
-        qvi_hwpool_s **opool
+        qvi_hwpool **hwpool
     );
     /**
      * Initializes a hardware pool from the given
@@ -185,7 +185,7 @@ public:
      */
     int
     add_device(
-        const qvi_hwpool_dev_s &dev
+        const qvi_hwpool_dev &dev
     );
     /**
      * Releases all devices in the hwpool.
@@ -195,14 +195,14 @@ public:
     /** Packs the instance into the provided buffer. */
     int
     packinto(
-        qvi_bbuff_t *buff
+        qvi_bbuff *buff
     ) const;
     /** Unpacks the buffer and creates a new hardware pool instance. */
     static int
     unpack(
         byte_t *buffpos,
         size_t *bytes_written,
-        qvi_hwpool_s **hwp
+        qvi_hwpool **hwp
     );
 };
 

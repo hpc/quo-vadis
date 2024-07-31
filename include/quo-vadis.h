@@ -39,8 +39,8 @@ extern "C" {
 #define QUO_VADIS_API_VERSION 0x00000001
 
 /** Opaque quo-vadis scope. */
-struct qv_scope_s;
-typedef struct qv_scope_s qv_scope_t;
+struct qv_scope;
+typedef struct qv_scope qv_scope_t;
 
 /**
  * Return codes.
