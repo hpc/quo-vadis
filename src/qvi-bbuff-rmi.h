@@ -18,7 +18,7 @@
  * c = hwloc_cpuset_t
  * c = qvi_hwloc_bitmap_s
  * d = qv_scope_create_hints_t
- * h = qvi_hwpool_s *
+ * h = qvi_hwpool *
  * i = int
  * s = char *
  * s = std::string
@@ -122,7 +122,7 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
-    const qvi_hwpool_s *
+    const qvi_hwpool *
 ) {
     picture += "h";
 }
@@ -131,7 +131,7 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
-    qvi_hwpool_s *
+    qvi_hwpool *
 ) {
     picture += "h";
 }
@@ -140,7 +140,7 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
-    qvi_hwpool_s **
+    qvi_hwpool **
 ) {
     picture += "h";
 }
@@ -286,7 +286,7 @@ qvi_bbuff_rmi_get_picture
 template<typename T>
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *,
+    qvi_bbuff *,
     T
 );
 
@@ -295,7 +295,7 @@ qvi_bbuff_rmi_pack_item(
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     size_t data
 ) {
     return buff->append(&data, sizeof(data));
@@ -306,7 +306,7 @@ qvi_bbuff_rmi_pack_item(
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     int data
 ) {
     return buff->append(&data, sizeof(data));
@@ -317,7 +317,7 @@ qvi_bbuff_rmi_pack_item(
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     qv_scope_create_hints_t data
 ) {
     const int dai = (int)data;
@@ -329,7 +329,7 @@ qvi_bbuff_rmi_pack_item(
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     qv_hw_obj_type_t data
 ) {
     const int dai = (int)data;
@@ -341,7 +341,7 @@ qvi_bbuff_rmi_pack_item(
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     qv_device_id_type_t data
 ) {
     const int dai = (int)data;
@@ -353,7 +353,7 @@ qvi_bbuff_rmi_pack_item(
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     qv_scope_intrinsic_t data
 ) {
     const int dai = (int)data;
@@ -366,7 +366,7 @@ qvi_bbuff_rmi_pack_item(
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     pid_t data
 ) {
     const int dai = (int)data;
@@ -376,7 +376,7 @@ qvi_bbuff_rmi_pack_item(
 
 inline int
 qvi_bbuff_rmi_pack_item_impl(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     cstr_t data
 ) {
     return buff->append(data, strlen(data) + 1);
@@ -387,7 +387,7 @@ qvi_bbuff_rmi_pack_item_impl(
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     const std::string &data
 ) {
     return qvi_bbuff_rmi_pack_item_impl(buff, data.c_str());
@@ -398,7 +398,7 @@ qvi_bbuff_rmi_pack_item(
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     cstr_t data
 ) {
     return qvi_bbuff_rmi_pack_item_impl(buff, data);
@@ -409,7 +409,7 @@ qvi_bbuff_rmi_pack_item(
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     char *data
 ) {
     return qvi_bbuff_rmi_pack_item_impl(buff, data);
@@ -420,7 +420,7 @@ qvi_bbuff_rmi_pack_item(
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *,
+    qvi_bbuff *,
     qvi_bbuff_rmi_zero_msg_t
 ) {
     return QV_SUCCESS;
@@ -431,7 +431,7 @@ qvi_bbuff_rmi_pack_item(
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     qvi_bbuff_rmi_bytes_in_t data
 ) {
     // We store size then data so unpack has an easier time, but keep
@@ -447,7 +447,7 @@ qvi_bbuff_rmi_pack_item(
  */
 inline int
 qvi_bbuff_rmi_pack_item_impl(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     hwloc_const_cpuset_t data
 ) {
     // Protect against null data.
@@ -472,7 +472,7 @@ qvi_bbuff_rmi_pack_item_impl(
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     hwloc_cpuset_t data
 ) {
     return qvi_bbuff_rmi_pack_item_impl(buff, data);
@@ -483,7 +483,7 @@ qvi_bbuff_rmi_pack_item(
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     const qvi_hwloc_bitmap_s &bitmap
 ) {
     return qvi_bbuff_rmi_pack_item_impl(buff, bitmap.cdata());
@@ -494,7 +494,7 @@ qvi_bbuff_rmi_pack_item(
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     hwloc_const_cpuset_t data
 ) {
     return qvi_bbuff_rmi_pack_item_impl(buff, data);
@@ -505,8 +505,8 @@ qvi_bbuff_rmi_pack_item(
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
-    const qvi_hwpool_cpu_s &data
+    qvi_bbuff *buff,
+    const qvi_hwpool_cpu &data
 ) {
     return data.packinto(buff);
 }
@@ -516,37 +516,37 @@ qvi_bbuff_rmi_pack_item(
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
-    qvi_hwpool_dev_s *data
+    qvi_bbuff *buff,
+    qvi_hwpool_dev *data
 ) {
     return data->packinto(buff);
 }
 
 /**
- * Packs qvi_hwpool_s *
+ * Packs qvi_hwpool *
  */
 inline int
 qvi_bbuff_rmi_pack_item_impl(
-    qvi_bbuff_t *buff,
-    const qvi_hwpool_s *data
+    qvi_bbuff *buff,
+    const qvi_hwpool *data
 ) {
     return data->packinto(buff);
 }
 
 /**
- * Packs qvi_hwpool_s *
+ * Packs qvi_hwpool *
  */
 inline int
 qvi_bbuff_rmi_pack_item(
-    qvi_bbuff_t *buff,
-    qvi_hwpool_s *data
+    qvi_bbuff *buff,
+    qvi_hwpool *data
 ) {
     return qvi_bbuff_rmi_pack_item_impl(buff, data);
 }
 
 inline int
 qvi_bbuff_rmi_pack(
-    qvi_bbuff_t *
+    qvi_bbuff *
 ) {
     // Base case
     return QV_SUCCESS;
@@ -555,7 +555,7 @@ qvi_bbuff_rmi_pack(
 template<typename T, typename... Types>
 inline int
 qvi_bbuff_rmi_pack(
-    qvi_bbuff_t *buff,
+    qvi_bbuff *buff,
     T&& arg,
     Types &&...args
 ) {
@@ -817,11 +817,11 @@ qvi_bbuff_rmi_unpack_item(
  */
 inline int
 qvi_bbuff_rmi_unpack_item(
-    qvi_hwpool_cpu_s &cpu,
+    qvi_hwpool_cpu &cpu,
     byte_t *buffpos,
     size_t *bytes_written
 ) {
-    return qvi_hwpool_cpu_s::unpack(buffpos, bytes_written, cpu);
+    return qvi_hwpool_cpu::unpack(buffpos, bytes_written, cpu);
 }
 
 /**
@@ -829,23 +829,23 @@ qvi_bbuff_rmi_unpack_item(
  */
 inline int
 qvi_bbuff_rmi_unpack_item(
-    qvi_hwpool_dev_s &dev,
+    qvi_hwpool_dev &dev,
     byte_t *buffpos,
     size_t *bytes_written
 ) {
-    return qvi_hwpool_dev_s::unpack(buffpos, bytes_written, dev);
+    return qvi_hwpool_dev::unpack(buffpos, bytes_written, dev);
 }
 
 /**
- * Unpacks qvi_hwpool_s **
+ * Unpacks qvi_hwpool **
  */
 inline int
 qvi_bbuff_rmi_unpack_item(
-    qvi_hwpool_s **hwp,
+    qvi_hwpool **hwp,
     byte_t *buffpos,
     size_t *bytes_written
 ) {
-    return qvi_hwpool_s::unpack(buffpos, bytes_written, hwp);
+    return qvi_hwpool::unpack(buffpos, bytes_written, hwp);
 }
 
 /**

@@ -29,13 +29,13 @@ qvi_omp_scope_get(
     qv_scope_t **scope
 ) {
     // Create the base process group.
-    qvi_group_omp_s *zgroup = nullptr;
+    qvi_group_omp *zgroup = nullptr;
     const int rc = qvi_new(&zgroup);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         *scope = nullptr;
         return rc;
     }
-    return qv_scope_s::make_intrinsic(zgroup, iscope, scope);
+    return qv_scope::make_intrinsic(zgroup, iscope, scope);
 }
 
 int

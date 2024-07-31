@@ -21,25 +21,25 @@
 #include "qvi-group.h"
 #include "qvi-mpi.h"
 
-struct qvi_group_mpi_s : public qvi_group_s {
+struct qvi_group_mpi : public qvi_group {
 protected:
     /** Task associated with this group. */
-    qvi_task_t *m_task = nullptr;
+    qvi_task *m_task = nullptr;
     /** Points to the base MPI context information. */
     qvi_mpi_t *m_mpi = nullptr;
     /** Underlying group instance. */
     qvi_mpi_group_t *m_mpi_group = nullptr;
 public:
     /** Default constructor. */
-    qvi_group_mpi_s(void);
+    qvi_group_mpi(void);
     /** Constructor. */
-    qvi_group_mpi_s(
+    qvi_group_mpi(
         qvi_mpi_t *mpi_ctx
     );
     /** Destructor. */
-    virtual ~qvi_group_mpi_s(void);
+    virtual ~qvi_group_mpi(void);
 
-    virtual qvi_task_t *
+    virtual qvi_task *
     task(void)
     {
         return m_task;
@@ -70,22 +70,22 @@ public:
 
     virtual int
     self(
-        qvi_group_s **child
+        qvi_group **child
     );
 
     virtual int
     split(
         int color,
         int key,
-        qvi_group_s **child
+        qvi_group **child
     );
 
     virtual int
     gather(
-        qvi_bbuff_t *txbuff,
+        qvi_bbuff *txbuff,
         int root,
         bool *shared,
-        qvi_bbuff_t ***rxbuffs
+        qvi_bbuff ***rxbuffs
     ) {
         return qvi_mpi_group_gather_bbuffs(
             m_mpi_group, txbuff, root, shared, rxbuffs
@@ -94,9 +94,9 @@ public:
 
     virtual int
     scatter(
-        qvi_bbuff_t **txbuffs,
+        qvi_bbuff **txbuffs,
         int root,
-        qvi_bbuff_t **rxbuff
+        qvi_bbuff **rxbuff
     ) {
         return qvi_mpi_group_scatter_bbuffs(
             m_mpi_group, txbuffs, root, rxbuff
@@ -110,9 +110,8 @@ public:
         return qvi_mpi_group_comm_dup(m_mpi_group, comm);
     }
 };
-typedef qvi_group_mpi_s qvi_group_mpi_t;
 
-struct qvi_zgroup_mpi_s : public qvi_group_mpi_s {
+struct qvi_zgroup_mpi_s : public qvi_group_mpi {
     /** Default constructor. */
     qvi_zgroup_mpi_s(void) = delete;
     /** Constructor. */

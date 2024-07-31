@@ -18,19 +18,19 @@
 #include "qvi-group.h"
 #include "qvi-process.h"
 
-struct qvi_group_process_s : public qvi_group_s {
+struct qvi_group_process : public qvi_group {
 protected:
     /** Task associated with this group. */
-    qvi_task_t *m_task = nullptr;
+    qvi_task *m_task = nullptr;
     /** Underlying group instance. */
     qvi_process_group_t *m_proc_group = nullptr;
 public:
     /** Constructor. */
-    qvi_group_process_s(void);
+    qvi_group_process(void);
     /** Destructor. */
-    virtual ~qvi_group_process_s(void);
+    virtual ~qvi_group_process(void);
 
-    virtual qvi_task_t *
+    virtual qvi_task *
     task(void)
     {
         return m_task;
@@ -65,14 +65,14 @@ public:
 
     virtual int
     self(
-        qvi_group_s **child
+        qvi_group **child
     );
 
     virtual int
     split(
         int,
         int,
-        qvi_group_s **child
+        qvi_group **child
     ) {
         // NOTE: The concept of coloring with a provided key doesn't apply here,
         // so ignore.  Also, because this is in the context of a process, the
@@ -83,10 +83,10 @@ public:
 
     virtual int
     gather(
-        qvi_bbuff_t *txbuff,
+        qvi_bbuff *txbuff,
         int root,
         bool *shared,
-        qvi_bbuff_t ***rxbuffs
+        qvi_bbuff ***rxbuffs
     ) {
         return qvi_process_group_gather_bbuffs(
             m_proc_group, txbuff, root, shared, rxbuffs
@@ -95,16 +95,15 @@ public:
 
     virtual int
     scatter(
-        qvi_bbuff_t **txbuffs,
+        qvi_bbuff **txbuffs,
         int root,
-        qvi_bbuff_t **rxbuff
+        qvi_bbuff **rxbuff
     ) {
         return qvi_process_group_scatter_bbuffs(
             m_proc_group, txbuffs, root, rxbuff
         );
     }
 };
-typedef qvi_group_process_s qvi_group_process_t;
 
 #endif
 

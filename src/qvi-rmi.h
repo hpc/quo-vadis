@@ -117,7 +117,7 @@ qvi_rmi_get_intrinsic_hwpool(
     qvi_rmi_client_t *client,
     pid_t task_id,
     qv_scope_intrinsic_t iscope,
-    qvi_hwpool_s **hwpool
+    qvi_hwpool **hwpool
 );
 
 /**

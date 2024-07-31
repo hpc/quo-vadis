@@ -98,7 +98,7 @@ struct qvi_mpi_s {
         qvi_group_id_t gid = given_id;
         // Marker used to differentiate between intrinsic and automatic IDs.
         if (given_id == QVI_MPI_GROUP_NULL) {
-            const int rc = qvi_group_t::next_id(&gid);
+            const int rc = qvi_group::next_id(&gid);
             if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
         }
         group_tab.insert({gid, group});
@@ -363,10 +363,10 @@ qvi_mpi_group_barrier(
 int
 qvi_mpi_group_gather_bbuffs(
     qvi_mpi_group_t *group,
-    qvi_bbuff_t *txbuff,
+    qvi_bbuff *txbuff,
     int root,
     bool *shared_alloc,
-    qvi_bbuff_t ***rxbuffs
+    qvi_bbuff ***rxbuffs
 ) {
     const int send_count = (int)txbuff->size();
     const int group_id = group->qvcomm.rank;
@@ -375,7 +375,7 @@ qvi_mpi_group_gather_bbuffs(
     int rc = QV_SUCCESS, mpirc = MPI_SUCCESS;
     std::vector<int> rxcounts, displs;
     std::vector<byte_t> allbytes;
-    qvi_bbuff_t **bbuffs = nullptr;
+    qvi_bbuff **bbuffs = nullptr;
 
     if (group_id == root) {
         rxcounts.resize(group_size);
@@ -413,7 +413,7 @@ qvi_mpi_group_gather_bbuffs(
     }
     // Root creates new buffers from data gathered from each participant.
     if (group_id == root) {
-        bbuffs = new qvi_bbuff_t *[group_size];
+        bbuffs = new qvi_bbuff *[group_size];
         byte_t *bytepos = allbytes.data();
         for (int i = 0; i < group_size; ++i) {
             rc = qvi_bbuff_new(&bbuffs[i]);
@@ -441,9 +441,9 @@ out:
 int
 qvi_mpi_group_scatter_bbuffs(
     qvi_mpi_group_t *group,
-    qvi_bbuff_t **txbuffs,
+    qvi_bbuff **txbuffs,
     int root,
-    qvi_bbuff_t **rxbuff
+    qvi_bbuff **rxbuff
 ) {
     const int group_size = group->qvcomm.size;
     const int group_id = group->qvcomm.rank;
@@ -452,7 +452,7 @@ qvi_mpi_group_scatter_bbuffs(
     int total_bytes = 0;
     std::vector<int> txcounts, displs;
     std::vector<byte_t> mybytes, txbytes;
-    qvi_bbuff_t *mybbuff = nullptr;
+    qvi_bbuff *mybbuff = nullptr;
     // Root sets up relevant Scatterv data structures.
     if (group_id == root) {
         txcounts.resize(group_size);

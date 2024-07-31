@@ -21,24 +21,24 @@
 #include "qvi-group.h"
 #include "qvi-hwpool.h"
 
-struct qv_scope_s {
+struct qv_scope {
 private:
     /** Task group associated with this scope instance. */
-    qvi_group_t *m_group = nullptr;
+    qvi_group *m_group = nullptr;
     /** Hardware resource pool. */
-    qvi_hwpool_s *m_hwpool = nullptr;
+    qvi_hwpool *m_hwpool = nullptr;
 public:
     /** Constructor */
-    qv_scope_s(void) = delete;
+    qv_scope(void) = delete;
     /** Constructor */
-    qv_scope_s(
-        qvi_group_t *group,
-        qvi_hwpool_s *hwpool
+    qv_scope(
+        qvi_group *group,
+        qvi_hwpool *hwpool
     );
     /** Takes the provided group and creates a new intrinsic scope from it. */
     static int
     make_intrinsic(
-        qvi_group_t *group,
+        qvi_group *group,
         qv_scope_intrinsic_t iscope,
         qv_scope_t **scope
     );
@@ -54,7 +54,7 @@ public:
         qv_scope_t **child
     );
     /** Destructor */
-    ~qv_scope_s(void);
+    ~qv_scope(void);
     /** Destroys a scope. */
     static void
     destroy(
@@ -67,10 +67,10 @@ public:
         uint_t k
     );
     /** Returns a pointer to the scope's underlying group. */
-    qvi_group_t *
+    qvi_group *
     group(void) const;
     /** Returns a pointer to the scope's underlying hardware pool. */
-    qvi_hwpool_s *
+    qvi_hwpool *
     hwpool(void) const;
     /** Returns the scope's group size. */
     int

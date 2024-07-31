@@ -61,10 +61,10 @@ qvi_process_group_barrier(
 int
 qvi_process_group_gather_bbuffs(
     qvi_process_group_t *group,
-    qvi_bbuff_t *txbuff,
+    qvi_bbuff *txbuff,
     int root,
     bool *shared,
-    qvi_bbuff_t ***rxbuffs
+    qvi_bbuff ***rxbuffs
 ) {
     const int group_size = qvi_process_group_size(group);
     // Make sure that we are dealing with a valid process group.
@@ -73,7 +73,7 @@ qvi_process_group_gather_bbuffs(
         qvi_abort();
     }
     // Zero initialize array of pointers to nullptr.
-    qvi_bbuff_t **bbuffs = new qvi_bbuff_t *[group_size]();
+    qvi_bbuff **bbuffs = new qvi_bbuff *[group_size]();
 
     const int rc = qvi_bbuff_dup(*txbuff, &bbuffs[0]);
     if (rc != QV_SUCCESS) {
@@ -91,9 +91,9 @@ qvi_process_group_gather_bbuffs(
 int
 qvi_process_group_scatter_bbuffs(
     qvi_process_group_t *group,
-    qvi_bbuff_t **txbuffs,
+    qvi_bbuff **txbuffs,
     int root,
-    qvi_bbuff_t **rxbuff
+    qvi_bbuff **rxbuff
 ) {
     const int group_size = qvi_process_group_size(group);
     // Make sure that we are dealing with a valid process group.
@@ -102,7 +102,7 @@ qvi_process_group_scatter_bbuffs(
         qvi_abort();
     }
     // There should always be only one at the root (us).
-    qvi_bbuff_t *mybbuff = nullptr;
+    qvi_bbuff *mybbuff = nullptr;
     const int rc = qvi_bbuff_dup(*txbuffs[root], &mybbuff);
     if (rc != QV_SUCCESS) {
         qvi_bbuff_delete(&mybbuff);

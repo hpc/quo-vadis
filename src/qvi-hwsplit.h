@@ -34,7 +34,7 @@ struct qvi_hwsplit_s {
     /** A pointer to my RMI. */
     qvi_rmi_client_t *m_rmi = nullptr;
     /** The base hardware pool we are splitting. */
-    qvi_hwpool_s *m_hwpool = nullptr;
+    qvi_hwpool *m_hwpool = nullptr;
     /** The number of members that are part of the split. */
     uint_t m_group_size = 0;
     /** The number of pieces in the split. */
@@ -58,7 +58,7 @@ struct qvi_hwsplit_s {
      * number of hardware pools will always match the group size and that their
      * array index corresponds to a task ID: 0 ... group_size - 1.
      */
-    std::vector<qvi_hwpool_s *> m_hwpools;
+    std::vector<qvi_hwpool *> m_hwpools;
     /**
      * Vector of colors, one for each member of the group. Note that the number
      * of colors will always match the group size and that their array index
@@ -208,8 +208,8 @@ struct qvi_hwsplit_coll_s {
     /** */
     int
     gather_hwpools(
-        qvi_hwpool_s *txpool,
-        std::vector<qvi_hwpool_s *> &rxpools
+        qvi_hwpool *txpool,
+        std::vector<qvi_hwpool *> &rxpools
     );
     /** Gathers. */
     int
@@ -217,14 +217,14 @@ struct qvi_hwsplit_coll_s {
     /** */
     int
     scatter_hwpools(
-        const std::vector<qvi_hwpool_s *> &pools,
-        qvi_hwpool_s **pool
+        const std::vector<qvi_hwpool *> &pools,
+        qvi_hwpool **pool
     );
     /** */
     int
     scatter(
         int *colorp,
-        qvi_hwpool_s **result
+        qvi_hwpool **result
     );
     /** */
     int
@@ -238,7 +238,7 @@ struct qvi_hwsplit_coll_s {
     int
     split(
         int *colorp,
-        qvi_hwpool_s **result
+        qvi_hwpool **result
     );
 };
 

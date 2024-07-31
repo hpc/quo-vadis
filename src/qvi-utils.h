@@ -24,11 +24,11 @@
 /**
  * Reference counting base class that provides retain/release semantics.
  */
-struct qvi_refc_s {
+struct qvi_refc {
 private:
     mutable std::atomic<int64_t> refc = {1};
 public:
-    virtual ~qvi_refc_s(void) = default;
+    virtual ~qvi_refc(void) = default;
 
     void
     retain(void) const

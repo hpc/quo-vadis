@@ -18,19 +18,19 @@
 #include "qvi-group.h"
 #include "qvi-pthread.h"
 
-struct qvi_group_pthread_s : public qvi_group_s {
+struct qvi_group_pthread : public qvi_group {
     /** Underlying group instance. */
     qvi_pthread_group_t *thgroup = nullptr;
     /** Constructor. */
-    qvi_group_pthread_s(void) = delete;
+    qvi_group_pthread(void) = delete;
     /** Constructor. */
-    qvi_group_pthread_s(
+    qvi_group_pthread(
         int group_size
     );
     /** Destructor. */
-    virtual ~qvi_group_pthread_s(void);
+    virtual ~qvi_group_pthread(void);
 
-    virtual qvi_task_t *
+    virtual qvi_task *
     task(void)
     {
         return thgroup->task();
@@ -64,13 +64,13 @@ struct qvi_group_pthread_s : public qvi_group_s {
 
     virtual int
     self(
-        qvi_group_s **child
+        qvi_group **child
     );
 
     virtual int
     thsplit(
         int,
-        qvi_group_s **
+        qvi_group **
     ) {
         // TODO(skg)
         return QV_ERR_NOT_SUPPORTED;
@@ -80,15 +80,15 @@ struct qvi_group_pthread_s : public qvi_group_s {
     split(
         int color,
         int key,
-        qvi_group_s **child
+        qvi_group **child
     );
 
     virtual int
     gather(
-        qvi_bbuff_t *txbuff,
+        qvi_bbuff *txbuff,
         int root,
         bool *shared,
-        qvi_bbuff_t ***rxbuffs
+        qvi_bbuff ***rxbuffs
     ) {
         return thgroup->gather(
            txbuff, root, shared, rxbuffs
@@ -97,16 +97,15 @@ struct qvi_group_pthread_s : public qvi_group_s {
 
     virtual int
     scatter(
-        qvi_bbuff_t **txbuffs,
+        qvi_bbuff **txbuffs,
         int root,
-        qvi_bbuff_t **rxbuff
+        qvi_bbuff **rxbuff
     ) {
         return thgroup->scatter(
             txbuffs, root, rxbuff
         );
     }
 };
-typedef qvi_group_pthread_s qvi_group_pthread_t;
 
 #endif
 

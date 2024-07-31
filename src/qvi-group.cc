@@ -17,17 +17,17 @@
 #include "qvi-utils.h"
 
 qvi_hwloc_t *
-qvi_group_s::hwloc(void)
+qvi_group::hwloc(void)
 {
     return task()->hwloc();
 }
 
 int
-qvi_group_s::thsplit(
+qvi_group::thsplit(
     int nthreads,
-    qvi_group_s **child
+    qvi_group **child
 ) {
-    qvi_group_pthread_t *ichild = nullptr;
+    qvi_group_pthread *ichild = nullptr;
     const int rc = qvi_new(&ichild, nthreads);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);
@@ -37,7 +37,7 @@ qvi_group_s::thsplit(
 }
 
 int
-qvi_group_s::next_id(
+qvi_group::next_id(
     qvi_group_id_t *gid
 ) {
     // Global group ID. Note that we pad its initial value so that other

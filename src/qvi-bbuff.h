@@ -21,7 +21,7 @@
 
 #include "qvi-common.h"
 
-struct qvi_bbuff_s {
+struct qvi_bbuff {
 private:
     /** Minimum growth in bytes for resizes, etc. */
     static constexpr size_t s_min_growth = 256;
@@ -33,16 +33,16 @@ private:
     void *m_data = nullptr;
 public:
     /** Constructor. */
-    qvi_bbuff_s(void);
+    qvi_bbuff(void);
     /** Copy constructor. */
-    qvi_bbuff_s(
-        const qvi_bbuff_s &src
+    qvi_bbuff(
+        const qvi_bbuff &src
     );
     /** Destructor. */
-    ~qvi_bbuff_s(void);
+    ~qvi_bbuff(void);
     /** Assignment operator. */
     void
-    operator=(const qvi_bbuff_s &src) = delete;
+    operator=(const qvi_bbuff &src) = delete;
     /** Returns the size of the data stored in the byte buffer. */
     size_t
     size(void) const;
@@ -62,18 +62,18 @@ public:
 
 int
 qvi_bbuff_new(
-    qvi_bbuff_t **buff
+    qvi_bbuff **buff
 );
 
 int
 qvi_bbuff_dup(
-    const qvi_bbuff_t &src,
-    qvi_bbuff_t **buff
+    const qvi_bbuff &src,
+    qvi_bbuff **buff
 );
 
 void
 qvi_bbuff_delete(
-    qvi_bbuff_t **buff
+    qvi_bbuff **buff
 );
 
 #endif

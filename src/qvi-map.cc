@@ -92,8 +92,8 @@ make_shared_affinity_map_disjoint(
 
 uint_t
 qvi_map_maxfit(
-    uint_t space_left,
-    uint_t max_chunk
+    uint_t max_chunk,
+    uint_t space_left
 ) {
     uint_t result = max_chunk;
     while (result > space_left) {
@@ -178,7 +178,7 @@ qvi_map_packed(
     uint_t nmapped = qvi_map_nfids_mapped(map);
     for (uint_t tid = 0; tid < ntres; ++tid) {
         // Number of consumer IDs to map.
-        const uint_t nmap = qvi_map_maxfit(nfids - nmapped, maxcpr);
+        const uint_t nmap = qvi_map_maxfit(maxcpr, nfids - nmapped);
         for (uint_t i = 0; i < nmap; ++i, ++fid) {
             // Already mapped (potentially by some other mapper).
             if (qvi_map_fid_mapped(map, fid)) continue;

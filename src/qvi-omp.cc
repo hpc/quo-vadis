@@ -168,17 +168,17 @@ qvi_omp_group_create_from_split(
 int
 qvi_omp_group_gather_bbuffs(
     qvi_omp_group_t *group,
-    qvi_bbuff_t *txbuff,
+    qvi_bbuff *txbuff,
     int,
     bool *shared_alloc,
-    qvi_bbuff_t ***rxbuffs
+    qvi_bbuff ***rxbuffs
 ) {
     const int group_size = group->size;
     const int group_rank = group->rank;
 
-    qvi_bbuff_t **bbuffs = nullptr;
+    qvi_bbuff **bbuffs = nullptr;
     #pragma omp single copyprivate(bbuffs)
-    bbuffs = new qvi_bbuff_t *[group_size]();
+    bbuffs = new qvi_bbuff *[group_size]();
 
     const int rc = qvi_bbuff_dup(*txbuff, &bbuffs[group_rank]);
     // Need to ensure that all threads have contributed to bbuffs.
@@ -201,18 +201,18 @@ qvi_omp_group_gather_bbuffs(
 int
 qvi_omp_group_scatter_bbuffs(
     qvi_omp_group_t *group,
-    qvi_bbuff_t **txbuffs,
+    qvi_bbuff **txbuffs,
     int,
-    qvi_bbuff_t **rxbuff
+    qvi_bbuff **rxbuff
 ) {
-    qvi_bbuff_t ***tmp = nullptr;
+    qvi_bbuff ***tmp = nullptr;
     #pragma omp single copyprivate(tmp)
-    tmp = new qvi_bbuff_t**();
+    tmp = new qvi_bbuff**();
     #pragma omp master
     *tmp = txbuffs;
     #pragma omp barrier
-    qvi_bbuff_t *inbuff = (*tmp)[group->rank];
-    qvi_bbuff_t *mybbuff = nullptr;
+    qvi_bbuff *inbuff = (*tmp)[group->rank];
+    qvi_bbuff *mybbuff = nullptr;
     const int rc = qvi_bbuff_dup(*inbuff, &mybbuff);
     #pragma omp barrier
     #pragma omp single

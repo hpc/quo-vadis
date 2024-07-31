@@ -108,7 +108,7 @@ qv_pthread_create(
     // pthread_create(), return a reasonable errno.
     if (qvi_unlikely(rc != QV_SUCCESS)) return ENOMEM;
 
-    auto group = dynamic_cast<qvi_group_pthread_t *>(scope->group());
+    auto group = dynamic_cast<qvi_group_pthread *>(scope->group());
     qvi_pthread_group_pthread_create_args_s *cargs = nullptr;
     rc = qvi_new(&cargs, group->thgroup, qvi_pthread_routine, arg_ptr);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
@@ -129,7 +129,7 @@ qv_pthread_scopes_free(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        qv_scope_s::thdestroy(&scopes, nscopes);
+        qv_scope::thdestroy(&scopes, nscopes);
         return QV_SUCCESS;
     }
     qvi_catch_and_return();

@@ -24,19 +24,19 @@
 #include "qvi-group.h"
 #include "qvi-omp.h"
 
-struct qvi_group_omp_s : public qvi_group_s {
+struct qvi_group_omp : public qvi_group {
 protected:
     /** Task associated with this group. */
-    qvi_task_t *m_task = nullptr;
+    qvi_task *m_task = nullptr;
     /** Underlying group instance. */
     qvi_omp_group_t *m_ompgroup = nullptr;
 public:
     /** Constructor. */
-    qvi_group_omp_s(void);
+    qvi_group_omp(void);
     /** Destructor. */
-    virtual ~qvi_group_omp_s(void);
+    virtual ~qvi_group_omp(void);
 
-    virtual qvi_task_t *
+    virtual qvi_task *
     task(void)
     {
         return m_task;
@@ -67,13 +67,13 @@ public:
 
     virtual int
     self(
-        qvi_group_s **child
+        qvi_group **child
     );
 
     virtual int
     thsplit(
         int,
-        qvi_group_s **
+        qvi_group **
     ) {
         // TODO(skg) Need to test this.
         return QV_ERR_NOT_SUPPORTED;
@@ -83,15 +83,15 @@ public:
     split(
         int color,
         int key,
-        qvi_group_s **child
+        qvi_group **child
     );
 
     virtual int
     gather(
-        qvi_bbuff_t *txbuff,
+        qvi_bbuff *txbuff,
         int root,
         bool *shared,
-        qvi_bbuff_t ***rxbuffs
+        qvi_bbuff ***rxbuffs
     ) {
         return qvi_omp_group_gather_bbuffs(
            m_ompgroup, txbuff, root, shared, rxbuffs
@@ -100,16 +100,15 @@ public:
 
     virtual int
     scatter(
-        qvi_bbuff_t **txbuffs,
+        qvi_bbuff **txbuffs,
         int root,
-        qvi_bbuff_t **rxbuff
+        qvi_bbuff **rxbuff
     ) {
         return qvi_omp_group_scatter_bbuffs(
             m_ompgroup, txbuffs, root, rxbuff
         );
     }
 };
-typedef qvi_group_omp_s qvi_group_omp_t;
 
 #endif
 
