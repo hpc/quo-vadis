@@ -29,8 +29,8 @@
  * qvi_hwsplit_coll_s. Typically, collective operations will fill in a
  * this structure, but that isn't a requirement.
  */
-struct qvi_hwsplit_s {
-//private:
+struct qvi_hwsplit {
+private:
     /** A pointer to my RMI. */
     qvi_rmi_client_t *m_rmi = nullptr;
     /** The base hardware pool we are splitting. */
@@ -69,16 +69,16 @@ struct qvi_hwsplit_s {
     qvi_hwloc_cpusets_t m_affinities;
 public:
     /** Constructor. */
-    qvi_hwsplit_s(void) = default;
+    qvi_hwsplit(void) = default;
     /** Constructor. */
-    qvi_hwsplit_s(
+    qvi_hwsplit(
         qv_scope_t *parent,
         uint_t group_size,
         uint_t split_size,
         qv_hw_obj_type_t split_at_type
     );
     /** Destructor. */
-    ~qvi_hwsplit_s(void);
+    ~qvi_hwsplit(void);
     /**
      * Resizes the relevant containers to make
      * room for |group size| number of elements.
@@ -90,8 +90,20 @@ public:
      * among the aggregate, but other resources may be distributed differently.
      * For example, some hardware pools may have GPUs, while others may not.
      */
-    qvi_hwloc_bitmap_s
+    qvi_hwloc_bitmap
     cpuset(void) const;
+    /** Returns a reference to the group TIDs. */
+    std::vector<pid_t> &
+    tids(void);
+    /** Returns a reference to the group colors. */
+    std::vector<int> &
+    colors(void);
+    /** Returns a reference to the group hardware pools. */
+    std::vector<qvi_hwpool *> &
+    hwpools(void);
+    /** Returns a reference to the group task affinities. */
+    qvi_hwloc_cpusets_t &
+    affinities(void);
     /**
      * Performs a straightforward splitting of the provided cpuset:
      * split the provided base cpuset into split_size distinct pieces.
@@ -153,12 +165,8 @@ public:
  * split operations requiring aggregated resource knowledge AND coordination
  * between tasks in the parent scope to perform a split.
  */
-struct qvi_hwsplit_coll_s {
-    /**
-     * The root task ID used for collective operations.
-     * We use 0 as the root because 0 will always exist.
-     */
-    static constexpr int s_rootid = 0;
+struct qvi_hwsplit_coll {
+private:
     /** Points to the parent scope that we are splitting. */
     qv_scope_t *m_parent = nullptr;
     /** My color. */
@@ -167,9 +175,15 @@ struct qvi_hwsplit_coll_s {
      * Stores group-global hardware split information brought together by
      * collective operations across the members in the parent scope.
      */
-    qvi_hwsplit_s m_hwsplit;
+    qvi_hwsplit m_hwsplit;
+public:
+    /**
+     * The root task ID used for collective operations.
+     * We use 0 as the root because 0 will always exist.
+     */
+    static constexpr int rootid = 0;
     /** Constructor. */
-    qvi_hwsplit_coll_s(void) = delete;
+    qvi_hwsplit_coll(void) = delete;
     /** Constructor. */
     /**
      * Hardware resources will be split based on the provided split parameters:
@@ -179,7 +193,7 @@ struct qvi_hwsplit_coll_s {
      *   maybe_obj_type: Potentially the object type that we are splitting at. This
      *   value influences how the splitting algorithms perform their mapping.
      */
-    qvi_hwsplit_coll_s(
+    qvi_hwsplit_coll(
         qv_scope_t *parent,
         uint_t npieces,
         int color,

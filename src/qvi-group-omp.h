@@ -25,7 +25,7 @@
 #include "qvi-omp.h"
 
 struct qvi_group_omp : public qvi_group {
-protected:
+private:
     /** Task associated with this group. */
     qvi_task *m_task = nullptr;
     /** Underlying group instance. */

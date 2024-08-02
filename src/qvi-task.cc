@@ -46,7 +46,7 @@ qvi_task::init_bind_stack(void)
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    m_stack.push(qvi_hwloc_bitmap_s(current_bind));
+    m_stack.push(qvi_hwloc_bitmap(current_bind));
     qvi_hwloc_bitmap_delete(&current_bind);
     return rc;
 }
@@ -90,7 +90,7 @@ qvi_task::bind_push(
     hwloc_const_cpuset_t cpuset
 ) {
     // Copy input bitmap because we don't want to directly modify it.
-    qvi_hwloc_bitmap_s bitmap_copy(cpuset);
+    qvi_hwloc_bitmap bitmap_copy(cpuset);
     // Change policy
     const int rc = qvi_rmi_set_cpubind(
         m_rmi, mytid(), bitmap_copy.cdata()

@@ -24,7 +24,7 @@ int
 qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
     qvi_hwloc_t *hwl,
     uint32_t devid,
-    qvi_hwloc_bitmap_s &cpuset
+    qvi_hwloc_bitmap &cpuset
 );
 
 #endif
