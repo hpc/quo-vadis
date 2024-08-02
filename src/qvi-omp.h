@@ -21,10 +21,7 @@
 #define QVI_OMP_H
 
 #include "qvi-common.h"
-
-// Forward declarations.
-struct qvi_omp_group_s;
-typedef struct qvi_omp_group_s qvi_omp_group_t;
+#include "qvi-subgroup.h"
 
 #if 0
 /**
@@ -53,57 +50,71 @@ typedef struct qv_layout_s {
 } qv_layout_t;
 #endif
 
-int
-qvi_omp_group_new(
-    int group_size,
-    int group_rank,
-    qvi_omp_group_t **group
-);
+struct qvi_omp_group {
+private:
+    /** Group size. */
+    int m_size = 0;
+    /** ID (rank) in group: this ID is unique to each thread. */
+    int m_rank = 0;
+    /** */
+    int
+    subgroup_info(
+        int color,
+        int key,
+        qvi_subgroup_info_s *sginfo
+    );
+public:
+    /** Constructor. */
+    qvi_omp_group(void) = delete;
+    /** Constructor. */
+    qvi_omp_group(
+        int group_size,
+        int group_rank
+    );
 
-void
-qvi_omp_group_delete(
-    qvi_omp_group_t **group
-);
+    static int
+    create(
+        int group_size,
+        int group_rank,
+        qvi_omp_group **group
+    );
 
-int
-qvi_omp_group_size(
-    const qvi_omp_group_t *group
-);
+    static void
+    destroy(
+        qvi_omp_group **group
+    );
 
-int
-qvi_omp_group_id(
-    const qvi_omp_group_t *group
-);
+    int
+    size(void);
 
-int
-qvi_omp_group_barrier(
-    qvi_omp_group_t *group
-);
+    int
+    rank(void);
 
-int
-qvi_omp_group_create_from_split(
-    qvi_omp_group_t *parent,
-    int color,
-    int key,
-    qvi_omp_group_t **child
-);
+    int
+    barrier(void);
 
-int
-qvi_omp_group_gather_bbuffs(
-    qvi_omp_group_t *group,
-    qvi_bbuff *txbuff,
-    int,
-    bool *shared_alloc,
-    qvi_bbuff ***rxbuffs
-);
+    int
+    split(
+        int color,
+        int key,
+        qvi_omp_group **child
+    );
 
-int
-qvi_omp_group_scatter_bbuffs(
-    qvi_omp_group_t *group,
-    qvi_bbuff **txbuffs,
-    int root,
-    qvi_bbuff **rxbuff
-);
+    int
+    gather(
+        qvi_bbuff *txbuff,
+        int root,
+        bool *shared,
+        qvi_bbuff ***rxbuffs
+    );
+
+    int
+    scatter(
+        qvi_bbuff **txbuffs,
+        int root,
+        qvi_bbuff **rxbuff
+    );
+};
 
 #endif
 

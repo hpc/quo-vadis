@@ -25,12 +25,12 @@
 qvi_group_omp::qvi_group_omp(void)
 {
     const int rc = qvi_new(&m_task);
-    if (rc != QV_SUCCESS) throw qvi_runtime_error();
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 }
 
 qvi_group_omp::~qvi_group_omp(void)
 {
-    qvi_omp_group_delete(&m_ompgroup);
+    qvi_omp_group::destroy(&m_ompgroup);
     qvi_delete(&m_task);
 }
 
@@ -42,7 +42,7 @@ qvi_group_omp::make_intrinsic(
     const int group_rank = omp_get_thread_num();
     // NOTE: the provided scope doesn't affect how
     // we create the thread group, so we ignore it.
-    return qvi_omp_group_new(group_size, group_rank, &m_ompgroup);
+    return qvi_omp_group::create(group_size, group_rank, &m_ompgroup);
 }
 
 int
@@ -53,11 +53,11 @@ qvi_group_omp::self(
     const int group_rank = 0;
     qvi_group_omp *ichild = nullptr;
     int rc = qvi_new(&ichild);
-    if (rc != QV_SUCCESS) goto out;
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Create a group containing a single thread.
-    rc = qvi_omp_group_new(group_size, group_rank, &ichild->m_ompgroup);
+    rc = qvi_omp_group::create(group_size, group_rank, &ichild->m_ompgroup);
 out:
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);
     }
     *child = ichild;
@@ -72,13 +72,11 @@ qvi_group_omp::split(
 ) {
     qvi_group_omp *ichild = nullptr;
     int rc = qvi_new(&ichild);
-    if (rc != QV_SUCCESS) goto out;
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
 
-    rc = qvi_omp_group_create_from_split(
-        m_ompgroup, color, key, &ichild->m_ompgroup
-    );
+    rc = m_ompgroup->split(color, key, &ichild->m_ompgroup);
 out:
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);
     }
     *child = ichild;
