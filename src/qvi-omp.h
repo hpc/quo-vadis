@@ -58,10 +58,10 @@ private:
     int m_rank = 0;
     /** */
     int
-    subgroup_info(
+    m_subgroup_info(
         int color,
         int key,
-        qvi_subgroup_info_s *sginfo
+        qvi_subgroup_info *sginfo
     );
 public:
     /** Constructor. */

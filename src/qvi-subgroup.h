@@ -26,7 +26,7 @@
  * Stores sub-group information for infrastructure that
  * doesn't have native support for creating sub-groups.
  */
-struct qvi_subgroup_info_s {
+struct qvi_subgroup_info {
     /** Number of sub-groups created from split. */
     int ngroups = 0;
     /** Number of members in this sub-group. */
@@ -39,23 +39,23 @@ struct qvi_subgroup_info_s {
  * Provides supporting infrastructure for creating
  * sub-groups based on color, key, and rank.
  */
-struct qvi_subgroup_color_key_rank_s {
+struct qvi_subgroup_color_key_rank {
     int color = 0;
     int key = 0;
     int rank = 0;
 
     static bool
     by_color(
-        const qvi_subgroup_color_key_rank_s &a,
-        const qvi_subgroup_color_key_rank_s &b
+        const qvi_subgroup_color_key_rank &a,
+        const qvi_subgroup_color_key_rank &b
     ) {
         return a.color < b.color;
     }
 
     static bool
     by_key(
-        const qvi_subgroup_color_key_rank_s &a,
-        const qvi_subgroup_color_key_rank_s &b
+        const qvi_subgroup_color_key_rank &a,
+        const qvi_subgroup_color_key_rank &b
     ) {
         // If colors are the same, sort by key.
         return a.color == b.color && a.key < b.key;
@@ -63,8 +63,8 @@ struct qvi_subgroup_color_key_rank_s {
 
     static bool
     by_rank(
-        const qvi_subgroup_color_key_rank_s &a,
-        const qvi_subgroup_color_key_rank_s &b
+        const qvi_subgroup_color_key_rank &a,
+        const qvi_subgroup_color_key_rank &b
     ) {
         // If colors and keys are the same, sort by rank.
         return a.color == b.color && a.key == b.key && a.rank < b.rank;

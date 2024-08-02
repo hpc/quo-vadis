@@ -66,15 +66,15 @@ qvi_omp_group::barrier(void)
 }
 
 int
-qvi_omp_group::subgroup_info(
+qvi_omp_group::m_subgroup_info(
     int color,
     int key,
-    qvi_subgroup_info_s *sginfo
+    qvi_subgroup_info *sginfo
 ) {
-    qvi_subgroup_color_key_rank_s *ckrs = nullptr;
+    qvi_subgroup_color_key_rank *ckrs = nullptr;
 
     #pragma omp single copyprivate(ckrs)
-    ckrs = new qvi_subgroup_color_key_rank_s[m_size];
+    ckrs = new qvi_subgroup_color_key_rank[m_size];
     // Gather colors and keys from ALL threads.
     ckrs[m_rank].color = color;
     ckrs[m_rank].key = key;
@@ -89,9 +89,9 @@ qvi_omp_group::subgroup_info(
         // Sort the color/key/rank array. First according to color, then by key,
         // but in the same color realm. If color and key are identical, sort by
         // the rank from given group.
-        std::sort(ckrs, ckrs + m_size, qvi_subgroup_color_key_rank_s::by_color);
-        std::sort(ckrs, ckrs + m_size, qvi_subgroup_color_key_rank_s::by_key);
-        std::sort(ckrs, ckrs + m_size, qvi_subgroup_color_key_rank_s::by_rank);
+        std::sort(ckrs, ckrs + m_size, qvi_subgroup_color_key_rank::by_color);
+        std::sort(ckrs, ckrs + m_size, qvi_subgroup_color_key_rank::by_key);
+        std::sort(ckrs, ckrs + m_size, qvi_subgroup_color_key_rank::by_rank);
         // Calculate the number of distinct colors provided.
         std::set<int> color_set;
         for (int i = 0; i < m_size; ++i) {
@@ -134,8 +134,8 @@ qvi_omp_group::split(
 ) {
     qvi_omp_group *ichild = nullptr;
 
-    qvi_subgroup_info_s sginfo;
-    int rc = subgroup_info(color, key, &sginfo);
+    qvi_subgroup_info sginfo;
+    int rc = m_subgroup_info(color, key, &sginfo);
     if (qvi_likely(rc == QV_SUCCESS)) {
         rc = qvi_new(&ichild, sginfo.size, sginfo.rank);
     }
