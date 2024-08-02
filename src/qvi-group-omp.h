@@ -29,7 +29,7 @@ protected:
     /** Task associated with this group. */
     qvi_task *m_task = nullptr;
     /** Underlying group instance. */
-    qvi_omp_group_t *m_ompgroup = nullptr;
+    qvi_omp_group *m_ompgroup = nullptr;
 public:
     /** Constructor. */
     qvi_group_omp(void);
@@ -45,19 +45,19 @@ public:
     virtual int
     rank(void) const
     {
-        return qvi_omp_group_id(m_ompgroup);
+        return m_ompgroup->rank();
     }
 
     virtual int
     size(void) const
     {
-        return qvi_omp_group_size(m_ompgroup);
+        return m_ompgroup->size();
     }
 
     virtual int
     barrier(void)
     {
-        return qvi_omp_group_barrier(m_ompgroup);
+        return m_ompgroup->barrier();
     }
 
     virtual int
@@ -93,9 +93,7 @@ public:
         bool *shared,
         qvi_bbuff ***rxbuffs
     ) {
-        return qvi_omp_group_gather_bbuffs(
-           m_ompgroup, txbuff, root, shared, rxbuffs
-        );
+        return m_ompgroup->gather(txbuff, root, shared, rxbuffs);
     }
 
     virtual int
@@ -104,9 +102,7 @@ public:
         int root,
         qvi_bbuff **rxbuff
     ) {
-        return qvi_omp_group_scatter_bbuffs(
-            m_ompgroup, txbuffs, root, rxbuff
-        );
+        return m_ompgroup->scatter(txbuffs, root, rxbuff);
     }
 };
 
