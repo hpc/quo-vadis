@@ -264,7 +264,7 @@ qv_scope::split_at(
 }
 
 int
-qv_scope::thsplit(
+qv_scope::thread_split(
     uint_t npieces,
     int *kcolors,
     uint_t k,
@@ -272,38 +272,12 @@ qv_scope::thsplit(
     qv_scope_t ***thchildren
 ) {
     *thchildren = nullptr;
-
     const uint_t group_size = k;
-    // Construct the hardware split.
-    qvi_hwsplit hwsplit(this, group_size, npieces, maybe_obj_type);
-    // Eagerly make room for the group member information.
-    hwsplit.reserve();
-    // Since this is called by a single task, get its ID and associated
-    // hardware affinity here, and replicate them in the following loop
-    // that populates splitagg.
-    //No point in doing this in a loop.
-    const pid_t taskid = qvi_task::mytid();
-    hwloc_cpuset_t task_affinity = nullptr;
-    // Get the task's current affinity.
-    int rc = m_group->task()->bind_top(&task_affinity);
-    if (rc != QV_SUCCESS) return rc;
-    for (uint_t i = 0; i < group_size; ++i) {
-        // Store requested colors in aggregate.
-        hwsplit.colors()[i] = kcolors[i];
-        // Since the parent hardware pool is the resource we are splitting and
-        // agg_split_* calls expect |group_size| elements, replicate by dups.
-        rc = qvi_dup(*m_hwpool, &hwsplit.hwpools()[i]);
-        if (rc != QV_SUCCESS) break;
-        // Since this is called by a single task, replicate its task ID, too.
-        hwsplit.tids()[i] = taskid;
-        // Same goes for the task's affinity.
-        hwsplit.affinities()[i].set(task_affinity);
-    }
-    // Cleanup: we don't need task_affinity anymore.
-    qvi_hwloc_bitmap_delete(&task_affinity);
-    if (rc != QV_SUCCESS) return rc;
-    // Split the hardware resources based on the provided split parameters.
-    rc = hwsplit.split();
+    // Split the hardware, get the hardare pools.
+    qvi_hwpool **hwpools = nullptr;
+    int rc = qvi_hwsplit::thread_split(
+        this, npieces, kcolors, k, maybe_obj_type, &hwpools
+    );
     if (rc != QV_SUCCESS) return rc;
     // Split off from our parent group. This call is called from a context in
     // which a process is splitting its resources across threads, so create a
@@ -314,13 +288,9 @@ qv_scope::thsplit(
     // Now create and populate the children.
     qv_scope_t **ithchildren = new qv_scope_t *[group_size];
     for (uint_t i = 0; i < group_size; ++i) {
-        // Copy out, since the hardware pools in splitagg will get freed.
-        qvi_hwpool *hwpool = nullptr;
-        rc = qvi_dup(*hwsplit.hwpools()[i], &hwpool);
-        if (rc != QV_SUCCESS) break;
         // Create and initialize the new scope.
         qv_scope_t *child = nullptr;
-        rc = qvi_new(&child, thgroup, hwpool);
+        rc = qvi_new(&child, thgroup, hwpools[i]);
         if (rc != QV_SUCCESS) break;
         thgroup->retain();
         ithchildren[i] = child;
@@ -344,7 +314,7 @@ qv_scope::thsplit_at(
     uint_t k,
     qv_scope_t ***kchildren
 ) {
-    return thsplit(hwpool_nobjects(type), kgroup_ids, k, type, kchildren);
+    return thread_split(hwpool_nobjects(type), kgroup_ids, k, type, kchildren);
 }
 
 /*

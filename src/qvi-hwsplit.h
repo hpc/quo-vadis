@@ -19,6 +19,8 @@
 #include "qvi-hwpool.h"
 #include "qvi-map.h"
 
+struct qvi_hwsplit_coll;
+
 /**
  * Hardware split aggregation: a collection of information relevant to split
  * operations requiring aggregated (e.g., global) knowledge to perform a split.
@@ -30,6 +32,7 @@
  * this structure, but that isn't a requirement.
  */
 struct qvi_hwsplit {
+    friend qvi_hwsplit_coll;
 private:
     /** A pointer to my RMI. */
     qvi_rmi_client_t *m_rmi = nullptr;
@@ -92,18 +95,6 @@ public:
      */
     qvi_hwloc_bitmap
     cpuset(void) const;
-    /** Returns a reference to the group TIDs. */
-    std::vector<pid_t> &
-    tids(void);
-    /** Returns a reference to the group colors. */
-    std::vector<int> &
-    colors(void);
-    /** Returns a reference to the group hardware pools. */
-    std::vector<qvi_hwpool *> &
-    hwpools(void);
-    /** Returns a reference to the group task affinities. */
-    qvi_hwloc_cpusets_t &
-    affinities(void);
     /**
      * Performs a straightforward splitting of the provided cpuset:
      * split the provided base cpuset into split_size distinct pieces.
@@ -112,9 +103,17 @@ public:
     split_cpuset(
         qvi_hwloc_cpusets_t &result
     ) const;
-    /**
-     * Returns device affinities that are part of the split.
-     */
+    /** Performs a thread-split operation, returns relevant hardare pools. */
+    static int
+    thread_split(
+        qv_scope_t *parent,
+        uint_t npieces,
+        int *kcolors,
+        uint_t k,
+        qv_hw_obj_type_t maybe_obj_type,
+        qvi_hwpool ***khwpools
+    );
+    /** Returns device affinities that are part of the split. */
     int
     osdev_cpusets(
         qvi_hwloc_cpusets_t &result
@@ -127,35 +126,25 @@ public:
 
     qvi_map_fn_t
     affinity_preserving_policy(void) const;
-    /** Releases all devices contained in the provided split aggregate. */
+    /** Releases all devices contained in the hardware split. */
     int
     release_devices(void);
-    /**
-     * Straightforward user-defined device splitting.
-     */
+    /** Straightforward user-defined device splitting. */
     int
     split_devices_user_defined(void);
-    /**
-     * Affinity preserving device splitting.
-     */
+    /** Affinity preserving device splitting. */
     int
     split_devices_affinity_preserving(void);
-    /**
-     * User-defined split.
-     */
+    /** User-defined split. */
     int
     split_user_defined(void);
 
     int
     split_affinity_preserving_pass1(void);
-    /**
-     * Affinity preserving split.
-     */
+    /** Affinity preserving split. */
     int
     split_affinity_preserving(void);
-    /**
-     * Splits aggregate scope data.
-     */
+    /** Splits aggregate scope data. */
     int
     split(void);
 };
