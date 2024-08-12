@@ -23,13 +23,13 @@ qvi_hwpool_res::hints(void)
     return m_hints;
 }
 
-qvi_hwloc_bitmap_s &
+qvi_hwloc_bitmap &
 qvi_hwpool_res::affinity(void)
 {
     return m_affinity;
 }
 
-const qvi_hwloc_bitmap_s &
+const qvi_hwloc_bitmap &
 qvi_hwpool_res::affinity(void) const
 {
     return m_affinity;
@@ -256,7 +256,7 @@ qvi_hwpool::initialize(
     return add_devices_with_affinity(hwloc);
 }
 
-const qvi_hwloc_bitmap_s &
+const qvi_hwloc_bitmap &
 qvi_hwpool::cpuset(void) const
 {
     return m_cpu.affinity();

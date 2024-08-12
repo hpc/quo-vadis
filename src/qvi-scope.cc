@@ -232,7 +232,7 @@ qv_scope::split(
     qvi_group *group = nullptr;
     qv_scope_t *ichild = nullptr;
     // Split the hardware resources based on the provided split parameters.
-    qvi_hwsplit_coll_s chwsplit(
+    qvi_hwsplit_coll chwsplit(
         this, npieces, color, maybe_obj_type
     );
     rc = chwsplit.split(&colorp, &hwpool);
@@ -275,7 +275,7 @@ qv_scope::thsplit(
 
     const uint_t group_size = k;
     // Construct the hardware split.
-    qvi_hwsplit_s hwsplit(this, group_size, npieces, maybe_obj_type);
+    qvi_hwsplit hwsplit(this, group_size, npieces, maybe_obj_type);
     // Eagerly make room for the group member information.
     hwsplit.reserve();
     // Since this is called by a single task, get its ID and associated
@@ -289,15 +289,15 @@ qv_scope::thsplit(
     if (rc != QV_SUCCESS) return rc;
     for (uint_t i = 0; i < group_size; ++i) {
         // Store requested colors in aggregate.
-        hwsplit.m_colors[i] = kcolors[i];
+        hwsplit.colors()[i] = kcolors[i];
         // Since the parent hardware pool is the resource we are splitting and
         // agg_split_* calls expect |group_size| elements, replicate by dups.
-        rc = qvi_dup(*m_hwpool, &hwsplit.m_hwpools[i]);
+        rc = qvi_dup(*m_hwpool, &hwsplit.hwpools()[i]);
         if (rc != QV_SUCCESS) break;
         // Since this is called by a single task, replicate its task ID, too.
-        hwsplit.m_group_tids[i] = taskid;
+        hwsplit.tids()[i] = taskid;
         // Same goes for the task's affinity.
-        hwsplit.m_affinities[i].set(task_affinity);
+        hwsplit.affinities()[i].set(task_affinity);
     }
     // Cleanup: we don't need task_affinity anymore.
     qvi_hwloc_bitmap_delete(&task_affinity);
@@ -316,7 +316,7 @@ qv_scope::thsplit(
     for (uint_t i = 0; i < group_size; ++i) {
         // Copy out, since the hardware pools in splitagg will get freed.
         qvi_hwpool *hwpool = nullptr;
-        rc = qvi_dup(*hwsplit.m_hwpools[i], &hwpool);
+        rc = qvi_dup(*hwsplit.hwpools()[i], &hwpool);
         if (rc != QV_SUCCESS) break;
         // Create and initialize the new scope.
         qv_scope_t *child = nullptr;

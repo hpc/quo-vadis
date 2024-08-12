@@ -1248,7 +1248,7 @@ int
 qvi_hwloc_get_devices_in_bitmap(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t dev_type,
-    const qvi_hwloc_bitmap_s &bitmap,
+    const qvi_hwloc_bitmap &bitmap,
     qvi_hwloc_dev_list_t &devs
 ) {
     return get_devices_in_cpuset(hwl, dev_type, bitmap.cdata(), devs);

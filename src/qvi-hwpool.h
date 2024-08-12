@@ -27,7 +27,7 @@ protected:
     /** Resource hint flags. */
     qv_scope_create_hints_t m_hints = QV_SCOPE_CREATE_HINT_NONE;
     /** The resource's affinity encoded as a bitmap. */
-    qvi_hwloc_bitmap_s m_affinity;
+    qvi_hwloc_bitmap m_affinity;
 public:
     /** Returns the resource's create hints. */
     qv_scope_create_hints_t
@@ -35,12 +35,12 @@ public:
     /**
      * Returns a reference to the resource's affinity encoded by a bitmap.
      */
-    qvi_hwloc_bitmap_s &
+    qvi_hwloc_bitmap &
     affinity(void);
     /**
      * Returns a const reference to the resource's affinity encoded by a bitmap.
      */
-    const qvi_hwloc_bitmap_s &
+    const qvi_hwloc_bitmap &
     affinity(void) const;
 };
 
@@ -72,7 +72,7 @@ private:
     /** Device type. */
     qv_hw_obj_type_t m_type = QV_HW_OBJ_LAST;
     /** The bitmap encoding CPU affinity. */
-    qvi_hwloc_bitmap_s m_affinity;
+    qvi_hwloc_bitmap m_affinity;
     /** Device ID (ordinal). */
     int m_id = QVI_HWLOC_DEVICE_INVALID_ID;
     /** The PCI bus ID. */
@@ -164,7 +164,7 @@ public:
     /**
      * Returns a const reference to the hardware pool's cpuset.
      */
-    const qvi_hwloc_bitmap_s &
+    const qvi_hwloc_bitmap &
     cpuset(void) const;
     /**
      * Returns a const reference to the hardware pool's devices.

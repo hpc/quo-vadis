@@ -20,7 +20,7 @@
 #include "qvi-common.h"
 #include "qvi-hwloc.h"
 
-using qvi_task_bind_stack_t = std::stack<qvi_hwloc_bitmap_s>;
+using qvi_task_bind_stack_t = std::stack<qvi_hwloc_bitmap>;
 
 struct qvi_task {
 private:

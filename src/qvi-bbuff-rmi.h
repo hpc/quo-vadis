@@ -104,7 +104,7 @@ template<>
 inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
-    const qvi_hwloc_bitmap_s &
+    const qvi_hwloc_bitmap &
 ) {
     picture += "c";
 }
@@ -484,7 +484,7 @@ qvi_bbuff_rmi_pack_item(
 inline int
 qvi_bbuff_rmi_pack_item(
     qvi_bbuff *buff,
-    const qvi_hwloc_bitmap_s &bitmap
+    const qvi_hwloc_bitmap &bitmap
 ) {
     return qvi_bbuff_rmi_pack_item_impl(buff, bitmap.cdata());
 }
@@ -781,7 +781,7 @@ out:
  */
 inline int
 qvi_bbuff_rmi_unpack_item(
-    qvi_hwloc_bitmap_s &bitmap,
+    qvi_hwloc_bitmap &bitmap,
     byte_t *buffpos,
     size_t *bytes_written
 ) {

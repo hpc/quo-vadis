@@ -419,19 +419,19 @@ qvi_hwloc_supported_devices(void);
 /**
  * hwloc bitmap object.
  */
-struct qvi_hwloc_bitmap_s {
+struct qvi_hwloc_bitmap {
 private:
     /** Internal bitmap. */
     hwloc_bitmap_t m_data = nullptr;
 public:
     /** Default constructor. */
-    qvi_hwloc_bitmap_s(void)
+    qvi_hwloc_bitmap(void)
     {
         const int rc = qvi_hwloc_bitmap_calloc(&m_data);
         if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
     }
     /** Construct via hwloc_const_bitmap_t. */
-    explicit qvi_hwloc_bitmap_s(hwloc_const_bitmap_t bitmap)
+    explicit qvi_hwloc_bitmap(hwloc_const_bitmap_t bitmap)
     {
         int rc = qvi_hwloc_bitmap_calloc(&m_data);
         if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
@@ -439,7 +439,7 @@ public:
         if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
     }
     /** Copy constructor. */
-    qvi_hwloc_bitmap_s(const qvi_hwloc_bitmap_s &src)
+    qvi_hwloc_bitmap(const qvi_hwloc_bitmap &src)
     {
         int rc = qvi_hwloc_bitmap_calloc(&m_data);
         if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
@@ -447,20 +447,20 @@ public:
         if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
     }
     /** Destructor. */
-    ~qvi_hwloc_bitmap_s(void)
+    ~qvi_hwloc_bitmap(void)
     {
         qvi_hwloc_bitmap_delete(&m_data);
     }
     /** Equality operator. */
     bool
     operator==(
-        const qvi_hwloc_bitmap_s &x
+        const qvi_hwloc_bitmap &x
     ) const {
         return hwloc_bitmap_compare(cdata(), x.cdata()) == 0;
     }
     /** Assignment operator. */
     void
-    operator=(const qvi_hwloc_bitmap_s &src)
+    operator=(const qvi_hwloc_bitmap &src)
     {
         const int rc = qvi_hwloc_bitmap_copy(src.m_data, m_data);
         if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
@@ -494,13 +494,13 @@ public:
 /**
  * Vector of cpuset objects.
  */
-using qvi_hwloc_cpusets_t = std::vector<qvi_hwloc_bitmap_s>;
+using qvi_hwloc_cpusets_t = std::vector<qvi_hwloc_bitmap>;
 
 typedef struct qvi_hwloc_device_s {
     /** Device type. */
     qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
     /** Device affinity. */
-    qvi_hwloc_bitmap_s affinity;
+    qvi_hwloc_bitmap affinity;
     /** Vendor ID. */
     int vendor_id = QVI_HWLOC_DEVICE_INVALID_ID;
     /** System Management Interface ID. */
@@ -531,7 +531,7 @@ int
 qvi_hwloc_get_devices_in_bitmap(
     qvi_hwloc_t *hwl,
     qv_hw_obj_type_t dev_type,
-    const qvi_hwloc_bitmap_s &bitmap,
+    const qvi_hwloc_bitmap &bitmap,
     qvi_hwloc_dev_list_t &devs
 );
 
