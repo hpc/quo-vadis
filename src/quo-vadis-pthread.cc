@@ -67,7 +67,7 @@ qv_pthread_scope_split(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return scope->thsplit(
+        return scope->thread_split(
             npieces, color_array, nthreads, QV_HW_OBJ_LAST, subscope
         );
     }

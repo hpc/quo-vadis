@@ -111,7 +111,7 @@ public:
     );
 
     int
-    thsplit(
+    thread_split(
         uint_t npieces,
         int *kcolors,
         uint_t k,

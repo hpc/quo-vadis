@@ -16,7 +16,7 @@
  * a = size_t
  * b = qvi_bbuff_rmi_bytes_in_t, qvi_bbuff_rmi_bytes_out_t
  * c = hwloc_cpuset_t
- * c = qvi_hwloc_bitmap_s
+ * c = qvi_hwloc_bitmap
  * d = qv_scope_create_hints_t
  * h = qvi_hwpool *
  * i = int
@@ -479,7 +479,7 @@ qvi_bbuff_rmi_pack_item(
 }
 
 /**
- * Packs qvi_hwloc_bitmap_s
+ * Packs qvi_hwloc_bitmap
  */
 inline int
 qvi_bbuff_rmi_pack_item(
@@ -777,7 +777,7 @@ out:
 }
 
 /**
- * Unpacks qvi_hwloc_bitmap_s.
+ * Unpacks qvi_hwloc_bitmap.
  */
 inline int
 qvi_bbuff_rmi_unpack_item(
