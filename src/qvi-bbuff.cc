@@ -17,11 +17,23 @@
 #include "qvi-bbuff.h"
 #include "qvi-utils.h"
 
-qvi_bbuff::qvi_bbuff(void)
+void
+qvi_bbuff::init(void)
 {
+    // Make sure we get rid of any data that may be present.
+    if (m_data) {
+        free(m_data);
+        m_data = nullptr;
+    }
+    m_size = 0;
     m_capacity = s_min_growth;
     m_data = calloc(m_capacity, sizeof(byte_t));
     if (qvi_unlikely(!m_data)) throw qvi_runtime_error();
+}
+
+qvi_bbuff::qvi_bbuff(void)
+{
+    init();
 }
 
 qvi_bbuff::qvi_bbuff(
@@ -34,13 +46,17 @@ qvi_bbuff::qvi_bbuff(
 
 qvi_bbuff::~qvi_bbuff(void)
 {
-    if (m_data) free(m_data);
+    if (m_data) {
+        free(m_data);
+        m_data = nullptr;
+    }
 }
 
 void
 qvi_bbuff::operator=(
     const qvi_bbuff &src
 ) {
+    init();
     const int rc = append(src.m_data, src.m_size);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 }

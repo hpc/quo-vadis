@@ -31,6 +31,8 @@ private:
     size_t m_size = 0;
     /** Pointer to data backing store. */
     void *m_data = nullptr;
+    /** Initializes the instance. */
+    void init(void);
 public:
     /** Constructor. */
     qvi_bbuff(void);
