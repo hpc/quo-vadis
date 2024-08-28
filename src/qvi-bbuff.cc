@@ -37,6 +37,14 @@ qvi_bbuff::~qvi_bbuff(void)
     if (m_data) free(m_data);
 }
 
+void
+qvi_bbuff::operator=(
+    const qvi_bbuff &src
+) {
+    const int rc = append(src.m_data, src.m_size);
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+}
+
 size_t
 qvi_bbuff::size(void) const
 {
