@@ -42,7 +42,7 @@ public:
     ~qvi_bbuff(void);
     /** Assignment operator. */
     void
-    operator=(const qvi_bbuff &src) = delete;
+    operator=(const qvi_bbuff &src);
     /** Returns the size of the data stored in the byte buffer. */
     size_t
     size(void) const;
