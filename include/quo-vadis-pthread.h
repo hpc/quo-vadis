@@ -28,6 +28,21 @@ extern "C" {
 #endif
 
 /**
+ * Mapping policies types.
+ */
+typedef enum qv_policy_s {
+  QV_POLICY_PACKED     = 1,
+  QV_POLICY_COMPACT    = 1,
+  QV_POLICY_CLOSE      = 1,
+  QV_POLICY_SPREAD     = 2,
+  QV_POLICY_DISTRIBUTE = 3,
+  QV_POLICY_ALTERNATE  = 3,
+  QV_POLICY_CORESFIRST = 3,
+  QV_POLICY_SCATTER    = 4,
+  QV_POLICY_CHOOSE     = 5,
+} qv_policy_t;
+
+/**
  * Similar to pthread_create(3).
  */
 int
@@ -64,6 +79,16 @@ int
 qv_pthread_scopes_free(
     int nscopes,
     qv_scope_t **scopes
+);
+
+/**
+ * Fills color array used in qv_pthread_scope_split*.
+ */
+int
+qv_pthread_colors_fill(
+    int *color_array,
+    int array_size,
+    qv_policy_t policy
 );
 
 #ifdef __cplusplus

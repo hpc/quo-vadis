@@ -22,6 +22,7 @@
 
 #include "qvi-common.h"
 #include "qvi-subgroup.h"
+#include "qvi-bbuff.h"
 
 #if 0
 /**
@@ -104,7 +105,7 @@ public:
     gather(
         qvi_bbuff *txbuff,
         int root,
-        bool *shared,
+        qvi_alloc_type_t*shared,
         qvi_bbuff ***rxbuffs
     );
 

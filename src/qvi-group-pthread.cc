@@ -17,7 +17,7 @@
 qvi_group_pthread::qvi_group_pthread(
     int group_size
 ) {
-    const int rc = qvi_new(&thgroup, group_size);
+    const int rc = qvi_new(&thgroup, group_size, 0);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 }
 
@@ -36,12 +36,21 @@ qvi_group_pthread::self(
 
 int
 qvi_group_pthread::split(
-    int,
-    int,
-    qvi_group **
+    int color ,
+    int key,
+    qvi_group ** child
 ) {
-    // TODO(skg)
-    return QV_ERR_NOT_SUPPORTED;
+    qvi_group_pthread *ichild = nullptr;
+    int rc  = qvi_new(&ichild);
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+
+    rc = thgroup->split(color, key, &ichild->thgroup);
+out:
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        qvi_delete(&ichild);
+    }
+    *child = ichild;
+    return rc;
 }
 
 /*

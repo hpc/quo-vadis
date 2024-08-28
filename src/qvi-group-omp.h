@@ -23,6 +23,7 @@
 #include "qvi-common.h"
 #include "qvi-group.h"
 #include "qvi-omp.h"
+#include "qvi-bbuff.h"
 
 struct qvi_group_omp : public qvi_group {
 private:
@@ -90,7 +91,7 @@ public:
     gather(
         qvi_bbuff *txbuff,
         int root,
-        bool *shared,
+        qvi_alloc_type_t *shared,
         qvi_bbuff ***rxbuffs
     ) {
         return m_ompgroup->gather(txbuff, root, shared, rxbuffs);

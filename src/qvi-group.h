@@ -19,6 +19,7 @@
 
 #include "qvi-common.h"
 #include "qvi-utils.h"
+#include "qvi-bbuff.h"
 
 /** Group ID type. */
 using qvi_group_id_t = uint64_t;
@@ -82,7 +83,7 @@ struct qvi_group : qvi_refc {
     gather(
         qvi_bbuff *txbuff,
         int root,
-        bool *shared,
+        qvi_alloc_type_t  *shared,
         qvi_bbuff ***rxbuffs
     ) = 0;
     /** Scatters bbuffs from specified root. */

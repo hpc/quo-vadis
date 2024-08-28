@@ -17,12 +17,13 @@
 #include "qvi-common.h"
 #include "qvi-group.h"
 #include "qvi-pthread.h"
+#include "qvi-bbuff.h"
 
 struct qvi_group_pthread : public qvi_group {
     /** Underlying group instance. */
     qvi_pthread_group_t *thgroup = nullptr;
     /** Constructor. */
-    qvi_group_pthread(void) = delete;
+    qvi_group_pthread(void) = default;
     /** Constructor. */
     qvi_group_pthread(
         int group_size
@@ -87,7 +88,7 @@ struct qvi_group_pthread : public qvi_group {
     gather(
         qvi_bbuff *txbuff,
         int root,
-        bool *shared,
+        qvi_alloc_type_t  *shared,
         qvi_bbuff ***rxbuffs
     ) {
         return thgroup->gather(

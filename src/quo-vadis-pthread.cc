@@ -1,5 +1,5 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
-/*
+/*qv_policy_t
  * Copyright (c) 2022-2024 Triad National Security, LLC
  *                         All rights reserved.
  *
@@ -116,7 +116,7 @@ qv_pthread_create(
         return ENOMEM;
     }
     return pthread_create(
-        thread, attr, qvi_pthread_group_s::call_first_from_pthread_create, cargs
+        thread, attr, qvi_pthread_group::call_first_from_pthread_create, cargs
     );
 }
 
@@ -133,6 +133,16 @@ qv_pthread_scopes_free(
         return QV_SUCCESS;
     }
     qvi_catch_and_return();
+}
+
+int
+qv_pthread_colors_fill(
+   int *,//color_array,
+   int, // array_size,
+   qv_policy_t //policy
+){
+    //TODO(GM) implement
+    return QV_ERR_NOT_SUPPORTED;
 }
 
 /*

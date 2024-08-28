@@ -73,10 +73,24 @@ qvi_bbuff_dup(
     qvi_bbuff **buff
 );
 
+int
+qvi_bbuff_copy(
+    const qvi_bbuff &src,
+    qvi_bbuff *buff
+);
+
 void
 qvi_bbuff_delete(
     qvi_bbuff **buff
 );
+
+enum qvi_alloc_s {
+    ALLOC_SHARED = 0,
+    ALLOC_SHARED_GLOBAL,
+    ALLOC_PRIVATE,
+};
+
+typedef enum qvi_alloc_s qvi_alloc_type_t;
 
 #endif
 

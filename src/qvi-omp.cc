@@ -62,6 +62,15 @@ qvi_omp_group::barrier(void)
 {
     // TODO(skg) What should we do about barriers here? In particular, we need
     // to be careful about sub-groups, etc.
+    if (0 == m_rank){
+    omp_set_num_threads(m_size);
+    }
+    #pragma omp barrier
+
+    int level = omp_get_level();
+    assert(level > 0);
+    int num = omp_get_ancestor_thread_num(level-1);
+    omp_set_num_threads(num);
     return QV_SUCCESS;
 }
 
@@ -150,7 +159,7 @@ int
 qvi_omp_group::gather(
     qvi_bbuff *txbuff,
     int,
-    bool *shared_alloc,
+    qvi_alloc_type_t *shared_alloc,
     qvi_bbuff ***rxbuffs
 ) {
     qvi_bbuff **bbuffs = nullptr;
@@ -171,20 +180,21 @@ qvi_omp_group::gather(
         bbuffs = nullptr;
     }
     *rxbuffs = bbuffs;
-    *shared_alloc = true;
+    *shared_alloc = ALLOC_SHARED;
     return rc;
 }
 
 int
 qvi_omp_group::scatter(
     qvi_bbuff **txbuffs,
-    int,
+    int, // rootid,
     qvi_bbuff **rxbuff
 ) {
     qvi_bbuff ***tmp = nullptr;
     #pragma omp single copyprivate(tmp)
     tmp = new qvi_bbuff**();
     #pragma omp master
+    //#pragma omp masked filter(rootid)
     *tmp = txbuffs;
     #pragma omp barrier
     qvi_bbuff *inbuff = (*tmp)[m_rank];

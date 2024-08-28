@@ -20,6 +20,7 @@
 #include "qvi-common.h"
 #include "qvi-group.h"
 #include "qvi-mpi.h"
+#include "qvi-bbuff.h"
 
 struct qvi_group_mpi : public qvi_group {
 protected:
@@ -84,7 +85,7 @@ public:
     gather(
         qvi_bbuff *txbuff,
         int root,
-        bool *shared,
+        qvi_alloc_type_t *shared,
         qvi_bbuff ***rxbuffs
     ) {
         return qvi_mpi_group_gather_bbuffs(

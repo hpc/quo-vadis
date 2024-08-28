@@ -40,9 +40,10 @@ struct qvi_subgroup_info {
  * sub-groups based on color, key, and rank.
  */
 struct qvi_subgroup_color_key_rank {
-    int color = 0;
-    int key = 0;
-    int rank = 0;
+    int color = -1;
+    int key = -1;
+    int rank = -1;
+    int ncolors = 0;
 
     static bool
     by_color(
