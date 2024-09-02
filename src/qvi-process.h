@@ -15,6 +15,7 @@
 #define QVI_PROCESS_H
 
 #include "qvi-common.h"
+#include "qvi-bbuff.h"
 
 // Forward declarations.
 struct qvi_process_group_s;
@@ -68,7 +69,7 @@ qvi_process_group_gather_bbuffs(
     qvi_process_group_t *group,
     qvi_bbuff *txbuff,
     int root,
-    bool *shared,
+    qvi_alloc_type_t  *shared,
     qvi_bbuff ***rxbuffs
 );
 

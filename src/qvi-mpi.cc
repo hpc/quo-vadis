@@ -365,7 +365,7 @@ qvi_mpi_group_gather_bbuffs(
     qvi_mpi_group_t *group,
     qvi_bbuff *txbuff,
     int root,
-    bool *shared_alloc,
+    qvi_alloc_type_t *shared_alloc,
     qvi_bbuff ***rxbuffs
 ) {
     const int send_count = (int)txbuff->size();
@@ -434,7 +434,7 @@ out:
         bbuffs = nullptr;
     }
     *rxbuffs = bbuffs;
-    *shared_alloc = false;
+    *shared_alloc = ALLOC_PRIVATE;
     return rc;
 }
 

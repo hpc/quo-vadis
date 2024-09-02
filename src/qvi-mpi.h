@@ -20,6 +20,7 @@
 #include "qvi-common.h"
 #include "qvi-group.h"
 #include "quo-vadis-mpi.h" // IWYU pragma: keep
+#include "qvi-bbuff.h"
 
 // Forward declarations.
 struct qvi_mpi_s;
@@ -151,7 +152,7 @@ qvi_mpi_group_gather_bbuffs(
     qvi_mpi_group_t *group,
     qvi_bbuff *txbuff,
     int root,
-    bool *shared_alloc,
+    qvi_alloc_type_t *shared_alloc,
     qvi_bbuff ***rxbuffs
 );
 

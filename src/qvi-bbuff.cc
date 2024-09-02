@@ -112,6 +112,14 @@ qvi_bbuff_dup(
     return qvi_dup(src, buff);
 }
 
+int
+qvi_bbuff_copy(
+    const qvi_bbuff &src,
+    qvi_bbuff *buff
+) {
+    return qvi_copy(src, buff);
+}
+
 void
 qvi_bbuff_delete(
     qvi_bbuff **buff

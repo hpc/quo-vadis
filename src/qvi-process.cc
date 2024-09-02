@@ -63,7 +63,7 @@ qvi_process_group_gather_bbuffs(
     qvi_process_group_t *group,
     qvi_bbuff *txbuff,
     int root,
-    bool *shared,
+    qvi_alloc_type_t *shared,
     qvi_bbuff ***rxbuffs
 ) {
     const int group_size = qvi_process_group_size(group);
@@ -84,7 +84,7 @@ qvi_process_group_gather_bbuffs(
         bbuffs = nullptr;
     }
     *rxbuffs = bbuffs;
-    *shared = false;
+    *shared = ALLOC_PRIVATE;
     return rc;
 }
 

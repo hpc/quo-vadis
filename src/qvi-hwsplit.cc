@@ -641,7 +641,9 @@ qvi_hwsplit_coll::scatter_values(
     }
 
     rc = group->scatter(txbuffs.data(), rootid, &rxbuff);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        goto out;
+    }
 
     *value = *(TYPE *)rxbuff->data();
 out:
@@ -692,7 +694,7 @@ qvi_hwsplit_coll::gather_values(
         return rc;
     }
     // Gather the values to the root.
-    bool shared = false;
+    qvi_alloc_type_t shared = ALLOC_PRIVATE;
     qvi_bbuff **bbuffs = nullptr;
     rc = group->gather(txbuff, rootid, &shared, &bbuffs);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
@@ -705,14 +707,15 @@ qvi_hwsplit_coll::gather_values(
         }
     }
 out:
-    if (!shared || (shared && (group->rank() == rootid))) {
+    if ((ALLOC_PRIVATE == shared) || ((ALLOC_SHARED == shared) && (group->rank() == rootid))) {
         if (bbuffs) {
-            for (uint_t i = 0; i < group_size; ++i) {
+           for (uint_t i = 0; i < group_size; ++i) {
                 qvi_bbuff_delete(&bbuffs[i]);
             }
             delete[] bbuffs;
         }
     }
+
     qvi_bbuff_delete(&txbuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         // If something went wrong, just zero-initialize the values.
@@ -733,7 +736,7 @@ qvi_hwsplit_coll::gather_hwpools(
     int rc = txpool->packinto(&txbuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Gather the values to the root.
-    bool shared = false;
+    qvi_alloc_type_t shared = ALLOC_PRIVATE;
     qvi_bbuff **bbuffs = nullptr;
     rc = group->gather(&txbuff, rootid, &shared, &bbuffs);
     if (rc != QV_SUCCESS) goto out;
@@ -749,7 +752,7 @@ qvi_hwsplit_coll::gather_hwpools(
         }
     }
 out:
-    if (!shared || (shared && (group->rank() == rootid))) {
+    if ((ALLOC_PRIVATE == shared) || ((ALLOC_SHARED == shared) && (group->rank() == rootid))) {
         if (bbuffs) {
             for (uint_t i = 0; i < group_size; ++i) {
                 qvi_bbuff_delete(&bbuffs[i]);
@@ -757,6 +760,7 @@ out:
             delete[] bbuffs;
         }
     }
+
     if (rc != QV_SUCCESS) {
         // If something went wrong, just zero-initialize the pools.
         rxpools = {};
