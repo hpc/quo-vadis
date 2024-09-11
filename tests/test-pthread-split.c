@@ -100,12 +100,14 @@ main(void)
     int npieces  = 2; //ncores / 2;
     int nthreads = ncores;
 
+
     fprintf(stdout,"[%d] ====== Testing thread_scope_split (number of threads : %i)\n", tid, nthreads);
 
     int colors[nthreads];
     for (int i = 0 ; i < nthreads ; i++) {
         colors[i] = i % npieces;
     }
+
 
     qv_scope_t **th_scopes = NULL;
     rc = qv_pthread_scope_split(
@@ -124,6 +126,7 @@ main(void)
 
     pthread_t thid[nthreads];
     pthread_attr_t *attr = NULL;
+
     for (int i = 0 ; i < nthreads; ++i) {
         const int ptrc = qv_pthread_create(
             &thid[i], attr, thread_work, &thargs[i], th_scopes[i]
@@ -149,16 +152,6 @@ main(void)
         ers = "qv_pthread_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
-
-    rc = qv_scope_free(mpi_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    //MPI_Finalize();
-    //exit(EXIT_SUCCESS);
 
     //Test qv_pthread_scope_split_at
     nthreads = 2 * ncores;
