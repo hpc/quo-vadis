@@ -242,9 +242,6 @@ qv_scope::split(
     rc = m_group->split(
         colorp, m_group->rank(), &group
     );
-
-    assert(rc == QV_SUCCESS);
-
     if (rc != QV_SUCCESS) goto out;
     // Create and initialize the new scope.
     rc = qvi_new(&ichild, group, hwpool);
