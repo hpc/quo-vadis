@@ -104,10 +104,17 @@ main(void)
     fprintf(stdout,"[%d] ====== Testing thread_scope_split (number of threads : %i)\n", tid, nthreads);
 
     int colors[nthreads];
+
+    /*
     for (int i = 0 ; i < nthreads ; i++) {
         colors[i] = i % npieces;
     }
-
+    */
+    rc = qv_pthread_colors_fill(colors, nthreads, QV_POLICY_PACKED, 1, npieces);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_pthread_colors_fill() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
 
     qv_scope_t **th_scopes = NULL;
     rc = qv_pthread_scope_split(
@@ -159,8 +166,15 @@ main(void)
     fprintf(stdout,"[%d] ====== Testing thread_scope_split_at (number of threads : %i)\n", tid, nthreads);
 
     int colors2[nthreads];
+    /*
     for (int i = 0 ; i < nthreads ; i++) {
         colors2[i] = i % ncores;
+    }
+    */
+    rc = qv_pthread_colors_fill(colors2, nthreads, QV_POLICY_PACKED, 1, ncores);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_pthread_colors_fill() failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = qv_pthread_scope_split_at(

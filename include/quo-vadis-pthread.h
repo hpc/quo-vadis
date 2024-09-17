@@ -30,6 +30,13 @@ extern "C" {
 /**
  * Mapping policies types.
  */
+// Intel policies (KMP_AFFINITY) are :
+// - disabled: prevents the runtime library from making any affinity-related
+//             system calls (to avoid interference with other platform affinity mechanisms).
+// - compact: threads are placed as close together as possible.
+// - scatter: threads are distributed as evenly as possible across the entire system.
+//            (opposite of compact).
+// - explicit: threads are placed according to a list of OS proc IDs (required)
 typedef enum qv_policy_s {
   QV_POLICY_PACKED     = 1,
   QV_POLICY_COMPACT    = 1,
@@ -88,7 +95,9 @@ int
 qv_pthread_colors_fill(
     int *color_array,
     int array_size,
-    qv_policy_t policy
+    qv_policy_t policy,
+    int stride,
+    int npieces
 );
 
 #ifdef __cplusplus
