@@ -24,6 +24,7 @@
 #include "qvi-scope.h"
 #include "qvi-utils.h"
 
+
 struct qvi_pthread_args_s {
     qv_scope_t *scope = nullptr;
     qvi_pthread_routine_fun_ptr_t th_routine = nullptr;
@@ -137,12 +138,50 @@ qv_pthread_scopes_free(
 
 int
 qv_pthread_colors_fill(
-   int *,//color_array,
-   int, // array_size,
-   qv_policy_t //policy
+   int *color_array,
+   int array_size,
+   qv_policy_t policy,
+   int stride,
+   int npieces
 ){
-    //TODO(GM) implement
-    return QV_ERR_NOT_SUPPORTED;
+    int rc = QV_SUCCESS;
+
+    switch(policy){
+    case QV_POLICY_SPREAD:
+        {
+            break;
+        }
+
+    case QV_POLICY_DISTRIBUTE:
+    //case QV_POLICY_ALTERNATE:
+    //case QV_POLICY_CORESFIRST:
+        {
+            break;
+        }
+
+    case QV_POLICY_SCATTER:
+        {
+            break;
+        }
+
+    case QV_POLICY_CHOOSE:
+        {
+            break;
+        }
+
+    case QV_POLICY_PACKED:
+    //case QV_POLICY_COMPACT:
+    //case QV_POLICY_CLOSE:
+    default:
+        {
+            for(int idx = 0 ; idx < array_size ; idx++){
+                color_array[idx] = (idx+idx*(stride-1))%(npieces);
+            }
+            break;
+        }
+    }
+
+    return rc;
 }
 
 /*
