@@ -142,7 +142,7 @@ qvi_pthread_group::task(void)
 int
 qvi_pthread_group::barrier(void)
 {
-    const int rc = pthread_barrier_wait(&(m_barrier));
+    const int rc = pthread_barrier_wait(&m_barrier);
     if (qvi_unlikely((rc != 0) && (rc != PTHREAD_BARRIER_SERIAL_THREAD))) {
         return QV_ERR_INTERNAL;
     }
