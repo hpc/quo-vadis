@@ -33,7 +33,7 @@ thread_work(
     fprintf(stdout,"[%d] Thread running on %s\n", tid, binds);
     free(binds);
 
-    int rank = -1;
+    int rank = 0;
     rc = qv_scope_group_rank(thargs->scope, &rank);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_group_rank failed";
@@ -42,14 +42,14 @@ thread_work(
 
     fprintf(stdout,"[%d] Thread %d splitting in two pieces\n", tid, rank);
 
-    qv_scope_t *out_scope = NULL;
-    rc = qv_scope_split(thargs->scope, 2, rank, &out_scope);
+    qv_scope_t *pthread_subscope = NULL;
+    rc = qv_scope_split(thargs->scope, 2, rank, &pthread_subscope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(out_scope);
+    rc = qv_scope_free(pthread_subscope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));

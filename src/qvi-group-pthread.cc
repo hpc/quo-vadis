@@ -36,9 +36,9 @@ qvi_group_pthread::self(
 
 int
 qvi_group_pthread::split(
-    int color ,
+    int color,
     int key,
-    qvi_group ** child
+    qvi_group **child
 ) {
     qvi_group_pthread *ichild = nullptr;
     int rc  = qvi_new(&ichild);

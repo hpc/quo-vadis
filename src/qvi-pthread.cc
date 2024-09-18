@@ -71,11 +71,8 @@ qvi_pthread_group::call_first_from_pthread_create(
             const pid_t tidi = group->m_tids[i];
             group->m_tid2rank.insert({tidi, i});
         }
-        pthread_barrier_wait(&group->m_barrier);
     }
-    else {
-        pthread_barrier_wait(&group->m_barrier);
-    }
+    pthread_barrier_wait(&group->m_barrier);
     // Everyone can now create their task and populate the mapping table.
     {
         std::lock_guard<std::mutex> guard(group->m_mutex);
@@ -216,7 +213,7 @@ qvi_pthread_group::split(
     if (qvi_likely(rc == QV_SUCCESS)) {
         rc = qvi_new(&ichild, sginfo.size, sginfo.rank);
     }
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);
     }
     *child = ichild;
@@ -230,9 +227,7 @@ qvi_pthread_group::gather(
     qvi_alloc_type_t *shared_alloc,
     qvi_bbuff ***rxbuffs
 ) {
-    int rank = qvi_pthread_group::rank();
-
-    const int rc = qvi_bbuff_copy(*txbuff, m_data_g[rank]);
+    const int rc = qvi_bbuff_copy(*txbuff, m_data_g[rank()]);
     // Need to ensure that all threads have contributed to m_data_g
     pthread_barrier_wait(&m_barrier);
     *shared_alloc = ALLOC_SHARED_GLOBAL;
@@ -252,15 +247,15 @@ qvi_pthread_group::scatter(
     int rootid,
     qvi_bbuff **rxbuff
 ) {
-    int rank = qvi_pthread_group::rank();
+    const int myrank = rank();
 
-    if(rootid == rank){
+    if (rootid == myrank) {
         *m_data_s = txbuffs;
     }
     pthread_barrier_wait(&m_barrier);
 
     qvi_bbuff *mybbuff = nullptr;
-    const int rc = qvi_bbuff_dup( *((*m_data_s)[rank]), &mybbuff);
+    const int rc = qvi_bbuff_dup( *((*m_data_s)[myrank]), &mybbuff);
     pthread_barrier_wait(&m_barrier);
 
     if (qvi_unlikely(rc != QV_SUCCESS)) {
