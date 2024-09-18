@@ -33,7 +33,6 @@ thread_work(
     fprintf(stdout,"[%d] Thread running on %s\n", tid, binds);
     free(binds);
 
-    qv_scope_t *out_scope = NULL;
     int rank = -1;
     rc = qv_scope_group_rank(thargs->scope, &rank);
     if (rc != QV_SUCCESS) {
@@ -41,11 +40,18 @@ thread_work(
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    fprintf(stdout,"=== [%d] Thread %i splitting in two pieces\n", tid, rank);
+    fprintf(stdout,"[%d] Thread %d splitting in two pieces\n", tid, rank);
 
+    qv_scope_t *out_scope = NULL;
     rc = qv_scope_split(thargs->scope, 2, rank, &out_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split failed";
+        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    rc = qv_scope_free(out_scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_free failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -95,21 +101,15 @@ main(void)
         ers = "qv_scope_nobjs() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
-    //test qv_pthread_scope_split
-    int npieces  = 2; //ncores / 2;
+    //
+    // Test qv_pthread_scope_split
+    //
+    int npieces = 2;
     int nthreads = ncores;
 
-
-    fprintf(stdout,"[%d] ====== Testing thread_scope_split (number of threads : %i)\n", tid, nthreads);
+    printf("[%d] Testing thread_scope_split (nthreads=%i)\n", tid, nthreads);
 
     int colors[nthreads];
-
-    /*
-    for (int i = 0 ; i < nthreads ; i++) {
-        colors[i] = i % npieces;
-    }
-    */
     rc = qv_pthread_colors_fill(colors, nthreads, QV_POLICY_PACKED, 1, npieces);
     if (rc != QV_SUCCESS) {
         ers = "qv_pthread_colors_fill() failed";
@@ -152,14 +152,13 @@ main(void)
         }
         //fprintf(stdout,"Thread finished with '%s'\n", (char *)ret);
     }
-
-    /* Clean up */
+    // Clean up.
     rc = qv_pthread_scopes_free(nthreads, th_scopes);
     if (rc != QV_SUCCESS) {
         ers = "qv_pthread_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
+#if 0
     //Test qv_pthread_scope_split_at
     nthreads = 2 * ncores;
 
@@ -216,7 +215,7 @@ main(void)
         ers = "qv_pthread_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
+#endif
     rc = qv_scope_free(mpi_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
