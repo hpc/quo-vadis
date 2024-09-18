@@ -304,6 +304,9 @@ qv_scope::thread_split(
         // implicit retain during construct.
         thgroup->release();
     }
+    // Delete the hardware pool container since its contents are now stored in
+    // the newly created scopes above.
+    delete[] hwpools;
     *thchildren = ithchildren;
     return rc;
 }
