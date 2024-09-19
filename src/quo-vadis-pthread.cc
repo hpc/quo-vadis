@@ -146,6 +146,9 @@ qv_pthread_colors_fill(
 ){
     int rc = QV_SUCCESS;
 
+    if(stride < 1)
+        return QV_ERR_INVLD_ARG;
+
     switch(policy){
     case QV_POLICY_SPREAD:
         {
@@ -161,6 +164,8 @@ qv_pthread_colors_fill(
 
     case QV_POLICY_SCATTER:
         {
+
+
             break;
         }
 
@@ -175,7 +180,8 @@ qv_pthread_colors_fill(
     default:
         {
             for(int idx = 0 ; idx < array_size ; idx++){
-                color_array[idx] = (idx+idx*(stride-1))%(npieces);
+                //    color_array[idx] = (idx+idx*(stride-1))%(npieces);
+                color_array[idx] = (idx*stride)%(npieces);
             }
             break;
         }

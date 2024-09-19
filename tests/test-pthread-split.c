@@ -23,31 +23,27 @@ thread_work(
         qvi_test_panic("%s", ers);
     }
 
-    char *binds = NULL;
-    int rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &binds);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_string() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    fprintf(stdout,"[%d] Thread running on %s\n", tid, binds);
-    free(binds);
-
     int rank = 0;
-    rc = qv_scope_group_rank(thargs->scope, &rank);
+    int rc = qv_scope_group_rank(scope, &rank);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_group_rank failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    fprintf(stdout,"[%d] Thread %d splitting in two pieces\n", tid, rank);
+    qvi_test_scope_report(scope, "thread_scope_in_thread_routine");
+    qvi_test_emit_task_bind(scope);
 
+    fprintf(stdout,"[%d] ============ Thread %d splitting in two pieces\n", tid, rank);
     qv_scope_t *pthread_subscope = NULL;
-    rc = qv_scope_split(thargs->scope, 2, rank, &pthread_subscope);
-    if (rc != QV_SUCCESS) {
+    rc = qv_scope_split(scope, 2, rank, &pthread_subscope);
+N    if (rc != QV_SUCCESS) {
         ers = "qv_scope_split failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+
+    qvi_test_scope_report(pthread_subscope, "thread_subscope");
+    qvi_test_emit_task_bind(pthread_subscope);
+
 
     rc = qv_scope_free(pthread_subscope);
     if (rc != QV_SUCCESS) {
@@ -101,20 +97,48 @@ main(void)
         ers = "qv_scope_nobjs() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+
+    qvi_test_scope_report(mpi_scope, "mpi_scope");
+    qvi_test_emit_task_bind(mpi_scope);
+
+    //As Edgar pointed out, this will work only in the
+    //single process case.
+    //The mpi_scope need to be plsit in order to get
+    //a new mpi_single_process_scope
+
     //
     // Test qv_pthread_scope_split
     //
     int npieces = 2;
     int nthreads = ncores;
-
-    printf("[%d] Testing thread_scope_split (nthreads=%i)\n", tid, nthreads);
-
+    int stride = 1;
     int colors[nthreads];
-    rc = qv_pthread_colors_fill(colors, nthreads, QV_POLICY_PACKED, 1, npieces);
+
+    printf("[%d] Testing thread_scope_split (nthreads=%i, npieces=%i)\n", tid, nthreads, npieces);
+
+    for (int i = 0 ; i < nthreads ; i++) {
+        colors[i] = i % npieces;
+    }
+
+    fprintf(stdout,"Array values :");
+    for (int i = 0 ; i < nthreads ; i++) {
+        fprintf(stdout,"val[%i]: %i |",i,colors[i]);
+    }
+    fprintf(stdout,"\n");
+
+
+    rc = qv_pthread_colors_fill(colors, nthreads, QV_POLICY_PACKED, stride, ncores, npieces);
     if (rc != QV_SUCCESS) {
         ers = "qv_pthread_colors_fill() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+
+    fprintf(stdout,"Array values :");
+    for (int i = 0 ; i < nthreads ; i++) {
+        fprintf(stdout,"val[%i]: %i |",i,colors[i]);
+    }
+    fprintf(stdout,"\n");
+
 
     qv_scope_t **th_scopes = NULL;
     rc = qv_pthread_scope_split(
@@ -158,23 +182,36 @@ main(void)
         ers = "qv_pthread_scope_free() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+
 #if 0
     //Test qv_pthread_scope_split_at
     nthreads = 2 * ncores;
 
-    fprintf(stdout,"[%d] ====== Testing thread_scope_split_at (number of threads : %i)\n", tid, nthreads);
+    printf("[%d] Testing thread_scope_split_at (nthreads=%i)\n", tid, nthreads);
 
     int colors2[nthreads];
-    /*
     for (int i = 0 ; i < nthreads ; i++) {
         colors2[i] = i % ncores;
     }
-    */
-    rc = qv_pthread_colors_fill(colors2, nthreads, QV_POLICY_PACKED, 1, ncores);
+
+    fprintf(stdout,"Array values :");
+    for (int i = 0 ; i < nthreads ; i++) {
+        fprintf(stdout,"val[%i]: %i |",i,colors2[i]);
+    }
+    fprintf(stdout,"\n");
+
+
+    rc = qv_pthread_colors_fill(colors2, nthreads, QV_POLICY_PACKED, stride, ncores, ncores);
     if (rc != QV_SUCCESS) {
         ers = "qv_pthread_colors_fill() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+
+    fprintf(stdout,"Array values :");
+    for (int i = 0 ; i < nthreads ; i++) {
+        fprintf(stdout,"val[%i]: %i |",i,colors2[i]);
+    }
+    fprintf(stdout,"\n");
 
     rc = qv_pthread_scope_split_at(
         mpi_scope, QV_HW_OBJ_CORE, colors2, nthreads, &th_scopes
