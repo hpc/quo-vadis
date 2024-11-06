@@ -36,7 +36,7 @@ thread_work(
     fprintf(stdout,"[%d] ============ Thread %d splitting in two pieces\n", tid, rank);
     qv_scope_t *pthread_subscope = NULL;
     rc = qv_scope_split(scope, 2, rank, &pthread_subscope);
-N    if (rc != QV_SUCCESS) {
+    if (rc != QV_SUCCESS) {
         ers = "qv_scope_split failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
@@ -127,7 +127,7 @@ main(void)
     fprintf(stdout,"\n");
     
 
-    rc = qv_pthread_colors_fill(colors, nthreads, QV_POLICY_PACKED, stride, ncores, npieces);
+    rc = qv_pthread_colors_fill(colors, nthreads, QV_POLICY_PACKED, stride, npieces);
     if (rc != QV_SUCCESS) {
         ers = "qv_pthread_colors_fill() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -201,7 +201,7 @@ main(void)
     fprintf(stdout,"\n");
 
     
-    rc = qv_pthread_colors_fill(colors2, nthreads, QV_POLICY_PACKED, stride, ncores, ncores);
+    rc = qv_pthread_colors_fill(colors2, nthreads, QV_POLICY_PACKED, stride, ncores);
     if (rc != QV_SUCCESS) {
         ers = "qv_pthread_colors_fill() failed";
         qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
