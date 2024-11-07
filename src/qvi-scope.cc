@@ -239,9 +239,18 @@ qv_scope::split(
     if (rc != QV_SUCCESS) goto out;
 
     // Split underlying group. Notice the use of colorp here.
+
+    fprintf(stdout,"[%i]================ rank (key) = %i | color %i | colorp %i | group size =  %i | %s @ %i\n",
+            qvi_gettid() ,m_group->rank(), color, colorp, m_group->size(),__FILE__,__LINE__);
+    fflush(stdout);
+        
     rc = m_group->split(
         colorp, m_group->rank(), &group
     );
+
+    fprintf(stdout,"[%i]================ subgroup rank = %i | subgroup size =  %i | %s @ %i\n", qvi_gettid() ,group->rank(), group->size(),__FILE__,__LINE__);
+    fflush(stdout);
+    
     if (rc != QV_SUCCESS) goto out;
     // Create and initialize the new scope.
     rc = qvi_new(&ichild, group, hwpool);

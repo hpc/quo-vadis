@@ -126,6 +126,12 @@ int
 qvi_pthread_group::rank(void)
 {
     std::lock_guard<std::mutex> guard(m_mutex);
+
+    if(m_tid2rank.empty()){
+        fprintf(stdout,"[%i]=========== Empty map ! %s @ %i\n",qvi_gettid(),__FILE__,__LINE__);
+        return -111;
+    }
+    
     return m_tid2rank.at(qvi_gettid());
 }
 
@@ -208,14 +214,22 @@ qvi_pthread_group::split(
 ) {
     qvi_pthread_group_t *ichild = nullptr;
 
+    fprintf(stdout,"[%i] ==============  pthread group split with color = %i, key = %i |  %s @ %i\n",qvi_gettid(),color, key, __FILE__,__LINE__);            
+    
     qvi_subgroup_info sginfo;
     int rc = m_subgroup_info(color, key, &sginfo);
+
+    fprintf(stdout,"[%i] ==============  pthread group split with sginfo.size = %i, sginfo.rank = %i |  %s @ %i\n",qvi_gettid(), sginfo.size, sginfo.rank, __FILE__,__LINE__);            
+
+    
     if (qvi_likely(rc == QV_SUCCESS)) {
         rc = qvi_new(&ichild, sginfo.size, sginfo.rank);
     }
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);
     }
+
+    
     *child = ichild;
     return rc;
 }

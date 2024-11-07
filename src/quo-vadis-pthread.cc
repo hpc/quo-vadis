@@ -142,6 +142,7 @@ qv_pthread_colors_fill(
    int array_size,
    qv_policy_t policy,
    int stride,
+   int nresources,
    int npieces
 ){
     int rc = QV_SUCCESS;
