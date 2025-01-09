@@ -15,7 +15,7 @@
  */
 
 #include "quo-vadis-mpi.h"
-#include "qvi-test-common.h"
+#include "common-test-utils.h"
 
 int
 main(
@@ -28,34 +28,34 @@ main(
     int rc = MPI_Init(&argc, &argv);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Init() failed";
-        qvi_test_panic("%s (rc=%d)", ers, rc);
+        ctu_panic("%s (rc=%d)", ers, rc);
     }
 
     int wsize;
     rc = MPI_Comm_size(comm, &wsize);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_size() failed";
-        qvi_test_panic("%s (rc=%d)", ers, rc);
+        ctu_panic("%s (rc=%d)", ers, rc);
     }
 
     int wrank = 0;
     rc = MPI_Comm_rank(comm, &wrank);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_rank() failed";
-        qvi_test_panic("%s (rc=%d)", ers, rc);
+        ctu_panic("%s (rc=%d)", ers, rc);
     }
 
     qv_scope_t *scope = NULL;
     rc = qv_mpi_scope_get(comm, QV_SCOPE_USER, &scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_scope_get() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = qv_scope_free(scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     MPI_Finalize();

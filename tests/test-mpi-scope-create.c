@@ -15,7 +15,7 @@
  */
 
 #include "quo-vadis-mpi.h"
-#include "qvi-test-common.h"
+#include "common-test-utils.h"
 
 #define USE_AFFINITY_PRESERVING 1
 
@@ -38,27 +38,27 @@ test_create_scope(
                ncores, 0, &core_scope);
   if (rc != QV_SUCCESS) {
     ers = "qv_scope_create() failed";
-    qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
   }
 
   int res_ncores;
   rc = qv_scope_nobjs(core_scope, QV_HW_OBJ_CORE, &res_ncores);
   if (rc != QV_SUCCESS) {
     ers = "qv_scope_nobjs() failed";
-    qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
   }
 
   rc = qv_scope_bind_push(core_scope);
   if (rc != QV_SUCCESS) {
     ers = "qv_bind_push() failed";
-    qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
   }
 
   /* Where did I end up? */
   rc = qv_scope_bind_string(core_scope, QV_BIND_STRING_AS_LIST, &binds);
   if (rc != QV_SUCCESS) {
     ers = "qv_bind_get_list_as_string() failed";
-    qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
   }
   printf("=> [%d] Core scope: got %d cores, running on %s\n",
      wrank, res_ncores, binds);
@@ -67,13 +67,13 @@ test_create_scope(
   rc = qv_scope_bind_pop(core_scope);
   if (rc != QV_SUCCESS) {
     ers = "qv_bind_pop() failed";
-    qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
   }
 
   rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &binds);
   if (rc != QV_SUCCESS) {
     ers = "qv_bind_get_list_as_string() failed";
-    qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
   }
   printf("[%d] Popped up to %s\n", wrank, binds);
   free(binds);
@@ -82,7 +82,7 @@ test_create_scope(
     rc = qv_scope_free(core_scope);
     if (rc != QV_SUCCESS) {
       ers = "qv_scope_free() failed";
-      qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+      ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
   }
 
@@ -93,7 +93,7 @@ test_create_scope(
   rc = qv_context_barrier(ctx);
   if (rc != QV_SUCCESS) {
     ers = "qv_context_barrier() failed";
-    qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
   }
 #endif
 }
@@ -110,21 +110,21 @@ main(
     int rc = MPI_Init(&argc, &argv);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Init() failed";
-        qvi_test_panic("%s (rc=%d)", ers, rc);
+        ctu_panic("%s (rc=%d)", ers, rc);
     }
 
     int wsize;
     rc = MPI_Comm_size(comm, &wsize);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_size() failed";
-        qvi_test_panic("%s (rc=%d)", ers, rc);
+        ctu_panic("%s (rc=%d)", ers, rc);
     }
 
     int wrank;
     rc = MPI_Comm_rank(comm, &wrank);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_rank() failed";
-        qvi_test_panic("%s (rc=%d)", ers, rc);
+        ctu_panic("%s (rc=%d)", ers, rc);
     }
 
     setbuf(stdout, NULL);
@@ -138,7 +138,7 @@ main(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_scope_get() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int ncores;
@@ -149,14 +149,14 @@ main(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     char *binds;
     rc = qv_scope_bind_string(base_scope, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Base scope w/%d cores, running on %s\n",
        wrank, ncores, binds);
@@ -186,7 +186,7 @@ main(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     /* What resources did I get? */
@@ -197,20 +197,20 @@ main(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = qv_scope_bind_push(sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     /* Where did I end up? */
     rc = qv_scope_bind_string(sub_scope, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("=> [%d] Split: got %d cores, running on %s\n",
        wrank, ncores, binds);
@@ -245,13 +245,13 @@ main(
     rc = qv_scope_free(sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     MPI_Finalize();

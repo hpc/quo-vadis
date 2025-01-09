@@ -19,7 +19,7 @@
 #include "qvi-utils.h"
 
 #include "quo-vadis.h"
-#include "qvi-test-common.h"
+#include "common-test-utils.h"
 
 typedef struct hw_name_type_s {
     char const *name;
@@ -27,16 +27,16 @@ typedef struct hw_name_type_s {
 } hw_name_type_t;
 
 static const hw_name_type_t nts[] = {
-    {QVI_TEST_TOSTRING(QV_HW_OBJ_MACHINE),  QV_HW_OBJ_MACHINE},
-    {QVI_TEST_TOSTRING(QV_HW_OBJ_PACKAGE),  QV_HW_OBJ_PACKAGE},
-    {QVI_TEST_TOSTRING(QV_HW_OBJ_CORE),     QV_HW_OBJ_CORE},
-    {QVI_TEST_TOSTRING(QV_HW_OBJ_PU),       QV_HW_OBJ_PU},
-    {QVI_TEST_TOSTRING(QV_HW_OBJ_L1CACHE),  QV_HW_OBJ_L1CACHE},
-    {QVI_TEST_TOSTRING(QV_HW_OBJ_L2CACHE),  QV_HW_OBJ_L2CACHE},
-    {QVI_TEST_TOSTRING(QV_HW_OBJ_L3CACHE),  QV_HW_OBJ_L3CACHE},
-    {QVI_TEST_TOSTRING(QV_HW_OBJ_L4CACHE),  QV_HW_OBJ_L4CACHE},
-    {QVI_TEST_TOSTRING(QV_HW_OBJ_L5CACHE),  QV_HW_OBJ_L5CACHE},
-    {QVI_TEST_TOSTRING(QV_HW_OBJ_NUMANODE), QV_HW_OBJ_NUMANODE}
+    {CTU_TOSTRING(QV_HW_OBJ_MACHINE),  QV_HW_OBJ_MACHINE},
+    {CTU_TOSTRING(QV_HW_OBJ_PACKAGE),  QV_HW_OBJ_PACKAGE},
+    {CTU_TOSTRING(QV_HW_OBJ_CORE),     QV_HW_OBJ_CORE},
+    {CTU_TOSTRING(QV_HW_OBJ_PU),       QV_HW_OBJ_PU},
+    {CTU_TOSTRING(QV_HW_OBJ_L1CACHE),  QV_HW_OBJ_L1CACHE},
+    {CTU_TOSTRING(QV_HW_OBJ_L2CACHE),  QV_HW_OBJ_L2CACHE},
+    {CTU_TOSTRING(QV_HW_OBJ_L3CACHE),  QV_HW_OBJ_L3CACHE},
+    {CTU_TOSTRING(QV_HW_OBJ_L4CACHE),  QV_HW_OBJ_L4CACHE},
+    {CTU_TOSTRING(QV_HW_OBJ_L5CACHE),  QV_HW_OBJ_L5CACHE},
+    {CTU_TOSTRING(QV_HW_OBJ_NUMANODE), QV_HW_OBJ_NUMANODE}
 };
 
 typedef struct device_name_type_s {
@@ -45,9 +45,9 @@ typedef struct device_name_type_s {
 } device_name_type_t;
 
 static const device_name_type_t devnts[] = {
-    {QVI_TEST_TOSTRING(QV_DEVICE_ID_UUID),       QV_DEVICE_ID_UUID},
-    {QVI_TEST_TOSTRING(QV_DEVICE_ID_PCI_BUS_ID), QV_DEVICE_ID_PCI_BUS_ID},
-    {QVI_TEST_TOSTRING(QV_DEVICE_ID_ORDINAL),    QV_DEVICE_ID_ORDINAL}
+    {CTU_TOSTRING(QV_DEVICE_ID_UUID),       QV_DEVICE_ID_UUID},
+    {CTU_TOSTRING(QV_DEVICE_ID_PCI_BUS_ID), QV_DEVICE_ID_PCI_BUS_ID},
+    {CTU_TOSTRING(QV_DEVICE_ID_ORDINAL),    QV_DEVICE_ID_ORDINAL}
 };
 
 static int
@@ -167,37 +167,37 @@ main(void)
     int rc = qvi_hwloc_new(&hwl);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_new() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = qvi_hwloc_topology_init(hwl, NULL);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_topology_init() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = qvi_hwloc_topology_load(hwl);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_topology_load() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = qvi_hwloc_discover_devices(hwl);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_discover_devices() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = echo_hw_info(hwl);
     if (rc != QV_SUCCESS) {
         ers = "echo_hw_info() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = echo_gpu_info(hwl);
     if (rc != QV_SUCCESS) {
         ers = "echo_gpu_info() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = qvi_hwloc_task_get_cpubind(
@@ -205,20 +205,20 @@ main(void)
     );
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_task_get_cpubind() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = qvi_hwloc_bitmap_asprintf(bitmap, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_bitmap_asprintf() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("\n# cpuset=%s\n", binds);
 
     rc = echo_task_intersections(hwl, binds);
     if (rc != QV_SUCCESS) {
         ers = "echo_task_intersections() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     if (binds) free(binds);

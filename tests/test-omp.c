@@ -4,7 +4,7 @@
  * @file test-threads.c
  */
 
-#include "qvi-test-common.h"
+#include "common-test-utils.h"
 #include "quo-vadis-omp.h"
 #include <omp.h>
 
@@ -26,11 +26,11 @@ emit_iter_info(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf(
         "[%d]: thread=%d of nthread=%d of thread=%d handling iter %d on %s\n",
-        qvi_test_gettid(), omp_get_thread_num(), omp_get_team_size(2),
+        ctu_gettid(), omp_get_thread_num(), omp_get_team_size(2),
         omp_get_ancestor_thread_num(1), i, binds
     );
     free(binds);
@@ -45,13 +45,13 @@ scopei_fill(
     int rc = qv_scope_group_size(sinfo->scope, &sinfo->size);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_group_size() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = qv_scope_group_rank(sinfo->scope, &sinfo->sgrank);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_group_rank() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
 
@@ -63,7 +63,7 @@ scopei_free(
     const int rc = qv_scope_free(sinfo->scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
 
@@ -77,7 +77,7 @@ scopei_base(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_thread_scope_get() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     scopei_fill(sinfo);
 }
@@ -99,7 +99,7 @@ scopei_ep(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split_at() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     scopei_fill(sinfo);
     // We don't need this anymore.
@@ -114,7 +114,7 @@ scopei_ep_push(
     const int rc = qv_scope_bind_push(sinfo->scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_bind_push() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
 
@@ -128,7 +128,7 @@ scopei_ep_pop(
     const int rc = qv_scope_bind_pop(sinfo->scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_bind_pop() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
 

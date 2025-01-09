@@ -19,7 +19,7 @@
 #include "qvi-utils.h"
 #include "qvi-hwloc.h"
 #include "qvi-rmi.h"
-#include "qvi-test-common.h" // IWYU pragma: keep
+#include "common-test-utils.h" // IWYU pragma: keep
 
 static int
 server(

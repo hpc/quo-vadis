@@ -23,7 +23,7 @@
 #include "quo-vadis-mpi.h"
 #include "quo-vadis-pthread.h"
 
-#include "qvi-test-common.h"
+#include "common-test-utils.h"
 
 #include <sys/syscall.h>
 #include <omp.h>
@@ -45,14 +45,14 @@ scope_report(
     int rc = qv_scope_taskid(scope, &taskid);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_taskid() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int sgsize;
     rc = qv_scope_group_size(scope, &sgsize);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_group_size() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     printf("[%d] %s taskid is %d\n", pid, scope_name, taskid);
@@ -61,7 +61,7 @@ scope_report(
     rc = qv_scope_barrier(scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_barrier() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
 
@@ -83,14 +83,14 @@ change_bind(
     int rc = qv_scope_bind_push(scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     char *bind1s;
     rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind1s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] New cpubind is  %s\n", pid,bind1s);
     free(bind1s);
@@ -98,14 +98,14 @@ change_bind(
     rc = qv_scope_bind_pop(scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_pop() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     char *bind2s;
     rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind2s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Popped cpubind is  %s\n", pid, bind2s);
     free(bind2s);
@@ -114,7 +114,7 @@ change_bind(
     rc = qv_scope_barrier(scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_barrier() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
 #endif
@@ -135,19 +135,19 @@ main(void)
    rc = MPI_Init(NULL, NULL);
    if (rc != MPI_SUCCESS) {
      ers = "MPI_Init() failed";
-     qvi_test_panic("%s (rc=%d)", ers, rc);
+     ctu_panic("%s (rc=%d)", ers, rc);
    }
 
    rc = MPI_Comm_size(comm, &wsize);
    if (rc != MPI_SUCCESS) {
      ers = "MPI_Comm_size() failed";
-     qvi_test_panic("%s (rc=%d)", ers, rc);
+     ctu_panic("%s (rc=%d)", ers, rc);
    }
 
    rc = MPI_Comm_rank(comm, &wrank);
    if (rc != MPI_SUCCESS) {
      ers = "MPI_Comm_rank() failed";
-     qvi_test_panic("%s (rc=%d)", ers, rc);
+     ctu_panic("%s (rc=%d)", ers, rc);
    }
 
    qv_scope_t *mpi_scope;
@@ -158,7 +158,7 @@ main(void)
    );
    if (rc != QV_SUCCESS) {
      ers = "qv_mpi_scope_get(QV_SCOPE_PROCESS) failed";
-     qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+     ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
    }
    scope_report(wrank, mpi_scope, "mpi_process_scope");
 
@@ -169,7 +169,7 @@ main(void)
                );
    if (rc != QV_SUCCESS) {
      ers = "qv_scope_nobjs() failed";
-     qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+     ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
    }
    printf("[%d] Number of NUMA in mpi_process_scope is %d\n", wrank, n_numa);
 
@@ -182,7 +182,7 @@ main(void)
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split_at() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     scope_report(wrank, mpi_numa_scope, "mpi_numa_scope");
 
@@ -203,7 +203,7 @@ main(void)
     );
     if (rc != QV_SUCCESS) {
             ers = "qv_scope_nobjs() failed";
-            qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
 
     omp_set_num_threads(n_pu);
@@ -219,7 +219,7 @@ main(void)
       rc = qv_thread_context_create(&omp_ctx);
       if (rc != QV_SUCCESS) {
         ers = "qv_process_context_create() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
       }
 
       qv_scope_t *omp_self_scope;
@@ -230,7 +230,7 @@ main(void)
           );
       if (rc != QV_SUCCESS) {
         ers = "qv_scope_get(QV_SCOPE_PROCESS) failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
       }
       scope_report(omp_ctx, wrank, omp_self_scope, "omp_self_scope");
 
@@ -242,7 +242,7 @@ main(void)
           );
       if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
       }
       printf("[%d][%d] Number of CORES in omp_self_scope is %d\n", wrank, tid, n_cores);
 
@@ -254,7 +254,7 @@ main(void)
           );
       if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
       }
       printf("[%d][%d] Number of PUS   in omp_self_scope is %d\n", wrank, tid, n_pus);
 
@@ -262,7 +262,7 @@ main(void)
       rc = qv_bind_string(omp_ctx, QV_BIND_STRING_AS_LIST, &binds);
       if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
       }
       printf("[%d][%d] Current cpubind is %s\n", wrank, tid, binds);
       free(binds);
@@ -277,7 +277,7 @@ main(void)
                   );
       if (rc != QV_SUCCESS) {
         ers = "qv_scope_split() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
       }
       scope_report(omp_ctx, wrank, omp_sub_scope, "omp_sub_scope");
 
@@ -286,25 +286,25 @@ main(void)
       rc = qv_scope_free(omp_ctx, omp_sub_scope);
       if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
       }
 
       rc = qv_scope_free(omp_ctx, omp_self_scope);
       if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
       }
 
       rc = qv_context_barrier(omp_ctx);
       if (rc != QV_SUCCESS) {
         ers = "qv_context_barrier() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
       }
 
       rc = qv_thread_context_free(omp_ctx);
       if (rc != QV_SUCCESS) {
         ers = "qv_thread_context_free failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
       }
     }
       }
@@ -316,13 +316,13 @@ main(void)
     rc = qv_scope_free(mpi_numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = qv_scope_free(mpi_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
    MPI_Finalize();

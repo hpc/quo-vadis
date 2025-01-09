@@ -15,7 +15,7 @@
  */
 
 #include "quo-vadis-process.h"
-#include "qvi-test-common.h"
+#include "common-test-utils.h"
 
 int
 main(void)
@@ -31,15 +31,15 @@ main(void)
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_get(QV_SCOPE_PROCESS) failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    qvi_test_scope_report(self_scope, "self_scope");
+    ctu_scope_report(self_scope, "self_scope");
 
     rc = qv_scope_free(self_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     qv_scope_t *base_scope;
@@ -48,31 +48,31 @@ main(void)
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_get(QV_SCOPE_USER) failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    qvi_test_scope_report(base_scope, "base_scope");
+    ctu_scope_report(base_scope, "base_scope");
 
     int srank;
     rc = qv_scope_group_rank(base_scope, &srank);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_group_rank() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     if (srank != 0) {
         ers = "Invalid task ID detected";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int sgsize;
     rc = qv_scope_group_size(base_scope, &sgsize);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_group_size() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     if (sgsize != 1) {
         ers = "Invalid number of tasks detected";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int n_numa;
@@ -81,7 +81,7 @@ main(void)
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Number of NUMA in base_scope is %d\n", pid, n_numa);
 
@@ -92,7 +92,7 @@ main(void)
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = qv_scope_nobjs(
@@ -100,24 +100,24 @@ main(void)
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Number of NUMA in sub_scope is %d\n", pid, n_numa);
 
-    qvi_test_scope_report(sub_scope, "sub_scope");
+    ctu_scope_report(sub_scope, "sub_scope");
 
-    qvi_test_change_bind(sub_scope);
+    ctu_change_bind(sub_scope);
 
     rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = qv_scope_free(sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     return EXIT_SUCCESS;
