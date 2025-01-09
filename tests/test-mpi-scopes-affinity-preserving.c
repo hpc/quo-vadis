@@ -12,7 +12,7 @@
  */
 
 #include "quo-vadis-mpi.h"
-#include "qvi-test-common.h"
+#include "common-test-utils.h"
 
 #include <signal.h>
 
@@ -27,7 +27,7 @@ main(
     int rc = MPI_Init(&argc, &argv);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Init() failed";
-        qvi_test_panic("%s (rc=%d)", ers, rc);
+        ctu_panic("%s (rc=%d)", ers, rc);
     }
 
     signal(SIGSEGV, SIG_DFL);
@@ -38,14 +38,14 @@ main(
     rc = MPI_Comm_size(comm, &wsize);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_size() failed";
-        qvi_test_panic("%s (rc=%d)", ers, rc);
+        ctu_panic("%s (rc=%d)", ers, rc);
     }
 
     int wrank;
     rc = MPI_Comm_rank(comm, &wrank);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_rank() failed";
-        qvi_test_panic("%s (rc=%d)", ers, rc);
+        ctu_panic("%s (rc=%d)", ers, rc);
     }
 
     qv_scope_t *base_scope;
@@ -56,10 +56,10 @@ main(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_scope_get() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    qvi_test_scope_report(base_scope, "base_scope");
+    ctu_scope_report(base_scope, "base_scope");
 
     int base_scope_sgsize;
     rc = qv_scope_group_size(
@@ -68,7 +68,7 @@ main(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_group_size() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int base_scope_rank;
@@ -78,7 +78,7 @@ main(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_group_rank() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int n_pu;
@@ -89,7 +89,7 @@ main(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Number of PUs in base_scope is %d\n", wrank, n_pu);
 
@@ -103,32 +103,32 @@ main(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    qvi_test_scope_report(sub_scope, "sub_scope");
+    ctu_scope_report(sub_scope, "sub_scope");
 
-    qvi_test_change_bind(sub_scope);
+    ctu_change_bind(sub_scope);
 
     rc = qv_scope_nobjs(
         sub_scope, QV_HW_OBJ_PU, &n_pu
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Number of PUs in sub_scope is %d\n", wrank, n_pu);
 
     rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     rc = qv_scope_free(sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     MPI_Finalize();

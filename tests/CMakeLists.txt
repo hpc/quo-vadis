@@ -1,6 +1,6 @@
 # -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*-
 #
-# Copyright (c) 2020-2024 Triad National Security, LLC
+# Copyright (c) 2020-2025 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -82,7 +82,7 @@ endif()
 if(MPI_FOUND)
     add_executable(
         test-mpi-init
-        qvi-test-common.h
+        common-test-utils.h
         test-mpi-init.c
     )
 
@@ -144,7 +144,7 @@ if(MPI_FOUND)
 
     add_executable(
         test-pthread-split
-        qvi-test-common.h
+        common-test-utils.h
         test-pthread-split.c
     )
 

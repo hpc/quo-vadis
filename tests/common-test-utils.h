@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2023 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -8,7 +8,7 @@
  */
 
 /**
- * @file qvi-test-common.h
+ * @file common-test-utils.h
  *
  * Common test infrastructure.
  */
@@ -28,10 +28,10 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
-#define QVI_TEST_STRINGIFY(x) #x
-#define QVI_TEST_TOSTRING(x)  QVI_TEST_STRINGIFY(x)
+#define CTU_STRINGIFY(x) #x
+#define CTU_TOSTRING(x)  CTU_STRINGIFY(x)
 
-#define qvi_test_panic(...)                                                    \
+#define ctu_panic(...)                                                         \
 do {                                                                           \
     fprintf(stderr, "\n%s@%d: ", __func__, __LINE__);                          \
     fprintf(stderr, __VA_ARGS__);                                              \
@@ -44,49 +44,49 @@ do {                                                                           \
 #ifdef QUO_VADIS
 
 static inline pid_t
-qvi_test_gettid(void)
+ctu_gettid(void)
 {
     return (pid_t)syscall(SYS_gettid);
 }
 
 static inline void
-qvi_test_emit_task_bind(
+ctu_emit_task_bind(
     qv_scope_t *scope
 ) {
-    const int pid = qvi_test_gettid();
+    const int pid = ctu_gettid();
     char const *ers = NULL;
     // Get new, current binding.
     char *binds = NULL;
     int rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] cpubind=%s\n", pid, binds);
     free(binds);
 }
 
 static inline void
-qvi_test_scope_report(
+ctu_scope_report(
     qv_scope_t *scope,
     const char *const scope_name
 ) {
     char const *ers = NULL;
 
-    const int pid = qvi_test_gettid();
+    const int pid = ctu_gettid();
 
     int sgrank;
     int rc = qv_scope_group_rank(scope, &sgrank);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_group_rank() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int sgsize;
     rc = qv_scope_group_size(scope, &sgsize);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_group_size() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     printf(
@@ -99,7 +99,7 @@ qvi_test_scope_report(
     rc = qv_scope_barrier(scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_barrier() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
 
@@ -107,24 +107,24 @@ qvi_test_scope_report(
  * A verbose version of qv_bind_push().
  */
 static inline void
-qvi_test_bind_push(
+ctu_bind_push(
     qv_scope_t *scope
 ) {
     char const *ers = NULL;
-    const int pid = qvi_test_gettid();
+    const int pid = ctu_gettid();
 
     int sgrank;
     int rc = qv_scope_group_rank(scope, &sgrank);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_group_rank() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     // Get current binding.
     char *bind0s;
     rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind0s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Current cpubind before qv_bind_push() is %s\n", pid, bind0s);
 
@@ -132,7 +132,7 @@ qvi_test_bind_push(
     rc = qv_scope_bind_push(scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     // Get new, current binding.
@@ -140,7 +140,7 @@ qvi_test_bind_push(
     rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind1s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] New cpubind after qv_bind_push() is %s\n", pid, bind1s);
 
@@ -152,25 +152,25 @@ qvi_test_bind_push(
  * A verbose version of qv_bind_pop().
  */
 static inline void
-qvi_test_bind_pop(
+ctu_bind_pop(
     qv_scope_t *scope
 ) {
     char const *ers = NULL;
 
-    const int pid = qvi_test_gettid();
+    const int pid = ctu_gettid();
 
     int sgrank;
     int rc = qv_scope_group_rank(scope, &sgrank);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_group_rank() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     // Get current binding.
     char *bind0s;
     rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind0s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Current cpubind before qv_bind_pop() is %s\n", pid, bind0s);
 
@@ -178,14 +178,14 @@ qvi_test_bind_pop(
     rc = qv_scope_bind_pop(scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     // Get new, current binding.
     char *bind1s;
     rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind1s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] New cpubind after qv_bind_pop() is %s\n", pid, bind1s);
 
@@ -198,25 +198,25 @@ qvi_test_bind_pop(
  * binding policies.
  */
 static inline void
-qvi_test_change_bind(
+ctu_change_bind(
     qv_scope_t *scope
 ) {
     char const *ers = NULL;
 
-    const int pid = qvi_test_gettid();
+    const int pid = ctu_gettid();
 
     int sgrank;
     int rc = qv_scope_group_rank(scope, &sgrank);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_group_rank() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     // Get current binding.
     char *bind0s;
     rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind0s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Current cpubind is %s\n", pid, bind0s);
 
@@ -224,7 +224,7 @@ qvi_test_change_bind(
     rc = qv_scope_bind_push(scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     // Get new, current binding.
@@ -232,27 +232,27 @@ qvi_test_change_bind(
     rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind1s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] New cpubind is %s\n", pid, bind1s);
 
     rc = qv_scope_bind_pop(scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_pop() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     char *bind2s;
     rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind2s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Popped cpubind is %s\n", pid, bind2s);
 
     if (strcmp(bind0s, bind2s)) {
         ers = "bind push/pop mismatch";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     free(bind0s);
@@ -262,7 +262,7 @@ qvi_test_change_bind(
     rc = qv_scope_barrier(scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_barrier() failed";
-        qvi_test_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
 
