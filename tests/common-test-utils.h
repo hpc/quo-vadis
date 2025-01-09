@@ -13,8 +13,8 @@
  * Common test infrastructure.
  */
 
-#ifndef QVI_TEST_COMMON_H
-#define QVI_TEST_COMMON_H
+#ifndef COMMON_TEST_UTILS_H
+#define COMMON_TEST_UTILS_H
 
 #include "quo-vadis.h"
 
