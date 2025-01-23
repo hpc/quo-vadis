@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -365,7 +365,7 @@ qvi_mpi_group_gather_bbuffs(
     qvi_mpi_group_t *group,
     qvi_bbuff *txbuff,
     int root,
-    qvi_alloc_type_t *shared_alloc,
+    qvi_bbuff_alloc_type_t *alloc_type,
     qvi_bbuff ***rxbuffs
 ) {
     const int send_count = (int)txbuff->size();
@@ -386,7 +386,7 @@ qvi_mpi_group_gather_bbuffs(
         rxcounts.data(), 1, MPI_INT,
         root, group->qvcomm.mpi_comm
     );
-    if (mpirc != MPI_SUCCESS) {
+    if (qvi_unlikely(mpirc != MPI_SUCCESS)) {
         rc = QV_ERR_MPI;
         goto out;
     }
@@ -407,7 +407,7 @@ qvi_mpi_group_gather_bbuffs(
         allbytes.data(), rxcounts.data(), displs.data(), MPI_UINT8_T,
         root, group->qvcomm.mpi_comm
     );
-    if (mpirc != MPI_SUCCESS) {
+    if (qvi_unlikely(mpirc != MPI_SUCCESS)) {
         rc = QV_ERR_MPI;
         goto out;
     }
@@ -424,7 +424,7 @@ qvi_mpi_group_gather_bbuffs(
         }
     }
 out:
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         if (bbuffs) {
             for (int i = 0; i < group_size; ++i) {
                 qvi_bbuff_delete(&bbuffs[i]);
@@ -434,7 +434,7 @@ out:
         bbuffs = nullptr;
     }
     *rxbuffs = bbuffs;
-    *shared_alloc = ALLOC_PRIVATE;
+    *alloc_type = QVI_BBUFF_ALLOC_PRIVATE;
     return rc;
 }
 

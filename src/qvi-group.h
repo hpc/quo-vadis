@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2024 Triad National Security, LLC
+ * Copyright (c) 2021-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c)      2021 Lawrence Livermore National Security, LLC
@@ -83,7 +83,7 @@ struct qvi_group : qvi_refc {
     gather(
         qvi_bbuff *txbuff,
         int root,
-        qvi_alloc_type_t  *shared,
+        qvi_bbuff_alloc_type_t *alloc_type,
         qvi_bbuff ***rxbuffs
     ) = 0;
     /** Scatters bbuffs from specified root. */

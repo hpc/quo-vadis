@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2022-2024 Triad National Security, LLC
+ * Copyright (c) 2022-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2022-2024 Inria
@@ -159,7 +159,7 @@ int
 qvi_omp_group::gather(
     qvi_bbuff *txbuff,
     int,
-    qvi_alloc_type_t *shared_alloc,
+    qvi_bbuff_alloc_type_t *alloc_type,
     qvi_bbuff ***rxbuffs
 ) {
     qvi_bbuff **bbuffs = nullptr;
@@ -180,7 +180,7 @@ qvi_omp_group::gather(
         bbuffs = nullptr;
     }
     *rxbuffs = bbuffs;
-    *shared_alloc = ALLOC_SHARED;
+    *alloc_type = QVI_BBUFF_ALLOC_SHARED;
     return rc;
 }
 

@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2024      Triad National Security, LLC
+ * Copyright (c) 2024-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -224,13 +224,13 @@ int
 qvi_pthread_group::gather(
     qvi_bbuff *txbuff,
     int,
-    qvi_alloc_type_t *shared_alloc,
+    qvi_bbuff_alloc_type_t *alloc_type,
     qvi_bbuff ***rxbuffs
 ) {
     const int rc = qvi_bbuff_copy(*txbuff, m_data_g[rank()]);
     // Need to ensure that all threads have contributed to m_data_g
     pthread_barrier_wait(&m_barrier);
-    *shared_alloc = ALLOC_SHARED_GLOBAL;
+    *alloc_type = QVI_BBUFF_ALLOC_SHARED_GLOBAL;
 
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         *rxbuffs = nullptr;
