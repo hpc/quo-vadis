@@ -33,7 +33,7 @@ qvi_pthread_group::qvi_pthread_group(
     */
 
     m_data_g = new qvi_bbuff *[m_size]();
-    for(int i = 0 ; i < group_size ; i++){
+    for (int i = 0 ; i < group_size ; i++) {
         const int rc = qvi_bbuff_new(&m_data_g[i]);
         if (qvi_unlikely(rc != 0)) throw qvi_runtime_error();
     }
@@ -47,7 +47,7 @@ qvi_pthread_group::call_first_from_pthread_create(
 ) {
     const pid_t mytid = qvi_gettid();
     auto args = (qvi_pthread_group_pthread_create_args_s *)arg;
-    qvi_pthread_group_t *const group = args->group;
+    qvi_pthread_group *const group = args->group;
     const qvi_pthread_routine_fun_ptr_t thread_routine = args->throutine;
     void *const th_routine_argp = args->throutine_argp;
     // Let the threads add their TIDs to the vector.
@@ -204,9 +204,9 @@ int
 qvi_pthread_group::split(
     int color,
     int key,
-    qvi_pthread_group_t **child
+    qvi_pthread_group **child
 ) {
-    qvi_pthread_group_t *ichild = nullptr;
+    qvi_pthread_group *ichild = nullptr;
 
     qvi_subgroup_info sginfo;
     int rc = m_subgroup_info(color, key, &sginfo);
