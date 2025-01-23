@@ -21,7 +21,7 @@
 
 struct qvi_group_pthread : public qvi_group {
     /** Underlying group instance. */
-    qvi_pthread_group_t *thgroup = nullptr;
+    qvi_pthread_group *thgroup = nullptr;
     /** Constructor. */
     qvi_group_pthread(void) = default;
     /** Constructor. */

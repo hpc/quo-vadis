@@ -19,22 +19,21 @@
 #include "qvi-bbuff.h"
 
 typedef void *(*qvi_pthread_routine_fun_ptr_t)(void *);
-
+// Foward declaration.
 struct qvi_pthread_group;
-typedef struct qvi_pthread_group qvi_pthread_group_t;
 
 struct qvi_pthread_group_pthread_create_args_s {
     /** Thread group. */
-    qvi_pthread_group_t *group = nullptr;
+    qvi_pthread_group *group = nullptr;
     /** The routine to call after group construction. */
     qvi_pthread_routine_fun_ptr_t throutine = nullptr;
     /** Thread routine arguments. */
     void *throutine_argp = nullptr;
-    /** Constructor. */
+    /** Default constructor. */
     qvi_pthread_group_pthread_create_args_s(void) = delete;
     /** Constructor. */
     qvi_pthread_group_pthread_create_args_s(
-        qvi_pthread_group_t *group_a,
+        qvi_pthread_group *group_a,
         qvi_pthread_routine_fun_ptr_t throutine_a,
         void *throutine_argp_a
     ) : group(group_a)
@@ -73,7 +72,7 @@ private:
         qvi_subgroup_info *sginfo
     );
 public:
-    /** Constructor. */
+    /** Default constructor. */
     qvi_pthread_group(void) = delete;
     /**
      * Constructor. This is called by the parent process to construct the
@@ -113,7 +112,7 @@ public:
     split(
         int color,
         int key,
-        qvi_pthread_group_t **child
+        qvi_pthread_group **child
     );
 
     int

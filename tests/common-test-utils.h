@@ -90,8 +90,8 @@ ctu_scope_report(
     }
 
     printf(
-        "[%d] %s sgrank is %d\n"
-        "[%d] %s sgsize is %d\n",
+        "[%d] %s scope group rank is %d\n"
+        "[%d] %s scope group size is %d\n",
         pid, scope_name, sgrank,
         pid, scope_name, sgsize
     );
