@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2024 Triad National Security, LLC
+ * Copyright (c) 2021-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -694,9 +694,9 @@ qvi_hwsplit_coll::gather_values(
         return rc;
     }
     // Gather the values to the root.
-    qvi_alloc_type_t shared = ALLOC_PRIVATE;
+    qvi_bbuff_alloc_type_t alloc_type = QVI_BBUFF_ALLOC_PRIVATE;
     qvi_bbuff **bbuffs = nullptr;
-    rc = group->gather(txbuff, rootid, &shared, &bbuffs);
+    rc = group->gather(txbuff, rootid, &alloc_type, &bbuffs);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // The root fills in the output.
     if (group->rank() == rootid) {
@@ -707,7 +707,8 @@ qvi_hwsplit_coll::gather_values(
         }
     }
 out:
-    if ((ALLOC_PRIVATE == shared) || ((ALLOC_SHARED == shared) && (group->rank() == rootid))) {
+    if ((QVI_BBUFF_ALLOC_PRIVATE == alloc_type) ||
+        ((QVI_BBUFF_ALLOC_SHARED == alloc_type) && (group->rank() == rootid))) {
         if (bbuffs) {
            for (uint_t i = 0; i < group_size; ++i) {
                 qvi_bbuff_delete(&bbuffs[i]);
@@ -736,9 +737,9 @@ qvi_hwsplit_coll::gather_hwpools(
     int rc = txpool->packinto(&txbuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Gather the values to the root.
-    qvi_alloc_type_t shared = ALLOC_PRIVATE;
+    qvi_bbuff_alloc_type_t alloc_type = QVI_BBUFF_ALLOC_PRIVATE;
     qvi_bbuff **bbuffs = nullptr;
-    rc = group->gather(&txbuff, rootid, &shared, &bbuffs);
+    rc = group->gather(&txbuff, rootid, &alloc_type, &bbuffs);
     if (rc != QV_SUCCESS) goto out;
 
     if (group->rank() == rootid) {
@@ -752,7 +753,8 @@ qvi_hwsplit_coll::gather_hwpools(
         }
     }
 out:
-    if ((ALLOC_PRIVATE == shared) || ((ALLOC_SHARED == shared) && (group->rank() == rootid))) {
+    if ((QVI_BBUFF_ALLOC_PRIVATE == alloc_type) ||
+        ((QVI_BBUFF_ALLOC_SHARED == alloc_type) && (group->rank() == rootid))) {
         if (bbuffs) {
             for (uint_t i = 0; i < group_size; ++i) {
                 qvi_bbuff_delete(&bbuffs[i]);

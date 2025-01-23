@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2022-2024 Triad National Security, LLC
+ * Copyright (c) 2022-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2022-2024 Inria
@@ -37,7 +37,7 @@ extern "C" {
 // - scatter: threads are distributed as evenly as possible across the entire system.
 //            (opposite of compact).
 // - explicit: threads are placed according to a list of OS proc IDs (required)
-typedef enum qv_policy_s {
+typedef enum {
   QV_POLICY_PACKED     = 1,
   QV_POLICY_COMPACT    = 1,
   QV_POLICY_CLOSE      = 1,
@@ -48,6 +48,8 @@ typedef enum qv_policy_s {
   QV_POLICY_SCATTER    = 4,
   QV_POLICY_CHOOSE     = 5,
 } qv_policy_t;
+// TODO(skg) Consider updating prefix to qv_pthread_ if this is only used for
+// Pthread code.
 
 /**
  * Similar to pthread_create(3).

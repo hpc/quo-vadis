@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2022      Inria
@@ -91,10 +91,10 @@ public:
     gather(
         qvi_bbuff *txbuff,
         int root,
-        qvi_alloc_type_t *shared,
+        qvi_bbuff_alloc_type_t *alloc_type,
         qvi_bbuff ***rxbuffs
     ) {
-        return m_ompgroup->gather(txbuff, root, shared, rxbuffs);
+        return m_ompgroup->gather(txbuff, root, alloc_type, rxbuffs);
     }
 
     virtual int

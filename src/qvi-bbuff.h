@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -20,6 +20,12 @@
 #define QVI_BBUFF_H
 
 #include "qvi-common.h"
+
+typedef enum {
+    QVI_BBUFF_ALLOC_SHARED = 0,
+    QVI_BBUFF_ALLOC_SHARED_GLOBAL,
+    QVI_BBUFF_ALLOC_PRIVATE
+} qvi_bbuff_alloc_type_t;
 
 struct qvi_bbuff {
 private:
@@ -83,14 +89,6 @@ void
 qvi_bbuff_delete(
     qvi_bbuff **buff
 );
-
-enum qvi_alloc_s {
-    ALLOC_SHARED = 0,
-    ALLOC_SHARED_GLOBAL,
-    ALLOC_PRIVATE,
-};
-
-typedef enum qvi_alloc_s qvi_alloc_type_t;
 
 #endif
 
