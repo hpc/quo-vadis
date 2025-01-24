@@ -291,7 +291,7 @@ qvi_mpi_group_create_from_split(
     const int mpirc = MPI_Comm_split(
         parent->qvcomm.mpi_comm, color, key, &split_comm
     );
-    if (mpirc != MPI_SUCCESS) return QV_ERR_MPI;
+    if (qvi_unlikely(mpirc != MPI_SUCCESS)) return QV_ERR_MPI;
 
     const int rc = qvi_mpi_group_create_from_mpi_comm(
         mpi, split_comm, child

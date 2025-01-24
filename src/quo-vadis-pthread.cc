@@ -86,7 +86,7 @@ qv_pthread_scope_split_at(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return scope->thsplit_at(
+        return scope->thread_split_at(
             type, color_array, nthreads, subscopes
         );
     }
@@ -129,7 +129,7 @@ qv_pthread_scopes_free(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        qv_scope::thdestroy(&scopes, nscopes);
+        qv_scope::thread_destroy(&scopes, nscopes);
         return QV_SUCCESS;
     }
     qvi_catch_and_return();
