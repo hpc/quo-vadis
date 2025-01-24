@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2024 Triad National Security, LLC
+ * Copyright (c) 2021-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c)      2021 Lawrence Livermore National Security, LLC
@@ -60,9 +60,9 @@ public:
     destroy(
         qv_scope_t **scope
     );
-    /** Destroys scopes created by thsplit*. */
+    /** Destroys scopes created by thread_split*. */
     static void
-    thdestroy(
+    thread_destroy(
         qv_scope_t ***kscopes,
         uint_t k
     );
@@ -120,7 +120,7 @@ public:
     );
 
     int
-    thsplit_at(
+    thread_split_at(
         qv_hw_obj_type_t type,
         int *kgroup_ids,
         uint_t k,

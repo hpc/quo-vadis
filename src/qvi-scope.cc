@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -41,7 +41,7 @@ qv_scope::destroy(
 }
 
 void
-qv_scope::thdestroy(
+qv_scope::thread_destroy(
     qv_scope_t ***kscopes,
     uint_t k
 ) {
@@ -297,7 +297,7 @@ qv_scope::thread_split(
         ithchildren[i] = child;
     }
     if (rc != QV_SUCCESS) {
-        qv_scope::thdestroy(&ithchildren, k);
+        qv_scope::thread_destroy(&ithchildren, k);
     }
     else {
         // Subtract one to account for the parent's
@@ -312,7 +312,7 @@ qv_scope::thread_split(
 }
 
 int
-qv_scope::thsplit_at(
+qv_scope::thread_split_at(
     qv_hw_obj_type_t type,
     int *kgroup_ids,
     uint_t k,

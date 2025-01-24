@@ -126,6 +126,7 @@ int
 qvi_pthread_group::rank(void)
 {
     std::lock_guard<std::mutex> guard(m_mutex);
+    assert(!m_tid2rank.empty());
     return m_tid2rank.at(qvi_gettid());
 }
 
@@ -133,6 +134,7 @@ qvi_task *
 qvi_pthread_group::task(void)
 {
     std::lock_guard<std::mutex> guard(m_mutex);
+    assert(!m_tid2task.empty());
     return m_tid2task.at(qvi_gettid());
 }
 
@@ -152,17 +154,17 @@ qvi_pthread_group::m_subgroup_info(
     int key,
     qvi_subgroup_info *sginfo
 ) {
-    int rank = qvi_pthread_group::rank();
-    int master_rank = 0; // Choosing 0 as master.
+    const int master_rank = 0;
+    const int my_rank = qvi_pthread_group::rank();
     // Gather colors and keys from ALL threads.
-    m_ckrs[rank].color = color;
-    m_ckrs[rank].key   = key;
-    m_ckrs[rank].rank  = rank;
+    m_ckrs[my_rank].color = color;
+    m_ckrs[my_rank].key = key;
+    m_ckrs[my_rank].rank = my_rank;
     // Barrier to be sure that all threads have contributed their values.
     pthread_barrier_wait(&m_barrier);
     // Since these data are shared, only the master thread has to sort them.
     // The same goes for calculating the number of distinct colors provided.
-    if(rank == master_rank){
+    if (my_rank == master_rank) {
         // Sort the color/key/rank array. First according to color, then by key,
         // but in the same color realm. If color and key are identical, sort by
         // the rank from given group.
@@ -174,7 +176,7 @@ qvi_pthread_group::m_subgroup_info(
         for (int i = 0; i < m_size; ++i) {
             color_set.insert(m_ckrs[i].color);
         }
-        m_ckrs[rank].ncolors = color_set.size();
+        m_ckrs[my_rank].ncolors = color_set.size();
     }
     //All threads wait for the number of colors to be computed.
     pthread_barrier_wait(&m_barrier);
@@ -188,7 +190,7 @@ qvi_pthread_group::m_subgroup_info(
         // Else we found the start of my color group.
         const int current_color = m_ckrs[i].color;
         for (int j = i; j < m_size && current_color == m_ckrs[j].color; ++j) {
-            if (m_ckrs[j].rank == rank) {
+            if (m_ckrs[j].rank == my_rank) {
                 sginfo->rank = group_rank;
             }
             group_size++;
