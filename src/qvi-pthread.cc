@@ -16,21 +16,17 @@
 #include "qvi-task.h" // IWYU pragma: keep
 #include "qvi-utils.h"
 
-qvi_pthread_group::qvi_pthread_group(
-    int group_size,
-    int //rank_in_group //unused for now
-) : m_size(group_size)
-{
-    const int rc = pthread_barrier_init(&m_barrier, NULL, group_size);
-    if (qvi_unlikely(rc != 0)) throw qvi_runtime_error();
+int
+qvi_pthread_group::m_init_by_a_single_thread(
+    qvi_pthread_group_context *ctx,
+    int group_size
+) {
+    m_context = ctx;
 
-    //C++ flavor
-    /*
-    m_data_g.resize(m_size);
-    for (auto &p : m_data_g) {
-        qvi_new(&p);
-    }
-    */
+    m_size = group_size;
+
+    int rc = pthread_barrier_init(&m_barrier, NULL, m_size);
+    if (qvi_unlikely(rc != 0)) throw qvi_runtime_error();
 
     m_data_g = new qvi_bbuff *[m_size]();
     for (int i = 0 ; i < group_size ; i++) {
@@ -39,17 +35,17 @@ qvi_pthread_group::qvi_pthread_group(
     }
     m_data_s = new qvi_bbuff**();
     m_ckrs = new qvi_subgroup_color_key_rank[m_size]();
+
+    return rc;
 }
 
-void *
-qvi_pthread_group::call_first_from_pthread_create(
-    void *arg
+/* static */ int
+qvi_pthread_group::m_finish_init_by_all_threads(
+    qvi_pthread_group *group
 ) {
+    int rc = QV_SUCCESS;
+
     const pid_t mytid = qvi_gettid();
-    auto args = (qvi_pthread_group_pthread_create_args_s *)arg;
-    qvi_pthread_group *const group = args->group;
-    const qvi_pthread_routine_fun_ptr_t thread_routine = args->throutine;
-    void *const th_routine_argp = args->throutine_argp;
     // Let the threads add their TIDs to the vector.
     {
         std::lock_guard<std::mutex> guard(group->m_mutex);
@@ -77,12 +73,49 @@ qvi_pthread_group::call_first_from_pthread_create(
     {
         std::lock_guard<std::mutex> guard(group->m_mutex);
         qvi_task *task = nullptr;
-        const int rc = qvi_new(&task);
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+        // Don't check rc and return here to avoid hangs in error paths.
+        rc = qvi_new(&task);
         group->m_tid2task.insert({mytid, task});
     }
-    // Make sure they all finish before continuing.
+    // Make sure they all finish before returning.
     pthread_barrier_wait(&group->m_barrier);
+    return rc;
+}
+
+qvi_pthread_group::qvi_pthread_group(
+    qvi_pthread_group_context *ctx,
+    int group_size
+) {
+    const int rc = m_init_by_a_single_thread(ctx, group_size);
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+    // TODO(skg) Add to group table context.
+}
+
+qvi_pthread_group::qvi_pthread_group(
+    qvi_pthread_group *parent_group,
+    const qvi_subgroup_info &sginfo
+) {
+    assert(sginfo.rank == 0);
+
+    std::lock_guard<std::mutex> guard(parent_group->m_mutex);
+    const int rc = m_init_by_a_single_thread(parent_group->m_context, sginfo.size);
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+
+    const qvi_group_id_t mygid = parent_group->m_subgroup_gids[sginfo.index];
+    m_context->groupid2thgroup.insert({mygid, this});
+}
+
+void *
+qvi_pthread_group::call_first_from_pthread_create(
+    void *arg
+) {
+    auto args = (qvi_pthread_group_pthread_create_args *)arg;
+    const qvi_pthread_routine_fun_ptr_t thread_routine = args->throutine;
+    void *const th_routine_argp = args->throutine_argp;
+
+    const int rc = m_finish_init_by_all_threads(args->group);
+    // TODO(skg) Is this the correct thing to do? Shall we return something?
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
     // Free the provided argument container.
     qvi_delete(&args);
     // Finally, call the specified thread routine.
@@ -91,6 +124,9 @@ qvi_pthread_group::call_first_from_pthread_create(
 
 qvi_pthread_group::~qvi_pthread_group(void)
 {
+    // TODO(skg)
+    return;
+
     std::lock_guard<std::mutex> guard(m_mutex);
     for (auto &tt : m_tid2task) {
         qvi_delete(&tt.second);
@@ -110,7 +146,6 @@ qvi_pthread_group::~qvi_pthread_group(void)
         qvi_delete(&tt);
     }
     */
-
     delete m_data_s;
     delete[] m_ckrs;
 }
@@ -152,11 +187,15 @@ int
 qvi_pthread_group::m_subgroup_info(
     int color,
     int key,
-    qvi_subgroup_info *sginfo
+    qvi_subgroup_info &sginfo
 ) {
+    int rc = QV_SUCCESS;
     const int master_rank = 0;
-    const int my_rank = qvi_pthread_group::rank();
-    // Gather colors and keys from ALL threads.
+    const int my_rank = rank();
+    // TODO(skg)
+    //qvi_log_debug("color={}, key={}, rank={}", color, key, my_rank);
+    // Gather colors and keys from ALL threads in the parent group.
+    // NOTE: this (i.e., the caller) is a member of the parent group).
     m_ckrs[my_rank].color = color;
     m_ckrs[my_rank].key = key;
     m_ckrs[my_rank].rank = my_rank;
@@ -176,30 +215,45 @@ qvi_pthread_group::m_subgroup_info(
         for (int i = 0; i < m_size; ++i) {
             color_set.insert(m_ckrs[i].color);
         }
-        m_ckrs[my_rank].ncolors = color_set.size();
+        const size_t ncolors = color_set.size();
+        m_ckrs[my_rank].ncolors = ncolors;
+        // Now that we know the number of distinct colors, populate the
+        // sub-group IDs. Set rc here and continue until return so we don't hang
+        // on an error path.
+        rc = qvi_group::next_ids(ncolors, m_subgroup_gids);
     }
-    //All threads wait for the number of colors to be computed.
+    // All threads wait for the number of colors to be computed.
     pthread_barrier_wait(&m_barrier);
+    // Make sure errors didn't occur above. Do this after the barrier.
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // The number of distinct colors is the number of subgroups.
-    sginfo->ngroups = m_ckrs[master_rank].ncolors;
-    // Compute my sub-group size and sub-group rank.
-    int group_rank = 0;
-    int group_size = 0;
+    m_ckrs[my_rank].ncolors = m_ckrs[master_rank].ncolors;
+    sginfo.ngroups = m_ckrs[master_rank].ncolors;
+    // Compute my sub-group id, size, and sub-group rank.
+    int subgroup_index = 0;
+    int subgroup_rank = 0;
+    int subgroup_size = 0;
+    int current_color = m_ckrs[0].color;
     for (int i = 0; i < m_size; ++i) {
+        // Calculate subgroup ID based on new colors seen.
+        if (current_color != m_ckrs[i].color) {
+            current_color = m_ckrs[i].color;
+            subgroup_index++;
+        }
         if (color != m_ckrs[i].color) continue;
         // Else we found the start of my color group.
-        const int current_color = m_ckrs[i].color;
-        for (int j = i; j < m_size && current_color == m_ckrs[j].color; ++j) {
+        for (int j = i; j < m_size && color == m_ckrs[j].color; ++j) {
             if (m_ckrs[j].rank == my_rank) {
-                sginfo->rank = group_rank;
+                sginfo.rank = subgroup_rank;
             }
-            group_size++;
-            group_rank++;
+            subgroup_size++;
+            subgroup_rank++;
         }
-        sginfo->size = group_size;
+        sginfo.index = subgroup_index;
+        sginfo.size = subgroup_size;
         break;
     }
-    return QV_SUCCESS;
+    return rc;
 }
 
 int
@@ -211,10 +265,22 @@ qvi_pthread_group::split(
     qvi_pthread_group *ichild = nullptr;
 
     qvi_subgroup_info sginfo;
-    int rc = m_subgroup_info(color, key, &sginfo);
-    if (qvi_likely(rc == QV_SUCCESS)) {
-        rc = qvi_new(&ichild, sginfo.size, sginfo.rank);
+    int rc = m_subgroup_info(color, key, sginfo);
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    if (sginfo.rank == 0) {
+        // Recall this is the parent group.
+        rc = qvi_new(&ichild, this, sginfo);
+        barrier();
     }
+    else {
+        barrier();
+        const qvi_group_id_t mygid = m_subgroup_gids[sginfo.index];
+        ichild = m_context->groupid2thgroup.at(mygid);
+    }
+
+    rc = m_finish_init_by_all_threads(ichild);
+
+out:
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);
     }

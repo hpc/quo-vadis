@@ -61,10 +61,11 @@ struct qvi_group : qvi_refc {
         qvi_group **child
     ) = 0;
     /**
-     * Creates a new thread group by splitting off of the caller's group.
+     * Creates a new thread group by splitting off of the calling process'
+     * group.
      */
     virtual int
-    thsplit(
+    thread_split(
         int nthreads,
         qvi_group **child
     );
@@ -97,6 +98,12 @@ struct qvi_group : qvi_refc {
     static int
     next_id(
         qvi_group_id_t *gid
+    );
+    /** Populates gids with n unique group IDs after each call. */
+    static int
+    next_ids(
+        size_t n,
+        std::vector<qvi_group_id_t> &gids
     );
 };
 

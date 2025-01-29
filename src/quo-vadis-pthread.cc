@@ -24,14 +24,14 @@
 #include "qvi-scope.h"
 #include "qvi-utils.h"
 
-struct qvi_pthread_args_s {
+struct qvi_pthread_args {
     qv_scope_t *scope = nullptr;
     qvi_pthread_routine_fun_ptr_t th_routine = nullptr;
     void *th_routine_argp = nullptr;
+    /** Default constructor. */
+    qvi_pthread_args(void) = delete;
     /** Constructor. */
-    qvi_pthread_args_s(void) = delete;
-    /** Constructor. */
-    qvi_pthread_args_s(
+    qvi_pthread_args(
         qv_scope_t *scope_a,
         qvi_pthread_routine_fun_ptr_t th_routine_a,
         void *th_routine_argp_a
@@ -41,15 +41,15 @@ struct qvi_pthread_args_s {
 };
 
 static void *
-qvi_pthread_routine(
+qvi_pthread_start_routine(
     void *arg
 ) {
-    qvi_pthread_args_s *arg_ptr = (qvi_pthread_args_s *)arg;
+    qvi_pthread_args *args = (qvi_pthread_args *)arg;
     // TODO(skg) Check return code.
-    arg_ptr->scope->bind_push();
+    args->scope->bind_push();
 
-    void *const ret = arg_ptr->th_routine(arg_ptr->th_routine_argp);
-    qvi_delete(&arg_ptr);
+    void *const ret = args->th_routine(args->th_routine_argp);
+    qvi_delete(&args);
     pthread_exit(ret);
 }
 
@@ -102,17 +102,21 @@ qv_pthread_create(
     qv_scope_t *scope
 ) {
     // Memory will be freed in qv_pthread_routine to avoid memory leaks.
-    qvi_pthread_args_s *arg_ptr = nullptr;
-    int rc = qvi_new(&arg_ptr, scope, thread_routine, arg);
+    qvi_pthread_args *pthread_start_args = nullptr;
+    int rc = qvi_new(&pthread_start_args, scope, thread_routine, arg);
     // Since this is meant to behave similarly to
     // pthread_create(), return a reasonable errno.
     if (qvi_unlikely(rc != QV_SUCCESS)) return ENOMEM;
-
+    // Note: The provided scope should have been created by
+    // qv_pthread_scope_split*. That is why we can safely cast the scope's
+    // underlying group it to a qvi_group_pthread *.
     auto group = dynamic_cast<qvi_group_pthread *>(scope->group());
-    qvi_pthread_group_pthread_create_args_s *cargs = nullptr;
-    rc = qvi_new(&cargs, group->thgroup, qvi_pthread_routine, arg_ptr);
+    qvi_pthread_group_pthread_create_args *cargs = nullptr;
+    rc = qvi_new(
+        &cargs, group->thgroup, qvi_pthread_start_routine, pthread_start_args
+    );
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_delete(&arg_ptr);
+        qvi_delete(&pthread_start_args);
         return ENOMEM;
     }
     return pthread_create(

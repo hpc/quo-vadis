@@ -20,13 +20,31 @@
 #include "qvi-bbuff.h"
 
 struct qvi_group_pthread : public qvi_group {
+protected:
+    /**
+     * Points to per-process, per-thread_split()
+     * information that maintains Pthread group context.
+     */
+    qvi_pthread_group_context *m_context = nullptr;
+public:
     /** Underlying group instance. */
     qvi_pthread_group *thgroup = nullptr;
-    /** Constructor. */
-    qvi_group_pthread(void) = default;
-    /** Constructor. */
+    /** Default constructor. */
+    qvi_group_pthread(void) = delete;
+    /**
+     * Constructor that is called by the parent process to setup
+     * base infrastructure required during a thread_split().
+     */
     qvi_group_pthread(
+        qvi_pthread_group_context *ctx,
         int group_size
+    );
+    /**
+     * Constructor that is collective across ALL threads in the parent group.
+     */
+    qvi_group_pthread(
+        qvi_pthread_group_context *ctx,
+        qvi_pthread_group *thread_group
     );
     /** Destructor. */
     virtual ~qvi_group_pthread(void);
@@ -59,7 +77,10 @@ struct qvi_group_pthread : public qvi_group {
     make_intrinsic(
         qv_scope_intrinsic_t
     ) {
-        // Nothing to do.
+        // Nothing to do here because a Pthread group cannot be created outside
+        // of another group. For example, a thread_split can be called from a
+        // process context, which can be an intrinsic group, but not from a
+        // threaded context alone.
         return QV_SUCCESS;
     }
 
@@ -69,14 +90,15 @@ struct qvi_group_pthread : public qvi_group {
     );
 
     virtual int
-    thsplit(
+    thread_split(
         int,
         qvi_group **
     ) {
-        // TODO(skg)
         return QV_ERR_NOT_SUPPORTED;
     }
-
+    /**
+     * This is a collective call across all threads in the parent thread group.
+     */
     virtual int
     split(
         int color,

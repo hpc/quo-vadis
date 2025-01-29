@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2022-2024 Triad National Security, LLC
+ * Copyright (c) 2022-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2022-2024 Inria
@@ -29,9 +29,11 @@
 struct qvi_subgroup_info {
     /** Number of sub-groups created from split. */
     int ngroups = 0;
-    /** Number of members in this sub-group. */
+    /** My sub-group index (from 0 to ngroups - 1). */
+    int index = 0;
+    /** Number of members in my sub-group. */
     int size = 0;
-    /** My rank in this sub-group. */
+    /** My rank in my sub-group. */
     int rank = 0;
 };
 
@@ -43,7 +45,7 @@ struct qvi_subgroup_color_key_rank {
     int color = -1;
     int key = -1;
     int rank = -1;
-    int ncolors = 0;
+    int ncolors = -1;
 
     static bool
     by_color(

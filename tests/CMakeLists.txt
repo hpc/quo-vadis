@@ -151,7 +151,6 @@ if(MPI_FOUND)
     target_link_libraries(
         test-pthread-split
         quo-vadis
-        quo-vadis-mpi
     )
 
     add_executable(
