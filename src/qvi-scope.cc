@@ -237,10 +237,6 @@ qv_scope::split(
     );
     rc = chwsplit.split(&colorp, &hwpool);
     if (rc != QV_SUCCESS) goto out;
-    // TODO(skg) In the threaded case it looks like there is a race here or
-    // something else is wrong. See colorp.
-    //qvi_log_debug("SCOPE SPLIT npieces={}, color={} colorp={}", npieces, color, colorp);
-
     // Split underlying group. Notice the use of colorp here.
     rc = m_group->split(
         colorp, m_group->rank(), &group
