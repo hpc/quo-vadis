@@ -72,7 +72,7 @@ public:
     );
 
     virtual int
-    thsplit(
+    thread_split(
         int,
         qvi_group **
     ) {

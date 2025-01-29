@@ -15,10 +15,34 @@
 #include "qvi-utils.h"
 
 qvi_group_pthread::qvi_group_pthread(
+    qvi_pthread_group_context *ctx,
     int group_size
 ) {
-    const int rc = qvi_new(&thgroup, group_size, 0);
+    int rc = QV_SUCCESS;
+    // A context pointer was not provided, so create a new one.
+    if (!ctx) {
+        rc = qvi_new(&m_context);
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+    }
+    else {
+        // Else a context pointer was provided, so use it.
+        m_context = ctx;
+        m_context->retain();
+    }
+    //
+    rc = qvi_new(&thgroup, m_context, group_size);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+}
+
+qvi_group_pthread::qvi_group_pthread(
+    qvi_pthread_group_context *ctx,
+    qvi_pthread_group *thread_group
+) {
+    assert(ctx && thread_group);
+    m_context = ctx;
+    m_context->retain();
+    //
+    thgroup = thread_group;
 }
 
 qvi_group_pthread::~qvi_group_pthread(void)
@@ -40,13 +64,18 @@ qvi_group_pthread::split(
     int key,
     qvi_group **child
 ) {
+    // NOTE: This is a collective call across
+    // ALL threads in the parent thread group.
     qvi_group_pthread *ichild = nullptr;
-    int rc  = qvi_new(&ichild);
+
+    qvi_pthread_group *ithgroup = nullptr;
+    int rc = thgroup->split(color, key, &ithgroup);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
 
-    rc = thgroup->split(color, key, &ichild->thgroup);
+    rc = qvi_new(&ichild, m_context, ithgroup);
 out:
     if (qvi_unlikely(rc != QV_SUCCESS)) {
+        qvi_delete(&ithgroup);
         qvi_delete(&ichild);
     }
     *child = ichild;

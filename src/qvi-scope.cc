@@ -237,6 +237,9 @@ qv_scope::split(
     );
     rc = chwsplit.split(&colorp, &hwpool);
     if (rc != QV_SUCCESS) goto out;
+    // TODO(skg) In the threaded case it looks like there is a race here or
+    // something else is wrong. See colorp.
+    //qvi_log_debug("SCOPE SPLIT npieces={}, color={} colorp={}", npieces, color, colorp);
 
     // Split underlying group. Notice the use of colorp here.
     rc = m_group->split(
@@ -274,7 +277,7 @@ qv_scope::thread_split(
 ) {
     *thchildren = nullptr;
     const uint_t group_size = k;
-    // Split the hardware, get the hardare pools.
+    // Split the hardware, get the hardware pools.
     qvi_hwpool **hwpools = nullptr;
     int rc = qvi_hwsplit::thread_split(
         this, npieces, kcolors, k, maybe_obj_type, &hwpools
@@ -282,9 +285,9 @@ qv_scope::thread_split(
     if (rc != QV_SUCCESS) return rc;
     // Split off from our parent group. This call is called from a context in
     // which a process is splitting its resources across threads, so create a
-    // new thread group for each child.
+    // new thread group that will be shared with each child (see below).
     qvi_group *thgroup = nullptr;
-    rc = m_group->thsplit(group_size, &thgroup);
+    rc = m_group->thread_split(group_size, &thgroup);
     if (rc != QV_SUCCESS) return rc;
     // Now create and populate the children.
     qv_scope_t **ithchildren = new qv_scope_t *[group_size];
