@@ -192,8 +192,6 @@ qvi_pthread_group::m_subgroup_info(
     int rc = QV_SUCCESS;
     const int master_rank = 0;
     const int my_rank = rank();
-    // TODO(skg)
-    //qvi_log_debug("color={}, key={}, rank={}", color, key, my_rank);
     // Gather colors and keys from ALL threads in the parent group.
     // NOTE: this (i.e., the caller) is a member of the parent group).
     m_ckrs[my_rank].color = color;
@@ -277,9 +275,10 @@ qvi_pthread_group::split(
         const qvi_group_id_t mygid = m_subgroup_gids[sginfo.index];
         ichild = m_context->groupid2thgroup.at(mygid);
     }
+    // Now we can check if errors happened above.
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
 
     rc = m_finish_init_by_all_threads(ichild);
-
 out:
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);
@@ -295,16 +294,22 @@ qvi_pthread_group::gather(
     qvi_bbuff_alloc_type_t *alloc_type,
     qvi_bbuff ***rxbuffs
 ) {
-    const int rc = qvi_bbuff_copy(*txbuff, m_data_g[rank()]);
+    const int myrank = rank();
+    // I'm not sure why this barrier is needed, but it seems to help...
+    barrier();
+    int rc = QV_SUCCESS;
+    {
+        std::lock_guard<std::mutex> guard(m_mutex);
+        rc = qvi_bbuff_copy(*txbuff, m_data_g[myrank]);
+        *alloc_type = QVI_BBUFF_ALLOC_SHARED_GLOBAL;
+    }
     // Need to ensure that all threads have contributed to m_data_g
-    pthread_barrier_wait(&m_barrier);
-    *alloc_type = QVI_BBUFF_ALLOC_SHARED_GLOBAL;
+    barrier();
 
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         *rxbuffs = nullptr;
         return QV_ERR_INTERNAL;
     }
-
     *rxbuffs = m_data_g;
     return rc;
 }
@@ -315,16 +320,20 @@ qvi_pthread_group::scatter(
     int rootid,
     qvi_bbuff **rxbuff
 ) {
+    int rc = QV_SUCCESS;
     const int myrank = rank();
+    qvi_bbuff *mybbuff = nullptr;
 
     if (rootid == myrank) {
         *m_data_s = txbuffs;
     }
-    pthread_barrier_wait(&m_barrier);
 
-    qvi_bbuff *mybbuff = nullptr;
-    const int rc = qvi_bbuff_dup( *((*m_data_s)[myrank]), &mybbuff);
-    pthread_barrier_wait(&m_barrier);
+    barrier();
+    {
+        std::lock_guard<std::mutex> guard(m_mutex);
+        rc = qvi_bbuff_dup(*((*m_data_s)[myrank]), &mybbuff);
+    }
+    barrier();
 
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_bbuff_delete(&mybbuff);
