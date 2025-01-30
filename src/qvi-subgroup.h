@@ -27,6 +27,8 @@
  * doesn't have native support for creating sub-groups.
  */
 struct qvi_subgroup_info {
+    /** The rank of the master task. */
+    static constexpr int master_rank = 0;
     /** Number of sub-groups created from split. */
     int ngroups = 0;
     /** My sub-group index (from 0 to ngroups - 1). */

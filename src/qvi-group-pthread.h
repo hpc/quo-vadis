@@ -77,11 +77,11 @@ public:
     make_intrinsic(
         qv_scope_intrinsic_t
     ) {
-        // Nothing to do here because a Pthread group cannot be created outside
-        // of another group. For example, a thread_split can be called from a
+        // Not supported because a Pthread group cannot be created outside of
+        // another group. For example, a thread_split can be called from a
         // process context, which can be an intrinsic group, but not from a
         // threaded context alone.
-        return QV_SUCCESS;
+        return QV_ERR_NOT_SUPPORTED;
     }
 
     virtual int

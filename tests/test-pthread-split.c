@@ -47,14 +47,11 @@ thread_work(
     ctu_scope_report(pthread_subscope, "thread_subscope");
     ctu_emit_task_bind(pthread_subscope);
 
-#if 0
     rc = qv_scope_free(pthread_subscope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-#endif
-
     return NULL;
 }
 

@@ -17,26 +17,27 @@
 #include "qvi-utils.h"
 
 int
-qvi_pthread_group::m_init_by_a_single_thread(
+qvi_pthread_group::m_start_init_by_a_single_thread(
     qvi_pthread_group_context *ctx,
     int group_size
 ) {
-    m_context = ctx;
+    assert(ctx && group_size > 0);
 
+    m_context = ctx;
     m_size = group_size;
 
-    int rc = pthread_barrier_init(&m_barrier, NULL, m_size);
-    if (qvi_unlikely(rc != 0)) throw qvi_runtime_error();
+    int rc = pthread_barrier_init(&m_barrier, nullptr, m_size);
+    if (qvi_unlikely(rc != 0)) return rc;
 
-    m_data_g = new qvi_bbuff *[m_size]();
+    m_gather_data = new qvi_bbuff *[m_size]();
     for (int i = 0 ; i < group_size ; i++) {
-        const int rc = qvi_bbuff_new(&m_data_g[i]);
-        if (qvi_unlikely(rc != 0)) throw qvi_runtime_error();
+        rc = qvi_bbuff_new(&m_gather_data[i]);
+        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     }
-    m_data_s = new qvi_bbuff**();
+    m_scatter_data = new qvi_bbuff**();
     m_ckrs = new qvi_subgroup_color_key_rank[m_size]();
 
-    return rc;
+    return QV_SUCCESS;
 }
 
 /* static */ int
@@ -52,7 +53,7 @@ qvi_pthread_group::m_finish_init_by_all_threads(
         group->m_tids.push_back(mytid);
     }
     // Make sure they all contribute before continuing.
-    pthread_barrier_wait(&group->m_barrier);
+    group->barrier();
     // Elect one thread to be the worker.
     bool worker = false;
     {
@@ -61,6 +62,7 @@ qvi_pthread_group::m_finish_init_by_all_threads(
     }
     // The worker populates the TID to rank mapping, while the others wait.
     if (worker) {
+        std::lock_guard<std::mutex> guard(group->m_mutex);
         std::sort(group->m_tids.begin(), group->m_tids.end());
 
         for (int i = 0; i < group->m_size; ++i) {
@@ -68,7 +70,7 @@ qvi_pthread_group::m_finish_init_by_all_threads(
             group->m_tid2rank.insert({tidi, i});
         }
     }
-    pthread_barrier_wait(&group->m_barrier);
+    group->barrier();
     // Everyone can now create their task and populate the mapping table.
     {
         std::lock_guard<std::mutex> guard(group->m_mutex);
@@ -78,7 +80,7 @@ qvi_pthread_group::m_finish_init_by_all_threads(
         group->m_tid2task.insert({mytid, task});
     }
     // Make sure they all finish before returning.
-    pthread_barrier_wait(&group->m_barrier);
+    group->barrier();
     return rc;
 }
 
@@ -86,19 +88,20 @@ qvi_pthread_group::qvi_pthread_group(
     qvi_pthread_group_context *ctx,
     int group_size
 ) {
-    const int rc = m_init_by_a_single_thread(ctx, group_size);
+    const int rc = m_start_init_by_a_single_thread(ctx, group_size);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
-    // TODO(skg) Add to group table context.
 }
 
 qvi_pthread_group::qvi_pthread_group(
     qvi_pthread_group *parent_group,
     const qvi_subgroup_info &sginfo
 ) {
-    assert(sginfo.rank == 0);
+    assert(sginfo.rank == qvi_subgroup_info::master_rank);
 
     std::lock_guard<std::mutex> guard(parent_group->m_mutex);
-    const int rc = m_init_by_a_single_thread(parent_group->m_context, sginfo.size);
+    const int rc = m_start_init_by_a_single_thread(
+        parent_group->m_context, sginfo.size
+    );
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 
     const qvi_group_id_t mygid = parent_group->m_subgroup_gids[sginfo.index];
@@ -124,30 +127,23 @@ qvi_pthread_group::call_first_from_pthread_create(
 
 qvi_pthread_group::~qvi_pthread_group(void)
 {
-    // TODO(skg)
-    return;
-
     std::lock_guard<std::mutex> guard(m_mutex);
+
     for (auto &tt : m_tid2task) {
         qvi_delete(&tt.second);
     }
-    pthread_barrier_destroy(&m_barrier);
 
-    if (m_data_g) {
+    if (m_gather_data) {
         for (int i = 0; i < m_size; ++i) {
-            qvi_bbuff_delete(&m_data_g[i]);
+            qvi_bbuff_delete(&m_gather_data[i]);
         }
-        delete[] m_data_g;
+        delete[] m_gather_data;
     }
 
-    //C++ flavor
-    /*
-    for (auto &tt : m_data) {
-        qvi_delete(&tt);
-    }
-    */
-    delete m_data_s;
+    delete m_scatter_data;
     delete[] m_ckrs;
+
+    pthread_barrier_destroy(&m_barrier);
 }
 
 int
@@ -216,8 +212,8 @@ qvi_pthread_group::m_subgroup_info(
         const size_t ncolors = color_set.size();
         m_ckrs[my_rank].ncolors = ncolors;
         // Now that we know the number of distinct colors, populate the
-        // sub-group IDs. Set rc here and continue until return so we don't hang
-        // on an error path.
+        // sub-group IDs. Set rc here and continue until after the next barrier
+        // so we don't hang on an error path.
         rc = qvi_group::next_ids(ncolors, m_subgroup_gids);
     }
     // All threads wait for the number of colors to be computed.
@@ -265,7 +261,9 @@ qvi_pthread_group::split(
     qvi_subgroup_info sginfo;
     int rc = m_subgroup_info(color, key, sginfo);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    if (sginfo.rank == 0) {
+    // One thread creates the child group. The rest wait for the instance and
+    // later grab a pointer to their group based on the sub-group index.
+    if (sginfo.rank == qvi_subgroup_info::master_rank) {
         // Recall this is the parent group.
         rc = qvi_new(&ichild, this, sginfo);
         barrier();
@@ -274,10 +272,11 @@ qvi_pthread_group::split(
         barrier();
         const qvi_group_id_t mygid = m_subgroup_gids[sginfo.index];
         ichild = m_context->groupid2thgroup.at(mygid);
+        ichild->retain();
     }
     // Now we can check if errors happened above.
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-
+    // Collectively finish child instance initialization.
     rc = m_finish_init_by_all_threads(ichild);
 out:
     if (qvi_unlikely(rc != QV_SUCCESS)) {
@@ -300,7 +299,7 @@ qvi_pthread_group::gather(
     int rc = QV_SUCCESS;
     {
         std::lock_guard<std::mutex> guard(m_mutex);
-        rc = qvi_bbuff_copy(*txbuff, m_data_g[myrank]);
+        rc = qvi_bbuff_copy(*txbuff, m_gather_data[myrank]);
         *alloc_type = QVI_BBUFF_ALLOC_SHARED_GLOBAL;
     }
     // Need to ensure that all threads have contributed to m_data_g
@@ -310,7 +309,7 @@ qvi_pthread_group::gather(
         *rxbuffs = nullptr;
         return QV_ERR_INTERNAL;
     }
-    *rxbuffs = m_data_g;
+    *rxbuffs = m_gather_data;
     return rc;
 }
 
@@ -325,13 +324,13 @@ qvi_pthread_group::scatter(
     qvi_bbuff *mybbuff = nullptr;
 
     if (rootid == myrank) {
-        *m_data_s = txbuffs;
+        *m_scatter_data = txbuffs;
     }
 
     barrier();
     {
         std::lock_guard<std::mutex> guard(m_mutex);
-        rc = qvi_bbuff_dup(*((*m_data_s)[myrank]), &mybbuff);
+        rc = qvi_bbuff_dup(*((*m_scatter_data)[myrank]), &mybbuff);
     }
     barrier();
 

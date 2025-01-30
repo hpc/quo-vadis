@@ -41,20 +41,21 @@ qvi_group_pthread::qvi_group_pthread(
     assert(ctx && thread_group);
     m_context = ctx;
     m_context->retain();
-    //
+    // No retain() here because the calling side takes care of this. See
+    // qvi_pthread_group::split() by way of qvi_group_pthread::split().
     thgroup = thread_group;
 }
 
 qvi_group_pthread::~qvi_group_pthread(void)
 {
-    qvi_delete(&thgroup);
+    thgroup->release();
+    m_context->release();
 }
 
 int
 qvi_group_pthread::self(
     qvi_group **
 ) {
-    // TODO(skg)
     return QV_ERR_NOT_SUPPORTED;
 }
 
@@ -75,7 +76,6 @@ qvi_group_pthread::split(
     rc = qvi_new(&ichild, m_context, ithgroup);
 out:
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_delete(&ithgroup);
         qvi_delete(&ichild);
     }
     *child = ichild;
