@@ -29,13 +29,13 @@ qvi_pthread_group::m_start_init_by_a_single_thread(
     int rc = pthread_barrier_init(&m_barrier, nullptr, m_size);
     if (qvi_unlikely(rc != 0)) return rc;
 
-    m_gather_data = new qvi_bbuff *[m_size]();
+    m_gather_data = new qvi_bbuff *[m_size];
     for (int i = 0 ; i < group_size ; i++) {
         rc = qvi_bbuff_new(&m_gather_data[i]);
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     }
-    m_scatter_data = new qvi_bbuff**();
-    m_ckrs = new qvi_subgroup_color_key_rank[m_size]();
+    m_scatter_data = new qvi_bbuff**;
+    m_ckrs.resize(m_size);
 
     return QV_SUCCESS;
 }
@@ -108,23 +108,6 @@ qvi_pthread_group::qvi_pthread_group(
     m_context->groupid2thgroup.insert({mygid, this});
 }
 
-void *
-qvi_pthread_group::call_first_from_pthread_create(
-    void *arg
-) {
-    auto args = (qvi_pthread_group_pthread_create_args *)arg;
-    const qvi_pthread_routine_fun_ptr_t thread_routine = args->throutine;
-    void *const th_routine_argp = args->throutine_argp;
-
-    const int rc = m_finish_init_by_all_threads(args->group);
-    // TODO(skg) Is this the correct thing to do? Shall we return something?
-    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
-    // Free the provided argument container.
-    qvi_delete(&args);
-    // Finally, call the specified thread routine.
-    return thread_routine(th_routine_argp);
-}
-
 qvi_pthread_group::~qvi_pthread_group(void)
 {
     std::lock_guard<std::mutex> guard(m_mutex);
@@ -141,9 +124,30 @@ qvi_pthread_group::~qvi_pthread_group(void)
     }
 
     delete m_scatter_data;
-    delete[] m_ckrs;
 
     pthread_barrier_destroy(&m_barrier);
+}
+
+void *
+qvi_pthread_group::call_first_from_pthread_create(
+    void *arg
+) {
+    auto args = (qvi_pthread_group_pthread_create_args *)arg;
+    const qvi_pthread_routine_fun_ptr_t thread_routine = args->throutine;
+    void *const th_routine_argp = args->throutine_argp;
+
+    const int rc = m_finish_init_by_all_threads(args->group);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        qvi_log_error(
+            "An error occurred in m_finish_init_by_all_threads(): {} ({})",
+            rc, qv_strerr(rc)
+        );
+        throw qvi_runtime_error();
+    }
+    // Free the provided argument container.
+    qvi_delete(&args);
+    // Finally, call the specified thread routine.
+    return thread_routine(th_routine_argp);
 }
 
 int
@@ -201,9 +205,9 @@ qvi_pthread_group::m_subgroup_info(
         // Sort the color/key/rank array. First according to color, then by key,
         // but in the same color realm. If color and key are identical, sort by
         // the rank from given group.
-        std::sort(m_ckrs, m_ckrs + m_size, qvi_subgroup_color_key_rank::by_color);
-        std::sort(m_ckrs, m_ckrs + m_size, qvi_subgroup_color_key_rank::by_key);
-        std::sort(m_ckrs, m_ckrs + m_size, qvi_subgroup_color_key_rank::by_rank);
+        std::sort(m_ckrs.begin(), m_ckrs.end(), qvi_subgroup_color_key_rank::by_color);
+        std::sort(m_ckrs.begin(), m_ckrs.end(), qvi_subgroup_color_key_rank::by_key);
+        std::sort(m_ckrs.begin(), m_ckrs.end(), qvi_subgroup_color_key_rank::by_rank);
         // Calculate the number of distinct colors provided.
         std::set<int> color_set;
         for (int i = 0; i < m_size; ++i) {
@@ -293,21 +297,21 @@ qvi_pthread_group::gather(
     qvi_bbuff_alloc_type_t *alloc_type,
     qvi_bbuff ***rxbuffs
 ) {
-    const int myrank = rank();
-    // I'm not sure why this barrier is needed, but it seems to help...
-    barrier();
     int rc = QV_SUCCESS;
+    const int myrank = rank();
+
+    barrier();
     {
         std::lock_guard<std::mutex> guard(m_mutex);
         rc = qvi_bbuff_copy(*txbuff, m_gather_data[myrank]);
         *alloc_type = QVI_BBUFF_ALLOC_SHARED_GLOBAL;
     }
-    // Need to ensure that all threads have contributed to m_data_g
+    // Ensure that all threads have contributed to m_gather_data.
     barrier();
 
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         *rxbuffs = nullptr;
-        return QV_ERR_INTERNAL;
+        return rc;
     }
     *rxbuffs = m_gather_data;
     return rc;
@@ -336,7 +340,7 @@ qvi_pthread_group::scatter(
 
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_bbuff_delete(&mybbuff);
-        return QV_ERR_INTERNAL;
+        return rc;
     }
     *rxbuff = mybbuff;
     return rc;

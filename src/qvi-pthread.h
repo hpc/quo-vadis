@@ -65,8 +65,6 @@ private:
     std::map<pid_t, qvi_task *> m_tid2task;
     /** Used for mutexy things. */
     std::mutex m_mutex;
-    /** Used for monitory things. */
-    std::condition_variable m_condition;
     /** Used for barrier things. */
     pthread_barrier_t m_barrier;
     /** Used for gather exchanges. */
@@ -74,7 +72,7 @@ private:
     /** Used for scatter exchanges. */
     qvi_bbuff ***m_scatter_data = nullptr;
     /** Shared color, key, rank data used for splitting. */
-    qvi_subgroup_color_key_rank *m_ckrs = nullptr;
+    std::vector<qvi_subgroup_color_key_rank> m_ckrs;
     /** Shared sub-group IDs. */
     std::vector<qvi_group_id_t> m_subgroup_gids;
     /** */
