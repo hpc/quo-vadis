@@ -28,7 +28,7 @@ struct qvi_pthread_group;
  * all threads that are spawned by a common parent process.
  */
 struct qvi_pthread_group_context : public qvi_refc {
-    /** */
+    /** Maps group IDs to Pthread group instance pointers. */
     std::unordered_map<qvi_group_id_t, qvi_pthread_group *> groupid2thgroup;
 };
 
@@ -51,7 +51,7 @@ struct qvi_pthread_group_pthread_create_args {
       , throutine_argp(throutine_argp_a) { }
 };
 
-struct qvi_pthread_group {
+struct qvi_pthread_group : qvi_refc {
 private:
     /** Context information. */
     qvi_pthread_group_context *m_context = nullptr;
@@ -70,16 +70,16 @@ private:
     /** Used for barrier things. */
     pthread_barrier_t m_barrier;
     /** Used for gather exchanges. */
-    qvi_bbuff **m_data_g = nullptr;
+    qvi_bbuff **m_gather_data = nullptr;
     /** Used for scatter exchanges. */
-    qvi_bbuff ***m_data_s = nullptr;
-    /** Shared color, key, rank scratch pad used for splitting. */
+    qvi_bbuff ***m_scatter_data = nullptr;
+    /** Shared color, key, rank data used for splitting. */
     qvi_subgroup_color_key_rank *m_ckrs = nullptr;
     /** Shared sub-group IDs. */
     std::vector<qvi_group_id_t> m_subgroup_gids;
     /** */
     int
-    m_init_by_a_single_thread(
+    m_start_init_by_a_single_thread(
         qvi_pthread_group_context *ctx,
         int group_size
     );
