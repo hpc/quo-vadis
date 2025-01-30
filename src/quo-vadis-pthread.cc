@@ -45,8 +45,14 @@ qvi_pthread_start_routine(
     void *arg
 ) {
     qvi_pthread_args *args = (qvi_pthread_args *)arg;
-    // TODO(skg) Check return code.
-    args->scope->bind_push();
+
+    const int rc = args->scope->bind_push();
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        qvi_log_error(
+            "An error occurred in bind_push(): {} ({})", rc, qv_strerr(rc)
+        );
+        pthread_exit(nullptr);
+    }
 
     void *const ret = args->th_routine(args->th_routine_argp);
     qvi_delete(&args);
@@ -61,9 +67,9 @@ qv_pthread_scope_split(
     int nthreads,
     qv_scope_t ***subscope
 ) {
-    const bool invld_args = !scope || npieces < 0 || !color_array ||
-                            nthreads < 0 || !subscope;
-    if (qvi_unlikely(invld_args)) {
+    const bool invalid_args = !scope || npieces < 0 || !color_array ||
+                              nthreads < 0 || !subscope;
+    if (qvi_unlikely(invalid_args)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
@@ -143,50 +149,42 @@ int
 qv_pthread_colors_fill(
    int *color_array,
    int array_size,
-   qv_policy_t policy,
+   qv_pthread_placement_t policy,
    int stride,
    int npieces
 ) {
-    int rc = QV_SUCCESS;
-
-    if (stride < 1) return QV_ERR_INVLD_ARG;
-
+    const bool invalid_args = !color_array || array_size < 0 ||
+                              stride < 1 || npieces < 1;
+    if (qvi_unlikely(invalid_args)) return QV_ERR_INVLD_ARG;
+    // TODO(skg) We should use the mapping algorithms in qvi-map for these. The
+    // problem is that its interfaces aren't yet suited for this type of
+    // mapping.
     switch(policy) {
-    case QV_POLICY_SPREAD:
-        {
-            break;
-        }
-
-    case QV_POLICY_DISTRIBUTE:
-    //case QV_POLICY_ALTERNATE:
-    //case QV_POLICY_CORESFIRST:
-        {
-            break;
-        }
-
-    case QV_POLICY_SCATTER:
-        {
-            break;
-        }
-
-    case QV_POLICY_CHOOSE:
-        {
-            break;
-        }
-
-    case QV_POLICY_PACKED:
-    //case QV_POLICY_COMPACT:
-    //case QV_POLICY_CLOSE:
-    default:
-        {
+        case QV_POLICY_PACKED: {
+            // TODO(skg) This looks more like spread.
             for(int idx = 0 ; idx < array_size ; idx++){
-                //    color_array[idx] = (idx+idx*(stride-1))%(npieces);
+                // color_array[idx] = (idx+idx*(stride-1))%(npieces);
                 color_array[idx] = (idx*stride)%(npieces);
             }
             break;
         }
+        case QV_POLICY_SPREAD: {
+            return QV_ERR_NOT_SUPPORTED;
+        }
+        case QV_POLICY_DISTRIBUTE: {
+            return QV_ERR_NOT_SUPPORTED;
+        }
+        case QV_POLICY_SCATTER: {
+            return QV_ERR_NOT_SUPPORTED;
+        }
+        case QV_POLICY_CHOOSE: {
+            return QV_ERR_NOT_SUPPORTED;
+        }
+        default: {
+            return QV_ERR_INVLD_ARG;
+        }
     }
-    return rc;
+    return QV_SUCCESS;
 }
 
 /*

@@ -28,7 +28,7 @@ extern "C" {
 #endif
 
 /**
- * Mapping policies types.
+ * Placement (or mapping) policy types.
  */
 // Intel policies (KMP_AFFINITY) are :
 // - disabled: prevents the runtime library from making any affinity-related
@@ -37,6 +37,7 @@ extern "C" {
 // - scatter: threads are distributed as evenly as possible across the entire system.
 //            (opposite of compact).
 // - explicit: threads are placed according to a list of OS proc IDs (required)
+// TODO(skg) Do we need all of these synonyms?
 typedef enum {
   QV_POLICY_PACKED     = 1,
   QV_POLICY_COMPACT    = 1,
@@ -46,10 +47,8 @@ typedef enum {
   QV_POLICY_ALTERNATE  = 3,
   QV_POLICY_CORESFIRST = 3,
   QV_POLICY_SCATTER    = 4,
-  QV_POLICY_CHOOSE     = 5,
-} qv_policy_t;
-// TODO(skg) Consider updating prefix to qv_pthread_ if this is only used for
-// Pthread code.
+  QV_POLICY_CHOOSE     = 5
+} qv_pthread_placement_t;
 
 /**
  * Similar to pthread_create(3).
@@ -97,7 +96,7 @@ int
 qv_pthread_colors_fill(
     int *color_array,
     int array_size,
-    qv_policy_t policy,
+    qv_pthread_placement_t policy,
     int stride,
     int npieces
 );
