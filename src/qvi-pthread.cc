@@ -142,7 +142,7 @@ qvi_pthread_group::call_first_from_pthread_create(
             "An error occurred in m_finish_init_by_all_threads(): {} ({})",
             rc, qv_strerr(rc)
         );
-        throw qvi_runtime_error();
+        pthread_exit(nullptr);
     }
     // Free the provided argument container.
     qvi_delete(&args);
