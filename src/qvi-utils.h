@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -71,7 +71,7 @@ void
 qvi_delete(
     T **t
 ) {
-    if (!t) return;
+    if (qvi_unlikely(!t)) return;
     T *it = *t;
     if (it) {
         delete it;
