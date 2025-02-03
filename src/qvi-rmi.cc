@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -94,7 +94,7 @@ static void
 zsocket_close(
     void **sock
 ) {
-    if (!sock) return;
+    if (qvi_unlikely(!sock)) return;
     void *isock = *sock;
     if (qvi_likely(isock)) {
         const int rc = zmq_close(isock);
@@ -109,7 +109,7 @@ static void
 zctx_destroy(
     void **ctx
 ) {
-    if (!ctx) return;
+    if (qvi_unlikely(!ctx)) return;
     void *ictx = *ctx;
     if (qvi_likely(ictx)) {
         const int rc = zmq_ctx_destroy(ictx);
@@ -754,14 +754,15 @@ server_rpc_dispatch(
 
     qvi_bbuff *res;
     rc = fidfunp->second(server, &hdr, body, &res);
-    if (rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN) {
+    if (qvi_unlikely(rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN)) {
         cstr_t ers = "RPC dispatch failed";
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
         goto out;
     }
     // Shutdown?
-    if (rc == QV_SUCCESS_SHUTDOWN) shutdown = true;
-
+    if (qvi_unlikely(rc == QV_SUCCESS_SHUTDOWN)) {
+        shutdown = true;
+    }
     rc = zmsg_init_from_bbuff(res, msg_out);
 out:
     zmq_msg_close(msg_in);
@@ -795,7 +796,7 @@ server_go(
         rc = zmsg_send(zworksock, &mtx, &bsent);
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
         bsentt += bsent;
-    } while(active);
+    } while(qvi_likely(active));
 #if QVI_DEBUG_MODE == 1
     // Nice to understand messaging characteristics.
     qvi_log_debug("Server Sent {} bytes", bsentt);
@@ -885,18 +886,18 @@ qvi_rmi_server_start(
 ) {
     // First populate the base hardware resource pool.
     int qvrc = server_populate_base_hwpool(server);
-    if (qvrc != QV_SUCCESS) return qvrc;
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
 
     server->zlo = zsocket_create_and_connect(
         server->zctx, ZMQ_REQ, server->config.url.c_str()
     );
-    if (!server->zlo) return QV_ERR_RPC;
+    if (qvi_unlikely(!server->zlo)) return QV_ERR_RPC;
 
-    int rc = pthread_create(
+    const int rc = pthread_create(
         &server->worker_thread, nullptr,
         server_start_threads, server
     );
-    if (rc != 0) {
+    if (qvi_unlikely(rc != 0)) {
         cstr_t ers = "pthread_create() failed";
         qvi_log_error("{} with rc={} ({})", ers, rc, qvi_strerr(rc));
         qvrc = QV_ERR_SYS;
