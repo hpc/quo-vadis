@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -132,8 +132,7 @@ rmi_start(
 
     cstr_t ers = nullptr;
 
-    static const bool blocks = true;
-    int rc = qvi_rmi_server_start(ctx.rmi, blocks);
+    int rc = qvi_rmi_server_start(ctx.rmi);
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_server_start() failed";
     }

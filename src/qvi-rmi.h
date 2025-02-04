@@ -81,8 +81,7 @@ qvi_rmi_server_config(
  */
 int
 qvi_rmi_server_start(
-    qvi_rmi_server_t *server,
-    bool block
+    qvi_rmi_server_t *server
 );
 
 /**
@@ -181,6 +180,11 @@ qvi_rmi_get_cpuset_for_nobjs(
     qv_hw_obj_type_t obj_type,
     int nobjs,
     hwloc_cpuset_t *result
+);
+
+int
+qvi_rmi_send_shutdown_message(
+    qvi_rmi_client_t *client
 );
 
 #ifdef __cplusplus
