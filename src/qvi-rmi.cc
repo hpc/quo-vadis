@@ -53,8 +53,6 @@ do {                                                                           \
     qvi_log_warn("{} with errno={} ({})", ers, (erno), qvi_strerr((erno)));    \
 } while (0)
 
-static constexpr cstr_t ZINPROC_ADDR = "inproc://qvi-rmi-workers";
-
 typedef enum qvi_rpc_funid_e {
     FID_INVALID = 0,
     FID_SERVER_SHUTDOWN,
@@ -83,11 +81,6 @@ typedef int (*qvi_rpc_fun_ptr_t)(
     qvi_msg_header_t *,
     void *,
     qvi_bbuff **
-);
-
-static void
-send_server_shutdown_msg(
-    qvi_rmi_server_t *server
 );
 
 static void
@@ -129,10 +122,6 @@ struct qvi_rmi_server_s {
     void *zctx = nullptr;
     /** Loopback socket for managerial messages. */
     void *zlo = nullptr;
-    /** The worker thread. */
-    pthread_t worker_thread;
-    /** Flag indicating if main thread blocks for workers to complete. */
-    bool blocks = false;
     /** Constructor. */
     qvi_rmi_server_s(void)
     {
@@ -145,14 +134,10 @@ struct qvi_rmi_server_s {
     /** Destructor. */
     ~qvi_rmi_server_s(void)
     {
-        send_server_shutdown_msg(this);
         zsocket_close(&zlo);
         zctx_destroy(&zctx);
         unlink(config.hwtopo_path.c_str());
         qvi_delete(&hwpool);
-        if (!blocks) {
-            pthread_join(worker_thread, nullptr);
-        }
     }
 };
 
@@ -772,16 +757,15 @@ out:
     return (shutdown ? QV_SUCCESS_SHUTDOWN : rc);
 }
 
-static void *
+static int
 server_go(
-    void *data
+    qvi_rmi_server_t *server
 ) {
-    qvi_rmi_server_t *const server = (qvi_rmi_server_t *)data;
 
-    void *zworksock = zsocket_create_and_connect(
-        server->zctx, ZMQ_REP, ZINPROC_ADDR
+    void *zworksock = zsocket_create_and_bind(
+        server->zctx, ZMQ_REP, server->config.url.c_str()
     );
-    if (qvi_unlikely(!zworksock)) return nullptr;
+    if (qvi_unlikely(!zworksock)) return QV_ERR_SYS;
 
     int rc, bsent;
     volatile int bsentt = 0;
@@ -807,15 +791,7 @@ server_go(
     if (qvi_unlikely(rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN)) {
         qvi_log_error("RX/TX loop exited with rc={} ({})", rc, qv_strerr(rc));
     }
-    return nullptr;
-}
-
-static void
-send_server_shutdown_msg(
-    qvi_rmi_server_t *server
-) {
-    (void)rpc_req(server->zlo, FID_SERVER_SHUTDOWN, QVI_BBUFF_RMI_ZERO_MSG);
-    (void)rpc_rep(server->zlo, QVI_BBUFF_RMI_ZERO_MSG);
+    return QV_SUCCESS;
 }
 
 int
@@ -840,49 +816,9 @@ server_populate_base_hwpool(
     return server->hwpool->initialize(hwloc, cpuset);
 }
 
-static void *
-server_start_threads(
-    void *data
-) {
-    qvi_rmi_server_t *server = (qvi_rmi_server_t *)data;
-
-    void *clients = zsocket_create_and_bind(
-        server->zctx, ZMQ_ROUTER, server->config.url.c_str()
-    );
-    if (qvi_unlikely(!clients)) {
-        cstr_t ers = "zsocket_create_and_bind() failed";
-        qvi_log_error("{}", ers);
-        return nullptr;
-    }
-
-    void *workers = zsocket_create_and_bind(
-        server->zctx, ZMQ_DEALER, ZINPROC_ADDR
-    );
-    if (qvi_unlikely(!workers)) {
-        cstr_t ers = "zsocket_create_and_bind() failed";
-        qvi_log_error("{}", ers);
-        return nullptr;
-    }
-
-    pthread_t worker;
-    int rc = pthread_create(&worker, nullptr, server_go, server);
-    if (qvi_unlikely(rc != 0)) {
-        cstr_t ers = "pthread_create() failed";
-        qvi_log_error("{} with rc={} ({})", ers, rc, qvi_strerr(rc));
-    }
-    // The zmq_proxy() function always returns -1 and errno set to ETERM.
-    zmq_proxy(clients, workers, nullptr);
-    pthread_join(worker, nullptr);
-    zsocket_close(&workers);
-
-    zsocket_close(&clients);
-    return nullptr;
-}
-
 int
 qvi_rmi_server_start(
-    qvi_rmi_server_t *server,
-    bool block
+    qvi_rmi_server_t *server
 ) {
     // First populate the base hardware resource pool.
     int qvrc = server_populate_base_hwpool(server);
@@ -891,23 +827,9 @@ qvi_rmi_server_start(
     server->zlo = zsocket_create_and_connect(
         server->zctx, ZMQ_REQ, server->config.url.c_str()
     );
-    if (qvi_unlikely(!server->zlo)) return QV_ERR_RPC;
+    if (qvi_unlikely(!server->zlo)) return QV_ERR_SYS;
 
-    const int rc = pthread_create(
-        &server->worker_thread, nullptr,
-        server_start_threads, server
-    );
-    if (qvi_unlikely(rc != 0)) {
-        cstr_t ers = "pthread_create() failed";
-        qvi_log_error("{} with rc={} ({})", ers, rc, qvi_strerr(rc));
-        qvrc = QV_ERR_SYS;
-    }
-
-    if (block && qvrc == QV_SUCCESS) {
-        server->blocks = true;
-        pthread_join(server->worker_thread, nullptr);
-    }
-    return qvrc;
+    return server_go(server);
 }
 
 static int
@@ -1093,6 +1015,15 @@ qvi_rmi_get_cpuset_for_nobjs(
     return qvi_hwloc_get_cpuset_for_nobjs(
         client->config.hwloc, cpuset,
         obj_type, nobjs, result
+    );
+}
+
+int
+qvi_rmi_send_shutdown_message(
+    qvi_rmi_client_t *client
+) {
+    return rpc_req(
+        client->zsock, FID_SERVER_SHUTDOWN
     );
 }
 

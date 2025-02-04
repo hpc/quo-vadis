@@ -1,6 +1,6 @@
 # -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*-
 #
-# Copyright (c) 2020-2024 Triad National Security, LLC
+# Copyright (c) 2020-2025 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -34,26 +34,6 @@ add_test(
 ################################################################################
 ################################################################################
 add_executable(
-    test-rmi-server
-    test-rmi-server.cc
-)
-
-target_link_libraries(
-    test-rmi-server
-    quo-vadis
-)
-
-add_test(
-    NAME
-      rmi-server
-    COMMAND
-      bash -c "export URL=\"tcp://127.0.0.1:55995\" && \
-      ${CMAKE_CURRENT_BINARY_DIR}/test-rmi-server $URL"
-)
-
-################################################################################
-################################################################################
-add_executable(
     test-rmi
     test-rmi.cc
 )
@@ -68,12 +48,10 @@ add_test(
       rmi
     COMMAND
       bash -c "export URL=\"tcp://127.0.0.1:55995\" && \
-      ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh \
-        \"${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -s\" 5 & ) && \
+      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -s & ) && \
       ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
       ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
-      ( ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c & ) && \
-        ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c"
+        ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -cc"
 )
 
 # Use the C linker to test for C/C++ linkage problems.
@@ -87,7 +65,6 @@ set_target_properties(
 # Set core test properties.
 set_tests_properties(
     hwloc
-    rmi-server
     rmi
     PROPERTIES
       TIMEOUT 60

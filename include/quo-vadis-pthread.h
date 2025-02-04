@@ -39,15 +39,15 @@ extern "C" {
 // - explicit: threads are placed according to a list of OS proc IDs (required)
 // TODO(skg) Do we need all of these synonyms?
 typedef enum {
-  QV_POLICY_PACKED     = 1,
-  QV_POLICY_COMPACT    = 1,
-  QV_POLICY_CLOSE      = 1,
-  QV_POLICY_SPREAD     = 2,
-  QV_POLICY_DISTRIBUTE = 3,
-  QV_POLICY_ALTERNATE  = 3,
-  QV_POLICY_CORESFIRST = 3,
-  QV_POLICY_SCATTER    = 4,
-  QV_POLICY_CHOOSE     = 5
+    QV_POLICY_PACKED     = 1,
+    QV_POLICY_COMPACT    = 1,
+    QV_POLICY_CLOSE      = 1,
+    QV_POLICY_SPREAD     = 2,
+    QV_POLICY_DISTRIBUTE = 3,
+    QV_POLICY_ALTERNATE  = 3,
+    QV_POLICY_CORESFIRST = 3,
+    QV_POLICY_SCATTER    = 4,
+    QV_POLICY_CHOOSE     = 5
 } qv_pthread_placement_t;
 
 /**
