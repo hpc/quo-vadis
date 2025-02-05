@@ -35,7 +35,7 @@ struct qvi_hwsplit {
     friend qvi_hwsplit_coll;
 private:
     /** A pointer to my RMI. */
-    qvi_rmi_client_t *m_rmi = nullptr;
+    qvi_rmi_client *m_rmi = nullptr;
     /** The base hardware pool we are splitting. */
     qvi_hwpool *m_hwpool = nullptr;
     /** The number of members that are part of the split. */

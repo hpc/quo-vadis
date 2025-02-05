@@ -66,8 +66,8 @@ qv_scope::make_intrinsic(
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Get the requested intrinsic hardware pool.
     qvi_hwpool *hwpool = nullptr;
-    rc = qvi_rmi_get_intrinsic_hwpool(
-        group->task()->rmi(), qvi_task::mytid(), iscope, &hwpool
+    rc = group->task()->rmi()->get_intrinsic_hwpool(
+        qvi_task::mytid(), iscope, &hwpool
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Create and initialize the scope.
@@ -100,10 +100,8 @@ qv_scope::create(
     }
     // Get the appropriate cpuset based on the caller's request.
     hwloc_cpuset_t cpuset = nullptr;
-    rc = qvi_rmi_get_cpuset_for_nobjs(
-        m_group->task()->rmi(),
-        m_hwpool->cpuset().cdata(),
-        type, nobjs, &cpuset
+    rc = m_group->task()->rmi()->get_cpuset_for_nobjs(
+        m_hwpool->cpuset().cdata(), type, nobjs, &cpuset
     );
     if (rc != QV_SUCCESS) {
         qvi_delete(&group);

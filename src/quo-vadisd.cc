@@ -25,9 +25,9 @@
 #include "qvi-rmi.h"
 
 struct context_s {
-    qvi_rmi_config_s rmic;
+    qvi_rmi_config rmic;
     qvi_hwloc_t *hwloc = nullptr;
-    qvi_rmi_server_t *rmi = nullptr;
+    qvi_rmi_server *rmi = nullptr;
     bool daemonized = false;
     /** Constructor. */
     context_s(void)
@@ -37,7 +37,7 @@ struct context_s {
             throw qvi_runtime_error();
         }
 
-        rc = qvi_rmi_server_new(&rmi);
+        rc = qvi_new(&rmi);
         if (rc != QV_SUCCESS) {
             throw qvi_runtime_error();
         }
@@ -45,7 +45,7 @@ struct context_s {
     /** Destructor */
     ~context_s(void)
     {
-        qvi_rmi_server_delete(&rmi);
+        qvi_delete(&rmi);
         qvi_hwloc_delete(&hwloc);
     }
 };
@@ -114,9 +114,9 @@ rmi_config(
         return;
     }
 
-    rc = qvi_rmi_server_config(ctx.rmi, &ctx.rmic);
+    rc = ctx.rmi->configure(ctx.rmic);
     if (rc != QV_SUCCESS) {
-        qvi_panic_log_error("qvi_rmi_server_config() failed");
+        qvi_panic_log_error("rmi->configure() failed");
         return;
     }
 
@@ -132,12 +132,12 @@ rmi_start(
 
     cstr_t ers = nullptr;
 
-    int rc = qvi_rmi_server_start(ctx.rmi);
-    if (rc != QV_SUCCESS) {
+    const int rc = ctx.rmi->start();
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         ers = "qvi_rmi_server_start() failed";
     }
     // TODO(skg) Add flags option
-    if (ers) {
+    if (qvi_unlikely(ers)) {
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
 }

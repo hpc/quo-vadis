@@ -177,7 +177,7 @@ qvi_hwsplit::split_cpuset(
     // The cpuset that we are going to split.
     const qvi_hwloc_bitmap base_cpuset = cpuset();
     // Pointer to my hwloc instance.
-    qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc(m_rmi);
+    qvi_hwloc_t *const hwloc = m_rmi->hwloc();
     // Holds the host's split cpusets.
     result.resize(m_split_size);
     // Notice that we do not go through the RMI for this because this is just an
@@ -258,7 +258,7 @@ qvi_hwsplit::osdev_cpusets(
     // Get the number of devices we have available in the provided scope.
     int nobj = 0;
     int rc = m_hwpool->nobjects(
-        qvi_rmi_client_hwloc(m_rmi), m_split_at_type, &nobj
+        m_rmi->hwloc(), m_split_at_type, &nobj
     );
     if (rc != QV_SUCCESS) return rc;
     // Holds the device affinities used for the split.
@@ -470,7 +470,7 @@ qvi_hwsplit::split_user_defined(void)
     qvi_map_t map{};
     rc = qvi_map_colors(map, m_colors, cpusets);
     if (rc != QV_SUCCESS) return rc;
-    qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc(m_rmi);
+    qvi_hwloc_t *const hwloc = m_rmi->hwloc();
     // Update the hardware pools and colors to reflect the new mapping.
     rc = apply_cpuset_mapping(
         hwloc, map, cpusets, m_hwpools, m_colors
@@ -500,7 +500,7 @@ qvi_hwsplit::split_affinity_preserving_pass1(void)
     if (qvi_map_nfids_mapped(map) != m_group_size) {
         qvi_abort();
     }
-    qvi_hwloc_t *const hwloc = qvi_rmi_client_hwloc(m_rmi);
+    qvi_hwloc_t *const hwloc = m_rmi->hwloc();
     // Update the hardware pools and colors to reflect the new mapping.
     return apply_cpuset_mapping(
         hwloc, map, cpusets, m_hwpools, m_colors

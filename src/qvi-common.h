@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -72,8 +72,7 @@ struct qvi_bbuff;
 struct qvi_hwloc_s;
 typedef struct qvi_hwloc_s qvi_hwloc_t;
 
-struct qvi_rmi_client_s;
-typedef struct qvi_rmi_client_s qvi_rmi_client_t;
+struct qvi_rmi_client;
 
 struct qvi_task;
 
