@@ -307,29 +307,21 @@ rpc_req(
     Types &&...args
 ) {
     qvi_bbuff *buff = nullptr;
-    int rc = rpc_pack(&buff, fid, std::forward<Types>(args)...);
+    const int rc = rpc_pack(&buff, fid, std::forward<Types>(args)...);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_bbuff_delete(&buff);
         return rc;
     }
-    // Cache buffer size here because our call to qvi_bbuff_size() after
-    // zmsg_send() may be invalid because msg_free_byte_buffer_cb() may have
-    // already been called.
-    const int buffer_size = (int)buff->size();
 
-    zmq_msg_t msg;
-    rc = zmsg_init_from_bbuff(buff, &msg);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-
-    int nbytes_sent;
-    rc = zmsg_send(zsock, &msg, &nbytes_sent);
-    if (qvi_unlikely(nbytes_sent != buffer_size)) {
-        zerr_msg("zmq_msg_send() truncated", errno);
-        rc = QV_ERR_RPC;
+    const int buff_size = buff->size();
+    const int nbsent = zmq_send(zsock, buff->data(), buff_size, 0);
+    if (qvi_unlikely(nbsent != buff_size)) {
+        zerr_msg("zmq_send() truncated", errno);
+        return QV_ERR_RPC;
     }
-out:
-    if (qvi_unlikely(rc != QV_SUCCESS)) zmq_msg_close(&msg);
-    // Else freeing of buffer and message resources is done for us.
+    // We are resposible for freeing the buffer after ZMQ has
+    // taken ownership of its contents after zmq_send() returns.
+    qvi_bbuff_delete(&buff);
     return rc;
 }
 
