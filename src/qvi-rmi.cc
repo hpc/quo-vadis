@@ -34,7 +34,7 @@
 #include "qvi-utils.h"
 
 struct qvi_rmi_msg_header {
-    qvi_rmi_rpc_funid_t fid = QVI_RMI_FID_INVALID;
+    qvi_rmi_rpc_fid_t fid = QVI_RMI_FID_INVALID;
     char picture[16] = {'\0'};
 };
 
@@ -62,7 +62,7 @@ zwrn_msg(
     qvi_log_warn("{} with errno={} ({})", ers, erno, qvi_strerr(erno));
 }
 
-static void
+static inline void
 zsocket_close(
     void **sock
 ) {
@@ -77,7 +77,7 @@ zsocket_close(
     *sock = nullptr;
 }
 
-static void
+static inline void
 zctx_destroy(
     void **ctx
 ) {
@@ -92,27 +92,34 @@ zctx_destroy(
     *ctx = nullptr;
 }
 
-static void *
-zsocket_create_and_connect(
+static inline void *
+zsocket_create(
     void *zctx,
-    int sock_type,
-    const char *addr
+    int sock_type
 ) {
     void *zsock = zmq_socket(zctx, sock_type);
     if (qvi_unlikely(!zsock)) {
         zerr_msg("zmq_socket() failed", errno);
         return nullptr;
     }
+    return zsock;
+}
+
+static inline int
+zsocket_connect(
+    void *zsock,
+    const char *addr
+) {
     const int rc = zmq_connect(zsock, addr);
     if (qvi_unlikely(rc != 0)) {
         zerr_msg("zmq_connect() failed", errno);
         zsocket_close(&zsock);
-        return nullptr;
+        return QV_ERR_RPC;
     }
-    return zsock;
+    return QV_SUCCESS;
 }
 
-static void *
+static inline void *
 zsocket_create_and_bind(
     void *zctx,
     int sock_type,
@@ -147,7 +154,7 @@ msg_free_byte_buffer_cb(
 static inline int
 buffer_append_header(
     qvi_bbuff *buff,
-    qvi_rmi_rpc_funid_t fid,
+    qvi_rmi_rpc_fid_t fid,
     cstr_t picture
 ) {
     qvi_rmi_msg_header hdr;
@@ -206,14 +213,13 @@ zmsg_send(
     zmq_msg_t *msg,
     int *bsent
 ) {
-    int qvrc = QV_SUCCESS;
     *bsent = zmq_msg_send(msg, zsock, 0);
     if (qvi_unlikely(*bsent == -1)) {
         zerr_msg("zmq_msg_send() failed", errno);
-        qvrc = QV_ERR_RPC;
+        zmq_msg_close(msg);
+        return QV_ERR_RPC;
     }
-    if (qvi_unlikely(qvrc != QV_SUCCESS)) zmq_msg_close(msg);
-    return qvrc;
+    return QV_SUCCESS;
 }
 
 static inline int
@@ -243,7 +249,7 @@ template <typename... Types>
 static inline int
 rpc_pack(
     qvi_bbuff **buff,
-    qvi_rmi_rpc_funid_t fid,
+    qvi_rmi_rpc_fid_t fid,
     Types &&...args
 ) {
     std::string picture;
@@ -297,24 +303,23 @@ template <typename... Types>
 static inline int
 rpc_req(
     void *zsock,
-    qvi_rmi_rpc_funid_t fid,
+    qvi_rmi_rpc_fid_t fid,
     Types &&...args
 ) {
-    int buffer_size = 0;
-
     qvi_bbuff *buff = nullptr;
     int rc = rpc_pack(&buff, fid, std::forward<Types>(args)...);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_bbuff_delete(&buff);
         return rc;
     }
-    zmq_msg_t msg;
-    rc = zmsg_init_from_bbuff(buff, &msg);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Cache buffer size here because our call to qvi_bbuff_size() after
     // zmsg_send() may be invalid because msg_free_byte_buffer_cb() may have
     // already been called.
-    buffer_size = (int)buff->size();
+    const int buffer_size = (int)buff->size();
+
+    zmq_msg_t msg;
+    rc = zmsg_init_from_bbuff(buff, &msg);
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
 
     int nbytes_sent;
     rc = zmsg_send(zsock, &msg, &nbytes_sent);
@@ -351,6 +356,9 @@ qvi_rmi_client::qvi_rmi_client(void)
     // Create a new ZMQ context.
     m_zctx = zmq_ctx_new();
     if (qvi_unlikely(!m_zctx)) throw qvi_runtime_error();
+    // Create the ZMQ socket used for communication with the server.
+    m_zsock = zsocket_create(m_zctx, ZMQ_REQ);
+    if (qvi_unlikely(!m_zsock)) throw qvi_runtime_error();
 }
 
 qvi_rmi_client::~qvi_rmi_client(void)
@@ -367,26 +375,20 @@ qvi_rmi_client::hwloc(void)
 }
 
 int
-qvi_rmi_client::m_hello(void)
-{
-    const int rc = rpc_req(m_zsock, QVI_RMI_FID_HELLO, getpid());
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-
-    return rpc_rep(m_zsock, m_config.url, m_config.hwtopo_path);
-}
-
-int
 qvi_rmi_client::connect(
     const std::string &url
 ) {
-    m_zsock = zsocket_create_and_connect(
-        m_zctx, ZMQ_REQ, url.c_str()
-    );
-    if (qvi_unlikely(!m_zsock)) return QV_ERR_RPC;
-
-    int rc = m_hello();
+    int rc = zsocket_connect(m_zsock, url.c_str());
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
+    std::string hwtopo_path;
+    rc = m_hello(hwtopo_path);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // Now that we have all the info we need,
+    // finish populating the RMI config.
+    m_config.url = url;
+    m_config.hwtopo_path = hwtopo_path;
+    // Now we can initialize and load our topology.
     rc = qvi_hwloc_topology_init(
         m_config.hwloc, m_config.hwtopo_path.c_str()
     );
@@ -396,8 +398,23 @@ qvi_rmi_client::connect(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Client-Side (Public) RPC Definitions
+// Client-Side RPC Definitions
 ////////////////////////////////////////////////////////////////////////////////
+int
+qvi_rmi_client::m_hello(
+    std::string &hwtopo_path
+) {
+    int qvrc = rpc_req(m_zsock, QVI_RMI_FID_HELLO, qvi_gettid());
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
+    // Should be set by rpc_rep, so assume an error.
+    int rpcrc = QV_ERR_RPC;
+    qvrc = rpc_rep(m_zsock, &rpcrc, hwtopo_path);
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) {
+        return qvrc;
+    }
+    return rpcrc;
+}
+
 int
 qvi_rmi_client::get_cpubind(
     pid_t who,
@@ -584,9 +601,9 @@ qvi_rmi_server::s_rpc_hello(
     const int rc = qvi_bbuff_rmi_unpack(input, &whoisit);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Pack relevant configuration information.
+    const int rpcrc = QV_SUCCESS;
     return rpc_pack(
-        output, hdr->fid,
-        server->m_config.url,
+        output, hdr->fid, rpcrc,
         server->m_config.hwtopo_path
     );
 }
@@ -831,11 +848,11 @@ out:
 }
 
 int
-qvi_rmi_server::m_go(void)
+qvi_rmi_server::m_execute_main_server_loop(void)
 {
     int rc, bsent;
     volatile int bsentt = 0;
-    volatile std::atomic<bool> active{true};
+    volatile bool active = true;
     do {
         zmq_msg_t mrx, mtx;
         rc = zmsg_recv(m_zsock, &mrx);
@@ -851,7 +868,7 @@ qvi_rmi_server::m_go(void)
     // Nice to understand messaging characteristics.
     qvi_log_debug("Server Sent {} bytes", bsentt);
 #else
-    QVI_UNUSED(bsentt);
+    qvi_unused(bsentt);
 #endif
     if (qvi_unlikely(rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN)) {
         qvi_log_error("RX/TX loop exited with rc={} ({})", rc, qv_strerr(rc));
@@ -867,9 +884,6 @@ qvi_rmi_server::configure(
     return QV_SUCCESS;
 }
 
-/**
- * Populates base hardware pool.
- */
 int
 qvi_rmi_server::m_populate_base_hwpool(void)
 {
@@ -891,7 +905,7 @@ qvi_rmi_server::start(void)
     );
     if (qvi_unlikely(!m_zsock)) return QV_ERR_SYS;
     // Start the main service loop.
-    return m_go();
+    return m_execute_main_server_loop();
 }
 
 /*

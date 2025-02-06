@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -32,7 +32,7 @@
  *
  * @param[in] x Unused variable.
  */
-#define QVI_UNUSED(x)                                                          \
+#define qvi_unused(x)                                                          \
 do {                                                                           \
     (void)(x);                                                                 \
 } while (0)

@@ -68,8 +68,8 @@ pool_obtain_cpus_by_cpuset(
     );
     return (hwrc == 0 ? QV_SUCCESS : QV_ERR_HWLOC);
 #endif
-    QVI_UNUSED(pool);
-    QVI_UNUSED(request);
+    qvi_unused(pool);
+    qvi_unused(request);
     return QV_SUCCESS;
 }
 #endif

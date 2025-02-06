@@ -36,7 +36,7 @@ typedef enum {
     QVI_RMI_FID_GET_NOBJS_IN_CPUSET,
     QVI_RMI_FID_GET_DEVICE_IN_CPUSET,
     QVI_RMI_FID_GET_INTRINSIC_HWPOOL
-} qvi_rmi_rpc_funid_t;
+} qvi_rmi_rpc_fid_t;
 
 /**
  * @note: The return value is used for operation status (e.g., was the internal
@@ -65,7 +65,7 @@ struct qvi_rmi_config {
 struct qvi_rmi_server {
 private:
     /** Maps function IDs to function pointers. */
-    std::map<qvi_rmi_rpc_funid_t, qvi_rmi_rpc_fun_ptr_t> m_rpc_dispatch_table;
+    std::map<qvi_rmi_rpc_fid_t, qvi_rmi_rpc_fun_ptr_t> m_rpc_dispatch_table;
     /** Server configuration. */
     qvi_rmi_config m_config;
     /** The base resource pool maintained by the server. */
@@ -97,7 +97,7 @@ private:
     );
     /** Executes the main server loop. */
     int
-    m_go(void);
+    m_execute_main_server_loop(void);
     /** */
     static int
     s_rpc_invalid(
@@ -206,7 +206,9 @@ private:
     void *m_zsock = nullptr;
     /** Performs connection handshake. */
     int
-    m_hello(void);
+    m_hello(
+        std::string &hwtopo_path
+    );
 public:
     /** Constructor. */
     qvi_rmi_client(void);

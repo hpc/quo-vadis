@@ -25,9 +25,9 @@ qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
     qvi_hwloc_bitmap &cpuset
 ) {
 #ifndef CUDAToolkit_FOUND
-    QVI_UNUSED(hwl);
-    QVI_UNUSED(uuid);
-    QVI_UNUSED(cpuset);
+    qvi_unused(hwl);
+    qvi_unused(uuid);
+    qvi_unused(cpuset);
     return QV_ERR_NOT_SUPPORTED;
 #else
     int rc = QV_SUCCESS;
