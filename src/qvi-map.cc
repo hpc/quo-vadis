@@ -336,7 +336,7 @@ qvi_map_debug_dump(
     const qvi_map_t &map
 ) {
 #if QVI_DEBUG_MODE == 0
-    QVI_UNUSED(map);
+    qvi_unused(map);
 #else
     qvi_log_debug(" # nfids_mapped={}", qvi_map_nfids_mapped(map));
     for (const auto &mi : map) {

@@ -26,9 +26,9 @@ qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
     qvi_hwloc_bitmap &cpuset
 ) {
 #ifndef ROCmSMI_FOUND
-    QVI_UNUSED(hwl);
-    QVI_UNUSED(devid);
-    QVI_UNUSED(cpuset);
+    qvi_unused(hwl);
+    qvi_unused(devid);
+    qvi_unused(cpuset);
     return QV_ERR_NOT_SUPPORTED;
 #else
     // Because we rely on facilities that require that the given topology is the

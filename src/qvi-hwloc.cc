@@ -865,7 +865,7 @@ qvi_hwloc_cpuset_debug(
     hwloc_const_cpuset_t cpuset
 ) {
 #if QVI_DEBUG_MODE == 0
-    QVI_UNUSED(msg);
+    qvi_unused(msg);
 #endif
     assert(cpuset);
     char *cpusets = nullptr;

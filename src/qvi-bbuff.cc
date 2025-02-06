@@ -18,7 +18,7 @@
 #include "qvi-utils.h"
 
 void
-qvi_bbuff::init(void)
+qvi_bbuff::m_init(void)
 {
     // Make sure we get rid of any data that may be present.
     if (m_data) {
@@ -33,7 +33,7 @@ qvi_bbuff::init(void)
 
 qvi_bbuff::qvi_bbuff(void)
 {
-    init();
+    m_init();
 }
 
 qvi_bbuff::qvi_bbuff(
@@ -56,7 +56,7 @@ void
 qvi_bbuff::operator=(
     const qvi_bbuff &src
 ) {
-    init();
+    m_init();
     const int rc = append(src.m_data, src.m_size);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 }
