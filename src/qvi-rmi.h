@@ -80,8 +80,9 @@ private:
     /** Performs RPC dispatch. */
     int
     m_rpc_dispatch(
-        zmq_msg_t *msg_in,
-        zmq_msg_t *msg_out
+        void *zsock,
+        zmq_msg_t *command_msg,
+        int *bsent
     );
     /** */
     int
@@ -97,7 +98,7 @@ private:
     );
     /** Executes the main server loop. */
     int
-    m_execute_main_server_loop(void);
+    m_enter_main_server_loop(void);
     /** */
     static int
     s_rpc_invalid(
