@@ -139,18 +139,6 @@ zsocket_create_and_bind(
     return zsock;
 }
 
-/**
- * Buffer resource deallocation callback.
- */
-static void
-msg_free_byte_buffer_cb(
-    void *,
-    void *hint
-) {
-    qvi_bbuff *buff = (qvi_bbuff *)hint;
-    qvi_bbuff_delete(&buff);
-}
-
 static inline int
 buffer_append_header(
     qvi_bbuff *buff,
@@ -191,39 +179,25 @@ unpack_msg_header(
 }
 
 static inline int
-zmsg_init_from_bbuff(
-    qvi_bbuff *bbuff,
-    zmq_msg_t *zmsg
-) {
-    const size_t buffer_size = bbuff->size();
-    const int zrc = zmq_msg_init_data(
-        zmsg, bbuff->data(), buffer_size,
-        msg_free_byte_buffer_cb, bbuff
-    );
-    if (qvi_unlikely(zrc != 0)) {
-        zerr_msg("zmq_msg_init_data() failed", errno);
-        return QV_ERR_RPC;
-    }
-    return QV_SUCCESS;
-}
-
-static inline int
-zmsg_send(
+zsock_send_bbuff(
     void *zsock,
-    zmq_msg_t *msg,
+    qvi_bbuff *bbuff,
     int *bsent
 ) {
-    *bsent = zmq_msg_send(msg, zsock, 0);
-    if (qvi_unlikely(*bsent == -1)) {
-        zerr_msg("zmq_msg_send() failed", errno);
-        zmq_msg_close(msg);
+    const int buff_size = bbuff->size();
+    *bsent = zmq_send(zsock, bbuff->data(), buff_size, 0);
+    if (qvi_unlikely(*bsent != buff_size)) {
+        zerr_msg("zmq_send() truncated", errno);
         return QV_ERR_RPC;
     }
+    // We are resposible for freeing the buffer after ZMQ has
+    // taken ownership of its contents after zmq_send() returns.
+    qvi_bbuff_delete(&bbuff);
     return QV_SUCCESS;
 }
 
 static inline int
-zmsg_recv(
+zsock_recv_msg(
     void *zsock,
     zmq_msg_t *mrx
 ) {
@@ -306,23 +280,14 @@ rpc_req(
     qvi_rmi_rpc_fid_t fid,
     Types &&...args
 ) {
-    qvi_bbuff *buff = nullptr;
-    const int rc = rpc_pack(&buff, fid, std::forward<Types>(args)...);
+    qvi_bbuff *bbuff = nullptr;
+    const int rc = rpc_pack(&bbuff, fid, std::forward<Types>(args)...);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_bbuff_delete(&buff);
+        qvi_bbuff_delete(&bbuff);
         return rc;
     }
-
-    const int buff_size = buff->size();
-    const int nbsent = zmq_send(zsock, buff->data(), buff_size, 0);
-    if (qvi_unlikely(nbsent != buff_size)) {
-        zerr_msg("zmq_send() truncated", errno);
-        return QV_ERR_RPC;
-    }
-    // We are resposible for freeing the buffer after ZMQ has
-    // taken ownership of its contents after zmq_send() returns.
-    qvi_bbuff_delete(&buff);
-    return rc;
+    int bsent = 0;
+    return zsock_send_bbuff(zsock, bbuff, &bsent);
 }
 
 template <typename... Types>
@@ -332,7 +297,7 @@ rpc_rep(
     Types &&...args
 ) {
     zmq_msg_t msg;
-    int rc = zmsg_recv(zsock, &msg);
+    int rc = zsock_recv_msg(zsock, &msg);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     rc = rpc_unpack(zmq_msg_data(&msg), std::forward<Types>(args)...);
 out:
@@ -801,13 +766,14 @@ qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
 
 int
 qvi_rmi_server::m_rpc_dispatch(
-    zmq_msg_t *msg_in,
-    zmq_msg_t *msg_out
+    void *zsock,
+    zmq_msg_t *command_msg,
+    int *bsent
 ) {
     int rc = QV_SUCCESS;
     bool shutdown = false;
 
-    void *data = zmq_msg_data(msg_in);
+    void *data = zmq_msg_data(command_msg);
     qvi_rmi_msg_header hdr;
     const size_t trim = unpack_msg_header(data, &hdr);
     void *body = data_trim(data, trim);
@@ -819,8 +785,8 @@ qvi_rmi_server::m_rpc_dispatch(
         goto out;
     }
 
-    qvi_bbuff *res;
-    rc = fidfunp->second(this, &hdr, body, &res);
+    qvi_bbuff *result;
+    rc = fidfunp->second(this, &hdr, body, &result);
     if (qvi_unlikely(rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN)) {
         cstr_t ers = "RPC dispatch failed";
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
@@ -830,30 +796,25 @@ qvi_rmi_server::m_rpc_dispatch(
     if (qvi_unlikely(rc == QV_SUCCESS_SHUTDOWN)) {
         shutdown = true;
     }
-    rc = zmsg_init_from_bbuff(res, msg_out);
+    rc = zsock_send_bbuff(zsock, result, bsent);
 out:
-    zmq_msg_close(msg_in);
-    if (rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN) {
-        zmq_msg_close(msg_out);
-    }
+    zmq_msg_close(command_msg);
     return (shutdown ? QV_SUCCESS_SHUTDOWN : rc);
 }
 
 int
-qvi_rmi_server::m_execute_main_server_loop(void)
+qvi_rmi_server::m_enter_main_server_loop(void)
 {
     int rc, bsent;
     volatile int bsentt = 0;
     volatile bool active = true;
+    zmq_msg_t mrx;
     do {
-        zmq_msg_t mrx, mtx;
-        rc = zmsg_recv(m_zsock, &mrx);
+        rc = zsock_recv_msg(m_zsock, &mrx);
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
-        rc = m_rpc_dispatch(&mrx, &mtx);
+        rc = m_rpc_dispatch(m_zsock, &mrx, &bsent);
         if (qvi_unlikely(rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN)) break;
         if (qvi_unlikely(rc == QV_SUCCESS_SHUTDOWN)) active = false;
-        rc = zmsg_send(m_zsock, &mtx, &bsent);
-        if (qvi_unlikely(rc != QV_SUCCESS)) break;
         bsentt += bsent;
     } while(qvi_likely(active));
 #if QVI_DEBUG_MODE == 1
@@ -897,7 +858,7 @@ qvi_rmi_server::start(void)
     );
     if (qvi_unlikely(!m_zsock)) return QV_ERR_SYS;
     // Start the main service loop.
-    return m_execute_main_server_loop();
+    return m_enter_main_server_loop();
 }
 
 /*
