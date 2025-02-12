@@ -62,7 +62,7 @@ ctu_emit_task_bind(
         ers = "qv_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] cpubind=%s\n", pid, binds);
+    printf("[%d] cpubind (physical) = %s\n", pid, binds);
     free(binds);
 }
 

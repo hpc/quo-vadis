@@ -187,6 +187,7 @@ qvi_hwloc_emit_cpubind(
  */
 int
 qvi_hwloc_bitmap_asprintf(
+    hwloc_topology_t topo,
     hwloc_const_cpuset_t cpuset,
     char **result
 );
@@ -196,6 +197,7 @@ qvi_hwloc_bitmap_asprintf(
  */
 int
 qvi_hwloc_bitmap_list_asprintf(
+    hwloc_topology_t topo,
     hwloc_const_cpuset_t cpuset,
     char **result
 );
@@ -537,6 +539,7 @@ qvi_hwloc_get_devices_in_bitmap(
 
 int
 qvi_hwloc_bitmap_string(
+    hwloc_topology_t topo,
     hwloc_const_bitmap_t bitmap,
     qv_bind_string_format_t format,
     char **result

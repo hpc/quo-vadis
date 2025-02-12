@@ -213,7 +213,9 @@ qv_scope::bind_string(
     int rc = m_group->task()->bind_top(&bitmap);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    rc = qvi_hwloc_bitmap_string(bitmap, format, result);
+    hwloc_topology_t topo = qvi_hwloc_get_topo_obj(m_group->hwloc());
+
+    rc = qvi_hwloc_bitmap_string(topo, bitmap, format, result);
     qvi_hwloc_bitmap_delete(&bitmap);
     return rc;
 }
