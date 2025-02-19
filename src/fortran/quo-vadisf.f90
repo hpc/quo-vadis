@@ -1,5 +1,5 @@
 !
-! Copyright (c) 2013-2024 Triad National Security, LLC
+! Copyright (c) 2013-2025 Triad National Security, LLC
 !                         All rights reserved.
 !
 ! This file is part of the quo-vadis project. See the LICENSE file at the
@@ -96,13 +96,13 @@ module quo_vadisf
     parameter (QV_HW_OBJ_LAST = 11)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! Binding string representaiton formats.
+    ! Binding string representation format flags.
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    integer(c_int) QV_BIND_STRING_AS_BITMAP
-    integer(c_int) QV_BIND_STRING_AS_LIST
+    integer(c_int), parameter :: QV_BIND_STRING_LOGICAL = &
+        int(Z'00000001', kind=c_int)
 
-    parameter (QV_BIND_STRING_AS_BITMAP = 0)
-    parameter (QV_BIND_STRING_AS_LIST = 1)
+    integer(c_int), parameter :: QV_BIND_STRING_PHYSICAL = &
+        int(Z'00000002', kind=c_int)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Automatic grouping options for qv_scope_split().

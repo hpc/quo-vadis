@@ -22,7 +22,7 @@ emit_iter_info(
     char const *ers = NULL;
     char *binds;
     const int rc = qv_scope_bind_string(
-        sinfo->scope, QV_BIND_STRING_AS_LIST, &binds
+        sinfo->scope, QV_BIND_STRING_LOGICAL, &binds
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";

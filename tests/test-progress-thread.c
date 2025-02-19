@@ -37,7 +37,7 @@ void *thread_work(void *arg)
 
     char *binds;
     char const *ers = NULL;
-    int rc = qv_bind_string(ctx, QV_BIND_STRING_AS_LIST, &binds);
+    int rc = qv_bind_string(ctx, QV_BIND_STRING_LOGICAL, &binds);
 
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
 
     /* Where did I end up? */
     char *binds;
-    rc = qv_scope_bind_string(task_scope, QV_BIND_STRING_AS_LIST, &binds);
+    rc = qv_scope_bind_string(task_scope, QV_BIND_STRING_LOGICAL, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
         ers = "qv_bind_push() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    rc = qv_scope_bind_string(wk_scope, QV_BIND_STRING_AS_LIST, &binds);
+    rc = qv_scope_bind_string(wk_scope, QV_BIND_STRING_LOGICAL, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
         ers = "qv_bind_push() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    rc = qv_scope_bind_string(ut_scope, QV_BIND_STRING_AS_LIST, &binds);
+    rc = qv_scope_bind_string(ut_scope, QV_BIND_STRING_LOGICAL, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));

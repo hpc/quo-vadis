@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -100,12 +100,19 @@ typedef enum {
 } qv_hw_obj_type_t;
 
 /**
- * Binding string representation formats.
+ * Binding string representation format flags.
  */
-typedef enum {
-    QV_BIND_STRING_AS_BITMAP = 0,
-    QV_BIND_STRING_AS_LIST
-} qv_bind_string_format_t;
+typedef int qv_bind_string_flags_t;
+
+/**
+ * Output the logical binding.
+ */
+const qv_bind_string_flags_t QV_BIND_STRING_LOGICAL = 0x00000001;
+
+/**
+ * Output the physical (OS) binding.
+ */
+const qv_bind_string_flags_t QV_BIND_STRING_PHYSICAL = 0x00000002;
 
 /**
  * Automatic grouping options for qv_scope_split(). The following values can be
@@ -277,7 +284,7 @@ qv_scope_bind_pop(
 int
 qv_scope_bind_string(
     qv_scope_t *scope,
-    qv_bind_string_format_t format,
+    qv_bind_string_flags_t flags,
     char **str
 );
 

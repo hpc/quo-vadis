@@ -62,14 +62,14 @@ qv_scope_bind_pop(
 int
 qv_scope_bind_string(
     qv_scope_t *scope,
-    qv_bind_string_format_t format,
+    qv_bind_string_flags_t flags,
     char **str
 ) {
     if (qvi_unlikely(!scope || !str)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return scope->bind_string(format, str);
+        return scope->bind_string(flags, str);
     }
     qvi_catch_and_return();
 }

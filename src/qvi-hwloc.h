@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -174,20 +174,10 @@ qvi_hwloc_get_nobjs_by_type(
 );
 
 /**
- *
- */
-int
-qvi_hwloc_emit_cpubind(
-   qvi_hwloc_t *hwl,
-   pid_t task_id
-);
-
-/**
  * Caller is responsible for freeing returned resources.
  */
 int
 qvi_hwloc_bitmap_asprintf(
-    hwloc_topology_t topo,
     hwloc_const_cpuset_t cpuset,
     char **result
 );
@@ -197,7 +187,6 @@ qvi_hwloc_bitmap_asprintf(
  */
 int
 qvi_hwloc_bitmap_list_asprintf(
-    hwloc_topology_t topo,
     hwloc_const_cpuset_t cpuset,
     char **result
 );
@@ -538,10 +527,10 @@ qvi_hwloc_get_devices_in_bitmap(
 );
 
 int
-qvi_hwloc_bitmap_string(
-    hwloc_topology_t topo,
+qvi_hwloc_bind_string(
+    qvi_hwloc_t *hwloc,
     hwloc_const_bitmap_t bitmap,
-    qv_bind_string_format_t format,
+    qv_bind_string_flags_t flags,
     char **result
 );
 

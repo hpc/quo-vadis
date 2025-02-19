@@ -106,7 +106,7 @@ public:
 
     int
     bind_string(
-        qv_bind_string_format_t format,
+        qv_bind_string_flags_t flags,
         char **result
     );
 

@@ -206,16 +206,18 @@ qv_scope::bind_pop(void)
 
 int
 qv_scope::bind_string(
-    qv_bind_string_format_t format,
+    qv_bind_string_flags_t flags,
     char **result
 ) {
+    *result = nullptr;
+
     hwloc_cpuset_t bitmap = nullptr;
     int rc = m_group->task()->bind_top(&bitmap);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    hwloc_topology_t topo = qvi_hwloc_get_topo_obj(m_group->hwloc());
-
-    rc = qvi_hwloc_bitmap_string(topo, bitmap, format, result);
+    rc = qvi_hwloc_bind_string(
+        m_group->hwloc(), bitmap, flags, result
+    );
     qvi_hwloc_bitmap_delete(&bitmap);
     return rc;
 }

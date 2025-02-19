@@ -459,7 +459,7 @@ qvi_bbuff_rmi_pack_item_impl(
     }
     // Non-null data.
     char *datas = nullptr;
-    int rc = qvi_hwloc_bitmap_asprintf(NULL, data, &datas);
+    int rc = qvi_hwloc_bitmap_asprintf(data, &datas);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // We are sending the string representation of the cpuset.
     rc = buff->append(datas, strlen(datas) + 1);
