@@ -208,7 +208,7 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qvi_hwloc_bitmap_asprintf(NULL, bitmap, &binds);
+    rc = qvi_hwloc_bitmap_asprintf(bitmap, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_bitmap_asprintf() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));

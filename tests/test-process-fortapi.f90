@@ -1,11 +1,3 @@
-!
-! Copyright (c) 2013-2024 Triad National Security, LLC
-!                         All rights reserved.
-!
-! This file is part of the quo-vadis project. See the LICENSE file at the
-! top-level directory of this distribution.
-!
-
 ! Does nothing useful. Just used to exercise the Fortran interface.
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -47,7 +39,7 @@ program process_fortapi
     end if
     print *, 'ncores', n_cores
 
-    call qv_scope_bind_string(scope_user, QV_BIND_STRING_AS_LIST, bstr, info)
+    call qv_scope_bind_string(scope_user, QV_BIND_STRING_LOGICAL, bstr, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if

@@ -57,12 +57,12 @@ ctu_emit_task_bind(
     char const *ers = NULL;
     // Get new, current binding.
     char *binds = NULL;
-    int rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &binds);
+    int rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] cpubind (physical) = %s\n", pid, binds);
+    printf("[%d] cpubind=%s\n", pid, binds);
     free(binds);
 }
 
@@ -121,7 +121,7 @@ ctu_bind_push(
     }
     // Get current binding.
     char *bind0s;
-    rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind0s);
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind0s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -137,7 +137,7 @@ ctu_bind_push(
 
     // Get new, current binding.
     char *bind1s;
-    rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind1s);
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind1s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -167,7 +167,7 @@ ctu_bind_pop(
     }
     // Get current binding.
     char *bind0s;
-    rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind0s);
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind0s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -182,7 +182,7 @@ ctu_bind_pop(
     }
     // Get new, current binding.
     char *bind1s;
-    rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind1s);
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind1s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -213,7 +213,7 @@ ctu_change_bind(
     }
     // Get current binding.
     char *bind0s;
-    rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind0s);
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind0s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -229,7 +229,7 @@ ctu_change_bind(
 
     // Get new, current binding.
     char *bind1s;
-    rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind1s);
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind1s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -243,7 +243,7 @@ ctu_change_bind(
     }
 
     char *bind2s;
-    rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind2s);
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind2s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));

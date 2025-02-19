@@ -87,7 +87,7 @@ change_bind(
     }
 
     char *bind1s;
-    rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind1s);
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind1s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -102,7 +102,7 @@ change_bind(
     }
 
     char *bind2s;
-    rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &bind2s);
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind2s);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -259,7 +259,7 @@ main(void)
       printf("[%d][%d] Number of PUS   in omp_self_scope is %d\n", wrank, tid, n_pus);
 
       char *binds;
-      rc = qv_bind_string(omp_ctx, QV_BIND_STRING_AS_LIST, &binds);
+      rc = qv_bind_string(omp_ctx, QV_BIND_STRING_LOGICAL, &binds);
       if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));

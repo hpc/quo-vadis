@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -178,22 +178,109 @@ qvi_hwloc_obj_type_is_host_resource(
     }
 }
 
-int
-qvi_hwloc_bitmap_string(
-    hwloc_topology_t topo,
+static int
+get_logical_bind_string(
+    qvi_hwloc_t *hwloc,
     hwloc_const_bitmap_t bitmap,
-    qv_bind_string_format_t format,
+    std::string &result
+) {
+    result.clear();
+
+    const int num_pus = hwloc_get_nbobjs_inside_cpuset_by_type(
+        hwloc->topo, bitmap, HWLOC_OBJ_PU
+    );
+
+    hwloc_obj_t obj_pu = nullptr;
+    qvi_hwloc_bitmap logical_bitmap;
+    for (int idx = 0; idx < num_pus; idx++) {
+        obj_pu = hwloc_get_next_obj_inside_cpuset_by_type(
+            hwloc->topo, bitmap, HWLOC_OBJ_PU, obj_pu
+        );
+        (void)hwloc_bitmap_set(logical_bitmap.data(), obj_pu->logical_index);
+    }
+
+    char *logicals = nullptr;
+    const int rc = qvi_hwloc_bitmap_list_asprintf(
+        logical_bitmap.cdata(), &logicals
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        return rc;
+    }
+
+    result.append("L");
+    result.append(logicals);
+    free(logicals);
+
+    return QV_SUCCESS;
+}
+
+static int
+get_physical_bind_string(
+    qvi_hwloc_t *,
+    hwloc_const_bitmap_t bitmap,
+    std::string &result
+) {
+    result.clear();
+
+    char *physicals = nullptr;
+    const int rc = qvi_hwloc_bitmap_list_asprintf(bitmap, &physicals);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        return rc;
+    }
+
+    result.append("P");
+    result.append(physicals);
+    free(physicals);
+
+    return QV_SUCCESS;
+}
+
+int
+qvi_hwloc_bind_string(
+    qvi_hwloc_t *hwloc,
+    hwloc_const_bitmap_t bitmap,
+    qv_bind_string_flags_t flags,
     char **result
 ) {
-    switch (format) {
-        case QV_BIND_STRING_AS_BITMAP:
-            return qvi_hwloc_bitmap_asprintf(topo, bitmap, result);
-        case QV_BIND_STRING_AS_LIST:
-            return qvi_hwloc_bitmap_list_asprintf(topo, bitmap, result);
-        default:
-            *result = nullptr;
-            return QV_ERR_INVLD_ARG;
+    *result = nullptr;
+
+    int rc = QV_SUCCESS;
+    const std::string sep = " ; ";
+    std::string lresult;
+    std::string presult;
+    std::string iresult;
+
+    if (flags & QV_BIND_STRING_LOGICAL) {
+        rc = get_logical_bind_string(
+            hwloc, bitmap, lresult
+        );
+        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+
+        iresult.append(lresult);
     }
+    if (flags & QV_BIND_STRING_PHYSICAL) {
+        rc = get_physical_bind_string(
+            hwloc, bitmap, presult
+        );
+        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+
+        if (!iresult.empty()) {
+            iresult.append(sep);
+        }
+        iresult.append(presult);
+    }
+    // Sanity check. This means that no valid flag paths were taken. This
+    // likely means that an invalid flag was provided to the function.
+    if (qvi_unlikely(iresult.empty())) {
+        return QV_ERR_INVLD_ARG;
+    }
+    //
+    const int np = asprintf(result, "%s", iresult.c_str());
+    if (qvi_unlikely(np == -1)) {
+        *result = nullptr;
+        return QV_ERR_OOR;
+    }
+    return QV_SUCCESS;
 }
 
 int
@@ -285,7 +372,7 @@ get_pci_busid(
 
     static constexpr int PCI_BUS_ID_BUFF_SIZE = 32;
     char busid_buffer[PCI_BUS_ID_BUFF_SIZE] = {'\0'};
-    const int nw = snprintf(
+    const int np = snprintf(
         busid_buffer, PCI_BUS_ID_BUFF_SIZE,
         "%04x:%02x:%02x.%01x",
         pcidev->attr->pcidev.domain,
@@ -293,7 +380,7 @@ get_pci_busid(
         pcidev->attr->pcidev.dev,
         pcidev->attr->pcidev.func
     );
-    if (qvi_unlikely(nw >= PCI_BUS_ID_BUFF_SIZE)) {
+    if (qvi_unlikely(np >= PCI_BUS_ID_BUFF_SIZE)) {
         qvi_abort();
     }
     busid = std::string(busid_buffer);
@@ -681,7 +768,7 @@ topo_fname(
 ) {
     const int pid = getpid();
     srand(time(nullptr));
-    const int nw = asprintf(
+    const int np = asprintf(
         name,
         "%s/%s-%s-%d-%d.xml",
         base,
@@ -690,7 +777,7 @@ topo_fname(
         pid,
         rand() % 256
     );
-    if (nw == -1) {
+    if (qvi_unlikely(np == -1)) {
         *name = nullptr;
         return QV_ERR_OOR;
     }
@@ -808,31 +895,7 @@ qvi_hwloc_get_nobjs_by_type(
 }
 
 int
-qvi_hwloc_emit_cpubind(
-   qvi_hwloc_t  *hwl,
-   pid_t task_id
-) {
-    hwloc_cpuset_t cpuset = nullptr;
-    int rc = qvi_hwloc_task_get_cpubind(hwl, task_id, &cpuset);
-    if (rc != QV_SUCCESS) return rc;
-
-    char *cpusets = nullptr;
-    rc = qvi_hwloc_bitmap_asprintf(hwl->topo, cpuset, &cpusets);
-    if (rc != QV_SUCCESS) goto out;
-
-    qvi_log_info(
-        "[pid={} tid={}] cpubind (physical) = {}",
-        getpid(), task_id, cpusets
-    );
-out:
-    qvi_hwloc_bitmap_delete(&cpuset);
-    if (cpusets) free(cpusets);
-    return rc;
-}
-
-int
 qvi_hwloc_bitmap_asprintf(
-    hwloc_topology_t topo,
     hwloc_const_cpuset_t cpuset,
     char **result
 ) {
@@ -842,44 +905,12 @@ qvi_hwloc_bitmap_asprintf(
         qvi_log_error("hwloc_bitmap_asprintf() failed");
         return QV_ERR_OOR;
     }
-
-    if (topo) {
-        hwloc_bitmap_t cpuset_logical = hwloc_bitmap_alloc();
-        hwloc_obj_t obj_pu = nullptr;
-
-        int num_pus = hwloc_get_nbobjs_inside_cpuset_by_type(topo, cpuset, HWLOC_OBJ_PU);
-        for(int idx = 0; idx < num_pus ; idx++){
-            obj_pu = hwloc_get_next_obj_inside_cpuset_by_type(topo, cpuset, HWLOC_OBJ_PU, obj_pu);
-            (void)hwloc_bitmap_set(cpuset_logical,obj_pu->logical_index);
-        }
-
-        char *iresult_logical = nullptr;
-        (void)hwloc_bitmap_list_asprintf(&iresult_logical, cpuset_logical);
-        if (qvi_unlikely(!iresult_logical)) {
-            qvi_log_error("hwloc_bitmap_list_asprintf() failed");
-            return QV_ERR_OOR;
-        }
-        (void)hwloc_bitmap_free(cpuset_logical);
-
-        char head[] = " | (logical) = ";
-        char *final_result = (char*)calloc(strlen(iresult)+
-                                           strlen(head)+
-                                           strlen(iresult_logical)+1,sizeof(char));
-        memcpy(final_result,iresult,strlen(iresult));
-        strcat(final_result,head);
-        strcat(final_result,iresult_logical);
-        free(iresult_logical);
-        free(iresult);
-        iresult = final_result;
-    }
-
     *result = iresult;
     return QV_SUCCESS;
 }
 
 int
 qvi_hwloc_bitmap_list_asprintf(
-    hwloc_topology_t topo,
     hwloc_const_cpuset_t cpuset,
     char **result
 ) {
@@ -889,37 +920,6 @@ qvi_hwloc_bitmap_list_asprintf(
         qvi_log_error("hwloc_bitmap_list_asprintf() failed");
         return QV_ERR_OOR;
     }
-
-    if (topo) {
-        hwloc_bitmap_t cpuset_logical = hwloc_bitmap_alloc();
-        hwloc_obj_t obj_pu = nullptr;
-
-        int num_pus = hwloc_get_nbobjs_inside_cpuset_by_type(topo, cpuset, HWLOC_OBJ_PU);
-        for(int idx = 0; idx < num_pus ; idx++){
-            obj_pu = hwloc_get_next_obj_inside_cpuset_by_type(topo, cpuset, HWLOC_OBJ_PU, obj_pu);
-            (void)hwloc_bitmap_set(cpuset_logical,obj_pu->logical_index);
-        }
-
-        char *iresult_logical = nullptr;
-        (void)hwloc_bitmap_list_asprintf(&iresult_logical, cpuset_logical);
-        if (qvi_unlikely(!iresult_logical)) {
-            qvi_log_error("hwloc_bitmap_list_asprintf() failed");
-            return QV_ERR_OOR;
-        }
-        (void)hwloc_bitmap_free(cpuset_logical);
-
-        char head[] = " | (logical) = ";
-        char *final_result = (char*)calloc(strlen(iresult)+
-                                           strlen(head)+
-                                           strlen(iresult_logical)+1,sizeof(char));
-        memcpy(final_result,iresult,strlen(iresult));
-        strcat(final_result,head);
-        strcat(final_result,iresult_logical);
-        free(iresult_logical);
-        free(iresult);
-        iresult = final_result;
-    }
-
     *result = iresult;
     return QV_SUCCESS;
 }
@@ -934,7 +934,7 @@ qvi_hwloc_cpuset_debug(
 #endif
     assert(cpuset);
     char *cpusets = nullptr;
-    int rc = qvi_hwloc_bitmap_asprintf(nullptr, cpuset, &cpusets);
+    int rc = qvi_hwloc_bitmap_asprintf(cpuset, &cpusets);
     if (rc != QV_SUCCESS) {
         qvi_abort();
     }
@@ -1022,7 +1022,7 @@ qvi_hwloc_task_get_cpubind_as_string(
     int rc = qvi_hwloc_task_get_cpubind(hwl, task_id, &cpuset);
     if (rc != QV_SUCCESS) return rc;
 
-    rc = qvi_hwloc_bitmap_asprintf(hwl->topo, cpuset, cpusets);
+    rc = qvi_hwloc_bitmap_asprintf(cpuset, cpusets);
     qvi_hwloc_bitmap_delete(&cpuset);
     return rc;
 }
@@ -1250,7 +1250,7 @@ qvi_hwloc_devices_emit(
     }
     for (auto &dev : *devlist) {
         char *cpusets = nullptr;
-        int rc = qvi_hwloc_bitmap_asprintf(hwl->topo, dev->affinity.cdata(), &cpusets);
+        int rc = qvi_hwloc_bitmap_asprintf(dev->affinity.cdata(), &cpusets);
         if (rc != QV_SUCCESS) return rc;
 
         qvi_log_info("  Device Name: {}", dev->name);
@@ -1328,7 +1328,7 @@ qvi_hwloc_get_device_id_in_cpuset(
     qv_device_id_type_t dev_id_type,
     char **dev_id
 ) {
-    int rc = QV_SUCCESS, nw = 0;
+    int rc = QV_SUCCESS, np = 0;
 
     qvi_hwloc_dev_list_t devs;
     rc = get_devices_in_cpuset(hwl, dev_obj, cpuset, devs);
@@ -1338,19 +1338,19 @@ qvi_hwloc_get_device_id_in_cpuset(
 
     switch (dev_id_type) {
         case (QV_DEVICE_ID_UUID):
-            nw = asprintf(dev_id, "%s", devs.at(i)->uuid.c_str());
+            np = asprintf(dev_id, "%s", devs.at(i)->uuid.c_str());
             break;
         case (QV_DEVICE_ID_PCI_BUS_ID):
-            nw = asprintf(dev_id, "%s", devs.at(i)->pci_bus_id.c_str());
+            np = asprintf(dev_id, "%s", devs.at(i)->pci_bus_id.c_str());
             break;
         case (QV_DEVICE_ID_ORDINAL):
-            nw = asprintf(dev_id, "%d", devs.at(i)->id);
+            np = asprintf(dev_id, "%d", devs.at(i)->id);
             break;
         default:
             rc = QV_ERR_INVLD_ARG;
             goto out;
     }
-    if (nw == -1) rc = QV_ERR_OOR;
+    if (np == -1) rc = QV_ERR_OOR;
 out:
     if (rc != QV_SUCCESS) {
         *dev_id = nullptr;

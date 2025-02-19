@@ -55,7 +55,7 @@ test_create_scope(
   }
 
   /* Where did I end up? */
-  rc = qv_scope_bind_string(core_scope, QV_BIND_STRING_AS_LIST, &binds);
+  rc = qv_scope_bind_string(core_scope, QV_BIND_STRING_LOGICAL, &binds);
   if (rc != QV_SUCCESS) {
     ers = "qv_bind_get_list_as_string() failed";
     ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -70,7 +70,7 @@ test_create_scope(
     ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
   }
 
-  rc = qv_scope_bind_string(scope, QV_BIND_STRING_AS_LIST, &binds);
+  rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &binds);
   if (rc != QV_SUCCESS) {
     ers = "qv_bind_get_list_as_string() failed";
     ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -153,7 +153,7 @@ main(
     }
 
     char *binds;
-    rc = qv_scope_bind_string(base_scope, QV_BIND_STRING_AS_LIST, &binds);
+    rc = qv_scope_bind_string(base_scope, QV_BIND_STRING_LOGICAL, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -207,7 +207,7 @@ main(
     }
 
     /* Where did I end up? */
-    rc = qv_scope_bind_string(sub_scope, QV_BIND_STRING_AS_LIST, &binds);
+    rc = qv_scope_bind_string(sub_scope, QV_BIND_STRING_LOGICAL, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
