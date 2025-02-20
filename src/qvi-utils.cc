@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -105,15 +105,15 @@ qvi_atoi(
     const long val = strtol(str, &end, 10);
     int err = errno;
     // Did we get any digits?
-    if (str == end) return QV_ERR_INVLD_ARG;
+    if (qvi_unlikely(str == end)) return QV_ERR_INVLD_ARG;
     // In valid range?
-    if (val > INT_MAX || (err == ERANGE && val == LONG_MAX)) {
+    if (qvi_unlikely(val > INT_MAX || (err == ERANGE && val == LONG_MAX))) {
         return QV_ERR_INVLD_ARG;
     }
-    if (val < INT_MIN || (err == ERANGE && val == LONG_MIN)) {
+    if (qvi_unlikely(val < INT_MIN || (err == ERANGE && val == LONG_MIN))) {
         return QV_ERR_INVLD_ARG;
     }
-    if (*end != '\0') return QV_ERR_INVLD_ARG;
+    if (qvi_unlikely(*end != '\0')) return QV_ERR_INVLD_ARG;
 
     *maybe_val = (int)val;
     return QV_SUCCESS;
@@ -132,13 +132,13 @@ int
 qvi_url(
     std::string &url
 ) {
-    static const cstr_t base = "tcp://127.0.0.1";
+    static const std::string base = "tcp://127.0.0.1";
 
     int port = 0;
     const int rc = qvi_port(&port);
     if (rc != QV_SUCCESS) return rc;
 
-    url = std::string(base) + ":" + std::to_string(port);
+    url = base + ":" + std::to_string(port);
     return rc;
 }
 
