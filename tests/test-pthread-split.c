@@ -85,7 +85,6 @@ main(void)
     //
     const int npieces = 2;
     const int nthreads = ncores;
-    int stride = 1;
     int colors[nthreads];
 
     printf(
@@ -103,11 +102,7 @@ main(void)
     }
     printf("\n");
 #endif
-    rc = qv_pthread_colors_fill(colors, nthreads, QV_POLICY_PACKED, stride, npieces);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_pthread_colors_fill() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+
 #if 0
     fprintf(stdout,"Filled values: ");
     for (int i = 0 ; i < nthreads ; i++) {

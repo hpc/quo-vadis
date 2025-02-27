@@ -66,17 +66,17 @@ int
 qv_pthread_scope_split(
     qv_scope_t *scope,
     int npieces,
-    int *color_array,
-    int nthreads,
-    qv_scope_t ***subscope
+    int *kcolors,
+    int k,
+    qv_scope_t ***subscopes
 );
 
 int
 qv_pthread_scope_split_at(
     qv_scope_t *scope,
     qv_hw_obj_type_t type,
-    int *color_array,
-    int nthreads,
+    int *kcolors,
+    int k,
     qv_scope_t ***subscopes
 );
 
@@ -87,18 +87,6 @@ int
 qv_pthread_scopes_free(
     int nscopes,
     qv_scope_t **scopes
-);
-
-/**
- * Fills color array used in qv_pthread_scope_split*.
- */
-int
-qv_pthread_colors_fill(
-    int *color_array,
-    int array_size,
-    qv_pthread_placement_t policy,
-    int stride,
-    int npieces
 );
 
 #ifdef __cplusplus
