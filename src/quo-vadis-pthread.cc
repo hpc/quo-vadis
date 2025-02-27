@@ -65,16 +65,16 @@ qv_pthread_scope_split(
     int npieces,
     int *color_array,
     int nthreads,
-    qv_scope_t ***subscope
+    qv_scope_t ***subscopes
 ) {
     const bool invalid_args = !scope || npieces < 0 || !color_array ||
-                              nthreads < 0 || !subscope;
+                              nthreads < 0 || !subscopes;
     if (qvi_unlikely(invalid_args)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
         return scope->thread_split(
-            npieces, color_array, nthreads, QV_HW_OBJ_LAST, subscope
+            npieces, color_array, nthreads, QV_HW_OBJ_LAST, subscopes
         );
     }
     qvi_catch_and_return();
@@ -84,17 +84,15 @@ int
 qv_pthread_scope_split_at(
     qv_scope_t *scope,
     qv_hw_obj_type_t type,
-    int *color_array,
-    int nthreads,
+    int *kcolors,
+    int k,
     qv_scope_t ***subscopes
 ) {
-    if (qvi_unlikely(!scope || !color_array || nthreads < 0 || !subscopes)) {
+    if (qvi_unlikely(!scope || !kcolors || k < 0 || !subscopes)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return scope->thread_split_at(
-            type, color_array, nthreads, subscopes
-        );
+        return scope->thread_split_at(type, kcolors, k, subscopes);
     }
     qvi_catch_and_return();
 }
@@ -143,48 +141,6 @@ qv_pthread_scopes_free(
         return QV_SUCCESS;
     }
     qvi_catch_and_return();
-}
-
-int
-qv_pthread_colors_fill(
-   int *color_array,
-   int array_size,
-   qv_pthread_placement_t policy,
-   int stride,
-   int npieces
-) {
-    const bool invalid_args = !color_array || array_size < 0 ||
-                              stride < 1 || npieces < 1;
-    if (qvi_unlikely(invalid_args)) return QV_ERR_INVLD_ARG;
-    // TODO(skg) We should use the mapping algorithms in qvi-map for these. The
-    // problem is that its interfaces aren't yet suited for this type of
-    // mapping.
-    switch(policy) {
-        case QV_POLICY_PACKED: {
-            // TODO(skg) This looks more like spread.
-            for(int idx = 0 ; idx < array_size ; idx++){
-                // color_array[idx] = (idx+idx*(stride-1))%(npieces);
-                color_array[idx] = (idx*stride)%(npieces);
-            }
-            break;
-        }
-        case QV_POLICY_SPREAD: {
-            return QV_ERR_NOT_SUPPORTED;
-        }
-        case QV_POLICY_DISTRIBUTE: {
-            return QV_ERR_NOT_SUPPORTED;
-        }
-        case QV_POLICY_SCATTER: {
-            return QV_ERR_NOT_SUPPORTED;
-        }
-        case QV_POLICY_CHOOSE: {
-            return QV_ERR_NOT_SUPPORTED;
-        }
-        default: {
-            return QV_ERR_INVLD_ARG;
-        }
-    }
-    return QV_SUCCESS;
 }
 
 /*

@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2024 Triad National Security, LLC
+ * Copyright (c) 2021-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -70,7 +70,32 @@ private:
     std::vector<int> m_colors;
     /** Vector of task affinities. */
     qvi_hwloc_cpusets_t m_affinities;
+    /** */
+    qvi_map_fn_t
+    affinity_preserving_policy(void) const;
+    /** */
+    int
+    split_affinity_preserving_pass1(void);
+    /** User-defined split. */
+    int
+    split_user_defined(void);
+    /** Affinity preserving split. */
+    int
+    split_affinity_preserving(void);
+    /** */
+    int
+    split_packed(void);
+    /** */
+    int
+    split_spread(void);
+    /** Straightforward user-defined device splitting. */
+    int
+    split_devices_user_defined(void);
+    /** Affinity preserving device splitting. */
+    int
+    split_devices_affinity_preserving(void);
 public:
+    // TODO(skg) Cleanup private, protected, public interfaces.
     /** Constructor. */
     qvi_hwsplit(void) = default;
     /** Constructor. */
@@ -124,26 +149,9 @@ public:
         qvi_hwloc_cpusets_t &result
     ) const;
 
-    qvi_map_fn_t
-    affinity_preserving_policy(void) const;
     /** Releases all devices contained in the hardware split. */
     int
     release_devices(void);
-    /** Straightforward user-defined device splitting. */
-    int
-    split_devices_user_defined(void);
-    /** Affinity preserving device splitting. */
-    int
-    split_devices_affinity_preserving(void);
-    /** User-defined split. */
-    int
-    split_user_defined(void);
-
-    int
-    split_affinity_preserving_pass1(void);
-    /** Affinity preserving split. */
-    int
-    split_affinity_preserving(void);
     /** Splits aggregate scope data. */
     int
     split(void);

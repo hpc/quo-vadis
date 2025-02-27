@@ -132,6 +132,10 @@ const int QV_SCOPE_SPLIT_UNDEFINED = -1;
  */
 const int QV_SCOPE_SPLIT_AFFINITY_PRESERVING = -2;
 
+const int QV_SCOPE_SPLIT_PACKED = -3;
+
+const int QV_SCOPE_SPLIT_SPREAD = -4;
+
 /**
  *
  */

@@ -520,6 +520,54 @@ qvi_hwsplit::split_affinity_preserving(void)
     return split_devices_affinity_preserving();
 }
 
+// TODO(skg) Add device splitting.
+int
+qvi_hwsplit::split_packed(void)
+{
+    // cpusets used for mapping.
+    qvi_hwloc_cpusets_t cpusets;
+    // Get the primary cpusets for the mapping.
+    int rc = primary_cpusets(cpusets);
+    if (rc != QV_SUCCESS) return rc;
+    // Maintains the mapping between task (consumer) IDs and resource IDs.
+    qvi_map_t map;
+    rc = qvi_map_packed(map, m_group_size, cpusets);
+    if (rc != QV_SUCCESS) return rc;
+    // Make sure that we mapped all the tasks. If not, this is a bug.
+    if (qvi_map_nfids_mapped(map) != m_group_size) {
+        qvi_abort();
+    }
+    qvi_hwloc_t *const hwloc = m_rmi->hwloc();
+    // Update the hardware pools and colors to reflect the new mapping.
+    return apply_cpuset_mapping(
+        hwloc, map, cpusets, m_hwpools, m_colors
+    );
+}
+
+// TODO(skg) Add device splitting.
+int
+qvi_hwsplit::split_spread(void)
+{
+    // cpusets used for mapping.
+    qvi_hwloc_cpusets_t cpusets;
+    // Get the primary cpusets for the mapping.
+    int rc = primary_cpusets(cpusets);
+    if (rc != QV_SUCCESS) return rc;
+    // Maintains the mapping between task (consumer) IDs and resource IDs.
+    qvi_map_t map;
+    rc = qvi_map_spread(map, m_group_size, cpusets);
+    if (rc != QV_SUCCESS) return rc;
+    // Make sure that we mapped all the tasks. If not, this is a bug.
+    if (qvi_map_nfids_mapped(map) != m_group_size) {
+        qvi_abort();
+    }
+    qvi_hwloc_t *const hwloc = m_rmi->hwloc();
+    // Update the hardware pools and colors to reflect the new mapping.
+    return apply_cpuset_mapping(
+        hwloc, map, cpusets, m_hwpools, m_colors
+    );
+}
+
 /**
  * Takes a vector of colors and clamps their values to [0, ndc)
  * in place, where ndc is the number of distinct numbers found in values.
@@ -590,6 +638,10 @@ qvi_hwsplit::split(void)
     switch (m_colors[0]) {
         case QV_SCOPE_SPLIT_AFFINITY_PRESERVING:
             return split_affinity_preserving();
+        case QV_SCOPE_SPLIT_PACKED:
+            return split_packed();
+        case QV_SCOPE_SPLIT_SPREAD:
+            return split_spread();
         default:
             rc = QV_ERR_INVLD_ARG;
             break;
