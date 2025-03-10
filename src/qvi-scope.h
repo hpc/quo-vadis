@@ -122,7 +122,7 @@ public:
     int
     thread_split_at(
         qv_hw_obj_type_t type,
-        int *kgroup_ids,
+        int *kcolors,
         uint_t k,
         qv_scope_t ***kchildren
     );

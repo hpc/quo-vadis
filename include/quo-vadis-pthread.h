@@ -50,6 +50,9 @@ typedef enum {
     QV_POLICY_CHOOSE     = 5
 } qv_pthread_placement_t;
 
+int *const QV_PTHREAD_SCOPE_SPLIT_PACKED = (int *)0x00000001;
+int *const QV_PTHREAD_SCOPE_SPLIT_SPREAD = (int *)0x00000002;
+
 /**
  * Similar to pthread_create(3).
  */
