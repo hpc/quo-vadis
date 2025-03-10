@@ -33,7 +33,6 @@ thread_work(
     ctu_scope_report(scope, "thread_scope_in_thread_routine");
     ctu_emit_task_bind(scope);
 #endif
-
     if (rank == 0) {
         printf("[%d] ============ Splitting thread scopes in two\n", tid);
     }
@@ -81,38 +80,21 @@ main(void)
 
     ctu_emit_task_bind(base_scope);
     //
-    // Test qv_pthread_scope_split
+    // Test qv_pthread_scope_split()
     //
     const int npieces = 2;
     const int nthreads = ncores;
-    int colors[nthreads];
 
     printf(
         "[%d] Testing thread_scope_split (nthreads=%d, npieces=%d)\n",
         tid, nthreads, npieces
     );
 
-    for (int i = 0 ; i < nthreads ; i++) {
-        colors[i] = i % npieces;
-    }
-#if 0
-    printf("Manual values: ");
-    for (int i = 0 ; i < nthreads ; i++) {
-        printf("val[%i]:%i | ",i,colors[i]);
-    }
-    printf("\n");
-#endif
-
-#if 0
-    fprintf(stdout,"Filled values: ");
-    for (int i = 0 ; i < nthreads ; i++) {
-        fprintf(stdout,"val[%i]:%i | ",i,colors[i]);
-    }
-    fprintf(stdout,"\n");
-#endif
     qv_scope_t **th_scopes = NULL;
     rc = qv_pthread_scope_split(
-        base_scope, npieces, colors, nthreads, &th_scopes
+        base_scope, npieces,
+        QV_PTHREAD_SCOPE_SPLIT_PACKED,
+        nthreads, &th_scopes
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_pthread_scope_split() failed";
@@ -152,39 +134,18 @@ main(void)
         ers = "qv_pthread_scope_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
-#if 0
+    //
     //Test qv_pthread_scope_split_at
-    nthreads = 2 * ncores;
-
-    printf("[%d] Testing thread_scope_split_at (nthreads=%i)\n", tid, nthreads);
-
-    int colors2[nthreads];
-    for (int i = 0 ; i < nthreads ; i++) {
-        colors2[i] = i % ncores;
-    }
-
-    fprintf(stdout,"Array values :");
-    for (int i = 0 ; i < nthreads ; i++) {
-        fprintf(stdout,"val[%i]: %i |",i,colors2[i]);
-    }
-    fprintf(stdout,"\n");
-
-
-    rc = qv_pthread_colors_fill(colors2, nthreads, QV_POLICY_PACKED, stride, ncores);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_pthread_colors_fill() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    fprintf(stdout,"Array values :");
-    for (int i = 0 ; i < nthreads ; i++) {
-        fprintf(stdout,"val[%i]: %i |",i,colors2[i]);
-    }
-    fprintf(stdout,"\n");
+    //
+    printf(
+        "[%d] Testing thread_scope_split_at (nthreads=%d, npieces=%d)\n",
+        tid, nthreads, npieces
+    );
 
     rc = qv_pthread_scope_split_at(
-        mpi_scope, QV_HW_OBJ_CORE, colors2, nthreads, &th_scopes
+        base_scope, QV_HW_OBJ_CORE,
+        QV_PTHREAD_SCOPE_SPLIT_PACKED,
+        nthreads, &th_scopes
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_pthread_scope_split_at() failed";
@@ -215,14 +176,13 @@ main(void)
         }
         //fprintf(stdout,"Thread finished with '%s'\n", (char *)ret);
     }
-
     // Clean up.
     rc = qv_pthread_scopes_free(nthreads, th_scopes);
     if (rc != QV_SUCCESS) {
         ers = "qv_pthread_scope_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-#endif
+
     rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";

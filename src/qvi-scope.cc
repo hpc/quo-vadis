@@ -315,11 +315,11 @@ qv_scope::thread_split(
 int
 qv_scope::thread_split_at(
     qv_hw_obj_type_t type,
-    int *kgroup_ids,
+    int *kcolors,
     uint_t k,
     qv_scope_t ***kchildren
 ) {
-    return thread_split(hwpool_nobjects(type), kgroup_ids, k, type, kchildren);
+    return thread_split(hwpool_nobjects(type), kcolors, k, type, kchildren);
 }
 
 /*

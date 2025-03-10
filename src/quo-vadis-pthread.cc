@@ -59,22 +59,51 @@ qvi_pthread_start_routine(
     pthread_exit(ret);
 }
 
+static int
+split_color_fixup(
+    int *kcolors,
+    int k,
+    std::vector<int> &kcolorsp
+) {
+    int real_color = QV_SCOPE_SPLIT_UNDEFINED;
+
+    if (kcolors == QV_PTHREAD_SCOPE_SPLIT_PACKED) {
+        real_color = QV_SCOPE_SPLIT_PACKED;
+    }
+    else if (kcolors == QV_PTHREAD_SCOPE_SPLIT_SPREAD) {
+        real_color = QV_SCOPE_SPLIT_SPREAD;
+    }
+    // Nothing to do. An automatic coloring was not requested.
+    if (real_color == QV_SCOPE_SPLIT_UNDEFINED) {
+        return QV_SUCCESS;
+    }
+    // An automatic coloring was requested.
+    kcolorsp.resize(k);
+    std::fill(kcolorsp.begin(), kcolorsp.end(), real_color);
+    return QV_SUCCESS;
+}
+
 int
 qv_pthread_scope_split(
     qv_scope_t *scope,
     int npieces,
-    int *color_array,
-    int nthreads,
+    int *kcolors,
+    int k,
     qv_scope_t ***subscopes
 ) {
-    const bool invalid_args = !scope || npieces < 0 || !color_array ||
-                              nthreads < 0 || !subscopes;
+    const bool invalid_args = !scope || npieces < 0 || !kcolors ||
+                              k < 0 || !subscopes;
     if (qvi_unlikely(invalid_args)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
+        std::vector<int> color_fixup;
+        const int rc = split_color_fixup(kcolors, k, color_fixup);
+        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+        // Set the colors array to the appropriate data.
+        int *kcolorsp = color_fixup.empty() ? kcolors : color_fixup.data();
         return scope->thread_split(
-            npieces, color_array, nthreads, QV_HW_OBJ_LAST, subscopes
+            npieces, kcolorsp, k, QV_HW_OBJ_LAST, subscopes
         );
     }
     qvi_catch_and_return();
@@ -92,7 +121,12 @@ qv_pthread_scope_split_at(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return scope->thread_split_at(type, kcolors, k, subscopes);
+        std::vector<int> color_fixup;
+        const int rc = split_color_fixup(kcolors, k, color_fixup);
+        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+        // Set the colors array to the appropriate data.
+        int *kcolorsp = color_fixup.empty() ? kcolors : color_fixup.data();
+        return scope->thread_split_at(type, kcolorsp, k, subscopes);
     }
     qvi_catch_and_return();
 }

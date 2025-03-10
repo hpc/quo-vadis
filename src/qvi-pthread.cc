@@ -268,7 +268,7 @@ qvi_pthread_group::split(
     // One thread creates the child group. The rest wait for the instance and
     // later grab a pointer to their group based on the sub-group index.
     if (sginfo.rank == qvi_subgroup_info::master_rank) {
-        // Recall this is the parent group.
+        // Recall that 'this' is the parent group.
         rc = qvi_new(&ichild, this, sginfo);
         barrier();
     }
