@@ -60,7 +60,7 @@ closefds(
     if (getrlimit(RLIMIT_NOFILE, &rl) < 0) {
         static cstr_t ers = "Cannot determine RLIMIT_NOFILE";
         const int err = errno;
-        qvi_panic_log_error("{} (rc={}, {})", ers, err, qvi_strerr(err));
+        qvi_panic_log_error("{} (rc={}, {})", ers, err, strerror(err));
     }
     // Default: no limit on this resource, so pick one.
     int64_t maxfd = 1024;
@@ -84,7 +84,7 @@ become_session_leader(
     if ((pid = fork()) < 0) {
         static cstr_t ers = "fork() failed";
         const int err = errno;
-        qvi_panic_log_error("{} (rc={}, {})", ers, err, qvi_strerr(err));
+        qvi_panic_log_error("{} (rc={}, {})", ers, err, strerror(err));
     }
     // Parent
     if (pid != 0) {
@@ -96,7 +96,7 @@ become_session_leader(
     if (pgid < 0) {
         static cstr_t ers = "setsid() failed";
         const int err = errno;
-        qvi_panic_log_error("{} (rc={}, {})", ers, err, qvi_strerr(err));
+        qvi_panic_log_error("{} (rc={}, {})", ers, err, strerror(err));
     }
 }
 
@@ -173,12 +173,12 @@ hwtopo_export(
 ) {
     qvi_log_debug("Publishing hardware information");
 
-    cstr_t basedir = qvi_tmpdir();
+    const std::string basedir = qvi_tmpdir();
     char *path = nullptr;
-    int rc = qvi_hwloc_topology_export(
-        ctx.hwloc, basedir, &path
+    const int rc = qvi_hwloc_topology_export(
+        ctx.hwloc, basedir.c_str(), &path
     );
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         static cstr_t ers = "qvi_hwloc_topology_export() failed";
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }

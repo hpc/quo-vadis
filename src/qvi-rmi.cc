@@ -42,25 +42,19 @@ struct qvi_rmi_msg_header {
  * Prints ZMQ error information. Defined as a macro so
  * that the line numbers correspond to the error site.
  */
-static inline void
-zerr_msg(
-    cstr_t ers,
-    int erno
-) {
-    qvi_log_error("{} with errno={} ({})", ers, erno, qvi_strerr(erno));
-}
+#define zerr_msg(ers, erno)                                                   \
+do {                                                                          \
+    qvi_log_error("{} with errno={} ({})", ers, erno, strerror(erno));        \
+} while (0)
 
 /**
  * Prints ZMQ warnings. Defined as a macro so that
  * the line numbers correspond to the warning site.
  */
-static inline void
-zwrn_msg(
-    cstr_t ers,
-    int erno
-) {
-    qvi_log_warn("{} with errno={} ({})", ers, erno, qvi_strerr(erno));
-}
+#define zwrn_msg(ers, erno)                                                   \
+do {                                                                          \
+    qvi_log_warn("{} with errno={} ({})", ers, erno, strerror(erno));         \
+} while (0)
 
 static inline void
 zsocket_close(

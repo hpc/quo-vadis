@@ -57,66 +57,28 @@ qv_strerr(int ec)
     return got->second.c_str();
 }
 
-cstr_t
-qvi_strerr(int ec)
-{
-    static thread_local char sb[1024];
-    return strerror_r(ec, sb, sizeof(sb));
-}
-
 double
 qvi_time(void)
 {
     using namespace std::chrono;
 
     const auto n = steady_clock::now();
-    auto tse_ms = time_point_cast<microseconds>(n).time_since_epoch().count();
-    return double(tse_ms) / 1e6;
+    const auto m = time_point_cast<microseconds>(n).time_since_epoch().count();
+    return double(m) / 1e6;
 }
 
 bool
-qvi_path_usable(
-    const cstr_t path,
+qvi_access(
+    const std::string &path,
+    int mode,
     int *errc
 ) {
     *errc = 0;
-    if (access(path, R_OK | W_OK) == -1) {
+    if (access(path.c_str(), mode) == -1) {
         *errc = errno;
         return false;
     }
     return true;
-}
-
-int
-qvi_atoi(
-    cstr_t str,
-    int *maybe_val
-) {
-    *maybe_val = 0;
-
-    cstr_t tstr = str;
-    // Make certain str contrains only digits.
-    while ('\0' != *tstr) {
-        if (!isdigit(*tstr)) return QV_ERR_INVLD_ARG;
-        ++tstr;
-    }
-    errno = 0;
-    char *end = nullptr;
-    const long val = strtol(str, &end, 10);
-    int err = errno;
-    // Did we get any digits?
-    if (qvi_unlikely(str == end)) return QV_ERR_INVLD_ARG;
-    // In valid range?
-    if (qvi_unlikely(val > INT_MAX || (err == ERANGE && val == LONG_MAX))) {
-        return QV_ERR_INVLD_ARG;
-    }
-    if (qvi_unlikely(val < INT_MIN || (err == ERANGE && val == LONG_MIN))) {
-        return QV_ERR_INVLD_ARG;
-    }
-    if (qvi_unlikely(*end != '\0')) return QV_ERR_INVLD_ARG;
-
-    *maybe_val = (int)val;
-    return QV_SUCCESS;
 }
 
 int
@@ -125,7 +87,8 @@ qvi_port(
 ) {
     const cstr_t ports = getenv(QVI_ENV_PORT);
     if (!ports) return QV_ERR_ENV;
-    return qvi_atoi(ports, port);
+    *port = std::stoi(std::string(ports));
+    return QV_SUCCESS;
 }
 
 int
@@ -136,10 +99,10 @@ qvi_url(
 
     int port = 0;
     const int rc = qvi_port(&port);
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     url = base + ":" + std::to_string(port);
-    return rc;
+    return QV_SUCCESS;
 }
 
 cstr_t
@@ -152,47 +115,26 @@ qvi_conn_ers(void)
     return msg.c_str();
 }
 
-cstr_t
+std::string
 qvi_tmpdir(void)
 {
-    static thread_local char tmpdir[PATH_MAX];
-
     cstr_t qvenv = getenv("QV_TMPDIR");
-    if (qvenv) {
-        const int nw = snprintf(tmpdir, PATH_MAX, "%s", qvenv);
-        if (nw < PATH_MAX) return tmpdir;
-    }
-    qvenv = getenv("TMPDIR");
-    if (qvenv) {
-        const int nw = snprintf(tmpdir, PATH_MAX, "%s", qvenv);
-        if (nw < PATH_MAX) return tmpdir;
-    }
-    static cstr_t tmp = "/tmp";
-    return tmp;
-}
+    if (qvenv) return std::string(qvenv);
 
-cstr_t
-qvi_whoami(void)
-{
-    static const int bsize = 128;
-    static thread_local char buff[bsize];
-    cstr_t user = getenv("USER");
-    if (!user) {
-        user = PACKAGE_NAME;
-    }
-    const int nw = snprintf(buff, bsize, "%s", user);
-    if (nw >= bsize) return PACKAGE_NAME;
-    return buff;
+    qvenv = getenv("TMPDIR");
+    if (qvenv) return std::string(qvenv);
+
+    return std::string("/tmp");
 }
 
 int
 qvi_file_size(
-    const cstr_t path,
+    const std::string &path,
     size_t *size
 ) {
     struct stat st;
-    const int rc = stat(path, &st);
-    if (rc == -1) return QV_ERR_FILE_IO;
+    const int rc = stat(path.c_str(), &st);
+    if (qvi_unlikely(rc == -1)) return QV_ERR_FILE_IO;
     *size = st.st_size;
     return QV_SUCCESS;
 }
