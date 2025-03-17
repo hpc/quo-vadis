@@ -797,7 +797,7 @@ topo_fopen(
     if (ifd == -1) {
         const int err = errno;
         cstr_t ers = "open() failed";
-        qvi_log_error("{} {}", ers, qvi_strerr(err));
+        qvi_log_error("{} {}", ers, strerror(err));
         return QV_ERR_FILE_IO;
     }
     // We need to publish this file to consumers that are potentially not part
@@ -806,7 +806,7 @@ topo_fopen(
     if (rc == -1) {
         const int err = errno;
         cstr_t ers = "fchmod() failed";
-        qvi_log_error("{} {}", ers, qvi_strerr(err));
+        qvi_log_error("{} {}", ers, strerror(err));
         return QV_ERR_FILE_IO;
     }
     *fd = ifd;
@@ -822,11 +822,11 @@ qvi_hwloc_topology_export(
     int qvrc = QV_SUCCESS, rc = 0, fd = 0;
     cstr_t ers = nullptr;
 
-    int err;
-    bool usable = qvi_path_usable(base_path, &err);
-    if (!usable) {
+    int err = 0;
+    const bool usable = qvi_access(base_path, R_OK | W_OK, &err);
+    if (qvi_unlikely(!usable)) {
         ers = "Cannot export hardware topology to {} ({})";
-        qvi_log_error(ers, base_path, qvi_strerr(err));
+        qvi_log_error(ers, base_path, strerror(err));
         return QV_ERR;
     }
 
@@ -867,7 +867,7 @@ qvi_hwloc_topology_export(
     if (rc == -1 || rc != topo_xml_len) {
         int err = errno;
         ers = "write() failed";
-        qvi_log_error("{} {}", ers, qvi_strerr(err));
+        qvi_log_error("{} {}", ers, strerror(err));
         qvrc = QV_ERR_FILE_IO;
         goto out;
     }

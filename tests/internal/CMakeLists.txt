@@ -18,7 +18,7 @@ include_directories(
 ################################################################################
 add_executable(
     test-hwloc
-    test-hwloc.c
+    test-hwloc.cc
 )
 
 target_link_libraries(
@@ -52,12 +52,6 @@ add_test(
       ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c && \
       ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -c && \
       ${CMAKE_CURRENT_BINARY_DIR}/test-rmi $URL -cc"
-)
-
-# Use the C linker to test for C/C++ linkage problems.
-set_target_properties(
-    test-hwloc
-    PROPERTIES LINKER_LANGUAGE C
 )
 
 ################################################################################

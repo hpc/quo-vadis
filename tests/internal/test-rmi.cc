@@ -16,7 +16,6 @@ server(
     printf("# [%d] Starting Server (%s)\n", getpid(), url);
 
     char const *ers = NULL;
-    const char *basedir = qvi_tmpdir();
     char *path = nullptr;
     qvi_rmi_config config;
 
@@ -50,7 +49,7 @@ server(
     config.hwloc = hwloc;
 
     rc = qvi_hwloc_topology_export(
-        hwloc, basedir, &path
+        hwloc, qvi_tmpdir().c_str(), &path
     );
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_topology_export() failed";

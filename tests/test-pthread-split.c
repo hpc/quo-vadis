@@ -4,6 +4,7 @@
 #include "quo-vadis-pthread.h"
 #include "common-test-utils.h"
 
+// A convenience structure to hold thread arguments.
 typedef struct {
     qv_scope_t *scope;
     int answer;

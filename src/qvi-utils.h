@@ -19,8 +19,6 @@
 
 #include "qvi-common.h"
 
-#ifdef __cplusplus
-
 /**
  * Reference counting base class that provides retain/release semantics.
  */
@@ -119,12 +117,6 @@ qvi_url(
     std::string &url
 );
 
-#endif
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 /**
  * See gettid(2) for details.
  */
@@ -137,12 +129,6 @@ qvi_gettid(void)
 /**
  *
  */
-cstr_t
-qvi_strerr(int ec);
-
-/**
- *
- */
 double
 qvi_time(void);
 
@@ -150,18 +136,10 @@ qvi_time(void);
  *
  */
 bool
-qvi_path_usable(
-    const cstr_t path,
+qvi_access(
+    const std::string &path,
+    int mode,
     int *errc
-);
-
-/**
- *
- */
-int
-qvi_atoi(
-    cstr_t str,
-    int *maybe_val
 );
 
 /**
@@ -173,21 +151,15 @@ qvi_conn_ers(void);
 /**
  *
  */
-cstr_t
+std::string
 qvi_tmpdir(void);
-
-/**
- *
- */
-cstr_t
-qvi_whoami(void);
 
 /**
  *
  */
 int
 qvi_file_size(
-    const cstr_t path,
+    const std::string &path,
     size_t *size
 );
 
@@ -199,10 +171,6 @@ qvi_cantor_pairing(
     int a,
     int b
 );
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
 
