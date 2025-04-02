@@ -157,7 +157,8 @@ qv_scope::hwpool_nobjects(
     qv_hw_obj_type_t obj
 ) const {
     int result = 0;
-    m_hwpool->nobjects(m_group->hwloc(), obj, &result);
+    const int rc = m_hwpool->nobjects(m_group->hwloc(), obj, &result);
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
     return result;
 }
 
@@ -229,27 +230,25 @@ qv_scope::split(
     qv_hw_obj_type_t maybe_obj_type,
     qv_scope_t **child
 ) {
-    int rc = QV_SUCCESS, colorp = 0;
     qvi_hwpool *hwpool = nullptr;
     qvi_group *group = nullptr;
     qv_scope_t *ichild = nullptr;
     // Split the hardware resources based on the provided split parameters.
-    qvi_hwsplit_coll chwsplit(
-        this, npieces, color, maybe_obj_type
+    int colorp = 0;
+    int rc = m_hwpool->split(
+        m_group, npieces, color, maybe_obj_type, &colorp, &hwpool
     );
-    rc = chwsplit.split(&colorp, &hwpool);
-    if (rc != QV_SUCCESS) goto out;
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Split underlying group. Notice the use of colorp here.
-    rc = m_group->split(
-        colorp, m_group->rank(), &group
-    );
-    if (rc != QV_SUCCESS) goto out;
+    rc = m_group->split(colorp, m_group->rank(), &group);
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Create and initialize the new scope.
     rc = qvi_new(&ichild, group, hwpool);
 out:
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&hwpool);
         qvi_delete(&group);
+        // TODO(skg) Is the wrapper needed?
         qv_scope::destroy(&ichild);
     }
     *child = ichild;

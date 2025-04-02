@@ -406,11 +406,11 @@ qvi_rmi_client::get_intrinsic_hwpool(
     *hwpool = nullptr;
 
     int qvrc = rpc_req(m_zsock, QVI_RMI_FID_GET_INTRINSIC_HWPOOL, who, iscope);
-    if (qvrc != QV_SUCCESS) return qvrc;
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
     qvrc = rpc_rep(m_zsock, &rpcrc, hwpool);
-    if (qvrc != QV_SUCCESS) return qvrc;
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     return rpcrc;
 }
 

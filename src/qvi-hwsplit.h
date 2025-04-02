@@ -19,8 +19,6 @@
 #include "qvi-hwpool.h"
 #include "qvi-map.h"
 
-struct qvi_hwsplit_coll;
-
 /**
  * Hardware split aggregation: a collection of information relevant to split
  * operations requiring aggregated (e.g., global) knowledge to perform a split.
@@ -32,7 +30,6 @@ struct qvi_hwsplit_coll;
  * this structure, but that isn't a requirement.
  */
 struct qvi_hwsplit {
-    friend qvi_hwsplit_coll;
 private:
     /** A pointer to my RMI. */
     qvi_rmi_client *m_rmi = nullptr;
@@ -100,7 +97,7 @@ public:
     qvi_hwsplit(void) = default;
     /** Constructor. */
     qvi_hwsplit(
-        qv_scope_t *parent,
+        qvi_group *group,
         uint_t group_size,
         uint_t split_size,
         qv_hw_obj_type_t split_at_type
@@ -155,99 +152,25 @@ public:
     /** Splits aggregate scope data. */
     int
     split(void);
-};
 
-/**
- * Collective hardware split: a collection of data and operations relevant to
- * split operations requiring aggregated resource knowledge AND coordination
- * between tasks in the parent scope to perform a split.
- */
-struct qvi_hwsplit_coll {
-private:
-    /** Points to the parent scope that we are splitting. */
-    qv_scope_t *m_parent = nullptr;
-    /** My color. */
-    int m_color = 0;
-    /**
-     * Stores group-global hardware split information brought together by
-     * collective operations across the members in the parent scope.
-     */
-    qvi_hwsplit m_hwsplit;
-public:
-    /**
-     * The root task ID used for collective operations.
-     * We use 0 as the root because 0 will always exist.
-     */
-    static constexpr int rootid = 0;
-    /** Constructor. */
-    qvi_hwsplit_coll(void) = delete;
-    /** Constructor. */
-    /**
-     * Hardware resources will be split based on the provided split parameters:
-     * - npieces: The number of splits requested.
-     * - color: Either user-supplied (explicitly set) or a value that requests
-     *   us to do the coloring for the callers.
-     *   maybe_obj_type: Potentially the object type that we are splitting at. This
-     *   value influences how the splitting algorithms perform their mapping.
-     */
-    qvi_hwsplit_coll(
-        qv_scope_t *parent,
-        uint_t npieces,
-        int color,
-        qv_hw_obj_type_t split_at_type
+    int gather(
+        qvi_group &group,
+        const qvi_hwpool &hwpool,
+        int color
     );
-    /** */
-    template <typename TYPE>
-    int
-    scatter_values(
-        const std::vector<TYPE> &values,
-        TYPE *value
-    );
-    /** */
-    template <typename TYPE>
-    int
-    bcast_value(
-        TYPE *value
-    );
-    /** */
-    template <typename TYPE>
-    int
-    gather_values(
-        TYPE invalue,
-        std::vector<TYPE> &outvals
-    );
-    /** */
-    int
-    gather_hwpools(
-        qvi_hwpool *txpool,
-        std::vector<qvi_hwpool *> &rxpools
-    );
-    /** Gathers. */
-    int
-    gather(void);
-    /** */
-    int
-    scatter_hwpools(
-        const std::vector<qvi_hwpool *> &pools,
-        qvi_hwpool **pool
-    );
-    /** */
+
     int
     scatter(
+        qvi_group &group,
         int *colorp,
         qvi_hwpool **result
     );
-    /** */
-    int
-    barrier(void);
-    /**
-     * Split the hardware resources based on the provided split parameters:
-     * - colorp: color' is potentially a new color assignment determined by one
-     *   of our coloring algorithms. This value can be used to influence the
-     *   group splitting that occurs after this call completes.
-     */
+    // TODO(skg) Update arg order
     int
     split(
+        qvi_group &group,
+        const qvi_hwpool &hwpool,
+        int color,
         int *colorp,
         qvi_hwpool **result
     );

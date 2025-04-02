@@ -16,6 +16,7 @@
 #include "qvi-rmi.h"
 #include "qvi-bbuff-rmi.h"
 #include "qvi-task.h" // IWYU pragma: keep
+#include "qvi-coll.h"
 #include "qvi-scope.h" // IWYU pragma: keep
 
 #if 0
@@ -129,12 +130,11 @@ pool_release_cpus_by_cpuset(
 using id2devs_t = std::multimap<int, const qvi_hwpool_dev *>;
 
 qvi_hwsplit::qvi_hwsplit(
-    qv_scope_t *parent,
+    qvi_group *group,
     uint_t group_size,
     uint_t split_size,
     qv_hw_obj_type_t split_at_type
-) : m_rmi(parent->group()->task()->rmi())
-  , m_hwpool(parent->hwpool())
+) : m_rmi(group->task()->rmi())
   , m_group_size(group_size)
   , m_split_size(split_size)
   , m_split_at_type(split_at_type)
@@ -166,7 +166,7 @@ qvi_hwloc_bitmap
 qvi_hwsplit::cpuset(void) const
 {
     // This shouldn't happen.
-    assert(m_hwpools.size() != 0);
+    assert(m_hwpools.size() > 0);
     return m_hwpools[0]->cpuset();
 }
 
@@ -205,7 +205,7 @@ qvi_hwsplit::thread_split(
 ) {
     const uint_t group_size = k;
     // Construct the hardware split.
-    qvi_hwsplit hwsplit(parent, group_size, npieces, maybe_obj_type);
+    qvi_hwsplit hwsplit(parent->group(), group_size, npieces, maybe_obj_type);
     // Eagerly make room for the group member information.
     hwsplit.reserve();
     // Since this is called by a single task, get its ID and associated
@@ -257,6 +257,7 @@ qvi_hwsplit::osdev_cpusets(
 ) const {
     // Get the number of devices we have available in the provided scope.
     int nobj = 0;
+
     int rc = m_hwpool->nobjects(
         m_rmi->hwloc(), m_split_at_type, &nobj
     );
@@ -649,200 +650,40 @@ qvi_hwsplit::split(void)
     return rc;
 }
 
-qvi_hwsplit_coll::qvi_hwsplit_coll(
-    qv_scope_t *parent,
-    uint_t npieces,
-    int color,
-    qv_hw_obj_type_t split_at_type
-) : m_parent(parent)
-  , m_color(color)
-{
-    const qvi_group *const pgroup = m_parent->group();
-    if (pgroup->rank() == qvi_hwsplit_coll::rootid) {
-        m_hwsplit = qvi_hwsplit(
-            m_parent, pgroup->size(), npieces, split_at_type
-        );
-    }
-}
-
-template <typename TYPE>
+// TODO(skg) Rename
 int
-qvi_hwsplit_coll::scatter_values(
-    const std::vector<TYPE> &values,
-    TYPE *value
+qvi_hwsplit::gather(
+    qvi_group &group,
+    const qvi_hwpool &hwpool,
+    int color
 ) {
-    static_assert(std::is_trivially_copyable<TYPE>::value, "");
-
-    int rc = QV_SUCCESS;
-    qvi_bbuff *rxbuff = nullptr;
-
-    qvi_group *const group = m_parent->group();
-    std::vector<qvi_bbuff *> txbuffs(0);
-    if (group->rank() == rootid) {
-        const uint_t group_size = group->size();
-        txbuffs.resize(group_size);
-        // Pack the values.
-        for (uint_t i = 0; i < group_size; ++i) {
-            rc = qvi_bbuff_new(&txbuffs[i]);
-            if (qvi_unlikely(rc != QV_SUCCESS)) break;
-
-            rc = txbuffs[i]->append(&values[i], sizeof(TYPE));
-            if (qvi_unlikely(rc != QV_SUCCESS)) break;
-        }
-        if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    }
-
-    rc = group->scatter(txbuffs.data(), rootid, &rxbuff);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        goto out;
-    }
-
-    *value = *(TYPE *)rxbuff->data();
-out:
-    for (auto &buff : txbuffs) {
-        qvi_bbuff_delete(&buff);
-    }
-    qvi_bbuff_delete(&rxbuff);
-    if (rc != QV_SUCCESS) {
-        // If something went wrong, just zero-initialize the value.
-        *value = {};
-    }
-    return rc;
-}
-
-template <typename TYPE>
-int
-qvi_hwsplit_coll::bcast_value(
-    TYPE *value
-) {
-    static_assert(std::is_trivially_copyable<TYPE>::value, "");
-    qvi_group *const group = m_parent->group();
-
-    std::vector<TYPE> values;
-    if (group->rank() == rootid) {
-        values.resize(group->size());
-        std::fill(values.begin(), values.end(), *value);
-    }
-    return scatter_values(values, value);
-}
-
-template <typename TYPE>
-int
-qvi_hwsplit_coll::gather_values(
-    TYPE invalue,
-    std::vector<TYPE> &outvals
-) {
-    static_assert(std::is_trivially_copyable<TYPE>::value, "");
-    qvi_group *const group = m_parent->group();
-    const uint_t group_size = group->size();
-
-    qvi_bbuff *txbuff = nullptr;
-    int rc = qvi_bbuff_new(&txbuff);
+    const int rootid = 0;
+    int rc = qvi_coll::gather_values(
+        group, rootid, qvi_task::mytid(), m_group_tids
+    );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-
-    rc = txbuff->append(&invalue, sizeof(TYPE));
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_bbuff_delete(&txbuff);
-        return rc;
-    }
-    // Gather the values to the root.
-    qvi_bbuff_alloc_type_t alloc_type = QVI_BBUFF_ALLOC_PRIVATE;
-    qvi_bbuff **bbuffs = nullptr;
-    rc = group->gather(txbuff, rootid, &alloc_type, &bbuffs);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    // The root fills in the output.
-    if (group->rank() == rootid) {
-        outvals.resize(group_size);
-        // Unpack the values.
-        for (uint_t i = 0; i < group_size; ++i) {
-            outvals[i] = *(TYPE *)bbuffs[i]->data();
-        }
-    }
-out:
-    if ((QVI_BBUFF_ALLOC_PRIVATE == alloc_type) ||
-        ((QVI_BBUFF_ALLOC_SHARED == alloc_type) && (group->rank() == rootid))) {
-        if (bbuffs) {
-           for (uint_t i = 0; i < group_size; ++i) {
-                qvi_bbuff_delete(&bbuffs[i]);
-            }
-            delete[] bbuffs;
-        }
-    }
-
-    qvi_bbuff_delete(&txbuff);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        // If something went wrong, just zero-initialize the values.
-        outvals = {};
-    }
-    return rc;
-}
-
-int
-qvi_hwsplit_coll::gather_hwpools(
-    qvi_hwpool *txpool,
-    std::vector<qvi_hwpool *> &rxpools
-) {
-    qvi_group *const group = m_parent->group();
-    const uint_t group_size = group->size();
-    // Pack the hardware pool into a buffer.
-    qvi_bbuff txbuff;
-    int rc = txpool->packinto(&txbuff);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Gather the values to the root.
-    qvi_bbuff_alloc_type_t alloc_type = QVI_BBUFF_ALLOC_PRIVATE;
-    qvi_bbuff **bbuffs = nullptr;
-    rc = group->gather(&txbuff, rootid, &alloc_type, &bbuffs);
-    if (rc != QV_SUCCESS) goto out;
-
-    if (group->rank() == rootid) {
-        rxpools.resize(group_size);
-        // Unpack the hwpools.
-        for (uint_t i = 0; i < group_size; ++i) {
-            rc = qvi_bbuff_rmi_unpack(
-                bbuffs[i]->data(), &rxpools[i]
-            );
-            if (qvi_unlikely(rc != QV_SUCCESS)) break;
-        }
-    }
-out:
-    if ((QVI_BBUFF_ALLOC_PRIVATE == alloc_type) ||
-        ((QVI_BBUFF_ALLOC_SHARED == alloc_type) && (group->rank() == rootid))) {
-        if (bbuffs) {
-            for (uint_t i = 0; i < group_size; ++i) {
-                qvi_bbuff_delete(&bbuffs[i]);
-            }
-            delete[] bbuffs;
-        }
-    }
-
-    if (rc != QV_SUCCESS) {
-        // If something went wrong, just zero-initialize the pools.
-        rxpools = {};
-    }
-    return rc;
-}
-
-int
-qvi_hwsplit_coll::gather(void)
-{
-    int rc = gather_values(qvi_task::mytid(), m_hwsplit.m_group_tids);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    rc = gather_values(m_color, m_hwsplit.m_colors);
+    rc = qvi_coll::gather_values(
+        group, rootid, color, m_colors
+    );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Note that the result hwpools are copies, so we can modify them freely.
-    rc = gather_hwpools(m_parent->hwpool(), m_hwsplit.m_hwpools);
+    // TODO(skg) I think we can delete this. NOTE: we then have to instantiate
+    // the hardware pools in m_hwpools.
+    rc = qvi_coll::gather_hwpools(
+        group, rootid, hwpool, m_hwpools
+    );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    const int myrank = m_parent->group()->rank();
-    const uint_t group_size = m_parent->group()->size();
-    if (myrank == qvi_hwsplit_coll::rootid) {
-        m_hwsplit.m_affinities.resize(group_size);
+    const int myrank = group.rank();
+    const uint_t group_size = group.size();
+    if (myrank == rootid) {
+        m_affinities.resize(group_size);
         for (uint_t tid = 0; tid < group_size; ++tid) {
             hwloc_cpuset_t cpuset = nullptr;
-            rc = m_parent->group()->task()->bind_top(&cpuset);
+            rc = group.task()->bind_top(&cpuset);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
             //
-            rc = m_hwsplit.m_affinities[tid].set(cpuset);
+            rc = m_affinities[tid].set(cpuset);
             // Clean up.
             qvi_hwloc_bitmap_delete(&cpuset);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
@@ -852,66 +693,26 @@ qvi_hwsplit_coll::gather(void)
 }
 
 int
-qvi_hwsplit_coll::scatter_hwpools(
-    const std::vector<qvi_hwpool *> &pools,
-    qvi_hwpool **pool
-) {
-    int rc = QV_SUCCESS;
-    std::vector<qvi_bbuff *> txbuffs(0);
-    qvi_bbuff *rxbuff = nullptr;
-
-    qvi_group *const group = m_parent->group();
-
-    if (group->rank() == rootid) {
-        const uint_t group_size = group->size();
-        txbuffs.resize(group_size);
-        // Pack the hwpools.
-        for (uint_t i = 0; i < group_size; ++i) {
-            rc = qvi_bbuff_new(&txbuffs[i]);
-            if (rc != QV_SUCCESS) break;
-
-            rc = pools[i]->packinto(txbuffs[i]);
-            if (rc != QV_SUCCESS) break;
-        }
-        if (rc != QV_SUCCESS) goto out;
-    }
-
-    rc = group->scatter(txbuffs.data(), rootid, &rxbuff);
-    if (rc != QV_SUCCESS) goto out;
-
-    rc = qvi_bbuff_rmi_unpack(rxbuff->data(), pool);
-out:
-    for (auto &buff : txbuffs) {
-        qvi_bbuff_delete(&buff);
-    }
-    qvi_bbuff_delete(&rxbuff);
-    if (rc != QV_SUCCESS) {
-        qvi_delete(pool);
-    }
-    return rc;
-}
-
-int
-qvi_hwsplit_coll::scatter(
+qvi_hwsplit::scatter(
+    qvi_group &group,
     int *colorp,
     qvi_hwpool **result
 ) {
-    const int rc = scatter_values(m_hwsplit.m_colors, colorp);
+    const int rootid = 0;
+    const int rc = qvi_coll::scatter_values(group, rootid, m_colors, colorp);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    return scatter_hwpools(m_hwsplit.m_hwpools, result);
+    return qvi_coll::scatter_hwpools(group, rootid, m_hwpools, result);
 }
 
 int
-qvi_hwsplit_coll::barrier(void)
-{
-    return m_parent->group()->barrier();
-}
-
-int
-qvi_hwsplit_coll::split(
+qvi_hwsplit::split(
+    qvi_group &group,
+    const qvi_hwpool &hwpool,
+    int color,
     int *colorp,
     qvi_hwpool **result
 ) {
+    const int rootid = 0;
     // First consolidate the provided information, as this is coming from a
     // SPMD-like context (e.g., splitting a resource shared by MPI processes).
     // In most cases it is easiest to have a single task calculate the split
@@ -919,24 +720,27 @@ qvi_hwsplit_coll::split(
     // its group members. Note that aggregated data are only valid for the task
     // whose id is equal to qvi_global_split_t::rootid after gather has
     // completed.
-    int rc = gather();
+    int rc = gather(group, hwpool, color);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // The root does this calculation.
     int rc2 = QV_SUCCESS;
-    if (m_parent->group()->rank() == rootid) {
-        rc2 = m_hwsplit.split();
+    if (group.rank() == rootid) {
+        // TODO(skg) Refactor.
+        m_hwpool = new qvi_hwpool(hwpool);
+        rc2 = split();
+        qvi_delete(&m_hwpool);
     }
     // Wait for the split information. Explicitly barrier here in case the
-    // underlying broadcast implementation polls heavily for completion.
-    rc = barrier();
+    // underlying collective operations poll heavily for completion.
+    rc = group.barrier();
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // To avoid hangs in split error paths, share the split rc with everyone.
-    rc = bcast_value(&rc2);
+    rc = qvi_coll::bcast_value(group, rootid, &rc2);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // If the split failed, return the error to all participants.
     if (qvi_unlikely(rc2 != QV_SUCCESS)) return rc2;
     // Scatter the results.
-    return scatter(colorp, result);
+    return scatter(group, colorp, result);
 }
 
 /*

@@ -1,6 +1,6 @@
 # -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*-
 #
-# Copyright (c) 2020-2024 Triad National Security, LLC
+# Copyright (c) 2020-2025 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -34,6 +34,7 @@ add_library(
       qvi-subgroup.h
       qvi-group-pthread.h
       qvi-map.h
+      qvi-coll.h
       qvi-hwsplit.h
       qvi-scope.h
       qvi-log.cc
@@ -49,6 +50,7 @@ add_library(
       qvi-pthread.cc
       qvi-group-pthread.cc
       qvi-map.cc
+      qvi-coll.cc
       qvi-hwsplit.cc
       qvi-scope.cc
       quo-vadis.cc

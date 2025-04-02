@@ -17,6 +17,8 @@
 #include "qvi-common.h"
 #include "qvi-hwloc.h"
 
+// TODO(skg)
+//
 /** Maintains a mapping between 'From IDs' to 'To IDs'. */
 using qvi_map_t = std::map<uint_t, uint_t>;
 
