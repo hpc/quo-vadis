@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2022-2024 Triad National Security, LLC
+ * Copyright (c) 2022-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -15,6 +15,7 @@
 
 #include "qvi-hwpool.h"
 #include "qvi-bbuff-rmi.h"
+#include "qvi-hwsplit.h"
 #include "qvi-utils.h"
 
 qv_scope_create_hints_t
@@ -363,6 +364,22 @@ out:
     *bytes_written = total_bw;
     *hwp = ihwp;
     return rc;
+}
+
+// TODO(skg) Make group const.
+int
+qvi_hwpool::split(
+    qvi_group *group,
+    uint_t npieces,
+    int color,
+    qv_hw_obj_type_t maybe_obj_type,
+    int *colorp,
+    qvi_hwpool **result
+) {
+    // TODO(skg) Refactor.
+    // Construct the hardware split.
+    qvi_hwsplit hwsplit(group, group->size(), npieces, maybe_obj_type);
+    return hwsplit.split(*group, *this, color, colorp, result);
 }
 
 /*

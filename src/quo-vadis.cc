@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -179,7 +179,6 @@ qv_scope_split(
         // We use the sentinel value QV_HW_OBJ_LAST to differentiate between
         // calls from split() and split_at(). Since this call doesn't have a
         // hardware type argument, we use QV_HW_OBJ_LAST as the hardware type.
-        // return
         return scope->split(npieces, color, QV_HW_OBJ_LAST, subscope);
     }
     qvi_catch_and_return();

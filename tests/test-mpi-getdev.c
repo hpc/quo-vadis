@@ -107,12 +107,12 @@ main(
     }
 
     /* Split the base scope evenly across workers */
+    // TODO(skg) Why is QV_SCOPE_SPLIT_AFFINITY_PRESERVING broken on my machine?
     qv_scope_t *rank_scope;
     rc = qv_scope_split(
             base_scope,
-            wsize,        // Number of workers
-            //wrank,        // My group color
-            QV_SCOPE_SPLIT_AFFINITY_PRESERVING,
+            wsize,
+            wrank,
             &rank_scope
     );
     if (rc != QV_SUCCESS) {

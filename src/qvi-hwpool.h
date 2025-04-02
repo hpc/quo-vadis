@@ -17,6 +17,7 @@
 #define QVI_HWPOOL_H
 
 #include "qvi-common.h"
+#include "qvi-group.h"
 #include "qvi-hwloc.h"
 
 /**
@@ -192,17 +193,31 @@ public:
      */
     int
     release_devices(void);
-    /** Packs the instance into the provided buffer. */
+    /**
+     * Packs the instance into the provided buffer.
+     */
     int
     packinto(
         qvi_bbuff *buff
     ) const;
-    /** Unpacks the buffer and creates a new hardware pool instance. */
+    /**
+     * Unpacks the buffer and creates a new hardware pool instance.
+     */
     static int
     unpack(
         byte_t *buffpos,
         size_t *bytes_written,
         qvi_hwpool **hwp
+    );
+    /** */
+    int
+    split(
+        qvi_group *group,
+        uint_t npieces,
+        int color,
+        qv_hw_obj_type_t maybe_obj_type,
+        int *colorp,
+        qvi_hwpool **result
     );
 };
 
