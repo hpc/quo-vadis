@@ -87,7 +87,7 @@ public:
         int root,
         qvi_bbuff_alloc_type_t *alloc_type,
         qvi_bbuff ***rxbuffs
-    ) {
+    ) const {
         return qvi_mpi_group_gather_bbuffs(
             m_mpi_group, txbuff, root, alloc_type, rxbuffs
         );
@@ -98,7 +98,7 @@ public:
         qvi_bbuff **txbuffs,
         int root,
         qvi_bbuff **rxbuff
-    ) {
+    ) const {
         return qvi_mpi_group_scatter_bbuffs(
             m_mpi_group, txbuffs, root, rxbuff
         );

@@ -50,7 +50,6 @@ add_library(
       qvi-pthread.cc
       qvi-group-pthread.cc
       qvi-map.cc
-      qvi-coll.cc
       qvi-hwsplit.cc
       qvi-scope.cc
       quo-vadis.cc

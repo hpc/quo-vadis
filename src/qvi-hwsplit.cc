@@ -12,9 +12,7 @@
  */
 
 #include "qvi-hwsplit.h"
-#include "qvi-bbuff.h"
 #include "qvi-rmi.h"
-#include "qvi-bbuff-rmi.h"
 #include "qvi-task.h" // IWYU pragma: keep
 #include "qvi-coll.h"
 #include "qvi-scope.h" // IWYU pragma: keep
@@ -658,18 +656,18 @@ qvi_hwsplit::gather(
     int color
 ) {
     const int rootid = 0;
-    int rc = qvi_coll::gather_values(
+    int rc = qvi_coll::gather(
         group, rootid, qvi_task::mytid(), m_group_tids
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    rc = qvi_coll::gather_values(
+    rc = qvi_coll::gather(
         group, rootid, color, m_colors
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Note that the result hwpools are copies, so we can modify them freely.
     // TODO(skg) I think we can delete this. NOTE: we then have to instantiate
     // the hardware pools in m_hwpools.
-    rc = qvi_coll::gather_hwpools(
+    rc = qvi_coll::gather(
         group, rootid, hwpool, m_hwpools
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
@@ -699,9 +697,9 @@ qvi_hwsplit::scatter(
     qvi_hwpool **result
 ) {
     const int rootid = 0;
-    const int rc = qvi_coll::scatter_values(group, rootid, m_colors, colorp);
+    const int rc = qvi_coll::scatter(group, rootid, m_colors, *colorp);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    return qvi_coll::scatter_hwpools(group, rootid, m_hwpools, result);
+    return qvi_coll::scatter(group, rootid, m_hwpools, result);
 }
 
 int
@@ -735,7 +733,7 @@ qvi_hwsplit::split(
     rc = group.barrier();
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // To avoid hangs in split error paths, share the split rc with everyone.
-    rc = qvi_coll::bcast_value(group, rootid, &rc2);
+    rc = qvi_coll::bcast(group, rootid, rc2);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // If the split failed, return the error to all participants.
     if (qvi_unlikely(rc2 != QV_SUCCESS)) return rc2;

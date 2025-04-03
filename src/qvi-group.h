@@ -86,14 +86,14 @@ struct qvi_group : qvi_refc {
         int root,
         qvi_bbuff_alloc_type_t *alloc_type,
         qvi_bbuff ***rxbuffs
-    ) = 0;
+    ) const = 0;
     /** Scatters bbuffs from specified root. */
     virtual int
     scatter(
         qvi_bbuff **txbuffs,
         int root,
         qvi_bbuff **rxbuff
-    ) = 0;
+    ) const = 0;
     /** Returns a unique group ID after each call. */
     static int
     next_id(
