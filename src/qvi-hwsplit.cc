@@ -680,7 +680,7 @@ qvi_hwsplit::gather(
         m_affinities.resize(group_size);
         for (uint_t tid = 0; tid < group_size; ++tid) {
             hwloc_cpuset_t cpuset = nullptr;
-            rc = group.task()->bind_top(&cpuset);
+            rc = m_rmi->get_cpubind(m_group_tids[tid], &cpuset);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
             //
             rc = m_affinities[tid].set(cpuset);
