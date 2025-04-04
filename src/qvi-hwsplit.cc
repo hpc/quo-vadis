@@ -651,37 +651,39 @@ qvi_hwsplit::split(void)
 // TODO(skg) Rename
 int
 qvi_hwsplit::gather(
-    qvi_group &group,
-    const qvi_hwpool &hwpool,
+    qv_scope_t *parent,
+    qvi_hwsplit &hwsplit,
     int color
 ) {
     const int rootid = 0;
+    const qvi_group &group = *parent->group();
+
     int rc = qvi_coll::gather(
-        group, rootid, qvi_task::mytid(), m_group_tids
+        group, rootid, qvi_task::mytid(), hwsplit.m_group_tids
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     rc = qvi_coll::gather(
-        group, rootid, color, m_colors
+        group, rootid, color, hwsplit.m_colors
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Note that the result hwpools are copies, so we can modify them freely.
     // TODO(skg) I think we can delete this. NOTE: we then have to instantiate
     // the hardware pools in m_hwpools.
     rc = qvi_coll::gather(
-        group, rootid, hwpool, m_hwpools
+        group, rootid, *parent->hwpool(), hwsplit.m_hwpools
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     const int myrank = group.rank();
     const uint_t group_size = group.size();
     if (myrank == rootid) {
-        m_affinities.resize(group_size);
+        hwsplit.m_affinities.resize(group_size);
         for (uint_t tid = 0; tid < group_size; ++tid) {
             hwloc_cpuset_t cpuset = nullptr;
-            rc = m_rmi->get_cpubind(m_group_tids[tid], &cpuset);
+            rc = hwsplit.m_rmi->get_cpubind(hwsplit.m_group_tids[tid], &cpuset);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
             //
-            rc = m_affinities[tid].set(cpuset);
+            rc = hwsplit.m_affinities[tid].set(cpuset);
             // Clean up.
             qvi_hwloc_bitmap_delete(&cpuset);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
@@ -692,25 +694,29 @@ qvi_hwsplit::gather(
 
 int
 qvi_hwsplit::scatter(
-    qvi_group &group,
+    qv_scope_t *parent,
+    qvi_hwsplit &hwsplit,
     int *colorp,
     qvi_hwpool **result
 ) {
     const int rootid = 0;
-    const int rc = qvi_coll::scatter(group, rootid, m_colors, *colorp);
+    const int rc = qvi_coll::scatter(*parent->group(), rootid, hwsplit.m_colors, *colorp);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    return qvi_coll::scatter(group, rootid, m_hwpools, result);
+    return qvi_coll::scatter(*parent->group(), rootid, hwsplit.m_hwpools, result);
 }
 
 int
 qvi_hwsplit::split(
-    qvi_group &group,
-    const qvi_hwpool &hwpool,
+    qv_scope_t *parent,
+    uint_t npieces,
     int color,
+    qv_hw_obj_type_t maybe_obj_type,
     int *colorp,
     qvi_hwpool **result
 ) {
     const int rootid = 0;
+    // TODO(skg) Update sig: take scope, and color.
+    qvi_hwsplit hwsplit(parent->group(), parent->group()->size(), npieces, maybe_obj_type);
     // First consolidate the provided information, as this is coming from a
     // SPMD-like context (e.g., splitting a resource shared by MPI processes).
     // In most cases it is easiest to have a single task calculate the split
@@ -718,27 +724,27 @@ qvi_hwsplit::split(
     // its group members. Note that aggregated data are only valid for the task
     // whose id is equal to qvi_global_split_t::rootid after gather has
     // completed.
-    int rc = gather(group, hwpool, color);
+    int rc = gather(parent, hwsplit, color);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // The root does this calculation.
     int rc2 = QV_SUCCESS;
-    if (group.rank() == rootid) {
+    if (parent->group()->rank() == rootid) {
         // TODO(skg) Refactor.
-        m_hwpool = new qvi_hwpool(hwpool);
-        rc2 = split();
-        qvi_delete(&m_hwpool);
+        hwsplit.m_hwpool = new qvi_hwpool(*parent->hwpool());
+        rc2 = hwsplit.split();
+        delete hwsplit.m_hwpool;
     }
     // Wait for the split information. Explicitly barrier here in case the
     // underlying collective operations poll heavily for completion.
-    rc = group.barrier();
+    rc = parent->group()->barrier();
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // To avoid hangs in split error paths, share the split rc with everyone.
-    rc = qvi_coll::bcast(group, rootid, rc2);
+    rc = qvi_coll::bcast(*parent->group(), rootid, rc2);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // If the split failed, return the error to all participants.
     if (qvi_unlikely(rc2 != QV_SUCCESS)) return rc2;
     // Scatter the results.
-    return scatter(group, colorp, result);
+    return scatter(parent, hwsplit, colorp, result);
 }
 
 /*

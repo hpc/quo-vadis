@@ -125,7 +125,8 @@ public:
     split_cpuset(
         qvi_hwloc_cpusets_t &result
     ) const;
-    /** Performs a thread-split operation, returns relevant hardare pools. */
+    /** Performs a thread-split operation, returns relevant hardware pools. */
+    // TODO(skg) No colorp here. We probably need to address that.
     static int
     thread_split(
         qv_scope_t *parent,
@@ -153,24 +154,28 @@ public:
     int
     split(void);
 
-    int gather(
-        qvi_group &group,
-        const qvi_hwpool &hwpool,
+    // TODO(skg) Remove color.
+    static int
+    gather(
+        qv_scope_t *parent,
+        qvi_hwsplit &hwsplit,
         int color
     );
 
-    int
+    static int
     scatter(
-        qvi_group &group,
+        qv_scope_t *parent,
+        qvi_hwsplit &hwsplit,
         int *colorp,
         qvi_hwpool **result
     );
-    // TODO(skg) Update arg order
-    int
+
+    static int
     split(
-        qvi_group &group,
-        const qvi_hwpool &hwpool,
+        qv_scope_t *parent,
+        uint_t npieces,
         int color,
+        qv_hw_obj_type_t maybe_obj_type,
         int *colorp,
         qvi_hwpool **result
     );

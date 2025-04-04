@@ -15,7 +15,7 @@ thread_work(
     void *arg
 ) {
     char const *ers = NULL;
-    const pid_t tid = ctu_gettid();
+    //const pid_t tid = ctu_gettid();
     thargs_t *thargs = (thargs_t *)arg;
 
     qv_scope_t *scope = thargs->scope;
@@ -30,10 +30,13 @@ thread_work(
         ers = "qv_scope_group_rank failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-#if 0
+#if 1
     ctu_scope_report(scope, "thread_scope_in_thread_routine");
     ctu_emit_task_bind(scope);
 #endif
+    // TODO(skg) We need to make this more general. Perhaps don't error out if
+    // the split can't be done? On some machines this test doesn't work.
+#if 0
     if (rank == 0) {
         printf("[%d] ============ Splitting thread scopes in two\n", tid);
     }
@@ -52,6 +55,7 @@ thread_work(
         ers = "qv_scope_free failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+#endif
     return NULL;
 }
 

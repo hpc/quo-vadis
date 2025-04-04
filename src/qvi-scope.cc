@@ -235,8 +235,8 @@ qv_scope::split(
     qv_scope_t *ichild = nullptr;
     // Split the hardware resources based on the provided split parameters.
     int colorp = 0;
-    int rc = m_hwpool->split(
-        m_group, npieces, color, maybe_obj_type, &colorp, &hwpool
+    int rc = qvi_hwsplit::split(
+        this, npieces, color, maybe_obj_type, &colorp, &hwpool
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Split underlying group. Notice the use of colorp here.

@@ -209,16 +209,6 @@ public:
         size_t *bytes_written,
         qvi_hwpool **hwp
     );
-    /** */
-    int
-    split(
-        qvi_group *group,
-        uint_t npieces,
-        int color,
-        qv_hw_obj_type_t maybe_obj_type,
-        int *colorp,
-        qvi_hwpool **result
-    );
 };
 
 #endif
