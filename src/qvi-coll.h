@@ -27,7 +27,10 @@ gather(
     TYPE send,
     std::vector<TYPE> &recv
 ) {
-    static_assert(std::is_trivially_copyable<TYPE>::value, "");
+    static_assert(
+        std::is_trivially_copyable<TYPE>::value &&
+        !std::is_pointer<TYPE>::value, ""
+    );
 
     const uint_t group_size = group.size();
 
@@ -80,6 +83,8 @@ gather(
     const CLASS &send,
     std::vector<CLASS *> &recv
 ) {
+    static_assert(!std::is_pointer<CLASS>::value, "");
+
     const uint_t group_size = group.size();
     // Pack the hardware pool into a buffer.
     qvi_bbuff txbuff;
@@ -126,7 +131,10 @@ scatter(
     const std::vector<TYPE> &send,
     TYPE &recv
 ) {
-    static_assert(std::is_trivially_copyable<TYPE>::value, "");
+    static_assert(
+        std::is_trivially_copyable<TYPE>::value &&
+        !std::is_pointer<TYPE>::value, ""
+    );
 
     int rc = QV_SUCCESS;
     qvi_bbuff *rxbuff = nullptr;
@@ -172,6 +180,8 @@ scatter(
     const std::vector<CLASS *> &send,
     CLASS **recv
 ) {
+    static_assert(!std::is_pointer<CLASS>::value, "");
+
     int rc = QV_SUCCESS;
     std::vector<qvi_bbuff *> txbuffs(0);
     qvi_bbuff *rxbuff = nullptr;
@@ -212,7 +222,10 @@ bcast(
     int rootid,
     TYPE &value
 ) {
-    static_assert(std::is_trivially_copyable<TYPE>::value, "");
+    static_assert(
+        std::is_trivially_copyable<TYPE>::value &&
+        !std::is_pointer<TYPE>::value, ""
+    );
 
     std::vector<TYPE> values;
     if (group.rank() == rootid) {
