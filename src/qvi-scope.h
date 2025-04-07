@@ -55,11 +55,6 @@ public:
     );
     /** Destructor */
     ~qv_scope(void);
-    /** Destroys a scope. */
-    static void
-    destroy(
-        qv_scope_t **scope
-    );
     /** Destroys scopes created by thread_split*. */
     static void
     thread_destroy(

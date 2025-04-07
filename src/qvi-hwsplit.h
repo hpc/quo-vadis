@@ -18,6 +18,7 @@
 #include "qvi-hwloc.h"
 #include "qvi-hwpool.h"
 #include "qvi-map.h"
+#include "qvi-scope.h"
 
 /**
  * Hardware split aggregation: a collection of information relevant to split
@@ -97,7 +98,7 @@ public:
     qvi_hwsplit(void) = default;
     /** Constructor. */
     qvi_hwsplit(
-        qvi_group *group,
+        qv_scope *parent,
         uint_t group_size,
         uint_t split_size,
         qv_hw_obj_type_t split_at_type
