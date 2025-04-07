@@ -128,11 +128,12 @@ pool_release_cpus_by_cpuset(
 using id2devs_t = std::multimap<int, const qvi_hwpool_dev *>;
 
 qvi_hwsplit::qvi_hwsplit(
-    qvi_group *group,
+    qv_scope *parent,
     uint_t group_size,
     uint_t split_size,
     qv_hw_obj_type_t split_at_type
-) : m_rmi(group->task()->rmi())
+) : m_rmi(parent->group()->task()->rmi())
+  , m_hwpool(parent->hwpool())
   , m_group_size(group_size)
   , m_split_size(split_size)
   , m_split_at_type(split_at_type)
@@ -203,7 +204,7 @@ qvi_hwsplit::thread_split(
 ) {
     const uint_t group_size = k;
     // Construct the hardware split.
-    qvi_hwsplit hwsplit(parent->group(), group_size, npieces, maybe_obj_type);
+    qvi_hwsplit hwsplit(parent, group_size, npieces, maybe_obj_type);
     // Eagerly make room for the group member information.
     hwsplit.reserve();
     // Since this is called by a single task, get its ID and associated
@@ -715,8 +716,7 @@ qvi_hwsplit::split(
     qvi_hwpool **result
 ) {
     const int rootid = 0;
-    // TODO(skg) Update sig: take scope, and color.
-    qvi_hwsplit hwsplit(parent->group(), parent->group()->size(), npieces, maybe_obj_type);
+    qvi_hwsplit hwsplit(parent, parent->group()->size(), npieces, maybe_obj_type);
     // First consolidate the provided information, as this is coming from a
     // SPMD-like context (e.g., splitting a resource shared by MPI processes).
     // In most cases it is easiest to have a single task calculate the split
@@ -729,10 +729,7 @@ qvi_hwsplit::split(
     // The root does this calculation.
     int rc2 = QV_SUCCESS;
     if (parent->group()->rank() == rootid) {
-        // TODO(skg) Refactor.
-        hwsplit.m_hwpool = new qvi_hwpool(*parent->hwpool());
         rc2 = hwsplit.split();
-        delete hwsplit.m_hwpool;
     }
     // Wait for the split information. Explicitly barrier here in case the
     // underlying collective operations poll heavily for completion.

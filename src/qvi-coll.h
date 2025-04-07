@@ -83,8 +83,6 @@ gather(
     const CLASS &send,
     std::vector<CLASS *> &recv
 ) {
-    static_assert(!std::is_pointer<CLASS>::value, "");
-
     const uint_t group_size = group.size();
     // Pack the hardware pool into a buffer.
     qvi_bbuff txbuff;

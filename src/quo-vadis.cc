@@ -14,7 +14,10 @@
  * @file quo-vadis.cc
  */
 
+// IWYU pragma: begin_keep
+#include "qvi-common.h"
 #include "qvi-scope.h"
+// IWYU pragma: end_keep
 
 int
 qv_version(
@@ -82,7 +85,7 @@ qv_scope_free(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        qv_scope::destroy(&scope);
+        qvi_delete(&scope);
         return QV_SUCCESS;
     }
     qvi_catch_and_return();

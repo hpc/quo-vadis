@@ -34,13 +34,6 @@ qv_scope::~qv_scope(void)
 }
 
 void
-qv_scope::destroy(
-    qv_scope_t **scope
-) {
-    qvi_delete(scope);
-}
-
-void
 qv_scope::thread_destroy(
     qv_scope_t ***kscopes,
     uint_t k
@@ -48,7 +41,7 @@ qv_scope::thread_destroy(
     if (!kscopes) return;
     qv_scope_t **ikscopes = *kscopes;
     for (uint_t i = 0; i < k; ++i) {
-        qv_scope::destroy(&ikscopes[i]);
+        qvi_delete(&ikscopes[i]);
     }
     delete[] ikscopes;
     *kscopes = nullptr;
@@ -73,7 +66,7 @@ qv_scope::make_intrinsic(
     // Create and initialize the scope.
     rc = qvi_new(scope, group, hwpool);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qv_scope::destroy(scope);
+        qvi_delete(scope);
     }
     return rc;
 }
@@ -122,7 +115,7 @@ qv_scope::create(
     qv_scope_t *ichild = nullptr;
     rc = qvi_new(&ichild, group, hwpool);
     if (rc != QV_SUCCESS) {
-        qv_scope::destroy(&ichild);
+        qvi_delete(&ichild);
     }
     *child = ichild;
     return rc;
@@ -230,11 +223,11 @@ qv_scope::split(
     qv_hw_obj_type_t maybe_obj_type,
     qv_scope_t **child
 ) {
-    qvi_hwpool *hwpool = nullptr;
     qvi_group *group = nullptr;
     qv_scope_t *ichild = nullptr;
     // Split the hardware resources based on the provided split parameters.
     int colorp = 0;
+    qvi_hwpool *hwpool = nullptr;
     int rc = qvi_hwsplit::split(
         this, npieces, color, maybe_obj_type, &colorp, &hwpool
     );
@@ -248,8 +241,7 @@ out:
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&hwpool);
         qvi_delete(&group);
-        // TODO(skg) Is the wrapper needed?
-        qv_scope::destroy(&ichild);
+        qvi_delete(&ichild);
     }
     *child = ichild;
     return rc;
@@ -279,7 +271,7 @@ qv_scope::thread_split(
     int rc = qvi_hwsplit::thread_split(
         this, npieces, kcolors, k, maybe_obj_type, &hwpools
     );
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Split off from our parent group. This call is called from a context in
     // which a process is splitting its resources across threads, so create a
     // new thread group that will be shared with each child (see below).
@@ -296,7 +288,7 @@ qv_scope::thread_split(
         thgroup->retain();
         ithchildren[i] = child;
     }
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         qv_scope::thread_destroy(&ithchildren, k);
     }
     else {
