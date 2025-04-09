@@ -161,12 +161,10 @@ qvi_hwsplit::reserve(void)
     m_affinities.resize(m_group_size);
 }
 
-qvi_hwloc_bitmap
+const qvi_hwloc_bitmap &
 qvi_hwsplit::cpuset(void) const
 {
-    // This shouldn't happen.
-    assert(m_hwpools.size() > 0);
-    return m_hwpools[0]->cpuset();
+    return m_hwpool.cpuset();
 }
 
 int
@@ -174,7 +172,7 @@ qvi_hwsplit::split_cpuset(
     qvi_hwloc_cpusets_t &result
 ) const {
     // The cpuset that we are going to split.
-    const qvi_hwloc_bitmap base_cpuset = cpuset();
+    const qvi_hwloc_bitmap &base_cpuset = cpuset();
     // Pointer to my hwloc instance.
     qvi_hwloc_t *const hwloc = m_rmi->hwloc();
     // Holds the host's split cpusets.
@@ -188,7 +186,7 @@ qvi_hwsplit::split_cpuset(
             hwloc, base_cpuset.cdata(), m_split_size,
             chunkid, result[chunkid].data()
         );
-        if (rc != QV_SUCCESS) break;
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
     }
     return rc;
 }
@@ -222,7 +220,7 @@ qvi_hwsplit::thread_split(
         hwsplit.m_colors[i] = kcolors[i];
         // Since the parent hardware pool is the resource we are splitting and
         // agg_split_* calls expect |group_size| elements, replicate by dups.
-        rc = qvi_dup(*parent->hwpool(), &hwsplit.m_hwpools[i]);
+        rc = qvi_dup(parent->hwpool(), &hwsplit.m_hwpools[i]);
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
         // Since this is called by a single task, replicate its task ID, too.
         hwsplit.m_group_tids[i] = taskid;
@@ -257,14 +255,14 @@ qvi_hwsplit::osdev_cpusets(
     // Get the number of devices we have available in the provided scope.
     int nobj = 0;
 
-    int rc = m_hwpool->nobjects(
+    int rc = m_hwpool.nobjects(
         m_rmi->hwloc(), m_split_at_type, &nobj
     );
     if (rc != QV_SUCCESS) return rc;
     // Holds the device affinities used for the split.
     result.resize(nobj);
     uint_t affi = 0;
-    for (const auto &dinfo : m_hwpool->devices()) {
+    for (const auto &dinfo : m_hwpool.devices()) {
         // Not the type we are looking to split.
         if (m_split_at_type != dinfo.first) continue;
         // Copy the device's affinity to our list of device affinities.
@@ -342,7 +340,7 @@ qvi_hwsplit::split_devices_user_defined(void)
         ncolors_chosen++;
     }
     // Cache all device infos associated with the parent hardware pool.
-    auto dinfos = m_hwpool->devices();
+    auto dinfos = m_hwpool.devices();
     // Iterate over the supported device types and split them up round-robin.
     // TODO(skg) Should this be a mapping operation in qvi-map?
     for (const auto devt : qvi_hwloc_supported_devices()) {
@@ -391,7 +389,7 @@ qvi_hwsplit::split_devices_affinity_preserving(void)
     int rc = release_devices();
     if (rc != QV_SUCCESS) return rc;
     // Get a pointer to device infos associated with the parent hardware pool.
-    auto dinfos = m_hwpool->devices();
+    auto dinfos = m_hwpool.devices();
     // Iterate over the supported device types and split them up.
     for (const auto devt : qvi_hwloc_supported_devices()) {
         // Store device infos.
@@ -663,28 +661,26 @@ qvi_hwsplit::gather(
         group, rootid, qvi_task::mytid(), hwsplit.m_group_tids
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+
     rc = qvi_coll::gather(
         group, rootid, color, hwsplit.m_colors
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Note that the result hwpools are copies, so we can modify them freely.
-    // TODO(skg) I think we can delete this. NOTE: we then have to instantiate
-    // the hardware pools in m_hwpools.
-    rc = qvi_coll::gather(
-        group, rootid, *parent->hwpool(), hwsplit.m_hwpools
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    const int myrank = group.rank();
-    const uint_t group_size = group.size();
-    if (myrank == rootid) {
+    if (group.rank() == rootid) {
+        const uint_t group_size = group.size();
+        hwsplit.m_hwpools.resize(group_size);
         hwsplit.m_affinities.resize(group_size);
-        for (uint_t tid = 0; tid < group_size; ++tid) {
+        for (uint_t gid = 0; gid < group_size; ++gid) {
+            // The root creates new hardware pools so it can modify them freely.
+            rc = qvi_new(&hwsplit.m_hwpools.at(gid));
+            if (qvi_unlikely(rc != QV_SUCCESS)) break;
+            // Get the group member's current affinity.
             hwloc_cpuset_t cpuset = nullptr;
-            rc = hwsplit.m_rmi->get_cpubind(hwsplit.m_group_tids[tid], &cpuset);
+            rc = hwsplit.m_rmi->get_cpubind(hwsplit.m_group_tids[gid], &cpuset);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
             //
-            rc = hwsplit.m_affinities[tid].set(cpuset);
+            rc = hwsplit.m_affinities[gid].set(cpuset);
             // Clean up.
             qvi_hwloc_bitmap_delete(&cpuset);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;

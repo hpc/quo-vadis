@@ -179,7 +179,7 @@ public:
         qvi_hwloc_t *hwloc,
         qv_hw_obj_type_t obj_type,
         int *result
-    );
+    ) const;
     /**
      * Adds a qvi_hwpool_dev_s device.
      */

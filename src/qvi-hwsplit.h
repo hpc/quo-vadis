@@ -21,21 +21,21 @@
 #include "qvi-scope.h"
 
 /**
- * Hardware split aggregation: a collection of information relevant to split
- * operations requiring aggregated (e.g., global) knowledge to perform a split.
+ * A collection of information relevant to split operations requiring aggregated
+ * (e.g., global) knowledge to perform a split.
  *
  * NOTE: since splitting and mapping operations are performed by a single
- * process, this structure does not support collective operations that require
- * coordination between cooperating tasks. The structure for that is
- * qvi_hwsplit_coll_s. Typically, collective operations will fill in a
- * this structure, but that isn't a requirement.
+ * process, that process requires global knowledge of the split parameters.
+ * Also, that process needs a way to relay that information to its members. This
+ * is done in one of two ways: before starting threads or by group-level message
+ * passing.
  */
 struct qvi_hwsplit {
 private:
     /** A pointer to my RMI. */
     qvi_rmi_client *m_rmi = nullptr;
-    /** The base hardware pool we are splitting. */
-    qvi_hwpool *m_hwpool = nullptr;
+    /** A const reference to the base hardware pool we are splitting. */
+    const qvi_hwpool &m_hwpool;
     /** The number of members that are part of the split. */
     uint_t m_group_size = 0;
     /** The number of pieces in the split. */
@@ -95,7 +95,7 @@ private:
 public:
     // TODO(skg) Cleanup private, protected, public interfaces.
     /** Constructor. */
-    qvi_hwsplit(void) = default;
+    qvi_hwsplit(void) = delete;
     /** Constructor. */
     qvi_hwsplit(
         qv_scope *parent,
@@ -112,11 +112,12 @@ public:
     void
     reserve(void);
     /**
-     * Returns a copy of the aggregate cpuset. Note that the cpuset will be shared
-     * among the aggregate, but other resources may be distributed differently.
-     * For example, some hardware pools may have GPUs, while others may not.
+     * Returns a const reference to the aggregate cpuset. Note that the cpuset
+     * will be shared among the aggregate, but other resources may be
+     * distributed differently. For example, some hardware pools may have GPUs,
+     * while others may not.
      */
-    qvi_hwloc_bitmap
+    const qvi_hwloc_bitmap &
     cpuset(void) const;
     /**
      * Performs a straightforward splitting of the provided cpuset:
