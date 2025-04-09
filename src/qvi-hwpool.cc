@@ -273,7 +273,7 @@ qvi_hwpool::nobjects(
     qvi_hwloc_t *hwloc,
     qv_hw_obj_type_t obj_type,
     int *result
-) {
+) const {
     if (qvi_hwloc_obj_type_is_host_resource(obj_type)) {
         return qvi_hwloc_get_nobjs_in_cpuset(
             hwloc, obj_type, m_cpu.affinity().cdata(), result

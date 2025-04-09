@@ -127,10 +127,10 @@ qv_scope::group(void) const
     return m_group;
 }
 
-qvi_hwpool *
+const qvi_hwpool &
 qv_scope::hwpool(void) const
 {
-    return m_hwpool;
+    return *m_hwpool;
 }
 
 int

@@ -64,8 +64,8 @@ public:
     /** Returns a pointer to the scope's underlying group. */
     qvi_group *
     group(void) const;
-    /** Returns a pointer to the scope's underlying hardware pool. */
-    qvi_hwpool *
+    /** Returns a const reference to the scope's underlying hardware pool. */
+    const qvi_hwpool &
     hwpool(void) const;
     /** Returns the scope's group size. */
     int
