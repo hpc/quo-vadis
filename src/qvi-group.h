@@ -46,7 +46,7 @@ struct qvi_group : qvi_refc {
     rank(void) const = 0;
     /** Performs node-local group barrier. */
     virtual int
-    barrier(void) = 0;
+    barrier(void) const = 0;
     /** Makes the calling instance an intrinsic group. */
     virtual int
     make_intrinsic(

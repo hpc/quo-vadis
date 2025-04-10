@@ -132,7 +132,7 @@ qvi_hwsplit::qvi_hwsplit(
     uint_t group_size,
     uint_t split_size,
     qv_hw_obj_type_t split_at_type
-) : m_rmi(parent->group()->task()->rmi())
+) : m_rmi(parent->group().task()->rmi())
   , m_hwpool(parent->hwpool())
   , m_group_size(group_size)
   , m_split_size(split_size)
@@ -212,7 +212,7 @@ qvi_hwsplit::thread_split(
     const pid_t taskid = qvi_task::mytid();
     // Get the task's current affinity.
     hwloc_cpuset_t task_affinity = nullptr;
-    int rc = parent->group()->task()->bind_top(&task_affinity);
+    int rc = parent->group().task()->bind_top(&task_affinity);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Prepare the hwsplit with our parent's information.
     for (uint_t i = 0; i < group_size; ++i) {
@@ -647,16 +647,13 @@ qvi_hwsplit::split(void)
     return rc;
 }
 
-// TODO(skg) Rename
 int
-qvi_hwsplit::gather(
-    qv_scope_t *parent,
+qvi_hwsplit::gather_split_data(
+    const qvi_group &group,
+    int rootid,
     qvi_hwsplit &hwsplit,
     int color
 ) {
-    const int rootid = 0;
-    const qvi_group &group = *parent->group();
-
     int rc = qvi_coll::gather(
         group, rootid, qvi_task::mytid(), hwsplit.m_group_tids
     );
@@ -690,16 +687,16 @@ qvi_hwsplit::gather(
 }
 
 int
-qvi_hwsplit::scatter(
-    qv_scope_t *parent,
-    qvi_hwsplit &hwsplit,
+qvi_hwsplit::scatter_split_results(
+    const qvi_group &group,
+    int rootid,
+    const qvi_hwsplit &hwsplit,
     int *colorp,
     qvi_hwpool **result
 ) {
-    const int rootid = 0;
-    const int rc = qvi_coll::scatter(*parent->group(), rootid, hwsplit.m_colors, *colorp);
+    const int rc = qvi_coll::scatter(group, rootid, hwsplit.m_colors, *colorp);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    return qvi_coll::scatter(*parent->group(), rootid, hwsplit.m_hwpools, result);
+    return qvi_coll::scatter(group, rootid, hwsplit.m_hwpools, result);
 }
 
 int
@@ -711,33 +708,35 @@ qvi_hwsplit::split(
     int *colorp,
     qvi_hwpool **result
 ) {
-    const int rootid = 0;
-    qvi_hwsplit hwsplit(parent, parent->group()->size(), npieces, maybe_obj_type);
+    const qvi_group &pgroup = parent->group();
+    // Everyone create a hardware split object.
+    qvi_hwsplit hwsplit(
+        parent, pgroup.size(), npieces, maybe_obj_type
+    );
     // First consolidate the provided information, as this is coming from a
     // SPMD-like context (e.g., splitting a resource shared by MPI processes).
     // In most cases it is easiest to have a single task calculate the split
     // based on global knowledge and later redistribute the calculated result to
     // its group members. Note that aggregated data are only valid for the task
-    // whose id is equal to qvi_global_split_t::rootid after gather has
-    // completed.
-    int rc = gather(parent, hwsplit, color);
+    // whose id is equal to qvi_hwsplit::s_root after gather has completed.
+    int rc = gather_split_data(pgroup, s_root, hwsplit, color);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // The root does this calculation.
     int rc2 = QV_SUCCESS;
-    if (parent->group()->rank() == rootid) {
+    if (pgroup.rank() == s_root) {
         rc2 = hwsplit.split();
     }
     // Wait for the split information. Explicitly barrier here in case the
     // underlying collective operations poll heavily for completion.
-    rc = parent->group()->barrier();
+    rc = pgroup.barrier();
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // To avoid hangs in split error paths, share the split rc with everyone.
-    rc = qvi_coll::bcast(*parent->group(), rootid, rc2);
+    rc = qvi_coll::bcast(pgroup, s_root, rc2);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // If the split failed, return the error to all participants.
     if (qvi_unlikely(rc2 != QV_SUCCESS)) return rc2;
     // Scatter the results.
-    return scatter(parent, hwsplit, colorp, result);
+    return scatter_split_results(pgroup, s_root, hwsplit, colorp, result);
 }
 
 /*

@@ -59,7 +59,7 @@ public:
     }
 
     virtual int
-    barrier(void)
+    barrier(void) const
     {
         return qvi_mpi_group_barrier(m_mpi_group);
     }

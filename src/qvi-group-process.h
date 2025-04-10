@@ -50,7 +50,7 @@ public:
     }
 
     virtual int
-    barrier(void)
+    barrier(void) const
     {
         return qvi_process_group_barrier(m_proc_group);
     }

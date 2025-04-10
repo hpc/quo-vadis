@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -87,7 +87,7 @@ qvi_mpi_scope_comm_dup(
     qv_scope_t *scope,
     MPI_Comm *comm
 ) {
-    return dynamic_cast<qvi_group_mpi *>(scope->group())->comm_dup(comm);
+    return dynamic_cast<qvi_group_mpi &>(scope->group()).comm_dup(comm);
 }
 
 int

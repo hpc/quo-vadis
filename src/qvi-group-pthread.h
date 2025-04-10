@@ -68,7 +68,7 @@ public:
     }
 
     virtual int
-    barrier(void)
+    barrier(void) const
     {
         return thgroup->barrier();
     }

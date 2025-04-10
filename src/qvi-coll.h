@@ -16,6 +16,7 @@
 
 #include "qvi-common.h"
 #include "qvi-bbuff-rmi.h"
+#include "qvi-group.h"
 
 namespace qvi_coll {
 

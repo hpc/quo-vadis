@@ -148,10 +148,10 @@ qv_pthread_create(
     // Note: The provided scope should have been created by
     // qv_pthread_scope_split*. That is why we can safely cast the scope's
     // underlying group it to a qvi_group_pthread *.
-    auto group = dynamic_cast<qvi_group_pthread *>(scope->group());
+    const auto &group = dynamic_cast<qvi_group_pthread &>(scope->group());
     qvi_pthread_group_pthread_create_args *cargs = nullptr;
     rc = qvi_new(
-        &cargs, group->thgroup, qvi_pthread_start_routine, pthread_start_args
+        &cargs, group.thgroup, qvi_pthread_start_routine, pthread_start_args
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&pthread_start_args);
