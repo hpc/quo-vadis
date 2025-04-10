@@ -145,13 +145,6 @@ qvi_hwsplit::qvi_hwsplit(
     // appropriate vector sizing.
 }
 
-qvi_hwsplit::~qvi_hwsplit(void)
-{
-    for (auto &hwpool : m_hwpools) {
-        qvi_delete(&hwpool);
-    }
-}
-
 void
 qvi_hwsplit::reserve(void)
 {
@@ -174,7 +167,7 @@ qvi_hwsplit::split_cpuset(
     // The cpuset that we are going to split.
     const qvi_hwloc_bitmap &base_cpuset = cpuset();
     // Pointer to my hwloc instance.
-    qvi_hwloc_t *const hwloc = m_rmi->hwloc();
+    qvi_hwloc_t *const hwloc = m_rmi.hwloc();
     // Holds the host's split cpusets.
     result.resize(m_split_size);
     // Notice that we do not go through the RMI for this because this is just an
@@ -218,10 +211,6 @@ qvi_hwsplit::thread_split(
     for (uint_t i = 0; i < group_size; ++i) {
         // Store requested colors in aggregate.
         hwsplit.m_colors[i] = kcolors[i];
-        // Since the parent hardware pool is the resource we are splitting and
-        // agg_split_* calls expect |group_size| elements, replicate by dups.
-        rc = qvi_dup(parent->hwpool(), &hwsplit.m_hwpools[i]);
-        if (qvi_unlikely(rc != QV_SUCCESS)) break;
         // Since this is called by a single task, replicate its task ID, too.
         hwsplit.m_group_tids[i] = taskid;
         // Same goes for the task's affinity.
@@ -236,8 +225,8 @@ qvi_hwsplit::thread_split(
     // Now populate the hardware pools as the result.
     qvi_hwpool **ikhwpools = new qvi_hwpool *[group_size];
     for (uint_t i = 0; i < group_size; ++i) {
-        // Copy out, since the hardware pools in splitagg will get freed.
-        rc = qvi_dup(*hwsplit.m_hwpools[i], &ikhwpools[i]);
+        // Copy out, since the hardware pools in split will get freed.
+        rc = qvi_dup(hwsplit.m_hwpools[i], &ikhwpools[i]);
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
     }
     if (qvi_unlikely(rc != QV_SUCCESS)) {
@@ -256,7 +245,7 @@ qvi_hwsplit::osdev_cpusets(
     int nobj = 0;
 
     int rc = m_hwpool.nobjects(
-        m_rmi->hwloc(), m_split_at_type, &nobj
+        m_rmi.hwloc(), m_split_at_type, &nobj
     );
     if (rc != QV_SUCCESS) return rc;
     // Holds the device affinities used for the split.
@@ -308,7 +297,7 @@ qvi_hwsplit::release_devices(void)
 {
     int rc = QV_SUCCESS;
     for (auto &hwpool : m_hwpools) {
-        rc = hwpool->release_devices();
+        rc = hwpool.release_devices();
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     }
     return rc;
@@ -368,7 +357,7 @@ qvi_hwsplit::split_devices_user_defined(void)
             const int color = m_colors[i];
             for (const auto &c2d : devmap) {
                 if (c2d.first != color) continue;
-                rc = m_hwpools[i]->add_device(*c2d.second);
+                rc = m_hwpools[i].add_device(*c2d.second);
                 if (rc != QV_SUCCESS) break;
             }
             if (rc != QV_SUCCESS) break;
@@ -417,7 +406,7 @@ qvi_hwsplit::split_devices_affinity_preserving(void)
         for (const auto &mi : map) {
             const uint_t devid = mi.first;
             const uint_t pooli = mi.second;
-            rc = m_hwpools[pooli]->add_device(*devs[devid]);
+            rc = m_hwpools[pooli].add_device(*devs[devid]);
             if (rc != QV_SUCCESS) break;
         }
         if (rc != QV_SUCCESS) break;
@@ -430,14 +419,14 @@ apply_cpuset_mapping(
     qvi_hwloc_t *hwloc,
     const qvi_map_t &map,
     const qvi_hwloc_cpusets_t cpusets,
-    std::vector<qvi_hwpool *> &hwpools,
+    std::vector<qvi_hwpool> &hwpools,
     std::vector<int> &colors
 ) {
     int rc = QV_SUCCESS;
 
     const uint_t npools = hwpools.size();
     for (uint_t pid = 0; pid < npools; ++pid) {
-        rc = hwpools.at(pid)->initialize(
+        rc = hwpools.at(pid).initialize(
             hwloc, qvi_map_cpuset_at(map, cpusets, pid)
         );
         if (rc != QV_SUCCESS) break;
@@ -468,7 +457,7 @@ qvi_hwsplit::split_user_defined(void)
     qvi_map_t map{};
     rc = qvi_map_colors(map, m_colors, cpusets);
     if (rc != QV_SUCCESS) return rc;
-    qvi_hwloc_t *const hwloc = m_rmi->hwloc();
+    qvi_hwloc_t *const hwloc = m_rmi.hwloc();
     // Update the hardware pools and colors to reflect the new mapping.
     rc = apply_cpuset_mapping(
         hwloc, map, cpusets, m_hwpools, m_colors
@@ -498,7 +487,7 @@ qvi_hwsplit::split_affinity_preserving_pass1(void)
     if (qvi_map_nfids_mapped(map) != m_group_size) {
         qvi_abort();
     }
-    qvi_hwloc_t *const hwloc = m_rmi->hwloc();
+    qvi_hwloc_t *const hwloc = m_rmi.hwloc();
     // Update the hardware pools and colors to reflect the new mapping.
     return apply_cpuset_mapping(
         hwloc, map, cpusets, m_hwpools, m_colors
@@ -535,7 +524,7 @@ qvi_hwsplit::split_packed(void)
     if (qvi_map_nfids_mapped(map) != m_group_size) {
         qvi_abort();
     }
-    qvi_hwloc_t *const hwloc = m_rmi->hwloc();
+    qvi_hwloc_t *const hwloc = m_rmi.hwloc();
     // Update the hardware pools and colors to reflect the new mapping.
     return apply_cpuset_mapping(
         hwloc, map, cpusets, m_hwpools, m_colors
@@ -559,7 +548,7 @@ qvi_hwsplit::split_spread(void)
     if (qvi_map_nfids_mapped(map) != m_group_size) {
         qvi_abort();
     }
-    qvi_hwloc_t *const hwloc = m_rmi->hwloc();
+    qvi_hwloc_t *const hwloc = m_rmi.hwloc();
     // Update the hardware pools and colors to reflect the new mapping.
     return apply_cpuset_mapping(
         hwloc, map, cpusets, m_hwpools, m_colors
@@ -666,15 +655,13 @@ qvi_hwsplit::gather_split_data(
 
     if (group.rank() == rootid) {
         const uint_t group_size = group.size();
-        hwsplit.m_hwpools.resize(group_size);
         hwsplit.m_affinities.resize(group_size);
+        // The root creates new hardware pools so it can modify them freely.
+        hwsplit.m_hwpools.resize(group_size);
         for (uint_t gid = 0; gid < group_size; ++gid) {
-            // The root creates new hardware pools so it can modify them freely.
-            rc = qvi_new(&hwsplit.m_hwpools.at(gid));
-            if (qvi_unlikely(rc != QV_SUCCESS)) break;
             // Get the group member's current affinity.
             hwloc_cpuset_t cpuset = nullptr;
-            rc = hwsplit.m_rmi->get_cpubind(hwsplit.m_group_tids[gid], &cpuset);
+            rc = hwsplit.m_rmi.get_cpubind(hwsplit.m_group_tids[gid], &cpuset);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
             //
             rc = hwsplit.m_affinities[gid].set(cpuset);

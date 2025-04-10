@@ -217,7 +217,7 @@ public:
     ~qvi_rmi_client(void);
     /** Returns a pointer to the client's hwloc instance. */
     qvi_hwloc_t *
-    hwloc(void);
+    hwloc(void) const;
     /** Connects a client to to the server specified by the provided URL. */
     int
     connect(
@@ -228,7 +228,7 @@ public:
     get_cpubind(
         pid_t task_id,
         hwloc_cpuset_t *cpuset
-    );
+    ) const;
     /** Sets the cpuset of the provided PID. */
     int
     set_cpubind(

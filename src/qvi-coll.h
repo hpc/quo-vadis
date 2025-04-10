@@ -176,7 +176,7 @@ int
 scatter(
     const qvi_group &group,
     int rootid,
-    const std::vector<CLASS *> &send,
+    const std::vector<CLASS> &send,
     CLASS **recv
 ) {
     static_assert(!std::is_pointer<CLASS>::value, "");
@@ -193,7 +193,7 @@ scatter(
             rc = qvi_bbuff_new(&txbuffs[i]);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
 
-            rc = send[i]->packinto(txbuffs[i]);
+            rc = send[i].packinto(txbuffs[i]);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
         }
         if (qvi_unlikely(rc != QV_SUCCESS)) goto out;

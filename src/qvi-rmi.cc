@@ -320,7 +320,7 @@ qvi_rmi_client::~qvi_rmi_client(void)
 }
 
 qvi_hwloc_t *
-qvi_rmi_client::hwloc(void)
+qvi_rmi_client::hwloc(void) const
 {
     return m_config.hwloc;
 }
@@ -370,7 +370,7 @@ int
 qvi_rmi_client::get_cpubind(
     pid_t who,
     hwloc_cpuset_t *cpuset
-) {
+) const {
     int qvrc = rpc_req(m_zsock, QVI_RMI_FID_GET_CPUBIND, who);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
