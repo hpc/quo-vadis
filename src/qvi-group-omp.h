@@ -56,7 +56,7 @@ public:
     }
 
     virtual int
-    barrier(void)
+    barrier(void) const
     {
         return m_ompgroup->barrier();
     }

@@ -121,10 +121,10 @@ qv_scope::create(
     return rc;
 }
 
-qvi_group *
+qvi_group &
 qv_scope::group(void) const
 {
-    return m_group;
+    return *m_group;
 }
 
 const qvi_hwpool &

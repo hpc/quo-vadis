@@ -32,6 +32,8 @@
  */
 struct qvi_hwsplit {
 private:
+    /** The root rank. */
+    static constexpr int s_root = 0;
     /** A pointer to my RMI. */
     qvi_rmi_client *m_rmi = nullptr;
     /** A const reference to the base hardware pool we are splitting. */
@@ -92,6 +94,9 @@ private:
     /** Affinity preserving device splitting. */
     int
     split_devices_affinity_preserving(void);
+    /** Splits aggregate scope data. This can only be called by the root. */
+    int
+    split(void);
 public:
     // TODO(skg) Cleanup private, protected, public interfaces.
     /** Constructor. */
@@ -148,30 +153,29 @@ public:
     primary_cpusets(
         qvi_hwloc_cpusets_t &result
     ) const;
-
     /** Releases all devices contained in the hardware split. */
     int
     release_devices(void);
-    /** Splits aggregate scope data. */
-    int
-    split(void);
-
-    // TODO(skg) Remove color.
+    /** Gathers group-level split data to the specified root. */
     static int
-    gather(
-        qv_scope_t *parent,
+    gather_split_data(
+        const qvi_group &group,
+        int rootid,
         qvi_hwsplit &hwsplit,
         int color
     );
-
+    /**
+     * Scatters split results from the specified root to other group members.
+     */
     static int
-    scatter(
-        qv_scope_t *parent,
-        qvi_hwsplit &hwsplit,
+    scatter_split_results(
+        const qvi_group &group,
+        int rootid,
+        const qvi_hwsplit &hwsplit,
         int *colorp,
         qvi_hwpool **result
     );
-
+    /** Performs a collective split. */
     static int
     split(
         qv_scope_t *parent,

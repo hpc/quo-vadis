@@ -61,8 +61,8 @@ public:
         qv_scope_t ***kscopes,
         uint_t k
     );
-    /** Returns a pointer to the scope's underlying group. */
-    qvi_group *
+    /** Returns a reference to the scope's underlying group. */
+    qvi_group &
     group(void) const;
     /** Returns a const reference to the scope's underlying hardware pool. */
     const qvi_hwpool &
