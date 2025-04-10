@@ -69,11 +69,13 @@ qvi_task::~qvi_task(void)
     qvi_delete(&m_rmi);
 }
 
-qvi_rmi_client *
+qvi_rmi_client &
 qvi_task::rmi(void)
 {
-    assert(m_rmi);
-    return m_rmi;
+    if (qvi_unlikely(!m_rmi)) {
+        throw qvi_runtime_error();
+    }
+    return *m_rmi;
 }
 
 qvi_hwloc_t *

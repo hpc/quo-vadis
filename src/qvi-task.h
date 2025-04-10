@@ -44,8 +44,8 @@ public:
     qvi_task(const qvi_task &src) = delete;
     /** Destructor. */
     ~qvi_task(void);
-    /** Returns a pointer to the task's RMI. */
-    qvi_rmi_client *
+    /** Returns a reference to the task's RMI. */
+    qvi_rmi_client &
     rmi(void);
     /** Returns a pointer to the task's hwloc. */
     qvi_hwloc_t *

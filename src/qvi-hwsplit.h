@@ -34,8 +34,8 @@ struct qvi_hwsplit {
 private:
     /** The root rank. */
     static constexpr int s_root = 0;
-    /** A pointer to my RMI. */
-    qvi_rmi_client *m_rmi = nullptr;
+    /** A const reference to my RMI. */
+    const qvi_rmi_client &m_rmi;
     /** A const reference to the base hardware pool we are splitting. */
     const qvi_hwpool &m_hwpool;
     /** The number of members that are part of the split. */
@@ -61,7 +61,7 @@ private:
      * number of hardware pools will always match the group size and that their
      * array index corresponds to a task ID: 0 ... group_size - 1.
      */
-    std::vector<qvi_hwpool *> m_hwpools;
+    std::vector<qvi_hwpool> m_hwpools;
     /**
      * Vector of colors, one for each member of the group. Note that the number
      * of colors will always match the group size and that their array index
@@ -70,46 +70,6 @@ private:
     std::vector<int> m_colors;
     /** Vector of task affinities. */
     qvi_hwloc_cpusets_t m_affinities;
-    /** */
-    qvi_map_fn_t
-    affinity_preserving_policy(void) const;
-    /** */
-    int
-    split_affinity_preserving_pass1(void);
-    /** User-defined split. */
-    int
-    split_user_defined(void);
-    /** Affinity preserving split. */
-    int
-    split_affinity_preserving(void);
-    /** */
-    int
-    split_packed(void);
-    /** */
-    int
-    split_spread(void);
-    /** Straightforward user-defined device splitting. */
-    int
-    split_devices_user_defined(void);
-    /** Affinity preserving device splitting. */
-    int
-    split_devices_affinity_preserving(void);
-    /** Splits aggregate scope data. This can only be called by the root. */
-    int
-    split(void);
-public:
-    // TODO(skg) Cleanup private, protected, public interfaces.
-    /** Constructor. */
-    qvi_hwsplit(void) = delete;
-    /** Constructor. */
-    qvi_hwsplit(
-        qv_scope *parent,
-        uint_t group_size,
-        uint_t split_size,
-        qv_hw_obj_type_t split_at_type
-    );
-    /** Destructor. */
-    ~qvi_hwsplit(void);
     /**
      * Resizes the relevant containers to make
      * room for |group size| number of elements.
@@ -132,17 +92,6 @@ public:
     split_cpuset(
         qvi_hwloc_cpusets_t &result
     ) const;
-    /** Performs a thread-split operation, returns relevant hardware pools. */
-    // TODO(skg) No colorp here. We probably need to address that.
-    static int
-    thread_split(
-        qv_scope_t *parent,
-        uint_t npieces,
-        int *kcolors,
-        uint_t k,
-        qv_hw_obj_type_t maybe_obj_type,
-        qvi_hwpool ***khwpools
-    );
     /** Returns device affinities that are part of the split. */
     int
     osdev_cpusets(
@@ -175,6 +124,45 @@ public:
         int *colorp,
         qvi_hwpool **result
     );
+    /** */
+    qvi_map_fn_t
+    affinity_preserving_policy(void) const;
+    /** */
+    int
+    split_affinity_preserving_pass1(void);
+    /** User-defined split. */
+    int
+    split_user_defined(void);
+    /** Affinity preserving split. */
+    int
+    split_affinity_preserving(void);
+    /** */
+    int
+    split_packed(void);
+    /** */
+    int
+    split_spread(void);
+    /** Straightforward user-defined device splitting. */
+    int
+    split_devices_user_defined(void);
+    /** Affinity preserving device splitting. */
+    int
+    split_devices_affinity_preserving(void);
+    /** Splits aggregate scope data. This can only be called by the root. */
+    int
+    split(void);
+public:
+    /** Constructor. */
+    qvi_hwsplit(void) = delete;
+    /** Constructor. */
+    qvi_hwsplit(
+        qv_scope *parent,
+        uint_t group_size,
+        uint_t split_size,
+        qv_hw_obj_type_t split_at_type
+    );
+    /** Destructor. */
+    ~qvi_hwsplit(void) = default;
     /** Performs a collective split. */
     static int
     split(
@@ -184,6 +172,17 @@ public:
         qv_hw_obj_type_t maybe_obj_type,
         int *colorp,
         qvi_hwpool **result
+    );
+    /** Performs a thread-split operation, returns relevant hardware pools. */
+    // TODO(skg) No colorp here. We probably need to address that.
+    static int
+    thread_split(
+        qv_scope_t *parent,
+        uint_t npieces,
+        int *kcolors,
+        uint_t k,
+        qv_hw_obj_type_t maybe_obj_type,
+        qvi_hwpool ***khwpools
     );
 };
 
