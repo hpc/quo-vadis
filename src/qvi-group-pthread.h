@@ -37,7 +37,8 @@ public:
      */
     qvi_group_pthread(
         qvi_pthread_group_context *ctx,
-        int group_size
+        int group_size,
+        const std::vector<int> &colors
     );
     /**
      * Constructor that is collective across ALL threads in the parent group.
@@ -92,6 +93,7 @@ public:
     virtual int
     thread_split(
         int,
+        const std::vector<int> &,
         qvi_group **
     ) {
         return QV_ERR_NOT_SUPPORTED;

@@ -25,6 +25,7 @@ qvi_group::hwloc(void)
 int
 qvi_group::thread_split(
     int nthreads,
+    const std::vector<int> &colors,
     qvi_group **child
 ) {
     qvi_group_pthread *ichild = nullptr;
@@ -32,7 +33,7 @@ qvi_group::thread_split(
     // passed to signal that a new context must be created by the new
     // qvi_group_pthread. Also note this is called by a single thread of
     // execution (i.e., the parent process).
-    const int rc = qvi_new(&ichild, nullptr, nthreads);
+    const int rc = qvi_new(&ichild, nullptr, nthreads, colors);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);
     }

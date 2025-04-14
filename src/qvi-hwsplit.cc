@@ -185,59 +185,6 @@ qvi_hwsplit::split_cpuset(
 }
 
 int
-qvi_hwsplit::thread_split(
-    qv_scope_t *parent,
-    uint_t npieces,
-    int *kcolors,
-    uint_t k,
-    qv_hw_obj_type_t maybe_obj_type,
-    qvi_hwpool ***khwpools
-) {
-    const uint_t group_size = k;
-    // Construct the hardware split.
-    qvi_hwsplit hwsplit(parent, group_size, npieces, maybe_obj_type);
-    // Eagerly make room for the group member information.
-    hwsplit.reserve();
-    // Since this is called by a single task, get its ID and associated
-    // hardware affinity here, and replicate them in the following loop
-    // that populates splitagg.
-    //No point in doing this in a loop.
-    const pid_t taskid = qvi_task::mytid();
-    // Get the task's current affinity.
-    hwloc_cpuset_t task_affinity = nullptr;
-    int rc = parent->group().task()->bind_top(&task_affinity);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Prepare the hwsplit with our parent's information.
-    for (uint_t i = 0; i < group_size; ++i) {
-        // Store requested colors in aggregate.
-        hwsplit.m_colors[i] = kcolors[i];
-        // Since this is called by a single task, replicate its task ID, too.
-        hwsplit.m_group_tids[i] = taskid;
-        // Same goes for the task's affinity.
-        hwsplit.m_affinities[i].set(task_affinity);
-    }
-    // Cleanup: we don't need task_affinity anymore.
-    qvi_hwloc_bitmap_delete(&task_affinity);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Split the hardware resources based on the provided split parameters.
-    rc = hwsplit.split();
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Now populate the hardware pools as the result.
-    qvi_hwpool **ikhwpools = new qvi_hwpool *[group_size];
-    for (uint_t i = 0; i < group_size; ++i) {
-        // Copy out, since the hardware pools in split will get freed.
-        rc = qvi_dup(hwsplit.m_hwpools[i], &ikhwpools[i]);
-        if (qvi_unlikely(rc != QV_SUCCESS)) break;
-    }
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        delete[] ikhwpools;
-        ikhwpools = nullptr;
-    }
-    *khwpools = ikhwpools;
-    return rc;
-}
-
-int
 qvi_hwsplit::osdev_cpusets(
     qvi_hwloc_cpusets_t &result
 ) const {
@@ -255,7 +202,7 @@ qvi_hwsplit::osdev_cpusets(
         // Not the type we are looking to split.
         if (m_split_at_type != dinfo.first) continue;
         // Copy the device's affinity to our list of device affinities.
-        result[affi++] = dinfo.second->affinity();
+        result.at(affi++) = dinfo.second->affinity();
     }
     return rc;
 }
@@ -267,8 +214,6 @@ qvi_hwsplit::primary_cpusets(
     // We were provided a real host resource type that we have to split. Or
     // QV_HW_OBJ_LAST is instead provided to indicate that we were called from a
     // split() context, which uses the host's cpuset to split the resources.
-    // TODO(skg) This looks suspicious to me. Make sure we want to do this.
-    // What about getting called from a split context for devices?
     if (qvi_hwloc_obj_type_is_host_resource(m_split_at_type) ||
         m_split_at_type == QV_HW_OBJ_LAST) {
         return split_cpuset(result);
@@ -724,6 +669,62 @@ qvi_hwsplit::split(
     if (qvi_unlikely(rc2 != QV_SUCCESS)) return rc2;
     // Scatter the results.
     return scatter_split_results(pgroup, s_root, hwsplit, colorp, result);
+}
+
+int
+qvi_hwsplit::thread_split(
+    qv_scope_t *parent,
+    uint_t npieces,
+    int *kcolors,
+    uint_t k,
+    qv_hw_obj_type_t maybe_obj_type,
+    std::vector<int> &kcolorps,
+    qvi_hwpool ***khwpools
+) {
+    const uint_t group_size = k;
+    // Construct the hardware split.
+    qvi_hwsplit hwsplit(parent, group_size, npieces, maybe_obj_type);
+    // Eagerly make room for the group member information.
+    hwsplit.reserve();
+    // Since this is called by a single task, get its ID and associated
+    // hardware affinity here, and replicate them in the following loop
+    // that populates splitagg.
+    //No point in doing this in a loop.
+    const pid_t taskid = qvi_task::mytid();
+    // Get the task's current affinity.
+    hwloc_cpuset_t task_affinity = nullptr;
+    int rc = parent->group().task()->bind_top(&task_affinity);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // Prepare the hwsplit with our parent's information.
+    for (uint_t i = 0; i < group_size; ++i) {
+        // Store requested colors in aggregate.
+        hwsplit.m_colors.at(i) = kcolors[i];
+        // Since this is called by a single task, replicate its task ID, too.
+        hwsplit.m_group_tids.at(i) = taskid;
+        // Same goes for the task's affinity.
+        hwsplit.m_affinities.at(i).set(task_affinity);
+    }
+    // Cleanup: we don't need task_affinity anymore.
+    qvi_hwloc_bitmap_delete(&task_affinity);
+    // Split the hardware resources based on the provided split parameters.
+    rc = hwsplit.split();
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // Now populate the hardware pools as the result.
+    qvi_hwpool **ikhwpools = new qvi_hwpool *[group_size];
+    kcolorps.resize(group_size);
+    for (uint_t i = 0; i < group_size; ++i) {
+        // Copy out, since the hardware pools in split will get freed.
+        rc = qvi_dup(hwsplit.m_hwpools.at(i), &ikhwpools[i]);
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
+        // Copy out the colorp values.
+        kcolorps.at(i) = hwsplit.m_colors.at(i);
+    }
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        delete[] ikhwpools;
+        ikhwpools = nullptr;
+    }
+    *khwpools = ikhwpools;
+    return rc;
 }
 
 /*
