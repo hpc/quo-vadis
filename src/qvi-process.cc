@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -75,10 +75,10 @@ qvi_process_group_gather_bbuffs(
     // Zero initialize array of pointers to nullptr.
     qvi_bbuff **bbuffs = new qvi_bbuff *[group_size]();
 
-    const int rc = qvi_bbuff_dup(*txbuff, &bbuffs[0]);
+    const int rc = qvi_dup(*txbuff, &bbuffs[0]);
     if (rc != QV_SUCCESS) {
         if (bbuffs) {
-            qvi_bbuff_delete(&bbuffs[0]);
+            qvi_delete(&bbuffs[0]);
             delete[] bbuffs;
         }
         bbuffs = nullptr;
@@ -98,14 +98,14 @@ qvi_process_group_scatter_bbuffs(
     const int group_size = qvi_process_group_size(group);
     // Make sure that we are dealing with a valid process group.
     // If not, this is an internal development error, so abort.
-    if (root != 0 || group_size != 1) {
+    if (qvi_unlikely(root != 0 || group_size != 1)) {
         qvi_abort();
     }
     // There should always be only one at the root (us).
     qvi_bbuff *mybbuff = nullptr;
-    const int rc = qvi_bbuff_dup(*txbuffs[root], &mybbuff);
-    if (rc != QV_SUCCESS) {
-        qvi_bbuff_delete(&mybbuff);
+    const int rc = qvi_dup(*txbuffs[root], &mybbuff);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        qvi_delete(&mybbuff);
     }
     *rxbuff = mybbuff;
     return rc;

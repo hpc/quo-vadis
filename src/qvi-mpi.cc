@@ -416,7 +416,7 @@ qvi_mpi_group_gather_bbuffs(
         bbuffs = new qvi_bbuff *[group_size];
         byte_t *bytepos = allbytes.data();
         for (int i = 0; i < group_size; ++i) {
-            rc = qvi_bbuff_new(&bbuffs[i]);
+            rc = qvi_new(&bbuffs[i]);
             if (rc != QV_SUCCESS) break;
             rc = bbuffs[i]->append(bytepos, rxcounts[i]);
             if (rc != QV_SUCCESS) break;
@@ -427,7 +427,7 @@ out:
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         if (bbuffs) {
             for (int i = 0; i < group_size; ++i) {
-                qvi_bbuff_delete(&bbuffs[i]);
+                qvi_delete(&bbuffs[i]);
             }
             delete[] bbuffs;
         }
@@ -494,12 +494,12 @@ qvi_mpi_group_scatter_bbuffs(
         goto out;
     }
     // Everyone creates new buffers from data received from root.
-    rc = qvi_bbuff_new(&mybbuff);
+    rc = qvi_new(&mybbuff);
     if (rc != QV_SUCCESS) goto out;
     rc = mybbuff->append(mybytes.data(), rxcount);
 out:
-    if (rc != QV_SUCCESS) {
-        qvi_bbuff_delete(&mybbuff);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        qvi_delete(&mybbuff);
     }
     *rxbuff = mybbuff;
     return rc;

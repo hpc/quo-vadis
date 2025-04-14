@@ -36,12 +36,12 @@ gather(
     const uint_t group_size = group.size();
 
     qvi_bbuff *txbuff = nullptr;
-    int rc = qvi_bbuff_new(&txbuff);
+    int rc = qvi_new(&txbuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     rc = txbuff->append(&send, sizeof(TYPE));
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_bbuff_delete(&txbuff);
+        qvi_delete(&txbuff);
         return rc;
     }
     // Gather the values to the root.
@@ -62,13 +62,13 @@ out:
         ((QVI_BBUFF_ALLOC_SHARED == alloc_type) && (group.rank() == rootid))) {
         if (bbuffs) {
            for (uint_t i = 0; i < group_size; ++i) {
-                qvi_bbuff_delete(&bbuffs[i]);
+                qvi_delete(&bbuffs[i]);
             }
             delete[] bbuffs;
         }
     }
 
-    qvi_bbuff_delete(&txbuff);
+    qvi_delete(&txbuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         // If something went wrong, just zero-initialize the values.
         recv = {};
@@ -110,7 +110,7 @@ out:
         ((QVI_BBUFF_ALLOC_SHARED == alloc_type) && (group.rank() == rootid))) {
         if (bbuffs) {
             for (uint_t i = 0; i < group_size; ++i) {
-                qvi_bbuff_delete(&bbuffs[i]);
+                qvi_delete(&bbuffs[i]);
             }
             delete[] bbuffs;
         }
@@ -144,7 +144,7 @@ scatter(
         txbuffs.resize(group_size);
         // Pack the values.
         for (uint_t i = 0; i < group_size; ++i) {
-            rc = qvi_bbuff_new(&txbuffs[i]);
+            rc = qvi_new(&txbuffs[i]);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
 
             rc = txbuffs[i]->append(&send[i], sizeof(TYPE));
@@ -161,9 +161,9 @@ scatter(
     recv = *(TYPE *)rxbuff->data();
 out:
     for (auto &buff : txbuffs) {
-        qvi_bbuff_delete(&buff);
+        qvi_delete(&buff);
     }
-    qvi_bbuff_delete(&rxbuff);
+    qvi_delete(&rxbuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         // If something went wrong, just zero-initialize the value.
         recv = {};
@@ -190,7 +190,7 @@ scatter(
         txbuffs.resize(group_size);
         // Pack the class data.
         for (uint_t i = 0; i < group_size; ++i) {
-            rc = qvi_bbuff_new(&txbuffs[i]);
+            rc = qvi_new(&txbuffs[i]);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
 
             rc = send[i].packinto(txbuffs[i]);
@@ -205,9 +205,9 @@ scatter(
     rc = qvi_bbuff_rmi_unpack(rxbuff->data(), recv);
 out:
     for (auto &buff : txbuffs) {
-        qvi_bbuff_delete(&buff);
+        qvi_delete(&buff);
     }
-    qvi_bbuff_delete(&rxbuff);
+    qvi_delete(&rxbuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(recv);
     }
