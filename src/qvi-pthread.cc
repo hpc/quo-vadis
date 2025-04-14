@@ -31,7 +31,7 @@ qvi_pthread_group::m_start_init_by_a_single_thread(
 
     m_gather_data = new qvi_bbuff *[m_size];
     for (int i = 0 ; i < group_size ; i++) {
-        rc = qvi_bbuff_new(&m_gather_data[i]);
+        rc = qvi_new(&m_gather_data[i]);
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     }
     m_scatter_data = new qvi_bbuff**;
@@ -134,7 +134,7 @@ qvi_pthread_group::~qvi_pthread_group(void)
 
     if (m_gather_data) {
         for (int i = 0; i < m_size; ++i) {
-            qvi_bbuff_delete(&m_gather_data[i]);
+            qvi_delete(&m_gather_data[i]);
         }
         delete[] m_gather_data;
     }
@@ -325,7 +325,7 @@ qvi_pthread_group::gather(
     barrier();
     {
         std::lock_guard<std::mutex> guard(m_mutex);
-        rc = qvi_bbuff_copy(*txbuff, m_gather_data[myrank]);
+        rc = qvi_copy(*txbuff, m_gather_data[myrank]);
         *alloc_type = QVI_BBUFF_ALLOC_SHARED_GLOBAL;
     }
     // Ensure that all threads have contributed to m_gather_data.
@@ -356,12 +356,12 @@ qvi_pthread_group::scatter(
     barrier();
     {
         std::lock_guard<std::mutex> guard(m_mutex);
-        rc = qvi_bbuff_dup(*((*m_scatter_data)[myrank]), &mybbuff);
+        rc = qvi_dup(*((*m_scatter_data)[myrank]), &mybbuff);
     }
     barrier();
 
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_bbuff_delete(&mybbuff);
+        qvi_delete(&mybbuff);
         return rc;
     }
     *rxbuff = mybbuff;

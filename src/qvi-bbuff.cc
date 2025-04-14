@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -15,7 +15,6 @@
  */
 
 #include "qvi-bbuff.h"
-#include "qvi-utils.h"
 
 void
 qvi_bbuff::m_init(void)
@@ -95,36 +94,6 @@ qvi_bbuff::append(
     memmove(dest, data, size);
     m_size += size;
     return QV_SUCCESS;
-}
-
-int
-qvi_bbuff_new(
-    qvi_bbuff **buff
-) {
-    return qvi_new(buff);
-}
-
-int
-qvi_bbuff_dup(
-    const qvi_bbuff &src,
-    qvi_bbuff **buff
-) {
-    return qvi_dup(src, buff);
-}
-
-int
-qvi_bbuff_copy(
-    const qvi_bbuff &src,
-    qvi_bbuff *buff
-) {
-    return qvi_copy(src, buff);
-}
-
-void
-qvi_bbuff_delete(
-    qvi_bbuff **buff
-) {
-    qvi_delete(buff);
 }
 
 /*

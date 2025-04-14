@@ -186,7 +186,7 @@ zsock_send_bbuff(
     }
     // We are resposible for freeing the buffer after ZMQ has
     // taken ownership of its contents after zmq_send() returns.
-    qvi_bbuff_delete(&bbuff);
+    qvi_delete(&bbuff);
     return QV_SUCCESS;
 }
 
@@ -223,7 +223,7 @@ rpc_pack(
     std::string picture;
 
     qvi_bbuff *ibuff = nullptr;
-    int rc = qvi_bbuff_new(&ibuff);
+    int rc = qvi_new(&ibuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Get the picture based on the types passed.
     qvi_bbuff_rmi_get_picture(picture, std::forward<Types>(args)...);
@@ -234,7 +234,7 @@ rpc_pack(
     rc = qvi_bbuff_rmi_pack(ibuff, std::forward<Types>(args)...);
 out:
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_bbuff_delete(&ibuff);
+        qvi_delete(&ibuff);
     }
     *buff = ibuff;
     return rc;
@@ -277,7 +277,7 @@ rpc_req(
     qvi_bbuff *bbuff = nullptr;
     const int rc = rpc_pack(&bbuff, fid, std::forward<Types>(args)...);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_bbuff_delete(&bbuff);
+        qvi_delete(&bbuff);
         return rc;
     }
     int bsent = 0;
