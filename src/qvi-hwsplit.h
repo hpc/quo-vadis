@@ -174,7 +174,6 @@ public:
         qvi_hwpool **result
     );
     /** Performs a thread-split operation, returns relevant hardware pools. */
-    // TODO(skg) No colorp here. We probably need to address that.
     static int
     thread_split(
         qv_scope_t *parent,
@@ -182,6 +181,7 @@ public:
         int *kcolors,
         uint_t k,
         qv_hw_obj_type_t maybe_obj_type,
+        std::vector<int> &kcolorps,
         qvi_hwpool ***khwpools
     );
 };

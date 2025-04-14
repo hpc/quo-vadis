@@ -268,15 +268,16 @@ qv_scope::thread_split(
     const uint_t group_size = k;
     // Split the hardware, get the hardware pools.
     qvi_hwpool **hwpools = nullptr;
+    std::vector<int> colorps;
     int rc = qvi_hwsplit::thread_split(
-        this, npieces, kcolors, k, maybe_obj_type, &hwpools
+        this, npieces, kcolors, k, maybe_obj_type, colorps, &hwpools
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Split off from our parent group. This call is called from a context in
     // which a process is splitting its resources across threads, so create a
     // new thread group that will be shared with each child (see below).
     qvi_group *thgroup = nullptr;
-    rc = m_group->thread_split(group_size, &thgroup);
+    rc = m_group->thread_split(group_size, colorps, &thgroup);
     if (rc != QV_SUCCESS) return rc;
     // Now create and populate the children.
     qv_scope_t **ithchildren = new qv_scope_t *[group_size];

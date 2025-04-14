@@ -16,7 +16,8 @@
 
 qvi_group_pthread::qvi_group_pthread(
     qvi_pthread_group_context *ctx,
-    int group_size
+    int group_size,
+    const std::vector<int> &colors
 ) {
     int rc = QV_SUCCESS;
     // A context pointer was not provided, so create a new one.
@@ -30,7 +31,7 @@ qvi_group_pthread::qvi_group_pthread(
         m_context->retain();
     }
     //
-    rc = qvi_new(&thgroup, m_context, group_size);
+    rc = qvi_new(&thgroup, m_context, group_size, colors);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 }
 

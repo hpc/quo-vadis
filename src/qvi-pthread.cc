@@ -40,13 +40,13 @@ qvi_pthread_group::m_start_init_by_a_single_thread(
     return QV_SUCCESS;
 }
 
-/* static */ int
+int
 qvi_pthread_group::m_finish_init_by_all_threads(
     qvi_pthread_group *group
 ) {
     int rc = QV_SUCCESS;
 
-    const pid_t mytid = qvi_gettid();
+   const pid_t mytid = qvi_gettid();
     // Let the threads add their TIDs to the vector.
     {
         std::lock_guard<std::mutex> guard(group->m_mutex);
@@ -84,11 +84,27 @@ qvi_pthread_group::m_finish_init_by_all_threads(
     return rc;
 }
 
+// TODO(skg) Verify that the ckr information is used properly during
+// thread_split() and during split(). Should we set the other infos here?
+static int
+initialize_ckrs(
+    const std::vector<int> &colors,
+    std::vector<qvi_subgroup_color_key_rank> &ckrs
+) {
+    for (uint_t i = 0; i < colors.size(); ++i) {
+        ckrs.at(i).color = colors.at(i);
+    }
+    return QV_SUCCESS;
+}
+
 qvi_pthread_group::qvi_pthread_group(
     qvi_pthread_group_context *ctx,
-    int group_size
+    int group_size,
+    const std::vector<int> &colors
 ) {
-    const int rc = m_start_init_by_a_single_thread(ctx, group_size);
+    int rc = m_start_init_by_a_single_thread(ctx, group_size);
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+    rc = initialize_ckrs(colors, m_ckrs);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 }
 
@@ -183,6 +199,8 @@ qvi_pthread_group::barrier(void)
     return QV_SUCCESS;
 }
 
+// TODO(skg) Cleanup barrier exit paths to avoid hangs in error paths.
+// TODO(skg) Audit thread safety here.
 int
 qvi_pthread_group::m_subgroup_info(
     int color,
@@ -194,14 +212,18 @@ qvi_pthread_group::m_subgroup_info(
     const int my_rank = rank();
     // Gather colors and keys from ALL threads in the parent group.
     // NOTE: this (i.e., the caller) is a member of the parent group).
-    m_ckrs[my_rank].color = color;
-    m_ckrs[my_rank].key = key;
-    m_ckrs[my_rank].rank = my_rank;
+    {
+        std::lock_guard<std::mutex> guard(m_mutex);
+        m_ckrs[my_rank].color = color;
+        m_ckrs[my_rank].key = key;
+        m_ckrs[my_rank].rank = my_rank;
+    }
     // Barrier to be sure that all threads have contributed their values.
-    pthread_barrier_wait(&m_barrier);
+    barrier();
     // Since these data are shared, only the master thread has to sort them.
     // The same goes for calculating the number of distinct colors provided.
     if (my_rank == master_rank) {
+        std::lock_guard<std::mutex> guard(m_mutex);
         // Sort the color/key/rank array. First according to color, then by key,
         // but in the same color realm. If color and key are identical, sort by
         // the rank from given group.
@@ -221,7 +243,7 @@ qvi_pthread_group::m_subgroup_info(
         rc = qvi_group::next_ids(ncolors, m_subgroup_gids);
     }
     // All threads wait for the number of colors to be computed.
-    pthread_barrier_wait(&m_barrier);
+    barrier();
     // Make sure errors didn't occur above. Do this after the barrier.
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // The number of distinct colors is the number of subgroups.

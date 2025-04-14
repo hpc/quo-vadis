@@ -112,7 +112,8 @@ public:
      */
     qvi_pthread_group(
         qvi_pthread_group_context *ctx,
-        int group_size
+        int group_size,
+        const std::vector<int> &colors
     );
     /**
      * This function shall be called by pthread_create() to finish group

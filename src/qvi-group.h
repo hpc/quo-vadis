@@ -67,6 +67,7 @@ struct qvi_group : qvi_refc {
     virtual int
     thread_split(
         int nthreads,
+        const std::vector<int> &colors,
         qvi_group **child
     );
     /**

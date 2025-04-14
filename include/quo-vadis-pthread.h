@@ -52,6 +52,7 @@ typedef enum {
 
 int *const QV_PTHREAD_SCOPE_SPLIT_PACKED = (int *)0x00000001;
 int *const QV_PTHREAD_SCOPE_SPLIT_SPREAD = (int *)0x00000002;
+int *const QV_PTHREAD_SCOPE_SPLIT_AFFINITY_PRESERVING = (int *)0x00000003;
 
 /**
  * Similar to pthread_create(3).
