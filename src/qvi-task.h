@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -30,10 +30,10 @@ private:
     qvi_task_bind_stack_t m_stack;
     /** Connects to the RMI server. */
     int
-    connect_to_server(void);
+    m_connect_to_server(void);
     /** Initializes the bind stack. */
     int
-    init_bind_stack(void);
+    m_init_bind_stack(void);
 public:
     /** Returns the caller's thread ID. */
     static pid_t
