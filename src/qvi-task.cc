@@ -25,7 +25,7 @@ qvi_task::mytid(void)
 }
 
 int
-qvi_task::connect_to_server(void)
+qvi_task::m_connect_to_server(void)
 {
     std::string url;
     const int rc = qvi_url(url);
@@ -37,7 +37,7 @@ qvi_task::connect_to_server(void)
 }
 
 int
-qvi_task::init_bind_stack(void)
+qvi_task::m_init_bind_stack(void)
 {
     // Cache current binding.
     hwloc_cpuset_t current_bind = nullptr;
@@ -54,10 +54,10 @@ qvi_task::qvi_task(void)
     int rc = qvi_new(&m_rmi);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
     // Connect to our server.
-    rc = connect_to_server();
+    rc = m_connect_to_server();
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
     // Initialize our bind stack.
-    rc = init_bind_stack();
+    rc = m_init_bind_stack();
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 }
 
