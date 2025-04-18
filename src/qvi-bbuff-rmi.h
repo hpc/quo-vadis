@@ -751,7 +751,7 @@ qvi_bbuff_rmi_unpack_item(
 }
 
 /**
- * Unpacks qvi_bbuff_rmi_bytes_out_t.
+ * Unpacks hwloc_cpuset_t *.
  */
 inline int
 qvi_bbuff_rmi_unpack_item(
@@ -797,6 +797,18 @@ qvi_bbuff_rmi_unpack_item(
     rc = bitmap.set(raw_cpuset);
     qvi_hwloc_bitmap_delete(&raw_cpuset);
     return rc;
+}
+
+/**
+ * Unpacks qvi_hwloc_bitmap *.
+ */
+inline int
+qvi_bbuff_rmi_unpack_item(
+    qvi_hwloc_bitmap *bitmap,
+    byte_t *buffpos,
+    size_t *bytes_written
+) {
+    return qvi_bbuff_rmi_unpack_item(*bitmap, buffpos, bytes_written);
 }
 
 /**

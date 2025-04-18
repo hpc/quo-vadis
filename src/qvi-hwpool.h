@@ -138,7 +138,7 @@ private:
      * provided, initialized hardware resource pool.
      */
     int
-    add_devices_with_affinity(
+    m_add_devices_with_affinity(
         qvi_hwloc_t *hwloc
     );
 public:

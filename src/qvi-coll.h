@@ -25,75 +25,19 @@ int
 gather(
     const qvi_group &group,
     int rootid,
-    TYPE send,
+    const TYPE &send,
     std::vector<TYPE> &recv
-) {
-    static_assert(
-        std::is_trivially_copyable<TYPE>::value &&
-        !std::is_pointer<TYPE>::value, ""
-    );
-
-    const uint_t group_size = group.size();
-
-    qvi_bbuff *txbuff = nullptr;
-    int rc = qvi_new(&txbuff);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-
-    rc = txbuff->append(&send, sizeof(TYPE));
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_delete(&txbuff);
-        return rc;
-    }
-    // Gather the values to the root.
-    qvi_bbuff_alloc_type_t alloc_type = QVI_BBUFF_ALLOC_PRIVATE;
-    qvi_bbuff **bbuffs = nullptr;
-    rc = group.gather(txbuff, rootid, &alloc_type, &bbuffs);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    // The root fills in the output.
-    if (group.rank() == rootid) {
-        recv.resize(group_size);
-        // Unpack the values.
-        for (uint_t i = 0; i < group_size; ++i) {
-            recv[i] = *(TYPE *)bbuffs[i]->data();
-        }
-    }
-out:
-    if ((QVI_BBUFF_ALLOC_PRIVATE == alloc_type) ||
-        ((QVI_BBUFF_ALLOC_SHARED == alloc_type) && (group.rank() == rootid))) {
-        if (bbuffs) {
-           for (uint_t i = 0; i < group_size; ++i) {
-                qvi_delete(&bbuffs[i]);
-            }
-            delete[] bbuffs;
-        }
-    }
-
-    qvi_delete(&txbuff);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        // If something went wrong, just zero-initialize the values.
-        recv = {};
-    }
-    return rc;
-}
-
-template <class CLASS>
-int
-gather(
-    const qvi_group &group,
-    int rootid,
-    const CLASS &send,
-    std::vector<CLASS *> &recv
 ) {
     const uint_t group_size = group.size();
     // Pack the hardware pool into a buffer.
     qvi_bbuff txbuff;
-    int rc = send.packinto(&txbuff);
+    int rc = qvi_bbuff_rmi_pack(&txbuff, send);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Gather the values to the root.
     qvi_bbuff_alloc_type_t alloc_type = QVI_BBUFF_ALLOC_PRIVATE;
     qvi_bbuff **bbuffs = nullptr;
     rc = group.gather(&txbuff, rootid, &alloc_type, &bbuffs);
-    if (rc != QV_SUCCESS) goto out;
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
 
     if (group.rank() == rootid) {
         recv.resize(group_size);
@@ -107,7 +51,8 @@ gather(
     }
 out:
     if ((QVI_BBUFF_ALLOC_PRIVATE == alloc_type) ||
-        ((QVI_BBUFF_ALLOC_SHARED == alloc_type) && (group.rank() == rootid))) {
+        ((QVI_BBUFF_ALLOC_SHARED == alloc_type) &&
+          (group.rank() == rootid))) {
         if (bbuffs) {
             for (uint_t i = 0; i < group_size; ++i) {
                 qvi_delete(&bbuffs[i]);
