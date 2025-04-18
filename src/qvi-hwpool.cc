@@ -207,7 +207,7 @@ out:
 }
 
 int
-qvi_hwpool::add_devices_with_affinity(
+qvi_hwpool::m_add_devices_with_affinity(
     qvi_hwloc_t *hwloc
 ) {
     int rc = QV_SUCCESS;
@@ -253,7 +253,7 @@ qvi_hwpool::initialize(
     const int rc = m_cpu.affinity().set(cpuset);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Add devices with affinity to the hardware pool.
-    return add_devices_with_affinity(hwloc);
+    return m_add_devices_with_affinity(hwloc);
 }
 
 const qvi_hwloc_bitmap &

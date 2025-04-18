@@ -49,6 +49,8 @@ private:
      * split_at() context.
      */
     qv_hw_obj_type_t m_split_at_type;
+    /** The split member's current CPU affinity. */
+    qvi_hwloc_bitmap m_cpu_affinity;
     /**
      * Vector of task TIDs, one for each member of the group. Note that the
      * number of task IDs will always match the group size and that their array
@@ -69,13 +71,13 @@ private:
      */
     std::vector<int> m_colors;
     /** Vector of task affinities. */
-    qvi_hwloc_cpusets_t m_affinities;
+    qvi_hwloc_cpusets_t m_cpu_affinities;
     /**
      * Resizes the relevant containers to make
      * room for |group size| number of elements.
      */
     void
-    reserve(void);
+    m_reserve(void);
     /**
      * Returns a const reference to the aggregate cpuset. Note that the cpuset
      * will be shared among the aggregate, but other resources may be
@@ -83,31 +85,31 @@ private:
      * while others may not.
      */
     const qvi_hwloc_bitmap &
-    cpuset(void) const;
+    m_cpuset(void) const;
     /**
      * Performs a straightforward splitting of the provided cpuset:
      * split the provided base cpuset into split_size distinct pieces.
      */
     int
-    split_cpuset(
+    m_split_cpuset(
         qvi_hwloc_cpusets_t &result
     ) const;
     /** Returns device affinities that are part of the split. */
     int
-    osdev_cpusets(
+    m_osdev_cpusets(
         qvi_hwloc_cpusets_t &result
     ) const;
 
     int
-    primary_cpusets(
+    m_primary_cpusets(
         qvi_hwloc_cpusets_t &result
     ) const;
     /** Releases all devices contained in the hardware split. */
     int
-    release_devices(void);
+    m_release_devices(void);
     /** Gathers group-level split data to the specified root. */
     static int
-    gather_split_data(
+    m_gather_split_data(
         const qvi_group &group,
         int rootid,
         qvi_hwsplit &hwsplit,
@@ -117,7 +119,7 @@ private:
      * Scatters split results from the specified root to other group members.
      */
     static int
-    scatter_split_results(
+    m_scatter_split_results(
         const qvi_group &group,
         int rootid,
         const qvi_hwsplit &hwsplit,

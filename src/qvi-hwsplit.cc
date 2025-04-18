@@ -138,6 +138,14 @@ qvi_hwsplit::qvi_hwsplit(
   , m_split_size(split_size)
   , m_split_at_type(split_at_type)
 {
+    hwloc_cpuset_t task_affinity = nullptr;
+    int rc = parent->group().task()->bind_top(&task_affinity);
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+
+    rc = m_cpu_affinity.set(task_affinity);
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+
+    qvi_hwloc_bitmap_delete(&task_affinity);
     // To save memory we don't eagerly resize our vectors to group_size
     // since most processes will not use the storage. For example, in the
     // collective case the root ID process will be the only one needing
@@ -146,28 +154,24 @@ qvi_hwsplit::qvi_hwsplit(
 }
 
 void
-qvi_hwsplit::reserve(void)
+qvi_hwsplit::m_reserve(void)
 {
     m_group_tids.resize(m_group_size);
     m_hwpools.resize(m_group_size);
     m_colors.resize(m_group_size);
-    m_affinities.resize(m_group_size);
+    m_cpu_affinities.resize(m_group_size);
 }
 
 const qvi_hwloc_bitmap &
-qvi_hwsplit::cpuset(void) const
+qvi_hwsplit::m_cpuset(void) const
 {
     return m_hwpool.cpuset();
 }
 
 int
-qvi_hwsplit::split_cpuset(
+qvi_hwsplit::m_split_cpuset(
     qvi_hwloc_cpusets_t &result
 ) const {
-    // The cpuset that we are going to split.
-    const qvi_hwloc_bitmap &base_cpuset = cpuset();
-    // Pointer to my hwloc instance.
-    qvi_hwloc_t *const hwloc = m_rmi.hwloc();
     // Holds the host's split cpusets.
     result.resize(m_split_size);
     // Notice that we do not go through the RMI for this because this is just an
@@ -176,7 +180,7 @@ qvi_hwsplit::split_cpuset(
     int rc = QV_SUCCESS;
     for (uint_t chunkid = 0; chunkid < m_split_size; ++chunkid) {
         rc = qvi_hwloc_split_cpuset_by_chunk_id(
-            hwloc, base_cpuset.cdata(), m_split_size,
+            m_rmi.hwloc(), m_cpuset().cdata(), m_split_size,
             chunkid, result[chunkid].data()
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
@@ -185,7 +189,7 @@ qvi_hwsplit::split_cpuset(
 }
 
 int
-qvi_hwsplit::osdev_cpusets(
+qvi_hwsplit::m_osdev_cpusets(
     qvi_hwloc_cpusets_t &result
 ) const {
     // Get the number of devices we have available in the provided scope.
@@ -208,7 +212,7 @@ qvi_hwsplit::osdev_cpusets(
 }
 
 int
-qvi_hwsplit::primary_cpusets(
+qvi_hwsplit::m_primary_cpusets(
     qvi_hwloc_cpusets_t &result
 ) const {
     // We were provided a real host resource type that we have to split. Or
@@ -216,11 +220,11 @@ qvi_hwsplit::primary_cpusets(
     // split() context, which uses the host's cpuset to split the resources.
     if (qvi_hwloc_obj_type_is_host_resource(m_split_at_type) ||
         m_split_at_type == QV_HW_OBJ_LAST) {
-        return split_cpuset(result);
+        return m_split_cpuset(result);
     }
     // An OS device.
     else {
-        return osdev_cpusets(result);
+        return m_osdev_cpusets(result);
     }
 }
 
@@ -238,7 +242,7 @@ qvi_hwsplit::affinity_preserving_policy(void) const
 }
 
 int
-qvi_hwsplit::release_devices(void)
+qvi_hwsplit::m_release_devices(void)
 {
     int rc = QV_SUCCESS;
     for (auto &hwpool : m_hwpools) {
@@ -258,7 +262,7 @@ qvi_hwsplit::split_devices_user_defined(void)
 {
     // Release devices from the hardware pools because
     // they will be redistributed in the next step.
-    int rc = release_devices();
+    int rc = m_release_devices();
     if (rc != QV_SUCCESS) return rc;
     // Determine mapping of colors to task IDs. The array index i of colors is
     // the color requested by task i. Also determine the number of distinct
@@ -320,7 +324,7 @@ qvi_hwsplit::split_devices_affinity_preserving(void)
 {
     // Release devices from the hardware pools because
     // they will be redistributed in the next step.
-    int rc = release_devices();
+    int rc = m_release_devices();
     if (rc != QV_SUCCESS) return rc;
     // Get a pointer to device infos associated with the parent hardware pool.
     auto dinfos = m_hwpool.devices();
@@ -342,7 +346,7 @@ qvi_hwsplit::split_devices_affinity_preserving(void)
         qvi_map_t map;
         const auto policy = affinity_preserving_policy();
         rc = qvi_map_affinity_preserving(
-            map, policy, devaffs, m_affinities
+            map, policy, devaffs, m_cpu_affinities
         );
         if (rc != QV_SUCCESS) return rc;
         //qvi_map_debug_dump(map);
@@ -394,7 +398,7 @@ qvi_hwsplit::split_user_defined(void)
 {
     // Split the base cpuset into the requested number of pieces.
     qvi_hwloc_cpusets_t cpusets;
-    int rc = split_cpuset(cpusets);
+    int rc = m_split_cpuset(cpusets);
     if (rc != QV_SUCCESS) return rc;
     // Developer sanity check.
     assert(cpusets.size() == m_split_size);
@@ -418,14 +422,14 @@ qvi_hwsplit::split_affinity_preserving_pass1(void)
     // cpusets used for first mapping pass.
     qvi_hwloc_cpusets_t cpusets;
     // Get the primary cpusets used for the first pass of mapping.
-    int rc = primary_cpusets(cpusets);
+    int rc = m_primary_cpusets(cpusets);
     if (rc != QV_SUCCESS) return rc;
     // Maintains the mapping between task (consumer) IDs and resource IDs.
     qvi_map_t map;
     // Map tasks based on their affinity to resources encoded by the cpusets.
     const auto policy = affinity_preserving_policy();
     rc = qvi_map_affinity_preserving(
-        map, policy, m_affinities, cpusets
+        map, policy, m_cpu_affinities, cpusets
     );
     if (rc != QV_SUCCESS) return rc;
     // Make sure that we mapped all the tasks. If not, this is a bug.
@@ -459,7 +463,7 @@ qvi_hwsplit::split_packed(void)
     // cpusets used for mapping.
     qvi_hwloc_cpusets_t cpusets;
     // Get the primary cpusets for the mapping.
-    int rc = primary_cpusets(cpusets);
+    int rc = m_primary_cpusets(cpusets);
     if (rc != QV_SUCCESS) return rc;
     // Maintains the mapping between task (consumer) IDs and resource IDs.
     qvi_map_t map;
@@ -483,7 +487,7 @@ qvi_hwsplit::split_spread(void)
     // cpusets used for mapping.
     qvi_hwloc_cpusets_t cpusets;
     // Get the primary cpusets for the mapping.
-    int rc = primary_cpusets(cpusets);
+    int rc = m_primary_cpusets(cpusets);
     if (rc != QV_SUCCESS) return rc;
     // Maintains the mapping between task (consumer) IDs and resource IDs.
     qvi_map_t map;
@@ -582,7 +586,7 @@ qvi_hwsplit::split(void)
 }
 
 int
-qvi_hwsplit::gather_split_data(
+qvi_hwsplit::m_gather_split_data(
     const qvi_group &group,
     int rootid,
     qvi_hwsplit &hwsplit,
@@ -594,32 +598,23 @@ qvi_hwsplit::gather_split_data(
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     rc = qvi_coll::gather(
-        group, rootid, color, hwsplit.m_colors
+        group, rootid, hwsplit.m_cpu_affinity, hwsplit.m_cpu_affinities
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
+    rc = qvi_coll::gather(
+        group, rootid, color, hwsplit.m_colors
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // The root creates new hardware pools so it can modify them freely.
     if (group.rank() == rootid) {
-        const uint_t group_size = group.size();
-        hwsplit.m_affinities.resize(group_size);
-        // The root creates new hardware pools so it can modify them freely.
-        hwsplit.m_hwpools.resize(group_size);
-        for (uint_t gid = 0; gid < group_size; ++gid) {
-            // Get the group member's current affinity.
-            hwloc_cpuset_t cpuset = nullptr;
-            rc = hwsplit.m_rmi.get_cpubind(hwsplit.m_group_tids[gid], &cpuset);
-            if (qvi_unlikely(rc != QV_SUCCESS)) break;
-            //
-            rc = hwsplit.m_affinities[gid].set(cpuset);
-            // Clean up.
-            qvi_hwloc_bitmap_delete(&cpuset);
-            if (qvi_unlikely(rc != QV_SUCCESS)) break;
-        }
+        hwsplit.m_hwpools.resize(group.size());
     }
     return rc;
 }
 
 int
-qvi_hwsplit::scatter_split_results(
+qvi_hwsplit::m_scatter_split_results(
     const qvi_group &group,
     int rootid,
     const qvi_hwsplit &hwsplit,
@@ -651,7 +646,7 @@ qvi_hwsplit::split(
     // based on global knowledge and later redistribute the calculated result to
     // its group members. Note that aggregated data are only valid for the task
     // whose id is equal to qvi_hwsplit::s_root after gather has completed.
-    int rc = gather_split_data(pgroup, s_root, hwsplit, color);
+    int rc = m_gather_split_data(pgroup, s_root, hwsplit, color);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // The root does this calculation.
     int rc2 = QV_SUCCESS;
@@ -668,7 +663,7 @@ qvi_hwsplit::split(
     // If the split failed, return the error to all participants.
     if (qvi_unlikely(rc2 != QV_SUCCESS)) return rc2;
     // Scatter the results.
-    return scatter_split_results(pgroup, s_root, hwsplit, colorp, result);
+    return m_scatter_split_results(pgroup, s_root, hwsplit, colorp, result);
 }
 
 int
@@ -685,7 +680,7 @@ qvi_hwsplit::thread_split(
     // Construct the hardware split.
     qvi_hwsplit hwsplit(parent, group_size, npieces, maybe_obj_type);
     // Eagerly make room for the group member information.
-    hwsplit.reserve();
+    hwsplit.m_reserve();
     // Since this is called by a single task, get its ID and associated
     // hardware affinity here, and replicate them in the following loop
     // that populates splitagg.
@@ -702,7 +697,7 @@ qvi_hwsplit::thread_split(
         // Since this is called by a single task, replicate its task ID, too.
         hwsplit.m_group_tids.at(i) = taskid;
         // Same goes for the task's affinity.
-        hwsplit.m_affinities.at(i).set(task_affinity);
+        hwsplit.m_cpu_affinities.at(i).set(task_affinity);
     }
     // Cleanup: we don't need task_affinity anymore.
     qvi_hwloc_bitmap_delete(&task_affinity);
