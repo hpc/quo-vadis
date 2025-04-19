@@ -621,9 +621,21 @@ qvi_hwsplit::m_scatter_split_results(
     int *colorp,
     qvi_hwpool **result
 ) {
-    const int rc = qvi_coll::scatter(group, rootid, hwsplit.m_colors, *colorp);
+    *result = nullptr;
+
+    int rc = qvi_coll::scatter(group, rootid, hwsplit.m_colors, *colorp);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    return qvi_coll::scatter(group, rootid, hwsplit.m_hwpools, result);
+
+    qvi_hwpool *iresult = nullptr;
+    rc = qvi_new(&iresult);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+
+    rc = qvi_coll::scatter(group, rootid, hwsplit.m_hwpools, *iresult);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        qvi_delete(&iresult);
+    }
+    *result = iresult;
+    return rc;
 }
 
 int
