@@ -29,7 +29,7 @@ gather(
     std::vector<TYPE> &recv
 ) {
     const uint_t group_size = group.size();
-    // Pack the hardware pool into a buffer.
+    // Pack the send type into a buffer.
     qvi_bbuff txbuff;
     int rc = qvi_bbuff_rmi_pack(&txbuff, send);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
@@ -61,7 +61,7 @@ out:
         }
     }
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        // If something went wrong, just zero-initialize the pools.
+        // If something went wrong, just zero-initialize the results.
         recv = {};
     }
     return rc;
@@ -75,56 +75,7 @@ scatter(
     const std::vector<TYPE> &send,
     TYPE &recv
 ) {
-    static_assert(
-        std::is_trivially_copyable<TYPE>::value &&
-        !std::is_pointer<TYPE>::value, ""
-    );
-
-    int rc = QV_SUCCESS;
-    qvi_bbuff *rxbuff = nullptr;
-
-    std::vector<qvi_bbuff *> txbuffs(0);
-    if (group.rank() == rootid) {
-        const uint_t group_size = group.size();
-        txbuffs.resize(group_size);
-        // Pack the values.
-        for (uint_t i = 0; i < group_size; ++i) {
-            rc = qvi_new(&txbuffs[i]);
-            if (qvi_unlikely(rc != QV_SUCCESS)) break;
-
-            rc = txbuffs[i]->append(&send[i], sizeof(TYPE));
-            if (qvi_unlikely(rc != QV_SUCCESS)) break;
-        }
-        if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    }
-
-    rc = group.scatter(txbuffs.data(), rootid, &rxbuff);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        goto out;
-    }
-
-    recv = *(TYPE *)rxbuff->data();
-out:
-    for (auto &buff : txbuffs) {
-        qvi_delete(&buff);
-    }
-    qvi_delete(&rxbuff);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        // If something went wrong, just zero-initialize the value.
-        recv = {};
-    }
-    return rc;
-}
-
-template <class CLASS>
-int
-scatter(
-    const qvi_group &group,
-    int rootid,
-    const std::vector<CLASS> &send,
-    CLASS **recv
-) {
-    static_assert(!std::is_pointer<CLASS>::value, "");
+    static_assert(!std::is_pointer<TYPE>::value, "");
 
     int rc = QV_SUCCESS;
     std::vector<qvi_bbuff *> txbuffs(0);
@@ -133,12 +84,12 @@ scatter(
     if (group.rank() == rootid) {
         const uint_t group_size = group.size();
         txbuffs.resize(group_size);
-        // Pack the class data.
+        // Pack the data.
         for (uint_t i = 0; i < group_size; ++i) {
             rc = qvi_new(&txbuffs[i]);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
 
-            rc = send[i].packinto(txbuffs[i]);
+            rc = qvi_bbuff_rmi_pack(txbuffs[i], send[i]);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
         }
         if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
@@ -146,15 +97,16 @@ scatter(
 
     rc = group.scatter(txbuffs.data(), rootid, &rxbuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-
-    rc = qvi_bbuff_rmi_unpack(rxbuff->data(), recv);
+    // Unpack the results.
+    rc = qvi_bbuff_rmi_unpack(rxbuff->data(), &recv);
 out:
     for (auto &buff : txbuffs) {
         qvi_delete(&buff);
     }
     qvi_delete(&rxbuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_delete(recv);
+        // If something went wrong, just zero-initialize the results.
+        recv = {};
     }
     return rc;
 }

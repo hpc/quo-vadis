@@ -200,13 +200,13 @@ public:
         qvi_bbuff *buff
     ) const;
     /**
-     * Unpacks the buffer and creates a new hardware pool instance.
+     * Unpacks the buffer into the provided hardware pool instance.
      */
     static int
     unpack(
         byte_t *buffpos,
         size_t *bytes_written,
-        qvi_hwpool **hwp
+        qvi_hwpool &hwp
     );
 };
 

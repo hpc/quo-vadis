@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2024 Triad National Security, LLC
+ * Copyright (c) 2021-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -18,7 +18,7 @@
  * c = hwloc_cpuset_t
  * c = qvi_hwloc_bitmap
  * d = qv_scope_create_hints_t
- * h = qvi_hwpool *
+ * h = qvi_hwpool
  * i = int
  * s = char *
  * s = std::string
@@ -132,15 +132,6 @@ inline void
 qvi_bbuff_rmi_pack_type_picture(
     std::string &picture,
     qvi_hwpool *
-) {
-    picture += "h";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    qvi_hwpool **
 ) {
     picture += "h";
 }
@@ -501,7 +492,7 @@ qvi_bbuff_rmi_pack_item(
 }
 
 /**
- * Packs qvi_hwpool_cpu_s
+ * Packs qvi_hwpool_cpu
  */
 inline int
 qvi_bbuff_rmi_pack_item(
@@ -512,7 +503,7 @@ qvi_bbuff_rmi_pack_item(
 }
 
 /**
- * Packs qvi_hwpool_dev_s *
+ * Packs qvi_hwpool_dev *
  */
 inline int
 qvi_bbuff_rmi_pack_item(
@@ -542,6 +533,17 @@ qvi_bbuff_rmi_pack_item(
     qvi_hwpool *data
 ) {
     return qvi_bbuff_rmi_pack_item_impl(buff, data);
+}
+
+/**
+ * Packs qvi_hwpool &
+ */
+inline int
+qvi_bbuff_rmi_pack_item(
+    qvi_bbuff *buff,
+    const qvi_hwpool &data
+) {
+    return qvi_bbuff_rmi_pack_item_impl(buff, &data);
 }
 
 inline int
@@ -825,7 +827,7 @@ qvi_bbuff_rmi_unpack_item(
 }
 
 /**
- * Unpacks qvi_hwpool_cpu_s
+ * Unpacks qvi_hwpool_cpu
  */
 inline int
 qvi_bbuff_rmi_unpack_item(
@@ -837,7 +839,7 @@ qvi_bbuff_rmi_unpack_item(
 }
 
 /**
- * Unpacks qvi_hwpool_dev_s &
+ * Unpacks qvi_hwpool_dev &
  */
 inline int
 qvi_bbuff_rmi_unpack_item(
@@ -849,15 +851,15 @@ qvi_bbuff_rmi_unpack_item(
 }
 
 /**
- * Unpacks qvi_hwpool **
+ * Unpacks qvi_hwpool *
  */
 inline int
 qvi_bbuff_rmi_unpack_item(
-    qvi_hwpool **hwp,
+    qvi_hwpool *hwp,
     byte_t *buffpos,
     size_t *bytes_written
 ) {
-    return qvi_hwpool::unpack(buffpos, bytes_written, hwp);
+    return qvi_hwpool::unpack(buffpos, bytes_written, *hwp);
 }
 
 /**

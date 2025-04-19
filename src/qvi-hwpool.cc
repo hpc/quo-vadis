@@ -322,16 +322,12 @@ int
 qvi_hwpool::unpack(
     byte_t *buffpos,
     size_t *bytes_written,
-    qvi_hwpool **hwp
+    qvi_hwpool &hwp
 ) {
     size_t bw = 0, total_bw = 0;
-    // Create the new hardware pool.
-    qvi_hwpool *ihwp = nullptr;
-    int rc = qvi_new(&ihwp);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Unpack the CPU into the hardare pool.
-    rc = qvi_bbuff_rmi_unpack_item(
-        ihwp->m_cpu, buffpos, &bw
+    int rc = qvi_bbuff_rmi_unpack_item(
+        hwp.m_cpu, buffpos, &bw
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     total_bw += bw;
@@ -352,16 +348,15 @@ qvi_hwpool::unpack(
         total_bw += bw;
         buffpos += bw;
         // Add the unpacked device.
-        rc = ihwp->add_device(dev);
+        rc = hwp.add_device(dev);
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
     }
 out:
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_delete(&ihwp);
+        hwp = {};
         total_bw = 0;
     }
     *bytes_written = total_bw;
-    *hwp = ihwp;
     return rc;
 }
 

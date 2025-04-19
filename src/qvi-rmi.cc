@@ -407,10 +407,18 @@ qvi_rmi_client::get_intrinsic_hwpool(
 
     int qvrc = rpc_req(m_zsock, QVI_RMI_FID_GET_INTRINSIC_HWPOOL, who, iscope);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
+    // Create the new hardware pool.
+    qvi_hwpool *ihwpool = nullptr;
+    qvrc = qvi_new(&ihwpool);
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
-    qvrc = rpc_rep(m_zsock, &rpcrc, hwpool);
-    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
+    qvrc = rpc_rep(m_zsock, &rpcrc, ihwpool);
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) {
+        qvi_delete(&ihwpool);
+        return qvrc;
+    }
+    *hwpool = ihwpool;
     return rpcrc;
 }
 
