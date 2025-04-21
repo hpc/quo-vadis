@@ -32,6 +32,17 @@
  */
 struct qvi_hwsplit {
 private:
+    /** Constructor. */
+    qvi_hwsplit(void) = delete;
+    /** Constructor. */
+    qvi_hwsplit(
+        qv_scope *parent,
+        uint_t group_size,
+        uint_t split_size,
+        qv_hw_obj_type_t split_at_type
+    );
+    /** Destructor. */
+    ~qvi_hwsplit(void) = default;
     /** The root rank. */
     static constexpr int s_root = 0;
     /** A const reference to my RMI. */
@@ -154,17 +165,6 @@ private:
     int
     split(void);
 public:
-    /** Constructor. */
-    qvi_hwsplit(void) = delete;
-    /** Constructor. */
-    qvi_hwsplit(
-        qv_scope *parent,
-        uint_t group_size,
-        uint_t split_size,
-        qv_hw_obj_type_t split_at_type
-    );
-    /** Destructor. */
-    ~qvi_hwsplit(void) = default;
     /** Performs a collective split. */
     static int
     split(
