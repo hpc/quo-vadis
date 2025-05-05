@@ -531,7 +531,7 @@ clamp_colors(
  * Splits aggregate scope data.
  */
 int
-qvi_hwsplit::split(void)
+qvi_hwsplit::m_split(void)
 {
     int rc = QV_SUCCESS;
     bool auto_split = false;
@@ -663,7 +663,7 @@ qvi_hwsplit::split(
     // The root does this calculation.
     int rc2 = QV_SUCCESS;
     if (pgroup.rank() == s_root) {
-        rc2 = hwsplit.split();
+        rc2 = hwsplit.m_split();
     }
     // Wait for the split information. Explicitly barrier here in case the
     // underlying collective operations poll heavily for completion.
@@ -714,7 +714,7 @@ qvi_hwsplit::thread_split(
     // Cleanup: we don't need task_affinity anymore.
     qvi_hwloc_bitmap_delete(&task_affinity);
     // Split the hardware resources based on the provided split parameters.
-    rc = hwsplit.split();
+    rc = hwsplit.m_split();
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Now populate the hardware pools as the result.
     qvi_hwpool **ikhwpools = new qvi_hwpool *[group_size];

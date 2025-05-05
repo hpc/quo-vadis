@@ -227,9 +227,10 @@ qvi_pthread_group::m_subgroup_info(
         // Sort the color/key/rank array. First according to color, then by key,
         // but in the same color realm. If color and key are identical, sort by
         // the rank from given group.
-        std::sort(m_ckrs.begin(), m_ckrs.end(), qvi_subgroup_color_key_rank::by_color);
-        std::sort(m_ckrs.begin(), m_ckrs.end(), qvi_subgroup_color_key_rank::by_key);
-        std::sort(m_ckrs.begin(), m_ckrs.end(), qvi_subgroup_color_key_rank::by_rank);
+        std::sort(
+            m_ckrs.begin(), m_ckrs.end(),
+            qvi_subgroup_color_key_rank::by_color_key_rank
+        );
         // Calculate the number of distinct colors provided.
         std::set<int> color_set;
         for (int i = 0; i < m_size; ++i) {
