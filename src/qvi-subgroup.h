@@ -44,35 +44,19 @@ struct qvi_subgroup_info {
  * sub-groups based on color, key, and rank.
  */
 struct qvi_subgroup_color_key_rank {
-    int color = -1;
-    int key = -1;
-    int rank = -1;
-    int ncolors = -1;
+    int color = 0;
+    int key = 0;
+    int rank = 0;
+    int ncolors = 0;
 
     static bool
-    by_color(
+    by_color_key_rank(
         const qvi_subgroup_color_key_rank &a,
         const qvi_subgroup_color_key_rank &b
     ) {
-        return a.color < b.color;
-    }
-
-    static bool
-    by_key(
-        const qvi_subgroup_color_key_rank &a,
-        const qvi_subgroup_color_key_rank &b
-    ) {
-        // If colors are the same, sort by key.
-        return a.color == b.color && a.key < b.key;
-    }
-
-    static bool
-    by_rank(
-        const qvi_subgroup_color_key_rank &a,
-        const qvi_subgroup_color_key_rank &b
-    ) {
-        // If colors and keys are the same, sort by rank.
-        return a.color == b.color && a.key == b.key && a.rank < b.rank;
+        return a.color < b.color ||
+            (a.color == b.color && a.key < b.key) ||
+            (a.color == b.color && a.key == b.key && a.rank < b.rank);
     }
 };
 

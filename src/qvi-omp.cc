@@ -62,14 +62,14 @@ qvi_omp_group::barrier(void)
 {
     // TODO(skg) What should we do about barriers here? In particular, we need
     // to be careful about sub-groups, etc.
-    if (0 == m_rank){
-    omp_set_num_threads(m_size);
+    if (0 == m_rank) {
+        omp_set_num_threads(m_size);
     }
     #pragma omp barrier
 
-    int level = omp_get_level();
+    const int level = omp_get_level();
     assert(level > 0);
-    int num = omp_get_ancestor_thread_num(level-1);
+    const int num = omp_get_ancestor_thread_num(level - 1);
     omp_set_num_threads(num);
     return QV_SUCCESS;
 }
@@ -98,9 +98,10 @@ qvi_omp_group::m_subgroup_info(
         // Sort the color/key/rank array. First according to color, then by key,
         // but in the same color realm. If color and key are identical, sort by
         // the rank from given group.
-        std::sort(ckrs, ckrs + m_size, qvi_subgroup_color_key_rank::by_color);
-        std::sort(ckrs, ckrs + m_size, qvi_subgroup_color_key_rank::by_key);
-        std::sort(ckrs, ckrs + m_size, qvi_subgroup_color_key_rank::by_rank);
+        std::sort(
+            ckrs, ckrs + m_size,
+            qvi_subgroup_color_key_rank::by_color_key_rank
+        );
         // Calculate the number of distinct colors provided.
         std::set<int> color_set;
         for (int i = 0; i < m_size; ++i) {

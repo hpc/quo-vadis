@@ -32,6 +32,8 @@
  */
 struct qvi_hwsplit {
 private:
+    /** The root rank. */
+    static constexpr int s_root = 0;
     /** Constructor. */
     qvi_hwsplit(void) = delete;
     /** Constructor. */
@@ -43,8 +45,6 @@ private:
     );
     /** Destructor. */
     ~qvi_hwsplit(void) = default;
-    /** The root rank. */
-    static constexpr int s_root = 0;
     /** A const reference to my RMI. */
     const qvi_rmi_client &m_rmi;
     /** A const reference to the base hardware pool we are splitting. */
@@ -163,7 +163,7 @@ private:
     split_devices_affinity_preserving(void);
     /** Splits aggregate scope data. This can only be called by the root. */
     int
-    split(void);
+    m_split(void);
 public:
     /** Performs a collective split. */
     static int
