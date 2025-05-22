@@ -98,7 +98,7 @@ scopei_ep(
         pinfo.scope, 2, pinfo.sgrank, &sinfo->scope
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_split_at() failed";
+        ers = "qv_scope_split() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     scopei_fill(sinfo);
