@@ -19,7 +19,6 @@
 
 #include "qvi-common.h" // IWYU pragma: keep
 #include "quo-vadis-pthread.h"
-#include "qvi-pthread.h"
 #include "qvi-group-pthread.h"
 #include "qvi-scope.h"
 #include "qvi-utils.h"
@@ -151,17 +150,17 @@ qv_pthread_create(
     // Note: The provided scope should have been created by
     // qv_pthread_scope_split*. That is why we can safely cast the scope's
     // underlying group it to a qvi_group_pthread *.
-    const auto &group = dynamic_cast<qvi_group_pthread &>(scope->group());
-    qvi_pthread_group_pthread_create_args *cargs = nullptr;
+    auto group = dynamic_cast<qvi_group_pthread *>(&scope->group());
+    qvi_pthread_create_args *cargs = nullptr;
     rc = qvi_new(
-        &cargs, group.thgroup, qvi_pthread_start_routine, pthread_start_args
+        &cargs, group, qvi_pthread_start_routine, pthread_start_args
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&pthread_start_args);
         return ENOMEM;
     }
     return pthread_create(
-        thread, attr, qvi_pthread_group::call_first_from_pthread_create, cargs
+        thread, attr, qvi_group_pthread::call_first_from_pthread_create, cargs
     );
 }
 

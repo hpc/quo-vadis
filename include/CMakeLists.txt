@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2024 Triad National Security, LLC
+# Copyright (c) 2020-2025 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -18,15 +18,6 @@ install(
     DESTINATION
       include
 )
-
-if(OpenMP_C_FOUND)
-    install(
-        FILES
-          quo-vadis-omp.h
-        DESTINATION
-          include
-    )
-endif()
 
 if(MPI_FOUND)
     install(

@@ -29,9 +29,9 @@ add_library(
       qvi-rmi.h
       qvi-bbuff-rmi.h
       qvi-task.h
-      qvi-pthread.h
       qvi-group.h
       qvi-subgroup.h
+      qvi-group-thread.h
       qvi-group-pthread.h
       qvi-map.h
       qvi-coll.h
@@ -47,7 +47,6 @@ add_library(
       qvi-rmi.cc
       qvi-task.cc
       qvi-group.cc
-      qvi-pthread.cc
       qvi-group-pthread.cc
       qvi-map.cc
       qvi-hwsplit.cc
@@ -105,61 +104,6 @@ add_library(
     SHARED
       ${QUO_VADIS_SOURCE}
 )
-
-if(OpenMP_C_FOUND)
-    add_library(
-        quo-vadis-omp
-        SHARED
-          qvi-omp.h
-          qvi-group-omp.h
-          ../include/quo-vadis-omp.h
-          qvi-omp.cc
-          qvi-group-omp.cc
-          quo-vadis-omp.cc
-    )
-
-    set_target_properties(
-        quo-vadis-omp
-        PROPERTIES
-          COMPILE_FLAGS ${OpenMP_C_FLAGS}
-          LINK_FLAGS ${OpenMP_C_FLAGS}
-    )
-
-    target_include_directories(
-        quo-vadis-omp
-        PUBLIC
-          $<TARGET_PROPERTY:quo-vadis-core,INCLUDE_DIRECTORIES>
-          ${MPI_C_INCLUDE_DIRS}
-    )
-
-    target_link_libraries(
-        quo-vadis-omp
-        quo-vadis-core
-        ${MPI_C_LIBRARIES}
-    )
-
-    install(
-        TARGETS
-          quo-vadis-omp
-        DESTINATION
-          lib
-    )
-
-    # pkg-config ###############################################################
-    set(QV_PKG_LIBRARIES "-lquo-vadis-omp")
-    configure_file(
-        "${CMAKE_SOURCE_DIR}/pkgconfig/pkg-config.pc.in"
-        "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-omp.pc"
-        @ONLY
-    )
-
-    install(
-        FILES
-          "${CMAKE_BINARY_DIR}/${PROJECT_NAME}-omp.pc"
-        DESTINATION
-          lib/pkgconfig
-    )
-endif()
 
 target_include_directories(
     quo-vadis

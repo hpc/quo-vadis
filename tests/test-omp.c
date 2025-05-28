@@ -5,9 +5,9 @@
  */
 
 #include "common-test-utils.h"
-#include "quo-vadis-omp.h"
 #include <omp.h>
 
+#if 0
 typedef struct {
     qv_scope_t *scope;
     int size;
@@ -132,9 +132,12 @@ scopei_ep_pop(
     }
 }
 
+#endif
+
 int
 main(void)
 {
+#if 0
     // Make sure nested parallism is on.
     omp_set_nested(1);
     #pragma omp parallel
@@ -161,6 +164,7 @@ main(void)
 
         scopei_free(&ep_sinfo);
     }
+#endif
     return EXIT_SUCCESS;
 }
 
