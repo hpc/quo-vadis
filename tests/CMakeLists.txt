@@ -55,7 +55,7 @@ if (OPENMP_FOUND)
     target_link_libraries(
         test-omp
         quo-vadis
-        quo-vadis-omp
+#        quo-vadis-omp TODO
         OpenMP::OpenMP_C
     )
 

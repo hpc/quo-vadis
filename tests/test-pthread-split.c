@@ -14,48 +14,14 @@ void *
 thread_work(
     void *arg
 ) {
-    char const *ers = NULL;
-    //const pid_t tid = ctu_gettid();
     thargs_t *thargs = (thargs_t *)arg;
 
-    qv_scope_t *scope = thargs->scope;
     if (thargs->answer != 42) {
-        ers = "user arguments not forwarded!";
+        char const *ers = "user arguments not forwarded!";
         ctu_panic("%s", ers);
     }
-
-    int rank = 0;
-    int rc = qv_scope_group_rank(scope, &rank);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_group_rank failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-#if 1
-    ctu_scope_report(scope, "thread_scope_in_thread_routine");
-    ctu_emit_task_bind(scope);
-#endif
-    // TODO(skg) We need to make this more general. Perhaps don't error out if
-    // the split can't be done? On some machines this test doesn't work.
-#if 0
-    if (rank == 0) {
-        printf("[%d] ============ Splitting thread scopes in two\n", tid);
-    }
-    qv_scope_t *pthread_subscope = NULL;
-    rc = qv_scope_split(scope, 2, rank, &pthread_subscope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_split failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    ctu_scope_report(pthread_subscope, "thread_subscope");
-    ctu_emit_task_bind(pthread_subscope);
-
-    rc = qv_scope_free(pthread_subscope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-#endif
+    printf("Hello from pid=%d, tid=%d\n", getpid(), ctu_gettid());
+    ctu_emit_task_bind(thargs->scope);
     return NULL;
 }
 

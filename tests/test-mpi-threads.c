@@ -10,9 +10,7 @@
 #include "quo-vadis-mpi.h"
 // TODO(skg) rename
 #include "quo-vadis-pthread.h"
-
 #include "common-test-utils.h"
-
 #include "omp.h"
 
 void *
@@ -20,8 +18,9 @@ thread_work(
     void *arg
 ) {
     // Do work.
-    printf("hi from %d(%d)\n", getpid(), ctu_gettid());
-    return arg;
+    printf("Hello from pid=%d, tid=%d\n", getpid(), ctu_gettid());
+    ctu_emit_task_bind(arg);
+    return NULL;
 }
 
 int
@@ -120,57 +119,72 @@ main(
     // OpenMP: Launch one thread per core.
     ////////////////////////////////////////////////////////////////////////////
     const int nthreads = ncores;
-    int tid;
-    qv_scope_t *th_scope;
-    omp_set_num_threads(nthreads);
-    #pragma omp parallel private(tid, th_scope)
-    {
-        rc = qv_scope_split_at(
-            subnuma, QV_HW_OBJ_CORE, QV_SCOPE_SPLIT_PACKED, &th_scope
-        );
-        if (rc != QV_SUCCESS) {
-            ers = "qv_scope_split_at() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
-        //qv_scope_bind_push(th_scopes);
-        tid = omp_get_thread_num();
-        // Each thread works.
-        thread_work(&tid);
-        /* When we are done, clean up */
-        qv_scope_free(th_scope);
-    }
-    /************************************************
-     * POSIX threads:
-     *   Launch one thread per hardware thread
-     *   Policy-based placement
-     *   Note num_threads < num_places on SMT
-     ************************************************/
-
-    void *ret;
     qv_scope_t **th_scopes;
-    int *th_color = QV_PTHREAD_SCOPE_SPLIT_PACKED;
-    // TODO(skg)
+    rc = qv_pthread_scope_split_at(
+        subnuma, QV_HW_OBJ_CORE,
+        QV_PTHREAD_SCOPE_SPLIT_PACKED,
+        nthreads, &th_scopes
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_thread_scope_split_at() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    omp_set_num_threads(nthreads);
+    #pragma omp parallel
+    {
+        const int tid = omp_get_thread_num();
+        // Each thread works with its new hardware affinity.
+        qv_scope_bind_push(th_scopes[tid]);
+        thread_work(th_scopes[tid]);
+    }
+    // When we are done with the scope, clean up.
+    rc = qv_pthread_scopes_free(nthreads, th_scopes);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_thread_scopes_free() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    ////////////////////////////////////////////////////////////////////////////
+    // POSIX threads:
+    // * Launch one thread per hardware thread
+    // *   Policy-based placement
+    // *   Note num_threads < num_places on SMT
+    ////////////////////////////////////////////////////////////////////////////
     qv_pthread_scope_split_at(
-        subnuma, QV_HW_OBJ_PU, th_color, nthreads, &th_scopes
+        subnuma, QV_HW_OBJ_PU,
+        QV_PTHREAD_SCOPE_SPLIT_PACKED,
+        nthreads, &th_scopes
     );
 
-    pthread_t *thid = malloc(nthreads * sizeof(pthread_t));
-    pthread_attr_t *attr = NULL;
+    pthread_t *pthrds = calloc(nthreads, sizeof(pthread_t));
+    if (!pthrds) {
+        ers = "calloc() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
 
-    for (int i=0; i<nthreads; i++)
-        qv_pthread_create(&thid[i], attr, thread_work, &i, th_scopes[i]);
-
-    for (int i=0; i<nthreads; i++)
-        if (pthread_join(thid[i], &ret) != 0)
+    for (int i = 0; i < nthreads; i++) {
+        qv_pthread_create(
+            &pthrds[i], NULL, thread_work,
+            th_scopes[i], th_scopes[i]
+        );
+    }
+    for (int i = 0; i < nthreads; i++) {
+        void *ret = NULL;
+        if (pthread_join(pthrds[i], &ret) != 0) {
             printf("Thread exited with %p\n", ret);
-
-    for (int i=0; i<nthreads; i++)
-        qv_scope_free(th_scopes[i]);
-    /************************************************
-     * Clean up
-     ************************************************/
+        }
+    }
+    free(pthrds);
+    // When we are done with the scope, clean up.
+    rc = qv_pthread_scopes_free(nthreads, th_scopes);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_thread_scopes_free() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    // Clean up.
     qv_scope_free(subnuma);
     qv_scope_free(numa_scope);
+    qv_scope_free(base_scope);
 
     MPI_Finalize();
 

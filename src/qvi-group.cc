@@ -12,8 +12,7 @@
  */
 
 #include "qvi-group.h"
-#include "qvi-group-pthread.h"
-#include "qvi-task.h" // IWYU pragma: keep
+#include "qvi-group-thread.h"
 #include "qvi-utils.h"
 
 qvi_hwloc_t *
@@ -28,12 +27,10 @@ qvi_group::thread_split(
     const std::vector<int> &colors,
     qvi_group **child
 ) {
-    qvi_group_pthread *ichild = nullptr;
-    // This is the entry point for creating a new thread group, so nullptr
-    // passed to signal that a new context must be created by the new
-    // qvi_group_pthread. Also note this is called by a single thread of
-    // execution (i.e., the parent process).
-    const int rc = qvi_new(&ichild, nullptr, nthreads, colors);
+    // This is the entry point for creating a new thread group. Also note this is
+    // called by a single thread of execution (i.e., the parent process).
+    qvi_group_thread *ichild = nullptr;
+    const int rc = qvi_new(&ichild, nthreads, colors);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);
     }

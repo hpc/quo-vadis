@@ -14,21 +14,11 @@
 #ifndef QVI_GROUP_PTHREAD_H
 #define QVI_GROUP_PTHREAD_H
 
-#include "qvi-common.h"
-#include "qvi-group.h"
-#include "qvi-pthread.h"
-#include "qvi-bbuff.h"
+#include "qvi-group-thread.h"
 
-struct qvi_group_pthread : public qvi_group {
-protected:
-    /**
-     * Points to per-process, per-thread_split()
-     * information that maintains Pthread group context.
-     */
-    qvi_pthread_group_context *m_context = nullptr;
-public:
-    /** Underlying group instance. */
-    qvi_pthread_group *thgroup = nullptr;
+typedef void *(*qvi_pthread_routine_fun_ptr_t)(void *);
+
+struct qvi_group_pthread : public qvi_group_thread {
     /** Default constructor. */
     qvi_group_pthread(void) = delete;
     /**
@@ -36,100 +26,35 @@ public:
      * base infrastructure required during a thread_split().
      */
     qvi_group_pthread(
-        qvi_pthread_group_context *ctx,
         int group_size,
         const std::vector<int> &colors
-    );
-    /**
-     * Constructor that is collective across ALL threads in the parent group.
-     */
-    qvi_group_pthread(
-        qvi_pthread_group_context *ctx,
-        qvi_pthread_group *thread_group
-    );
+    ) : qvi_group_thread(group_size, colors) { }
     /** Destructor. */
-    virtual ~qvi_group_pthread(void);
-
-    virtual qvi_task *
-    task(void)
-    {
-        return thgroup->task();
-    }
-
-    virtual int
-    rank(void) const
-    {
-        return thgroup->rank();
-    }
-
-    virtual int
-    size(void) const
-    {
-        return thgroup->size();
-    }
-
-    virtual int
-    barrier(void) const
-    {
-        return thgroup->barrier();
-    }
-
-    virtual int
-    make_intrinsic(
-        qv_scope_intrinsic_t
-    ) {
-        // Not supported because a Pthread group cannot be created outside of
-        // another group. For example, a thread_split can be called from a
-        // process context, which can be an intrinsic group, but not from a
-        // threaded context alone.
-        return QV_ERR_NOT_SUPPORTED;
-    }
-
-    virtual int
-    self(
-        qvi_group **child
+    virtual ~qvi_group_pthread(void) = default;
+    /** */
+    static void *
+    call_first_from_pthread_create(
+        void *arg
     );
+};
 
-    virtual int
-    thread_split(
-        int,
-        const std::vector<int> &,
-        qvi_group **
-    ) {
-        return QV_ERR_NOT_SUPPORTED;
-    }
-    /**
-     * This is a collective call across all threads in the parent thread group.
-     */
-    virtual int
-    split(
-        int color,
-        int key,
-        qvi_group **child
-    );
-
-    virtual int
-    gather(
-        qvi_bbuff *txbuff,
-        int root,
-        qvi_bbuff_alloc_type_t *alloc_type,
-        qvi_bbuff ***rxbuffs
-    ) const {
-        return thgroup->gather(
-           txbuff, root, alloc_type, rxbuffs
-        );
-    }
-
-    virtual int
-    scatter(
-        qvi_bbuff **txbuffs,
-        int root,
-        qvi_bbuff **rxbuff
-    ) const {
-        return thgroup->scatter(
-            txbuffs, root, rxbuff
-        );
-    }
+struct qvi_pthread_create_args {
+    /** Thread group. */
+    qvi_group_thread *group = nullptr;
+    /** The routine to call after group construction. */
+    qvi_pthread_routine_fun_ptr_t throutine = nullptr;
+    /** Thread routine arguments. */
+    void *throutine_argp = nullptr;
+    /** Default constructor. */
+    qvi_pthread_create_args(void) = delete;
+    /** Constructor. */
+    qvi_pthread_create_args(
+        qvi_group_thread *group_a,
+        qvi_pthread_routine_fun_ptr_t throutine_a,
+        void *throutine_argp_a
+    ) : group(group_a)
+      , throutine(throutine_a)
+      , throutine_argp(throutine_argp_a) { }
 };
 
 #endif
