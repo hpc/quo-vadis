@@ -13,7 +13,6 @@
 install(
     FILES
       quo-vadis.h
-      quo-vadis-process.h
       quo-vadis-thread.h
     DESTINATION
       include

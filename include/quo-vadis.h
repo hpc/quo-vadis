@@ -157,7 +157,7 @@ typedef enum {
 } qv_device_id_type_t;
 
 /**
- * Version query routine.
+ * Version query function.
  *
  * @param[out] major Major version.
  *
@@ -172,6 +172,23 @@ qv_version(
     int *major,
     int *minor,
     int *patch
+);
+
+/**
+ * Returns a pointer to a string describing the error code passed in the argument ec.
+ */
+const char *
+qv_strerr(
+    int ec
+);
+
+/**
+ * Creates a process context.
+ */
+int
+qv_process_scope_get(
+    qv_scope_intrinsic_t iscope,
+    qv_scope_t **scope
 );
 
 /**
@@ -290,14 +307,6 @@ qv_scope_bind_string(
     qv_scope_t *scope,
     qv_bind_string_flags_t flags,
     char **str
-);
-
-/**
- *
- */
-const char *
-qv_strerr(
-    int ec
 );
 
 #ifdef __cplusplus

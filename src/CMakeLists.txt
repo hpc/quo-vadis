@@ -31,6 +31,7 @@ add_library(
       qvi-task.h
       qvi-group.h
       qvi-subgroup.h
+      qvi-group-process.h
       qvi-group-thread.h
       qvi-group-pthread.h
       qvi-map.h
@@ -89,20 +90,9 @@ target_include_directories(
 ################################################################################
 # Base library
 ################################################################################
-set(
-    QUO_VADIS_SOURCE
-    ../include/quo-vadis-process.h
-    qvi-process.h
-    qvi-group-process.h
-    qvi-process.cc
-    qvi-group-process.cc
-    quo-vadis-process.cc
-)
-
 add_library(
     quo-vadis
     SHARED
-      ${QUO_VADIS_SOURCE}
 )
 
 target_include_directories(

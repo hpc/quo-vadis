@@ -1,6 +1,5 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 
-#include "quo-vadis-process.h"
 #include "quo-vadis-thread.h"
 #include "common-test-utils.h"
 

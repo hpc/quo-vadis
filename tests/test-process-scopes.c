@@ -14,7 +14,7 @@
  * @file test-process-scopes.c
  */
 
-#include "quo-vadis-process.h"
+#include "quo-vadis.h"
 #include "common-test-utils.h"
 
 int

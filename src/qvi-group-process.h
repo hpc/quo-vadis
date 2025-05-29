@@ -15,44 +15,47 @@
 #define QVI_GROUP_PROCESS_H
 
 #include "qvi-common.h"
+#include "qvi-task.h"
 #include "qvi-group.h"
-#include "qvi-process.h"
 #include "qvi-bbuff.h"
 
 struct qvi_group_process : public qvi_group {
-protected:
+private:
+    /** Size of group. This is fixed. */
+    static constexpr int m_size = 1;
+    /** ID (rank) in group. This is fixed. */
+    static constexpr int m_rank = 0;
     /** Task associated with this group. */
-    qvi_task *m_task = nullptr;
-    /** Underlying group instance. */
-    qvi_process_group_t *m_proc_group = nullptr;
+    qvi_task m_task;
 public:
     /** Constructor. */
-    qvi_group_process(void);
+    qvi_group_process(void) = default;
     /** Destructor. */
-    virtual ~qvi_group_process(void);
+    virtual ~qvi_group_process(void) = default;
 
     virtual qvi_task *
     task(void)
     {
-        return m_task;
+        return &m_task;
     }
 
     virtual int
     rank(void) const
     {
-        return qvi_process_group_id(m_proc_group);
+        return m_rank;
     }
 
     virtual int
     size(void) const
     {
-        return qvi_process_group_size(m_proc_group);
+        return m_size;
     }
 
     virtual int
     barrier(void) const
     {
-        return qvi_process_group_barrier(m_proc_group);
+        // Nothing to do since process groups contain a single member.
+        return QV_SUCCESS;
     }
 
     virtual int
@@ -61,13 +64,23 @@ public:
     ) {
         // NOTE: the provided scope doesn't affect how
         // we create the process group, so we ignore it.
-        return qvi_process_group_new(&m_proc_group);
+        return QV_SUCCESS;
     }
 
     virtual int
     self(
         qvi_group **child
-    );
+    ) {
+        // Because this is in the context of a process, the concept of splitting
+        // doesn't really apply here, so just create another process group.
+        qvi_group_process *ichild = nullptr;
+        const int rc = qvi_new(&ichild);
+        if (qvi_unlikely(rc != QV_SUCCESS)) {
+            qvi_delete(&ichild);
+        }
+        *child = ichild;
+        return rc;
+    }
 
     virtual int
     split(
@@ -89,9 +102,26 @@ public:
         qvi_bbuff_alloc_type_t *alloc_type,
         qvi_bbuff ***rxbuffs
     ) const {
-        return qvi_process_group_gather_bbuffs(
-            m_proc_group, txbuff, root, alloc_type, rxbuffs
-        );
+        const int group_size = size();
+        // Make sure that we are dealing with a valid process group.
+        // If not, this is an internal development error, so abort.
+        if (root != 0 || group_size != 1) {
+            qvi_abort();
+        }
+        // Zero initialize array of pointers to nullptr.
+        qvi_bbuff **bbuffs = new qvi_bbuff *[group_size]();
+
+        const int rc = qvi_dup(*txbuff, &bbuffs[0]);
+        if (rc != QV_SUCCESS) {
+            if (bbuffs) {
+                qvi_delete(&bbuffs[0]);
+                delete[] bbuffs;
+            }
+            bbuffs = nullptr;
+        }
+        *rxbuffs = bbuffs;
+        *alloc_type = QVI_BBUFF_ALLOC_PRIVATE;
+        return rc;
     }
 
     virtual int
@@ -100,9 +130,20 @@ public:
         int root,
         qvi_bbuff **rxbuff
     ) const {
-        return qvi_process_group_scatter_bbuffs(
-            m_proc_group, txbuffs, root, rxbuff
-        );
+        const int group_size = size();
+        // Make sure that we are dealing with a valid process group.
+        // If not, this is an internal development error, so abort.
+        if (qvi_unlikely(root != 0 || group_size != 1)) {
+            qvi_abort();
+        }
+        // There should always be only one at the root (us).
+        qvi_bbuff *mybbuff = nullptr;
+        const int rc = qvi_dup(*txbuffs[root], &mybbuff);
+        if (qvi_unlikely(rc != QV_SUCCESS)) {
+            qvi_delete(&mybbuff);
+        }
+        *rxbuff = mybbuff;
+        return rc;
     }
 };
 
