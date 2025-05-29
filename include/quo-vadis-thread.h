@@ -14,11 +14,11 @@
  */
 
 /**
- * @file quo-vadis-pthread.h
+ * @file quo-vadis-thread.h
  */
 
-#ifndef QUO_VADIS_PTHREAD_H
-#define QUO_VADIS_PTHREAD_H
+#ifndef QUO_VADIS_THREAD_H
+#define QUO_VADIS_THREAD_H
 
 #include "quo-vadis.h"
 #include <pthread.h>
@@ -48,11 +48,42 @@ typedef enum {
     QV_POLICY_CORESFIRST = 3,
     QV_POLICY_SCATTER    = 4,
     QV_POLICY_CHOOSE     = 5
-} qv_pthread_placement_t;
+} qv_thread_placement_t;
 
-int *const QV_PTHREAD_SCOPE_SPLIT_PACKED = (int *)0x00000001;
-int *const QV_PTHREAD_SCOPE_SPLIT_SPREAD = (int *)0x00000002;
-int *const QV_PTHREAD_SCOPE_SPLIT_AFFINITY_PRESERVING = (int *)0x00000003;
+int *const QV_THREAD_SCOPE_SPLIT_PACKED              = (int *)0x00000001;
+int *const QV_THREAD_SCOPE_SPLIT_SPREAD              = (int *)0x00000002;
+int *const QV_THREAD_SCOPE_SPLIT_AFFINITY_PRESERVING = (int *)0x00000003;
+
+int
+qv_thread_scope_split(
+    qv_scope_t *scope,
+    int npieces,
+    int *kcolors,
+    int k,
+    qv_scope_t ***subscopes
+);
+
+int
+qv_thread_scope_split_at(
+    qv_scope_t *scope,
+    qv_hw_obj_type_t type,
+    int *kcolors,
+    int k,
+    qv_scope_t ***subscopes
+);
+
+/**
+ * Frees resources allocated by calls to qv_thread_scope_split*.
+ */
+int
+qv_thread_scopes_free(
+    int nscopes,
+    qv_scope_t **scopes
+);
+
+////////////////////////////////////////////////////////////////////////////////
+// Pthread-specific calls.
+////////////////////////////////////////////////////////////////////////////////
 
 /**
  * Similar to pthread_create(3).
@@ -64,33 +95,6 @@ qv_pthread_create(
     void *(*thread_routine)(void *arg),
     void *arg,
     qv_scope_t *scope
-);
-
-int
-qv_pthread_scope_split(
-    qv_scope_t *scope,
-    int npieces,
-    int *kcolors,
-    int k,
-    qv_scope_t ***subscopes
-);
-
-int
-qv_pthread_scope_split_at(
-    qv_scope_t *scope,
-    qv_hw_obj_type_t type,
-    int *kcolors,
-    int k,
-    qv_scope_t ***subscopes
-);
-
-/**
- * Frees resources allocated by calls to qv_pthread_scope_split*.
- */
-int
-qv_pthread_scopes_free(
-    int nscopes,
-    qv_scope_t **scopes
 );
 
 #ifdef __cplusplus

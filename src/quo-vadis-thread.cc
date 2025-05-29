@@ -14,11 +14,11 @@
  */
 
 /**
- * @file quo-vadis-pthread.cc
+ * @file quo-vadis-thread.cc
  */
 
 #include "qvi-common.h" // IWYU pragma: keep
-#include "quo-vadis-pthread.h"
+#include "quo-vadis-thread.h"
 #include "qvi-group-pthread.h"
 #include "qvi-scope.h"
 #include "qvi-utils.h"
@@ -66,13 +66,13 @@ split_color_fixup(
 ) {
     int real_color = QV_SCOPE_SPLIT_UNDEFINED;
 
-    if (kcolors == QV_PTHREAD_SCOPE_SPLIT_PACKED) {
+    if (kcolors == QV_THREAD_SCOPE_SPLIT_PACKED) {
         real_color = QV_SCOPE_SPLIT_PACKED;
     }
-    else if (kcolors == QV_PTHREAD_SCOPE_SPLIT_SPREAD) {
+    else if (kcolors == QV_THREAD_SCOPE_SPLIT_SPREAD) {
         real_color = QV_SCOPE_SPLIT_SPREAD;
     }
-    else if (kcolors == QV_PTHREAD_SCOPE_SPLIT_AFFINITY_PRESERVING) {
+    else if (kcolors == QV_THREAD_SCOPE_SPLIT_AFFINITY_PRESERVING) {
         real_color = QV_SCOPE_SPLIT_AFFINITY_PRESERVING;
     }
     // Nothing to do. An automatic coloring was not requested.
@@ -86,7 +86,7 @@ split_color_fixup(
 }
 
 int
-qv_pthread_scope_split(
+qv_thread_scope_split(
     qv_scope_t *scope,
     int npieces,
     int *kcolors,
@@ -112,7 +112,7 @@ qv_pthread_scope_split(
 }
 
 int
-qv_pthread_scope_split_at(
+qv_thread_scope_split_at(
     qv_scope_t *scope,
     qv_hw_obj_type_t type,
     int *kcolors,
@@ -129,6 +129,21 @@ qv_pthread_scope_split_at(
         // Set the colors array to the appropriate data.
         int *kcolorsp = color_fixup.empty() ? kcolors : color_fixup.data();
         return scope->thread_split_at(type, kcolorsp, k, subscopes);
+    }
+    qvi_catch_and_return();
+}
+
+int
+qv_thread_scopes_free(
+    int nscopes,
+    qv_scope_t **scopes
+) {
+    if (qvi_unlikely(nscopes < 0 || !scopes)) {
+        return QV_ERR_INVLD_ARG;
+    }
+    try {
+        qv_scope::thread_destroy(&scopes, nscopes);
+        return QV_SUCCESS;
     }
     qvi_catch_and_return();
 }
@@ -162,21 +177,6 @@ qv_pthread_create(
     return pthread_create(
         thread, attr, qvi_group_pthread::call_first_from_pthread_create, cargs
     );
-}
-
-int
-qv_pthread_scopes_free(
-    int nscopes,
-    qv_scope_t **scopes
-) {
-    if (qvi_unlikely(nscopes < 0 || !scopes)) {
-        return QV_ERR_INVLD_ARG;
-    }
-    try {
-        qv_scope::thread_destroy(&scopes, nscopes);
-        return QV_SUCCESS;
-    }
-    qvi_catch_and_return();
 }
 
 /*

@@ -8,8 +8,7 @@
 // * qv_thread_scope_split_at() allow NULL for default colors.
 
 #include "quo-vadis-mpi.h"
-// TODO(skg) rename
-#include "quo-vadis-pthread.h"
+#include "quo-vadis-thread.h"
 #include "common-test-utils.h"
 #include "omp.h"
 
@@ -18,7 +17,7 @@ thread_work(
     void *arg
 ) {
     // Do work.
-    printf("Hello from pid=%d, tid=%d\n", getpid(), ctu_gettid());
+    printf("Hello from pid=%d,tid=%d\n", getpid(), ctu_gettid());
     ctu_emit_task_bind(arg);
     return NULL;
 }
@@ -120,9 +119,9 @@ main(
     ////////////////////////////////////////////////////////////////////////////
     const int nthreads = ncores;
     qv_scope_t **th_scopes;
-    rc = qv_pthread_scope_split_at(
+    rc = qv_thread_scope_split_at(
         subnuma, QV_HW_OBJ_CORE,
-        QV_PTHREAD_SCOPE_SPLIT_PACKED,
+        QV_THREAD_SCOPE_SPLIT_PACKED,
         nthreads, &th_scopes
     );
     if (rc != QV_SUCCESS) {
@@ -139,7 +138,7 @@ main(
         thread_work(th_scopes[tid]);
     }
     // When we are done with the scope, clean up.
-    rc = qv_pthread_scopes_free(nthreads, th_scopes);
+    rc = qv_thread_scopes_free(nthreads, th_scopes);
     if (rc != QV_SUCCESS) {
         ers = "qv_thread_scopes_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -150,9 +149,9 @@ main(
     // *   Policy-based placement
     // *   Note num_threads < num_places on SMT
     ////////////////////////////////////////////////////////////////////////////
-    qv_pthread_scope_split_at(
+    qv_thread_scope_split_at(
         subnuma, QV_HW_OBJ_PU,
-        QV_PTHREAD_SCOPE_SPLIT_PACKED,
+        QV_THREAD_SCOPE_SPLIT_PACKED,
         nthreads, &th_scopes
     );
 
@@ -176,7 +175,7 @@ main(
     }
     free(pthrds);
     // When we are done with the scope, clean up.
-    rc = qv_pthread_scopes_free(nthreads, th_scopes);
+    rc = qv_thread_scopes_free(nthreads, th_scopes);
     if (rc != QV_SUCCESS) {
         ers = "qv_thread_scopes_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
