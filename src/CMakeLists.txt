@@ -16,7 +16,7 @@ add_library(
     quo-vadis-core
     OBJECT
       ../include/quo-vadis.h
-      ../include/quo-vadis-pthread.h
+      ../include/quo-vadis-thread.h
       qvi-common.h
       qvi-macros.h
       qvi-log.h
@@ -52,7 +52,7 @@ add_library(
       qvi-hwsplit.cc
       qvi-scope.cc
       quo-vadis.cc
-      quo-vadis-pthread.cc
+      quo-vadis-thread.cc
 )
 
 set_target_properties(
