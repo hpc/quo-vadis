@@ -75,15 +75,15 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int n_numa;
+    int n_cores;
     rc = qv_scope_nobjs(
-        base_scope, QV_HW_OBJ_NUMANODE, &n_numa
+        base_scope, QV_HW_OBJ_CORE, &n_cores
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of NUMA in base_scope is %d\n", pid, n_numa);
+    printf("[%d] Number of cores in base_scope is %d\n", pid, n_cores);
 
     const int npieces = 2;
     qv_scope_t *sub_scope;
@@ -96,13 +96,13 @@ main(void)
     }
 
     rc = qv_scope_nobjs(
-        sub_scope, QV_HW_OBJ_NUMANODE, &n_numa
+        sub_scope, QV_HW_OBJ_CORE, &n_cores
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_nobjs() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of NUMA in sub_scope is %d\n", pid, n_numa);
+    printf("[%d] Number of cores in sub_scope is %d\n", pid, n_cores);
 
     ctu_scope_report(sub_scope, "sub_scope");
 
