@@ -4,9 +4,6 @@
  * @file test-mpi-threads.c
  */
 
-// TODO(skg)
-// * qv_thread_scope_split_at() allow NULL for default colors.
-
 #include "quo-vadis-mpi.h"
 #include "quo-vadis-thread.h"
 #include "common-test-utils.h"
@@ -118,11 +115,10 @@ main(
     // OpenMP: Launch one thread per core.
     ////////////////////////////////////////////////////////////////////////////
     const int nthreads = ncores;
+    int *thread_coloring = NULL; // Default thread assignment.
     qv_scope_t **th_scopes;
     rc = qv_thread_scope_split_at(
-        subnuma, QV_HW_OBJ_CORE,
-        QV_THREAD_SCOPE_SPLIT_PACKED,
-        nthreads, &th_scopes
+        subnuma, QV_HW_OBJ_CORE, thread_coloring, nthreads, &th_scopes
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_thread_scope_split_at() failed";
@@ -149,11 +145,14 @@ main(
     // *   Policy-based placement
     // *   Note num_threads < num_places on SMT
     ////////////////////////////////////////////////////////////////////////////
-    qv_thread_scope_split_at(
-        subnuma, QV_HW_OBJ_PU,
-        QV_THREAD_SCOPE_SPLIT_PACKED,
-        nthreads, &th_scopes
+    thread_coloring = QV_THREAD_SCOPE_SPLIT_PACKED,
+    rc = qv_thread_scope_split_at(
+        subnuma, QV_HW_OBJ_PU, thread_coloring, nthreads, &th_scopes
     );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_thread_scope_split_at() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
 
     pthread_t *pthrds = calloc(nthreads, sizeof(pthread_t));
     if (!pthrds) {
@@ -167,6 +166,7 @@ main(
             th_scopes[i], th_scopes[i]
         );
     }
+
     for (int i = 0; i < nthreads; i++) {
         void *ret = NULL;
         if (pthread_join(pthrds[i], &ret) != 0) {

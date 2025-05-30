@@ -65,8 +65,12 @@ split_color_fixup(
     std::vector<int> &kcolorsp
 ) {
     int real_color = QV_SCOPE_SPLIT_UNDEFINED;
-
-    if (kcolors == QV_THREAD_SCOPE_SPLIT_PACKED) {
+    if (kcolors == nullptr) {
+        // This is the default coloring if NULL
+        // is passed to the split functions.
+        real_color = QV_SCOPE_SPLIT_PACKED;
+    }
+    else if (kcolors == QV_THREAD_SCOPE_SPLIT_PACKED) {
         real_color = QV_SCOPE_SPLIT_PACKED;
     }
     else if (kcolors == QV_THREAD_SCOPE_SPLIT_SPREAD) {
@@ -93,8 +97,7 @@ qv_thread_scope_split(
     int k,
     qv_scope_t ***subscopes
 ) {
-    const bool invalid_args = !scope || npieces < 0 || !kcolors ||
-                              k < 0 || !subscopes;
+    const bool invalid_args = !scope || npieces < 0 || k < 0 || !subscopes;
     if (qvi_unlikely(invalid_args)) {
         return QV_ERR_INVLD_ARG;
     }
@@ -119,7 +122,7 @@ qv_thread_scope_split_at(
     int k,
     qv_scope_t ***subscopes
 ) {
-    if (qvi_unlikely(!scope || !kcolors || k < 0 || !subscopes)) {
+    if (qvi_unlikely(!scope || k < 0 || !subscopes)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
