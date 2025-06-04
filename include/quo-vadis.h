@@ -194,6 +194,19 @@ qv_process_scope_get(
 /**
  *
  */
+// TODO(skg) Add to Fortran interface.
+int
+qv_scope_create(
+    qv_scope_t *scope,
+    qv_hw_obj_type_t type,
+    int nobjs,
+    qv_scope_create_hints_t hint,
+    qv_scope_t **subscope
+);
+
+/**
+ *
+ */
 int
 qv_scope_group_rank(
     qv_scope_t *scope,
@@ -219,12 +232,11 @@ qv_scope_nobjs(
     int *nobjs
 );
 
-// TODO(skg) Rename to qv_scope_device_id_get?
 /**
  *
  */
 int
-qv_scope_get_device_id(
+qv_scope_device_id_get(
     qv_scope_t *scope,
     qv_hw_obj_type_t dev_obj,
     int dev_index,
@@ -238,19 +250,6 @@ qv_scope_get_device_id(
 int
 qv_scope_barrier(
     qv_scope_t *scope
-);
-
-/**
- *
- */
-// TODO(skg) Add to Fortran interface.
-int
-qv_scope_create(
-    qv_scope_t *scope,
-    qv_hw_obj_type_t type,
-    int nobjs,
-    qv_scope_create_hints_t hint,
-    qv_scope_t **subscope
 );
 
 /**
@@ -279,14 +278,6 @@ qv_scope_split_at(
  *
  */
 int
-qv_scope_free(
-    qv_scope_t *scope
-);
-
-/**
- *
- */
-int
 qv_scope_bind_push(
     qv_scope_t *scope
 );
@@ -307,6 +298,14 @@ qv_scope_bind_string(
     qv_scope_t *scope,
     qv_bind_string_flags_t flags,
     char **str
+);
+
+/**
+ * Releases resources associated with the provided scope.
+ */
+int
+qv_scope_free(
+    qv_scope_t *scope
 );
 
 #ifdef __cplusplus

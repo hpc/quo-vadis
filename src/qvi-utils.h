@@ -56,7 +56,6 @@ private:
         Key,
         typename std::list<std::pair<Key, Value>
     >::iterator> m_cache_map;
-
 public:
     /** Constructor. */
     qvi_lru_cache(

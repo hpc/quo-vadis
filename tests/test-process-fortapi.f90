@@ -53,7 +53,7 @@ program process_fortapi
     print *, 'ngpu', n_gpu
 
     do n = 0, n_gpu - 1
-        call qv_scope_get_device_id( &
+        call qv_scope_device_id_get( &
             scope_user, QV_HW_OBJ_GPU, n, &
             QV_DEVICE_ID_PCI_BUS_ID, dev_pci, info &
         )

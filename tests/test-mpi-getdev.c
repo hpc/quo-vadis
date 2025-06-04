@@ -37,7 +37,7 @@ emit_gpu_info(
     for (int i = 0; i < ngpus; ++i) {
         for (unsigned j = 0; j < ndevids; ++j) {
             char *devids = NULL;
-            int rc = qv_scope_get_device_id(
+            int rc = qv_scope_device_id_get(
                 scope,
                 QV_HW_OBJ_GPU,
                 i,
@@ -45,7 +45,7 @@ emit_gpu_info(
                 &devids
             );
             if (rc != QV_SUCCESS) {
-                const char *ers = "qv_scope_get_device_id() failed";
+                const char *ers = "qv_scope_device_id_get() failed";
                 ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
             }
             printf("# Device %u %s = %s\n", i, devnts[j].name, devids);
