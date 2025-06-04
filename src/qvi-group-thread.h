@@ -25,10 +25,10 @@ struct qvi_group_thread : qvi_group {
 private:
     /** Used for mutexy things. */
     std::mutex m_mutex;
-    //
-    std::unordered_map<pid_t, size_t> tid2index;
     /** Holds the appropriate number of task instances. */
     std::vector<qvi_task> m_tasks;
+    //
+    qvi_lru_cache<pid_t, size_t> m_tid2index;
 public:
     /** Deleted default constructor. */
     qvi_group_thread(void) = delete;
@@ -36,7 +36,8 @@ public:
     qvi_group_thread(
         int nthreads,
         const std::vector<int> &
-    ) : m_tasks(nthreads) {
+    ) : m_tasks(nthreads)
+      , m_tid2index(nthreads * 8) {
         // Note the unused vector of ints are colors. We don't currently use
         // that information because we don't support group splits within a
         // threaded context, so ignore it. See qvi_group::thread_split().
@@ -44,9 +45,9 @@ public:
     /** Virtual destructor. */
     virtual ~qvi_group_thread(void) = default;
     /**
-     * TODO(skg) Reimplement as an LRU cache of a bound size.
-     * This implements a dynamic, transient TID mapping to tasks.
-     * This is geared for runtimes like OpenMP.
+     * This implements a dynamic, transient TID mapping to tasks. This is geared
+     * for runtimes like OpenMP where respective parallel regions may spawn new
+     * threads.
      */
     virtual qvi_task *
     task(void) {
@@ -54,13 +55,23 @@ public:
         const pid_t mytid = qvi_gettid();
 
         std::lock_guard<std::mutex> guard(m_mutex);
-        auto got = tid2index.find(mytid);
-        if (got == tid2index.end()) {
-            const size_t myindex = next_index++ % m_tasks.size();
-            tid2index.insert({mytid, myindex});
-            return &m_tasks.at(myindex);
+
+        size_t myindex = 0;
+        int rc = m_tid2index.get(mytid, myindex);
+
+        switch (rc) {
+            // Found my index.
+            case QV_SUCCESS:
+                break;
+            // Not found, so create new index and cache it.
+            case QV_ERR_NOT_FOUND:
+                myindex = next_index++ % m_tasks.size();
+                m_tid2index.put(mytid, myindex);
+                break;
+            default:
+                throw qvi_runtime_error();
         }
-        return &m_tasks.at(got->second);
+        return &m_tasks.at(myindex);
     }
 
     virtual int

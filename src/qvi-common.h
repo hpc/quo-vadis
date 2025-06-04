@@ -46,6 +46,7 @@
 #ifdef __cplusplus
 #include "qvi-log.h"
 #include <chrono>
+#include <list>
 #include <map>
 #include <mutex>
 #include <condition_variable>

@@ -45,6 +45,75 @@ public:
 };
 
 /**
+ * Implements a fixed-capacity least recently used cache.
+ */
+template <typename Key, typename Value>
+struct qvi_lru_cache {
+private:
+    size_t m_capacity;
+    std::list<std::pair<Key, Value>> m_cache_list;
+    std::unordered_map<
+        Key,
+        typename std::list<std::pair<Key, Value>
+    >::iterator> m_cache_map;
+
+public:
+    /** Constructor. */
+    qvi_lru_cache(
+        size_t capacity
+    ) : m_capacity(capacity) { }
+
+    /**
+     * Stores a key, value pair.
+     */
+    void
+    put(
+        const Key &key,
+        const Value &value
+    ) {
+        auto got = m_cache_map.find(key);
+        if (got != m_cache_map.end()) {
+            // Update value and move to front.
+            got->second->second = value;
+            m_cache_list.splice(
+                m_cache_list.begin(), m_cache_list, got->second
+            );
+            return;
+        }
+        // If cache is full, remove the last element.
+        if (m_cache_list.size() == m_capacity) {
+            m_cache_map.erase(m_cache_list.back().first);
+            m_cache_list.pop_back();
+        }
+        // Add new element to the front.
+        m_cache_list.emplace_front(key, value);
+        m_cache_map[key] = m_cache_list.begin();
+    }
+
+    /**
+     * Attempts to get a cached value based on the provided key. If found,
+     * QV_SUCCESS is returned and value is valid. If not found, QV_ERR_NOT_FOUND
+     * is returned and value is invalid.
+     */
+    int
+    get(
+        const Key &key,
+        Value &value
+    ) {
+        value = {};
+
+        auto it = m_cache_map.find(key);
+        if (it == m_cache_map.end()) {
+            return QV_ERR_NOT_FOUND;
+        }
+        // Move the accessed node to the front of the list.
+        m_cache_list.splice(m_cache_list.begin(), m_cache_list, it->second);
+        value = it->second->second;
+        return QV_SUCCESS;
+    }
+};
+
+/**
  * Constructs a new object of a given type. *t will be valid if successful,
  * undefined otherwise. Returns QV_SUCCESS if successful.
  */
