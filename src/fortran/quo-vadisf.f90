@@ -214,10 +214,10 @@ interface
     end function qv_scope_barrier_c
 
     integer(c_int) &
-    function qv_scope_get_device_id_c( &
+    function qv_scope_device_id_get_c( &
         scope, dev_obj, i, id_type, dev_id &
     ) &
-        bind(c, name='qv_scope_get_device_id')
+        bind(c, name='qv_scope_device_id_get')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
@@ -225,7 +225,7 @@ interface
         integer(c_int), value :: i
         integer(c_int), value :: id_type
         type(c_ptr), intent(out) :: dev_id
-    end function qv_scope_get_device_id_c
+    end function qv_scope_device_id_get_c
 
     integer(c_int) &
     function qv_scope_bind_push_c(scope) &
@@ -367,7 +367,7 @@ contains
         info = qv_scope_barrier_c(scope)
     end subroutine qv_scope_barrier
 
-    subroutine qv_scope_get_device_id( &
+    subroutine qv_scope_device_id_get( &
         scope, dev_obj, i, id_type, dev_id, info &
     )
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
@@ -383,7 +383,7 @@ contains
         integer(c_size_t) :: strlen
         character, pointer, dimension(:) :: fstrp
 
-        info = qv_scope_get_device_id_c( &
+        info = qv_scope_device_id_get_c( &
             scope, dev_obj, i, id_type, cstr &
         )
         ! Now deal with the string
@@ -392,7 +392,7 @@ contains
         allocate(character(strlen) :: dev_id(1))
         dev_id = fstrp
         call qvif_free_c(cstr)
-    end subroutine qv_scope_get_device_id
+    end subroutine qv_scope_device_id_get
 
     subroutine qv_scope_bind_push(scope, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int

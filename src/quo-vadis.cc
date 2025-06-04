@@ -234,7 +234,7 @@ qv_scope_split_at(
 }
 
 int
-qv_scope_get_device_id(
+qv_scope_device_id_get(
     qv_scope_t *scope,
     qv_hw_obj_type_t dev_obj,
     int dev_index,

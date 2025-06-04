@@ -57,7 +57,7 @@ public:
         std::lock_guard<std::mutex> guard(m_mutex);
 
         size_t myindex = 0;
-        int rc = m_tid2index.get(mytid, myindex);
+        const int rc = m_tid2index.get(mytid, myindex);
 
         switch (rc) {
             // Found my index.
