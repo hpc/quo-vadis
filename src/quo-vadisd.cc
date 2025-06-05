@@ -13,7 +13,7 @@
 /**
  * @file quo-vadisd.cc
  *
- * The quo-vadis daemon.
+ * Implements the quo-vadis daemon.
  */
 
 // TODO(skg)
@@ -24,35 +24,33 @@
 #include "qvi-hwloc.h"
 #include "qvi-rmi.h"
 
-struct context_s {
+static const cstr_t app_name = "quo-vadisd";
+
+using option_help = std::map<std::string, std::string>;
+
+struct qvid_context {
     qvi_rmi_config rmic;
     qvi_hwloc_t *hwloc = nullptr;
-    qvi_rmi_server *rmi = nullptr;
+    qvi_rmi_server rmi;
     bool daemonized = false;
     /** Constructor. */
-    context_s(void)
+    qvid_context(void)
     {
-        int rc = qvi_hwloc_new(&hwloc);
-        if (rc != QV_SUCCESS) {
-            throw qvi_runtime_error();
-        }
-
-        rc = qvi_new(&rmi);
+        const int rc = qvi_hwloc_new(&hwloc);
         if (rc != QV_SUCCESS) {
             throw qvi_runtime_error();
         }
     }
     /** Destructor */
-    ~context_s(void)
+    ~qvid_context(void)
     {
-        qvi_delete(&rmi);
         qvi_hwloc_delete(&hwloc);
     }
 };
 
 static void
 closefds(
-    context_s &
+    qvid_context &
 ) {
     qvi_log_debug("Closing FDs");
     // Determine the max number of file descriptors.
@@ -76,7 +74,7 @@ closefds(
 
 static void
 become_session_leader(
-    context_s &
+    qvid_context &
 ) {
     qvi_log_debug("Becoming session leader");
 
@@ -92,7 +90,7 @@ become_session_leader(
         _exit(EXIT_SUCCESS);
     }
     // Child
-    pid_t pgid = setsid();
+    const pid_t pgid = setsid();
     if (pgid < 0) {
         static cstr_t ers = "setsid() failed";
         const int err = errno;
@@ -102,7 +100,7 @@ become_session_leader(
 
 static void
 rmi_config(
-    context_s &ctx
+    qvid_context &ctx
 ) {
     qvi_log_debug("Starting RMI");
 
@@ -114,7 +112,7 @@ rmi_config(
         return;
     }
 
-    rc = ctx.rmi->configure(ctx.rmic);
+    rc = ctx.rmi.configure(ctx.rmic);
     if (rc != QV_SUCCESS) {
         qvi_panic_log_error("rmi->configure() failed");
         return;
@@ -126,17 +124,16 @@ rmi_config(
 
 static void
 rmi_start(
-    context_s &ctx
+    qvid_context &ctx
 ) {
     qvi_log_debug("Starting RMI");
 
     cstr_t ers = nullptr;
-
-    const int rc = ctx.rmi->start();
+    // TODO(skg) Add flags option
+    const int rc = ctx.rmi.start();
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         ers = "qvi_rmi_server_start() failed";
     }
-    // TODO(skg) Add flags option
     if (qvi_unlikely(ers)) {
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
@@ -144,24 +141,24 @@ rmi_start(
 
 static void
 hwtopo_load(
-    context_s &ctx
+    qvid_context &ctx
 ) {
     qvi_log_debug("Loading hardware information");
 
     int rc = qvi_hwloc_topology_init(ctx.hwloc, nullptr);
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         static cstr_t ers = "qvi_hwloc_topology_init() failed";
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
 
     rc = qvi_hwloc_topology_load(ctx.hwloc);
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         static cstr_t ers = "qvi_hwloc_topology_load() failed";
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
 
     rc = qvi_hwloc_discover_devices(ctx.hwloc);
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         static cstr_t ers = "qvi_hwloc_discover_devices() failed";
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
@@ -169,7 +166,7 @@ hwtopo_load(
 
 static void
 hwtopo_export(
-    context_s &ctx
+    qvid_context &ctx
 ) {
     qvi_log_debug("Publishing hardware information");
 
@@ -186,13 +183,77 @@ hwtopo_export(
     free(path);
 }
 
+static void
+show_usage(
+    const option_help &opt_help
+) {
+    printf(
+        "\nUsage:\n"
+        "%s [OPTIONS]\n"
+        "Options:\n"
+        , app_name
+    );
+
+    for (auto &i : opt_help) {
+        printf("  %s %s\n", i.first.c_str(), i.second.c_str());
+    }
+}
+
+static int
+parse_args(
+    int argc,
+    char **argv,
+    qvid_context &ctx
+) {
+    enum {
+        FLOOR = 256,
+        DAEMONIZE,
+        HELP,
+    };
+
+    const cstr_t opts = "";
+    const struct option lopts[] = {
+        {"daemonize",        no_argument, nullptr         , DAEMONIZE         },
+        {"help",             no_argument, nullptr         , HELP              },
+        {nullptr,            0,           nullptr         , 0                 }
+    };
+    static const option_help opt_help = {
+        {"[--daemonize]        ", "Run as a daemon."                          },
+        {"[--help]             ", "Show this message and exit."               }
+    };
+
+    int opt;
+    while (-1 != (opt = getopt_long_only(argc, argv, opts, lopts, nullptr))) {
+        switch (opt) {
+            case DAEMONIZE:
+                ctx.daemonized = true;
+                break;
+            case HELP:
+                show_usage(opt_help);
+                return QV_SUCCESS_SHUTDOWN;
+            default:
+                show_usage(opt_help);
+                return QV_ERR_INVLD_ARG;
+        }
+    }
+    return QV_SUCCESS;
+}
+
 static int
 start(
-    int,
-    char **
+    int argc,
+    char **argv
 ) {
     try {
-        context_s ctx;
+        qvid_context ctx;
+
+        int rc = parse_args(argc, argv, ctx);
+        if (rc != QV_SUCCESS) {
+            if (rc == QV_SUCCESS_SHUTDOWN) {
+                rc = QV_SUCCESS;
+            }
+            return rc;
+        }
 
         if (ctx.daemonized) {
             // Redirect all console output to syslog.
