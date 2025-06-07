@@ -67,7 +67,7 @@ HWLOC_XMLFILE # Path to system topology XML file.
 # Set communication port
 export QV_PORT=55996
 # Launch the daemon
-build/src/quo-vadisd &
+build/src/quo-vadisd
 # Run a test
 mpiexec -n 2 build/tests/test-mpi-scopes
 ```

@@ -18,7 +18,6 @@
 
 // TODO(skg)
 // * Add something like QV_SHUTDOWN_ON_DISCONNECT or QV_DAEMON_KEEP_ALIVE
-// * Add daemonize option.
 
 #include "qvi-utils.h"
 #include "qvi-hwloc.h"
@@ -32,7 +31,8 @@ struct qvid_context {
     qvi_rmi_config rmic;
     qvi_hwloc_t *hwloc = nullptr;
     qvi_rmi_server rmi;
-    bool daemonized = false;
+    /** Run as a daemon flag. */
+    bool daemonized = true;
     /** Constructor. */
     qvid_context(void)
     {
@@ -207,26 +207,26 @@ parse_args(
 ) {
     enum {
         FLOOR = 256,
-        DAEMONIZE,
+        NO_DAEMONIZE,
         HELP,
     };
 
     const cstr_t opts = "";
     const struct option lopts[] = {
-        {"daemonize",        no_argument, nullptr         , DAEMONIZE         },
-        {"help",             no_argument, nullptr         , HELP              },
-        {nullptr,            0,           nullptr         , 0                 }
+        {"no-daemonize"    , no_argument, nullptr         , NO_DAEMONIZE      },
+        {"help"            , no_argument, nullptr         , HELP              },
+        {nullptr           , 0          , nullptr         , 0                 }
     };
     static const option_help opt_help = {
-        {"[--daemonize]        ", "Run as a daemon."                          },
+        {"[--no-daemonize]     ", "Do not run as a daemon."                   },
         {"[--help]             ", "Show this message and exit."               }
     };
 
     int opt;
     while (-1 != (opt = getopt_long_only(argc, argv, opts, lopts, nullptr))) {
         switch (opt) {
-            case DAEMONIZE:
-                ctx.daemonized = true;
+            case NO_DAEMONIZE:
+                ctx.daemonized = false;
                 break;
             case HELP:
                 show_usage(opt_help);
