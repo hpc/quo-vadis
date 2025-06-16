@@ -5,62 +5,85 @@
  */
 
 #include "common-test-utils.h"
+#include "quo-vadis-thread.h"
 #include <omp.h>
 
-#if 0
 typedef struct {
-    qv_scope_t *scope;
-    int size;
-    int sgrank;
+    int nthreads;
+    qv_scope_t **th_scopes;
 } scopei;
 
 static void
 emit_iter_info(
     scopei *sinfo,
+    int rank,
     int i
 ) {
     char const *ers = NULL;
     char *binds;
     const int rc = qv_scope_bind_string(
-        sinfo->scope, QV_BIND_STRING_LOGICAL, &binds
+        sinfo->th_scopes[rank], QV_BIND_STRING_LOGICAL, &binds
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf(
-        "[%d]: thread=%d of nthread=%d of thread=%d handling iter %d on %s\n",
-        ctu_gettid(), omp_get_thread_num(), omp_get_team_size(2),
-        omp_get_ancestor_thread_num(1), i, binds
+        "[%d]: thread=%d of nthread=%d handling iter %d on %s\n",
+        ctu_gettid(), omp_get_thread_num(), omp_get_num_threads(), i, binds
     );
     free(binds);
-}
-
-static void
-scopei_fill(
-    scopei *sinfo
-) {
-    char *ers = NULL;
-
-    int rc = qv_scope_group_size(sinfo->scope, &sinfo->size);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_group_size() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    rc = qv_scope_group_rank(sinfo->scope, &sinfo->sgrank);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_group_rank() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 }
 
 static void
 scopei_free(
     scopei *sinfo
 ) {
+    // Wait for all threads to complete before freeing the scopes.
+    #pragma omp barrier
     char *ers = NULL;
-    const int rc = qv_scope_free(sinfo->scope);
+    const int rc = qv_thread_scopes_free(sinfo->nthreads, sinfo->th_scopes);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_thread_scopes_free() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+}
+
+/**
+ * Creates the execution policy scopes.
+ */
+static void
+scopei_ep(
+    scopei *sinfo
+) {
+    char *ers = NULL;
+
+    qv_scope_t *base_scope;
+    int rc = qv_process_scope_get(
+        QV_SCOPE_PROCESS, &base_scope
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_thread_scope_get() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    // Use the number of cores to determine how many thread scopes to create.
+    rc = qv_scope_nobjs(base_scope, QV_HW_OBJ_CORE, &sinfo->nthreads);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_nobjs() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    int *thread_coloring = QV_THREAD_SCOPE_SPLIT_AFFINITY_PRESERVING;
+    rc = qv_thread_scope_split_at(
+        base_scope, QV_HW_OBJ_CORE, thread_coloring,
+        sinfo->nthreads, &sinfo->th_scopes
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_thread_scope_split_at() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -68,103 +91,45 @@ scopei_free(
 }
 
 static void
-scopei_base(
-    scopei *sinfo
-) {
-    char *ers = NULL;
-    const int rc = qv_omp_scope_get(
-        QV_SCOPE_PROCESS, &sinfo->scope
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_thread_scope_get() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    scopei_fill(sinfo);
-}
-
-/**
- * Creates the execution policy scope.
- */
-static void
-scopei_ep(
-    scopei *sinfo
-) {
-    // Get the base (parent) scope.
-    scopei pinfo;
-    scopei_base(&pinfo);
-
-    char *ers = NULL;
-    int rc = qv_scope_split(
-        pinfo.scope, 2, pinfo.sgrank, &sinfo->scope
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_split() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    scopei_fill(sinfo);
-    // We don't need this anymore.
-    scopei_free(&pinfo);
-}
-
-static void
 scopei_ep_push(
-    scopei *sinfo
+    scopei *sinfo,
+    int rank
 ) {
-    char *ers = NULL;
-    const int rc = qv_scope_bind_push(sinfo->scope);
+    const int rc = qv_scope_bind_push(sinfo->th_scopes[rank]);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_bind_push() failed";
+        char *ers = "qv_scope_bind_push() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
-
-static void
-scopei_ep_pop(
-    scopei *sinfo
-) {
-    // Make sure everyone is done with the execution policy before we pop.
-    #pragma omp barrier
-    char *ers = NULL;
-    const int rc = qv_scope_bind_pop(sinfo->scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_bind_pop() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-}
-
-#endif
 
 int
 main(void)
 {
-#if 0
-    // Make sure nested parallism is on.
-    omp_set_nested(1);
+    const double tick = omp_get_wtime();
+    scopei ep_sinfo;
+    scopei_ep(&ep_sinfo);
+    const double tock = omp_get_wtime();
+
+    omp_set_num_threads(ep_sinfo.nthreads);
+
     #pragma omp parallel
     #pragma omp master
-    printf("# Starting OpenMP Test (nthreads=%d)\n", omp_get_num_threads());
+    {
+        printf("# Starting OpenMP Test (nthreads=%d)\n", omp_get_num_threads());
+        printf("# Scope creation took %lf seconds\n", tock - tick);
+    }
 
     #pragma omp parallel
     {
-        const double tick = omp_get_wtime();
-        scopei ep_sinfo;
-        scopei_ep(&ep_sinfo);
-        const double tock = omp_get_wtime();
+        const int tid = omp_get_thread_num();
+        scopei_ep_push(&ep_sinfo, tid);
 
-        #pragma omp master
-        printf("# Scope creation took %lf seconds\n", tock - tick);
-
-        scopei_ep_push(&ep_sinfo);
-        #pragma omp task
-        #pragma omp parallel for num_threads(ep_sinfo.size)
-        for (int i = 0; i < 8; ++i) {
-            emit_iter_info(&ep_sinfo, i);
+        for (int i = 0; i < ep_sinfo.nthreads * 4; ++i) {
+            emit_iter_info(&ep_sinfo, tid, i);
         }
-        scopei_ep_pop(&ep_sinfo);
-
-        scopei_free(&ep_sinfo);
     }
-#endif
+
+    scopei_free(&ep_sinfo);
     return EXIT_SUCCESS;
 }
 
