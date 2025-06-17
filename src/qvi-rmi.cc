@@ -58,17 +58,15 @@ do {                                                                          \
 
 static inline void
 zsocket_close(
-    void **sock
+    void *sock
 ) {
     if (qvi_unlikely(!sock)) return;
-    void *isock = *sock;
-    if (qvi_likely(isock)) {
-        const int rc = zmq_close(isock);
+    if (qvi_likely(sock)) {
+        const int rc = zmq_close(sock);
         if (qvi_unlikely(rc != 0)) {
             zwrn_msg("zmq_close() failed", errno);
         }
     }
-    *sock = nullptr;
 }
 
 static inline void
@@ -107,7 +105,7 @@ zsocket_connect(
     const int rc = zmq_connect(zsock, addr);
     if (qvi_unlikely(rc != 0)) {
         zerr_msg("zmq_connect() failed", errno);
-        zsocket_close(&zsock);
+        zsocket_close(zsock);
         return QV_ERR_RPC;
     }
     return QV_SUCCESS;
@@ -127,7 +125,7 @@ zsocket_create_and_bind(
     const int rc = zmq_bind(zsock, addr);
     if (qvi_unlikely(rc != 0)) {
         zerr_msg("zmq_bind() failed", errno);
-        zsocket_close(&zsock);
+        zsocket_close(zsock);
         return nullptr;
     }
     return zsock;
@@ -314,7 +312,7 @@ qvi_rmi_client::qvi_rmi_client(void)
 
 qvi_rmi_client::~qvi_rmi_client(void)
 {
-    zsocket_close(&m_zsock);
+    zsocket_close(m_zsock);
     zctx_destroy(&m_zctx);
     qvi_hwloc_delete(&m_config.hwloc);
 }
@@ -516,7 +514,7 @@ qvi_rmi_server::qvi_rmi_server(void)
 
 qvi_rmi_server::~qvi_rmi_server(void)
 {
-    zsocket_close(&m_zsock);
+    zsocket_close(m_zsock);
     zctx_destroy(&m_zctx);
     unlink(m_config.hwtopo_path.c_str());
     qvi_delete(&m_hwpool);
