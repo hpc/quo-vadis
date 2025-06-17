@@ -14,28 +14,6 @@ typedef struct {
 } scopei;
 
 static void
-emit_iter_info(
-    scopei *sinfo,
-    int rank,
-    int i
-) {
-    char const *ers = NULL;
-    char *binds;
-    const int rc = qv_scope_bind_string(
-        sinfo->th_scopes[rank], QV_BIND_STRING_LOGICAL, &binds
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_string() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    printf(
-        "[%d]: thread=%d of nthread=%d handling iter %d on %s\n",
-        ctu_gettid(), omp_get_thread_num(), omp_get_num_threads(), i, binds
-    );
-    free(binds);
-}
-
-static void
 scopei_free(
     scopei *sinfo
 ) {
@@ -102,9 +80,48 @@ scopei_ep_push(
     }
 }
 
+static void
+scopei_ep_pop(
+    scopei *sinfo,
+    int rank
+) {
+    const int rc = qv_scope_bind_pop(sinfo->th_scopes[rank]);
+    if (rc != QV_SUCCESS) {
+        char *ers = "qv_scope_bind_pop() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+}
+
+static void
+emit_iter_info(
+    scopei *sinfo,
+    int rank,
+    int i
+) {
+    char const *ers = NULL;
+
+    scopei_ep_push(sinfo, rank);
+
+    char *binds;
+    const int rc = qv_scope_bind_string(
+        sinfo->th_scopes[rank], QV_BIND_STRING_LOGICAL, &binds
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    printf(
+        "[%d]: thread=%d of nthread=%d handling iter %d on %s\n",
+        ctu_gettid(), omp_get_thread_num(), omp_get_num_threads(), i, binds
+    );
+    free(binds);
+
+    scopei_ep_pop(sinfo, rank);
+}
+
 int
 main(void)
-{
+    {
     const double tick = omp_get_wtime();
     scopei ep_sinfo;
     scopei_ep(&ep_sinfo);
@@ -119,14 +136,9 @@ main(void)
         printf("# Scope creation took %lf seconds\n", tock - tick);
     }
 
-    #pragma omp parallel
-    {
-        const int tid = omp_get_thread_num();
-        scopei_ep_push(&ep_sinfo, tid);
-
-        for (int i = 0; i < ep_sinfo.nthreads * 4; ++i) {
-            emit_iter_info(&ep_sinfo, tid, i);
-        }
+    #pragma omp parallel for schedule(dynamic)
+    for (int i = 0; i < ep_sinfo.nthreads * 128; ++i) {
+        emit_iter_info(&ep_sinfo, omp_get_thread_num(), i);
     }
 
     scopei_free(&ep_sinfo);
