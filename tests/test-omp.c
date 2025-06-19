@@ -17,8 +17,6 @@ static void
 scopei_free(
     scopei *sinfo
 ) {
-    // Wait for all threads to complete before freeing the scopes.
-    #pragma omp barrier
     char *ers = NULL;
     const int rc = qv_thread_scopes_free(sinfo->nthreads, sinfo->th_scopes);
     if (rc != QV_SUCCESS) {
