@@ -327,12 +327,26 @@ int
 qvi_rmi_client::connect(
     const std::string &url
 ) {
-    int rc = zsocket_connect(m_zsock, url.c_str());
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-
+    // Note: ZMQ_CONNECT_TIMEOUT doesn't seem to have an appreciable effect.
+    int zrc = zsocket_connect(m_zsock, url.c_str());
+    if (qvi_unlikely(zrc != 0)) {
+        zerr_msg("zsocket_connect() failed", errno);
+        return QV_RES_UNAVAILABLE;
+    }
+    // To avoid hangs in faulty connections, set a timeout
+    // before initiating the first client/server exchange.
+    const int timeout_in_ms = 5000;
+    zrc = zmq_setsockopt(
+        m_zsock, ZMQ_RCVTIMEO, &timeout_in_ms, sizeof(timeout_in_ms)
+    );
+    if (qvi_unlikely(zrc != 0)) {
+        zerr_msg("zmq_setsockopt() failed", errno);
+        return QV_RES_UNAVAILABLE;
+    }
+    // Now initiate the client/server exchange.
     std::string hwtopo_path;
-    rc = m_hello(hwtopo_path);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    int rc = m_hello(hwtopo_path);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return QV_RES_UNAVAILABLE;
     // Now that we have all the info we need,
     // finish populating the RMI config.
     m_config.url = url;
@@ -341,9 +355,12 @@ qvi_rmi_client::connect(
     rc = qvi_hwloc_topology_init(
         m_config.hwloc, m_config.hwtopo_path.c_str()
     );
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return QV_RES_UNAVAILABLE;
 
-    return qvi_hwloc_topology_load(m_config.hwloc);
+    rc = qvi_hwloc_topology_load(m_config.hwloc);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return QV_RES_UNAVAILABLE;
+
+    return QV_SUCCESS;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

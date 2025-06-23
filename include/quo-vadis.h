@@ -56,13 +56,11 @@ enum {
     QV_ERR_SYS,
     QV_ERR_OOR,
     QV_ERR_INVLD_ARG,
-    QV_ERR_CALL_BEFORE_INIT,
     QV_ERR_HWLOC,
     QV_ERR_MPI,
     QV_ERR_MSG,
     QV_ERR_RPC,
     QV_ERR_NOT_SUPPORTED,
-    QV_ERR_POP,
     QV_ERR_NOT_FOUND,
     QV_ERR_SPLIT,
     /** Resources unavailable. */

@@ -213,8 +213,8 @@ qvi_access(
 /**
  *
  */
-cstr_t
-qvi_conn_ers(void);
+std::string
+qvi_conn_env_ers(void);
 
 /**
  *

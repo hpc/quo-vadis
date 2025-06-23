@@ -108,7 +108,7 @@ rmi_config(
 
     int rc = qvi_url(ctx.rmic.url);
     if (rc != QV_SUCCESS) {
-        qvi_panic_log_error(qvi_conn_ers());
+        qvi_panic_log_error(qvi_conn_env_ers());
         return;
     }
 
