@@ -33,13 +33,11 @@ static const std::map<uint_t, std::string> qvi_rc2str = {
     {QV_ERR_SYS, "System error"},
     {QV_ERR_OOR, "Out of resources"},
     {QV_ERR_INVLD_ARG, "Invalid argument"},
-    {QV_ERR_CALL_BEFORE_INIT, "Call before initialization"},
     {QV_ERR_HWLOC, "Hardware locality error"},
     {QV_ERR_MPI, "MPI error"},
     {QV_ERR_MSG, "Internal message error"},
     {QV_ERR_RPC, "Remote procedure call error"},
     {QV_ERR_NOT_SUPPORTED, "Operation not supported"},
-    {QV_ERR_POP, "Pop operation error"},
     {QV_ERR_NOT_FOUND, "Not found"},
     {QV_ERR_SPLIT, "Split error"},
     {QV_RES_UNAVAILABLE, "Resources unavailable"}
@@ -105,14 +103,14 @@ qvi_url(
     return QV_SUCCESS;
 }
 
-cstr_t
-qvi_conn_ers(void)
+std::string
+qvi_conn_env_ers(void)
 {
     static const std::string msg = "Cannot determine connection information. "
                                    "Please make sure that the following "
                                    "environment variable is set to an unused "
                                    "port number: " + std::string(QVI_ENV_PORT);
-    return msg.c_str();
+    return msg;
 }
 
 std::string

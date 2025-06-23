@@ -28,12 +28,22 @@ int
 qvi_task::m_connect_to_server(void)
 {
     std::string url;
-    const int rc = qvi_url(url);
+    int rc = qvi_url(url);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_log_error("{}", qvi_conn_ers());
+        qvi_log_error("{}", qvi_conn_env_ers());
         return rc;
     }
-    return m_rmi->connect(url);
+
+    rc = m_rmi->connect(url);
+    if (qvi_unlikely(rc == QV_RES_UNAVAILABLE)) {
+        const std::string msg =
+            "\n\n#############################################\n"
+            "# A client could not connect to its server.\n"
+            "# Ensure quo-vadisd is running and reachable."
+            "\n#############################################\n\n";
+        qvi_log_error("{}", msg);
+    }
+    return rc;
 }
 
 int
