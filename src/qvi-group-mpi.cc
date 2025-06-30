@@ -18,24 +18,17 @@
 #include "qvi-task.h" // IWYU pragma: keep
 #include "qvi-utils.h"
 
-qvi_group_mpi::qvi_group_mpi(void)
-{
-    const int rc = qvi_new(&m_task);
-    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
-}
-
 qvi_group_mpi::qvi_group_mpi(
     qvi_mpi_t *mpi_ctx
-) : qvi_group_mpi()
-{
-    assert(mpi_ctx);
+) {
+    if (qvi_unlikely(!mpi_ctx)) throw qvi_runtime_error();
     m_mpi = mpi_ctx;
+    m_task.connect_to_server();
 }
 
 qvi_group_mpi::~qvi_group_mpi(void)
 {
     qvi_mpi_group_delete(&m_mpi_group);
-    qvi_delete(&m_task);
 }
 
 int

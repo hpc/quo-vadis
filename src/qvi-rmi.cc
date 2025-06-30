@@ -302,18 +302,15 @@ qvi_rmi_client::qvi_rmi_client(void)
     // Remember clients own the hwloc data, unlike the server.
     const int rc = qvi_hwloc_new(&m_config.hwloc);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
-    // Create a new ZMQ context.
-    m_zctx = zmq_ctx_new();
-    if (qvi_unlikely(!m_zctx)) throw qvi_runtime_error();
-    // Create the ZMQ socket used for communication with the server.
-    m_zsock = zsocket_create(m_zctx, ZMQ_REQ);
-    if (qvi_unlikely(!m_zsock)) throw qvi_runtime_error();
 }
 
 qvi_rmi_client::~qvi_rmi_client(void)
 {
-    zsocket_close(m_zsock);
-    zctx_destroy(&m_zctx);
+    // Make sure we can safely call zmq_ctx_destroy(). Otherwise it will hang.
+    if (m_connected) {
+        zsocket_close(m_zsock);
+        zctx_destroy(&m_zctx);
+    }
     qvi_hwloc_delete(&m_config.hwloc);
 }
 
@@ -327,6 +324,12 @@ int
 qvi_rmi_client::connect(
     const std::string &url
 ) {
+    // Create a new ZMQ context.
+    m_zctx = zmq_ctx_new();
+    if (qvi_unlikely(!m_zctx)) return QV_RES_UNAVAILABLE;
+    // Create the ZMQ socket used for communication with the server.
+    m_zsock = zsocket_create(m_zctx, ZMQ_REQ);
+    if (qvi_unlikely(!m_zsock)) return QV_RES_UNAVAILABLE;
     // Note: ZMQ_CONNECT_TIMEOUT doesn't seem to have an appreciable effect.
     int zrc = zsocket_connect(m_zsock, url.c_str());
     if (qvi_unlikely(zrc != 0)) {
@@ -346,7 +349,12 @@ qvi_rmi_client::connect(
     // Now initiate the client/server exchange.
     std::string hwtopo_path;
     int rc = m_hello(hwtopo_path);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return QV_RES_UNAVAILABLE;
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        return QV_RES_UNAVAILABLE;
+    }
+    else {
+        m_connected = true;
+    }
     // Now that we have all the info we need,
     // finish populating the RMI config.
     m_config.url = url;

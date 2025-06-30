@@ -29,7 +29,11 @@ private:
     qvi_task m_task;
 public:
     /** Constructor. */
-    qvi_group_process(void) = default;
+    qvi_group_process(void)
+    {
+        const int rc = m_task.connect_to_server();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+    }
     /** Destructor. */
     virtual ~qvi_group_process(void) = default;
 

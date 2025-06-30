@@ -106,10 +106,13 @@ qvi_url(
 std::string
 qvi_conn_env_ers(void)
 {
-    static const std::string msg = "Cannot determine connection information. "
-                                   "Please make sure that the following "
-                                   "environment variable is set to an unused "
-                                   "port number: " + std::string(QVI_ENV_PORT);
+    static const std::string msg =
+        "\n\n#############################################\n"
+        "# Cannot determine connection information.\n"
+        "# Make sure that the following environment\n"
+        "# environment variable is set to an unused\n"
+        "# port number: " + std::string(QVI_ENV_PORT) + ""
+        "\n#############################################\n\n";
     return msg;
 }
 
