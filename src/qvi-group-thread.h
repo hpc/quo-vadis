@@ -41,6 +41,12 @@ public:
         // Note the unused vector of ints are colors. We don't currently use
         // that information because we don't support group splits within a
         // threaded context, so ignore it. See qvi_group::thread_split().
+
+        // Initialize the tasks.
+        for (auto &task : m_tasks) {
+            const int rc = task.connect_to_server();
+            if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+        }
     }
     /** Virtual destructor. */
     virtual ~qvi_group_thread(void) = default;

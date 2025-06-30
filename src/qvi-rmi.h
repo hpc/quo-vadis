@@ -205,6 +205,8 @@ private:
     void *m_zctx = nullptr;
     /** Communication socket. */
     void *m_zsock = nullptr;
+    /** Flag indicating whether client is connected to server. */
+    bool m_connected = false;
     /** Performs connection handshake. */
     int
     m_hello(

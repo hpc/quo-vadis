@@ -17,7 +17,7 @@
 #ifndef QVI_UTILS_H
 #define QVI_UTILS_H
 
-#include "qvi-common.h"
+#include "qvi-common.h" // IWYU pragma: keep
 
 /**
  * Reference counting base class that provides retain/release semantics.
@@ -176,6 +176,12 @@ qvi_copy(
     }
     qvi_catch_and_return();
 }
+
+/**
+ *
+ */
+int
+qvi_start_qvd(void);
 
 /**
  *

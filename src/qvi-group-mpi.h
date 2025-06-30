@@ -18,6 +18,7 @@
 #define QVI_GROUP_MPI_H
 
 #include "qvi-common.h"
+#include "qvi-task.h"
 #include "qvi-group.h"
 #include "qvi-mpi.h"
 #include "qvi-bbuff.h"
@@ -25,14 +26,14 @@
 struct qvi_group_mpi : public qvi_group {
 protected:
     /** Task associated with this group. */
-    qvi_task *m_task = nullptr;
+    qvi_task m_task;
     /** Points to the base MPI context information. */
     qvi_mpi_t *m_mpi = nullptr;
     /** Underlying group instance. */
     qvi_mpi_group_t *m_mpi_group = nullptr;
 public:
     /** Default constructor. */
-    qvi_group_mpi(void);
+    qvi_group_mpi(void) = default;
     /** Constructor. */
     qvi_group_mpi(
         qvi_mpi_t *mpi_ctx
@@ -43,7 +44,7 @@ public:
     virtual qvi_task *
     task(void)
     {
-        return m_task;
+        return &m_task;
     }
 
     virtual int
@@ -121,9 +122,12 @@ struct qvi_zgroup_mpi_s : public qvi_group_mpi {
     ) {
         int rc = qvi_mpi_new(&m_mpi);
         if (rc != QV_SUCCESS) throw qvi_runtime_error();
-        /** Initialize the MPI group with the provided communicator. */
+        // Initialize the MPI group with the provided communicator.
         rc = qvi_mpi_init(m_mpi, comm);
         if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        // Finish task initialization after we finish MPI initialization because
+        // the server daemon may have been started during qvi_mpi_init().
+        m_task.connect_to_server();
     }
     /** Destructor. */
     virtual ~qvi_zgroup_mpi_s(void)

@@ -14,11 +14,8 @@
  * @file quo-vadis.cc
  */
 
-// IWYU pragma: begin_keep
-#include "qvi-common.h"
 #include "qvi-group-process.h"
 #include "qvi-scope.h"
-// IWYU pragma: end_keep
 
 int
 qv_version(
