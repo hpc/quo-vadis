@@ -19,7 +19,7 @@
 /**
  * Port environment variable string.
  */
-static constexpr cstr_t QVI_ENV_PORT = "QV_PORT";
+static const std::string QVI_ENV_PORT = "QV_PORT";
 
 /** Maps return codes to their respective descriptions. */
 static const std::map<uint_t, std::string> qvi_rc2str = {
@@ -83,7 +83,7 @@ int
 qvi_port(
     int *port
 ) {
-    const cstr_t ports = getenv(QVI_ENV_PORT);
+    const cstr_t ports = getenv(QVI_ENV_PORT.c_str());
     if (!ports) return QV_ERR_ENV;
     *port = std::stoi(std::string(ports));
     return QV_SUCCESS;
@@ -111,7 +111,7 @@ qvi_conn_env_ers(void)
         "# Cannot determine connection information.\n"
         "# Make sure that the following environment\n"
         "# environment variable is set to an unused\n"
-        "# port number: " + std::string(QVI_ENV_PORT) + ""
+        "# port number: " + QVI_ENV_PORT + ""
         "\n#############################################\n\n";
     return msg;
 }

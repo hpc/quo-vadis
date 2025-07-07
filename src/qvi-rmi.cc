@@ -64,7 +64,8 @@ zsocket_close(
     if (qvi_likely(sock)) {
         const int rc = zmq_close(sock);
         if (qvi_unlikely(rc != 0)) {
-            zwrn_msg("zmq_close() failed", errno);
+            const int eno = errno;
+            zwrn_msg("zmq_close() failed", eno);
         }
     }
 }
@@ -78,7 +79,8 @@ zctx_destroy(
     if (qvi_likely(ictx)) {
         const int rc = zmq_ctx_destroy(ictx);
         if (qvi_unlikely(rc != 0)) {
-            zwrn_msg("zmq_ctx_destroy() failed", errno);
+            const int eno = errno;
+            zwrn_msg("zmq_ctx_destroy() failed", eno);
         }
     }
     *ctx = nullptr;
@@ -91,7 +93,8 @@ zsocket_create(
 ) {
     void *zsock = zmq_socket(zctx, sock_type);
     if (qvi_unlikely(!zsock)) {
-        zerr_msg("zmq_socket() failed", errno);
+        const int eno = errno;
+        zerr_msg("zmq_socket() failed", eno);
         return nullptr;
     }
     return zsock;
@@ -104,7 +107,8 @@ zsocket_connect(
 ) {
     const int rc = zmq_connect(zsock, addr);
     if (qvi_unlikely(rc != 0)) {
-        zerr_msg("zmq_connect() failed", errno);
+        const int eno = errno;
+        zerr_msg("zmq_connect() failed", eno);
         zsocket_close(zsock);
         return QV_ERR_RPC;
     }
@@ -119,12 +123,14 @@ zsocket_create_and_bind(
 ) {
     void *zsock = zmq_socket(zctx, sock_type);
     if (qvi_unlikely(!zsock)) {
-        zerr_msg("zmq_socket() failed", errno);
+        const int eno = errno;
+        zerr_msg("zmq_socket() failed", eno);
         return nullptr;
     }
     const int rc = zmq_bind(zsock, addr);
     if (qvi_unlikely(rc != 0)) {
-        zerr_msg("zmq_bind() failed", errno);
+        const int eno = errno;
+        zerr_msg("zmq_bind() failed", eno);
         zsocket_close(zsock);
         return nullptr;
     }
@@ -179,7 +185,8 @@ zsock_send_bbuff(
     const int buff_size = bbuff->size();
     *bsent = zmq_send(zsock, bbuff->data(), buff_size, 0);
     if (qvi_unlikely(*bsent != buff_size)) {
-        zerr_msg("zmq_send() truncated", errno);
+        const int eno = errno;
+        zerr_msg("zmq_send() truncated", eno);
         return QV_ERR_RPC;
     }
     // We are resposible for freeing the buffer after ZMQ has
@@ -196,14 +203,16 @@ zsock_recv_msg(
     int qvrc = QV_SUCCESS;
     int rc = zmq_msg_init(mrx);
     if (qvi_unlikely(rc != 0)) {
-        zerr_msg("zmq_msg_init() failed", errno);
+        const int eno = errno;
+        zerr_msg("zmq_msg_init() failed", eno);
         qvrc = QV_ERR_RPC;
         goto out;
     }
     // Block until a message is available to be received from socket.
     rc = zmq_msg_recv(mrx, zsock, 0);
     if (qvi_unlikely(rc == -1)) {
-        zerr_msg("zmq_msg_recv() failed", errno);
+        const int eno = errno;
+        zerr_msg("zmq_msg_recv() failed", eno);
         qvrc = QV_ERR_RPC;
     }
 out:
@@ -333,7 +342,8 @@ qvi_rmi_client::connect(
     // Note: ZMQ_CONNECT_TIMEOUT doesn't seem to have an appreciable effect.
     int zrc = zsocket_connect(m_zsock, url.c_str());
     if (qvi_unlikely(zrc != 0)) {
-        zerr_msg("zsocket_connect() failed", errno);
+        const int eno = errno;
+        zerr_msg("zsocket_connect() failed", eno);
         return QV_RES_UNAVAILABLE;
     }
     // To avoid hangs in faulty connections, set a timeout
@@ -343,7 +353,8 @@ qvi_rmi_client::connect(
         m_zsock, ZMQ_RCVTIMEO, &timeout_in_ms, sizeof(timeout_in_ms)
     );
     if (qvi_unlikely(zrc != 0)) {
-        zerr_msg("zmq_setsockopt() failed", errno);
+        const int eno = errno;
+        zerr_msg("zmq_setsockopt() failed", eno);
         return QV_RES_UNAVAILABLE;
     }
     // Now initiate the client/server exchange.

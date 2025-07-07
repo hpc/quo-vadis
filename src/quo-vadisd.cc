@@ -23,7 +23,7 @@
 #include "qvi-hwloc.h"
 #include "qvi-rmi.h"
 
-static const cstr_t app_name = "quo-vadisd";
+static const std::string app_name = "quo-vadisd";
 
 using option_help = std::map<std::string, std::string>;
 
@@ -109,13 +109,11 @@ rmi_config(
     int rc = qvi_url(ctx.rmic.url);
     if (rc != QV_SUCCESS) {
         qvi_panic_log_error(qvi_conn_env_ers());
-        return;
     }
 
     rc = ctx.rmi.configure(ctx.rmic);
     if (rc != QV_SUCCESS) {
         qvi_panic_log_error("rmi->configure() failed");
-        return;
     }
 
     qvi_log_debug("URL: {}", ctx.rmic.url);
@@ -191,7 +189,7 @@ show_usage(
         "\nUsage:\n"
         "%s [OPTIONS]\n"
         "Options:\n"
-        , app_name
+        , app_name.c_str()
     );
 
     for (auto &i : opt_help) {
