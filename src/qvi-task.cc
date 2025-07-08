@@ -27,13 +27,14 @@ int
 qvi_task::m_connect_to_server(void)
 {
     std::string url;
-    int rc = qvi_url(url);
+    int portno = 0;
+    int rc = qvi_url(url, portno);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_log_error("{}", qvi_conn_env_ers());
         return rc;
     }
 
-    rc = m_rmi.connect(url);
+    rc = m_rmi.connect(url, portno);
     if (qvi_unlikely(rc == QV_RES_UNAVAILABLE)) {
         const std::string msg =
             "\n\n#############################################\n"

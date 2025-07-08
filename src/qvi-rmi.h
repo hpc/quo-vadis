@@ -55,6 +55,8 @@ struct qvi_rmi_config {
     qvi_hwloc_t *hwloc = nullptr;
     /** Connection URL. */
     std::string url = {};
+    /** Connection port number. */
+    int portno = 0;
     /** Path to hardware topology file. */
     std::string hwtopo_path = {};
 };
@@ -220,10 +222,11 @@ public:
     /** Returns a pointer to the client's hwloc instance. */
     qvi_hwloc_t *
     hwloc(void) const;
-    /** Connects a client to to the server specified by the provided URL. */
+    /** Connects a client to to the server specified by the provided info. */
     int
     connect(
-        const std::string &url
+        const std::string &url,
+        const int &portno
     );
     /** Returns the current cpuset of the provided PID. */
     int

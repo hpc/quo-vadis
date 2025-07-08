@@ -331,7 +331,8 @@ qvi_rmi_client::hwloc(void) const
 
 int
 qvi_rmi_client::connect(
-    const std::string &url
+    const std::string &url,
+    const int &portno
 ) {
     // Create a new ZMQ context.
     m_zctx = zmq_ctx_new();
@@ -368,6 +369,7 @@ qvi_rmi_client::connect(
     }
     // Now that we have all the info we need,
     // finish populating the RMI config.
+    m_config.portno = portno;
     m_config.url = url;
     m_config.hwtopo_path = hwtopo_path;
     // Now we can initialize and load our topology.

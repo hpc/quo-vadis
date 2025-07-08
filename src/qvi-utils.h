@@ -187,8 +187,17 @@ qvi_start_qvd(void);
  *
  */
 int
+qvi_port(
+    int &portno
+);
+
+/**
+ *
+ */
+int
 qvi_url(
-    std::string &url
+    std::string &url,
+    int &portno
 );
 
 /**
