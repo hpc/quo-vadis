@@ -81,13 +81,27 @@ out:
 }
 
 static int
+get_portno(
+    char *url,
+    int *portno
+) {
+    char *pos = strrchr(url, ':');
+    if (!pos) return 1;
+
+    char *ports = pos + 1;
+    *portno = atoi(ports);
+    return 0;
+}
+
+static int
 client(
-    const char *url,
+    char *url,
     bool send_shutdown_msg
 ) {
     printf("# [%d] Starting Client (%s)\n", getpid(), url);
 
     char const *ers = NULL;
+    int portno = 0;
     pid_t who = qvi_gettid();
     hwloc_bitmap_t bitmap = NULL;
 
@@ -98,7 +112,13 @@ client(
         goto out;
     }
 
-    rc = client->connect(url);
+    rc = get_portno(url, &portno);
+    if (rc != 0) {
+        ers = "get_portno() failed";
+        goto out;
+    }
+
+    rc = client->connect(url, portno);
     if (rc != QV_SUCCESS) {
         ers = "client->connect() failed";
         goto out;

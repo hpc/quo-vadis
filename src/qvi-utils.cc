@@ -81,25 +81,27 @@ qvi_access(
 
 int
 qvi_port(
-    int *port
+    int &portno
 ) {
+    portno = 0;
+
     const cstr_t ports = getenv(QVI_ENV_PORT.c_str());
     if (!ports) return QV_ERR_ENV;
-    *port = std::stoi(std::string(ports));
+    portno = std::stoi(std::string(ports));
     return QV_SUCCESS;
 }
 
 int
 qvi_url(
-    std::string &url
+    std::string &url,
+    int &portno
 ) {
     static const std::string base = "tcp://127.0.0.1";
 
-    int port = 0;
-    const int rc = qvi_port(&port);
+    const int rc = qvi_port(portno);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    url = base + ":" + std::to_string(port);
+    url = base + ":" + std::to_string(portno);
     return QV_SUCCESS;
 }
 

@@ -629,7 +629,7 @@ qvi_hwloc_topology_load(
 ) {
     cstr_t ers = nullptr;
     // Set flags that influence hwloc's behavior.
-    static const uint_t flags = HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM;
+    const uint_t flags = HWLOC_TOPOLOGY_FLAG_IS_THISSYSTEM;
     int rc = hwloc_topology_set_flags(hwl->topo, flags);
     if (qvi_unlikely(rc != 0)) {
         ers = "hwloc_topology_set_flags() failed";

@@ -106,7 +106,7 @@ rmi_config(
 
     ctx.rmic.hwloc = ctx.hwloc;
 
-    int rc = qvi_url(ctx.rmic.url);
+    int rc = qvi_url(ctx.rmic.url, ctx.rmic.portno);
     if (rc != QV_SUCCESS) {
         qvi_panic_log_error(qvi_conn_env_ers());
     }
@@ -162,6 +162,19 @@ hwtopo_load(
     }
 }
 
+#if 0
+static void
+connection_get(
+    qvid_context &ctx
+) {
+}
+
+static void
+make_session_dir(
+) {
+}
+#endif
+
 static void
 hwtopo_export(
     qvid_context &ctx
@@ -174,7 +187,7 @@ hwtopo_export(
         ctx.hwloc, basedir.c_str(), &path
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        static cstr_t ers = "qvi_hwloc_topology_export() failed";
+        const cstr_t ers = "qvi_hwloc_topology_export() failed";
         qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
     }
     ctx.rmic.hwtopo_path = std::string(path);
@@ -263,6 +276,8 @@ start(
             // Close all file descriptors.
             closefds(ctx);
         }
+        // Determine connection information.
+        //connection_get(ctx);
         // Gather and publish hardware information.
         hwtopo_load(ctx);
         hwtopo_export(ctx);
