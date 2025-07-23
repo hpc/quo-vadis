@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2023 Triad National Security, LLC
+# Copyright (c) 2020-2025 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -12,7 +12,8 @@
 # Includes support for external projects
 include(ExternalProject)
 
-set(QVI_HWLOC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/hwloc-2.5.0.tar.gz)
+# Note: When updating don't forget to update URL_MD5 below, too.
+set(QVI_HWLOC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/hwloc-2.12.1.tar.gz)
 set(QVI_HWLOC_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/hwloc)
 set(QVI_HWLOC_STATIC_LIB ${QVI_HWLOC_PREFIX}/lib/libhwloc.a)
 set(QVI_HWLOC_INCLUDES ${QVI_HWLOC_PREFIX}/include)
@@ -87,7 +88,7 @@ list(POP_BACK CMAKE_MESSAGE_INDENT)
 ExternalProject_Add(
     libhwloc
     URL file://${QVI_HWLOC_DIR}
-    URL_MD5 "e9cb9230bcdf450b0948f255d505503f"
+    URL_MD5 "0b127f3f2ae1f5ff4f664900cd07658d"
     PREFIX ${QVI_HWLOC_PREFIX}
     CONFIGURE_COMMAND
       <SOURCE_DIR>/configure
