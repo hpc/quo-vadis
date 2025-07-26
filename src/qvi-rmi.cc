@@ -33,6 +33,9 @@
 #include "qvi-hwpool.h"
 #include "qvi-utils.h"
 
+// Used to indicate whether the server has been interrupted by a signal.
+static std::atomic<bool> g_server_shutdown_signaled(false);
+
 struct qvi_rmi_msg_header {
     qvi_rmi_rpc_fid_t fid = QVI_RMI_FID_INVALID;
     char picture[16] = {'\0'};
@@ -55,6 +58,19 @@ do {                                                                          \
 do {                                                                          \
     qvi_log_warn("{} with errno={} ({})", ers, erno, strerror(erno));         \
 } while (0)
+
+#if 0
+// TODO(skg) Consider chaining signal handlers.
+static void
+server_signal_handler(
+    int signal_value
+) {
+    if (signal_value == SIGINT) {
+        qvi_log_debug("SIG!!!!!!!!!!!!!!!!!");
+        g_server_shutdown_signaled = true;
+    }
+}
+#endif
 
 static inline void
 zsocket_close(
@@ -189,33 +205,70 @@ zsock_send_bbuff(
         zerr_msg("zmq_send() truncated", eno);
         return QV_ERR_RPC;
     }
-    // We are resposible for freeing the buffer after ZMQ has
+    // We are responsible for freeing the buffer after ZMQ has
     // taken ownership of its contents after zmq_send() returns.
     qvi_delete(&bbuff);
     return QV_SUCCESS;
 }
 
-static inline int
-zsock_recv_msg(
-    void *zsock,
+int
+qvi_rmi_server::m_recv_msg(
     zmq_msg_t *mrx
 ) {
     int qvrc = QV_SUCCESS;
-    int rc = zmq_msg_init(mrx);
-    if (qvi_unlikely(rc != 0)) {
+
+    int zrc = zmq_msg_init(mrx);
+    if (qvi_unlikely(zrc != 0)) {
         const int eno = errno;
         zerr_msg("zmq_msg_init() failed", eno);
-        qvrc = QV_ERR_RPC;
-        goto out;
+        return QV_ERR_RPC;
     }
-    // Block until a message is available to be received from socket.
-    rc = zmq_msg_recv(mrx, zsock, 0);
-    if (qvi_unlikely(rc == -1)) {
-        const int eno = errno;
-        zerr_msg("zmq_msg_recv() failed", eno);
-        qvrc = QV_ERR_RPC;
-    }
-out:
+
+    const int npoll_items = 1;
+    zmq_pollitem_t poll_items[npoll_items] = {
+        // Monitor m_zsock for incoming messages (recv).
+        {m_zsock, 0, ZMQ_POLLIN, 0}
+    };
+
+    do {
+        if (qvi_unlikely(g_server_shutdown_signaled)) {
+            qvrc = QV_SUCCESS_SHUTDOWN;
+            break;
+        }
+        // Poll for events with a timeout of 1000ms.
+        zrc = zmq_poll(poll_items, npoll_items, 1000);
+        if (qvi_unlikely(zrc == -1)) {
+            const int eno = errno;
+            // Poll interrupted by delivery of a signal before any events were
+            // available. Continue to see if we had any new relevant signal
+            // events.
+            if (eno == EINTR) {
+                continue;
+            }
+            // A real error occurred.
+            else {
+                zerr_msg("zmq_poll() failed", eno);
+                qvrc = QV_ERR_RPC;
+                break;
+            }
+        }
+        // Timeout, no events.
+        else if (zrc == 0) {
+            continue;
+        }
+        // Events on the socket ready for receipt.
+        if (poll_items[0].revents & ZMQ_POLLIN) {
+            // Perform a blocking receive of the available message.
+            zrc = zmq_msg_recv(mrx, m_zsock, 0);
+            if (qvi_unlikely(zrc == -1)) {
+                const int eno = errno;
+                zerr_msg("zmq_msg_recv() failed", eno);
+                qvrc = QV_ERR_RPC;
+            }
+            break;
+        }
+    } while (true);
+
     if (qvi_unlikely(qvrc != QV_SUCCESS)) zmq_msg_close(mrx);
     return qvrc;
 }
@@ -274,38 +327,6 @@ rpc_unpack(
     return qvi_bbuff_rmi_unpack(body, std::forward<Types>(args)...);
 }
 
-template <typename... Types>
-static inline int
-rpc_req(
-    void *zsock,
-    qvi_rmi_rpc_fid_t fid,
-    Types &&...args
-) {
-    qvi_bbuff *bbuff = nullptr;
-    const int rc = rpc_pack(&bbuff, fid, std::forward<Types>(args)...);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_delete(&bbuff);
-        return rc;
-    }
-    int bsent = 0;
-    return zsock_send_bbuff(zsock, bbuff, &bsent);
-}
-
-template <typename... Types>
-static inline int
-rpc_rep(
-    void *zsock,
-    Types &&...args
-) {
-    zmq_msg_t msg;
-    int rc = zsock_recv_msg(zsock, &msg);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    rc = rpc_unpack(zmq_msg_data(&msg), std::forward<Types>(args)...);
-out:
-    zmq_msg_close(&msg);
-    return rc;
-}
-
 qvi_rmi_client::qvi_rmi_client(void)
 {
     // Remember clients own the hwloc data, unlike the server.
@@ -355,7 +376,7 @@ qvi_rmi_client::connect(
     );
     if (qvi_unlikely(zrc != 0)) {
         const int eno = errno;
-        zerr_msg("zmq_setsockopt() failed", eno);
+        zerr_msg("zmq_setsockopt(ZMQ_RCVTIMEO) failed", eno);
         return QV_RES_UNAVAILABLE;
     }
     // Now initiate the client/server exchange.
@@ -384,6 +405,60 @@ qvi_rmi_client::connect(
     return QV_SUCCESS;
 }
 
+int
+qvi_rmi_client::m_recv_msg(
+    zmq_msg_t *mrx
+) const {
+    int qvrc = QV_SUCCESS;
+
+    int rc = zmq_msg_init(mrx);
+    if (qvi_unlikely(rc != 0)) {
+        const int eno = errno;
+        zerr_msg("zmq_msg_init() failed", eno);
+        return QV_ERR_RPC;
+    }
+    // Block until a message is available to be received from socket.
+    rc = zmq_msg_recv(mrx, m_zsock, 0);
+    if (qvi_unlikely(rc == -1)) {
+        const int eno = errno;
+        zerr_msg("zmq_msg_recv() failed", eno);
+        qvrc = QV_ERR_RPC;
+    }
+
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) zmq_msg_close(mrx);
+    return qvrc;
+}
+
+template <typename... Types>
+int
+qvi_rmi_client::rpc_rep(
+    Types &&...args
+) const {
+    zmq_msg_t msg;
+    int rc = m_recv_msg(&msg);
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    rc = rpc_unpack(zmq_msg_data(&msg), std::forward<Types>(args)...);
+out:
+    zmq_msg_close(&msg);
+    return rc;
+}
+
+template <typename... Types>
+int
+qvi_rmi_client::rpc_req(
+    qvi_rmi_rpc_fid_t fid,
+    Types &&...args
+) const {
+    qvi_bbuff *bbuff = nullptr;
+    const int rc = rpc_pack(&bbuff, fid, std::forward<Types>(args)...);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        qvi_delete(&bbuff);
+        return rc;
+    }
+    int bsent = 0;
+    return zsock_send_bbuff(m_zsock, bbuff, &bsent);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Client-Side RPC Definitions
 ////////////////////////////////////////////////////////////////////////////////
@@ -391,11 +466,11 @@ int
 qvi_rmi_client::m_hello(
     std::string &hwtopo_path
 ) {
-    int qvrc = rpc_req(m_zsock, QVI_RMI_FID_HELLO, qvi_gettid());
+    int qvrc = rpc_req(QVI_RMI_FID_HELLO, qvi_gettid());
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
-    qvrc = rpc_rep(m_zsock, &rpcrc, hwtopo_path);
+    qvrc = rpc_rep(&rpcrc, hwtopo_path);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) {
         return qvrc;
     }
@@ -407,11 +482,11 @@ qvi_rmi_client::get_cpubind(
     pid_t who,
     hwloc_cpuset_t *cpuset
 ) const {
-    int qvrc = rpc_req(m_zsock, QVI_RMI_FID_GET_CPUBIND, who);
+    int qvrc = rpc_req(QVI_RMI_FID_GET_CPUBIND, who);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
-    qvrc = rpc_rep(m_zsock, &rpcrc, cpuset);
+    qvrc = rpc_rep(&rpcrc, cpuset);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) {
         qvi_hwloc_bitmap_delete(cpuset);
         return qvrc;
@@ -424,11 +499,11 @@ qvi_rmi_client::set_cpubind(
     pid_t who,
     hwloc_const_cpuset_t cpuset
 ) {
-    int qvrc = rpc_req(m_zsock, QVI_RMI_FID_SET_CPUBIND, who, cpuset);
+    int qvrc = rpc_req(QVI_RMI_FID_SET_CPUBIND, who, cpuset);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
-    qvrc = rpc_rep(m_zsock, &rpcrc);
+    qvrc = rpc_rep(&rpcrc);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     return rpcrc;
 }
@@ -441,7 +516,7 @@ qvi_rmi_client::get_intrinsic_hwpool(
 ) {
     *hwpool = nullptr;
 
-    int qvrc = rpc_req(m_zsock, QVI_RMI_FID_GET_INTRINSIC_HWPOOL, who, iscope);
+    int qvrc = rpc_req(QVI_RMI_FID_GET_INTRINSIC_HWPOOL, who, iscope);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Create the new hardware pool.
     qvi_hwpool *ihwpool = nullptr;
@@ -449,7 +524,7 @@ qvi_rmi_client::get_intrinsic_hwpool(
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
-    qvrc = rpc_rep(m_zsock, &rpcrc, ihwpool);
+    qvrc = rpc_rep(&rpcrc, ihwpool);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) {
         qvi_delete(&ihwpool);
         return qvrc;
@@ -463,11 +538,11 @@ qvi_rmi_client::get_obj_depth(
     qv_hw_obj_type_t type,
     int *depth
 ) {
-    int qvrc = rpc_req(m_zsock, QVI_RMI_FID_OBJ_TYPE_DEPTH, type);
+    int qvrc = rpc_req(QVI_RMI_FID_OBJ_TYPE_DEPTH, type);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
-    qvrc = rpc_rep(m_zsock, &rpcrc, depth);
+    qvrc = rpc_rep(&rpcrc, depth);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     return rpcrc;
 }
@@ -478,11 +553,11 @@ qvi_rmi_client::get_nobjs_in_cpuset(
     hwloc_const_cpuset_t cpuset,
     int *nobjs
 ) {
-    int qvrc = rpc_req(m_zsock, QVI_RMI_FID_GET_NOBJS_IN_CPUSET, target_obj, cpuset);
+    int qvrc = rpc_req(QVI_RMI_FID_GET_NOBJS_IN_CPUSET, target_obj, cpuset);
     if (qvrc != QV_SUCCESS) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
-    qvrc = rpc_rep(m_zsock, &rpcrc, nobjs);
+    qvrc = rpc_rep(&rpcrc, nobjs);
     if (qvrc != QV_SUCCESS) return qvrc;
     return rpcrc;
 }
@@ -496,13 +571,13 @@ qvi_rmi_client::get_device_in_cpuset(
     char **dev_id
 ) {
     int qvrc = rpc_req(
-        m_zsock, QVI_RMI_FID_GET_DEVICE_IN_CPUSET,
+        QVI_RMI_FID_GET_DEVICE_IN_CPUSET,
         dev_obj, dev_i, cpuset, dev_id_type
     );
     if (qvrc != QV_SUCCESS) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
-    qvrc = rpc_rep(m_zsock, &rpcrc, dev_id);
+    qvrc = rpc_rep(&rpcrc, dev_id);
     if (qvrc != QV_SUCCESS) return qvrc;
     return rpcrc;
 }
@@ -525,11 +600,16 @@ qvi_rmi_client::get_cpuset_for_nobjs(
 int
 qvi_rmi_client::send_shutdown_message(void)
 {
-    return rpc_req(m_zsock, QVI_RMI_FID_SERVER_SHUTDOWN);
+    return rpc_req(QVI_RMI_FID_SERVER_SHUTDOWN);
 }
 
 qvi_rmi_server::qvi_rmi_server(void)
 {
+#if 0
+    signal(SIGINT, server_signal_handler);
+    signal(SIGTERM, server_signal_handler);
+#endif
+
     m_rpc_dispatch_table = {
         {QVI_RMI_FID_INVALID, s_rpc_invalid},
         {QVI_RMI_FID_SERVER_SHUTDOWN, s_rpc_shutdown},
@@ -844,17 +924,15 @@ int
 qvi_rmi_server::m_enter_main_server_loop(void)
 {
     int rc, bsent;
-    volatile int bsentt = 0;
-    volatile bool active = true;
+    int bsentt = 0;
     zmq_msg_t mrx;
     do {
-        rc = zsock_recv_msg(m_zsock, &mrx);
+        rc = m_recv_msg(&mrx);
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
         rc = m_rpc_dispatch(m_zsock, &mrx, &bsent);
-        if (qvi_unlikely(rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN)) break;
-        if (qvi_unlikely(rc == QV_SUCCESS_SHUTDOWN)) active = false;
-        bsentt += bsent;
-    } while(qvi_likely(active));
+        if (qvi_likely(rc == QV_SUCCESS)) bsentt += bsent;
+        else break;
+    } while(true);
 #if QVI_DEBUG_MODE == 1
     // Nice to understand messaging characteristics.
     qvi_log_debug("Server Sent {} bytes", bsentt);
@@ -863,6 +941,7 @@ qvi_rmi_server::m_enter_main_server_loop(void)
 #endif
     if (qvi_unlikely(rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN)) {
         qvi_log_error("RX/TX loop exited with rc={} ({})", rc, qv_strerr(rc));
+        return rc;
     }
     return QV_SUCCESS;
 }
@@ -888,13 +967,25 @@ int
 qvi_rmi_server::start(void)
 {
     // First populate the base hardware resource pool.
-    int qvrc = m_populate_base_hwpool();
+    const int qvrc = m_populate_base_hwpool();
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Setup our connection.
     m_zsock = zsocket_create_and_bind(
         m_zctx, ZMQ_REP, m_config.url.c_str()
     );
     if (qvi_unlikely(!m_zsock)) return QV_ERR_SYS;
+    // Set linger period to 0 so clients won't hang when a server shutdown
+    // request is handled. A value of 0 means the following: pending messages
+    // shall be discarded immediately when the socket is closed.
+    const int linger = 0;
+    const int zrc = zmq_setsockopt(
+        m_zsock, ZMQ_LINGER, &linger, sizeof(linger)
+    );
+    if (qvi_unlikely(zrc != 0)) {
+        const int eno = errno;
+        zerr_msg("zmq_setsockopt(ZMQ_LINGER) failed", eno);
+        return QV_ERR_SYS;
+    }
     // Start the main service loop.
     return m_enter_main_server_loop();
 }
