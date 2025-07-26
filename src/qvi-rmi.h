@@ -79,6 +79,11 @@ private:
     /** Populates base hardware pool. */
     int
     m_populate_base_hwpool(void);
+    /** Reveives messages. */
+    int
+    m_recv_msg(
+        zmq_msg_t *mrx
+    );
     /** Performs RPC dispatch. */
     int
     m_rpc_dispatch(
@@ -209,6 +214,24 @@ private:
     void *m_zsock = nullptr;
     /** Flag indicating whether client is connected to server. */
     bool m_connected = false;
+    /** Reveives messages. */
+    int
+    m_recv_msg(
+        zmq_msg_t *mrx
+    ) const;
+    /** Performs RPC reply. */
+    template <typename... Types>
+    int
+    rpc_rep(
+        Types &&...args
+    ) const;
+    /** Performs RPC request. */
+    template <typename... Types>
+    int
+    rpc_req(
+        qvi_rmi_rpc_fid_t fid,
+        Types &&...args
+    ) const;
     /** Performs connection handshake. */
     int
     m_hello(
