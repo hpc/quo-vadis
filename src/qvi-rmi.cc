@@ -33,7 +33,7 @@
 #include "qvi-hwpool.h"
 #include "qvi-utils.h"
 
-// Used to indicate whether the server has been interrupted by a signal.
+// Indicates whether the server has been signaled to shutdown.
 static std::atomic<bool> g_server_shutdown_signaled(false);
 
 struct qvi_rmi_msg_header {
@@ -59,18 +59,12 @@ do {                                                                          \
     qvi_log_warn("{} with errno={} ({})", ers, erno, strerror(erno));         \
 } while (0)
 
-#if 0
-// TODO(skg) Consider chaining signal handlers.
 static void
 server_signal_handler(
-    int signal_value
+    int
 ) {
-    if (signal_value == SIGINT) {
-        qvi_log_debug("SIG!!!!!!!!!!!!!!!!!");
-        g_server_shutdown_signaled = true;
-    }
+    g_server_shutdown_signaled = true;
 }
-#endif
 
 static inline void
 zsocket_close(
@@ -605,10 +599,10 @@ qvi_rmi_client::send_shutdown_message(void)
 
 qvi_rmi_server::qvi_rmi_server(void)
 {
-#if 0
-    signal(SIGINT, server_signal_handler);
+    // Register signal handlers.
     signal(SIGTERM, server_signal_handler);
-#endif
+    signal(SIGINT, server_signal_handler);
+    signal(SIGHUP, server_signal_handler);
 
     m_rpc_dispatch_table = {
         {QVI_RMI_FID_INVALID, s_rpc_invalid},
