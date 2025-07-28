@@ -79,6 +79,34 @@ qvi_access(
     return true;
 }
 
+static int
+rmall_cb(
+    const char *path,
+    const struct stat *,
+    int,
+    struct FTW *
+) {
+    errno = 0;
+    const int rc = remove(path);
+    if (qvi_unlikely(rc != 0)) {
+        const int eno = errno;
+        qvi_log_error(
+            "remove({}) failed with errno={} ({})",
+            path, eno, strerror(eno)
+        );
+    }
+    return rc;
+}
+
+int
+qvi_rmall(
+    const std::string &path
+) {
+    const int rc = nftw(path.c_str(), rmall_cb, 64, FTW_DEPTH | FTW_PHYS);
+    if (qvi_unlikely(rc != 0)) return QV_ERR_FILE_IO;
+    return QV_SUCCESS;
+}
+
 int
 qvi_port(
     int &portno

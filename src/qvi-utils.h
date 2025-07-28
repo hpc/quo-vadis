@@ -226,6 +226,14 @@ qvi_access(
 );
 
 /**
+ * Removes the provided path, including all its contents.
+ */
+int
+qvi_rmall(
+    const std::string &path
+);
+
+/**
  *
  */
 std::string

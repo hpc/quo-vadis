@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2023      Triad National Security, LLC
+# Copyright (c) 2023-2025 Triad National Security, LLC
 #                         All rights reserved.
 #
 # This file is part of the quo-vadis project. See the LICENSE file at the
@@ -9,13 +9,13 @@
 
 argc="$#"
 
-if [[ $argc != 2 ]]; then
-    echo "usage: $1 to_exec timeout_in_seconds"
+if [[ $argc -lt 2 ]]; then
+    echo "usage: $1 timeout_in_seconds to_exec [ARGS]"
     exit 1
 fi
 
-to_exec="$1"
-timeout_in_seconds="$2"
+timeout_in_seconds="$1"
+to_exec="${*:2}"
 
 echo "Starting $to_exec"
 $to_exec &
