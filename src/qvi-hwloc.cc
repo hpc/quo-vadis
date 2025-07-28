@@ -766,16 +766,8 @@ topo_fname(
     const char *base,
     char **name
 ) {
-    const int pid = getpid();
-    srand(time(nullptr));
     const int np = asprintf(
-        name,
-        "%s/%s-%s-%d-%d.xml",
-        base,
-        PACKAGE_NAME,
-        "hwtopo",
-        pid,
-        rand() % 256
+        name, "%s/%s.xml", base, "hwtopo"
     );
     if (qvi_unlikely(np == -1)) {
         *name = nullptr;

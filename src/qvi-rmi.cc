@@ -32,7 +32,6 @@
 #include "qvi-bbuff-rmi.h"
 #include "qvi-hwpool.h"
 #include "qvi-utils.h"
-#include <csignal>
 
 // Indicates whether the server has been signaled to shutdown.
 volatile static std::sig_atomic_t g_server_shutdown_signaled(false);
@@ -601,13 +600,12 @@ qvi_rmi_client::send_shutdown_message(void)
 qvi_rmi_server::qvi_rmi_server(void)
 {
     // Register signal handlers.
-
     struct sigaction action = {};
     action.sa_handler = server_signal_handler;
 
-    sigaction(SIGTERM,&action,NULL);
-    sigaction(SIGINT,&action,NULL);
-    sigaction(SIGHUP,&action,NULL);
+    sigaction(SIGTERM, &action, nullptr);
+    sigaction(SIGINT, &action, nullptr);
+    sigaction(SIGHUP, &action, nullptr);
 
     m_rpc_dispatch_table = {
         {QVI_RMI_FID_INVALID, s_rpc_invalid},

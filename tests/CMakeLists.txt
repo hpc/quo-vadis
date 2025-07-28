@@ -27,7 +27,7 @@ add_test(
       process-scopes
     COMMAND
       bash -c "export QV_PORT=\"55999\" && \
-      ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh ../src/quo-vadisd 5 & ) && \
+      ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ../src/quo-vadisd --no-daemonize & ) && \
         ${CMAKE_CURRENT_BINARY_DIR}/test-process-scopes"
 )
 
@@ -64,7 +64,7 @@ if (OPENMP_FOUND)
           omp
         COMMAND
           bash -c "export QV_PORT=\"55999\" && \
-          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh ../src/quo-vadisd 5 & ) && \
+          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ../src/quo-vadisd --no-daemonize & ) && \
             ${CMAKE_CURRENT_BINARY_DIR}/test-omp"
     )
 
@@ -193,7 +193,7 @@ if(MPI_FOUND)
           mpi-api
         COMMAND
           bash -c "export QV_PORT=\"55999\" && \
-          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh ../src/quo-vadisd 5 & ) && \
+          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ../src/quo-vadisd --no-daemonize & ) && \
             ${MPIEXEC_EXECUTABLE} \
             ${MPIEXEC_NUMPROC_FLAG} \
             ${MPIEXEC_MAX_NUMPROCS} \
@@ -205,7 +205,7 @@ if(MPI_FOUND)
           mpi-scopes
         COMMAND
           bash -c "export QV_PORT=\"55999\" && \
-          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh ../src/quo-vadisd 5 & ) && \
+          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ../src/quo-vadisd --no-daemonize & ) && \
             ${MPIEXEC_EXECUTABLE} \
             ${MPIEXEC_NUMPROC_FLAG} \
             ${MPIEXEC_MAX_NUMPROCS} \
@@ -269,7 +269,7 @@ if(QV_FORTRAN_HAPPY)
           process-fortapi
         COMMAND
           bash -c "export QV_PORT=\"55999\" && \
-          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh ../src/quo-vadisd 5 & ) && \
+          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ../src/quo-vadisd --no-daemonize & ) && \
           ${CMAKE_CURRENT_BINARY_DIR}/test-process-fortapi"
     )
 

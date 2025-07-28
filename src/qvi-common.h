@@ -27,6 +27,7 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <ftw.h>
 #include <getopt.h>
 #include <inttypes.h>
 #include <limits.h>
@@ -48,6 +49,7 @@
 #ifdef __cplusplus
 #include "qvi-log.h"
 #include <chrono>
+#include <csignal>
 #include <list>
 #include <map>
 #include <mutex>
