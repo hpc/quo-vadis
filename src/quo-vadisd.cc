@@ -16,9 +16,6 @@
  * Implements the quo-vadis daemon.
  */
 
-// TODO(skg)
-// * Add something like QV_SHUTDOWN_ON_DISCONNECT or QV_DAEMON_KEEP_ALIVE
-
 #include "qvi-utils.h"
 #include "qvi-hwloc.h"
 #include "qvi-rmi.h"
@@ -27,7 +24,7 @@ static const std::string app_name = "quo-vadisd";
 
 using option_help = std::map<std::string, std::string>;
 
-struct qvid_context {
+struct qvid {
     qvi_rmi_server rmi;
     qvi_rmi_config rmic;
     /** Base session directory. */
@@ -35,219 +32,208 @@ struct qvid_context {
     /** Run as a daemon flag. */
     bool daemonized = true;
     /** Constructor. */
-    qvid_context(void)
+    qvid(void)
     {
         const int rc = qvi_hwloc_new(&rmic.hwloc);
         if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
     }
     /** Destructor. */
-    ~qvid_context(void)
+    ~qvid(void)
     {
         qvi_hwloc_delete(&rmic.hwloc);
     }
+
+    void
+    closefds(void)
+    {
+        qvi_log_info("Closing FDs");
+        // Determine the max number of file descriptors.
+        struct rlimit rl;
+        if (getrlimit(RLIMIT_NOFILE, &rl) < 0) {
+            const int err = errno;
+            const cstr_t ers = "Cannot determine RLIMIT_NOFILE";
+            qvi_panic_log_error("{} (rc={}, {})", ers, err, strerror(err));
+        }
+        // Default: no limit on this resource, so pick one.
+        int64_t maxfd = 1024;
+        if (rl.rlim_max != RLIM_INFINITY) {
+            // Not RLIM_INFINITY, so set to resource limit.
+            maxfd = (int64_t)rl.rlim_max;
+        }
+        // Close all the file descriptors.
+        for (int64_t fd = 0; fd < maxfd; ++fd) {
+            (void)close(fd);
+        }
+    }
+
+    void
+    become_session_leader(void)
+    {
+        qvi_log_info("Becoming session leader");
+
+        pid_t pid = 0;
+        if ((pid = fork()) < 0) {
+            const int err = errno;
+            const cstr_t ers = "fork() failed";
+            qvi_panic_log_error("{} (rc={}, {})", ers, err, strerror(err));
+        }
+        // Parent
+        if (pid != 0) {
+            // _exit(2) used to match daemon(3) behavior.
+            _exit(EXIT_SUCCESS);
+        }
+        // Child
+        const pid_t pgid = setsid();
+        if (pgid < 0) {
+            const int err = errno;
+            const cstr_t ers = "setsid() failed";
+            qvi_panic_log_error("{} (rc={}, {})", ers, err, strerror(err));
+        }
+    }
+
+    void
+    configure_rmi(void)
+    {
+        qvi_log_info("Configuring RMI");
+
+        const int rc = rmi.configure(rmic);
+        if (qvi_unlikely(rc != QV_SUCCESS)) {
+            qvi_panic_log_error("rmi.configure() failed");
+        }
+
+        qvi_log_info("--URL: {}", rmic.url);
+        qvi_log_info("--Port Number: {}", rmic.portno);
+        qvi_log_info("--hwloc XML: {}", rmic.hwtopo_path);
+    }
+
+    void
+    start_rmi_server(void)
+    {
+        qvi_log_info("Starting RMI");
+
+        const int rc = rmi.start();
+        if (qvi_unlikely(rc != QV_SUCCESS)) {
+            const cstr_t ers = "qvi_rmi_server_start() failed";
+            qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
+        }
+    }
+
+    void
+    load_hwtopo(void)
+    {
+        qvi_log_info("Loading hardware information");
+
+        int rc = qvi_hwloc_topology_init(rmic.hwloc, nullptr);
+        if (qvi_unlikely(rc != QV_SUCCESS)) {
+            static cstr_t ers = "qvi_hwloc_topology_init() failed";
+            qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
+        }
+
+        rc = qvi_hwloc_topology_load(rmic.hwloc);
+        if (qvi_unlikely(rc != QV_SUCCESS)) {
+            static cstr_t ers = "qvi_hwloc_topology_load() failed";
+            qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
+        }
+
+        rc = qvi_hwloc_discover_devices(rmic.hwloc);
+        if (qvi_unlikely(rc != QV_SUCCESS)) {
+            static cstr_t ers = "qvi_hwloc_discover_devices() failed";
+            qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
+        }
+    }
+
+    void
+    determine_connection_info(void)
+    {
+        qvi_log_info("Determining connection information");
+
+        const int rc = qvi_url(rmic.url, rmic.portno);
+        if (qvi_unlikely(rc != QV_SUCCESS)) {
+            qvi_panic_log_error(qvi_conn_env_ers());
+        }
+    }
+
+    void
+    make_session_dir(void)
+    {
+        qvi_log_info("Creating session directory");
+
+        const std::string tmpdir = qvi_tmpdir();
+        // Make sure that the provided temp dir is usable.
+        int eno = 0;
+        bool usable = qvi_access(tmpdir, R_OK | W_OK, &eno);
+        if (qvi_unlikely(!usable)) {
+            qvi_panic_log_error(
+                "{} is not usable as a tmp dir (rc={}, {})",
+                tmpdir, eno, strerror(eno)
+            );
+        }
+        // Make sure that this session directory does not already exist. If it
+        // does, then we can't continue because another daemon is using it.
+        const std::string portnos = std::to_string(rmic.portno);
+        const std::string session_dirname = app_name + "." + portnos;
+        const std::string full_session_dir = tmpdir + "/" + session_dirname;
+        usable = qvi_access(full_session_dir, R_OK, &eno);
+        if (qvi_unlikely(usable)) {
+            // TODO(skg) Provide a nicer error message that describes what can
+            // cause this situation.
+            qvi_panic_log_error(
+                "{} already exists. Cannot continue.", full_session_dir
+            );
+        }
+        const int rc = mkdir(full_session_dir.c_str(), 0755);
+        if (qvi_unlikely(rc != 0)) {
+            eno = errno;
+            qvi_panic_log_error(
+                "Failed to create session dir {} (rc={}, {})",
+                full_session_dir , eno, strerror(eno)
+            );
+        }
+        session_dir = full_session_dir;
+    }
+
+    void
+    export_hwtopo(void)
+    {
+        qvi_log_info("Publishing hardware information");
+
+        char *path = nullptr;
+        const int rc = qvi_hwloc_topology_export(
+            rmic.hwloc, session_dir.c_str(), &path
+        );
+        if (qvi_unlikely(rc != QV_SUCCESS)) {
+            const cstr_t ers = "qvi_hwloc_topology_export() failed";
+            qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
+        }
+        rmic.hwtopo_path = std::string(path);
+        free(path);
+    }
+
+    void
+    cleanup(void)
+    {
+        qvi_log_info("Cleaning up");
+
+        const int rc = qvi_rmall(session_dir);
+        if (qvi_unlikely(rc != QV_SUCCESS)) {
+            qvi_log_warn("Removal of {} failed.");
+        }
+    }
 };
-
-static void
-closefds(
-    qvid_context &
-) {
-    qvi_log_info("Closing FDs");
-    // Determine the max number of file descriptors.
-    struct rlimit rl;
-    if (getrlimit(RLIMIT_NOFILE, &rl) < 0) {
-        static cstr_t ers = "Cannot determine RLIMIT_NOFILE";
-        const int err = errno;
-        qvi_panic_log_error("{} (rc={}, {})", ers, err, strerror(err));
-    }
-    // Default: no limit on this resource, so pick one.
-    int64_t maxfd = 1024;
-    if (rl.rlim_max != RLIM_INFINITY) {
-        // Not RLIM_INFINITY, so set to resource limit.
-        maxfd = (int64_t)rl.rlim_max;
-    }
-    // Close all the file descriptors.
-    for (int64_t fd = 0; fd < maxfd; ++fd) {
-        (void)close(fd);
-    }
-}
-
-static void
-become_session_leader(
-    qvid_context &
-) {
-    qvi_log_info("Becoming session leader");
-
-    pid_t pid = 0;
-    if ((pid = fork()) < 0) {
-        static cstr_t ers = "fork() failed";
-        const int err = errno;
-        qvi_panic_log_error("{} (rc={}, {})", ers, err, strerror(err));
-    }
-    // Parent
-    if (pid != 0) {
-        // _exit(2) used to match daemon(3) behavior.
-        _exit(EXIT_SUCCESS);
-    }
-    // Child
-    const pid_t pgid = setsid();
-    if (pgid < 0) {
-        static cstr_t ers = "setsid() failed";
-        const int err = errno;
-        qvi_panic_log_error("{} (rc={}, {})", ers, err, strerror(err));
-    }
-}
-
-static void
-rmi_config(
-    qvid_context &ctx
-) {
-    qvi_log_info("Configuring RMI");
-
-    const int rc = ctx.rmi.configure(ctx.rmic);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_panic_log_error("rmi.configure() failed");
-    }
-
-    qvi_log_info("--URL: {}", ctx.rmic.url);
-    qvi_log_info("--Port Number: {}", ctx.rmic.portno);
-    qvi_log_info("--hwloc XML: {}", ctx.rmic.hwtopo_path);
-}
-
-static void
-rmi_start(
-    qvid_context &ctx
-) {
-    qvi_log_info("Starting RMI");
-
-    cstr_t ers = nullptr;
-    // TODO(skg) Add flags option
-    const int rc = ctx.rmi.start();
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        ers = "qvi_rmi_server_start() failed";
-    }
-    if (qvi_unlikely(ers)) {
-        qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
-    }
-}
-
-static void
-hwtopo_load(
-    qvid_context &ctx
-) {
-    qvi_log_info("Loading hardware information");
-
-    int rc = qvi_hwloc_topology_init(ctx.rmic.hwloc, nullptr);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        static cstr_t ers = "qvi_hwloc_topology_init() failed";
-        qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
-    }
-
-    rc = qvi_hwloc_topology_load(ctx.rmic.hwloc);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        static cstr_t ers = "qvi_hwloc_topology_load() failed";
-        qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
-    }
-
-    rc = qvi_hwloc_discover_devices(ctx.rmic.hwloc);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        static cstr_t ers = "qvi_hwloc_discover_devices() failed";
-        qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
-    }
-}
-
-static void
-connection_get(
-    qvid_context &ctx
-) {
-    qvi_log_info("Determining connection information");
-
-    const int rc = qvi_url(ctx.rmic.url, ctx.rmic.portno);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_panic_log_error(qvi_conn_env_ers());
-    }
-}
-
-static void
-session_dir_make(
-    qvid_context &ctx
-) {
-    qvi_log_info("Creating session directory");
-
-    const std::string tmpdir = qvi_tmpdir();
-    // Make sure that the provided temp dir is usable.
-    int eno = 0;
-    bool usable = qvi_access(tmpdir, R_OK | W_OK, &eno);
-    if (qvi_unlikely(!usable)) {
-        qvi_panic_log_error(
-            "{} is not usable as a tmp dir (rc={}, {})",
-            tmpdir, eno, strerror(eno)
-        );
-    }
-    // Make sure that this session directory does not already exist. If it does,
-    // then we can't continue because another daemon is using it.
-    const std::string portnos = std::to_string(ctx.rmic.portno);
-    const std::string session_dir = app_name + "." + portnos;
-    const std::string full_session_dir = tmpdir + "/" + session_dir;
-    usable = qvi_access(full_session_dir, R_OK, &eno);
-    if (qvi_unlikely(usable)) {
-        qvi_panic_log_error(
-            "{} already exists. Cannot continue.", full_session_dir
-        );
-    }
-    const int rc = mkdir(full_session_dir.c_str(), 0755);
-    if (qvi_unlikely(rc != 0)) {
-        eno = errno;
-        qvi_panic_log_error(
-            "Failed to create session dir {} (rc={}, {})",
-            full_session_dir , eno, strerror(eno)
-        );
-    }
-    ctx.session_dir = full_session_dir;
-}
-
-static void
-hwtopo_export(
-    qvid_context &ctx
-) {
-    qvi_log_info("Publishing hardware information");
-
-    char *path = nullptr;
-    const int rc = qvi_hwloc_topology_export(
-        ctx.rmic.hwloc, ctx.session_dir.c_str(), &path
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        const cstr_t ers = "qvi_hwloc_topology_export() failed";
-        qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
-    }
-    ctx.rmic.hwtopo_path = std::string(path);
-    free(path);
-}
-
-static void
-cleanup(
-    qvid_context &ctx
-) {
-    qvi_log_info("Cleaning up");
-
-    const int rc = qvi_rmall(ctx.session_dir);
-    if (rc != QV_SUCCESS) {
-        qvi_log_warn("Removal of {} failed.");
-    }
-}
 
 static void
 show_usage(
     const option_help &opt_help
 ) {
-    printf(
+    qvi_log_info(
         "\nUsage:\n"
-        "%s [OPTIONS]\n"
-        "Options:\n"
-        , app_name.c_str()
+        "{} [OPTIONS]\n"
+        "Options:"
+        , app_name
     );
 
     for (auto &i : opt_help) {
-        printf("  %s %s\n", i.first.c_str(), i.second.c_str());
+        qvi_log_info("  {} {}", i.first, i.second);
     }
 }
 
@@ -255,7 +241,7 @@ static int
 parse_args(
     int argc,
     char **argv,
-    qvid_context &ctx
+    qvid &ctx
 ) {
     enum {
         FLOOR = 256,
@@ -297,9 +283,9 @@ start(
     char **argv
 ) {
     try {
-        qvid_context ctx;
+        qvid qvd;
 
-        int rc = parse_args(argc, argv, ctx);
+        int rc = parse_args(argc, argv, qvd);
         if (rc != QV_SUCCESS) {
             if (rc == QV_SUCCESS_SHUTDOWN) {
                 rc = QV_SUCCESS;
@@ -307,29 +293,29 @@ start(
             return rc;
         }
 
-        if (ctx.daemonized) {
+        if (qvd.daemonized) {
             // Redirect all console output to syslog.
             qvi_logger::console_to_syslog();
             // Clear umask. Note: this system call always succeeds.
             umask(0);
             // Become a session leader to lose controlling TTY.
-            become_session_leader(ctx);
+            qvd.become_session_leader();
             // Close all file descriptors.
-            closefds(ctx);
+            qvd.closefds();
         }
         // Determine connection information.
-        connection_get(ctx);
+        qvd.determine_connection_info();
         // Create our session directory.
-        session_dir_make(ctx);
+        qvd.make_session_dir();
         // Gather and publish hardware information.
-        hwtopo_load(ctx);
-        hwtopo_export(ctx);
+        qvd.load_hwtopo();
+        qvd.export_hwtopo();
         // Configure RMI, start listening for commands.
-        rmi_config(ctx);
+        qvd.configure_rmi();
         // This blocks until it is instructed to shutdown.
-        rmi_start(ctx);
+        qvd.start_rmi_server();
         // Cleanup
-        cleanup(ctx);
+        qvd.cleanup();
         return QV_SUCCESS;
     }
     qvi_catch_and_return();
