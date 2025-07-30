@@ -274,6 +274,15 @@ parse_args(
                 return QV_ERR_INVLD_ARG;
         }
     }
+    // Make sure no bogus options were provided.
+    if (optind < argc) {
+        qvi_log_info(
+            "{}: Unrecognized option detected: \'{}\'",
+            app_name, argv[optind]
+        );
+        show_usage(opt_help);
+        return QV_ERR_INVLD_ARG;
+    }
     return QV_SUCCESS;
 }
 
