@@ -60,7 +60,7 @@ public:
      */
     int
     bind_push(
-        hwloc_const_cpuset_t cpuset
+        const qvi_hwloc_bitmap &cpuset
     );
     /**
      * Removes the cpuset from the top of the bind stack

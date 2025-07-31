@@ -1004,7 +1004,7 @@ get_rmi_port_from_env(
 }
 
 int
-qvi_rmi_url(
+qvi_rmi_get_url(
     std::string &url,
     int &portno
 ) {

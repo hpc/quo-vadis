@@ -168,10 +168,10 @@ template <class T>
 int
 qvi_copy(
     const T &t,
-    T *dup
+    T *copy
 ) {
     try {
-        *dup = t;
+        *copy = t;
         return QV_SUCCESS;
     }
     qvi_catch_and_return();

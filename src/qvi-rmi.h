@@ -309,10 +309,12 @@ public:
 };
 
 /**
- *
+ * Returns a connection URL. When called with a portno of QVI_RMI_PORT_UNSET,
+ * then a valid portno is determined via an environment variable and returned.
+ * If portno is set, then a URL is generated based on the provided port number.
  */
 int
-qvi_rmi_url(
+qvi_rmi_get_url(
     std::string &url,
     int &portno
 );

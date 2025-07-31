@@ -147,7 +147,7 @@ struct qvid {
     {
         qvi_log_info("Determining connection information");
 
-        const int rc = qvi_rmi_url(rmic.url, rmic.portno);
+        const int rc = qvi_rmi_get_url(rmic.url, rmic.portno);
         if (qvi_unlikely(rc != QV_SUCCESS)) {
             qvi_panic_log_error(qvi_rmi_conn_env_ers());
         }
