@@ -163,7 +163,6 @@ qvi_logger::console_to_syslog(void)
     logger.m_console_error->set_level(spdlog::level::err);
     logger.m_console_error->flush_on(logger.m_console_error->level());
 
-
     logger.m_console_debug = spdlog::syslog_logger_mt("consys_debug");
     logger.m_console_debug->set_level(spdlog::level::debug);
     logger.m_console_debug->flush_on(logger.m_console_debug->level());
