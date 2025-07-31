@@ -16,11 +16,6 @@
 
 #include "qvi-utils.h"
 
-/**
- * Port environment variable string.
- */
-static const std::string QVI_ENV_PORT = "QV_PORT";
-
 /** Maps return codes to their respective descriptions. */
 static const std::map<uint_t, std::string> qvi_rc2str = {
     {QV_SUCCESS, "Success"},
@@ -79,6 +74,22 @@ qvi_access(
     return true;
 }
 
+int
+qvi_stoi(
+    const std::string &str,
+    int &maybe_result,
+    int base
+) {
+    try {
+        maybe_result = std::stoi(str, nullptr, base);
+        return QV_SUCCESS;
+    }
+    catch (const std::invalid_argument &e) { }
+    catch (const std::out_of_range &e) { }
+    maybe_result = 0;
+    return QV_ERR_INVLD_ARG;
+}
+
 static int
 rmall_cb(
     const char *path,
@@ -105,45 +116,6 @@ qvi_rmall(
     const int rc = nftw(path.c_str(), rmall_cb, 64, FTW_DEPTH | FTW_PHYS);
     if (qvi_unlikely(rc != 0)) return QV_ERR_FILE_IO;
     return QV_SUCCESS;
-}
-
-int
-qvi_port(
-    int &portno
-) {
-    portno = 0;
-
-    const cstr_t ports = getenv(QVI_ENV_PORT.c_str());
-    if (!ports) return QV_ERR_ENV;
-    portno = std::stoi(std::string(ports));
-    return QV_SUCCESS;
-}
-
-int
-qvi_url(
-    std::string &url,
-    int &portno
-) {
-    static const std::string base = "tcp://127.0.0.1";
-
-    const int rc = qvi_port(portno);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-
-    url = base + ":" + std::to_string(portno);
-    return QV_SUCCESS;
-}
-
-std::string
-qvi_conn_env_ers(void)
-{
-    static const std::string msg =
-        "\n\n#############################################\n"
-        "# Cannot determine connection information.\n"
-        "# Make sure that the following environment\n"
-        "# environment variable is set to an unused\n"
-        "# port number: " + QVI_ENV_PORT + ""
-        "\n#############################################\n\n";
-    return msg;
 }
 
 std::string

@@ -36,6 +36,9 @@
 // Indicates whether the server has been signaled to shutdown.
 volatile static std::sig_atomic_t g_server_shutdown_signaled(false);
 
+/** Port environment variable string. */
+static const std::string PORT_ENV_VAR = "QV_PORT";
+
 struct qvi_rmi_msg_header {
     qvi_rmi_rpc_fid_t fid = QVI_RMI_FID_INVALID;
     char picture[16] = {'\0'};
@@ -985,6 +988,48 @@ qvi_rmi_server::start(void)
     }
     // Start the main service loop.
     return m_enter_main_server_loop();
+}
+
+static int
+get_rmi_port_from_env(
+    int &portno
+) {
+    portno = QVI_RMI_PORT_UNSET;
+
+    const cstr_t ports = getenv(PORT_ENV_VAR.c_str());
+    if (!ports) return QV_ERR_ENV;
+    const int rc = qvi_stoi(std::string(ports), portno);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return QV_ERR_ENV;
+    return QV_SUCCESS;
+}
+
+int
+qvi_rmi_url(
+    std::string &url,
+    int &portno
+) {
+    static const std::string base = "tcp://127.0.0.1";
+
+    if (portno == QVI_RMI_PORT_UNSET) {
+        const int rc = get_rmi_port_from_env(portno);
+        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    }
+
+    url = base + ":" + std::to_string(portno);
+    return QV_SUCCESS;
+}
+
+std::string
+qvi_rmi_conn_env_ers(void)
+{
+    static const std::string msg =
+        "\n\n#############################################\n"
+        "# Cannot determine connection information.\n"
+        "# Make sure that the following environment\n"
+        "# environment variable is set to an unused\n"
+        "# port number: " + PORT_ENV_VAR + ""
+        "\n#############################################\n\n";
+    return msg;
 }
 
 /*

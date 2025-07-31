@@ -22,6 +22,9 @@
 #include "qvi-common.h"
 #include "zmq.h"
 
+/** Unset port number constant. */
+const int QVI_RMI_PORT_UNSET = -1;
+
 struct qvi_rmi_msg_header;
 struct qvi_rmi_server;
 
@@ -56,7 +59,7 @@ struct qvi_rmi_config {
     /** Connection URL. */
     std::string url = {};
     /** Connection port number. */
-    int portno = 0;
+    int portno = QVI_RMI_PORT_UNSET;
     /** Path to hardware topology file. */
     std::string hwtopo_path = {};
 };
@@ -304,6 +307,21 @@ public:
     int
     send_shutdown_message(void);
 };
+
+/**
+ *
+ */
+int
+qvi_rmi_url(
+    std::string &url,
+    int &portno
+);
+
+/**
+ *
+ */
+std::string
+qvi_rmi_conn_env_ers(void);
 
 #endif
 

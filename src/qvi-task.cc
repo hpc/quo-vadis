@@ -27,10 +27,10 @@ int
 qvi_task::m_connect_to_server(void)
 {
     std::string url;
-    int portno = 0;
-    int rc = qvi_url(url, portno);
+    int portno = QVI_RMI_PORT_UNSET;
+    int rc = qvi_rmi_url(url, portno);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_log_error("{}", qvi_conn_env_ers());
+        qvi_log_error("{}", qvi_rmi_conn_env_ers());
         return rc;
     }
 
