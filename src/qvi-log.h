@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2022 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c)      2020 Lawrence Livermore National Security, LLC
@@ -28,19 +28,19 @@ class qvi_logger {
     // Convenience internal logger type alias.
     using logger_t = decltype(spdlog::get(""));
     // Log sinks.
-    // console (stdout)
+    // Console
     logger_t m_console_info;
     logger_t m_console_error;
     logger_t m_console_warn;
     logger_t m_console_debug;
-    // syslog
+    // Syslog
     logger_t m_syslog_info;
     logger_t m_syslog_error;
     logger_t m_syslog_warn;
     logger_t m_syslog_debug;
-    //
+    /** Constructor. */
     qvi_logger(void);
-    //
+    /** Destructor. */
     ~qvi_logger(void);
 
 public:
@@ -53,7 +53,7 @@ public:
     qvi_logger &
     operator=(const qvi_logger &);
     //
-    // console
+    // Console
     //
     static logger_t
     console_info(void);
@@ -67,7 +67,7 @@ public:
     static logger_t
     console_debug(void);
     //
-    // syslog
+    // Syslog
     //
     static logger_t
     syslog_info(void);

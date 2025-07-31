@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -29,17 +29,19 @@ qvi_logger::qvi_logger(void)
     //
     // Console
     //
-    m_console_info = spdlog::stderr_logger_mt("console_info");
+    m_console_info = spdlog::stdout_logger_mt("console_info");
     m_console_info->set_level(spdlog::level::info);
     m_console_info->set_pattern("%v");
     m_console_info->flush_on(m_console_info->level());
 
+    m_console_warn = spdlog::stderr_logger_mt("console_warn");
+    m_console_warn->set_level(spdlog::level::warn);
+    m_console_warn->set_pattern("%v");
+    m_console_warn->flush_on(m_console_warn->level());
+
     m_console_error = spdlog::stderr_logger_mt("console_error");
     m_console_error->set_level(spdlog::level::err);
     m_console_error->flush_on(m_console_error->level());
-
-    m_console_warn = spdlog::stderr_logger_mt("console_warn");
-    m_console_warn->set_level(spdlog::level::warn);
 
     m_console_debug = spdlog::stderr_logger_mt("console_debug");
     m_console_debug->set_level(spdlog::level::debug);
@@ -52,13 +54,13 @@ qvi_logger::qvi_logger(void)
     m_syslog_info->set_level(spdlog::level::info);
     m_syslog_info->flush_on(m_syslog_info->level());
 
-    m_syslog_error = spdlog::syslog_logger_mt("syslog_error");
-    m_syslog_error->set_level(spdlog::level::err);
-    m_syslog_error->flush_on(m_syslog_error->level());
-
     m_syslog_warn = spdlog::syslog_logger_mt("syslog_warn");
     m_syslog_warn->set_level(spdlog::level::warn);
     m_syslog_warn->flush_on(m_syslog_warn->level());
+
+    m_syslog_error = spdlog::syslog_logger_mt("syslog_error");
+    m_syslog_error->set_level(spdlog::level::err);
+    m_syslog_error->flush_on(m_syslog_error->level());
 
     m_syslog_debug = spdlog::syslog_logger_mt("syslog_debug");
     m_syslog_debug->set_level(spdlog::level::debug);
@@ -144,8 +146,8 @@ qvi_logger::console_to_syslog(void)
     auto &logger = qvi_logger::the_qvi_logger();
 
     spdlog::drop(logger.m_console_info->name());
-    spdlog::drop(logger.m_console_error->name());
     spdlog::drop(logger.m_console_warn->name());
+    spdlog::drop(logger.m_console_error->name());
     spdlog::drop(logger.m_console_debug->name());
 
     logger.m_console_info = spdlog::syslog_logger_mt("consys_info");
@@ -153,13 +155,14 @@ qvi_logger::console_to_syslog(void)
     logger.m_console_info->set_pattern("%v");
     logger.m_console_info->flush_on(logger.m_console_info->level());
 
+    logger.m_console_warn = spdlog::syslog_logger_mt("consys_warn");
+    logger.m_console_warn->set_level(spdlog::level::warn);
+    logger.m_console_warn->flush_on(logger.m_console_warn->level());
+
     logger.m_console_error = spdlog::syslog_logger_mt("consys_error");
     logger.m_console_error->set_level(spdlog::level::err);
     logger.m_console_error->flush_on(logger.m_console_error->level());
 
-    logger.m_console_warn = spdlog::syslog_logger_mt("consys_warn");
-    logger.m_console_warn->set_level(spdlog::level::warn);
-    logger.m_console_warn->flush_on(logger.m_console_warn->level());
 
     logger.m_console_debug = spdlog::syslog_logger_mt("consys_debug");
     logger.m_console_debug->set_level(spdlog::level::debug);
