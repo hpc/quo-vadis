@@ -216,7 +216,7 @@ struct qvid {
 
         const int rc = qvi_rmall(session_dir);
         if (qvi_unlikely(rc != QV_SUCCESS)) {
-            qvi_log_warn("Removal of {} failed.");
+            qvi_log_warn("Removal of {} failed.", session_dir);
         }
     }
 };
