@@ -184,23 +184,6 @@ int
 qvi_start_qvd(void);
 
 /**
- *
- */
-int
-qvi_port(
-    int &portno
-);
-
-/**
- *
- */
-int
-qvi_url(
-    std::string &url,
-    int &portno
-);
-
-/**
  * See gettid(2) for details.
  */
 static inline pid_t
@@ -226,18 +209,22 @@ qvi_access(
 );
 
 /**
+ * Converts string to an int, if possible.
+ */
+int
+qvi_stoi(
+    const std::string &str,
+    int &maybe_result,
+    int base = 10
+);
+
+/**
  * Removes the provided path, including all its contents.
  */
 int
 qvi_rmall(
     const std::string &path
 );
-
-/**
- *
- */
-std::string
-qvi_conn_env_ers(void);
 
 /**
  *

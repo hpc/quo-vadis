@@ -147,9 +147,9 @@ struct qvid {
     {
         qvi_log_info("Determining connection information");
 
-        const int rc = qvi_url(rmic.url, rmic.portno);
+        const int rc = qvi_rmi_url(rmic.url, rmic.portno);
         if (qvi_unlikely(rc != QV_SUCCESS)) {
-            qvi_panic_log_error(qvi_conn_env_ers());
+            qvi_panic_log_error(qvi_rmi_conn_env_ers());
         }
     }
 
@@ -241,34 +241,42 @@ static int
 parse_args(
     int argc,
     char **argv,
-    qvid &ctx
+    qvid &qvd
 ) {
     enum {
         FLOOR = 256,
-        NO_DAEMONIZE,
         HELP,
+        NO_DAEMONIZE,
+        PORT
     };
 
     const cstr_t opts = "";
     const struct option lopts[] = {
-        {"no-daemonize"    , no_argument, nullptr         , NO_DAEMONIZE      },
-        {"help"            , no_argument, nullptr         , HELP              },
-        {nullptr           , 0          , nullptr         , 0                 }
+        {"help"            , no_argument,       nullptr, HELP                 },
+        {"no-daemonize"    , no_argument,       nullptr, NO_DAEMONIZE         },
+        {"port"            , required_argument, nullptr, PORT                 },
+        {nullptr           , 0,                 nullptr, 0                    }
     };
     static const option_help opt_help = {
+        {"[--help]             ", "Show this message and exit."               },
         {"[--no-daemonize]     ", "Do not run as a daemon."                   },
-        {"[--help]             ", "Show this message and exit."               }
+        {"[--port PORTNO]      ", "Specify port number to use."               }
     };
 
     int opt;
     while (-1 != (opt = getopt_long_only(argc, argv, opts, lopts, nullptr))) {
         switch (opt) {
-            case NO_DAEMONIZE:
-                ctx.daemonized = false;
-                break;
             case HELP:
                 show_usage(opt_help);
                 return QV_SUCCESS_SHUTDOWN;
+            case NO_DAEMONIZE:
+                qvd.daemonized = false;
+                break;
+            case PORT: {
+                const int rc = qvi_stoi(std::string(optarg), qvd.rmic.portno);
+                if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+                break;
+            }
             default:
                 show_usage(opt_help);
                 return QV_ERR_INVLD_ARG;
