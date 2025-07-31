@@ -187,9 +187,7 @@ qv_scope::group_barrier(void)
 int
 qv_scope::bind_push(void)
 {
-    return m_group->task()->bind_push(
-        m_hwpool->cpuset().cdata()
-    );
+    return m_group->task()->bind_push(m_hwpool->cpuset());
 }
 
 int
