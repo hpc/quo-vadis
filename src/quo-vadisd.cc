@@ -175,10 +175,18 @@ struct qvid {
         const std::string full_session_dir = tmpdir + "/" + session_dirname;
         usable = qvi_access(full_session_dir, R_OK, &eno);
         if (qvi_unlikely(usable)) {
-            // TODO(skg) Provide a nicer error message that describes what can
-            // cause this situation.
+            const std::string errs =
+                "A {} session directory was detected at {}. "
+                "This is typically caused by the following situations: "
+                "1. {} is already running using port {}. "
+                "Clients may use this existing connection. "
+                "If a new connection is desired, choose a different port "
+                "and try again. 2. A daemon was forcibly killed and did "
+                "not cleanup completely. In this case, remove {} "
+                "and try again.";
             qvi_panic_log_error(
-                "{} already exists. Cannot continue.", full_session_dir
+                errs, app_name, full_session_dir, app_name,
+                rmic.portno, full_session_dir
             );
         }
         const int rc = mkdir(full_session_dir.c_str(), 0755);
@@ -284,7 +292,7 @@ parse_args(
     }
     // Make sure no bogus options were provided.
     if (optind < argc) {
-        qvi_log_info(
+        qvi_log_warn(
             "{}: Unrecognized option detected: \'{}\'",
             app_name, argv[optind]
         );
