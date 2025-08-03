@@ -55,15 +55,8 @@ qvi_task::m_init_bind_stack(void)
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     m_stack.push(qvi_hwloc_bitmap(current_bind));
-    qvi_hwloc_bitmap_delete(&current_bind);
+    qvi_hwloc::bitmap_delete(&current_bind);
     return rc;
-}
-
-qvi_task::~qvi_task(void)
-{
-    while (!m_stack.empty()) {
-        m_stack.pop();
-    }
 }
 
 int
@@ -82,7 +75,7 @@ qvi_task::rmi(void)
     return m_rmi;
 }
 
-qvi_hwloc_t *
+qvi_hwloc *
 qvi_task::hwloc(void)
 {
     return m_rmi.hwloc();
@@ -112,7 +105,7 @@ int
 qvi_task::bind_top(
     hwloc_cpuset_t *result
 ) {
-    return qvi_hwloc_bitmap_dup(m_stack.top().cdata(), result);
+    return qvi_hwloc::bitmap_dup(m_stack.top().cdata(), result);
 }
 
 /*

@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2022-2024 Triad National Security, LLC
+ * Copyright (c) 2022-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -64,7 +64,7 @@ struct qvi_hwpool_cpu : qvi_hwpool_res {
 };
 
 /**
- * Defines a hardware pool device. This differs from a qvi_hwloc_device_s
+ * Defines a hardware pool device. This differs from a qvi_hwloc_device
  * because we only maintain information relevant for user-facing operations.
  */
 struct qvi_hwpool_dev : qvi_hwpool_res {
@@ -74,7 +74,7 @@ private:
     /** The bitmap encoding CPU affinity. */
     qvi_hwloc_bitmap m_affinity;
     /** Device ID (ordinal). */
-    int m_id = QVI_HWLOC_DEVICE_INVALID_ID;
+    int m_id = qvi_hwloc_device::INVALID_ID;
     /** The PCI bus ID. */
     std::string m_pci_bus_id;
     /** Universally Unique Identifier. */
@@ -82,13 +82,13 @@ private:
 public:
     /** Default constructor. */
     qvi_hwpool_dev(void) = default;
-    /** Constructor using qvi_hwloc_device_s. */
+    /** Constructor using qvi_hwloc_device. */
     explicit qvi_hwpool_dev(
-        const qvi_hwloc_device_s &dev
+        const qvi_hwloc_device &dev
     );
-    /** Constructor using std::shared_ptr<qvi_hwloc_device_s>. */
+    /** Constructor using std::shared_ptr<qvi_hwloc_device>. */
     explicit qvi_hwpool_dev(
-        const std::shared_ptr<qvi_hwloc_device_s> &shdev
+        const std::shared_ptr<qvi_hwloc_device> &shdev
     );
     /** Destructor. */
     virtual ~qvi_hwpool_dev(void) = default;
@@ -139,7 +139,7 @@ private:
      */
     int
     m_add_devices_with_affinity(
-        qvi_hwloc_t *hwloc
+        qvi_hwloc *hwloc
     );
 public:
     /**
@@ -148,17 +148,17 @@ public:
      */
     static int
     create(
-        qvi_hwloc_t *hwloc,
+        qvi_hwloc *hwloc,
         hwloc_const_cpuset_t cpuset,
         qvi_hwpool **hwpool
     );
     /**
      * Initializes a hardware pool from the given
-     * hardare locality information and cpuset.
+     * hardware locality information and cpuset.
      */
     int
     initialize(
-        qvi_hwloc_t *hwloc,
+        qvi_hwloc *hwloc,
         hwloc_const_bitmap_t cpuset
     );
     /**
@@ -176,7 +176,7 @@ public:
      */
     int
     nobjects(
-        qvi_hwloc_t *hwloc,
+        qvi_hwloc *hwloc,
         qv_hw_obj_type_t obj_type,
         int *result
     ) const;

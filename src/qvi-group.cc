@@ -15,7 +15,7 @@
 #include "qvi-group-thread.h"
 #include "qvi-utils.h"
 
-qvi_hwloc_t *
+qvi_hwloc *
 qvi_group::hwloc(void)
 {
     return task()->hwloc();

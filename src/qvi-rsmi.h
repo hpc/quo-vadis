@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2022-2024 Triad National Security, LLC
+ * Copyright (c) 2022-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c)      2021 Lawrence Livermore National Security, LLC
@@ -22,7 +22,7 @@
 
 int
 qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
-    qvi_hwloc_t *hwl,
+    qvi_hwloc *hwl,
     uint32_t devid,
     qvi_hwloc_bitmap &cpuset
 );

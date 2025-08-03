@@ -30,11 +30,10 @@
 #include "qvi-rmi.h"
 #include "qvi-bbuff.h"
 #include "qvi-bbuff-rmi.h"
-#include "qvi-hwpool.h"
 #include "qvi-utils.h"
 
 // Indicates whether the server has been signaled to shutdown.
-volatile static std::sig_atomic_t g_server_shutdown_signaled(false);
+static volatile std::sig_atomic_t g_server_shutdown_signaled(false);
 
 /** Port environment variable string. */
 static const std::string PORT_ENV_VAR = "QV_PORT";
@@ -327,7 +326,7 @@ rpc_unpack(
 qvi_rmi_client::qvi_rmi_client(void)
 {
     // Remember clients own the hwloc data, unlike the server.
-    const int rc = qvi_hwloc_new(&m_config.hwloc);
+    const int rc = qvi_new(&m_config.hwloc);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 }
 
@@ -338,10 +337,10 @@ qvi_rmi_client::~qvi_rmi_client(void)
         zsocket_close(m_zsock);
         zctx_destroy(&m_zctx);
     }
-    qvi_hwloc_delete(&m_config.hwloc);
+    qvi_delete(&m_config.hwloc);
 }
 
-qvi_hwloc_t *
+qvi_hwloc *
 qvi_rmi_client::hwloc(void) const
 {
     return m_config.hwloc;
@@ -391,12 +390,12 @@ qvi_rmi_client::connect(
     m_config.url = url;
     m_config.hwtopo_path = hwtopo_path;
     // Now we can initialize and load our topology.
-    rc = qvi_hwloc_topology_init(
-        m_config.hwloc, m_config.hwtopo_path.c_str()
+    rc = m_config.hwloc->topology_init(
+        m_config.hwtopo_path.c_str()
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return QV_RES_UNAVAILABLE;
 
-    rc = qvi_hwloc_topology_load(m_config.hwloc);
+    rc = m_config.hwloc->topology_load();
     if (qvi_unlikely(rc != QV_SUCCESS)) return QV_RES_UNAVAILABLE;
 
     return QV_SUCCESS;
@@ -485,7 +484,7 @@ qvi_rmi_client::get_cpubind(
     int rpcrc = QV_ERR_RPC;
     qvrc = rpc_rep(&rpcrc, cpuset);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) {
-        qvi_hwloc_bitmap_delete(cpuset);
+        qvi_hwloc::bitmap_delete(cpuset);
         return qvrc;
     }
     return rpcrc;
@@ -588,9 +587,8 @@ qvi_rmi_client::get_cpuset_for_nobjs(
 ) {
     // TODO(skg) At some point we will acquire the resources
     // for improved splitting and resource distribution.
-    return qvi_hwloc_get_cpuset_for_nobjs(
-        m_config.hwloc, cpuset,
-        obj_type, nobjs, result
+    return m_config.hwloc->get_cpuset_for_nobjs(
+        cpuset, obj_type, nobjs, result
     );
 }
 
@@ -625,9 +623,6 @@ qvi_rmi_server::qvi_rmi_server(void)
 
     m_zctx = zmq_ctx_new();
     if (qvi_unlikely(!m_zctx)) throw qvi_runtime_error();
-
-    const int rc = qvi_new(&m_hwpool);
-    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 }
 
 qvi_rmi_server::~qvi_rmi_server(void)
@@ -635,7 +630,6 @@ qvi_rmi_server::~qvi_rmi_server(void)
     zsocket_close(m_zsock);
     zctx_destroy(&m_zctx);
     unlink(m_config.hwtopo_path.c_str());
-    qvi_delete(&m_hwpool);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -706,11 +700,9 @@ qvi_rmi_server::s_rpc_get_cpubind(
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
 
     hwloc_cpuset_t bitmap = nullptr;
-    const int rpcrc = qvi_hwloc_task_get_cpubind(
-        server->m_config.hwloc, who, &bitmap
-    );
+    const int rpcrc = server->m_config.hwloc->task_get_cpubind(who, &bitmap);
     qvrc = rpc_pack(output, hdr->fid, rpcrc, bitmap);
-    qvi_hwloc_bitmap_delete(&bitmap);
+    qvi_hwloc::bitmap_delete(&bitmap);
 
     return qvrc;
 }
@@ -727,10 +719,10 @@ qvi_rmi_server::s_rpc_set_cpubind(
     const int qvrc = qvi_bbuff_rmi_unpack(input, &who, &cpuset);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
 
-    const int rpcrc = qvi_hwloc_task_set_cpubind_from_cpuset(
-        server->m_config.hwloc, who, cpuset
+    const int rpcrc = server->m_config.hwloc->task_set_cpubind_from_cpuset(
+        who, cpuset
     );
-    qvi_hwloc_bitmap_delete(&cpuset);
+    qvi_hwloc::bitmap_delete(&cpuset);
     return rpc_pack(output, hdr->fid, rpcrc);
 }
 
@@ -748,9 +740,7 @@ qvi_rmi_server::s_rpc_obj_type_depth(
     if (qvrc != QV_SUCCESS) return qvrc;
 
     int depth = 0;
-    const int rpcrc = qvi_hwloc_obj_type_depth(
-        server->m_config.hwloc, obj, &depth
-    );
+    const int rpcrc = server->m_config.hwloc->obj_type_depth(obj, &depth);
 
     return rpc_pack(output, hdr->fid, rpcrc, depth);
 }
@@ -770,13 +760,13 @@ qvi_rmi_server::s_rpc_get_nobjs_in_cpuset(
     if (qvrc != QV_SUCCESS) return qvrc;
 
     int nobjs = 0;
-    const int rpcrc = qvi_hwloc_get_nobjs_in_cpuset(
-        server->m_config.hwloc, target_obj, cpuset, &nobjs
+    const int rpcrc = server->m_config.hwloc->get_nobjs_in_cpuset(
+        target_obj, cpuset, &nobjs
     );
 
     qvrc = rpc_pack(output, hdr->fid, rpcrc, nobjs);
 
-    qvi_hwloc_bitmap_delete(&cpuset);
+    qvi_hwloc::bitmap_delete(&cpuset);
     return qvrc;
 }
 
@@ -797,13 +787,13 @@ qvi_rmi_server::s_rpc_get_device_in_cpuset(
     if (qvrc != QV_SUCCESS) return qvrc;
 
     char *dev_id = nullptr;
-    int rpcrc = qvi_hwloc_get_device_id_in_cpuset(
-        server->m_config.hwloc, dev_obj, dev_i, cpuset, devid_type, &dev_id
+    int rpcrc = server->m_config.hwloc->get_device_id_in_cpuset(
+        dev_obj, dev_i, cpuset, devid_type, &dev_id
     );
 
     qvrc = rpc_pack(output, hdr->fid, rpcrc, dev_id);
 
-    qvi_hwloc_bitmap_delete(&cpuset);
+    qvi_hwloc::bitmap_delete(&cpuset);
     free(dev_id);
     return qvrc;
 }
@@ -813,9 +803,10 @@ qvi_rmi_server::m_get_intrinsic_scope_user(
     pid_t,
     qvi_hwpool **hwpool
 ) {
+    qvi_hwloc *const hwloc = m_config.hwloc;
     // TODO(skg) Is the cpuset the best way to do this?
     return qvi_hwpool::create(
-        m_config.hwloc, qvi_hwloc_topo_get_cpuset(m_config.hwloc), hwpool
+        hwloc, hwloc->topology_get_cpuset(), hwpool
     );
 }
 
@@ -824,18 +815,18 @@ qvi_rmi_server::m_get_intrinsic_scope_proc(
     pid_t who,
     qvi_hwpool **hwpool
 ) {
+    qvi_hwloc *const hwloc = m_config.hwloc;
+
     hwloc_cpuset_t cpuset = nullptr;
-    int rc = qvi_hwloc_task_get_cpubind(
-        m_config.hwloc, who, &cpuset
-    );
-    if (rc != QV_SUCCESS) goto out;
+    int rc = hwloc->task_get_cpubind(who, &cpuset);
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
 
     rc = qvi_hwpool::create(
         m_config.hwloc, cpuset, hwpool
     );
 out:
-    qvi_hwloc_bitmap_delete(&cpuset);
-    if (rc != QV_SUCCESS) {
+    qvi_hwloc::bitmap_delete(&cpuset);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(hwpool);
     }
     return rc;
@@ -957,10 +948,10 @@ qvi_rmi_server::configure(
 int
 qvi_rmi_server::m_populate_base_hwpool(void)
 {
-    qvi_hwloc_t *const hwloc = m_config.hwloc;
-    hwloc_const_cpuset_t cpuset = qvi_hwloc_topo_get_cpuset(hwloc);
+    qvi_hwloc *const hwloc = m_config.hwloc;
+    hwloc_const_cpuset_t cpuset = hwloc->topology_get_cpuset();
     // The base resource pool will contain all available processors and devices.
-    return m_hwpool->initialize(hwloc, cpuset);
+    return m_hwpool.initialize(hwloc, cpuset);
 }
 
 int

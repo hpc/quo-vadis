@@ -67,21 +67,16 @@
 // IWYU pragma: end_keep
 
 // Internal type aliases.
-typedef uint8_t byte_t;
-typedef char const * cstr_t;
-typedef unsigned int uint_t;
+using byte_t = uint8_t;
+using cstr_t = char const *;
+using uint_t = unsigned int;
 
 // Forward declarations.
 struct qvi_bbuff;
-
-struct qvi_hwloc_s;
-typedef struct qvi_hwloc_s qvi_hwloc_t;
-
+struct qvi_hwloc;
 struct qvi_rmi_client;
-
-struct qvi_task;
-
 struct qvi_hwpool;
+struct qvi_task;
 
 #endif
 

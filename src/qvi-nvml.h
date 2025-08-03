@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2024 Triad National Security, LLC
+ * Copyright (c) 2021-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -23,7 +23,7 @@ extern "C" {
 
 int
 qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
-    qvi_hwloc_t *hwl,
+    qvi_hwloc *hwl,
     const std::string &uuid,
     qvi_hwloc_bitmap &cpuset
 );

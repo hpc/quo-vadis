@@ -110,7 +110,7 @@ qv_scope::create(
         return rc;
     }
     // No longer needed.
-    qvi_hwloc_bitmap_delete(&cpuset);
+    qvi_hwloc::bitmap_delete(&cpuset);
     // Create and initialize the new scope.
     qv_scope_t *ichild = nullptr;
     rc = qvi_new(&ichild, group, hwpool);
@@ -207,10 +207,8 @@ qv_scope::bind_string(
     int rc = m_group->task()->bind_top(&bitmap);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    rc = qvi_hwloc_bind_string(
-        m_group->hwloc(), bitmap, flags, result
-    );
-    qvi_hwloc_bitmap_delete(&bitmap);
+    rc = m_group->hwloc()->bind_string(bitmap, flags, result);
+    qvi_hwloc::bitmap_delete(&bitmap);
     return rc;
 }
 

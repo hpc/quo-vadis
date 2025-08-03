@@ -82,7 +82,7 @@ private:
      */
     std::vector<int> m_colors;
     /** Vector of task affinities. */
-    qvi_hwloc_cpusets_t m_cpu_affinities;
+    qvi_hwloc_cpusets m_cpu_affinities;
     /**
      * Resizes the relevant containers to make
      * room for |group size| number of elements.
@@ -103,17 +103,17 @@ private:
      */
     int
     m_split_cpuset(
-        qvi_hwloc_cpusets_t &result
+        qvi_hwloc_cpusets &result
     ) const;
     /** Returns device affinities that are part of the split. */
     int
     m_osdev_cpusets(
-        qvi_hwloc_cpusets_t &result
+        qvi_hwloc_cpusets &result
     ) const;
 
     int
     m_primary_cpusets(
-        qvi_hwloc_cpusets_t &result
+        qvi_hwloc_cpusets &result
     ) const;
     /** Releases all devices contained in the hardware split. */
     int

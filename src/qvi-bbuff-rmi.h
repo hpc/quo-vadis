@@ -450,7 +450,7 @@ qvi_bbuff_rmi_pack_item_impl(
     }
     // Non-null data.
     char *datas = nullptr;
-    int rc = qvi_hwloc_bitmap_asprintf(data, &datas);
+    int rc = qvi_hwloc::bitmap_asprintf(data, &datas);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // We are sending the string representation of the cpuset.
     rc = buff->append(datas, strlen(datas) + 1);
@@ -761,19 +761,19 @@ qvi_bbuff_rmi_unpack_item(
     byte_t *buffpos,
     size_t *bytes_written
 ) {
-    int rc = qvi_hwloc_bitmap_calloc(cpuset);
+    int rc = qvi_hwloc::bitmap_calloc(cpuset);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     char *const cpusets = (char *)buffpos;
     // Protect against empty data.
     if (strcmp(QV_BUFF_RMI_NULL_CPUSET, cpusets) != 0) {
-        rc = qvi_hwloc_bitmap_sscanf(*cpuset, cpusets);
+        rc = qvi_hwloc::bitmap_sscanf(*cpuset, cpusets);
         if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     }
     *bytes_written = strlen(cpusets) + 1;
 out:
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_hwloc_bitmap_delete(cpuset);
+        qvi_hwloc::bitmap_delete(cpuset);
     }
     return rc;
 }
@@ -797,7 +797,7 @@ qvi_bbuff_rmi_unpack_item(
     }
     //
     rc = bitmap.set(raw_cpuset);
-    qvi_hwloc_bitmap_delete(&raw_cpuset);
+    qvi_hwloc::bitmap_delete(&raw_cpuset);
     return rc;
 }
 

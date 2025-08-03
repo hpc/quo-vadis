@@ -129,7 +129,7 @@ int
 qvi_map_colors(
     qvi_map_t &map,
     const std::vector<int> &fcolors,
-    const qvi_hwloc_cpusets_t &tres
+    const qvi_hwloc_cpusets &tres
 ) {
     // Note: the array index i of fcolors is the color requested by task i.
     // Determine the number of distinct colors provided in the colors array.
@@ -167,7 +167,7 @@ int
 qvi_map_packed(
     qvi_map_t &map,
     uint_t nfids,
-    const qvi_hwloc_cpusets_t &tres
+    const qvi_hwloc_cpusets &tres
 ) {
     const uint_t ntres = tres.size();
     // Max consumers per resource.
@@ -197,7 +197,7 @@ int
 qvi_map_spread(
     qvi_map_t &map,
     uint_t nfids,
-    const qvi_hwloc_cpusets_t &tres
+    const qvi_hwloc_cpusets &tres
 ) {
     const uint_t ntres = tres.size();
     for (uint_t fid = 0, tid = 0; fid < nfids; ++fid) {
@@ -228,8 +228,8 @@ qvi_map_disjoint_affinity(
 
 int
 qvi_map_calc_shaffinity(
-    const qvi_hwloc_cpusets_t &faffs,
-    const qvi_hwloc_cpusets_t &tores,
+    const qvi_hwloc_cpusets &faffs,
+    const qvi_hwloc_cpusets &tores,
     qvi_map_shaffinity_t &res_affinity_map
 ) {
     // Number of consumers.
@@ -254,8 +254,8 @@ int
 qvi_map_affinity_preserving(
     qvi_map_t &map,
     const qvi_map_fn_t map_rest_fn,
-    const qvi_hwloc_cpusets_t &faffs,
-    const qvi_hwloc_cpusets_t &tores
+    const qvi_hwloc_cpusets &faffs,
+    const qvi_hwloc_cpusets &tores
 ) {
     int rc = QV_SUCCESS;
     // Number of consumers.
@@ -303,7 +303,7 @@ out:
 hwloc_const_cpuset_t
 qvi_map_cpuset_at(
     const qvi_map_t &map,
-    const qvi_hwloc_cpusets_t &cpusets,
+    const qvi_hwloc_cpusets &cpusets,
     uint_t fid
 ) {
     return cpusets.at(map.at(fid)).cdata();

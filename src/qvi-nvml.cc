@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2024 Triad National Security, LLC
+ * Copyright (c) 2021-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -20,7 +20,7 @@
 
 int
 qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
-    qvi_hwloc_t *hwl,
+    qvi_hwloc *hwl,
     const std::string &uuid,
     qvi_hwloc_bitmap &cpuset
 ) {
@@ -34,7 +34,7 @@ qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
     // Because we rely on facilities that require that the given topology is the
     // system's topology, we just avoid all that by just catching that here.
     if (!qvi_hwloc_topo_is_this_system(hwl)) {
-        return qvi_hwloc_bitmap_copy(
+        return qvi_hwloc::bitmap_copy(
             hwloc_topology_get_topology_cpuset(qvi_hwloc_topo_get(hwl)),
             cpuset.data()
         );

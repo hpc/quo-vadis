@@ -44,7 +44,7 @@ public:
     /** Copy constructor. */
     qvi_task(const qvi_task &src) = delete;
     /** Destructor. */
-    ~qvi_task(void);
+    ~qvi_task(void) = default;
     /** */
     int
     connect_to_server(void);
@@ -52,7 +52,7 @@ public:
     qvi_rmi_client &
     rmi(void);
     /** Returns a pointer to the task's hwloc. */
-    qvi_hwloc_t *
+    qvi_hwloc *
     hwloc(void);
     /**
      * Changes the task's affinity based on the provided cpuset.
