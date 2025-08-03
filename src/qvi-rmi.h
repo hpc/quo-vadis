@@ -20,6 +20,7 @@
 #define QVI_RMI_H
 
 #include "qvi-common.h"
+#include "qvi-hwpool.h"
 #include "zmq.h"
 
 /** Unset port number constant. */
@@ -55,7 +56,7 @@ using qvi_rmi_rpc_fun_ptr_t = std::function<
  */
 struct qvi_rmi_config {
     /** Maintains hardware locality information. */
-    qvi_hwloc_t *hwloc = nullptr;
+    qvi_hwloc *hwloc = nullptr;
     /** Connection URL. */
     std::string url = {};
     /** Connection port number. */
@@ -74,7 +75,7 @@ private:
     /** Server configuration. */
     qvi_rmi_config m_config;
     /** The base resource pool maintained by the server. */
-    qvi_hwpool *m_hwpool = nullptr;
+    qvi_hwpool m_hwpool;
     /** ZMQ context. */
     void *m_zctx = nullptr;
     /** Communication socket. */
@@ -246,7 +247,7 @@ public:
     /** Destructor. */
     ~qvi_rmi_client(void);
     /** Returns a pointer to the client's hwloc instance. */
-    qvi_hwloc_t *
+    qvi_hwloc *
     hwloc(void) const;
     /** Connects a client to to the server specified by the provided info. */
     int

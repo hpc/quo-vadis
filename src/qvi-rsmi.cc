@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2024 Triad National Security, LLC
+ * Copyright (c) 2021-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -21,7 +21,7 @@
 
 int
 qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
-    qvi_hwloc_t *hwl,
+    qvi_hwloc *hwl,
     uint32_t devid,
     qvi_hwloc_bitmap &cpuset
 ) {
@@ -33,9 +33,9 @@ qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
 #else
     // Because we rely on facilities that require that the given topology is the
     // system's topology, we just avoid all that by just catching that here.
-    if (!qvi_hwloc_topo_is_this_system(hwl)) {
-        return qvi_hwloc_bitmap_copy(
-            hwloc_topology_get_topology_cpuset(qvi_hwloc_topo_get(hwl)),
+    if (!hwl->topology_is_this_system()) {
+        return qvi_hwloc::bitmap_copy(
+            hwloc_topology_get_topology_cpuset(hwl->topology_get()),
             cpuset.data()
         );
     }
@@ -50,7 +50,7 @@ qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
     }
 
     hrc = hwloc_rsmi_get_device_cpuset(
-        qvi_hwloc_topo_get(hwl), devid, cpuset.data()
+        hwl->topology_get(), devid, cpuset.data()
     );
     if (hrc != 0) {
         rc = QV_ERR_HWLOC;

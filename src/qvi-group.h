@@ -36,7 +36,7 @@ struct qvi_group : qvi_refc {
     virtual qvi_task *
     task(void) = 0;
     /** Returns pointer to the task's hwloc information. */
-    qvi_hwloc_t *
+    qvi_hwloc *
     hwloc(void);
     /** Returns the number of members in this group. */
     virtual int

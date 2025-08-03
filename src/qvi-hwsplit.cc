@@ -29,7 +29,7 @@ cpus_available(
 ) {
     // TODO(skg) Cache storage for calculation?
     hwloc_cpuset_t tcpus = nullptr;
-    int rc = qvi_hwloc_bitmap_calloc(&tcpus);
+    int rc = qvi_hwloc::bitmap_calloc(&tcpus);
     if (rc != QV_SUCCESS) return rc;
 
     int hrc = hwloc_bitmap_and(tcpus, which, from);
@@ -145,7 +145,7 @@ qvi_hwsplit::qvi_hwsplit(
     rc = m_cpu_affinity.set(task_affinity);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 
-    qvi_hwloc_bitmap_delete(&task_affinity);
+    qvi_hwloc::bitmap_delete(&task_affinity);
     // To save memory we don't eagerly resize our vectors to group_size
     // since most processes will not use the storage. For example, in the
     // collective case the root ID process will be the only one needing
@@ -170,7 +170,7 @@ qvi_hwsplit::m_cpuset(void) const
 
 int
 qvi_hwsplit::m_split_cpuset(
-    qvi_hwloc_cpusets_t &result
+    qvi_hwloc_cpusets &result
 ) const {
     // Holds the host's split cpusets.
     result.resize(m_split_size);
@@ -179,8 +179,8 @@ qvi_hwsplit::m_split_cpuset(
     // algorithm.
     int rc = QV_SUCCESS;
     for (uint_t chunkid = 0; chunkid < m_split_size; ++chunkid) {
-        rc = qvi_hwloc_split_cpuset_by_chunk_id(
-            m_rmi.hwloc(), m_cpuset().cdata(), m_split_size,
+        rc = m_rmi.hwloc()->bitmap_split_by_chunk_id(
+            m_cpuset().cdata(), m_split_size,
             chunkid, result[chunkid].data()
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
@@ -190,7 +190,7 @@ qvi_hwsplit::m_split_cpuset(
 
 int
 qvi_hwsplit::m_osdev_cpusets(
-    qvi_hwloc_cpusets_t &result
+    qvi_hwloc_cpusets &result
 ) const {
     // Get the number of devices we have available in the provided scope.
     int nobj = 0;
@@ -213,12 +213,12 @@ qvi_hwsplit::m_osdev_cpusets(
 
 int
 qvi_hwsplit::m_primary_cpusets(
-    qvi_hwloc_cpusets_t &result
+    qvi_hwloc_cpusets &result
 ) const {
     // We were provided a real host resource type that we have to split. Or
     // QV_HW_OBJ_LAST is instead provided to indicate that we were called from a
     // split() context, which uses the host's cpuset to split the resources.
-    if (qvi_hwloc_obj_type_is_host_resource(m_split_at_type) ||
+    if (qvi_hwloc::obj_is_host_resource(m_split_at_type) ||
         m_split_at_type == QV_HW_OBJ_LAST) {
         return m_split_cpuset(result);
     }
@@ -281,7 +281,7 @@ qvi_hwsplit::split_devices_user_defined(void)
     auto dinfos = m_hwpool.devices();
     // Iterate over the supported device types and split them up round-robin.
     // TODO(skg) Should this be a mapping operation in qvi-map?
-    for (const auto devt : qvi_hwloc_supported_devices()) {
+    for (const auto devt : qvi_hwloc::supported_devices()) {
         // Get the number of devices.
         const uint_t ndevs = dinfos.count(devt);
         // Store device infos.
@@ -329,7 +329,7 @@ qvi_hwsplit::split_devices_affinity_preserving(void)
     // Get a pointer to device infos associated with the parent hardware pool.
     auto dinfos = m_hwpool.devices();
     // Iterate over the supported device types and split them up.
-    for (const auto devt : qvi_hwloc_supported_devices()) {
+    for (const auto devt : qvi_hwloc::supported_devices()) {
         // Store device infos.
         std::vector<const qvi_hwpool_dev *> devs;
         for (const auto &dinfo : dinfos) {
@@ -338,7 +338,7 @@ qvi_hwsplit::split_devices_affinity_preserving(void)
             devs.push_back(dinfo.second.get());
         }
         // Store device affinities.
-        qvi_hwloc_cpusets_t devaffs;
+        qvi_hwloc_cpusets devaffs;
         for (const auto &dev : devs) {
             devaffs.push_back(dev->affinity());
         }
@@ -365,9 +365,9 @@ qvi_hwsplit::split_devices_affinity_preserving(void)
 
 static int
 apply_cpuset_mapping(
-    qvi_hwloc_t *hwloc,
+    qvi_hwloc *hwloc,
     const qvi_map_t &map,
-    const qvi_hwloc_cpusets_t cpusets,
+    const qvi_hwloc_cpusets cpusets,
     std::vector<qvi_hwpool> &hwpools,
     std::vector<int> &colors
 ) {
@@ -397,7 +397,7 @@ int
 qvi_hwsplit::split_user_defined(void)
 {
     // Split the base cpuset into the requested number of pieces.
-    qvi_hwloc_cpusets_t cpusets;
+    qvi_hwloc_cpusets cpusets;
     int rc = m_split_cpuset(cpusets);
     if (rc != QV_SUCCESS) return rc;
     // Developer sanity check.
@@ -406,7 +406,7 @@ qvi_hwsplit::split_user_defined(void)
     qvi_map_t map{};
     rc = qvi_map_colors(map, m_colors, cpusets);
     if (rc != QV_SUCCESS) return rc;
-    qvi_hwloc_t *const hwloc = m_rmi.hwloc();
+    qvi_hwloc *const hwloc = m_rmi.hwloc();
     // Update the hardware pools and colors to reflect the new mapping.
     rc = apply_cpuset_mapping(
         hwloc, map, cpusets, m_hwpools, m_colors
@@ -420,7 +420,7 @@ int
 qvi_hwsplit::split_affinity_preserving_pass1(void)
 {
     // cpusets used for first mapping pass.
-    qvi_hwloc_cpusets_t cpusets;
+    qvi_hwloc_cpusets cpusets;
     // Get the primary cpusets used for the first pass of mapping.
     int rc = m_primary_cpusets(cpusets);
     if (rc != QV_SUCCESS) return rc;
@@ -436,7 +436,7 @@ qvi_hwsplit::split_affinity_preserving_pass1(void)
     if (qvi_map_nfids_mapped(map) != m_group_size) {
         qvi_abort();
     }
-    qvi_hwloc_t *const hwloc = m_rmi.hwloc();
+    qvi_hwloc *const hwloc = m_rmi.hwloc();
     // Update the hardware pools and colors to reflect the new mapping.
     return apply_cpuset_mapping(
         hwloc, map, cpusets, m_hwpools, m_colors
@@ -461,7 +461,7 @@ int
 qvi_hwsplit::split_packed(void)
 {
     // cpusets used for mapping.
-    qvi_hwloc_cpusets_t cpusets;
+    qvi_hwloc_cpusets cpusets;
     // Get the primary cpusets for the mapping.
     int rc = m_primary_cpusets(cpusets);
     if (rc != QV_SUCCESS) return rc;
@@ -473,7 +473,7 @@ qvi_hwsplit::split_packed(void)
     if (qvi_map_nfids_mapped(map) != m_group_size) {
         qvi_abort();
     }
-    qvi_hwloc_t *const hwloc = m_rmi.hwloc();
+    qvi_hwloc *const hwloc = m_rmi.hwloc();
     // Update the hardware pools and colors to reflect the new mapping.
     return apply_cpuset_mapping(
         hwloc, map, cpusets, m_hwpools, m_colors
@@ -485,7 +485,7 @@ int
 qvi_hwsplit::split_spread(void)
 {
     // cpusets used for mapping.
-    qvi_hwloc_cpusets_t cpusets;
+    qvi_hwloc_cpusets cpusets;
     // Get the primary cpusets for the mapping.
     int rc = m_primary_cpusets(cpusets);
     if (rc != QV_SUCCESS) return rc;
@@ -497,7 +497,7 @@ qvi_hwsplit::split_spread(void)
     if (qvi_map_nfids_mapped(map) != m_group_size) {
         qvi_abort();
     }
-    qvi_hwloc_t *const hwloc = m_rmi.hwloc();
+    qvi_hwloc *const hwloc = m_rmi.hwloc();
     // Update the hardware pools and colors to reflect the new mapping.
     return apply_cpuset_mapping(
         hwloc, map, cpusets, m_hwpools, m_colors
@@ -712,7 +712,7 @@ qvi_hwsplit::thread_split(
         hwsplit.m_cpu_affinities.at(i).set(task_affinity);
     }
     // Cleanup: we don't need task_affinity anymore.
-    qvi_hwloc_bitmap_delete(&task_affinity);
+    qvi_hwloc::bitmap_delete(&task_affinity);
     // Split the hardware resources based on the provided split parameters.
     rc = hwsplit.m_split();
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;

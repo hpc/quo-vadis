@@ -15,31 +15,31 @@ server(
 ) {
     printf("# [%d] Starting Server (%s)\n", getpid(), url);
 
-    char const *ers = NULL;
+    char const *ers = nullptr;
     char *path = nullptr;
     qvi_rmi_config config;
 
-    qvi_rmi_server *server = NULL;
+    qvi_rmi_server *server = nullptr;
     int rc = qvi_new(&server);
     if (rc != QV_SUCCESS) {
         ers = "qvi_new(&server) failed";
         goto out;
     }
 
-    qvi_hwloc_t *hwloc;
-    rc = qvi_hwloc_new(&hwloc);
+    qvi_hwloc *hwloc;
+    rc = qvi_new(&hwloc);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_new() failed";
+        ers = "qvi_new() failed";
         goto out;
     }
 
-    rc = qvi_hwloc_topology_init(hwloc, NULL);
+    rc = hwloc->topology_init(nullptr);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_topology_init() failed";
         goto out;
     }
 
-    rc = qvi_hwloc_topology_load(hwloc);
+    rc = hwloc->topology_load();
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_topology_load() failed";
         goto out;
@@ -48,8 +48,8 @@ server(
     config.url = std::string(url);
     config.hwloc = hwloc;
 
-    rc = qvi_hwloc_topology_export(
-        hwloc, qvi_tmpdir().c_str(), &path
+    rc = hwloc->topology_export(
+        qvi_tmpdir().c_str(), &path
     );
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_topology_export() failed";
@@ -72,7 +72,7 @@ server(
     printf("# [%d] Server Started\n", getpid());
 out:
     qvi_delete(&server);
-    qvi_hwloc_delete(&hwloc);
+    qvi_delete(&hwloc);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         return 1;
@@ -100,12 +100,12 @@ client(
 ) {
     printf("# [%d] Starting Client (%s)\n", getpid(), url);
 
-    char const *ers = NULL;
+    char const *ers = nullptr;
     int portno = 0;
     pid_t who = qvi_gettid();
-    hwloc_bitmap_t bitmap = NULL;
+    hwloc_bitmap_t bitmap = nullptr;
 
-    qvi_rmi_client *client = NULL;
+    qvi_rmi_client *client = nullptr;
     int rc = qvi_new(&client);
     if (rc != QV_SUCCESS) {
         ers = "qvi_new(&client) failed";
@@ -131,7 +131,7 @@ client(
     }
 
     char *res;
-    qvi_hwloc_bitmap_asprintf(bitmap, &res);
+    qvi_hwloc::bitmap_asprintf(bitmap, &res);
     printf("# [%d] cpubind = %s\n", who, res);
     hwloc_bitmap_free(bitmap);
     free(res);
@@ -161,7 +161,7 @@ main(
 ) {
     int rc = 0;
 
-    setbuf(stdout, NULL);
+    setbuf(stdout, nullptr);
 
     if (argc != 3) {
         usage(argv[0]);

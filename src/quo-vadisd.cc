@@ -34,13 +34,13 @@ struct qvid {
     /** Constructor. */
     qvid(void)
     {
-        const int rc = qvi_hwloc_new(&rmic.hwloc);
+        const int rc = qvi_new(&rmic.hwloc);
         if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
     }
     /** Destructor. */
     ~qvid(void)
     {
-        qvi_hwloc_delete(&rmic.hwloc);
+        qvi_delete(&rmic.hwloc);
     }
 
     void
@@ -123,21 +123,15 @@ struct qvid {
     {
         qvi_log_info("Loading hardware information");
 
-        int rc = qvi_hwloc_topology_init(rmic.hwloc, nullptr);
+        int rc = rmic.hwloc->topology_init(nullptr);
         if (qvi_unlikely(rc != QV_SUCCESS)) {
             static cstr_t ers = "qvi_hwloc_topology_init() failed";
             qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
         }
 
-        rc = qvi_hwloc_topology_load(rmic.hwloc);
+        rc = rmic.hwloc->topology_load();
         if (qvi_unlikely(rc != QV_SUCCESS)) {
             static cstr_t ers = "qvi_hwloc_topology_load() failed";
-            qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
-        }
-
-        rc = qvi_hwloc_discover_devices(rmic.hwloc);
-        if (qvi_unlikely(rc != QV_SUCCESS)) {
-            static cstr_t ers = "qvi_hwloc_discover_devices() failed";
             qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
         }
     }
@@ -206,8 +200,8 @@ struct qvid {
         qvi_log_info("Publishing hardware information");
 
         char *path = nullptr;
-        const int rc = qvi_hwloc_topology_export(
-            rmic.hwloc, session_dir.c_str(), &path
+        const int rc = rmic.hwloc->topology_export(
+            session_dir.c_str(), &path
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) {
             const cstr_t ers = "qvi_hwloc_topology_export() failed";
