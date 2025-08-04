@@ -35,27 +35,25 @@ qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
     // system's topology, we just avoid all that by just catching that here.
     if (!hwl->topology_is_this_system()) {
         return qvi_hwloc::bitmap_copy(
-            hwloc_topology_get_topology_cpuset(hwl->topology_get()),
-            cpuset.data()
+            hwl->topology_get_cpuset(), cpuset.data()
         );
     }
     // Else get the real thing.
     int rc = QV_SUCCESS, hrc = 0;
 
-    rsmi_status_t rsmi_rc = rsmi_init(0);
-    if (rsmi_rc != RSMI_STATUS_SUCCESS) {
-        qvi_log_error("rsmi_init() failed");
-        rc = QV_ERR_HWLOC;
-        goto out;
+    const rsmi_status_t rsmi_rc = rsmi_init(0);
+    if (qvi_unlikely(rsmi_rc != RSMI_STATUS_SUCCESS)) {
+        qvi_log_error("rsmi_init() failed with rc={}", rsmi_rc);
+        return QV_ERR_HWLOC;
     }
 
     hrc = hwloc_rsmi_get_device_cpuset(
         hwl->topology_get(), devid, cpuset.data()
     );
-    if (hrc != 0) {
+    if (qvi_unlikely(hrc != 0)) {
         rc = QV_ERR_HWLOC;
     }
-out:
+
     rsmi_shut_down();
     return rc;
 #endif

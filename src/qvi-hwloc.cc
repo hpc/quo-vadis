@@ -373,9 +373,8 @@ qvi_hwloc::topology_load(void)
 out:
     if (qvi_unlikely(ers)) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        return rc;
     }
-    return QV_SUCCESS;
+    return rc;
 }
 
 /**
@@ -387,7 +386,7 @@ qvi_hwloc::s_topo_fopen(
     int *fd
 ) {
     const int ifd = open(path, O_CREAT | O_RDWR, 0644);
-    if (ifd == -1) {
+    if (qvi_unlikely(ifd == -1)) {
         const int err = errno;
         cstr_t ers = "open() failed";
         qvi_log_error("{} {}", ers, strerror(err));
@@ -396,7 +395,7 @@ qvi_hwloc::s_topo_fopen(
     // We need to publish this file to consumers that are potentially not part
     // of our group. We cannot assume the current umask, so set explicitly.
     const int rc = fchmod(ifd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    if (rc == -1) {
+    if (qvi_unlikely(rc == -1)) {
         const int err = errno;
         cstr_t ers = "fchmod() failed";
         qvi_log_error("{} {}", ers, strerror(err));
@@ -777,9 +776,11 @@ qvi_hwloc::m_discover_gpu_devices(void)
             if (dev->id == qvi_hwloc_device::INVISIBLE_ID) continue;
             // Skip if this is not the PCI bus ID we are looking for.
             if (dev->pci_bus_id != busid) continue;
-            // Set as much device info as we can.
+            // Set as much device info as we can. If device support isn't
+            // available, then just return success.
             int rc = m_set_gpu_device_info(obj, dev.get());
-            if (rc != QV_SUCCESS) goto out;
+            if (rc == QV_ERR_NOT_SUPPORTED) return QV_SUCCESS;
+            else if (rc != QV_SUCCESS) return rc;
             // First, determine if this is a new device?
             auto got = devmap.find(busid);
             // New device (i.e., a new PCI bus ID)
@@ -787,7 +788,7 @@ qvi_hwloc::m_discover_gpu_devices(void)
                 auto gpudev = std::make_shared<qvi_hwloc_device>();
                 // Set base info from current device.
                 rc = qvi_copy(*dev.get(), gpudev.get());
-                if (rc != QV_SUCCESS) return rc;
+                if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
                 // Add it to our collection of 'seen' devices.
                 devmap.insert({busid, gpudev});
             }
@@ -797,7 +798,7 @@ qvi_hwloc::m_discover_gpu_devices(void)
             else {
                 qvi_hwloc_device *gpudev = got->second.get();
                 rc = m_set_gpu_device_info(obj, gpudev);
-                if (rc != QV_SUCCESS) return rc;
+                if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
             }
         }
     }
@@ -805,16 +806,13 @@ qvi_hwloc::m_discover_gpu_devices(void)
     for (const auto &mapi : devmap) {
         auto gpudev = std::make_shared<qvi_hwloc_device>();
         // Copy device info.
-        const int rc = qvi_copy(
-            *mapi.second.get(), gpudev.get()
-        );
-        if (rc != QV_SUCCESS) return rc;
+        const int rc = qvi_copy(*mapi.second.get(), gpudev.get());
+        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
         // Save copy.
         m_gpus.push_back(gpudev);
     }
     // Sort list based on device ID.
     std::sort(m_gpus.begin(), m_gpus.end(), dev_list_compare_by_visdev_id);
-out:
     return QV_SUCCESS;
 }
 
@@ -834,12 +832,11 @@ qvi_hwloc::m_discover_nic_devices(void)
             if (dev->pci_bus_id != busid) continue;
             //
             int rc = m_set_of_device_info(obj, dev.get());
-            if (rc != QV_SUCCESS) return rc;
+            if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
             //
             auto nicdev = std::make_shared<qvi_hwloc_device>();
-
             rc = qvi_copy(*dev.get(), nicdev.get());
-            if (rc != QV_SUCCESS) return rc;
+            if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
             m_nics.push_back(nicdev);
         }
     }
@@ -1337,18 +1334,18 @@ qvi_hwloc::get_device_affinity(
             rc = QV_ERR_NOT_SUPPORTED;
             break;
     }
-    if (rc != QV_SUCCESS) goto out;
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // XXX(skg) This isn't the most efficient way of doing this, but the device
     // lists tend to be small, so just perform a linear search for the given ID.
     for (const auto &dev : *devlist) {
         if (dev->id != device_id) continue;
         rc = qvi_hwloc::bitmap_dup(dev->affinity.cdata(), &icpuset);
-        if (rc != QV_SUCCESS) goto out;
+        if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     }
     if (!icpuset) rc = QV_ERR_NOT_FOUND;
 out:
-    if (rc != QV_SUCCESS) {
-        qvi_hwloc::bitmap_delete(cpuset);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        qvi_hwloc::bitmap_delete(&icpuset);
     }
     *cpuset = icpuset;
     return rc;

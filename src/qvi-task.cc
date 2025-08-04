@@ -31,7 +31,7 @@ qvi_task::m_connect_to_server(void)
     int rc = qvi_rmi_get_url(url, portno);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_log_error("{}", qvi_rmi_conn_env_ers());
-        return rc;
+        return QV_RES_UNAVAILABLE;
     }
 
     rc = m_rmi.connect(url, portno);
