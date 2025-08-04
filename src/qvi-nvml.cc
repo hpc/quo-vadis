@@ -35,8 +35,7 @@ qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
     // system's topology, we just avoid all that by just catching that here.
     if (!qvi_hwloc_topo_is_this_system(hwl)) {
         return qvi_hwloc::bitmap_copy(
-            hwloc_topology_get_topology_cpuset(qvi_hwloc_topo_get(hwl)),
-            cpuset.data()
+            hwl->topology_get_cpuset(), cpuset.data()
         );
     }
     // This method should be called once before invoking any other methods in
@@ -55,7 +54,7 @@ qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
     }
 
     const int hwrc = hwloc_nvml_get_device_cpuset(
-        qvi_hwloc_topo_get(hwl), device, cpuset.data()
+        hwl->topology_get(), device, cpuset.data()
     );
     if (hwrc != 0) {
         rc = QV_ERR_HWLOC;

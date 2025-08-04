@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -23,7 +23,9 @@ qvi_group_mpi::qvi_group_mpi(
 ) {
     if (qvi_unlikely(!mpi_ctx)) throw qvi_runtime_error();
     m_mpi = mpi_ctx;
-    m_task.connect_to_server();
+
+    const int rc = m_task.connect_to_server();
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 }
 
 qvi_group_mpi::~qvi_group_mpi(void)
