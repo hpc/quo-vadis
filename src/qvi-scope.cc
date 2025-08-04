@@ -59,7 +59,7 @@ qv_scope::make_intrinsic(
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Get the requested intrinsic hardware pool.
     qvi_hwpool *hwpool = nullptr;
-    rc = group->task()->rmi().get_intrinsic_hwpool(
+    rc = group->task().rmi().get_intrinsic_hwpool(
         qvi_task::mytid(), iscope, &hwpool
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
@@ -93,7 +93,7 @@ qv_scope::create(
     }
     // Get the appropriate cpuset based on the caller's request.
     hwloc_cpuset_t cpuset = nullptr;
-    rc = m_group->task()->rmi().get_cpuset_for_nobjs(
+    rc = m_group->task().rmi().get_cpuset_for_nobjs(
         m_hwpool->cpuset().cdata(), type, nobjs, &cpuset
     );
     if (rc != QV_SUCCESS) {
@@ -187,13 +187,13 @@ qv_scope::group_barrier(void)
 int
 qv_scope::bind_push(void)
 {
-    return m_group->task()->bind_push(m_hwpool->cpuset());
+    return m_group->task().bind_push(m_hwpool->cpuset());
 }
 
 int
 qv_scope::bind_pop(void)
 {
-    return m_group->task()->bind_pop();
+    return m_group->task().bind_pop();
 }
 
 int
@@ -204,7 +204,7 @@ qv_scope::bind_string(
     *result = nullptr;
 
     hwloc_cpuset_t bitmap = nullptr;
-    int rc = m_group->task()->bind_top(&bitmap);
+    int rc = m_group->task().bind_top(&bitmap);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     rc = m_group->hwloc().bind_string(bitmap, flags, result);

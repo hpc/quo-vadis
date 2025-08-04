@@ -27,7 +27,7 @@ struct qvid {
     qvi_rmi_config rmic;
     qvi_rmi_server rmi;
     /** Base session directory. */
-    std::string session_dir = {};
+    std::string session_dir;
     /** Run as a daemon flag. */
     bool daemonized = true;
     /** Constructor. */

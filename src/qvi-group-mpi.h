@@ -41,10 +41,10 @@ public:
     /** Destructor. */
     virtual ~qvi_group_mpi(void);
 
-    virtual qvi_task *
+    virtual qvi_task &
     task(void)
     {
-        return &m_task;
+        return m_task;
     }
 
     virtual int

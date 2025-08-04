@@ -132,14 +132,14 @@ qvi_hwsplit::qvi_hwsplit(
     uint_t group_size,
     uint_t split_size,
     qv_hw_obj_type_t split_at_type
-) : m_rmi(parent->group().task()->rmi())
+) : m_rmi(parent->group().task().rmi())
   , m_hwpool(parent->hwpool())
   , m_group_size(group_size)
   , m_split_size(split_size)
   , m_split_at_type(split_at_type)
 {
     hwloc_cpuset_t task_affinity = nullptr;
-    int rc = parent->group().task()->bind_top(&task_affinity);
+    int rc = parent->group().task().bind_top(&task_affinity);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 
     rc = m_cpu_affinity.set(task_affinity);
@@ -696,7 +696,7 @@ qvi_hwsplit::thread_split(
     const pid_t taskid = qvi_task::mytid();
     // Get the task's current affinity.
     hwloc_cpuset_t task_affinity = nullptr;
-    int rc = parent->group().task()->bind_top(&task_affinity);
+    int rc = parent->group().task().bind_top(&task_affinity);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Prepare the hwsplit with our parent's information.
     for (uint_t i = 0; i < group_size; ++i) {

@@ -32,12 +32,12 @@ struct qvi_group : qvi_refc {
     qvi_group(void) = default;
     /** Virtual destructor. */
     virtual ~qvi_group(void) = default;
-    /** Returns pointer to the caller's task information. */
-    virtual qvi_task *
-    task(void) = 0;
     /** Returns a reference to the task's hwloc information. */
     qvi_hwloc &
     hwloc(void);
+    /** Returns a reference to the caller's task information. */
+    virtual qvi_task &
+    task(void) = 0;
     /** Returns the number of members in this group. */
     virtual int
     size(void) const = 0;
