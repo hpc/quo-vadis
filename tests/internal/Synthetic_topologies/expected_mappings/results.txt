@@ -1,0 +1,77 @@
+* Case 1: A single (MPI) process occupies the whole node.
+  - Placement policy
+    * PACKED
+      = 2 threads
+        topo_01N_02P_04C_04PU:
+	topo_01N_03P_03C_03PU:
+	topo_02N_01P_08C_03PU:
+	topo_02N_02P_32C_01PU:
+	topo_02N_04P_06C_02PU:
+      = 3 threads
+        topo_01N_02P_04C_04PU:
+	topo_01N_03P_03C_03PU:
+	topo_02N_01P_08C_03PU:
+	topo_02N_02P_32C_01PU:
+	topo_02N_04P_06C_02PU:
+      = 4 threads
+        topo_01N_02P_04C_04PU:
+	topo_01N_03P_03C_03PU:
+	topo_02N_01P_08C_03PU:
+	topo_02N_02P_32C_01PU:
+	topo_02N_04P_06C_02PU:
+      = 8 threads
+        topo_01N_02P_04C_04PU:
+	topo_01N_03P_03C_03PU:
+	topo_02N_01P_08C_03PU:
+	topo_02N_02P_32C_01PU:
+	topo_02N_04P_06C_02PU:
+    * SCATTER
+      = 2 threads
+        topo_01N_02P_04C_04PU:
+	topo_01N_03P_03C_03PU:
+	topo_02N_01P_08C_03PU:
+	topo_02N_02P_32C_01PU:
+	topo_02N_04P_06C_02PU:
+      = 3 threads
+        topo_01N_02P_04C_04PU:
+	topo_01N_03P_03C_03PU:
+	topo_02N_01P_08C_03PU:
+	topo_02N_02P_32C_01PU:
+	topo_02N_04P_06C_02PU:
+      = 4 threads
+        topo_01N_02P_04C_04PU:
+	topo_01N_03P_03C_03PU:
+	topo_02N_01P_08C_03PU:
+	topo_02N_02P_32C_01PU:
+	topo_02N_04P_06C_02PU:
+      = 8 threads
+        topo_01N_02P_04C_04PU:
+	topo_01N_03P_03C_03PU:
+	topo_02N_01P_08C_03PU:
+	topo_02N_02P_32C_01PU:
+	topo_02N_04P_06C_02PU:
+    * ROUND ROBIN
+      = 2 threads
+        topo_01N_02P_04C_04PU:
+	topo_01N_03P_03C_03PU:
+	topo_02N_01P_08C_03PU:
+	topo_02N_02P_32C_01PU:
+	topo_02N_04P_06C_02PU:
+      = 3 threads
+        topo_01N_02P_04C_04PU:
+	topo_01N_03P_03C_03PU:
+	topo_02N_01P_08C_03PU:
+	topo_02N_02P_32C_01PU:
+	topo_02N_04P_06C_02PU:
+      = 4 threads
+        topo_01N_02P_04C_04PU:
+	topo_01N_03P_03C_03PU:
+	topo_02N_01P_08C_03PU:
+	topo_02N_02P_32C_01PU:
+	topo_02N_04P_06C_02PU:
+      = 8 threads
+        topo_01N_02P_04C_04PU:
+	topo_01N_03P_03C_03PU:
+	topo_02N_01P_08C_03PU:
+	topo_02N_02P_32C_01PU:
+	topo_02N_04P_06C_02PU:
