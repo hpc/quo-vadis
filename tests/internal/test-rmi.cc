@@ -16,63 +16,44 @@ server(
     printf("# [%d] Starting Server (%s)\n", getpid(), url);
 
     char const *ers = nullptr;
-    char *path = nullptr;
+    std::string path;
+    qvi_hwloc hwloc;
     qvi_rmi_config config;
+    qvi_rmi_server server;
 
-    qvi_rmi_server *server = nullptr;
-    int rc = qvi_new(&server);
+    int rc = hwloc.topology_init(nullptr);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_new(&server) failed";
+        ers = "hwloc.topology_init() failed";
         goto out;
     }
 
-    qvi_hwloc *hwloc;
-    rc = qvi_new(&hwloc);
+    rc = hwloc.topology_load();
     if (rc != QV_SUCCESS) {
-        ers = "qvi_new() failed";
-        goto out;
-    }
-
-    rc = hwloc->topology_init(nullptr);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_topology_init() failed";
-        goto out;
-    }
-
-    rc = hwloc->topology_load();
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_topology_load() failed";
+        ers = "hwloc.topology_load() failed";
         goto out;
     }
 
     config.url = std::string(url);
-    config.hwloc = hwloc;
 
-    rc = hwloc->topology_export(
-        qvi_tmpdir().c_str(), &path
-    );
+    rc = hwloc.topology_export(qvi_tmpdir(), config.hwtopo_path);
     if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc_topology_export() failed";
-        goto out;
-    }
-    config.hwtopo_path = std::string(path);
-    free(path);
-
-    rc = server->configure(config);
-    if (rc != QV_SUCCESS) {
-        ers = "server->configure() failed";
+        ers = "hwloc.topology_export() failed";
         goto out;
     }
 
-    rc = server->start();
+    rc = server.configure(config);
+    if (rc != QV_SUCCESS) {
+        ers = "server.configure() failed";
+        goto out;
+    }
+
+    rc = server.start();
     if (rc != QV_SUCCESS) {
         ers = "qvi_rmi_server_start() failed";
         goto out;
     }
     printf("# [%d] Server Started\n", getpid());
 out:
-    qvi_delete(&server);
-    qvi_delete(&hwloc);
     if (ers) {
         fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
         return 1;

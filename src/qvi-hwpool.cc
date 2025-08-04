@@ -208,13 +208,13 @@ out:
 
 int
 qvi_hwpool::m_add_devices_with_affinity(
-    qvi_hwloc *hwloc
+    qvi_hwloc &hwloc
 ) {
     int rc = QV_SUCCESS;
     // Iterate over the supported device types.
     for (const auto devt : qvi_hwloc::supported_devices()) {
         qvi_hwloc_dev_list devs;
-        rc = hwloc->get_devices_in_cpuset(
+        rc = hwloc.get_devices_in_cpuset(
             devt, m_cpu.affinity().cdata(), devs
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
@@ -228,7 +228,7 @@ qvi_hwpool::m_add_devices_with_affinity(
 
 int
 qvi_hwpool::create(
-    qvi_hwloc *hwloc,
+    qvi_hwloc &hwloc,
     hwloc_const_cpuset_t cpuset,
     qvi_hwpool **hwpool
 ) {
@@ -247,7 +247,7 @@ out:
 
 int
 qvi_hwpool::initialize(
-    qvi_hwloc *hwloc,
+    qvi_hwloc &hwloc,
     hwloc_const_bitmap_t cpuset
 ) {
     const int rc = m_cpu.affinity().set(cpuset);
@@ -270,12 +270,12 @@ qvi_hwpool::devices(void) const
 
 int
 qvi_hwpool::nobjects(
-    qvi_hwloc *hwloc,
+    qvi_hwloc &hwloc,
     qv_hw_obj_type_t obj_type,
     int *result
 ) const {
     if (qvi_hwloc::obj_is_host_resource(obj_type)) {
-        return hwloc->get_nobjs_in_cpuset(
+        return hwloc.get_nobjs_in_cpuset(
             obj_type, m_cpu.affinity().cdata(), result
         );
     }

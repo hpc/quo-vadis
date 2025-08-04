@@ -46,7 +46,7 @@ private:
     /** Destructor. */
     ~qvi_hwsplit(void) = default;
     /** A const reference to my RMI. */
-    const qvi_rmi_client &m_rmi;
+    qvi_rmi_client &m_rmi;
     /** A const reference to the base hardware pool we are splitting. */
     const qvi_hwpool &m_hwpool;
     /** The number of members that are part of the split. */

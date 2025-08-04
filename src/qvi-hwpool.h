@@ -139,7 +139,7 @@ private:
      */
     int
     m_add_devices_with_affinity(
-        qvi_hwloc *hwloc
+        qvi_hwloc &hwloc
     );
 public:
     /**
@@ -148,7 +148,7 @@ public:
      */
     static int
     create(
-        qvi_hwloc *hwloc,
+        qvi_hwloc &hwloc,
         hwloc_const_cpuset_t cpuset,
         qvi_hwpool **hwpool
     );
@@ -158,7 +158,7 @@ public:
      */
     int
     initialize(
-        qvi_hwloc *hwloc,
+        qvi_hwloc &hwloc,
         hwloc_const_bitmap_t cpuset
     );
     /**
@@ -176,7 +176,7 @@ public:
      */
     int
     nobjects(
-        qvi_hwloc *hwloc,
+        qvi_hwloc &hwloc,
         qv_hw_obj_type_t obj_type,
         int *result
     ) const;

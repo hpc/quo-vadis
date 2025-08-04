@@ -233,6 +233,11 @@ public:
     qvi_hwloc(void) = default;
     /** Destructor */
     ~qvi_hwloc(void);
+    /** Delete assignment operator. */
+    void
+    operator=(const qvi_hwloc &) = delete;
+    /** Delete copy constructor. */
+    qvi_hwloc(const qvi_hwloc &) = delete;
     /**
      *
      */
@@ -250,8 +255,8 @@ public:
      */
     int
     topology_export(
-        const char *base_path,
-        char **path
+        const std::string &base_path,
+        std::string &path
     );
     /**
      *
