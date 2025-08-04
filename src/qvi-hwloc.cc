@@ -142,16 +142,10 @@ set_visdev_id(
 
 static int
 topo_fname(
-    const char *base,
-    char **name
+    const std::string &base,
+    std::string &name
 ) {
-    const int np = asprintf(
-        name, "%s/%s.xml", base, "hwtopo"
-    );
-    if (qvi_unlikely(np == -1)) {
-        *name = nullptr;
-        return QV_ERR_OOR;
-    }
+    name = base + "/hwtopo.xml";
     return QV_SUCCESS;
 }
 
@@ -166,7 +160,7 @@ qvi_hwloc::bitmap_debug(
     assert(cpuset);
     char *cpusets = nullptr;
     int rc = qvi_hwloc::bitmap_asprintf(cpuset, &cpusets);
-    if (rc != QV_SUCCESS) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_abort();
     }
     qvi_log_debug("{} CPUSET={}", msg, cpusets);
@@ -187,7 +181,7 @@ void
 qvi_hwloc::bitmap_delete(
     hwloc_cpuset_t *cpuset
 ) {
-    if (!cpuset) return;
+    if (qvi_unlikely(!cpuset)) return;
     if (*cpuset) hwloc_bitmap_free(*cpuset);
     *cpuset = nullptr;
 }
@@ -305,7 +299,18 @@ qvi_hwloc::bitmap_split_by_chunk_id(
 qvi_hwloc::~qvi_hwloc(void)
 {
     if (m_topo) hwloc_topology_destroy(m_topo);
-    if (m_topo_file) free(m_topo_file);
+}
+
+int
+qvi_hwloc::m_topo_set_from_xml(
+    const char *path
+) {
+    const int rc = hwloc_topology_set_xml(m_topo, path);
+    if (qvi_unlikely(rc == -1)) {
+        qvi_log_error("hwloc_topology_set_xml() failed");
+        return QV_ERR_HWLOC;
+    }
+    return QV_SUCCESS;
 }
 
 int
@@ -373,6 +378,34 @@ out:
     return QV_SUCCESS;
 }
 
+/**
+ *
+ */
+int
+qvi_hwloc::s_topo_fopen(
+    const char *path,
+    int *fd
+) {
+    const int ifd = open(path, O_CREAT | O_RDWR, 0644);
+    if (ifd == -1) {
+        const int err = errno;
+        cstr_t ers = "open() failed";
+        qvi_log_error("{} {}", ers, strerror(err));
+        return QV_ERR_FILE_IO;
+    }
+    // We need to publish this file to consumers that are potentially not part
+    // of our group. We cannot assume the current umask, so set explicitly.
+    const int rc = fchmod(ifd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    if (rc == -1) {
+        const int err = errno;
+        cstr_t ers = "fchmod() failed";
+        qvi_log_error("{} {}", ers, strerror(err));
+        return QV_ERR_FILE_IO;
+    }
+    *fd = ifd;
+    return QV_SUCCESS;
+}
+
 int
 qvi_hwloc::topology_export(
     const char *base_path,
@@ -401,20 +434,20 @@ qvi_hwloc::topology_export(
         goto out;
     }
 
-    qvrc = topo_fname(base_path, &m_topo_file);
+    qvrc = topo_fname(base_path, m_topo_file);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) {
         ers = "topo_fname() failed";
         goto out;
     }
 
-    rc = asprintf(path, "%s", m_topo_file);
+    rc = asprintf(path, "%s", m_topo_file.c_str());
     if (qvi_unlikely(rc == -1)) {
         ers = "asprintf() failed";
         qvrc = QV_ERR_OOR;
         goto out;
     }
 
-    qvrc = s_topo_fopen(m_topo_file, &fd);
+    qvrc = s_topo_fopen(m_topo_file.c_str(), &fd);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) {
         ers = "topo_fopen() failed";
         goto out;
@@ -622,42 +655,6 @@ qvi_hwloc::bind_string(
 }
 
 int
-qvi_hwloc::m_obj_get_by_type(
-    qv_hw_obj_type_t type,
-    int type_index,
-    hwloc_obj_t *obj
-) {
-    const hwloc_obj_type_t obj_type = qvi_hwloc::obj_get_type(type);
-    hwloc_obj_t iobj = hwloc_get_obj_by_type(
-        m_topo, obj_type, (uint_t)type_index
-    );
-    if (qvi_unlikely(!iobj)) {
-        // There are a couple of reasons why target_obj may be NULL. If this
-        // ever happens and the specified type and obj index are valid, then
-        // improve this code.
-        qvi_log_error(
-            "hwloc_get_obj_by_type() failed. Please submit a bug report."
-        );
-        *obj = nullptr;
-        return QV_ERR_INTERNAL;
-    }
-    *obj = iobj;
-    return QV_SUCCESS;
-}
-
-int
-qvi_hwloc::m_topo_set_from_xml(
-    const char *path
-) {
-    const int rc = hwloc_topology_set_xml(m_topo, path);
-    if (qvi_unlikely(rc == -1)) {
-        qvi_log_error("hwloc_topology_set_xml() failed");
-        return QV_ERR_HWLOC;
-    }
-    return QV_SUCCESS;
-}
-
-int
 qvi_hwloc::m_set_general_device_info(
     hwloc_obj_t obj,
     hwloc_obj_t pci_obj,
@@ -854,7 +851,6 @@ qvi_hwloc::m_discover_nic_devices(void)
     return QV_SUCCESS;
 }
 
-
 int
 qvi_hwloc::m_discover_devices(void)
 {
@@ -863,34 +859,6 @@ qvi_hwloc::m_discover_devices(void)
     rc = m_discover_gpu_devices();
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     return m_discover_nic_devices();
-}
-
-/**
- *
- */
-int
-qvi_hwloc::s_topo_fopen(
-    const char *path,
-    int *fd
-) {
-    const int ifd = open(path, O_CREAT | O_RDWR, 0644);
-    if (ifd == -1) {
-        const int err = errno;
-        cstr_t ers = "open() failed";
-        qvi_log_error("{} {}", ers, strerror(err));
-        return QV_ERR_FILE_IO;
-    }
-    // We need to publish this file to consumers that are potentially not part
-    // of our group. We cannot assume the current umask, so set explicitly.
-    const int rc = fchmod(ifd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-    if (rc == -1) {
-        const int err = errno;
-        cstr_t ers = "fchmod() failed";
-        qvi_log_error("{} {}", ers, strerror(err));
-        return QV_ERR_FILE_IO;
-    }
-    *fd = ifd;
-    return QV_SUCCESS;
 }
 
 int
@@ -971,6 +939,30 @@ qvi_hwloc::task_get_cpubind_as_string(
     rc = qvi_hwloc::bitmap_asprintf(cpuset, cpusets);
     qvi_hwloc::bitmap_delete(&cpuset);
     return rc;
+}
+
+int
+qvi_hwloc::m_obj_get_by_type(
+    qv_hw_obj_type_t type,
+    int type_index,
+    hwloc_obj_t *obj
+) {
+    const hwloc_obj_type_t obj_type = qvi_hwloc::obj_get_type(type);
+    hwloc_obj_t iobj = hwloc_get_obj_by_type(
+        m_topo, obj_type, (uint_t)type_index
+    );
+    if (qvi_unlikely(!iobj)) {
+        // There are a couple of reasons why target_obj may be NULL. If this
+        // ever happens and the specified type and obj index are valid, then
+        // improve this code.
+        qvi_log_error(
+            "m_obj_get_by_type() failed. Please submit a bug report."
+        );
+        *obj = nullptr;
+        return QV_ERR_INTERNAL;
+    }
+    *obj = iobj;
+    return QV_SUCCESS;
 }
 
 /**
