@@ -179,7 +179,7 @@ qvi_hwsplit::m_split_cpuset(
     // algorithm.
     int rc = QV_SUCCESS;
     for (uint_t chunkid = 0; chunkid < m_split_size; ++chunkid) {
-        rc = m_rmi.hwloc()->bitmap_split_by_chunk_id(
+        rc = m_rmi.hwloc().bitmap_split_by_chunk_id(
             m_cpuset().cdata(), m_split_size,
             chunkid, result[chunkid].data()
         );
@@ -365,7 +365,7 @@ qvi_hwsplit::split_devices_affinity_preserving(void)
 
 static int
 apply_cpuset_mapping(
-    qvi_hwloc *hwloc,
+    qvi_hwloc &hwloc,
     const qvi_map_t &map,
     const qvi_hwloc_cpusets cpusets,
     std::vector<qvi_hwpool> &hwpools,
@@ -406,10 +406,9 @@ qvi_hwsplit::split_user_defined(void)
     qvi_map_t map{};
     rc = qvi_map_colors(map, m_colors, cpusets);
     if (rc != QV_SUCCESS) return rc;
-    qvi_hwloc *const hwloc = m_rmi.hwloc();
     // Update the hardware pools and colors to reflect the new mapping.
     rc = apply_cpuset_mapping(
-        hwloc, map, cpusets, m_hwpools, m_colors
+        m_rmi.hwloc(), map, cpusets, m_hwpools, m_colors
     );
     if (rc != QV_SUCCESS) return rc;
     // Use a straightforward device splitting algorithm based on user's request.
@@ -436,10 +435,9 @@ qvi_hwsplit::split_affinity_preserving_pass1(void)
     if (qvi_map_nfids_mapped(map) != m_group_size) {
         qvi_abort();
     }
-    qvi_hwloc *const hwloc = m_rmi.hwloc();
     // Update the hardware pools and colors to reflect the new mapping.
     return apply_cpuset_mapping(
-        hwloc, map, cpusets, m_hwpools, m_colors
+        m_rmi.hwloc(), map, cpusets, m_hwpools, m_colors
     );
 }
 
@@ -473,10 +471,9 @@ qvi_hwsplit::split_packed(void)
     if (qvi_map_nfids_mapped(map) != m_group_size) {
         qvi_abort();
     }
-    qvi_hwloc *const hwloc = m_rmi.hwloc();
     // Update the hardware pools and colors to reflect the new mapping.
     return apply_cpuset_mapping(
-        hwloc, map, cpusets, m_hwpools, m_colors
+        m_rmi.hwloc(), map, cpusets, m_hwpools, m_colors
     );
 }
 
@@ -497,10 +494,9 @@ qvi_hwsplit::split_spread(void)
     if (qvi_map_nfids_mapped(map) != m_group_size) {
         qvi_abort();
     }
-    qvi_hwloc *const hwloc = m_rmi.hwloc();
     // Update the hardware pools and colors to reflect the new mapping.
     return apply_cpuset_mapping(
-        hwloc, map, cpusets, m_hwpools, m_colors
+        m_rmi.hwloc(), map, cpusets, m_hwpools, m_colors
     );
 }
 

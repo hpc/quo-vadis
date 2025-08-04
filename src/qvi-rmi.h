@@ -55,14 +55,12 @@ using qvi_rmi_rpc_fun_ptr_t = std::function<
  * Maintains RMI configuration information.
  */
 struct qvi_rmi_config {
-    /** Maintains hardware locality information. */
-    qvi_hwloc *hwloc = nullptr;
     /** Connection URL. */
-    std::string url = {};
+    std::string url;
     /** Connection port number. */
     int portno = QVI_RMI_PORT_UNSET;
     /** Path to hardware topology file. */
-    std::string hwtopo_path = {};
+    std::string hwtopo_path;
 };
 
 /**
@@ -74,6 +72,8 @@ private:
     std::map<qvi_rmi_rpc_fid_t, qvi_rmi_rpc_fun_ptr_t> m_rpc_dispatch_table;
     /** Server configuration. */
     qvi_rmi_config m_config;
+    /** Maintains hardware locality information. */
+    qvi_hwloc m_hwloc;
     /** The base resource pool maintained by the server. */
     qvi_hwpool m_hwpool;
     /** ZMQ context. */
@@ -200,6 +200,12 @@ public:
     configure(
         const qvi_rmi_config &config
     );
+    /** Exports hardware topology. */
+    int
+    topology_export(
+        const std::string &base_path,
+        std::string &path
+    );
     /** Starts the server. */
     int
     start(void);
@@ -212,6 +218,8 @@ struct qvi_rmi_client {
 private:
     /** Client configuration. */
     qvi_rmi_config m_config;
+    /** Maintains hardware locality information. */
+    qvi_hwloc m_hwloc;
     /** ZMQ context. */
     void *m_zctx = nullptr;
     /** Communication socket. */
@@ -247,8 +255,8 @@ public:
     /** Destructor. */
     ~qvi_rmi_client(void);
     /** Returns a pointer to the client's hwloc instance. */
-    qvi_hwloc *
-    hwloc(void) const;
+    qvi_hwloc &
+    hwloc(void);
     /** Connects a client to to the server specified by the provided info. */
     int
     connect(

@@ -75,7 +75,7 @@ qvi_task::rmi(void)
     return m_rmi;
 }
 
-qvi_hwloc *
+qvi_hwloc &
 qvi_task::hwloc(void)
 {
     return m_rmi.hwloc();

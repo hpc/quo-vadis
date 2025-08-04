@@ -408,8 +408,8 @@ qvi_hwloc::s_topo_fopen(
 
 int
 qvi_hwloc::topology_export(
-    const char *base_path,
-    char **path
+    const std::string &base_path,
+    std::string &path
 ) {
     int qvrc = QV_SUCCESS, rc = 0, fd = 0;
     cstr_t ers = nullptr;
@@ -440,12 +440,7 @@ qvi_hwloc::topology_export(
         goto out;
     }
 
-    rc = asprintf(path, "%s", m_topo_file.c_str());
-    if (qvi_unlikely(rc == -1)) {
-        ers = "asprintf() failed";
-        qvrc = QV_ERR_OOR;
-        goto out;
-    }
+    path = m_topo_file;
 
     qvrc = s_topo_fopen(m_topo_file.c_str(), &fd);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) {

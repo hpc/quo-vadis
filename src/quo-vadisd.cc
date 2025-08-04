@@ -17,7 +17,6 @@
  */
 
 #include "qvi-utils.h"
-#include "qvi-hwloc.h"
 #include "qvi-rmi.h"
 
 static const std::string app_name = "quo-vadisd";
@@ -25,23 +24,16 @@ static const std::string app_name = "quo-vadisd";
 using option_help = std::map<std::string, std::string>;
 
 struct qvid {
-    qvi_rmi_server rmi;
     qvi_rmi_config rmic;
+    qvi_rmi_server rmi;
     /** Base session directory. */
     std::string session_dir = {};
     /** Run as a daemon flag. */
     bool daemonized = true;
     /** Constructor. */
-    qvid(void)
-    {
-        const int rc = qvi_new(&rmic.hwloc);
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
-    }
+    qvid(void) = default;
     /** Destructor. */
-    ~qvid(void)
-    {
-        qvi_delete(&rmic.hwloc);
-    }
+    ~qvid(void) = default;
 
     void
     closefds(void)
@@ -113,25 +105,7 @@ struct qvid {
 
         const int rc = rmi.start();
         if (qvi_unlikely(rc != QV_SUCCESS)) {
-            const cstr_t ers = "qvi_rmi_server_start() failed";
-            qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
-        }
-    }
-
-    void
-    load_hwtopo(void)
-    {
-        qvi_log_info("Loading hardware information");
-
-        int rc = rmic.hwloc->topology_init(nullptr);
-        if (qvi_unlikely(rc != QV_SUCCESS)) {
-            static cstr_t ers = "qvi_hwloc_topology_init() failed";
-            qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
-        }
-
-        rc = rmic.hwloc->topology_load();
-        if (qvi_unlikely(rc != QV_SUCCESS)) {
-            static cstr_t ers = "qvi_hwloc_topology_load() failed";
+            const cstr_t ers = "rmi.start() failed";
             qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
         }
     }
@@ -199,16 +173,11 @@ struct qvid {
     {
         qvi_log_info("Publishing hardware information");
 
-        char *path = nullptr;
-        const int rc = rmic.hwloc->topology_export(
-            session_dir.c_str(), &path
-        );
+        const int rc = rmi.topology_export(session_dir, rmic.hwtopo_path);
         if (qvi_unlikely(rc != QV_SUCCESS)) {
-            const cstr_t ers = "qvi_hwloc_topology_export() failed";
+            const cstr_t ers = "rmi.topology_export() failed";
             qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
         }
-        rmic.hwtopo_path = std::string(path);
-        free(path);
     }
 
     void
@@ -326,8 +295,6 @@ start(
         qvd.determine_connection_info();
         // Create our session directory.
         qvd.make_session_dir();
-        // Gather and publish hardware information.
-        qvd.load_hwtopo();
         qvd.export_hwtopo();
         // Configure RMI, start listening for commands.
         qvd.configure_rmi();
