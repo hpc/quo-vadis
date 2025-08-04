@@ -18,7 +18,8 @@
 qvi_hwloc &
 qvi_group::hwloc(void)
 {
-    return task()->hwloc();
+    // Remember that task() is polymorphic.
+    return task().hwloc();
 }
 
 int

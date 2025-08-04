@@ -55,7 +55,7 @@ public:
      * for runtimes like OpenMP where respective parallel regions may spawn new
      * threads.
      */
-    virtual qvi_task *
+    virtual qvi_task &
     task(void) {
         static std::atomic<size_t> next_index(0);
         const pid_t mytid = qvi_gettid();
@@ -77,7 +77,7 @@ public:
             default:
                 throw qvi_runtime_error();
         }
-        return &m_tasks.at(myindex);
+        return m_tasks.at(myindex);
     }
 
     virtual int
