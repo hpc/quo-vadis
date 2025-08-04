@@ -41,7 +41,7 @@ private:
     /** The cached node topology. */
     hwloc_topology_t m_topo = nullptr;
     /** Path to exported hardware topology. */
-    char *m_topo_file = nullptr;
+    std::string m_topo_file;
     /** Cached set of PCI IDs discovered during topology load. */
     qvi_hwloc_dev_id_set m_device_ids;
     /** Cached devices discovered during topology load. */
@@ -339,7 +339,6 @@ public:
         pid_t task_id,
         hwloc_cpuset_t *out_cpuset
     );
-
     /**
      *
      */
