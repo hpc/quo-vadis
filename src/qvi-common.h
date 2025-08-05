@@ -50,12 +50,15 @@
 #include "qvi-log.h"
 #include <chrono>
 #include <csignal>
+#include <filesystem>
 #include <list>
 #include <map>
 #include <mutex>
 #include <condition_variable>
 #include <new>
 #include <numeric>
+#include <random>
+#include <regex>
 #include <set>
 #include <stack>
 #include <stdexcept>

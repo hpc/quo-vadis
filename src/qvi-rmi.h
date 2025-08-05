@@ -253,11 +253,16 @@ public:
     /** Returns a pointer to the client's hwloc instance. */
     qvi_hwloc &
     hwloc(void);
+    /** Discovers server connection information. */
+    int
+    discover(
+        int &portno
+    );
     /** Connects a client to to the server specified by the provided info. */
     int
     connect(
         const std::string &url,
-        const int &portno
+        const int portno
     );
     /** Returns the current cpuset of the provided PID. */
     int
@@ -329,6 +334,9 @@ qvi_rmi_get_url(
  */
 std::string
 qvi_rmi_conn_env_ers(void);
+
+std::string
+qvi_rmi_discovery_ers(void);
 
 #endif
 
