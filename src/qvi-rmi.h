@@ -33,7 +33,6 @@ typedef enum {
     QVI_RMI_FID_INVALID = 0,
     QVI_RMI_FID_SERVER_SHUTDOWN,
     QVI_RMI_FID_HELLO,
-    QVI_RMI_FID_GOODBYE,
     QVI_RMI_FID_GET_CPUBIND,
     QVI_RMI_FID_SET_CPUBIND,
     QVI_RMI_FID_OBJ_TYPE_DEPTH,
@@ -133,14 +132,6 @@ private:
         qvi_rmi_msg_header *hdr,
         void *input,
         qvi_bbuff **output
-    );
-    /** */
-    static int
-    s_rpc_goodbye(
-        qvi_rmi_server *,
-        qvi_rmi_msg_header *,
-        void *,
-        qvi_bbuff **
     );
     /** */
     static int
