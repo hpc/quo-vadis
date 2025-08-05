@@ -251,7 +251,7 @@ private:
     );
 public:
     /** Constructor. */
-    qvi_rmi_client(void);
+    qvi_rmi_client(void) = default;
     /** Destructor. */
     ~qvi_rmi_client(void);
     /** Returns a pointer to the client's hwloc instance. */

@@ -281,7 +281,7 @@ qvi_hwloc::bitmap_split_by_chunk_id(
     hwloc_cpuset_t result
 ) {
     uint_t chunk_size = 0;
-    int rc = m_split_cpuset_chunk_size(
+    const int rc = m_split_cpuset_chunk_size(
         bitmap, nchunks, &chunk_size
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;

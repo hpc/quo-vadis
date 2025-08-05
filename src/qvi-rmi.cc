@@ -323,10 +323,6 @@ rpc_unpack(
     return qvi_bbuff_rmi_unpack(body, std::forward<Types>(args)...);
 }
 
-qvi_rmi_client::qvi_rmi_client(void)
-{
-}
-
 qvi_rmi_client::~qvi_rmi_client(void)
 {
     // Make sure we can safely call zmq_ctx_destroy(). Otherwise it will hang.
@@ -640,6 +636,75 @@ qvi_rmi_server::~qvi_rmi_server(void)
     unlink(m_config.hwtopo_path.c_str());
 }
 
+int
+qvi_rmi_server::m_get_intrinsic_scope_user(
+    pid_t,
+    qvi_hwpool **hwpool
+) {
+    return qvi_hwpool::create(
+        m_hwloc, m_hwloc.topology_get_cpuset(), hwpool
+    );
+}
+
+int
+qvi_rmi_server::m_get_intrinsic_scope_proc(
+    pid_t who,
+    qvi_hwpool **hwpool
+) {
+    hwloc_cpuset_t cpuset = nullptr;
+    int rc = m_hwloc.task_get_cpubind(who, &cpuset);
+    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+
+    rc = qvi_hwpool::create(m_hwloc, cpuset, hwpool);
+out:
+    qvi_hwloc::bitmap_delete(&cpuset);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        qvi_delete(hwpool);
+    }
+    return rc;
+}
+
+// TODO(skg) Lots of error path cleanup is required.
+int
+qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
+    qvi_rmi_server *server,
+    qvi_rmi_msg_header *hdr,
+    void *input,
+    qvi_bbuff **output
+) {
+    // Get requestor task id (type and pid) and intrinsic scope as integers
+    // from client request.
+    pid_t requestor;
+    qv_scope_intrinsic_t iscope;
+    int rc = qvi_bbuff_rmi_unpack(input, &requestor, &iscope);
+    if (rc != QV_SUCCESS) return rc;
+
+    int rpcrc = QV_SUCCESS;
+    // TODO(skg) Implement the rest.
+    qvi_hwpool *hwpool = nullptr;
+    switch (iscope) {
+        case QV_SCOPE_SYSTEM:
+        case QV_SCOPE_USER:
+        case QV_SCOPE_JOB:
+            rpcrc = server->m_get_intrinsic_scope_user(requestor, &hwpool);
+            break;
+        case QV_SCOPE_PROCESS:
+            rpcrc = server->m_get_intrinsic_scope_proc(requestor, &hwpool);
+            break;
+        default:
+            rpcrc = QV_ERR_INVLD_ARG;
+            break;
+    }
+    // TODO(skg) Protect against errors above.
+    rc = rpc_pack(output, hdr->fid, rpcrc, hwpool);
+
+    qvi_delete(&hwpool);
+    if (rc != QV_SUCCESS) {
+        return rc;
+    }
+    return rpcrc;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Server-Side RPC Definitions
 ////////////////////////////////////////////////////////////////////////////////
@@ -723,14 +788,13 @@ qvi_rmi_server::s_rpc_set_cpubind(
     qvi_bbuff **output
 ) {
     pid_t who;
-    hwloc_cpuset_t cpuset = nullptr;
-    const int qvrc = qvi_bbuff_rmi_unpack(input, &who, &cpuset);
+    qvi_hwloc_bitmap cpuset;
+    const int qvrc = qvi_bbuff_rmi_unpack(input, &who, cpuset);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
 
     const int rpcrc = server->m_hwloc.task_set_cpubind_from_cpuset(
-        who, cpuset
+        who, cpuset.cdata()
     );
-    qvi_hwloc::bitmap_delete(&cpuset);
     return rpc_pack(output, hdr->fid, rpcrc);
 }
 
@@ -742,9 +806,7 @@ qvi_rmi_server::s_rpc_obj_type_depth(
     qvi_bbuff **output
 ) {
     qv_hw_obj_type_t obj;
-    const int qvrc = qvi_bbuff_rmi_unpack(
-        input, &obj
-    );
+    const int qvrc = qvi_bbuff_rmi_unpack(input, &obj);
     if (qvrc != QV_SUCCESS) return qvrc;
 
     int depth = 0;
@@ -761,21 +823,18 @@ qvi_rmi_server::s_rpc_get_nobjs_in_cpuset(
     qvi_bbuff **output
 ) {
     qv_hw_obj_type_t target_obj;
-    hwloc_cpuset_t cpuset = nullptr;
+    qvi_hwloc_bitmap cpuset;
     int qvrc = qvi_bbuff_rmi_unpack(
-        input, &target_obj, &cpuset
+        input, &target_obj, cpuset
     );
-    if (qvrc != QV_SUCCESS) return qvrc;
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
 
     int nobjs = 0;
     const int rpcrc = server->m_hwloc.get_nobjs_in_cpuset(
-        target_obj, cpuset, &nobjs
+        target_obj, cpuset.cdata(), &nobjs
     );
 
-    qvrc = rpc_pack(output, hdr->fid, rpcrc, nobjs);
-
-    qvi_hwloc::bitmap_delete(&cpuset);
-    return qvrc;
+    return rpc_pack(output, hdr->fid, rpcrc, nobjs);
 }
 
 int
@@ -804,76 +863,6 @@ qvi_rmi_server::s_rpc_get_device_in_cpuset(
     qvi_hwloc::bitmap_delete(&cpuset);
     free(dev_id);
     return qvrc;
-}
-
-int
-qvi_rmi_server::m_get_intrinsic_scope_user(
-    pid_t,
-    qvi_hwpool **hwpool
-) {
-    // TODO(skg) Is the cpuset the best way to do this?
-    return qvi_hwpool::create(
-        m_hwloc, m_hwloc.topology_get_cpuset(), hwpool
-    );
-}
-
-int
-qvi_rmi_server::m_get_intrinsic_scope_proc(
-    pid_t who,
-    qvi_hwpool **hwpool
-) {
-    hwloc_cpuset_t cpuset = nullptr;
-    int rc = m_hwloc.task_get_cpubind(who, &cpuset);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-
-    rc = qvi_hwpool::create(m_hwloc, cpuset, hwpool);
-out:
-    qvi_hwloc::bitmap_delete(&cpuset);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_delete(hwpool);
-    }
-    return rc;
-}
-
-// TODO(skg) Lots of error path cleanup is required.
-int
-qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
-    qvi_rmi_server *server,
-    qvi_rmi_msg_header *hdr,
-    void *input,
-    qvi_bbuff **output
-) {
-    // Get requestor task id (type and pid) and intrinsic scope as integers
-    // from client request.
-    pid_t requestor;
-    qv_scope_intrinsic_t iscope;
-    int rc = qvi_bbuff_rmi_unpack(input, &requestor, &iscope);
-    if (rc != QV_SUCCESS) return rc;
-
-    int rpcrc = QV_SUCCESS;
-    // TODO(skg) Implement the rest.
-    qvi_hwpool *hwpool = nullptr;
-    switch (iscope) {
-        case QV_SCOPE_SYSTEM:
-        case QV_SCOPE_USER:
-        case QV_SCOPE_JOB:
-            rpcrc = server->m_get_intrinsic_scope_user(requestor, &hwpool);
-            break;
-        case QV_SCOPE_PROCESS:
-            rpcrc = server->m_get_intrinsic_scope_proc(requestor, &hwpool);
-            break;
-        default:
-            rpcrc = QV_ERR_INVLD_ARG;
-            break;
-    }
-    // TODO(skg) Protect against errors above.
-    rc = rpc_pack(output, hdr->fid, rpcrc, hwpool);
-
-    qvi_delete(&hwpool);
-    if (rc != QV_SUCCESS) {
-        return rc;
-    }
-    return rpcrc;
 }
 
 int
@@ -957,9 +946,8 @@ qvi_rmi_server::topology_export(
 int
 qvi_rmi_server::m_populate_base_hwpool(void)
 {
-    hwloc_const_cpuset_t cpuset = m_hwloc.topology_get_cpuset();
     // The base resource pool will contain all available processors and devices.
-    return m_hwpool.initialize(m_hwloc, cpuset);
+    return m_hwpool.initialize(m_hwloc, m_hwloc.topology_get_cpuset());
 }
 
 int
