@@ -16,15 +16,6 @@
  * Resource Management and Inquiry
  */
 
-// TODO(skg) We need to figure out how best to handle errors in RPC code. For
-// example, if a server-side error occurs, what do we do? Return locally or
-// return the error via RPC to the caller?
-//
-// TODO(skg) We need to have empty RPC data types that can be returned to the
-// caller in case of an non-fatal error on the server side.
-//
-// TODO(skg) We need to implement timeouts.
-//
 // TODO(skg) We need to version client/server RPC dispatch.
 
 #include "qvi-rmi.h"
@@ -602,7 +593,6 @@ qvi_rmi_server::qvi_rmi_server(void)
         {QVI_RMI_FID_INVALID, s_rpc_invalid},
         {QVI_RMI_FID_SERVER_SHUTDOWN, s_rpc_shutdown},
         {QVI_RMI_FID_HELLO, s_rpc_hello},
-        {QVI_RMI_FID_GOODBYE, s_rpc_goodbye},
         {QVI_RMI_FID_GET_CPUBIND, s_rpc_get_cpubind},
         {QVI_RMI_FID_SET_CPUBIND, s_rpc_set_cpubind},
         {QVI_RMI_FID_OBJ_TYPE_DEPTH, s_rpc_obj_type_depth},
@@ -738,7 +728,6 @@ qvi_rmi_server::s_rpc_hello(
     void *input,
     qvi_bbuff **output
 ) {
-    // TODO(skg) This will go into some registry somewhere.
     pid_t whoisit;
     const int rc = qvi_bbuff_rmi_unpack(input, &whoisit);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
@@ -748,17 +737,6 @@ qvi_rmi_server::s_rpc_hello(
         output, hdr->fid, rpcrc,
         server->m_config.hwtopo_path
     );
-}
-
-int
-qvi_rmi_server::s_rpc_goodbye(
-    qvi_rmi_server *,
-    qvi_rmi_msg_header *,
-    void *,
-    qvi_bbuff **
-) {
-    // TODO(skg) This is where we will do bookkeeping for closed connections.
-    return QV_ERR_INVLD_ARG;
 }
 
 int

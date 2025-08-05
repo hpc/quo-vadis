@@ -38,7 +38,7 @@ qvi_task::m_connect_to_server(void)
     if (qvi_unlikely(rc == QV_RES_UNAVAILABLE)) {
         const std::string msg =
             "\n\n#############################################\n"
-            "# A client could not connect to its server.\n"
+            "# A client could not communicate with its server.\n"
             "# Ensure quo-vadisd is running and reachable."
             "\n#############################################\n\n";
         qvi_log_error("{}", msg);
