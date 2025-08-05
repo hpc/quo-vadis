@@ -98,8 +98,6 @@ emit_iter_info(
 ) {
     char const *ers = NULL;
 
-    scopei_ep_push(sinfo, rank);
-
     char *binds;
     const int rc = qv_scope_bind_string(
         sinfo->th_scopes[rank], QV_BIND_STRING_LOGICAL, &binds
@@ -113,8 +111,6 @@ emit_iter_info(
         ctu_gettid(), omp_get_thread_num(), omp_get_num_threads(), i, binds
     );
     free(binds);
-
-    scopei_ep_pop(sinfo, rank);
 }
 
 int
@@ -134,8 +130,31 @@ main(void)
         printf("# Scope creation took %lf seconds\n", tock - tick);
     }
 
+    // First, set the thread affinities based on the computed execution policy.
+    #pragma omp parallel
+    {
+        scopei_ep_push(&ep_sinfo, omp_get_thread_num());
+    }
+
     #pragma omp parallel for schedule(dynamic)
-    for (int i = 0; i < ep_sinfo.nthreads * 128; ++i) {
+    for (int i = 0; i < ep_sinfo.nthreads * 64; ++i) {
+        emit_iter_info(&ep_sinfo, omp_get_thread_num(), i);
+    }
+
+    // Done with our calculation, so undo the threads' execution policy.
+    #pragma omp parallel
+    {
+        scopei_ep_pop(&ep_sinfo, omp_get_thread_num());
+    }
+
+    #pragma omp parallel
+    #pragma omp master
+    {
+        printf("\n# Now running without a QV execution policy\n\n");
+    }
+
+    #pragma omp parallel for schedule(dynamic)
+    for (int i = 0; i < ep_sinfo.nthreads * 64; ++i) {
         emit_iter_info(&ep_sinfo, omp_get_thread_num(), i);
     }
 
