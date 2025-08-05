@@ -303,9 +303,9 @@ qvi_hwloc::~qvi_hwloc(void)
 
 int
 qvi_hwloc::m_topo_set_from_xml(
-    const char *path
+    const std::string &path
 ) {
-    const int rc = hwloc_topology_set_xml(m_topo, path);
+    const int rc = hwloc_topology_set_xml(m_topo, path.c_str());
     if (qvi_unlikely(rc == -1)) {
         qvi_log_error("hwloc_topology_set_xml() failed");
         return QV_ERR_HWLOC;
@@ -315,14 +315,14 @@ qvi_hwloc::m_topo_set_from_xml(
 
 int
 qvi_hwloc::topology_init(
-    const char *xml
+    const std::string &xml_path
 ) {
     const int rc = hwloc_topology_init(&m_topo);
     if (qvi_unlikely(rc != 0)) {
         qvi_log_error("hwloc_topology_init() failed");
         return QV_ERR_HWLOC;
     }
-    if (xml) return m_topo_set_from_xml(xml);
+    if (!xml_path.empty()) return m_topo_set_from_xml(xml_path);
     return QV_SUCCESS;
 }
 
@@ -652,7 +652,7 @@ int
 qvi_hwloc::m_set_general_device_info(
     hwloc_obj_t obj,
     hwloc_obj_t pci_obj,
-    cstr_t pci_bus_id,
+    const std::string &pci_bus_id,
     qvi_hwloc_device *device
 ) {
     switch (obj->attr->osdev.type) {
@@ -662,7 +662,6 @@ qvi_hwloc::m_set_general_device_info(
         case HWLOC_OBJ_OSDEV_COPROC:
             device->type = QV_HW_OBJ_GPU;
             break;
-        // TODO(skg) Add other device types.
         default:
             return QV_SUCCESS;
     }
@@ -671,7 +670,7 @@ qvi_hwloc::m_set_general_device_info(
     // Save device name.
     device->name = std::string(obj->name);
     // Set the PCI bus ID.
-    device->pci_bus_id = std::string(pci_bus_id);
+    device->pci_bus_id = pci_bus_id;
     // Set visible device ID, if applicable.
     return set_visdev_id(device);
 }
@@ -740,7 +739,7 @@ qvi_hwloc::m_discover_devices_first_pass(void)
         auto new_dev = std::make_shared<qvi_hwloc_device>();
         // Save general device info to new device instance.
         const int rc = m_set_general_device_info(
-            obj, pci_obj, busid.c_str(), new_dev.get()
+            obj, pci_obj, busid, new_dev.get()
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
         // Add the new device to our list of available devices.

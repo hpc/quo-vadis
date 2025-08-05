@@ -21,7 +21,7 @@ server(
     qvi_rmi_config config;
     qvi_rmi_server server;
 
-    int rc = hwloc.topology_init(nullptr);
+    int rc = hwloc.topology_init();
     if (rc != QV_SUCCESS) {
         ers = "hwloc.topology_init() failed";
         goto out;

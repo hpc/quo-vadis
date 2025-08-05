@@ -167,7 +167,7 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = hwl->topology_init(nullptr);
+    rc = hwl->topology_init();
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_topology_init() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
