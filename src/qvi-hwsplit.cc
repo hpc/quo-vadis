@@ -138,14 +138,13 @@ qvi_hwsplit::qvi_hwsplit(
   , m_split_size(split_size)
   , m_split_at_type(split_at_type)
 {
-    hwloc_cpuset_t task_affinity = nullptr;
-    int rc = parent->group().task().bind_top(&task_affinity);
+    qvi_hwloc_bitmap task_affinity;
+    int rc = parent->group().task().bind_top(task_affinity);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 
-    rc = m_cpu_affinity.set(task_affinity);
+    rc = m_cpu_affinity.set(task_affinity.cdata());
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
 
-    qvi_hwloc::bitmap_delete(&task_affinity);
     // To save memory we don't eagerly resize our vectors to group_size
     // since most processes will not use the storage. For example, in the
     // collective case the root ID process will be the only one needing
@@ -695,8 +694,8 @@ qvi_hwsplit::thread_split(
     //No point in doing this in a loop.
     const pid_t taskid = qvi_task::mytid();
     // Get the task's current affinity.
-    hwloc_cpuset_t task_affinity = nullptr;
-    int rc = parent->group().task().bind_top(&task_affinity);
+    qvi_hwloc_bitmap task_affinity;
+    int rc = parent->group().task().bind_top(task_affinity);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Prepare the hwsplit with our parent's information.
     for (uint_t i = 0; i < group_size; ++i) {
@@ -705,10 +704,8 @@ qvi_hwsplit::thread_split(
         // Since this is called by a single task, replicate its task ID, too.
         hwsplit.m_group_tids.at(i) = taskid;
         // Same goes for the task's affinity.
-        hwsplit.m_cpu_affinities.at(i).set(task_affinity);
+        hwsplit.m_cpu_affinities.at(i).set(task_affinity.cdata());
     }
-    // Cleanup: we don't need task_affinity anymore.
-    qvi_hwloc::bitmap_delete(&task_affinity);
     // Split the hardware resources based on the provided split parameters.
     rc = hwsplit.m_split();
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;

@@ -203,13 +203,11 @@ qv_scope::bind_string(
 ) {
     *result = nullptr;
 
-    hwloc_cpuset_t bitmap = nullptr;
-    int rc = m_group->task().bind_top(&bitmap);
+    qvi_hwloc_bitmap bitmap;
+    const int rc = m_group->task().bind_top(bitmap);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    rc = m_group->hwloc().bind_string(bitmap, flags, result);
-    qvi_hwloc::bitmap_delete(&bitmap);
-    return rc;
+    return m_group->hwloc().bind_string(bitmap.cdata(), flags, result);
 }
 
 int

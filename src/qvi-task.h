@@ -21,15 +21,15 @@
 #include "qvi-rmi.h"
 #include "qvi-hwloc.h"
 
-using qvi_task_bind_stack_t = std::stack<qvi_hwloc_bitmap>;
+using qvi_task_bind_stack = std::stack<qvi_hwloc_bitmap>;
 
 struct qvi_task {
 private:
     /** Client-side connection to the RMI. */
     qvi_rmi_client m_rmi;
     /** The task's bind stack. */
-    qvi_task_bind_stack_t m_stack;
-    /** Connects to the RMI server. */
+    qvi_task_bind_stack m_stack;
+    /** Implements the RMI server connection. */
     int
     m_connect_to_server(void);
     /** Initializes the bind stack. */
@@ -43,9 +43,12 @@ public:
     qvi_task(void) = default;
     /** Copy constructor. */
     qvi_task(const qvi_task &src) = delete;
+    /** Assignment operator. */
+    void
+    operator=(const qvi_task &src) = delete;
     /** Destructor. */
     ~qvi_task(void) = default;
-    /** */
+    /** Connects to the server. */
     int
     connect_to_server(void);
     /** Returns a reference to the task's RMI. */
@@ -71,7 +74,7 @@ public:
     /** Returns the task's current cpuset. */
     int
     bind_top(
-        hwloc_cpuset_t *result
+        qvi_hwloc_bitmap &result
     );
 };
 
