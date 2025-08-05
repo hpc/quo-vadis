@@ -1,6 +1,6 @@
 # -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*-
 #
-# Copyright (c) 2020-2024 Triad National Security, LLC
+# Copyright (c) 2020-2025 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -26,7 +26,7 @@ set(CMAKE_C_STANDARD 11)
 set(C_STANDARD_REQUIRED TRUE)
 
 # Specify the C++ standard
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CXX_STANDARD_REQUIRED TRUE)
 
 # Append our module path
