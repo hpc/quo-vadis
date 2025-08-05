@@ -386,9 +386,7 @@ qvi_rmi_client::connect(
     m_config.url = url;
     m_config.hwtopo_path = hwtopo_path;
     // Now we can initialize and load our topology.
-    rc = m_hwloc.topology_init(
-        m_config.hwtopo_path.c_str()
-    );
+    rc = m_hwloc.topology_init(m_config.hwtopo_path);
     if (qvi_unlikely(rc != QV_SUCCESS)) return QV_RES_UNAVAILABLE;
 
     rc = m_hwloc.topology_load();
@@ -617,7 +615,7 @@ qvi_rmi_server::qvi_rmi_server(void)
         {QVI_RMI_FID_GET_INTRINSIC_HWPOOL, s_rpc_get_intrinsic_hwpool}
     };
 
-    int qvrc = m_hwloc.topology_init(nullptr);
+    int qvrc = m_hwloc.topology_init();
     if (qvi_unlikely(qvrc != QV_SUCCESS)) {
         static cstr_t ers = "hwloc.topology_init() failed";
         qvi_log_error("{} (rc={}, {})", ers, qvrc, qv_strerr(qvrc));

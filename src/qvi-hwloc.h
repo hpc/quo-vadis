@@ -53,7 +53,7 @@ private:
     /** */
     int
     m_topo_set_from_xml(
-        const char *path
+        const std::string &path
     );
     /** */
     static int
@@ -80,7 +80,7 @@ private:
     m_set_general_device_info(
         hwloc_obj_t obj,
         hwloc_obj_t pci_obj,
-        cstr_t pci_bus_id,
+        const std::string &pci_bus_id,
         qvi_hwloc_device *device
     );
     /** */
@@ -239,11 +239,12 @@ public:
     /** Delete copy constructor. */
     qvi_hwloc(const qvi_hwloc &) = delete;
     /**
-     *
+     * Initialize hardware topology. If an XML path is provided, set
+     * the hardware topology based on the contents of the XML file.
      */
     int
     topology_init(
-        const char *xml
+        const std::string &xml_path = ""
     );
     /**
      *
