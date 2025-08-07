@@ -23,6 +23,18 @@ qvi_task::mytid(void)
     return qvi_gettid();
 }
 
+qvi_rmi_client &
+qvi_task::rmi(void)
+{
+    return m_rmi;
+}
+
+qvi_hwloc &
+qvi_task::hwloc(void)
+{
+    return m_rmi.hwloc();
+}
+
 int
 qvi_task::m_connect_to_server(void)
 {
@@ -67,18 +79,6 @@ qvi_task::connect_to_server(void)
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Initialize our bind stack.
     return m_init_bind_stack();
-}
-
-qvi_rmi_client &
-qvi_task::rmi(void)
-{
-    return m_rmi;
-}
-
-qvi_hwloc &
-qvi_task::hwloc(void)
-{
-    return m_rmi.hwloc();
 }
 
 int

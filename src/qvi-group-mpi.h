@@ -48,15 +48,20 @@ public:
     }
 
     virtual int
+    size(void) const
+    {
+        return qvi_mpi_group_size(m_mpi_group);
+    }
+
+    virtual int
     rank(void) const
     {
         return qvi_mpi_group_rank(m_mpi_group);
     }
 
-    virtual int
-    size(void) const
-    {
-        return qvi_mpi_group_size(m_mpi_group);
+    virtual std::vector<pid_t>
+    pids(void) const {
+        return qvi_mpi_group_pids(m_mpi_group);
     }
 
     virtual int

@@ -44,6 +44,9 @@ struct qvi_group : qvi_refc {
     /** Returns the caller's group rank. */
     virtual int
     rank(void) const = 0;
+    /** Returns a vector of group member PIDs. */
+    virtual std::vector<pid_t>
+    pids(void) const  = 0;
     /** Performs node-local group barrier. */
     virtual int
     barrier(void) const = 0;

@@ -26,7 +26,7 @@ using qvi_map_t = std::map<uint_t, uint_t>;
  * Defines a function pointer to a desired mapping function.
  */
 using qvi_map_fn_t = std::function<
-    int(qvi_map_t &map, uint_t nfids, const qvi_hwloc_cpusets &tres)
+    int(qvi_map_t &map, uint_t nfids, const qvi_hwloc_bitmaps &tres)
 >;
 
 /**
@@ -86,14 +86,14 @@ int
 qvi_map_packed(
     qvi_map_t &map,
     uint_t nfids,
-    const qvi_hwloc_cpusets &tres
+    const qvi_hwloc_bitmaps &tres
 );
 
 int
 qvi_map_spread(
     qvi_map_t &map,
     uint_t nfids,
-    const qvi_hwloc_cpusets &tres
+    const qvi_hwloc_bitmaps &tres
 );
 
 /**
@@ -102,8 +102,8 @@ qvi_map_spread(
  */
 int
 qvi_map_calc_shaffinity(
-    const qvi_hwloc_cpusets &faffs,
-    const qvi_hwloc_cpusets &tores,
+    const qvi_hwloc_bitmaps &faffs,
+    const qvi_hwloc_bitmaps &tores,
     qvi_map_shaffinity_t &res_affinity_map
 );
 
@@ -124,7 +124,7 @@ int
 qvi_map_colors(
     qvi_map_t &map,
     const std::vector<int> &fcolors,
-    const qvi_hwloc_cpusets &tres
+    const qvi_hwloc_bitmaps &tres
 );
 
 /**
@@ -134,8 +134,8 @@ int
 qvi_map_affinity_preserving(
     qvi_map_t &map,
     const qvi_map_fn_t map_rest_fn,
-    const qvi_hwloc_cpusets &faffs,
-    const qvi_hwloc_cpusets &tores
+    const qvi_hwloc_bitmaps &faffs,
+    const qvi_hwloc_bitmaps &tores
 );
 
 /**
@@ -144,7 +144,7 @@ qvi_map_affinity_preserving(
 hwloc_const_cpuset_t
 qvi_map_cpuset_at(
     const qvi_map_t &map,
-    const qvi_hwloc_cpusets &cpusets,
+    const qvi_hwloc_bitmaps &cpusets,
     uint_t fid
 );
 

@@ -60,7 +60,7 @@ qv_scope::make_intrinsic(
     // Get the requested intrinsic hardware pool.
     qvi_hwpool *hwpool = nullptr;
     rc = group->task().rmi().get_intrinsic_hwpool(
-        qvi_task::mytid(), iscope, &hwpool
+        group->pids(), iscope, &hwpool
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Create and initialize the scope.

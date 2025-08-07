@@ -97,6 +97,14 @@ qvi_mpi_group_rank(
 /**
  *
  */
+std::vector<pid_t>
+qvi_mpi_group_pids(
+    const qvi_mpi_group_t *group
+);
+
+/**
+ *
+ */
 int
 qvi_mpi_group_lookup_by_id(
     qvi_mpi_t *mpi,

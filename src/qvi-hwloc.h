@@ -23,8 +23,8 @@
 struct qvi_hwloc_bitmap;
 struct qvi_hwloc_device;
 
-/** Vector of cpuset objects. */
-using qvi_hwloc_cpusets = std::vector<qvi_hwloc_bitmap>;
+/** Vector of bitmap objects. */
+using qvi_hwloc_bitmaps = std::vector<qvi_hwloc_bitmap>;
 /** Set of device identifiers. */
 using qvi_hwloc_dev_id_set = std::unordered_set<std::string>;
 /** Device list type. */
@@ -495,6 +495,22 @@ public:
     cdata(void) const
     {
         return m_data;
+    }
+    /**
+     * Returns the result of an hwloc_bitmap_or over the provided bitmaps.
+     */
+    static qvi_hwloc_bitmap
+    op_or(
+        const qvi_hwloc_bitmaps &bitmaps
+    ) {
+        qvi_hwloc_bitmap result;
+        for (const auto &bitmap : bitmaps) {
+            const int orrc = hwloc_bitmap_or(
+                result.data(), result.cdata(), bitmap.cdata()
+            );
+            if (qvi_unlikely(orrc != 0)) throw qvi_runtime_error();
+        }
+        return result;
     }
 };
 

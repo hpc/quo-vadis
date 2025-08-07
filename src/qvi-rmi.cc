@@ -31,7 +31,6 @@ static const std::string PORT_ENV_VAR = "QV_PORT";
 
 struct qvi_rmi_msg_header {
     qvi_rmi_rpc_fid_t fid = QVI_RMI_FID_INVALID;
-    char picture[16] = {'\0'};
 };
 
 /**
@@ -143,19 +142,10 @@ zsocket_create_and_bind(
 static inline int
 buffer_append_header(
     qvi_bbuff *buff,
-    qvi_rmi_rpc_fid_t fid,
-    cstr_t picture
+    qvi_rmi_rpc_fid_t fid
 ) {
     qvi_rmi_msg_header hdr;
     hdr.fid = fid;
-    const int bcap = sizeof(hdr.picture);
-    const int nw = snprintf(hdr.picture, bcap, "%s", picture);
-    if (qvi_unlikely(nw >= bcap)) {
-        qvi_log_error(
-            "Debug picture buffer too small. Please submit a bug report."
-        );
-        return QV_ERR_INTERNAL;
-    }
     return buff->append(&hdr, sizeof(hdr));
 }
 
@@ -267,15 +257,11 @@ rpc_pack(
     qvi_rmi_rpc_fid_t fid,
     Types &&...args
 ) {
-    std::string picture;
-
     qvi_bbuff *ibuff = nullptr;
     int rc = qvi_new(&ibuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    // Get the picture based on the types passed.
-    qvi_bbuff_rmi_get_picture(picture, std::forward<Types>(args)...);
     // Fill and add header.
-    rc = buffer_append_header(ibuff, fid, picture.c_str());
+    rc = buffer_append_header(ibuff, fid);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
 
     rc = qvi_bbuff_rmi_pack(ibuff, std::forward<Types>(args)...);
@@ -295,21 +281,6 @@ rpc_unpack(
 ) {
     qvi_rmi_msg_header hdr;
     const size_t trim = unpack_msg_header(data, &hdr);
-    // Get the picture based on the types passed.
-    std::string picture;
-    qvi_bbuff_rmi_get_picture(picture, std::forward<Types>(args)...);
-    // Verify it matches the arguments provided.
-    if (qvi_unlikely(strcmp(picture.c_str(), hdr.picture) != 0)) {
-        qvi_log_error(
-            "RPC pack/unpack type mismatch: "
-            "expected \"{}\", but detected \"{}\" "
-            "in RPC call to {}",
-            hdr.picture,
-            picture.c_str(),
-            hdr.fid
-        );
-        return QV_ERR_RPC;
-    }
     void *body = data_trim(data, trim);
     return qvi_bbuff_rmi_unpack(body, std::forward<Types>(args)...);
 }
@@ -487,7 +458,7 @@ qvi_rmi_client::set_cpubind(
 
 int
 qvi_rmi_client::get_intrinsic_hwpool(
-    pid_t who,
+    const std::vector<pid_t> &who,
     qv_scope_intrinsic_t iscope,
     qvi_hwpool **hwpool
 ) {
@@ -628,7 +599,6 @@ qvi_rmi_server::~qvi_rmi_server(void)
 
 int
 qvi_rmi_server::m_get_intrinsic_scope_user(
-    pid_t,
     qvi_hwpool **hwpool
 ) {
     return qvi_hwpool::create(
@@ -637,12 +607,40 @@ qvi_rmi_server::m_get_intrinsic_scope_user(
 }
 
 int
-qvi_rmi_server::m_get_intrinsic_scope_proc(
-    pid_t who,
+qvi_rmi_server::m_get_intrinsic_scope_job(
+    const std::vector<pid_t> &who,
     qvi_hwpool **hwpool
 ) {
+    int rc = QV_SUCCESS;
+    const size_t nmembers = who.size();
+
+    qvi_hwloc_bitmaps bitmaps(nmembers);
+
+    for (size_t i = 0; i < nmembers; ++i) {
+        hwloc_cpuset_t cpuset = nullptr;
+        rc = m_hwloc.task_get_cpubind(who[i], &cpuset);
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
+
+        bitmaps[i].set(cpuset);
+        qvi_hwloc::bitmap_delete(&cpuset);
+    }
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+
+    qvi_hwloc_bitmap job_bitmap = qvi_hwloc_bitmap::op_or(bitmaps);
+
+    return qvi_hwpool::create(m_hwloc, job_bitmap.cdata(), hwpool);
+}
+
+int
+qvi_rmi_server::m_get_intrinsic_scope_proc(
+    const std::vector<pid_t> &who,
+    qvi_hwpool **hwpool
+) {
+    // This is an internal bug.
+    if (qvi_unlikely(who.size() != 1)) qvi_abort();
+
     hwloc_cpuset_t cpuset = nullptr;
-    int rc = m_hwloc.task_get_cpubind(who, &cpuset);
+    int rc = m_hwloc.task_get_cpubind(who[0], &cpuset);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
 
     rc = qvi_hwpool::create(m_hwloc, cpuset, hwpool);
@@ -662,24 +660,25 @@ qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
     void *input,
     qvi_bbuff **output
 ) {
-    // Get requestor task id (type and pid) and intrinsic scope as integers
-    // from client request.
-    pid_t requestor;
+    std::vector<pid_t> who;
     qv_scope_intrinsic_t iscope;
-    int rc = qvi_bbuff_rmi_unpack(input, &requestor, &iscope);
-    if (rc != QV_SUCCESS) return rc;
+    int rc = qvi_bbuff_rmi_unpack(input, who, &iscope);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     int rpcrc = QV_SUCCESS;
-    // TODO(skg) Implement the rest.
     qvi_hwpool *hwpool = nullptr;
     switch (iscope) {
         case QV_SCOPE_SYSTEM:
+            rpcrc = QV_ERR_NOT_SUPPORTED;
+            break;
         case QV_SCOPE_USER:
+            rpcrc = server->m_get_intrinsic_scope_user(&hwpool);
+            break;
         case QV_SCOPE_JOB:
-            rpcrc = server->m_get_intrinsic_scope_user(requestor, &hwpool);
+            rpcrc = server->m_get_intrinsic_scope_job(who, &hwpool);
             break;
         case QV_SCOPE_PROCESS:
-            rpcrc = server->m_get_intrinsic_scope_proc(requestor, &hwpool);
+            rpcrc = server->m_get_intrinsic_scope_proc(who, &hwpool);
             break;
         default:
             rpcrc = QV_ERR_INVLD_ARG;
@@ -853,6 +852,7 @@ qvi_rmi_server::m_rpc_dispatch(
     bool shutdown = false;
 
     void *data = zmq_msg_data(command_msg);
+
     qvi_rmi_msg_header hdr;
     const size_t trim = unpack_msg_header(data, &hdr);
     void *body = data_trim(data, trim);
