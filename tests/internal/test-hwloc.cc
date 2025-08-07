@@ -122,7 +122,7 @@ echo_gpu_info(
 
     int ngpus = 0;
     int rc = hwl->get_nobjs_in_cpuset(
-        QV_HW_OBJ_GPU, hwloc_get_root_obj(hwl->topology_get())->cpuset, &ngpus
+        QV_HW_OBJ_GPU, hwl->topology_get_cpuset(), &ngpus
     );
     if (rc != QV_SUCCESS) return rc;
 
@@ -137,7 +137,7 @@ echo_gpu_info(
             char *devids = nullptr;
             rc = hwl->get_device_id_in_cpuset(
                 QV_HW_OBJ_GPU, i,
-                hwloc_get_root_obj(hwl->topology_get())->cpuset,
+                hwl->topology_get_cpuset(),
                 devnts[j].type, &devids
             );
             if (rc != QV_SUCCESS) return rc;

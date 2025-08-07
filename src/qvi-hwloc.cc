@@ -331,7 +331,10 @@ qvi_hwloc::topology_load(void)
 {
     cstr_t ers = nullptr;
     // Set flags that influence hwloc's behavior.
-    const uint_t flags = 0;
+    // Include resources that are not allowed (e.g., by cgroups) in the base
+    // topology. We will have functions that provide bitmap access to allowed
+    // and disallowed resources depending on need, but we must load it all.
+    const uint_t flags = HWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED;
     int rc = hwloc_topology_set_flags(m_topo, flags);
     if (qvi_unlikely(rc != 0)) {
         ers = "hwloc_topology_set_flags() failed";
@@ -478,6 +481,12 @@ qvi_hwloc::topology_is_this_system(void)
 
 hwloc_const_cpuset_t
 qvi_hwloc::topology_get_cpuset(void)
+{
+    return hwloc_topology_get_allowed_cpuset(m_topo);
+}
+
+hwloc_const_cpuset_t
+qvi_hwloc::topology_get_disallowed_cpuset(void)
 {
     return hwloc_topology_get_topology_cpuset(m_topo);
 }
