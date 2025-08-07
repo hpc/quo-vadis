@@ -419,7 +419,7 @@ public:
         hwloc_const_cpuset_t cpuset,
         qv_hw_obj_type_t obj_type,
         uint_t nobjs,
-        hwloc_cpuset_t *result
+        qvi_hwloc_bitmap &result
     );
 };
 

@@ -58,7 +58,7 @@ public:
     virtual std::vector<pid_t>
     pids(void) const
     {
-        return { m_task.mytid() };
+        return { getpid() };
     }
 
     virtual int

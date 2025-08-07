@@ -1281,15 +1281,12 @@ qvi_hwloc::get_cpuset_for_nobjs(
     hwloc_const_cpuset_t cpuset,
     qv_hw_obj_type_t obj_type,
     uint_t nobjs,
-    hwloc_cpuset_t *result
+    qvi_hwloc_bitmap &result
 ) {
-    hwloc_bitmap_t iresult = nullptr;
-    int rc = qvi_hwloc::bitmap_calloc(&iresult);
-    if (rc != QV_SUCCESS) goto out;
     // Get the target object's depth.
     int obj_depth;
-    rc = obj_type_depth(obj_type, &obj_depth);
-    if (rc != QV_SUCCESS) goto out;
+    int rc = obj_type_depth(obj_type, &obj_depth);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Calculate cpuset based on number of desired objects.
     for (uint_t i = 0; i < nobjs; ++i) {
         hwloc_obj_t dobj;
@@ -1299,18 +1296,13 @@ qvi_hwloc::get_cpuset_for_nobjs(
         if (rc != QV_SUCCESS) break;
 
         const int orrc = hwloc_bitmap_or(
-            iresult, iresult, dobj->cpuset
+            result.data(), result.cdata(), dobj->cpuset
         );
         if (orrc != 0) {
             rc = QV_ERR_HWLOC;
             break;
         }
     }
-out:
-    if (rc != QV_SUCCESS) {
-        qvi_hwloc::bitmap_delete(&iresult);
-    }
-    *result = iresult;
     return rc;
 }
 

@@ -92,9 +92,9 @@ qv_scope::create(
         return rc;
     }
     // Get the appropriate cpuset based on the caller's request.
-    hwloc_cpuset_t cpuset = nullptr;
+    qvi_hwloc_bitmap cpuset;
     rc = m_group->task().rmi().get_cpuset_for_nobjs(
-        m_hwpool->cpuset().cdata(), type, nobjs, &cpuset
+        m_hwpool->cpuset().cdata(), type, nobjs, cpuset
     );
     if (rc != QV_SUCCESS) {
         qvi_delete(&group);
@@ -109,8 +109,6 @@ qv_scope::create(
         qvi_delete(&hwpool);
         return rc;
     }
-    // No longer needed.
-    qvi_hwloc::bitmap_delete(&cpuset);
     // Create and initialize the new scope.
     qv_scope_t *ichild = nullptr;
     rc = qvi_new(&ichild, group, hwpool);

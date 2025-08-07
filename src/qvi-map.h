@@ -139,9 +139,9 @@ qvi_map_affinity_preserving(
 );
 
 /**
- * Returns the cpuset mapped to the given From ID.
+ * Returns a reference to the cpuset mapped to the given From ID.
  */
-hwloc_const_cpuset_t
+const qvi_hwloc_bitmap &
 qvi_map_cpuset_at(
     const qvi_map_t &map,
     const qvi_hwloc_bitmaps &cpusets,
