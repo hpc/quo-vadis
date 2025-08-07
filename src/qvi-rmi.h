@@ -96,20 +96,20 @@ private:
     );
     /** */
     int
-    m_get_intrinsic_scope_user(
-        qvi_hwpool **hwpool
+    m_get_iscope_bitmap_user(
+        qvi_hwloc_bitmap &bitmap
     );
     /** */
     int
-    m_get_intrinsic_scope_job(
+    m_get_iscope_bitmap_job(
         const std::vector<pid_t> &who,
-        qvi_hwpool **hwpool
+        qvi_hwloc_bitmap &bitmap
     );
     /** */
     int
-    m_get_intrinsic_scope_proc(
+    m_get_iscope_bitmap_proc(
         const std::vector<pid_t> &who,
-        qvi_hwpool **hwpool
+        qvi_hwloc_bitmap &bitmap
     );
     /** Executes the main server loop. */
     int
@@ -306,7 +306,7 @@ public:
         hwloc_const_cpuset_t cpuset,
         qv_hw_obj_type_t obj_type,
         int nobjs,
-        hwloc_cpuset_t *result
+        qvi_hwloc_bitmap &result
     );
     /** Sends a shutdown message to the server. */
     int

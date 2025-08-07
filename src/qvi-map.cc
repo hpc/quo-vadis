@@ -300,13 +300,13 @@ out:
     return rc;
 }
 
-hwloc_const_cpuset_t
+const qvi_hwloc_bitmap &
 qvi_map_cpuset_at(
     const qvi_map_t &map,
     const qvi_hwloc_bitmaps &cpusets,
     uint_t fid
 ) {
-    return cpusets.at(map.at(fid)).cdata();
+    return cpusets.at(map.at(fid));
 }
 
 std::vector<uint_t>

@@ -227,30 +227,11 @@ qvi_hwpool::m_add_devices_with_affinity(
 }
 
 int
-qvi_hwpool::create(
-    qvi_hwloc &hwloc,
-    hwloc_const_cpuset_t cpuset,
-    qvi_hwpool **hwpool
-) {
-    qvi_hwpool *ihwpool = nullptr;
-    int rc = qvi_new(&ihwpool);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    // Initialize the hardware pool.
-    rc = ihwpool->initialize(hwloc, cpuset);
-out:
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_delete(&ihwpool);
-    }
-    *hwpool = ihwpool;
-    return rc;
-}
-
-int
 qvi_hwpool::initialize(
     qvi_hwloc &hwloc,
-    hwloc_const_bitmap_t cpuset
+    const qvi_hwloc_bitmap &cpuset
 ) {
-    const int rc = m_cpu.affinity().set(cpuset);
+    const int rc = m_cpu.affinity().set(cpuset.cdata());
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Add devices with affinity to the hardware pool.
     return m_add_devices_with_affinity(hwloc);

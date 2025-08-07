@@ -143,23 +143,13 @@ private:
     );
 public:
     /**
-     * Creates a new, initialized hardware pool based
-     * on the affinity encoded in the provided cpuset.
-     */
-    static int
-    create(
-        qvi_hwloc &hwloc,
-        hwloc_const_cpuset_t cpuset,
-        qvi_hwpool **hwpool
-    );
-    /**
      * Initializes a hardware pool from the given
      * hardware locality information and cpuset.
      */
     int
     initialize(
         qvi_hwloc &hwloc,
-        hwloc_const_bitmap_t cpuset
+        const qvi_hwloc_bitmap &cpuset
     );
     /**
      * Returns a const reference to the hardware pool's cpuset.

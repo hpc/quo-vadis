@@ -535,7 +535,7 @@ qvi_rmi_client::get_cpuset_for_nobjs(
     hwloc_const_cpuset_t cpuset,
     qv_hw_obj_type_t obj_type,
     int nobjs,
-    hwloc_cpuset_t *result
+    qvi_hwloc_bitmap &result
 ) {
     // TODO(skg) At some point we will acquire the resources
     // for improved splitting and resource distribution.
@@ -598,18 +598,16 @@ qvi_rmi_server::~qvi_rmi_server(void)
 }
 
 int
-qvi_rmi_server::m_get_intrinsic_scope_user(
-    qvi_hwpool **hwpool
+qvi_rmi_server::m_get_iscope_bitmap_user(
+    qvi_hwloc_bitmap &bitmap
 ) {
-    return qvi_hwpool::create(
-        m_hwloc, m_hwloc.topology_get_cpuset(), hwpool
-    );
+    return bitmap.set(m_hwloc.topology_get_cpuset());
 }
 
 int
-qvi_rmi_server::m_get_intrinsic_scope_job(
+qvi_rmi_server::m_get_iscope_bitmap_job(
     const std::vector<pid_t> &who,
-    qvi_hwpool **hwpool
+    qvi_hwloc_bitmap &bitmap
 ) {
     int rc = QV_SUCCESS;
     const size_t nmembers = who.size();
@@ -626,33 +624,29 @@ qvi_rmi_server::m_get_intrinsic_scope_job(
     }
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    qvi_hwloc_bitmap job_bitmap = qvi_hwloc_bitmap::op_or(bitmaps);
+    bitmap = qvi_hwloc_bitmap::op_or(bitmaps);
 
-    return qvi_hwpool::create(m_hwloc, job_bitmap.cdata(), hwpool);
+    return QV_SUCCESS;
 }
 
 int
-qvi_rmi_server::m_get_intrinsic_scope_proc(
+qvi_rmi_server::m_get_iscope_bitmap_proc(
     const std::vector<pid_t> &who,
-    qvi_hwpool **hwpool
+    qvi_hwloc_bitmap &bitmap
 ) {
     // This is an internal bug.
     if (qvi_unlikely(who.size() != 1)) qvi_abort();
 
     hwloc_cpuset_t cpuset = nullptr;
     int rc = m_hwloc.task_get_cpubind(who[0], &cpuset);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    rc = qvi_hwpool::create(m_hwloc, cpuset, hwpool);
-out:
+    bitmap.set(cpuset);
     qvi_hwloc::bitmap_delete(&cpuset);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_delete(hwpool);
-    }
-    return rc;
+
+    return QV_SUCCESS;
 }
 
-// TODO(skg) Lots of error path cleanup is required.
 int
 qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
     qvi_rmi_server *server,
@@ -660,38 +654,40 @@ qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
     void *input,
     qvi_bbuff **output
 ) {
-    std::vector<pid_t> who;
-    qv_scope_intrinsic_t iscope;
-    int rc = qvi_bbuff_rmi_unpack(input, who, &iscope);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-
     int rpcrc = QV_SUCCESS;
-    qvi_hwpool *hwpool = nullptr;
-    switch (iscope) {
-        case QV_SCOPE_SYSTEM:
-            rpcrc = QV_ERR_NOT_SUPPORTED;
-            break;
-        case QV_SCOPE_USER:
-            rpcrc = server->m_get_intrinsic_scope_user(&hwpool);
-            break;
-        case QV_SCOPE_JOB:
-            rpcrc = server->m_get_intrinsic_scope_job(who, &hwpool);
-            break;
-        case QV_SCOPE_PROCESS:
-            rpcrc = server->m_get_intrinsic_scope_proc(who, &hwpool);
-            break;
-        default:
-            rpcrc = QV_ERR_INVLD_ARG;
-            break;
-    }
-    // TODO(skg) Protect against errors above.
-    rc = rpc_pack(output, hdr->fid, rpcrc, hwpool);
+    // Bitmap that encodes available host resources.
+    qvi_hwloc_bitmap sbitmap;
+    qvi_hwpool hwpool;
 
-    qvi_delete(&hwpool);
-    if (rc != QV_SUCCESS) {
-        return rc;
-    }
-    return rpcrc;
+    do {
+        std::vector<pid_t> who;
+        qv_scope_intrinsic_t iscope;
+        rpcrc = qvi_bbuff_rmi_unpack(input, who, &iscope);
+        // Drop the message. Send an empty hardware pool with the error code.
+        if (qvi_unlikely(rpcrc != QV_SUCCESS)) break;
+
+        switch (iscope) {
+            case QV_SCOPE_SYSTEM:
+                rpcrc = QV_ERR_NOT_SUPPORTED;
+                break;
+            case QV_SCOPE_USER:
+                rpcrc = server->m_get_iscope_bitmap_user(sbitmap);
+                break;
+            case QV_SCOPE_JOB:
+                rpcrc = server->m_get_iscope_bitmap_job(who, sbitmap);
+                break;
+            case QV_SCOPE_PROCESS:
+                rpcrc = server->m_get_iscope_bitmap_proc(who, sbitmap);
+                break;
+            default:
+                rpcrc = QV_ERR_INVLD_ARG;
+                break;
+        }
+        if (qvi_unlikely(rpcrc != QV_SUCCESS)) break;
+        rpcrc = hwpool.initialize(server->m_hwloc, sbitmap);
+    } while (false);
+
+    return rpc_pack(output, hdr->fid, rpcrc, hwpool);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -924,8 +920,9 @@ qvi_rmi_server::topology_export(
 int
 qvi_rmi_server::m_populate_base_hwpool(void)
 {
+    qvi_hwloc_bitmap base_bitmap(m_hwloc.topology_get_cpuset());
     // The base resource pool will contain all available processors and devices.
-    return m_hwpool.initialize(m_hwloc, m_hwloc.topology_get_cpuset());
+    return m_hwpool.initialize(m_hwloc, base_bitmap);
 }
 
 int
