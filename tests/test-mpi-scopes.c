@@ -71,7 +71,7 @@ main(
     qv_scope_t *base_scope;
     rc = qv_mpi_scope_get(
         comm,
-        QV_SCOPE_USER,
+        QV_SCOPE_JOB,
         &base_scope
     );
     if (rc != QV_SUCCESS) {

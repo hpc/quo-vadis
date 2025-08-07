@@ -44,15 +44,21 @@ public:
     }
 
     virtual int
+    size(void) const
+    {
+        return m_size;
+    }
+
+    virtual int
     rank(void) const
     {
         return m_rank;
     }
 
-    virtual int
-    size(void) const
+    virtual std::vector<pid_t>
+    pids(void) const
     {
-        return m_size;
+        return { m_task.mytid() };
     }
 
     virtual int

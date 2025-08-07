@@ -97,13 +97,18 @@ private:
     /** */
     int
     m_get_intrinsic_scope_user(
-        pid_t,
+        qvi_hwpool **hwpool
+    );
+    /** */
+    int
+    m_get_intrinsic_scope_job(
+        const std::vector<pid_t> &who,
         qvi_hwpool **hwpool
     );
     /** */
     int
     m_get_intrinsic_scope_proc(
-        pid_t who,
+        const std::vector<pid_t> &who,
         qvi_hwpool **hwpool
     );
     /** Executes the main server loop. */
@@ -269,7 +274,7 @@ public:
     /** Returns a new hardware pool based on the intrinsic scope specifier. */
     int
     get_intrinsic_hwpool(
-        pid_t task_id,
+        const std::vector<pid_t> &who,
         qv_scope_intrinsic_t iscope,
         qvi_hwpool **hwpool
     );

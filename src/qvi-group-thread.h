@@ -92,6 +92,17 @@ public:
         return QV_ERR_NOT_SUPPORTED;
     }
 
+    virtual std::vector<pid_t>
+    pids(void) const
+    {
+        // Use getpid() because we want to return the caller's parent's PID.
+        // We can't reliably get thread TIDs because they can change during
+        // execution (e.g., in OpenMP), so the best we can do is share the
+        // parent process' PID. Note: don't go through task.mytid() because
+        // it returns a thread ID.
+        return { getpid() };
+    }
+
     virtual int
     barrier(void) const {
         // By default thread groups do not support this operation.

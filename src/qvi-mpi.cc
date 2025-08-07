@@ -250,6 +250,27 @@ qvi_mpi_group_rank(
     return group->qvcomm.rank;
 }
 
+std::vector<pid_t>
+qvi_mpi_group_pids(
+    const qvi_mpi_group_t *group
+) {
+    static_assert(
+        sizeof(int) == sizeof(pid_t),
+        "int and pid_t must have the same size."
+    );
+
+    const pid_t mypid = getpid();
+    std::vector<pid_t> pids(group->qvcomm.size);
+
+    const int mpirc = MPI_Allgather(
+        &mypid, 1, MPI_INT, pids.data(),
+        1, MPI_INT, group->qvcomm.mpi_comm
+    );
+    if (qvi_unlikely(mpirc != MPI_SUCCESS)) throw qvi_runtime_error();
+
+    return pids;
+}
+
 int
 qvi_mpi_group_lookup_by_id(
     qvi_mpi_t *mpi,

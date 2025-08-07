@@ -23,4 +23,12 @@ endif()
 check_type_size(int QVI_SIZEOF_INT)
 check_type_size(pid_t QVI_SIZEOF_PID_T)
 
+# We assume sizeof(int) and sizeof(pid_t) are the same.
+message(CHECK_START "Verifying int and pid_t are same size")
+if(NOT QVI_SIZEOF_INT EQUAL QVI_SIZEOF_PID_T)
+    message(FATAL_ERROR "int and pid_t are not the same size")
+else()
+    message(CHECK_PASS "verified")
+endif()
+
 # vim: ts=4 sts=4 sw=4 expandtab

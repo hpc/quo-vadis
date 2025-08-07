@@ -11,20 +11,6 @@
  * @file qvi-bbuff-rmi.h
  */
 
-/*
- * Picture Reference:
- * a = size_t
- * b = qvi_bbuff_rmi_bytes_in_t, qvi_bbuff_rmi_bytes_out_t
- * c = hwloc_cpuset_t
- * c = qvi_hwloc_bitmap
- * d = qv_scope_create_hints_t
- * h = qvi_hwpool
- * i = int
- * s = char *
- * s = std::string
- * z = qvi_bbuff_rmi_zero_msg_t
- */
-
 #ifndef QVI_BBUFF_RMI_H
 #define QVI_BBUFF_RMI_H
 
@@ -36,10 +22,6 @@
 // 'Null' cpuset representation as a string.
 static constexpr cstr_t QV_BUFF_RMI_NULL_CPUSET = "";
 
-// Byte containers
-using qvi_bbuff_rmi_bytes_in_t = std::pair<void *, size_t>;
-using qvi_bbuff_rmi_bytes_out_t = std::pair<void **, size_t *>;
-
 // Defines a zero message type.
 typedef enum qvi_bbuff_rmi_zero_msg_e {
     QVI_BBUFF_RMI_ZERO_MSG = 0
@@ -48,232 +30,6 @@ typedef enum qvi_bbuff_rmi_zero_msg_e {
 ////////////////////////////////////////////////////////////////////////////////
 // Pack
 ////////////////////////////////////////////////////////////////////////////////
-template<typename T>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    T
-);
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    size_t
-) {
-    picture += "a";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    qvi_bbuff_rmi_bytes_in_t
-) {
-    picture += "b";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    hwloc_const_cpuset_t
-) {
-    picture += "c";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    hwloc_cpuset_t
-) {
-    picture += "c";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    hwloc_cpuset_t *
-) {
-    picture += "c";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    const qvi_hwloc_bitmap &
-) {
-    picture += "c";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    qv_scope_create_hints_t
-) {
-    picture += "d";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    const qvi_hwpool *
-) {
-    picture += "h";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    qvi_hwpool *
-) {
-    picture += "h";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    int
-) {
-    picture += "i";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    int *
-) {
-    picture += "i";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    qv_hw_obj_type_t
-) {
-    picture += "i";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    qv_hw_obj_type_t *
-) {
-    picture += "i";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    qv_device_id_type_t
-) {
-    picture += "i";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    qv_scope_intrinsic_t
-) {
-    picture += "i";
-}
-
-#if QVI_SIZEOF_INT != QVI_SIZEOF_PID_T
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    pid_t
-) {
-    picture += "i";
-}
-#endif
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    cstr_t
-) {
-    picture += "s";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    char *
-) {
-    picture += "s";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    char **
-) {
-    picture += "s";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    std::string
-) {
-    picture += "s";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    std::string &
-) {
-    picture += "s";
-}
-
-template<>
-inline void
-qvi_bbuff_rmi_pack_type_picture(
-    std::string &picture,
-    qvi_bbuff_rmi_zero_msg_t
-) {
-    picture += "z";
-}
-
-inline void
-qvi_bbuff_rmi_get_picture(
-    std::string &
-) {
-    // Base case
-}
-
-template<typename T, typename... Types>
-inline void
-qvi_bbuff_rmi_get_picture
-(
-    std::string &picture,
-    T&& arg,
-    Types &&...args
-) {
-    qvi_bbuff_rmi_pack_type_picture(picture, std::forward<T>(arg));
-    qvi_bbuff_rmi_get_picture(picture, std::forward<Types>(args)...);
-}
-
 template<typename T>
 inline int
 qvi_bbuff_rmi_pack_item(
@@ -351,20 +107,9 @@ qvi_bbuff_rmi_pack_item(
     return buff->append(&dai, sizeof(dai));
 }
 
-#if QVI_SIZEOF_INT != QVI_SIZEOF_PID_T
 /**
- * Packs pid_t as an int.
+ * Packs cstr_t
  */
-inline int
-qvi_bbuff_rmi_pack_item(
-    qvi_bbuff *buff,
-    pid_t data
-) {
-    const int dai = (int)data;
-    return buff->append(&dai, sizeof(dai));
-}
-#endif
-
 inline int
 qvi_bbuff_rmi_pack_item_impl(
     qvi_bbuff *buff,
@@ -382,6 +127,21 @@ qvi_bbuff_rmi_pack_item(
     const std::string &data
 ) {
     return qvi_bbuff_rmi_pack_item_impl(buff, data.c_str());
+}
+
+/**
+ * Packs std::vector<pid_t>
+ */
+inline int
+qvi_bbuff_rmi_pack_item(
+    qvi_bbuff *buff,
+    const std::vector<pid_t> &data
+) {
+    const size_t nelems = data.size();
+    const int rc = buff->append(&nelems, sizeof(size_t));
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+
+    return buff->append(data.data(), data.size() * sizeof(pid_t));
 }
 
 /**
@@ -415,22 +175,6 @@ qvi_bbuff_rmi_pack_item(
     qvi_bbuff_rmi_zero_msg_t
 ) {
     return QV_SUCCESS;
-}
-
-/**
- * Packs qvi_bbuff_rmi_bytes_in_t.
- */
-inline int
-qvi_bbuff_rmi_pack_item(
-    qvi_bbuff *buff,
-    qvi_bbuff_rmi_bytes_in_t data
-) {
-    // We store size then data so unpack has an easier time, but keep
-    // the user interface order as data then size.
-    size_t dsize = data.second;
-    const int rc = buff->append(&dsize, sizeof(dsize));
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    return buff->append(data.first, dsize);
 }
 
 /**
@@ -623,25 +367,6 @@ qvi_bbuff_rmi_unpack_item(
     return QV_SUCCESS;
 }
 
-#if QVI_SIZEOF_INT != QVI_SIZEOF_PID_T
-/**
- * Unpacks pid_t.
- */
-inline int
-qvi_bbuff_rmi_unpack_item(
-    pid_t *i,
-    byte_t *buffpos,
-    size_t *bytes_written
-) {
-    // Remember we are sending this as an int.
-    int pai = 0;
-    memmove(&pai, buffpos, sizeof(pai));
-    *bytes_written = sizeof(pai);
-    *i = (pid_t)pai;
-    return QV_SUCCESS;
-}
-#endif
-
 /**
  * Unpacks char *.
  */
@@ -723,32 +448,6 @@ qvi_bbuff_rmi_unpack_item(
     memmove(&oai, buffpos, sizeof(oai));
     *bytes_written = sizeof(oai);
     *o = (qv_hw_obj_type_t)oai;
-    return QV_SUCCESS;
-}
-
-/**
- * Unpacks qvi_bbuff_rmi_bytes_out_t.
- */
-inline int
-qvi_bbuff_rmi_unpack_item(
-    qvi_bbuff_rmi_bytes_out_t data,
-    byte_t *buffpos,
-    size_t *bytes_written
-) {
-    size_t *dsize = data.second;
-    memmove(dsize, buffpos, sizeof(*dsize));
-    buffpos += sizeof(*dsize);
-    *bytes_written = sizeof(*dsize);
-
-    void **dbuff = data.first;
-    *dbuff = calloc(*dsize, sizeof(byte_t));
-    if (qvi_unlikely(!*dbuff)) {
-        *bytes_written = 0;
-        return QV_ERR_OOR;
-    }
-    memmove(*dbuff, buffpos, *dsize);
-    *bytes_written += *dsize;
-
     return QV_SUCCESS;
 }
 
@@ -860,6 +559,34 @@ qvi_bbuff_rmi_unpack_item(
     size_t *bytes_written
 ) {
     return qvi_hwpool::unpack(buffpos, bytes_written, *hwp);
+}
+
+/**
+ * Unpacks std::vector<pid_t>
+ */
+inline int
+qvi_bbuff_rmi_unpack_item(
+    std::vector<pid_t> &pids,
+    byte_t *buffpos,
+    size_t *bytes_written
+) {
+    size_t bw = 0, total_bw = 0;
+
+    size_t nelems = 0;
+    int rc = qvi_bbuff_rmi_unpack_item(&nelems, buffpos, &bw);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+
+    total_bw += bw;
+    buffpos += bw;
+
+    pid_t *pidsp = (pid_t *)buffpos;
+    pids = std::vector<pid_t>(pidsp, pidsp + nelems);
+
+    total_bw += nelems * sizeof(pid_t);
+
+    *bytes_written = total_bw;
+
+    return QV_SUCCESS;
 }
 
 /**
