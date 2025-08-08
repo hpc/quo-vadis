@@ -676,7 +676,6 @@ qvi_rmi_server::s_rpc_invalid(
 ) {
     qvi_log_error("Something bad happened in RPC dispatch.");
     qvi_abort();
-    return QV_ERR_INVLD_ARG;
 }
 
 int
@@ -697,11 +696,12 @@ qvi_rmi_server::s_rpc_hello(
     void *input,
     qvi_bbuff **output
 ) {
+    int rpcrc = QV_SUCCESS;
+
     pid_t whoisit;
     const int rc = qvi_bbuff::unpack(input, whoisit);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) rpcrc = rc;
     // Pack relevant configuration information.
-    const int rpcrc = QV_SUCCESS;
     return rpc_pack(
         output, hdr->fid, rpcrc,
         server->m_config.hwtopo_path
@@ -715,12 +715,18 @@ qvi_rmi_server::s_rpc_get_cpubind(
     void *input,
     qvi_bbuff **output
 ) {
-    pid_t who;
-    int qvrc = qvi_bbuff::unpack(input, who);
-    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
-
+    int rpcrc = QV_SUCCESS;
     qvi_hwloc_bitmap bitmap;
-    const int rpcrc = server->m_hwloc.task_get_cpubind(who, bitmap);
+
+    do {
+        pid_t who;
+        const int qvrc = qvi_bbuff::unpack(input, who);
+        if (qvi_unlikely(qvrc != QV_SUCCESS)) {
+            rpcrc = qvrc;
+            break;
+        }
+        rpcrc = server->m_hwloc.task_get_cpubind(who, bitmap);
+    } while (false);
 
     return rpc_pack(output, hdr->fid, rpcrc, bitmap);
 }
@@ -732,14 +738,21 @@ qvi_rmi_server::s_rpc_set_cpubind(
     void *input,
     qvi_bbuff **output
 ) {
-    pid_t who;
-    qvi_hwloc_bitmap cpuset;
-    const int qvrc = qvi_bbuff::unpack(input, who, cpuset);
-    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
+    int rpcrc = QV_SUCCESS;
 
-    const int rpcrc = server->m_hwloc.task_set_cpubind_from_cpuset(
-        who, cpuset.cdata()
-    );
+    do {
+        pid_t who;
+        qvi_hwloc_bitmap cpuset;
+        const int qvrc = qvi_bbuff::unpack(input, who, cpuset);
+        if (qvi_unlikely(qvrc != QV_SUCCESS)) {
+            rpcrc = qvrc;
+            break;
+        }
+        rpcrc = server->m_hwloc.task_set_cpubind_from_cpuset(
+            who, cpuset.cdata()
+        );
+    } while (false);
+
     return rpc_pack(output, hdr->fid, rpcrc);
 }
 
@@ -750,12 +763,18 @@ qvi_rmi_server::s_rpc_obj_type_depth(
     void *input,
     qvi_bbuff **output
 ) {
-    qv_hw_obj_type_t obj;
-    const int qvrc = qvi_bbuff::unpack(input, obj);
-    if (qvrc != QV_SUCCESS) return qvrc;
-
+    int rpcrc = QV_SUCCESS;
     int depth = 0;
-    const int rpcrc = server->m_hwloc.obj_type_depth(obj, &depth);
+
+    do {
+        qv_hw_obj_type_t obj;
+        const int qvrc = qvi_bbuff::unpack(input, obj);
+        if (qvi_unlikely(qvrc != QV_SUCCESS)) {
+            rpcrc = qvrc;
+            break;
+        }
+        rpcrc = server->m_hwloc.obj_type_depth(obj, &depth);
+    } while (false);
 
     return rpc_pack(output, hdr->fid, rpcrc, depth);
 }
@@ -767,17 +786,23 @@ qvi_rmi_server::s_rpc_get_nobjs_in_cpuset(
     void *input,
     qvi_bbuff **output
 ) {
-    qv_hw_obj_type_t target_obj;
-    qvi_hwloc_bitmap cpuset;
-    int qvrc = qvi_bbuff::unpack(
-        input, target_obj, cpuset
-    );
-    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
-
+    int rpcrc = QV_SUCCESS;
     int nobjs = 0;
-    const int rpcrc = server->m_hwloc.get_nobjs_in_cpuset(
-        target_obj, cpuset.cdata(), &nobjs
-    );
+
+    do {
+        qv_hw_obj_type_t target_obj;
+        qvi_hwloc_bitmap cpuset;
+        const int qvrc = qvi_bbuff::unpack(
+            input, target_obj, cpuset
+        );
+        if (qvi_unlikely(qvrc != QV_SUCCESS)) {
+            rpcrc = qvrc;
+            break;
+        }
+        rpcrc = server->m_hwloc.get_nobjs_in_cpuset(
+            target_obj, cpuset.cdata(), &nobjs
+        );
+    } while (false);
 
     return rpc_pack(output, hdr->fid, rpcrc, nobjs);
 }
@@ -789,19 +814,25 @@ qvi_rmi_server::s_rpc_get_device_in_cpuset(
     void *input,
     qvi_bbuff **output
 ) {
-    qv_hw_obj_type_t dev_obj;
-    int dev_i;
-    qvi_hwloc_bitmap cpuset;
-    qv_device_id_type_t devid_type;
-    int qvrc = qvi_bbuff::unpack(
-        input, dev_obj, dev_i, cpuset, devid_type
-    );
-    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
-
+    int rpcrc = QV_SUCCESS;
     std::string dev_id;
-    const int rpcrc = server->m_hwloc.get_device_id_in_cpuset(
-        dev_obj, dev_i, cpuset.cdata(), devid_type, dev_id
-    );
+
+    do {
+        qv_hw_obj_type_t dev_obj;
+        int dev_i;
+        qvi_hwloc_bitmap cpuset;
+        qv_device_id_type_t devid_type;
+        const int qvrc = qvi_bbuff::unpack(
+            input, dev_obj, dev_i, cpuset, devid_type
+        );
+        if (qvi_unlikely(qvrc != QV_SUCCESS)) {
+            rpcrc = qvrc;
+            break;
+        }
+        rpcrc = server->m_hwloc.get_device_id_in_cpuset(
+            dev_obj, dev_i, cpuset.cdata(), devid_type, dev_id
+        );
+    } while (false);
 
     return rpc_pack(output, hdr->fid, rpcrc, dev_id);
 }
