@@ -107,53 +107,32 @@ public:
 
     virtual int
     gather(
-        qvi_bbuff *txbuff,
+        const qvi_bbuff &txbuff,
         int root,
-        qvi_bbuff_alloc_type_t *alloc_type,
-        qvi_bbuff ***rxbuffs
+        std::vector<qvi_bbuff> &rxbuffs
     ) const {
-        const int group_size = size();
         // Make sure that we are dealing with a valid process group.
         // If not, this is an internal development error, so abort.
-        if (root != 0 || group_size != 1) {
-            qvi_abort();
-        }
-        // Zero initialize array of pointers to nullptr.
-        qvi_bbuff **bbuffs = new qvi_bbuff *[group_size]();
+        if (qvi_unlikely(root != 0 || size() != 1)) qvi_abort();
 
-        const int rc = qvi_dup(*txbuff, &bbuffs[0]);
-        if (rc != QV_SUCCESS) {
-            if (bbuffs) {
-                qvi_delete(&bbuffs[0]);
-                delete[] bbuffs;
-            }
-            bbuffs = nullptr;
-        }
-        *rxbuffs = bbuffs;
-        *alloc_type = QVI_BBUFF_ALLOC_PRIVATE;
-        return rc;
+        rxbuffs.resize(size());
+        rxbuffs[0] = txbuff;
+
+        return QV_SUCCESS;
     }
 
     virtual int
     scatter(
-        qvi_bbuff **txbuffs,
+        const std::vector<qvi_bbuff> &txbuffs,
         int root,
-        qvi_bbuff **rxbuff
+        qvi_bbuff &rxbuff
     ) const {
-        const int group_size = size();
         // Make sure that we are dealing with a valid process group.
         // If not, this is an internal development error, so abort.
-        if (qvi_unlikely(root != 0 || group_size != 1)) {
-            qvi_abort();
-        }
+        if (qvi_unlikely(root != 0 || size() != 1)) qvi_abort();
         // There should always be only one at the root (us).
-        qvi_bbuff *mybbuff = nullptr;
-        const int rc = qvi_dup(*txbuffs[root], &mybbuff);
-        if (qvi_unlikely(rc != QV_SUCCESS)) {
-            qvi_delete(&mybbuff);
-        }
-        *rxbuff = mybbuff;
-        return rc;
+        rxbuff = txbuffs[root];
+        return QV_SUCCESS;
     }
 };
 

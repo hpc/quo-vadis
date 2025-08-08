@@ -33,38 +33,20 @@ gather(
     qvi_bbuff txbuff;
     int rc = txbuff.pack(send);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Gather the values to the root.
-    qvi_bbuff_alloc_type_t alloc_type = QVI_BBUFF_ALLOC_PRIVATE;
-    qvi_bbuff **bbuffs = nullptr;
-    rc = group.gather(&txbuff, rootid, &alloc_type, &bbuffs);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+
+    std::vector<qvi_bbuff> bbuffs;
+    rc = group.gather(txbuff, rootid, bbuffs);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     if (group.rank() == rootid) {
         recv.resize(group_size);
         // Unpack the data.
         for (uint_t i = 0; i < group_size; ++i) {
-            rc = qvi_bbuff::unpack(
-                bbuffs[i]->data(), recv[i]
-            );
-            if (qvi_unlikely(rc != QV_SUCCESS)) break;
+            rc = qvi_bbuff::unpack(bbuffs[i].data(), recv[i]);
+            if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
         }
     }
-out:
-    if ((QVI_BBUFF_ALLOC_PRIVATE == alloc_type) ||
-        ((QVI_BBUFF_ALLOC_SHARED == alloc_type) &&
-          (group.rank() == rootid))) {
-        if (bbuffs) {
-            for (uint_t i = 0; i < group_size; ++i) {
-                qvi_delete(&bbuffs[i]);
-            }
-            delete[] bbuffs;
-        }
-    }
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        // If something went wrong, just zero-initialize the results.
-        recv = {};
-    }
-    return rc;
+    return QV_SUCCESS;
 }
 
 template <typename TYPE>
@@ -78,37 +60,24 @@ scatter(
     static_assert(!std::is_pointer<TYPE>::value, "");
 
     int rc = QV_SUCCESS;
-    std::vector<qvi_bbuff *> txbuffs(0);
-    qvi_bbuff *rxbuff = nullptr;
+    std::vector<qvi_bbuff> txbuffs;
 
     if (group.rank() == rootid) {
         const uint_t group_size = group.size();
         txbuffs.resize(group_size);
         // Pack the data.
         for (uint_t i = 0; i < group_size; ++i) {
-            rc = qvi_new(&txbuffs[i]);
-            if (qvi_unlikely(rc != QV_SUCCESS)) break;
-
-            rc = txbuffs[i]->pack(send[i]);
+            rc = txbuffs[i].pack(send[i]);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
         }
-        if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     }
 
-    rc = group.scatter(txbuffs.data(), rootid, &rxbuff);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    qvi_bbuff rxbuff;
+    rc = group.scatter(txbuffs, rootid, rxbuff);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Unpack the results.
-    rc = qvi_bbuff::unpack(rxbuff->data(), recv);
-out:
-    for (auto &buff : txbuffs) {
-        qvi_delete(&buff);
-    }
-    qvi_delete(&rxbuff);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        // If something went wrong, just zero-initialize the results.
-        recv = {};
-    }
-    return rc;
+    return qvi_bbuff::unpack(rxbuff.data(), recv);
 }
 
 template <typename TYPE>

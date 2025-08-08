@@ -158,10 +158,9 @@ qvi_mpi_group_barrier(
 int
 qvi_mpi_group_gather_bbuffs(
     qvi_mpi_group_t *group,
-    qvi_bbuff *txbuff,
+    const qvi_bbuff &txbuff,
     int root,
-    qvi_bbuff_alloc_type_t *alloc_type,
-    qvi_bbuff ***rxbuffs
+    std::vector<qvi_bbuff> &rxbuffs
 );
 
 /**
@@ -170,9 +169,9 @@ qvi_mpi_group_gather_bbuffs(
 int
 qvi_mpi_group_scatter_bbuffs(
     qvi_mpi_group_t *group,
-    qvi_bbuff **txbuffs,
+    const std::vector<qvi_bbuff> &txbuffs,
     int root,
-    qvi_bbuff **rxbuff
+    qvi_bbuff &rxbuff
 );
 
 /**
