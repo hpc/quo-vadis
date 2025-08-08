@@ -599,14 +599,9 @@ qvi_rmi_server::m_get_iscope_bitmap_job(
     const size_t nmembers = who.size();
 
     qvi_hwloc_bitmaps bitmaps(nmembers);
-
     for (size_t i = 0; i < nmembers; ++i) {
-        hwloc_cpuset_t cpuset = nullptr;
-        rc = m_hwloc.task_get_cpubind(who[i], &cpuset);
+        rc = m_hwloc.task_get_cpubind(who[i],bitmaps[i]);
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
-
-        bitmaps[i].set(cpuset);
-        qvi_hwloc::bitmap_delete(&cpuset);
     }
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
@@ -622,15 +617,7 @@ qvi_rmi_server::m_get_iscope_bitmap_proc(
 ) {
     // This is an internal bug.
     if (qvi_unlikely(who.size() != 1)) qvi_abort();
-
-    hwloc_cpuset_t cpuset = nullptr;
-    int rc = m_hwloc.task_get_cpubind(who[0], &cpuset);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-
-    bitmap.set(cpuset);
-    qvi_hwloc::bitmap_delete(&cpuset);
-
-    return QV_SUCCESS;
+    return m_hwloc.task_get_cpubind(who[0], bitmap);
 }
 
 int
@@ -730,14 +717,11 @@ qvi_rmi_server::s_rpc_get_cpubind(
     pid_t who;
     int qvrc = qvi_bbuff::unpack(input, who);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
-    // TODO(skg) Change type.
-    hwloc_cpuset_t bitmap = nullptr;
-    const int rpcrc = server->m_hwloc.task_get_cpubind(who, &bitmap);
-    qvi_hwloc_bitmap tmp(bitmap);
-    qvrc = rpc_pack(output, hdr->fid, rpcrc, tmp);
-    qvi_hwloc::bitmap_delete(&bitmap);
 
-    return qvrc;
+    qvi_hwloc_bitmap bitmap;
+    const int rpcrc = server->m_hwloc.task_get_cpubind(who, bitmap);
+
+    return rpc_pack(output, hdr->fid, rpcrc, bitmap);
 }
 
 int
@@ -811,17 +795,14 @@ qvi_rmi_server::s_rpc_get_device_in_cpuset(
     int qvrc = qvi_bbuff::unpack(
         input, dev_obj, dev_i, cpuset, devid_type
     );
-    if (qvrc != QV_SUCCESS) return qvrc;
-    // TODO(skg) Change type to string
-    char *dev_id = nullptr;
-    int rpcrc = server->m_hwloc.get_device_id_in_cpuset(
-        dev_obj, dev_i, cpuset.cdata(), devid_type, &dev_id
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
+
+    std::string dev_id;
+    const int rpcrc = server->m_hwloc.get_device_id_in_cpuset(
+        dev_obj, dev_i, cpuset.cdata(), devid_type, dev_id
     );
 
-    qvrc = rpc_pack(output, hdr->fid, rpcrc, std::string(dev_id));
-
-    free(dev_id);
-    return qvrc;
+    return rpc_pack(output, hdr->fid, rpcrc, dev_id);
 }
 
 int
