@@ -52,14 +52,14 @@ static const device_name_type_t devnts[] = {
 
 static int
 echo_hw_info(
-    qvi_hwloc *hwl
+    qvi_hwloc &hwl
 ) {
     const int num_nts = sizeof(nts) / sizeof(hw_name_type_t);
 
     printf("\n# System Hardware Overview --------------\n");
     for (int i = 0; i < num_nts; ++i) {
         int n;
-        int rc = hwl->get_nobjs_by_type(nts[i].type, &n);
+        int rc = hwl.get_nobjs_by_type(nts[i].type, &n);
         if (rc != QV_SUCCESS) {
             fprintf(
                 stderr, "qvi_hwloc_get_nobjs_by_type(%s) failed\n", nts[i].name
@@ -74,7 +74,7 @@ echo_hw_info(
 
 static int
 echo_task_intersections(
-    qvi_hwloc *hwl,
+    qvi_hwloc &hwl,
     char *bitmap_str
 ) {
     const int num_nts = sizeof(nts) / sizeof(hw_name_type_t);
@@ -83,7 +83,7 @@ echo_task_intersections(
     printf("\n# Task Intersection Overview ------------\n");
     for (int i = 0; i < num_nts; ++i) {
         int nobj;
-        int rc = hwl->get_nobjs_by_type(nts[i].type, &nobj);
+        int rc = hwl.get_nobjs_by_type(nts[i].type, &nobj);
         if (rc != QV_SUCCESS) {
             fprintf(
                 stderr, "qvi_hwloc_get_nobjs_by_type(%s) failed\n", nts[i].name
@@ -92,7 +92,7 @@ echo_task_intersections(
         }
         for (int objid = 0; objid < nobj; ++objid) {
             int intersects;
-            rc = hwl->task_intersects_obj_by_type_id(
+            rc = hwl.task_intersects_obj_by_type_id(
                 nts[i].type, me, objid, &intersects
             );
             if (rc != QV_SUCCESS) {
@@ -116,33 +116,32 @@ echo_task_intersections(
 
 static int
 echo_gpu_info(
-    qvi_hwloc *hwl
+    qvi_hwloc &hwl
 ) {
     printf("\n# Discovered GPU Devices --------------\n");
 
     int ngpus = 0;
-    int rc = hwl->get_nobjs_in_cpuset(
-        QV_HW_OBJ_GPU, hwl->topology_get_cpuset(), &ngpus
+    int rc = hwl.get_nobjs_in_cpuset(
+        QV_HW_OBJ_GPU, hwl.topology_get_cpuset(), &ngpus
     );
     if (rc != QV_SUCCESS) return rc;
 
     printf("# Number of GPUs: %u\n", ngpus);
 
-    rc = hwl->devices_emit(QV_HW_OBJ_GPU);
+    rc = hwl.devices_emit(QV_HW_OBJ_GPU);
     if (rc != QV_SUCCESS) return rc;
 
     const unsigned ndevids = sizeof(devnts) / sizeof(device_name_type_t);
     for (int i = 0; i < ngpus; ++i) {
         for (unsigned j = 0; j < ndevids; ++j) {
-            char *devids = nullptr;
-            rc = hwl->get_device_id_in_cpuset(
+            std::string devids;
+            rc = hwl.get_device_id_in_cpuset(
                 QV_HW_OBJ_GPU, i,
-                hwl->topology_get_cpuset(),
-                devnts[j].type, &devids
+                hwl.topology_get_cpuset(),
+                devnts[j].type, devids
             );
             if (rc != QV_SUCCESS) return rc;
-            printf("# Device %u %s = %s\n", i, devnts[j].name, devids);
-            free(devids);
+            printf("# Device %u %s = %s\n", i, devnts[j].name, devids.c_str());
         }
     }
 
@@ -157,23 +156,17 @@ main(void)
 
     char const *ers = nullptr;
     char *binds = nullptr;
-    qvi_hwloc *hwl;
-    hwloc_bitmap_t bitmap = nullptr;
+    qvi_hwloc hwl;
+    qvi_hwloc_bitmap bitmap;
     pid_t who = qvi_gettid();
 
-    int rc = qvi_new(&hwl);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_new() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    rc = hwl->topology_init();
+    int rc = hwl.topology_init();
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_topology_init() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = hwl->topology_load();
+    rc = hwl.topology_load();
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_topology_load() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -191,13 +184,13 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = hwl->task_get_cpubind(who, &bitmap);
+    rc = hwl.task_get_cpubind(who, bitmap);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_task_get_cpubind() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qvi_hwloc::bitmap_asprintf(bitmap, &binds);
+    rc = qvi_hwloc::bitmap_asprintf(bitmap.cdata(), &binds);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc::bitmap_asprintf() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -211,8 +204,6 @@ main(void)
     }
 
     if (binds) free(binds);
-    if (bitmap) hwloc_bitmap_free(bitmap);
-    qvi_delete(&hwl);
 
     printf("# Done\n");
     return EXIT_SUCCESS;

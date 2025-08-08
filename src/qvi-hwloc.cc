@@ -876,11 +876,11 @@ qvi_hwloc::get_nobjs_by_type(
 
 int
 qvi_hwloc::m_get_proc_cpubind(
-    pid_t task_id,
-    hwloc_cpuset_t cpuset
+    pid_t who,
+    qvi_hwloc_bitmap &result
 ) {
     int rc = hwloc_get_proc_cpubind(
-        m_topo, task_id, cpuset, HWLOC_CPUBIND_THREAD
+        m_topo, who, result.data(), HWLOC_CPUBIND_THREAD
     );
     if (qvi_unlikely(rc != 0)) return QV_ERR_HWLOC;
     // Note in some instances I've noticed that the system's topology cpuset is
@@ -889,9 +889,9 @@ qvi_hwloc::m_get_proc_cpubind(
     // what we are dealing.
     hwloc_const_cpuset_t tcpuset = topology_get_cpuset();
     // If the topology's cpuset is less than the process' cpuset, adjust.
-    rc = hwloc_bitmap_compare(tcpuset, cpuset);
+    rc = hwloc_bitmap_compare(tcpuset, result.cdata());
     if (qvi_unlikely(rc == -1)) {
-        return qvi_hwloc::bitmap_copy(tcpuset, cpuset);
+        return result.set(tcpuset);
     }
     // Else just use the one that was gathered above.
     return QV_SUCCESS;
@@ -899,20 +899,10 @@ qvi_hwloc::m_get_proc_cpubind(
 
 int
 qvi_hwloc::task_get_cpubind(
-    pid_t task_id,
-    hwloc_cpuset_t *out_cpuset
+    pid_t who,
+    qvi_hwloc_bitmap &result
 ) {
-    hwloc_cpuset_t cur_bind = nullptr;
-    int rc = qvi_hwloc::bitmap_calloc(&cur_bind);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-
-    rc = m_get_proc_cpubind(task_id, cur_bind);
-out:
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_hwloc::bitmap_delete(&cur_bind);
-    }
-    *out_cpuset = cur_bind;
-    return rc;
+    return m_get_proc_cpubind(who, result);
 }
 
 int
@@ -932,13 +922,11 @@ qvi_hwloc::task_get_cpubind_as_string(
     pid_t task_id,
     char **cpusets
 ) {
-    hwloc_cpuset_t cpuset = nullptr;
-    int rc = task_get_cpubind(task_id, &cpuset);
+    qvi_hwloc_bitmap cpuset;
+    int rc = task_get_cpubind(task_id, cpuset);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    rc = qvi_hwloc::bitmap_asprintf(cpuset, cpusets);
-    qvi_hwloc::bitmap_delete(&cpuset);
-    return rc;
+    return qvi_hwloc::bitmap_asprintf(cpuset.cdata(), cpusets);
 }
 
 int
@@ -980,22 +968,21 @@ qvi_hwloc::m_task_obj_xop_by_type_id(
     int rc = m_obj_get_by_type(type, type_index, &obj);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    hwloc_cpuset_t cur_bind = nullptr;
-    rc = task_get_cpubind(task_id, &cur_bind);
+    qvi_hwloc_bitmap cur_bind;
+    rc = task_get_cpubind(task_id, cur_bind);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     switch (opid) {
         case TASK_INTERSECTS_OBJ:
-            *result = hwloc_bitmap_intersects(cur_bind, obj->cpuset);
+            *result = hwloc_bitmap_intersects(cur_bind.cdata(), obj->cpuset);
             break;
         case TASK_INCLUDEDIN_OBJ:
-            *result = hwloc_bitmap_isincluded(cur_bind, obj->cpuset);
+            *result = hwloc_bitmap_isincluded(cur_bind.cdata(), obj->cpuset);
             break;
         default:
             // Something bad happened to get here.
             qvi_abort();
     }
-    qvi_hwloc::bitmap_delete(&cur_bind);
     return QV_SUCCESS;
 }
 
@@ -1204,34 +1191,25 @@ qvi_hwloc::get_device_id_in_cpuset(
     int i,
     hwloc_const_cpuset_t cpuset,
     qv_device_id_type_t dev_id_type,
-    char **dev_id
+    std::string &dev_id
 ) {
-    int rc = QV_SUCCESS, np = 0;
-
     qvi_hwloc_dev_list devs;
-    rc = get_devices_in_cpuset(dev_obj, cpuset, devs);
-    if (rc != QV_SUCCESS) {
-        goto out;
-    }
+    int rc = get_devices_in_cpuset(dev_obj, cpuset, devs);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     switch (dev_id_type) {
         case (QV_DEVICE_ID_UUID):
-            np = asprintf(dev_id, "%s", devs.at(i)->uuid.c_str());
+            dev_id = devs.at(i)->uuid;
             break;
         case (QV_DEVICE_ID_PCI_BUS_ID):
-            np = asprintf(dev_id, "%s", devs.at(i)->pci_bus_id.c_str());
+            dev_id = devs.at(i)->pci_bus_id;
             break;
         case (QV_DEVICE_ID_ORDINAL):
-            np = asprintf(dev_id, "%d", devs.at(i)->id);
+            dev_id = devs.at(i)->id;
             break;
         default:
             rc = QV_ERR_INVLD_ARG;
-            goto out;
-    }
-    if (np == -1) rc = QV_ERR_OOR;
-out:
-    if (rc != QV_SUCCESS) {
-        *dev_id = nullptr;
+            break;
     }
     return rc;
 }

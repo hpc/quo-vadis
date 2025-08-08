@@ -98,8 +98,8 @@ private:
     /** */
     int
     m_get_proc_cpubind(
-        pid_t task_id,
-        hwloc_cpuset_t cpuset
+        pid_t who,
+        qvi_hwloc_bitmap &result
     );
     /** */
     int
@@ -322,7 +322,7 @@ public:
         int i,
         hwloc_const_cpuset_t cpuset,
         qv_device_id_type_t dev_id_type,
-        char **dev_id
+        std::string &dev_id
     );
     /**
      *
@@ -350,8 +350,8 @@ public:
      */
     int
     task_get_cpubind(
-        pid_t task_id,
-        hwloc_cpuset_t *out_cpuset
+        pid_t who,
+        qvi_hwloc_bitmap &result
     );
     /**
      *
