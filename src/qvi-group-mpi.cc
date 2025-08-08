@@ -37,9 +37,8 @@ int
 qvi_group_mpi::make_intrinsic(
     qv_scope_intrinsic_t scope
 ) {
-    int rc = QV_SUCCESS;
     qvi_group_id_t mpi_group_type;
-    // TODO(skg) Finish implementation.
+
     switch (scope) {
         case QV_SCOPE_SYSTEM:
         case QV_SCOPE_USER:
@@ -50,10 +49,8 @@ qvi_group_mpi::make_intrinsic(
             mpi_group_type = QVI_MPI_GROUP_SELF;
             break;
         default:
-            rc = QV_ERR_INVLD_ARG;
-            break;
+            return QV_ERR_INVLD_ARG;
     }
-    if (rc != QV_SUCCESS) return rc;
 
     return qvi_mpi_group_create_from_group_id(
         m_mpi, mpi_group_type, &m_mpi_group
