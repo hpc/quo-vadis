@@ -71,9 +71,27 @@ enum {
  * Intrinsic scope types.
  */
 typedef enum {
+    /**
+     * Include all system resources, including those disallowed by mechanisms
+     * such as Linux cgroups. Use this type with care.
+     */
     QV_SCOPE_SYSTEM = 0,
+    /**
+     * Includes all allowed resources on the system. For example, if cgroups are
+     * used, using this type will result in a scope containing only resources
+     * allowed in the encompassing cgroup.
+     */
     QV_SCOPE_USER,
+    /**
+     * Includes the union of resources available to the calling processes. For
+     * example, if the calling processes are bound to a strict subset of the
+     * available system resources, then the resulting scope will include
+     * strictly that subset.
+     */
     QV_SCOPE_JOB,
+    /**
+     * Like QV_SCOPE_USER, but the group comprises only the calling process.
+     */
     QV_SCOPE_PROCESS
 } qv_scope_intrinsic_t;
 
