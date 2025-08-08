@@ -28,12 +28,6 @@
 #include "cereal/types/vector.hpp"
 // IWYU pragma: end_keep
 
-typedef enum {
-    QVI_BBUFF_ALLOC_SHARED = 0,
-    QVI_BBUFF_ALLOC_SHARED_GLOBAL,
-    QVI_BBUFF_ALLOC_PRIVATE
-} qvi_bbuff_alloc_type_t;
-
 struct qvi_bbuff {
 private:
     /** Minimum growth in bytes for resizes, etc. */
@@ -73,6 +67,12 @@ public:
      */
     void *
     data(void);
+    /**
+     * Returns a const pointer to the flat data buffer
+     * maintained internally by the byte buffer.
+     */
+    const void *
+    cdata(void) const;
     /**
      *
      */

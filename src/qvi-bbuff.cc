@@ -72,6 +72,12 @@ qvi_bbuff::data(void)
     return m_data;
 }
 
+const void *
+qvi_bbuff::cdata(void) const
+{
+    return m_data;
+}
+
 int
 qvi_bbuff::append(
     const void *const data,

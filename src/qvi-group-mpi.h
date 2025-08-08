@@ -89,21 +89,20 @@ public:
 
     virtual int
     gather(
-        qvi_bbuff *txbuff,
+        const qvi_bbuff &txbuff,
         int root,
-        qvi_bbuff_alloc_type_t *alloc_type,
-        qvi_bbuff ***rxbuffs
+        std::vector<qvi_bbuff> &rxbuffs
     ) const {
         return qvi_mpi_group_gather_bbuffs(
-            m_mpi_group, txbuff, root, alloc_type, rxbuffs
+            m_mpi_group, txbuff, root, rxbuffs
         );
     }
 
     virtual int
     scatter(
-        qvi_bbuff **txbuffs,
+        const std::vector<qvi_bbuff> &txbuffs,
         int root,
-        qvi_bbuff **rxbuff
+        qvi_bbuff &rxbuff
     ) const {
         return qvi_mpi_group_scatter_bbuffs(
             m_mpi_group, txbuffs, root, rxbuff

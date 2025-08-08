@@ -150,10 +150,9 @@ public:
 
     virtual int
     gather(
-        qvi_bbuff *,
+        const qvi_bbuff &,
         int,
-        qvi_bbuff_alloc_type_t *,
-        qvi_bbuff ***
+        std::vector<qvi_bbuff> &
     ) const {
         // By default thread groups do not support this operation.
         return QV_ERR_NOT_SUPPORTED;
@@ -161,9 +160,9 @@ public:
 
     virtual int
     scatter(
-        qvi_bbuff **,
+        const std::vector<qvi_bbuff> &,
         int,
-        qvi_bbuff **
+        qvi_bbuff &
     ) const {
         // By default thread groups do not support this operation.
         return QV_ERR_NOT_SUPPORTED;

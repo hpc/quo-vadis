@@ -86,17 +86,16 @@ struct qvi_group : qvi_refc {
     /** Gathers bbuffs to specified root. */
     virtual int
     gather(
-        qvi_bbuff *txbuff,
+        const qvi_bbuff &txbuff,
         int root,
-        qvi_bbuff_alloc_type_t *alloc_type,
-        qvi_bbuff ***rxbuffs
+        std::vector<qvi_bbuff> &rxbuffs
     ) const = 0;
     /** Scatters bbuffs from specified root. */
     virtual int
     scatter(
-        qvi_bbuff **txbuffs,
+        const std::vector<qvi_bbuff> &txbuffs,
         int root,
-        qvi_bbuff **rxbuff
+        qvi_bbuff &rxbuff
     ) const = 0;
     /** Returns a unique group ID after each call. */
     static int
