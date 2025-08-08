@@ -614,23 +614,12 @@ qvi_hwsplit::m_scatter_split_results(
     int rootid,
     const qvi_hwsplit &hwsplit,
     int *colorp,
-    qvi_hwpool **result
+    qvi_hwpool &result
 ) {
-    *result = nullptr;
-
-    int rc = qvi_coll::scatter(group, rootid, hwsplit.m_colors, *colorp);
+    const int rc = qvi_coll::scatter(group, rootid, hwsplit.m_colors, *colorp);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    qvi_hwpool *iresult = nullptr;
-    rc = qvi_new(&iresult);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-
-    rc = qvi_coll::scatter(group, rootid, hwsplit.m_hwpools, *iresult);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_delete(&iresult);
-    }
-    *result = iresult;
-    return rc;
+    return qvi_coll::scatter(group, rootid, hwsplit.m_hwpools, result);
 }
 
 int
@@ -640,7 +629,7 @@ qvi_hwsplit::split(
     int color,
     qv_hw_obj_type_t maybe_obj_type,
     int *colorp,
-    qvi_hwpool **result
+    qvi_hwpool &result
 ) {
     const qvi_group &pgroup = parent->group();
     // Everyone create a hardware split object.
@@ -681,7 +670,7 @@ qvi_hwsplit::thread_split(
     uint_t k,
     qv_hw_obj_type_t maybe_obj_type,
     std::vector<int> &kcolorps,
-    qvi_hwpool ***khwpools
+    std::vector<qvi_hwpool> &khwpools
 ) {
     const uint_t group_size = k;
     // Construct the hardware split.
@@ -710,21 +699,9 @@ qvi_hwsplit::thread_split(
     rc = hwsplit.m_split();
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Now populate the hardware pools as the result.
-    qvi_hwpool **ikhwpools = new qvi_hwpool *[group_size];
-    kcolorps.resize(group_size);
-    for (uint_t i = 0; i < group_size; ++i) {
-        // Copy out, since the hardware pools in split will get freed.
-        rc = qvi_dup(hwsplit.m_hwpools.at(i), &ikhwpools[i]);
-        if (qvi_unlikely(rc != QV_SUCCESS)) break;
-        // Copy out the colorp values.
-        kcolorps.at(i) = hwsplit.m_colors.at(i);
-    }
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        delete[] ikhwpools;
-        ikhwpools = nullptr;
-    }
-    *khwpools = ikhwpools;
-    return rc;
+    khwpools = hwsplit.m_hwpools;
+    kcolorps = hwsplit.m_colors;
+    return QV_SUCCESS;
 }
 
 /*

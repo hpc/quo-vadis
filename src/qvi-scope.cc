@@ -23,13 +23,12 @@
 
 qv_scope::qv_scope(
     qvi_group *group,
-    qvi_hwpool *hwpool
+    qvi_hwpool &hwpool
 ) : m_group(group)
   , m_hwpool(hwpool) { }
 
 qv_scope::~qv_scope(void)
 {
-    qvi_delete(&m_hwpool);
     m_group->release();
 }
 
@@ -58,9 +57,9 @@ qv_scope::make_intrinsic(
     int rc = group->make_intrinsic(iscope);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Get the requested intrinsic hardware pool.
-    qvi_hwpool *hwpool = nullptr;
+    qvi_hwpool hwpool;
     rc = group->task().rmi().get_intrinsic_hwpool(
-        group->pids(), iscope, &hwpool
+        group->pids(), iscope, hwpool
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Create and initialize the scope.
@@ -85,28 +84,21 @@ qv_scope::create(
     int rc = m_group->self(&group);
     if (rc != QV_SUCCESS) return rc;
     // Create the hardware pool.
-    qvi_hwpool *hwpool = nullptr;
-    rc = qvi_new(&hwpool);
-    if (rc != QV_SUCCESS) {
-        qvi_delete(&group);
-        return rc;
-    }
+    qvi_hwpool hwpool;
     // Get the appropriate cpuset based on the caller's request.
     qvi_hwloc_bitmap cpuset;
     rc = m_group->task().rmi().get_cpuset_for_nobjs(
-        m_hwpool->cpuset().cdata(), type, nobjs, cpuset
+        m_hwpool.cpuset().cdata(), type, nobjs, cpuset
     );
     if (rc != QV_SUCCESS) {
         qvi_delete(&group);
-        qvi_delete(&hwpool);
         return rc;
     }
     // Now that we have the desired cpuset,
     // initialize the new hardware pool.
-    rc = hwpool->initialize(m_group->hwloc(), cpuset);
+    rc = hwpool.initialize(m_group->hwloc(), cpuset);
     if (rc != QV_SUCCESS) {
         qvi_delete(&group);
-        qvi_delete(&hwpool);
         return rc;
     }
     // Create and initialize the new scope.
@@ -128,7 +120,7 @@ qv_scope::group(void) const
 const qvi_hwpool &
 qv_scope::hwpool(void) const
 {
-    return *m_hwpool;
+    return m_hwpool;
 }
 
 int
@@ -148,7 +140,7 @@ qv_scope::hwpool_nobjects(
     qv_hw_obj_type_t obj
 ) const {
     int result = 0;
-    const int rc = m_hwpool->nobjects(m_group->hwloc(), obj, &result);
+    const int rc = m_hwpool.nobjects(m_group->hwloc(), obj, &result);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
     return result;
 }
@@ -164,7 +156,7 @@ qv_scope::device_id(
     // Look for the requested device.
     int id = 0;
     qvi_hwpool_dev *finfo = nullptr;
-    for (const auto &dinfo : m_hwpool->devices()) {
+    for (const auto &dinfo : m_hwpool.devices()) {
         if (dev_type != dinfo.first) continue;
         if (id++ == dev_index) {
             finfo = dinfo.second.get();
@@ -185,7 +177,7 @@ qv_scope::group_barrier(void)
 int
 qv_scope::bind_push(void)
 {
-    return m_group->task().bind_push(m_hwpool->cpuset());
+    return m_group->task().bind_push(m_hwpool.cpuset());
 }
 
 int
@@ -219,9 +211,9 @@ qv_scope::split(
     qv_scope_t *ichild = nullptr;
     // Split the hardware resources based on the provided split parameters.
     int colorp = 0;
-    qvi_hwpool *hwpool = nullptr;
+    qvi_hwpool hwpool;
     int rc = qvi_hwsplit::split(
-        this, npieces, color, maybe_obj_type, &colorp, &hwpool
+        this, npieces, color, maybe_obj_type, &colorp, hwpool
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Split underlying group. Notice the use of colorp here.
@@ -231,7 +223,6 @@ qv_scope::split(
     rc = qvi_new(&ichild, group, hwpool);
 out:
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_delete(&hwpool);
         qvi_delete(&group);
         qvi_delete(&ichild);
     }
@@ -259,10 +250,10 @@ qv_scope::thread_split(
     *thchildren = nullptr;
     const uint_t group_size = k;
     // Split the hardware, get the hardware pools.
-    qvi_hwpool **hwpools = nullptr;
+    std::vector<qvi_hwpool> hwpools;
     std::vector<int> colorps;
     int rc = qvi_hwsplit::thread_split(
-        this, npieces, kcolors, k, maybe_obj_type, colorps, &hwpools
+        this, npieces, kcolors, k, maybe_obj_type, colorps, hwpools
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Split off from our parent group. This call is called from a context in
@@ -289,9 +280,6 @@ qv_scope::thread_split(
         // implicit retain during construct.
         thgroup->release();
     }
-    // Delete the hardware pool container since its contents are now stored in
-    // the newly created scopes above.
-    delete[] hwpools;
     *thchildren = ithchildren;
     return rc;
 }

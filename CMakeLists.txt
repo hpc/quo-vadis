@@ -169,6 +169,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
 
 # Internal, third-party packages
 include(cmake/QVSpdLog.cmake)
+include(cmake/QVCereal.cmake)
 include(cmake/QVhwloc.cmake)
 
 # Add our source

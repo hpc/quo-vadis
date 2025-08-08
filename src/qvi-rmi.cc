@@ -18,6 +18,7 @@
 
 // TODO(skg) We need to version client/server RPC dispatch.
 
+// TODO(skg) Fix client-side return codes.
 #include "qvi-rmi.h"
 #include "qvi-bbuff.h"
 #include "qvi-bbuff-rmi.h"
@@ -418,7 +419,7 @@ qvi_rmi_client::m_hello(
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
-    qvrc = rpc_rep(&rpcrc, hwtopo_path);
+    qvrc = rpc_rep(rpcrc, hwtopo_path);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) {
         return qvrc;
     }
@@ -428,30 +429,25 @@ qvi_rmi_client::m_hello(
 int
 qvi_rmi_client::get_cpubind(
     pid_t who,
-    hwloc_cpuset_t *cpuset
+    qvi_hwloc_bitmap &cpuset
 ) const {
     int qvrc = rpc_req(QVI_RMI_FID_GET_CPUBIND, who);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
-    qvrc = rpc_rep(&rpcrc, cpuset);
-    if (qvi_unlikely(qvrc != QV_SUCCESS)) {
-        qvi_hwloc::bitmap_delete(cpuset);
-        return qvrc;
-    }
-    return rpcrc;
+    return rpc_rep(rpcrc, cpuset);
 }
 
 int
 qvi_rmi_client::set_cpubind(
     pid_t who,
-    hwloc_const_cpuset_t cpuset
+    const qvi_hwloc_bitmap &cpuset
 ) {
     int qvrc = rpc_req(QVI_RMI_FID_SET_CPUBIND, who, cpuset);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
-    qvrc = rpc_rep(&rpcrc);
+    qvrc = rpc_rep(rpcrc);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     return rpcrc;
 }
@@ -460,37 +456,26 @@ int
 qvi_rmi_client::get_intrinsic_hwpool(
     const std::vector<pid_t> &who,
     qv_scope_intrinsic_t iscope,
-    qvi_hwpool **hwpool
+    qvi_hwpool &hwpool
 ) {
-    *hwpool = nullptr;
-
     int qvrc = rpc_req(QVI_RMI_FID_GET_INTRINSIC_HWPOOL, who, iscope);
-    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
-    // Create the new hardware pool.
-    qvi_hwpool *ihwpool = nullptr;
-    qvrc = qvi_new(&ihwpool);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
-    qvrc = rpc_rep(&rpcrc, ihwpool);
-    if (qvi_unlikely(qvrc != QV_SUCCESS)) {
-        qvi_delete(&ihwpool);
-        return qvrc;
-    }
-    *hwpool = ihwpool;
-    return rpcrc;
+    // Get the new hardware pool.
+    return rpc_rep(rpcrc, hwpool);
 }
 
 int
 qvi_rmi_client::get_obj_depth(
     qv_hw_obj_type_t type,
-    int *depth
+    int &depth
 ) {
     int qvrc = rpc_req(QVI_RMI_FID_OBJ_TYPE_DEPTH, type);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
-    qvrc = rpc_rep(&rpcrc, depth);
+    qvrc = rpc_rep(rpcrc, depth);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     return rpcrc;
 }
@@ -498,14 +483,14 @@ qvi_rmi_client::get_obj_depth(
 int
 qvi_rmi_client::get_nobjs_in_cpuset(
     qv_hw_obj_type_t target_obj,
-    hwloc_const_cpuset_t cpuset,
-    int *nobjs
+    const qvi_hwloc_bitmap &cpuset,
+    int &nobjs
 ) {
     int qvrc = rpc_req(QVI_RMI_FID_GET_NOBJS_IN_CPUSET, target_obj, cpuset);
     if (qvrc != QV_SUCCESS) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
-    qvrc = rpc_rep(&rpcrc, nobjs);
+    qvrc = rpc_rep(rpcrc, nobjs);
     if (qvrc != QV_SUCCESS) return qvrc;
     return rpcrc;
 }
@@ -514,9 +499,9 @@ int
 qvi_rmi_client::get_device_in_cpuset(
     qv_hw_obj_type_t dev_obj,
     int dev_i,
-    hwloc_const_cpuset_t cpuset,
+    const qvi_hwloc_bitmap &cpuset,
     qv_device_id_type_t dev_id_type,
-    char **dev_id
+    std::string &dev_id
 ) {
     int qvrc = rpc_req(
         QVI_RMI_FID_GET_DEVICE_IN_CPUSET,
@@ -525,7 +510,7 @@ qvi_rmi_client::get_device_in_cpuset(
     if (qvrc != QV_SUCCESS) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
-    qvrc = rpc_rep(&rpcrc, dev_id);
+    qvrc = rpc_rep(rpcrc, dev_id);
     if (qvrc != QV_SUCCESS) return qvrc;
     return rpcrc;
 }
@@ -662,7 +647,7 @@ qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
     do {
         std::vector<pid_t> who;
         qv_scope_intrinsic_t iscope;
-        rpcrc = qvi_bbuff_rmi_unpack(input, who, &iscope);
+        rpcrc = qvi_bbuff_rmi_unpack(input, who, iscope);
         // Drop the message. Send an empty hardware pool with the error code.
         if (qvi_unlikely(rpcrc != QV_SUCCESS)) break;
 
@@ -724,7 +709,7 @@ qvi_rmi_server::s_rpc_hello(
     qvi_bbuff **output
 ) {
     pid_t whoisit;
-    const int rc = qvi_bbuff_rmi_unpack(input, &whoisit);
+    const int rc = qvi_bbuff_rmi_unpack(input, whoisit);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Pack relevant configuration information.
     const int rpcrc = QV_SUCCESS;
@@ -742,12 +727,13 @@ qvi_rmi_server::s_rpc_get_cpubind(
     qvi_bbuff **output
 ) {
     pid_t who;
-    int qvrc = qvi_bbuff_rmi_unpack(input, &who);
+    int qvrc = qvi_bbuff_rmi_unpack(input, who);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
-
+    // TODO(skg) Change type.
     hwloc_cpuset_t bitmap = nullptr;
     const int rpcrc = server->m_hwloc.task_get_cpubind(who, &bitmap);
-    qvrc = rpc_pack(output, hdr->fid, rpcrc, bitmap);
+    qvi_hwloc_bitmap tmp(bitmap);
+    qvrc = rpc_pack(output, hdr->fid, rpcrc, tmp);
     qvi_hwloc::bitmap_delete(&bitmap);
 
     return qvrc;
@@ -762,7 +748,7 @@ qvi_rmi_server::s_rpc_set_cpubind(
 ) {
     pid_t who;
     qvi_hwloc_bitmap cpuset;
-    const int qvrc = qvi_bbuff_rmi_unpack(input, &who, cpuset);
+    const int qvrc = qvi_bbuff_rmi_unpack(input, who, cpuset);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
 
     const int rpcrc = server->m_hwloc.task_set_cpubind_from_cpuset(
@@ -779,7 +765,7 @@ qvi_rmi_server::s_rpc_obj_type_depth(
     qvi_bbuff **output
 ) {
     qv_hw_obj_type_t obj;
-    const int qvrc = qvi_bbuff_rmi_unpack(input, &obj);
+    const int qvrc = qvi_bbuff_rmi_unpack(input, obj);
     if (qvrc != QV_SUCCESS) return qvrc;
 
     int depth = 0;
@@ -798,7 +784,7 @@ qvi_rmi_server::s_rpc_get_nobjs_in_cpuset(
     qv_hw_obj_type_t target_obj;
     qvi_hwloc_bitmap cpuset;
     int qvrc = qvi_bbuff_rmi_unpack(
-        input, &target_obj, cpuset
+        input, target_obj, cpuset
     );
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
 
@@ -819,21 +805,20 @@ qvi_rmi_server::s_rpc_get_device_in_cpuset(
 ) {
     qv_hw_obj_type_t dev_obj;
     int dev_i;
-    hwloc_cpuset_t cpuset = nullptr;
+    qvi_hwloc_bitmap cpuset;
     qv_device_id_type_t devid_type;
     int qvrc = qvi_bbuff_rmi_unpack(
-        input, &dev_obj, &dev_i, &cpuset, &devid_type
+        input, dev_obj, dev_i, cpuset, devid_type
     );
     if (qvrc != QV_SUCCESS) return qvrc;
-
+    // TODO(skg) Change type to string
     char *dev_id = nullptr;
     int rpcrc = server->m_hwloc.get_device_id_in_cpuset(
-        dev_obj, dev_i, cpuset, devid_type, &dev_id
+        dev_obj, dev_i, cpuset.cdata(), devid_type, &dev_id
     );
 
-    qvrc = rpc_pack(output, hdr->fid, rpcrc, dev_id);
+    qvrc = rpc_pack(output, hdr->fid, rpcrc, std::string(dev_id));
 
-    qvi_hwloc::bitmap_delete(&cpuset);
     free(dev_id);
     return qvrc;
 }

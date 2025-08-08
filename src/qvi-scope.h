@@ -26,15 +26,17 @@ private:
     /** Task group associated with this scope instance. */
     qvi_group *m_group = nullptr;
     /** Hardware resource pool. */
-    qvi_hwpool *m_hwpool = nullptr;
+    qvi_hwpool m_hwpool;
 public:
     /** Constructor */
     qv_scope(void) = delete;
     /** Constructor */
     qv_scope(
         qvi_group *group,
-        qvi_hwpool *hwpool
+        qvi_hwpool &hwpool
     );
+    /** Destructor */
+    ~qv_scope(void);
     /** Takes the provided group and creates a new intrinsic scope from it. */
     static int
     make_intrinsic(
@@ -53,8 +55,6 @@ public:
         qv_scope_create_hints_t hints,
         qv_scope_t **child
     );
-    /** Destructor */
-    ~qv_scope(void);
     /** Destroys scopes created by thread_split*. */
     static void
     thread_destroy(

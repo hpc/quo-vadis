@@ -435,6 +435,7 @@ public:
  * hwloc bitmap object.
  */
 struct qvi_hwloc_bitmap {
+    friend class cereal::access;
 private:
     /** Internal bitmap. */
     hwloc_bitmap_t m_data = nullptr;
@@ -519,6 +520,30 @@ public:
             if (qvi_unlikely(orrc != 0)) throw qvi_runtime_error();
         }
         return result;
+    }
+
+    template<class Archive>
+    void
+    save(
+        Archive &archive
+    ) const {
+        char *datas = nullptr;
+        const int rc = qvi_hwloc::bitmap_asprintf(m_data, &datas);
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+        // We are sending the string representation of the cpuset.
+        archive(std::string(datas));
+        free(datas);
+    }
+
+    template<class Archive>
+    void
+    load(
+        Archive &archive
+    ) {
+        std::string bitmaps;
+        archive(bitmaps);
+        int rc = qvi_hwloc::bitmap_sscanf(m_data, (char *)bitmaps.c_str());
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
     }
 };
 

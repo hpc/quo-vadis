@@ -63,6 +63,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+#include "cereal/access.hpp"
 #endif
 // IWYU pragma: end_keep
 

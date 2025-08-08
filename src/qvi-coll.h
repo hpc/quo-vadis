@@ -44,7 +44,7 @@ gather(
         // Unpack the data.
         for (uint_t i = 0; i < group_size; ++i) {
             rc = qvi_bbuff_rmi_unpack(
-                bbuffs[i]->data(), &recv[i]
+                bbuffs[i]->data(), recv[i]
             );
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
         }
@@ -98,7 +98,7 @@ scatter(
     rc = group.scatter(txbuffs.data(), rootid, &rxbuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Unpack the results.
-    rc = qvi_bbuff_rmi_unpack(rxbuff->data(), &recv);
+    rc = qvi_bbuff_rmi_unpack(rxbuff->data(), recv);
 out:
     for (auto &buff : txbuffs) {
         qvi_delete(&buff);

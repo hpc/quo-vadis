@@ -35,45 +35,6 @@ qvi_hwpool_res::affinity(void) const
     return m_affinity;
 }
 
-int
-qvi_hwpool_cpu::packinto(
-    qvi_bbuff *buff
-) const {
-    // Pack hints.
-    const int rc = qvi_bbuff_rmi_pack_item(buff, m_hints);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Pack cpuset.
-    return qvi_bbuff_rmi_pack_item(buff, m_affinity);
-}
-
-int
-qvi_hwpool_cpu::unpack(
-    byte_t *buffpos,
-    size_t *bytes_written,
-    qvi_hwpool_cpu &cpu
-) {
-    size_t bw = 0, total_bw = 0;
-    // Unpack hints.
-    int rc = qvi_bbuff_rmi_unpack_item(
-        &cpu.m_hints, buffpos, &bw
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    total_bw += bw;
-    buffpos += bw;
-    // Unpack bitmap.
-    rc = qvi_bbuff_rmi_unpack_item(
-        cpu.m_affinity, buffpos, &bw
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    total_bw += bw;
-out:
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        total_bw = 0;
-    }
-    *bytes_written = total_bw;
-    return rc;
-}
-
 qvi_hwpool_dev::qvi_hwpool_dev(
     const qvi_hwloc_device &dev
 ) : m_type(dev.type)
@@ -124,85 +85,6 @@ qvi_hwpool_dev::id(
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         *result = nullptr;
     }
-    return rc;
-}
-
-int
-qvi_hwpool_dev::packinto(
-    qvi_bbuff *buff
-) const {
-    // Pack device hints.
-    int rc = qvi_bbuff_rmi_pack_item(buff, m_hints);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Pack device affinity.
-    rc = qvi_bbuff_rmi_pack_item(buff, m_affinity);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Pack device type.
-    rc = qvi_bbuff_rmi_pack_item(buff, m_type);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Pack device ID.
-    rc = qvi_bbuff_rmi_pack_item(buff, m_id);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Pack device PCI bus ID.
-    rc = qvi_bbuff_rmi_pack_item(buff, m_pci_bus_id);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Pack device UUID.
-    return qvi_bbuff_rmi_pack_item(buff, m_uuid);
-}
-
-int
-qvi_hwpool_dev::unpack(
-    byte_t *buffpos,
-    size_t *bytes_written,
-    qvi_hwpool_dev &dev
-) {
-    size_t bw = 0, total_bw = 0;
-
-    int rc = qvi_bbuff_rmi_unpack_item(
-        &dev.m_hints, buffpos, &bw
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    total_bw += bw;
-    buffpos += bw;
-
-    rc = qvi_bbuff_rmi_unpack_item(
-        dev.m_affinity, buffpos, &bw
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    total_bw += bw;
-    buffpos += bw;
-
-    rc = qvi_bbuff_rmi_unpack_item(
-        &dev.m_type, buffpos, &bw
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    total_bw += bw;
-    buffpos += bw;
-
-    rc = qvi_bbuff_rmi_unpack_item(
-        &dev.m_id, buffpos, &bw
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    total_bw += bw;
-    buffpos += bw;
-
-    rc = qvi_bbuff_rmi_unpack_item(
-        dev.m_pci_bus_id, buffpos, &bw
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    total_bw += bw;
-    buffpos += bw;
-
-    rc = qvi_bbuff_rmi_unpack_item(
-        dev.m_uuid, buffpos, &bw
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    total_bw += bw;
-out:
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        total_bw = 0;
-    }
-    *bytes_written = total_bw;
     return rc;
 }
 
@@ -278,67 +160,6 @@ qvi_hwpool::release_devices(void)
 {
     m_devs.clear();
     return QV_SUCCESS;
-}
-
-int
-qvi_hwpool::packinto(
-    qvi_bbuff *buff
-) const {
-    // Pack the CPU.
-    int rc = qvi_bbuff_rmi_pack_item(buff, m_cpu);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Pack the number of devices.
-    const size_t ndev = m_devs.size();
-    rc = qvi_bbuff_rmi_pack_item(buff, ndev);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Pack the devices.
-    for (const auto &dev : m_devs) {
-        rc = qvi_bbuff_rmi_pack_item(buff, dev.second.get());
-        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    }
-    return rc;
-}
-
-int
-qvi_hwpool::unpack(
-    byte_t *buffpos,
-    size_t *bytes_written,
-    qvi_hwpool &hwp
-) {
-    size_t bw = 0, total_bw = 0;
-    // Unpack the CPU into the hardare pool.
-    int rc = qvi_bbuff_rmi_unpack_item(
-        hwp.m_cpu, buffpos, &bw
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    total_bw += bw;
-    buffpos += bw;
-    // Unpack the number of devices.
-    size_t ndev;
-    rc = qvi_bbuff_rmi_unpack_item(
-        &ndev, buffpos, &bw
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    total_bw += bw;
-    buffpos += bw;
-    // Unpack and add the devices.
-    for (size_t i = 0; i < ndev; ++i) {
-        qvi_hwpool_dev dev;
-        rc = qvi_bbuff_rmi_unpack_item(dev, buffpos, &bw);
-        if (qvi_unlikely(rc != QV_SUCCESS)) break;
-        total_bw += bw;
-        buffpos += bw;
-        // Add the unpacked device.
-        rc = hwp.add_device(dev);
-        if (qvi_unlikely(rc != QV_SUCCESS)) break;
-    }
-out:
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        hwp = {};
-        total_bw = 0;
-    }
-    *bytes_written = total_bw;
-    return rc;
 }
 
 /*
