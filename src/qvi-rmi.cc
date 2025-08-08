@@ -17,7 +17,6 @@
  */
 
 // TODO(skg) We need to version client/server RPC dispatch.
-// TODO(skg) Fix client-side return codes.
 
 #include "qvi-rmi.h"
 #include "qvi-bbuff.h"
@@ -421,9 +420,7 @@ qvi_rmi_client::m_hello(
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
     qvrc = rpc_rep(rpcrc, hwtopo_path);
-    if (qvi_unlikely(qvrc != QV_SUCCESS)) {
-        return qvrc;
-    }
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     return rpcrc;
 }
 
@@ -436,7 +433,9 @@ qvi_rmi_client::get_cpubind(
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
-    return rpc_rep(rpcrc, cpuset);
+    qvrc = rpc_rep(rpcrc, cpuset);
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
+    return rpcrc;
 }
 
 int
@@ -464,7 +463,9 @@ qvi_rmi_client::get_intrinsic_hwpool(
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
     // Get the new hardware pool.
-    return rpc_rep(rpcrc, hwpool);
+    qvrc = rpc_rep(rpcrc, hwpool);
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
+    return rpcrc;
 }
 
 int
@@ -488,11 +489,11 @@ qvi_rmi_client::get_nobjs_in_cpuset(
     int &nobjs
 ) {
     int qvrc = rpc_req(QVI_RMI_FID_GET_NOBJS_IN_CPUSET, target_obj, cpuset);
-    if (qvrc != QV_SUCCESS) return qvrc;
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
     qvrc = rpc_rep(rpcrc, nobjs);
-    if (qvrc != QV_SUCCESS) return qvrc;
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     return rpcrc;
 }
 
@@ -508,11 +509,11 @@ qvi_rmi_client::get_device_in_cpuset(
         QVI_RMI_FID_GET_DEVICE_IN_CPUSET,
         dev_obj, dev_i, cpuset, dev_id_type
     );
-    if (qvrc != QV_SUCCESS) return qvrc;
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
     qvrc = rpc_rep(rpcrc, dev_id);
-    if (qvrc != QV_SUCCESS) return qvrc;
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     return rpcrc;
 }
 
