@@ -29,7 +29,7 @@ const int QVI_RMI_PORT_UNSET = -1;
 struct qvi_rmi_msg_header;
 struct qvi_rmi_server;
 
-typedef enum {
+enum qvi_rmi_rpc_fid_t {
     QVI_RMI_FID_INVALID = 0,
     QVI_RMI_FID_SERVER_SHUTDOWN,
     QVI_RMI_FID_HELLO,
@@ -39,7 +39,7 @@ typedef enum {
     QVI_RMI_FID_GET_NOBJS_IN_CPUSET,
     QVI_RMI_FID_GET_DEVICE_IN_CPUSET,
     QVI_RMI_FID_GET_INTRINSIC_HWPOOL
-} qvi_rmi_rpc_fid_t;
+};
 
 /**
  * @note: The return value is used for operation status (e.g., was the internal
@@ -263,42 +263,42 @@ public:
     int
     get_cpubind(
         pid_t task_id,
-        hwloc_cpuset_t *cpuset
+        qvi_hwloc_bitmap &cpuset
     ) const;
     /** Sets the cpuset of the provided PID. */
     int
     set_cpubind(
         pid_t task_id,
-        hwloc_const_cpuset_t cpuset
+        const qvi_hwloc_bitmap &cpuset
     );
     /** Returns a new hardware pool based on the intrinsic scope specifier. */
     int
     get_intrinsic_hwpool(
         const std::vector<pid_t> &who,
         qv_scope_intrinsic_t iscope,
-        qvi_hwpool **hwpool
+        qvi_hwpool &hwpool
     );
     /** Returns the depth of the provided object type. */
     int
     get_obj_depth(
         qv_hw_obj_type_t type,
-        int *depth
+        int &depth
     );
     /** Returns the number of objects in the provided cpuset. */
     int
     get_nobjs_in_cpuset(
         qv_hw_obj_type_t target_obj,
-        hwloc_const_cpuset_t cpuset,
-        int *nobjs
+        const qvi_hwloc_bitmap &cpuset,
+        int &nobjs
     );
     /** Returns a device ID string for the requested device. */
     int
     get_device_in_cpuset(
         qv_hw_obj_type_t dev_obj,
         int dev_i,
-        hwloc_const_cpuset_t cpuset,
+        const qvi_hwloc_bitmap &cpuset,
         qv_device_id_type_t dev_id_type,
-        char **dev_id
+        std::string &dev_id
     );
     /** Returns a cpuset representing n objects of the requested type. */
     int

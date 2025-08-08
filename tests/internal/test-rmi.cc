@@ -84,7 +84,7 @@ client(
     char const *ers = nullptr;
     int portno = 0;
     pid_t who = qvi_gettid();
-    hwloc_bitmap_t bitmap = nullptr;
+    qvi_hwloc_bitmap bitmap;
 
     qvi_rmi_client *client = nullptr;
     int rc = qvi_new(&client);
@@ -105,16 +105,15 @@ client(
         goto out;
     }
 
-    rc = client->get_cpubind(who, &bitmap);
+    rc = client->get_cpubind(who, bitmap);
     if (rc != QV_SUCCESS) {
         ers = "client->cpubind() failed";
         goto out;
     }
 
     char *res;
-    qvi_hwloc::bitmap_asprintf(bitmap, &res);
+    qvi_hwloc::bitmap_asprintf(bitmap.cdata(), &res);
     printf("# [%d] cpubind = %s\n", who, res);
-    hwloc_bitmap_free(bitmap);
     free(res);
 
     if (send_shutdown_msg) {

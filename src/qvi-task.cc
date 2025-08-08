@@ -62,13 +62,12 @@ int
 qvi_task::m_init_bind_stack(void)
 {
     // Cache current binding.
-    hwloc_cpuset_t current_bind = nullptr;
-    const int rc = m_rmi.get_cpubind(mytid(), &current_bind);
+    qvi_hwloc_bitmap current_bind;
+    const int rc = m_rmi.get_cpubind(mytid(), current_bind);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    m_stack.push(qvi_hwloc_bitmap(current_bind));
-    qvi_hwloc::bitmap_delete(&current_bind);
-    return rc;
+    m_stack.push(current_bind);
+    return QV_SUCCESS;
 }
 
 int
@@ -86,7 +85,7 @@ qvi_task::bind_push(
     const qvi_hwloc_bitmap &cpuset
 ) {
     // Change policy
-    const int rc = m_rmi.set_cpubind(mytid(), cpuset.cdata());
+    const int rc = m_rmi.set_cpubind(mytid(), cpuset);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Push bitmap onto stack.
     m_stack.push(cpuset);
@@ -98,7 +97,7 @@ qvi_task::bind_pop(void)
 {
     m_stack.pop();
 
-    return m_rmi.set_cpubind(mytid(), m_stack.top().cdata());
+    return m_rmi.set_cpubind(mytid(), m_stack.top());
 }
 
 int

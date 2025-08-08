@@ -23,6 +23,7 @@
  * Base hardware pool resource class.
  */
 struct qvi_hwpool_res {
+    friend class cereal::access;
 protected:
     /** Resource hint flags. */
     qv_scope_create_hints_t m_hints = QV_SCOPE_CREATE_HINT_NONE;
@@ -42,32 +43,29 @@ public:
      */
     const qvi_hwloc_bitmap &
     affinity(void) const;
+
+    template <class Archive>
+    void
+    serialize(
+        Archive &archive
+    ) {
+        archive(m_hints, m_affinity);
+    }
 };
 
 /**
  * Defines a hardware pool CPU. A CPU here may have multiple
- * processing units (PUs), which are defined as the CPU's affinity.
+ * processing units (PUs), which are defined as the CPU's affinity. For now a
+ * qvi_hwpool_cpu has the same structure as a qvi_hwpool_res.
  */
-struct qvi_hwpool_cpu : qvi_hwpool_res {
-    /** Packs the instance into the provided buffer. */
-    int
-    packinto(
-        qvi_bbuff *buff
-    ) const;
-    /** Unpacks the buffer and creates a new hardware pool instance. */
-    static int
-    unpack(
-        byte_t *buffpos,
-        size_t *bytes_written,
-        qvi_hwpool_cpu &cpu
-    );
-};
+using qvi_hwpool_cpu = qvi_hwpool_res;
 
 /**
  * Defines a hardware pool device. This differs from a qvi_hwloc_device
  * because we only maintain information relevant for user-facing operations.
  */
 struct qvi_hwpool_dev : qvi_hwpool_res {
+    friend class cereal::access;
 private:
     /** Device type. */
     qv_hw_obj_type_t m_type = QV_HW_OBJ_LAST;
@@ -106,18 +104,17 @@ public:
         qv_device_id_type_t format,
         char **result
     ) const;
-    /** Packs the instance into the provided buffer. */
-    int
-    packinto(
-        qvi_bbuff *buff
-    ) const;
-    /** Unpacks the buffer and creates a new hardware pool device instance. */
-    static int
-    unpack(
-        byte_t *buffpos,
-        size_t *bytes_written,
-        qvi_hwpool_dev &dev
-    );
+
+    template <class Archive>
+    void
+    serialize(
+        Archive &archive
+    ) {
+        archive(
+            m_hints, m_affinity, m_type,
+            m_id, m_pci_bus_id, m_uuid
+        );
+    }
 };
 
 /**
@@ -128,6 +125,7 @@ using qvi_hwpool_devs_t = std::multimap<
 >;
 
 struct qvi_hwpool {
+    friend class cereal::access;
 private:
     /** The hardware pool's CPU. */
     qvi_hwpool_cpu m_cpu;
@@ -182,22 +180,14 @@ public:
      */
     int
     release_devices(void);
-    /**
-     * Packs the instance into the provided buffer.
-     */
-    int
-    packinto(
-        qvi_bbuff *buff
-    ) const;
-    /**
-     * Unpacks the buffer into the provided hardware pool instance.
-     */
-    static int
-    unpack(
-        byte_t *buffpos,
-        size_t *bytes_written,
-        qvi_hwpool &hwp
-    );
+
+    template <class Archive>
+    void
+    serialize(
+        Archive &archive
+    ) {
+        archive(m_cpu, m_devs);
+    }
 };
 
 #endif

@@ -67,6 +67,7 @@ set_target_properties(
 add_dependencies(
     quo-vadis-core
     spdlog
+    cereal
     hwloc
 )
 
@@ -83,6 +84,7 @@ target_include_directories(
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
       $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/src>
       $<TARGET_PROPERTY:spdlog,INTERFACE_INCLUDE_DIRECTORIES>
+      $<TARGET_PROPERTY:cereal,INTERFACE_INCLUDE_DIRECTORIES>
       $<TARGET_PROPERTY:hwloc,INTERFACE_INCLUDE_DIRECTORIES>
       $<TARGET_PROPERTY:zmq,INTERFACE_INCLUDE_DIRECTORIES>
 )

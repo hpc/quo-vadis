@@ -135,7 +135,7 @@ private:
         int rootid,
         const qvi_hwsplit &hwsplit,
         int *colorp,
-        qvi_hwpool **result
+        qvi_hwpool &result
     );
     /** */
     qvi_map_fn_t
@@ -173,7 +173,7 @@ public:
         int color,
         qv_hw_obj_type_t maybe_obj_type,
         int *colorp,
-        qvi_hwpool **result
+        qvi_hwpool &result
     );
     /** Performs a thread-split operation, returns relevant hardware pools. */
     static int
@@ -184,7 +184,7 @@ public:
         uint_t k,
         qv_hw_obj_type_t maybe_obj_type,
         std::vector<int> &kcolorps,
-        qvi_hwpool ***khwpools
+        std::vector<qvi_hwpool> &khwpools
     );
 };
 
