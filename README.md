@@ -78,8 +78,10 @@ mpiexec -n 2 build/tests/test-mpi-scopes
 * spdlog (https://github.com/gabime/spdlog)
 
 ## External Software Dependencies
-* ZeroMQ (https://github.com/zeromq/libzmq)
-* An MPI-3 implementation (https://www.open-mpi.org, https://www.mpich.org)
+* Required
+    * ZeroMQ (https://github.com/zeromq/libzmq)
+* Optional
+    * An MPI-3 implementation (https://www.open-mpi.org, https://www.mpich.org)
 
 ## Packaging for Developers
 ```shell
