@@ -20,6 +20,13 @@
 #define QVI_BBUFF_H
 
 #include "qvi-common.h"
+// IWYU pragma: begin_keep
+#include "cereal/archives/binary.hpp"
+#include "cereal/types/map.hpp"
+#include "cereal/types/memory.hpp"
+#include "cereal/types/string.hpp"
+#include "cereal/types/vector.hpp"
+// IWYU pragma: end_keep
 
 typedef enum {
     QVI_BBUFF_ALLOC_SHARED = 0,
@@ -66,6 +73,57 @@ public:
      */
     void *
     data(void);
+    /**
+     *
+     */
+    template<typename ...Types>
+    int
+    pack(
+        Types &&...args
+    ) {
+        try {
+            std::stringstream ss;
+            // Scoped to force flush on destruct.
+            {
+                cereal::BinaryOutputArchive oarchive(ss);
+                // Use a fold expression to serialize each argument.
+                (oarchive(std::forward<Types>(args)), ...);
+            }
+
+            const std::string archives(ss.str());
+            const size_t len = archives.length();
+
+            const int rc = append(&len, sizeof(size_t));
+            if (qvi_unlikely(rc) != QV_SUCCESS) return rc;
+            return append(archives.data(), archives.size());
+        }
+        qvi_catch_and_return();
+    }
+
+    template<typename ...Types>
+    static int
+    unpack(
+        void *data,
+        Types &&...args
+    ) {
+        try {
+            byte_t *pos = static_cast<byte_t *>(data);
+
+            size_t slen;
+            memmove(&slen, pos, sizeof(slen));
+            pos += sizeof(slen);
+
+            std::stringstream ss(std::string((const char *)pos, slen));
+            // Scoped to force flush on destruct.
+            {
+                cereal::BinaryInputArchive iarchive(ss);
+                iarchive(std::forward<Types>(args)...);
+            }
+
+            return QV_SUCCESS;
+        }
+        qvi_catch_and_return();
+    }
 };
 
 #endif

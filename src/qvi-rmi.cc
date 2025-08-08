@@ -17,11 +17,10 @@
  */
 
 // TODO(skg) We need to version client/server RPC dispatch.
-
 // TODO(skg) Fix client-side return codes.
+
 #include "qvi-rmi.h"
 #include "qvi-bbuff.h"
-#include "qvi-bbuff-rmi.h"
 #include "qvi-utils.h"
 
 // Indicates whether the server has been signaled to shutdown.
@@ -265,7 +264,7 @@ rpc_pack(
     rc = buffer_append_header(ibuff, fid);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
 
-    rc = qvi_bbuff_rmi_pack(ibuff, std::forward<Types>(args)...);
+    rc = ibuff->pack(std::forward<Types>(args)...);
 out:
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ibuff);
@@ -282,8 +281,10 @@ rpc_unpack(
 ) {
     qvi_rmi_msg_header hdr;
     const size_t trim = unpack_msg_header(data, &hdr);
-    void *body = data_trim(data, trim);
-    return qvi_bbuff_rmi_unpack(body, std::forward<Types>(args)...);
+    return qvi_bbuff::unpack(
+        data_trim(data, trim),
+        std::forward<Types>(args)...
+    );
 }
 
 qvi_rmi_client::~qvi_rmi_client(void)
@@ -647,7 +648,7 @@ qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
     do {
         std::vector<pid_t> who;
         qv_scope_intrinsic_t iscope;
-        rpcrc = qvi_bbuff_rmi_unpack(input, who, iscope);
+        rpcrc = qvi_bbuff::unpack(input, who, iscope);
         // Drop the message. Send an empty hardware pool with the error code.
         if (qvi_unlikely(rpcrc != QV_SUCCESS)) break;
 
@@ -697,7 +698,7 @@ qvi_rmi_server::s_rpc_shutdown(
     void *,
     qvi_bbuff **output
 ) {
-    (void)rpc_pack(output, hdr->fid, QVI_BBUFF_RMI_ZERO_MSG);
+    (void)rpc_pack(output, hdr->fid);
     return QV_SUCCESS_SHUTDOWN;
 }
 
@@ -709,7 +710,7 @@ qvi_rmi_server::s_rpc_hello(
     qvi_bbuff **output
 ) {
     pid_t whoisit;
-    const int rc = qvi_bbuff_rmi_unpack(input, whoisit);
+    const int rc = qvi_bbuff::unpack(input, whoisit);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Pack relevant configuration information.
     const int rpcrc = QV_SUCCESS;
@@ -727,7 +728,7 @@ qvi_rmi_server::s_rpc_get_cpubind(
     qvi_bbuff **output
 ) {
     pid_t who;
-    int qvrc = qvi_bbuff_rmi_unpack(input, who);
+    int qvrc = qvi_bbuff::unpack(input, who);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // TODO(skg) Change type.
     hwloc_cpuset_t bitmap = nullptr;
@@ -748,7 +749,7 @@ qvi_rmi_server::s_rpc_set_cpubind(
 ) {
     pid_t who;
     qvi_hwloc_bitmap cpuset;
-    const int qvrc = qvi_bbuff_rmi_unpack(input, who, cpuset);
+    const int qvrc = qvi_bbuff::unpack(input, who, cpuset);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
 
     const int rpcrc = server->m_hwloc.task_set_cpubind_from_cpuset(
@@ -765,7 +766,7 @@ qvi_rmi_server::s_rpc_obj_type_depth(
     qvi_bbuff **output
 ) {
     qv_hw_obj_type_t obj;
-    const int qvrc = qvi_bbuff_rmi_unpack(input, obj);
+    const int qvrc = qvi_bbuff::unpack(input, obj);
     if (qvrc != QV_SUCCESS) return qvrc;
 
     int depth = 0;
@@ -783,7 +784,7 @@ qvi_rmi_server::s_rpc_get_nobjs_in_cpuset(
 ) {
     qv_hw_obj_type_t target_obj;
     qvi_hwloc_bitmap cpuset;
-    int qvrc = qvi_bbuff_rmi_unpack(
+    int qvrc = qvi_bbuff::unpack(
         input, target_obj, cpuset
     );
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
@@ -807,7 +808,7 @@ qvi_rmi_server::s_rpc_get_device_in_cpuset(
     int dev_i;
     qvi_hwloc_bitmap cpuset;
     qv_device_id_type_t devid_type;
-    int qvrc = qvi_bbuff_rmi_unpack(
+    int qvrc = qvi_bbuff::unpack(
         input, dev_obj, dev_i, cpuset, devid_type
     );
     if (qvrc != QV_SUCCESS) return qvrc;

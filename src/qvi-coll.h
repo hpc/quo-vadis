@@ -15,7 +15,7 @@
 #define QVI_COLL_H
 
 #include "qvi-common.h"
-#include "qvi-bbuff-rmi.h"
+#include "qvi-bbuff.h"
 #include "qvi-group.h"
 
 namespace qvi_coll {
@@ -31,7 +31,7 @@ gather(
     const uint_t group_size = group.size();
     // Pack the send type into a buffer.
     qvi_bbuff txbuff;
-    int rc = qvi_bbuff_rmi_pack(&txbuff, send);
+    int rc = txbuff.pack(send);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Gather the values to the root.
     qvi_bbuff_alloc_type_t alloc_type = QVI_BBUFF_ALLOC_PRIVATE;
@@ -43,7 +43,7 @@ gather(
         recv.resize(group_size);
         // Unpack the data.
         for (uint_t i = 0; i < group_size; ++i) {
-            rc = qvi_bbuff_rmi_unpack(
+            rc = qvi_bbuff::unpack(
                 bbuffs[i]->data(), recv[i]
             );
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
@@ -89,7 +89,7 @@ scatter(
             rc = qvi_new(&txbuffs[i]);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
 
-            rc = qvi_bbuff_rmi_pack(txbuffs[i], send[i]);
+            rc = txbuffs[i]->pack(send[i]);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
         }
         if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
@@ -98,7 +98,7 @@ scatter(
     rc = group.scatter(txbuffs.data(), rootid, &rxbuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Unpack the results.
-    rc = qvi_bbuff_rmi_unpack(rxbuff->data(), recv);
+    rc = qvi_bbuff::unpack(rxbuff->data(), recv);
 out:
     for (auto &buff : txbuffs) {
         qvi_delete(&buff);

@@ -27,7 +27,6 @@ add_library(
       qvi-rsmi.h
       qvi-hwpool.h
       qvi-rmi.h
-      qvi-bbuff-rmi.h
       qvi-task.h
       qvi-group.h
       qvi-subgroup.h
