@@ -14,8 +14,6 @@
  */
 
 #include "qvi-hwpool.h"
-#include "qvi-bbuff-rmi.h"
-#include "qvi-utils.h"
 
 qv_scope_create_hints_t
 qvi_hwpool_res::hints(void)
