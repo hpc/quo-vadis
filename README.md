@@ -74,6 +74,7 @@ mpiexec -n 2 build/tests/test-mpi-scopes
 
 ## Internal Software Dependencies
 * hwloc (https://github.com/open-mpi/hwloc)
+* cereal (https://github.com/USCiLab/cereal)
 * spdlog (https://github.com/gabime/spdlog)
 
 ## External Software Dependencies
