@@ -45,12 +45,12 @@ jobs:
     - name: Run Core Tests
       working-directory: ${{github.workspace}}/build
       run: |
-        ctest -LE mpi -C ${{matrix.build-type}} --output-on-failure
+        ctest -V -LE mpi -C ${{matrix.build-type}} --output-on-failure
 
     - name: Run All Tests
       working-directory: ${{github.workspace}}/build
       if: ${{ matrix.build-type == 'Release' }}
-      run: ctest -C ${{matrix.build-type}} --output-on-failure
+      run: ctest -V -C ${{matrix.build-type}} --output-on-failure
 
     - name: Test Packaging
       working-directory: ${{github.workspace}}/build
