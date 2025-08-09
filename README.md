@@ -64,11 +64,18 @@ HWLOC_XMLFILE # Path to system topology XML file.
 ```
 ### Examples
 ```shell
-# Set communication port
+# Launch the daemon with specified port.
+build/src/quo-vadisd --port 55996
+# Run a test.
+./build/tests/test-process-scopes
+```
+
+```shell
+# Set the communication port via environment variable.
 export QV_PORT=55996
-# Launch the daemon
+# Launch the daemon.
 build/src/quo-vadisd
-# Run a test
+# Run a test.
 mpiexec -n 2 build/tests/test-mpi-scopes
 ```
 
