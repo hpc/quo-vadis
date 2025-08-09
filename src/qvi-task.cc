@@ -38,16 +38,23 @@ qvi_task::hwloc(void)
 int
 qvi_task::m_connect_to_server(void)
 {
-    std::string url;
+    // Discover the server's port number.
     int portno = QVI_RMI_PORT_UNSET;
-    int rc = qvi_rmi_get_url(url, portno);
+    int rc = m_rmi.discover(portno);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        qvi_log_error("{}", qvi_rmi_discovery_ers());
+        return QV_RES_UNAVAILABLE;
+    }
+
+    std::string url;
+    rc = qvi_rmi_get_url(url, portno);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_log_error("{}", qvi_rmi_conn_env_ers());
         return QV_RES_UNAVAILABLE;
     }
 
     rc = m_rmi.connect(url, portno);
-    if (qvi_unlikely(rc == QV_RES_UNAVAILABLE)) {
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
         const std::string msg =
             "\n\n#############################################\n"
             "# A client could not communicate with its server.\n"

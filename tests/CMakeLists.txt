@@ -12,6 +12,10 @@
 
 ################################################################################
 ################################################################################
+# Used to test QVD with specified port and no QV_PORT.
+set(QV_START_QVD_WPORT "../src/quo-vadisd --no-daemonize --port 55999")
+set(QV_START_QVD_WENV "../src/quo-vadisd --no-daemonize")
+
 add_executable(
     test-process-scopes
     test-process-scopes.c
@@ -26,8 +30,8 @@ add_test(
     NAME
       process-scopes
     COMMAND
-      bash -c "export QV_PORT=\"55999\" && \
-      ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ../src/quo-vadisd --no-daemonize & ) && \
+      bash -c "
+      ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ${QV_START_QVD_WPORT} & ) && \
         ${CMAKE_CURRENT_BINARY_DIR}/test-process-scopes"
 )
 
@@ -64,7 +68,7 @@ if (OPENMP_FOUND)
           omp
         COMMAND
           bash -c "export QV_PORT=\"55999\" && \
-          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ../src/quo-vadisd --no-daemonize & ) && \
+          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ${QV_START_QVD_WENV} & ) && \
             ${CMAKE_CURRENT_BINARY_DIR}/test-omp"
     )
 
@@ -192,8 +196,8 @@ if(MPI_FOUND)
         NAME
           mpi-api
         COMMAND
-          bash -c "export QV_PORT=\"55999\" && \
-          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ../src/quo-vadisd --no-daemonize & ) && \
+          bash -c "
+          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ${QV_START_QVD_WPORT} & ) && \
             ${MPIEXEC_EXECUTABLE} \
             ${MPIEXEC_NUMPROC_FLAG} \
             ${MPIEXEC_MAX_NUMPROCS} \
@@ -205,7 +209,7 @@ if(MPI_FOUND)
           mpi-scopes
         COMMAND
           bash -c "export QV_PORT=\"55999\" && \
-          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ../src/quo-vadisd --no-daemonize & ) && \
+          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ${QV_START_QVD_WENV} & ) && \
             ${MPIEXEC_EXECUTABLE} \
             ${MPIEXEC_NUMPROC_FLAG} \
             ${MPIEXEC_MAX_NUMPROCS} \
@@ -268,8 +272,8 @@ if(QV_FORTRAN_HAPPY)
         NAME
           process-fortapi
         COMMAND
-          bash -c "export QV_PORT=\"55999\" && \
-          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ../src/quo-vadisd --no-daemonize & ) && \
+          bash -c "
+          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ${QV_START_QVD_WPORT} & ) && \
           ${CMAKE_CURRENT_BINARY_DIR}/test-process-fortapi"
     )
 

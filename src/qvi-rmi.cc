@@ -301,10 +301,85 @@ qvi_rmi_client::hwloc(void)
     return m_hwloc;
 }
 
+static const std::regex &
+get_session_regex(void)
+{
+    static const std::regex session_re("quo-vadisd\\.([0-9]+)");
+    return session_re;
+}
+
+/**
+ * Attempts discovery until success or max delay is reached.
+ */
+static int
+discover_with_backoff(
+    std::function<int(int &)> discover_fn,
+    int &portno,
+    size_t max_delay_in_ms
+) {
+    namespace sc = std::chrono;
+    // Initial delay.
+    sc::milliseconds cur_delay(2);
+    const sc::milliseconds max_delay(max_delay_in_ms);
+    // Jitter random number generator.
+    std::mt19937 jitter_rng(std::random_device{}());
+
+    do {
+        const int rc = discover_fn(portno);
+        if (rc == QV_SUCCESS) return rc;
+        else {
+            // Calculate jitter: e.g., 0% to 50% of current_delay.
+            std::uniform_int_distribution<int> jdist(0, cur_delay.count() / 2);
+            const sc::milliseconds jitter = sc::milliseconds(jdist(jitter_rng));
+            std::this_thread::sleep_for(cur_delay + jitter);
+            // Double the delay for the next attempt, up to max_delay.
+            cur_delay = std::min(cur_delay * 2, max_delay);
+        }
+    } while (cur_delay != max_delay);
+    return QV_ERR;
+}
+
+static int
+discover_impl(
+    int &portno
+) {
+    namespace fs = std::filesystem;
+
+    const std::string tmpdir = qvi_tmpdir();
+    const std::regex &session_regex = get_session_regex();
+
+    try {
+        std::smatch match;
+        for (const auto &entry : fs::directory_iterator(tmpdir)) {
+            if (fs::is_directory(entry.path())) {
+                const std::string dirname = entry.path().filename().string();
+                // Found the session directory.
+                if (std::regex_search(dirname, match, session_regex)) {
+                    return qvi_stoi(match[1].str(), portno);
+                }
+            }
+        }
+    }
+    catch (const fs::filesystem_error &e) {
+        qvi_log_error(e.what());
+        return QV_ERR_FILE_IO;
+    }
+    return QV_ERR_NOT_FOUND;
+}
+
+int
+qvi_rmi_client::discover(
+    int &portno
+) {
+    // Account for potential delays in publishing session
+    // information between server startup and client discovery.
+    return discover_with_backoff(discover_impl, portno, 5000);
+}
+
 int
 qvi_rmi_client::connect(
     const std::string &url,
-    const int &portno
+    const int portno
 ) {
     // Create a new ZMQ context.
     m_zctx = zmq_ctx_new();
@@ -989,6 +1064,24 @@ qvi_rmi_conn_env_ers(void)
         "# Make sure that the following environment\n"
         "# environment variable is set to an unused\n"
         "# port number: " + PORT_ENV_VAR + ""
+        "\n#############################################\n\n";
+    return msg;
+}
+
+std::string
+qvi_rmi_discovery_ers(void)
+{
+    static const std::string msg =
+        "\n\n#############################################\n"
+        "# Cannot determine connection information.\n"
+        "# Please ensure quo-vadisd is running.\n"
+        "#\n"
+        "# If quo-vadisd is running, then ensure\n"
+        "# both server and clients are using the\n"
+        "# same tmp directory.\n"
+        "#\n"
+        "# For example, ensure TMPDIR or QV_TMPDIR\n"
+        "# are the same for both client and server."
         "\n#############################################\n\n";
     return msg;
 }

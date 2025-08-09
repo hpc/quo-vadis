@@ -107,7 +107,7 @@ emit_iter_info(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf(
-        "[%d]: thread=%d of nthread=%d handling iter %d on %s\n",
+        "[%d]: thread=%03d of nthread=%03d handling iter %03d on %s\n",
         ctu_gettid(), omp_get_thread_num(), omp_get_num_threads(), i, binds
     );
     free(binds);
@@ -120,8 +120,10 @@ main(void)
     scopei ep_sinfo;
     scopei_ep(&ep_sinfo);
     const double tock = omp_get_wtime();
+    const int niters = ep_sinfo.nthreads * 4;
 
     omp_set_num_threads(ep_sinfo.nthreads);
+
 
     #pragma omp parallel
     #pragma omp master
@@ -132,29 +134,23 @@ main(void)
 
     // First, set the thread affinities based on the computed execution policy.
     #pragma omp parallel
-    {
-        scopei_ep_push(&ep_sinfo, omp_get_thread_num());
-    }
+    scopei_ep_push(&ep_sinfo, omp_get_thread_num());
 
     #pragma omp parallel for schedule(dynamic)
-    for (int i = 0; i < ep_sinfo.nthreads * 64; ++i) {
+    for (int i = 0; i < niters; ++i) {
         emit_iter_info(&ep_sinfo, omp_get_thread_num(), i);
     }
 
     // Done with our calculation, so undo the threads' execution policy.
     #pragma omp parallel
-    {
-        scopei_ep_pop(&ep_sinfo, omp_get_thread_num());
-    }
+    scopei_ep_pop(&ep_sinfo, omp_get_thread_num());
 
     #pragma omp parallel
     #pragma omp master
-    {
-        printf("\n# Now running without a QV execution policy\n\n");
-    }
+    printf("\n# Now running without a QV execution policy\n\n");
 
     #pragma omp parallel for schedule(dynamic)
-    for (int i = 0; i < ep_sinfo.nthreads * 64; ++i) {
+    for (int i = 0; i < niters; ++i) {
         emit_iter_info(&ep_sinfo, omp_get_thread_num(), i);
     }
 
