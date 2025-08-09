@@ -30,9 +30,8 @@ add_test(
     NAME
       process-scopes
     COMMAND
-      bash -c "
-      ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ${QV_START_QVD_WPORT} & ) && \
-        ${CMAKE_CURRENT_BINARY_DIR}/test-process-scopes"
+      bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+      ${CMAKE_CURRENT_BINARY_DIR}/test-process-scopes"
 )
 
 # Use the C linker to test for C/C++ linkage problems.
@@ -59,7 +58,6 @@ if (OPENMP_FOUND)
     target_link_libraries(
         test-omp
         quo-vadis
-#        quo-vadis-omp TODO
         OpenMP::OpenMP_C
     )
 
@@ -67,9 +65,8 @@ if (OPENMP_FOUND)
         NAME
           omp
         COMMAND
-          bash -c "export QV_PORT=\"55999\" && \
-          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ${QV_START_QVD_WENV} & ) && \
-            ${CMAKE_CURRENT_BINARY_DIR}/test-omp"
+          bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+          ${CMAKE_CURRENT_BINARY_DIR}/test-omp"
     )
 
     # Set omp test properties.
@@ -196,24 +193,22 @@ if(MPI_FOUND)
         NAME
           mpi-api
         COMMAND
-          bash -c "
-          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ${QV_START_QVD_WPORT} & ) && \
-            ${MPIEXEC_EXECUTABLE} \
-            ${MPIEXEC_NUMPROC_FLAG} \
-            ${MPIEXEC_MAX_NUMPROCS} \
-            ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-api"
+          bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+          ${MPIEXEC_EXECUTABLE} \
+          ${MPIEXEC_NUMPROC_FLAG} \
+          ${MPIEXEC_MAX_NUMPROCS} \
+          ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-api"
     )
 
     add_test(
         NAME
           mpi-scopes
         COMMAND
-          bash -c "export QV_PORT=\"55999\" && \
-          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ${QV_START_QVD_WENV} & ) && \
-            ${MPIEXEC_EXECUTABLE} \
-            ${MPIEXEC_NUMPROC_FLAG} \
-            ${MPIEXEC_MAX_NUMPROCS} \
-            ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-scopes"
+          bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+          ${MPIEXEC_EXECUTABLE} \
+          ${MPIEXEC_NUMPROC_FLAG} \
+          ${MPIEXEC_MAX_NUMPROCS} \
+          ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-scopes"
     )
 
     # Set mpi test properties.
@@ -248,6 +243,24 @@ if(MPI_FOUND)
             test-mpi-threads
             PROPERTIES LINKER_LANGUAGE C
         )
+
+        add_test(
+            NAME
+              mpi-threads
+            COMMAND
+              bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+              ${MPIEXEC_EXECUTABLE} \
+              ${MPIEXEC_NUMPROC_FLAG} \
+              ${MPIEXEC_MAX_NUMPROCS} \
+              ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-threads"
+        )
+        # Set mpix test properties.
+        set_tests_properties(
+            mpi-threads
+            PROPERTIES
+              TIMEOUT 60
+              LABELS "mpix"
+        )
     endif()
 endif()
 
@@ -272,8 +285,7 @@ if(QV_FORTRAN_HAPPY)
         NAME
           process-fortapi
         COMMAND
-          bash -c "
-          ( ${CMAKE_SOURCE_DIR}/tests/exec-timeout.sh 5 ${QV_START_QVD_WPORT} & ) && \
+          bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
           ${CMAKE_CURRENT_BINARY_DIR}/test-process-fortapi"
     )
 
