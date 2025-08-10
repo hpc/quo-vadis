@@ -21,11 +21,11 @@
 qvi_group_mpi::qvi_group_mpi(
     qvi_mpi_t *mpi_ctx
 ) {
-    if (qvi_unlikely(!mpi_ctx)) throw qvi_runtime_error();
+    if (qvi_unlikely(!mpi_ctx)) throw qvi_runtime_error(QV_ERR_INTERNAL);
     m_mpi = mpi_ctx;
 
     const int rc = m_task.connect_to_server();
-    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
 }
 
 qvi_group_mpi::~qvi_group_mpi(void)

@@ -32,7 +32,7 @@ public:
     qvi_group_process(void)
     {
         const int rc = m_task.connect_to_server();
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
     }
     /** Destructor. */
     virtual ~qvi_group_process(void) = default;

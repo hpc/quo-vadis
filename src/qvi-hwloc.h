@@ -444,23 +444,23 @@ public:
     qvi_hwloc_bitmap(void)
     {
         const int rc = qvi_hwloc::bitmap_calloc(&m_data);
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
     }
     /** Construct via hwloc_const_bitmap_t. */
     explicit qvi_hwloc_bitmap(hwloc_const_bitmap_t bitmap)
     {
         int rc = qvi_hwloc::bitmap_calloc(&m_data);
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
         rc = set(bitmap);
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
     }
     /** Copy constructor. */
     qvi_hwloc_bitmap(const qvi_hwloc_bitmap &src)
     {
         int rc = qvi_hwloc::bitmap_calloc(&m_data);
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
         rc = set(src.m_data);
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
     }
     /** Destructor. */
     ~qvi_hwloc_bitmap(void)
@@ -479,7 +479,7 @@ public:
     operator=(const qvi_hwloc_bitmap &src)
     {
         const int rc = qvi_hwloc::bitmap_copy(src.m_data, m_data);
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
     }
     /** Sets the object's internal bitmap to match src's. */
     int
@@ -517,7 +517,7 @@ public:
             const int orrc = hwloc_bitmap_or(
                 result.data(), result.cdata(), bitmap.cdata()
             );
-            if (qvi_unlikely(orrc != 0)) throw qvi_runtime_error();
+            if (qvi_unlikely(orrc != 0)) throw qvi_runtime_error(QV_ERR_HWLOC);
         }
         return result;
     }
@@ -529,7 +529,7 @@ public:
     ) const {
         char *datas = nullptr;
         const int rc = qvi_hwloc::bitmap_asprintf(m_data, &datas);
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
         // We are sending the string representation of the cpuset.
         archive(std::string(datas));
         free(datas);
@@ -543,7 +543,7 @@ public:
         std::string bitmaps;
         archive(bitmaps);
         int rc = qvi_hwloc::bitmap_sscanf(m_data, (char *)bitmaps.c_str());
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
     }
 };
 

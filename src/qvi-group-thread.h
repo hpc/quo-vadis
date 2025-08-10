@@ -45,7 +45,7 @@ public:
         // Initialize the tasks.
         for (auto &task : m_tasks) {
             const int rc = task.connect_to_server();
-            if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+            if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
         }
     }
     /** Virtual destructor. */
@@ -75,7 +75,7 @@ public:
                 m_tid2index.put(mytid, myindex);
                 break;
             default:
-                throw qvi_runtime_error();
+                throw qvi_runtime_error(QV_ERR_INVLD_ARG);
         }
         return m_tasks.at(myindex);
     }

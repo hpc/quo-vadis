@@ -37,20 +37,24 @@ do {                                                                           \
     (void)(x);                                                                 \
 } while (0)
 
-#define qvi_runtime_error()                                                    \
-std::runtime_error(__FILE__ ":" + std::to_string(__LINE__))
+#define qvi_runtime_error(rc)                                                  \
+qvi_rterror(__FILE__ ":" + std::to_string(__LINE__), rc)
 
 #define qvi_catch_and_return()                                                 \
+catch (qvi_rterror &rte)                                                       \
+{                                                                              \
+    return rte.rc();                                                           \
+}                                                                              \
 catch (...)                                                                    \
 {                                                                              \
     auto eptr = std::current_exception();                                      \
     try {                                                                      \
         if (eptr) std::rethrow_exception(eptr);                                \
-        qvi_log_error("An unknown exception occurred.");                       \
+        /* qvi_log_error("An unknown exception occurred."); */                 \
     }                                                                          \
     catch(const std::exception &e)                                             \
     {                                                                          \
-        qvi_log_error("An exception occurred at {}", e.what());                \
+        /* qvi_log_error("An exception occurred at {}", e.what()); */          \
     }                                                                          \
     return QV_ERR;                                                             \
 }                                                                              \

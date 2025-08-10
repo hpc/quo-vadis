@@ -27,7 +27,7 @@ qvi_bbuff::m_init(void)
     m_size = 0;
     m_capacity = s_min_growth;
     m_data = calloc(m_capacity, sizeof(byte_t));
-    if (qvi_unlikely(!m_data)) throw qvi_runtime_error();
+    if (qvi_unlikely(!m_data)) throw qvi_runtime_error(QV_ERR_OOR);
 }
 
 qvi_bbuff::qvi_bbuff(void)
@@ -40,7 +40,7 @@ qvi_bbuff::qvi_bbuff(
 ) : qvi_bbuff()
 {
     const int rc = append(src.m_data, src.m_size);
-    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
 }
 
 qvi_bbuff::~qvi_bbuff(void)
@@ -57,7 +57,7 @@ qvi_bbuff::operator=(
 ) {
     m_init();
     const int rc = append(src.m_data, src.m_size);
-    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
 }
 
 size_t
