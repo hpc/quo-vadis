@@ -638,18 +638,18 @@ qvi_rmi_server::qvi_rmi_server(void)
     if (qvi_unlikely(qvrc != QV_SUCCESS)) {
         static cstr_t ers = "hwloc.topology_init() failed";
         qvi_log_error("{} (rc={}, {})", ers, qvrc, qv_strerr(qvrc));
-        throw qvi_runtime_error();
+        throw qvi_runtime_error(qvrc);
     }
 
     qvrc = m_hwloc.topology_load();
     if (qvi_unlikely(qvrc != QV_SUCCESS)) {
         static cstr_t ers = "hwloc.topology_load() failed";
         qvi_log_error("{} (rc={}, {})", ers, qvrc, qv_strerr(qvrc));
-        throw qvi_runtime_error();
+        throw qvi_runtime_error(qvrc);
     }
 
     m_zctx = zmq_ctx_new();
-    if (qvi_unlikely(!m_zctx)) throw qvi_runtime_error();
+    if (qvi_unlikely(!m_zctx)) throw qvi_runtime_error(QV_ERR_SYS);
 }
 
 qvi_rmi_server::~qvi_rmi_server(void)
@@ -710,7 +710,7 @@ qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
 
     do {
         std::vector<pid_t> who;
-        qv_scope_intrinsic_t iscope;
+        qv_scope_intrinsic_t iscope = {};
         rpcrc = qvi_bbuff::unpack(input, who, iscope);
         // Drop the message. Send an empty hardware pool with the error code.
         if (qvi_unlikely(rpcrc != QV_SUCCESS)) break;

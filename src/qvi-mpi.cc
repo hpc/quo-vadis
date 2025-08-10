@@ -40,16 +40,20 @@ struct qvi_mpi_comm_s {
         if (dup) {
             rc = MPI_Comm_dup(comm, &mpi_comm);
             if (qvi_unlikely(rc != MPI_SUCCESS)) {
-                throw qvi_runtime_error();
+                throw qvi_runtime_error(QV_ERR_MPI);
             }
         }
         else {
             mpi_comm = comm;
         }
         rc = MPI_Comm_size(mpi_comm, &size);
-        if (qvi_unlikely(rc != MPI_SUCCESS)) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != MPI_SUCCESS)) {
+            throw qvi_runtime_error(QV_ERR_MPI);
+        }
         rc = MPI_Comm_rank(mpi_comm, &rank);
-        if (qvi_unlikely(rc != MPI_SUCCESS)) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != MPI_SUCCESS)) {
+            throw qvi_runtime_error(QV_ERR_MPI);
+        }
     }
     /** Destructor. */
     ~qvi_mpi_comm_s(void) = default;
@@ -266,8 +270,9 @@ qvi_mpi_group_pids(
         &mypid, 1, MPI_INT, pids.data(),
         1, MPI_INT, group->qvcomm.mpi_comm
     );
-    if (qvi_unlikely(mpirc != MPI_SUCCESS)) throw qvi_runtime_error();
-
+    if (qvi_unlikely(mpirc != MPI_SUCCESS)) {
+        throw qvi_runtime_error(QV_ERR_MPI);
+    }
     return pids;
 }
 

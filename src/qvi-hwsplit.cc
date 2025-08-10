@@ -140,10 +140,10 @@ qvi_hwsplit::qvi_hwsplit(
 {
     qvi_hwloc_bitmap task_affinity;
     int rc = parent->group().task().bind_top(task_affinity);
-    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
 
     rc = m_cpu_affinity.set(task_affinity.cdata());
-    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
 
     // To save memory we don't eagerly resize our vectors to group_size
     // since most processes will not use the storage. For example, in the

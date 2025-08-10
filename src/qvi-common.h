@@ -83,6 +83,26 @@ struct qvi_rmi_client;
 struct qvi_hwpool;
 struct qvi_task;
 
+struct qvi_rterror : public std::runtime_error {
+private:
+    int m_rc = QV_ERR;
+
+public:
+    qvi_rterror(void) = delete;
+
+    qvi_rterror(
+        const std::string& message,
+        int rc
+    ) : std::runtime_error(message)
+      , m_rc(rc) {}
+
+    int
+    rc(void) const
+    {
+        return m_rc;
+    }
+};
+
 #endif
 
 /*

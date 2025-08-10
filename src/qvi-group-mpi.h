@@ -125,13 +125,14 @@ struct qvi_zgroup_mpi_s : public qvi_group_mpi {
         MPI_Comm comm
     ) {
         int rc = qvi_mpi_new(&m_mpi);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
         // Initialize the MPI group with the provided communicator.
         rc = qvi_mpi_init(m_mpi, comm);
-        if (rc != QV_SUCCESS) throw qvi_runtime_error();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
         // Finish task initialization after we finish MPI initialization because
         // the server daemon may have been started during qvi_mpi_init().
-        m_task.connect_to_server();
+        rc = m_task.connect_to_server();
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
     }
     /** Destructor. */
     virtual ~qvi_zgroup_mpi_s(void)

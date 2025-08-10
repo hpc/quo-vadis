@@ -141,7 +141,7 @@ qv_scope::hwpool_nobjects(
 ) const {
     int result = 0;
     const int rc = m_hwpool.nobjects(m_group->hwloc(), obj, &result);
-    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error();
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
     return result;
 }
 
