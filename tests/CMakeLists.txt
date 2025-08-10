@@ -202,6 +202,17 @@ if(MPI_FOUND)
 
     add_test(
         NAME
+          mpi-init
+        COMMAND
+          bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+          ${MPIEXEC_EXECUTABLE} \
+          ${MPIEXEC_NUMPROC_FLAG} \
+          ${MPIEXEC_MAX_NUMPROCS} \
+          ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-init"
+    )
+
+    add_test(
+        NAME
           mpi-scopes
         COMMAND
           bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
@@ -211,10 +222,23 @@ if(MPI_FOUND)
           ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-scopes"
     )
 
+    add_test(
+        NAME
+          mpi-get-dev
+        COMMAND
+          bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+          ${MPIEXEC_EXECUTABLE} \
+          ${MPIEXEC_NUMPROC_FLAG} \
+          ${MPIEXEC_MAX_NUMPROCS} \
+          ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-getdev"
+    )
+
     # Set mpi test properties.
     set_tests_properties(
         mpi-api
+        mpi-init
         mpi-scopes
+        mpi-get-dev
         PROPERTIES
           TIMEOUT 60
           LABELS "mpi"
@@ -311,6 +335,17 @@ if(QV_FORTRAN_HAPPY)
         set_target_properties(
             test-mpi-fortapi
             PROPERTIES LINKER_LANGUAGE Fortran
+        )
+
+        add_test(
+            NAME
+              mpi-fortapi
+            COMMAND
+              bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+              ${MPIEXEC_EXECUTABLE} \
+              ${MPIEXEC_NUMPROC_FLAG} \
+              ${MPIEXEC_MAX_NUMPROCS} \
+              ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-fortapi"
         )
     endif()
 endif()

@@ -1,14 +1,4 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
-/*
- * Copyright (c) 2020-2024 Triad National Security, LLC
- *                         All rights reserved.
- *
- * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
- *                         All rights reserved.
- *
- * This file is part of the quo-vadis project. See the LICENSE file at the
- * top-level directory of this distribution.
- */
 
 /**
  * @file test-mpi-init.c
