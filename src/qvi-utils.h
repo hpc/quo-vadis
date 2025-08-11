@@ -113,6 +113,14 @@ public:
 };
 
 /**
+ * Returns whether the provided environment variable is set.
+ */
+bool
+qvi_envset(
+    const std::string &varname
+) noexcept;
+
+/**
  * Constructs a new object of a given type. *t will be valid if successful,
  * undefined otherwise. Returns QV_SUCCESS if successful.
  */

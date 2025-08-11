@@ -21,6 +21,7 @@
 
 #include "qvi-common.h"
 // IWYU pragma: begin_keep
+#include "qvi-utils.h"
 #include "cereal/archives/binary.hpp"
 #include "cereal/types/map.hpp"
 #include "cereal/types/memory.hpp"

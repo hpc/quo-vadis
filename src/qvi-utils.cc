@@ -50,6 +50,13 @@ qv_strerr(int ec)
     return got->second.c_str();
 }
 
+bool
+qvi_envset(
+    const std::string &varname
+) noexcept {
+    return (getenv(varname.c_str()) != nullptr);
+}
+
 double
 qvi_time(void)
 {
@@ -121,7 +128,7 @@ qvi_rmall(
 std::string
 qvi_tmpdir(void)
 {
-    cstr_t qvenv = getenv("QV_TMPDIR");
+    cstr_t qvenv = getenv(QVI_ENV_TMPDIR.c_str());
     if (qvenv) return std::string(qvenv);
 
     qvenv = getenv("TMPDIR");
