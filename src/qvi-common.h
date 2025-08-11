@@ -83,6 +83,10 @@ struct qvi_rmi_client;
 struct qvi_hwpool;
 struct qvi_task;
 
+// Constants
+static const std::string QVI_ENV_TMPDIR = "QV_TMPDIR";
+static const std::string QVI_ENV_VEXCEPT = "QV_VEXCEPT";
+
 struct qvi_rterror : public std::runtime_error {
 private:
     int m_rc = QV_ERR;

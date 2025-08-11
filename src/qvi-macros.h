@@ -41,20 +41,30 @@ do {                                                                           \
 qvi_rterror(__FILE__ ":" + std::to_string(__LINE__), rc)
 
 #define qvi_catch_and_return()                                                 \
-catch (qvi_rterror &rte)                                                       \
+catch (const qvi_rterror &e)                                                   \
 {                                                                              \
-    return rte.rc();                                                           \
+    if (qvi_envset(QVI_ENV_VEXCEPT)) {                                         \
+        qvi_log_error(                                                         \
+            "An exception occurred at {} ({})",                                \
+            e.what(), qv_strerr(e.rc())                                        \
+        );                                                                     \
+    }                                                                          \
+    return e.rc();                                                             \
 }                                                                              \
 catch (...)                                                                    \
 {                                                                              \
     auto eptr = std::current_exception();                                      \
     try {                                                                      \
         if (eptr) std::rethrow_exception(eptr);                                \
-        /* qvi_log_error("An unknown exception occurred."); */                 \
+        if (qvi_envset(QVI_ENV_VEXCEPT)) {                                     \
+            qvi_log_error("An unknown exception occurred.");                   \
+        }                                                                      \
     }                                                                          \
     catch(const std::exception &e)                                             \
     {                                                                          \
-        /* qvi_log_error("An exception occurred at {}", e.what()); */          \
+        if (qvi_envset(QVI_ENV_VEXCEPT)) {                                     \
+            qvi_log_error("An exception occurred: {}", e.what());              \
+        }                                                                      \
     }                                                                          \
     return QV_ERR;                                                             \
 }                                                                              \
