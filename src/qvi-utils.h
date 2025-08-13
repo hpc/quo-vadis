@@ -186,12 +186,6 @@ qvi_copy(
 }
 
 /**
- *
- */
-int
-qvi_start_qvd(void);
-
-/**
  * See gettid(2) for details.
  */
 static inline pid_t
@@ -249,6 +243,11 @@ qvi_file_size(
     size_t *size
 );
 
+int
+qvi_port_from_env(
+    int &portno
+);
+
 /**
  * Cantor pairing function.
  */
@@ -256,6 +255,25 @@ int64_t
 qvi_cantor_pairing(
     int a,
     int b
+);
+
+bool
+qvi_session_exists(
+    int portno
+);
+
+int
+qvi_session_discover(
+    uint_t max_timeout_in_ms,
+    int &portno
+);
+
+/**
+ *
+ */
+int
+qvi_start_qvd(
+    int portno
 );
 
 #endif

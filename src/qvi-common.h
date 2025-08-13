@@ -84,6 +84,10 @@ struct qvi_hwpool;
 struct qvi_task;
 
 // Constants
+/** Unset port number constant. */
+const int QVI_PORT_UNSET = -1;
+/** Port environment variable string. */
+static const std::string QVI_ENV_PORT = "QV_PORT";
 static const std::string QVI_ENV_TMPDIR = "QV_TMPDIR";
 static const std::string QVI_ENV_VEXCEPT = "QV_VEXCEPT";
 
@@ -98,7 +102,7 @@ public:
         const std::string& message,
         int rc
     ) : std::runtime_error(message)
-      , m_rc(rc) {}
+      , m_rc(rc) { }
 
     int
     rc(void) const
