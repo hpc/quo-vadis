@@ -18,11 +18,33 @@
 #include "qvi-bbuff.h"
 #include "qvi-utils.h"
 
-using qvi_mpi_group_tab_t = std::unordered_map<
+using qvi_mpi_group_tab = std::unordered_map<
     qvi_group_id_t, qvi_mpi_group_t
 >;
 
-struct qvi_mpi_comm_s {
+/**
+ * Performs a low-noise, high latency node-level barrier across the given
+ * communicator.
+ */
+static int
+sleepy_node_barrier(
+    MPI_Comm node_comm
+) {
+    MPI_Request request;
+    int rc = MPI_Ibarrier(node_comm, &request);
+    if (qvi_unlikely(rc != MPI_SUCCESS)) return QV_ERR_MPI;
+
+    int done = 0;
+    do {
+        rc = MPI_Test(&request, &done, MPI_STATUS_IGNORE);
+        if (qvi_unlikely(rc != MPI_SUCCESS)) return QV_ERR_MPI;
+        std::this_thread::sleep_for(std::chrono::microseconds(50000));
+    } while (!done);
+
+    return QV_SUCCESS;
+}
+
+struct qvi_mpi_comm {
     /** Underlying MPI communicator. */
     MPI_Comm mpi_comm = MPI_COMM_NULL;
     /** Communicator size. */
@@ -30,9 +52,9 @@ struct qvi_mpi_comm_s {
     /** Communicator rank. */
     int rank = 0;
     /** Constructor. */
-    qvi_mpi_comm_s(void) = default;
+    qvi_mpi_comm(void) = default;
     /** Constructor. */
-    qvi_mpi_comm_s(
+    qvi_mpi_comm(
         MPI_Comm comm,
         bool dup
     ) {
@@ -56,11 +78,11 @@ struct qvi_mpi_comm_s {
         }
     }
     /** Destructor. */
-    ~qvi_mpi_comm_s(void) = default;
+    ~qvi_mpi_comm(void) = default;
     /** Frees the resources associated with the provided instance. */
     static void
     free(
-        qvi_mpi_comm_s &comm
+        qvi_mpi_comm &comm
     ) {
         MPI_Comm mpi_comm = comm.mpi_comm;
         if (mpi_comm != MPI_COMM_NULL) {
@@ -72,31 +94,39 @@ struct qvi_mpi_comm_s {
 
 struct qvi_mpi_group_s {
     /** The group's communicator info. */
-    qvi_mpi_comm_s qvcomm;
+    qvi_mpi_comm qvcomm = {};
+    /** Constructor. */
+    qvi_mpi_group_s(void) = default;
+    /** Constructor. */
+    qvi_mpi_group_s(
+        const qvi_mpi_comm &comm
+    ) : qvcomm(comm) { }
 };
 
 struct qvi_mpi_s {
+    /** Node representative communicator. Only valid for elected processes. */
+    qvi_mpi_comm node_rep_comm;
     /** Duplicate of MPI_COMM_SELF. */
-    qvi_mpi_comm_s self_comm;
+    qvi_mpi_comm self_comm;
     /** Node communicator. */
-    qvi_mpi_comm_s node_comm;
+    qvi_mpi_comm node_comm;
     /** Duplicate of initializing communicator. */
-    qvi_mpi_comm_s world_comm;
+    qvi_mpi_comm world_comm;
     /** Group table (ID to internal structure mapping). */
-    qvi_mpi_group_tab_t group_tab;
+    qvi_mpi_group_tab group_tab;
     /** Constructor. */
     qvi_mpi_s(void) = default;
     /** Destructor. */
     ~qvi_mpi_s(void)
     {
         for (auto &i : group_tab) {
-            qvi_mpi_comm_s::free(i.second.qvcomm);
+            qvi_mpi_comm::free(i.second.qvcomm);
         }
     }
     /** Adds a new group to the group table. */
     int
     add_group(
-        qvi_mpi_group_s &group,
+        const qvi_mpi_group_s &group,
         qvi_group_id_t given_id = QVI_MPI_GROUP_NULL
     ) {
         qvi_group_id_t gid = given_id;
@@ -152,7 +182,7 @@ group_init_from_mpi_comm(
     MPI_Comm comm,
     qvi_mpi_group_t &group
 ) {
-    group.qvcomm = qvi_mpi_comm_s(comm, false);
+    group.qvcomm = qvi_mpi_comm(comm, false);
     return QV_SUCCESS;
 }
 
@@ -167,7 +197,7 @@ qvi_mpi_group_comm_dup(
 }
 
 /**
- * Creates the node communicator.
+ * Creates intrinsic communicators.
  */
 static int
 create_intrinsic_comms(
@@ -179,30 +209,143 @@ create_intrinsic_comms(
     const int rc = mpi_comm_to_new_node_comm(comm, &node_comm);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // MPI_COMM_SELF duplicate.
-    mpi->self_comm = qvi_mpi_comm_s(MPI_COMM_SELF, true);
+    mpi->self_comm = qvi_mpi_comm(MPI_COMM_SELF, true);
     // Node communicator, no duplicate necessary here: created above.
-    mpi->node_comm = qvi_mpi_comm_s(node_comm, false);
+    mpi->node_comm = qvi_mpi_comm(node_comm, false);
     // 'World' (aka initializing communicator) duplicate.
-    mpi->world_comm = qvi_mpi_comm_s(comm, true);
+    mpi->world_comm = qvi_mpi_comm(comm, true);
     return rc;
+}
+
+/**
+ * Creates internal, administrative communicators.
+ */
+static int
+create_admin_comms(
+    qvi_mpi_t *mpi
+) {
+    assert(mpi->node_comm.mpi_comm != MPI_COMM_NULL);
+    // Create a communicator that has node rank zero members in it. We will call
+    // those processes 'node representatives.'
+    const int color = (mpi->node_comm.rank == 0) ? 0 : MPI_UNDEFINED;
+    MPI_Comm node_rep_comm;
+    int mpirc = MPI_Comm_split(
+        mpi->node_comm.mpi_comm, color,
+        mpi->world_comm.rank, &node_rep_comm
+    );
+    if (qvi_unlikely(mpirc != MPI_SUCCESS)) return QV_ERR_MPI;
+    // Part of the node representatives communicator.
+    if (node_rep_comm != MPI_COMM_NULL) {
+        mpi->node_rep_comm = qvi_mpi_comm(node_rep_comm, false);
+        // Add the comm to the group.
+        return mpi->add_group(qvi_mpi_group_t(mpi->node_rep_comm));
+    }
+    return QV_SUCCESS;
 }
 
 static int
 create_intrinsic_groups(
     qvi_mpi_t *mpi
 ) {
-    qvi_mpi_group_t self_group, node_group, wrld_group;
-    self_group.qvcomm = mpi->self_comm;
-    node_group.qvcomm = mpi->node_comm;
-    wrld_group.qvcomm = mpi->world_comm;
+    int rc = mpi->add_group(
+        qvi_mpi_group_t(mpi->self_comm), QVI_MPI_GROUP_SELF
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    int rc = mpi->add_group(self_group, QVI_MPI_GROUP_SELF);
-    if (rc != QV_SUCCESS) return rc;
+    rc = mpi->add_group(
+        qvi_mpi_group_t(mpi->node_comm), QVI_MPI_GROUP_NODE
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    rc = mpi->add_group(node_group, QVI_MPI_GROUP_NODE);
-    if (rc != QV_SUCCESS) return rc;
+    return mpi->add_group(
+        qvi_mpi_group_t(mpi->world_comm), QVI_MPI_GROUP_WORLD
+    );
+}
 
-    return mpi->add_group(wrld_group, QVI_MPI_GROUP_WORLD);
+static int
+get_portno_from_env(
+    const qvi_mpi_comm &comm,
+    int &portno
+) {
+    assert(comm.mpi_comm != MPI_COMM_NULL);
+
+    int rc = QV_SUCCESS;
+    do {
+        MPI_Comm rep_comm = comm.mpi_comm;
+        // Is QV_PORT set on this node, in my environment?
+        const bool envset = qvi_envset(QVI_ENV_PORT);
+        // See if any processes have QV_PORT set.
+        bool anyset = 0;
+        // See if QV_PORT is set on any of the nodes, while counting them.
+        int mpirc = MPI_Allreduce(
+            &envset, &anyset, 1, MPI_CXX_BOOL, MPI_LOR, rep_comm
+        );
+        if (qvi_unlikely(mpirc != MPI_SUCCESS)) {
+            rc = QV_ERR_MPI;
+            break;
+        }
+        if (anyset) {
+            int envport = QVI_PORT_UNSET;
+            // If this fails, envport is set to QVI_COMM_PORT_UNSET.
+            (void)qvi_port_from_env(envport);
+
+            std::vector<int> portnos(comm.size);
+            mpirc = MPI_Allgather(
+                &envport, 1, MPI_INT,
+                portnos.data(),
+                1, MPI_INT, rep_comm
+            );
+            if (qvi_unlikely(mpirc != MPI_SUCCESS)) {
+                rc = QV_ERR_MPI;
+                break;
+            }
+            // Pick one from the group.
+            for (const auto pn : portnos) {
+                if (pn == QVI_PORT_UNSET) continue;
+                portno = pn;
+            }
+        }
+    } while (false);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        portno = QVI_PORT_UNSET;
+    }
+    return rc;
+}
+
+static int
+start_daemons(
+    qvi_mpi_t *mpi
+) {
+    int rc = QV_SUCCESS, ret = QV_SUCCESS;
+    do {
+        // Default port.
+        int portno = QVI_PORT_UNSET;
+        // Not a node representative, so wait in barrier below.
+        if (mpi->node_rep_comm.mpi_comm == MPI_COMM_NULL) break;
+        // The rest do all the work.
+        rc = get_portno_from_env(mpi->node_rep_comm, portno);
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
+        // Try to use the requested port.
+        if (portno != QVI_PORT_UNSET) {
+            // If there is a session directory using the given port, use it.
+            if (qvi_session_exists(portno)) break;
+            // Else start up the daemon using the requested port.
+            rc = qvi_start_qvd(portno);
+            // Done!
+            break;
+        }
+        // No port requested, so try to discover one.
+        rc = qvi_session_discover(10, portno);
+        // Found one, so use it.
+        if (rc == QV_SUCCESS) break;
+        // Else, start up the daemon using our default port number.
+        rc = qvi_start_qvd(57550);
+    } while (false);
+    // See if any errors happened above, but all barrier to avoid hangs.
+    if (qvi_unlikely(rc != QV_SUCCESS)) ret = rc;
+    rc = sleepy_node_barrier(mpi->node_comm.mpi_comm);
+    if (qvi_unlikely(rc != QV_SUCCESS)) ret = rc;
+    return ret;
 }
 
 int
@@ -213,17 +356,23 @@ qvi_mpi_init(
     // If MPI isn't initialized, then we can't continue.
     int inited = 0;
     const int mpirc = MPI_Initialized(&inited);
-    if (mpirc != MPI_SUCCESS) return QV_ERR_MPI;
-    if (!inited) {
+    if (qvi_unlikely(mpirc != MPI_SUCCESS)) return QV_ERR_MPI;
+    if (qvi_unlikely(!inited)) {
         const cstr_t ers = "MPI is not initialized. Cannot continue.";
         qvi_log_error(ers);
         return QV_ERR_MPI;
     }
 
-    const int rc = create_intrinsic_comms(mpi, comm);
-    if (rc != QV_SUCCESS) return rc;
+    int rc = create_intrinsic_comms(mpi, comm);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    return create_intrinsic_groups(mpi);
+    rc = create_intrinsic_groups(mpi);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+
+    rc = create_admin_comms(mpi);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+
+    return start_daemons(mpi);
 }
 
 int
@@ -355,28 +504,6 @@ out:
         }
     }
     return rc;
-}
-
-/**
- * Performs a low-noise, high latency node-level barrier across the given
- * communicator.
- */
-static int
-sleepy_node_barrier(
-    MPI_Comm node_comm
-) {
-    MPI_Request request;
-    int rc = MPI_Ibarrier(node_comm, &request);
-    if (qvi_unlikely(rc != MPI_SUCCESS)) return QV_ERR_MPI;
-
-    int done = 0;
-    do {
-        rc = MPI_Test(&request, &done, MPI_STATUS_IGNORE);
-        if (qvi_unlikely(rc != MPI_SUCCESS)) return QV_ERR_MPI;
-        usleep(50000);
-    } while (!done);
-
-    return QV_SUCCESS;
 }
 
 int

@@ -149,12 +149,173 @@ qvi_file_size(
     return QV_SUCCESS;
 }
 
+int
+qvi_port_from_env(
+    int &portno
+) {
+    int rc = QV_SUCCESS;
+    do {
+        const cstr_t ports = getenv(QVI_ENV_PORT.c_str());
+        if (!ports) {
+            rc = QV_ERR_ENV;
+            break;
+        }
+        rc = qvi_stoi(std::string(ports), portno);
+        if (qvi_unlikely(rc != QV_SUCCESS)) {
+            rc = QV_ERR_ENV;
+            break;
+        }
+    } while (false);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        portno = QVI_PORT_UNSET;
+    }
+    return rc;
+}
+
 int64_t
 qvi_cantor_pairing(
     int a,
     int b
 ) {
     return (a + b) * ((a + b + 1) / 2) + b;
+}
+
+static const std::regex &
+get_session_regex(void)
+{
+    static const std::regex session_re("quo-vadisd\\.([0-9]+)");
+    return session_re;
+}
+
+/**
+ * Attempts discovery until success or max delay is reached.
+ */
+static int
+discover_with_backoff(
+    std::function<int(int &)> discover_fn,
+    int &portno,
+    uint_t max_delay_in_ms
+) {
+    namespace sc = std::chrono;
+
+    const uint_t start_delay = 1;
+    if (max_delay_in_ms < start_delay) {
+        max_delay_in_ms = start_delay;
+    }
+    // Initial delay.
+    sc::milliseconds cur_delay(start_delay);
+    const sc::milliseconds max_delay(max_delay_in_ms);
+    // Jitter random number generator.
+    std::mt19937 jitter_rng(std::random_device{}());
+
+    do {
+        const int rc = discover_fn(portno);
+        if (rc == QV_SUCCESS) return rc;
+        else {
+            // Calculate jitter: e.g., 0% to 50% of current_delay.
+            std::uniform_int_distribution<int> jdist(0, cur_delay.count() / 2);
+            const sc::milliseconds jitter = sc::milliseconds(jdist(jitter_rng));
+            std::this_thread::sleep_for(cur_delay + jitter);
+            // Double the delay for the next attempt, up to max_delay.
+            cur_delay = std::min(cur_delay * 2, max_delay);
+        }
+    } while (cur_delay != max_delay);
+    // No port found, so unset it.
+    portno = QVI_PORT_UNSET;
+    return QV_ERR;
+}
+
+static int
+discover_impl(
+    int &portno
+) {
+    namespace fs = std::filesystem;
+
+    const std::string tmpdir = qvi_tmpdir();
+    const std::regex &session_regex = get_session_regex();
+
+    try {
+        std::smatch match;
+        for (const auto &entry : fs::directory_iterator(tmpdir)) {
+            if (fs::is_directory(entry.path())) {
+                const std::string dirname = entry.path().filename().string();
+                // Found the session directory.
+                if (std::regex_search(dirname, match, session_regex)) {
+                    return qvi_stoi(match[1].str(), portno);
+                }
+            }
+        }
+    }
+    catch (const fs::filesystem_error &e) {
+        qvi_log_error(e.what());
+        return QV_ERR_FILE_IO;
+    }
+    return QV_ERR_NOT_FOUND;
+}
+
+bool
+qvi_session_exists(
+    int portno
+) {
+    const std::string tmpdir = qvi_tmpdir();
+    int e;
+    return qvi_access(
+        qvi_tmpdir() + "/quo-vadisd." + std::to_string(portno), R_OK | W_OK, &e
+    );
+}
+
+int
+qvi_session_discover(
+    uint_t max_timeout_in_ms,
+    int &portno
+) {
+    // Account for potential delays in publishing session
+    // information between server startup and client discovery.
+    return discover_with_backoff(discover_impl, portno, max_timeout_in_ms);
+}
+
+int
+qvi_start_qvd(
+    int portno
+) {
+    const pid_t pid = fork();
+    // Fork failed.
+    if (qvi_unlikely(pid == -1)) {
+        qvi_log_error(
+            "\n\n#############################################\n"
+            "# fork() failed while starting quo-vadisd"
+            "\n#############################################\n\n"
+        );
+        return QV_ERR_SYS;
+    }
+    // Child
+    else if (pid == 0) {
+        std::vector<std::string> argss = {
+            "quo-vadisd",
+            "--port",
+            std::to_string(portno)
+        };
+
+        std::vector<char *> argv;
+        for (const auto &arg : argss) {
+            argv.push_back(const_cast<char *>(arg.c_str()));
+        }
+        argv.push_back(nullptr);
+        // Exec the daemon.
+        execvp(argv[0], argv.data());
+        // If we get here, then the command failed.
+        qvi_log_error(
+            "\n\n#############################################\n"
+            "# Could not start quo-vadisd.\n#\n"
+            "# For automatic startup, ensure the path to\n"
+            "# quo-vadisd is in your PATH and try again.\n"
+            "# For manual startup, ensure quo-vadisd is\n"
+            "# running across all the servers in your job."
+            "\n#############################################\n\n"
+        );
+        _exit(EXIT_FAILURE);
+    }
+    return QV_SUCCESS;
 }
 
 /*

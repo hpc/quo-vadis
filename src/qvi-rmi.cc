@@ -25,9 +25,6 @@
 // Indicates whether the server has been signaled to shutdown.
 static volatile std::sig_atomic_t g_server_shutdown_signaled(false);
 
-/** Port environment variable string. */
-static const std::string PORT_ENV_VAR = "QV_PORT";
-
 struct qvi_rmi_msg_header {
     qvi_rmi_rpc_fid_t fid = QVI_RMI_FID_INVALID;
 };
@@ -301,79 +298,11 @@ qvi_rmi_client::hwloc(void)
     return m_hwloc;
 }
 
-static const std::regex &
-get_session_regex(void)
-{
-    static const std::regex session_re("quo-vadisd\\.([0-9]+)");
-    return session_re;
-}
-
-/**
- * Attempts discovery until success or max delay is reached.
- */
-static int
-discover_with_backoff(
-    std::function<int(int &)> discover_fn,
-    int &portno,
-    size_t max_delay_in_ms
-) {
-    namespace sc = std::chrono;
-    // Initial delay.
-    sc::milliseconds cur_delay(2);
-    const sc::milliseconds max_delay(max_delay_in_ms);
-    // Jitter random number generator.
-    std::mt19937 jitter_rng(std::random_device{}());
-
-    do {
-        const int rc = discover_fn(portno);
-        if (rc == QV_SUCCESS) return rc;
-        else {
-            // Calculate jitter: e.g., 0% to 50% of current_delay.
-            std::uniform_int_distribution<int> jdist(0, cur_delay.count() / 2);
-            const sc::milliseconds jitter = sc::milliseconds(jdist(jitter_rng));
-            std::this_thread::sleep_for(cur_delay + jitter);
-            // Double the delay for the next attempt, up to max_delay.
-            cur_delay = std::min(cur_delay * 2, max_delay);
-        }
-    } while (cur_delay != max_delay);
-    return QV_ERR;
-}
-
-static int
-discover_impl(
-    int &portno
-) {
-    namespace fs = std::filesystem;
-
-    const std::string tmpdir = qvi_tmpdir();
-    const std::regex &session_regex = get_session_regex();
-
-    try {
-        std::smatch match;
-        for (const auto &entry : fs::directory_iterator(tmpdir)) {
-            if (fs::is_directory(entry.path())) {
-                const std::string dirname = entry.path().filename().string();
-                // Found the session directory.
-                if (std::regex_search(dirname, match, session_regex)) {
-                    return qvi_stoi(match[1].str(), portno);
-                }
-            }
-        }
-    }
-    catch (const fs::filesystem_error &e) {
-        qvi_log_error(e.what());
-        return QV_ERR_FILE_IO;
-    }
-    return QV_ERR_NOT_FOUND;
-}
-
 int
 qvi_rmi_client::discover(
     int &portno
 ) {
-    // Account for potential delays in publishing session
-    // information between server startup and client discovery.
-    return discover_with_backoff(discover_impl, portno, 5000);
+    return qvi_session_discover(5000, portno);
 }
 
 int
@@ -1026,19 +955,6 @@ qvi_rmi_server::start(void)
     return m_enter_main_server_loop();
 }
 
-static int
-get_rmi_port_from_env(
-    int &portno
-) {
-    portno = QVI_RMI_PORT_UNSET;
-
-    const cstr_t ports = getenv(PORT_ENV_VAR.c_str());
-    if (!ports) return QV_ERR_ENV;
-    const int rc = qvi_stoi(std::string(ports), portno);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return QV_ERR_ENV;
-    return QV_SUCCESS;
-}
-
 int
 qvi_rmi_get_url(
     std::string &url,
@@ -1046,8 +962,8 @@ qvi_rmi_get_url(
 ) {
     static const std::string base = "tcp://127.0.0.1";
 
-    if (portno == QVI_RMI_PORT_UNSET) {
-        const int rc = get_rmi_port_from_env(portno);
+    if (portno == QVI_PORT_UNSET) {
+        const int rc = qvi_port_from_env(portno);
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     }
 
@@ -1063,7 +979,7 @@ qvi_rmi_conn_env_ers(void)
         "# Cannot determine connection information.\n"
         "# Make sure that the following environment\n"
         "# environment variable is set to an unused\n"
-        "# port number: " + PORT_ENV_VAR + ""
+        "# port number: " + QVI_ENV_PORT + ""
         "\n#############################################\n\n";
     return msg;
 }

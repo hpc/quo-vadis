@@ -39,8 +39,8 @@ int
 qvi_task::m_connect_to_server(void)
 {
     // Discover the server's port number.
-    int portno = QVI_RMI_PORT_UNSET;
-    int rc = m_rmi.discover(portno);
+    int portno = QVI_PORT_UNSET;
+    int rc = qvi_rmi_client::discover(portno);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_log_error("{}", qvi_rmi_discovery_ers());
         return QV_RES_UNAVAILABLE;

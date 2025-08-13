@@ -23,9 +23,6 @@
 #include "qvi-hwpool.h"
 #include "zmq.h"
 
-/** Unset port number constant. */
-const int QVI_RMI_PORT_UNSET = -1;
-
 struct qvi_rmi_msg_header;
 struct qvi_rmi_server;
 
@@ -57,7 +54,7 @@ struct qvi_rmi_config {
     /** Connection URL. */
     std::string url;
     /** Connection port number. */
-    int portno = QVI_RMI_PORT_UNSET;
+    int portno = QVI_PORT_UNSET;
     /** Path to hardware topology file. */
     std::string hwtopo_path;
 };
@@ -254,7 +251,7 @@ public:
     qvi_hwloc &
     hwloc(void);
     /** Discovers server connection information. */
-    int
+    static int
     discover(
         int &portno
     );
@@ -319,7 +316,7 @@ public:
 };
 
 /**
- * Returns a connection URL. When called with a portno of QVI_RMI_PORT_UNSET,
+ * Returns a connection URL. When called with a portno of QVI_COMM_PORT_UNSET,
  * then a valid portno is determined via an environment variable and returned.
  * If portno is set, then a URL is generated based on the provided port number.
  */
@@ -335,6 +332,9 @@ qvi_rmi_get_url(
 std::string
 qvi_rmi_conn_env_ers(void);
 
+/**
+ *
+ */
 std::string
 qvi_rmi_discovery_ers(void);
 
