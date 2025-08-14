@@ -97,41 +97,41 @@ struct qvi_mpi_group {
     ) : qvcomm(comm) { }
     /** Returns the size of the group. */
     int
-    size(void)
+    size(void) const
     {
         return qvcomm.m_size;
     }
     /** Returns the rank of the caller in the group. */
     int
-    rank(void)
+    rank(void) const
     {
         return qvcomm.m_rank;
     }
     /** Returns the PIDs of all the group members. */
     std::vector<pid_t>
-    pids(void);
+    pids(void) const;
     /** Performs a low-noise, high-latency barrier. */
     int
-    barrier(void);
+    barrier(void) const;
     /** Gathers bbuffs. */
     int
     gather_bbuffs(
         const qvi_bbuff &txbuff,
         int root,
         std::vector<qvi_bbuff> &rxbuffs
-    );
+    ) const;
     /** Scatters bbuffs. */
     int
     scatter_bbuffs(
         const std::vector<qvi_bbuff> &txbuffs,
         int root,
         qvi_bbuff &rxbuff
-    );
+    ) const;
     /** Duplicates the underlying group communicator and returns it. */
     int
     comm_dup(
         MPI_Comm *comm
-    );
+    ) const;
 };
 
 using qvi_mpi_group_tab = std::unordered_map<
@@ -187,29 +187,23 @@ public:
     );
     /** */
     int
-    group_lookup_by_id(
+    group_from_group_id(
         qvi_group_id_t id,
         qvi_mpi_group &group
     );
     /** */
     int
-    group_create_from_group_id(
-        qvi_group_id_t id,
-        qvi_mpi_group **group
-    );
-    /** */
-    int
-    group_create_from_mpi_comm(
+    group_from_mpi_comm(
         MPI_Comm comm,
-        qvi_mpi_group **new_group
+        qvi_mpi_group &group
     );
     /** */
     int
-    group_create_from_split(
-        const qvi_mpi_group *parent,
+    group_from_split(
+        const qvi_mpi_group &parent,
         int color,
         int key,
-        qvi_mpi_group **child
+        qvi_mpi_group &child
     );
 };
 

@@ -30,7 +30,7 @@ protected:
     /** Points to the base MPI context information. */
     qvi_mpi *m_mpi = nullptr;
     /** Underlying group instance. */
-    qvi_mpi_group *m_mpi_group = nullptr;
+    qvi_mpi_group m_mpi_group;
 public:
     /** Default constructor. */
     qvi_group_mpi(void) = default;
@@ -39,7 +39,7 @@ public:
         qvi_mpi *mpi_ctx
     );
     /** Destructor. */
-    virtual ~qvi_group_mpi(void);
+    virtual ~qvi_group_mpi(void) = default;
 
     virtual qvi_task &
     task(void)
@@ -50,24 +50,24 @@ public:
     virtual int
     size(void) const
     {
-        return m_mpi_group->size();
+        return m_mpi_group.size();
     }
 
     virtual int
     rank(void) const
     {
-        return m_mpi_group->rank();
+        return m_mpi_group.rank();
     }
 
     virtual std::vector<pid_t>
     pids(void) const {
-        return m_mpi_group->pids();
+        return m_mpi_group.pids();
     }
 
     virtual int
     barrier(void) const
     {
-        return m_mpi_group->barrier();
+        return m_mpi_group.barrier();
     }
 
     virtual int
@@ -93,7 +93,7 @@ public:
         int root,
         std::vector<qvi_bbuff> &rxbuffs
     ) const {
-        return m_mpi_group->gather_bbuffs(
+        return m_mpi_group.gather_bbuffs(
             txbuff, root, rxbuffs
         );
     }
@@ -104,7 +104,7 @@ public:
         int root,
         qvi_bbuff &rxbuff
     ) const {
-        return m_mpi_group->scatter_bbuffs(
+        return m_mpi_group.scatter_bbuffs(
             txbuffs, root, rxbuff
         );
     }
@@ -112,8 +112,8 @@ public:
     int
     comm_dup(
         MPI_Comm *comm
-    ) {
-        return m_mpi_group->comm_dup(comm);
+    ) const {
+        return m_mpi_group.comm_dup(comm);
     }
 };
 

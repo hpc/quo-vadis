@@ -41,7 +41,7 @@ sleepy_node_barrier(
 }
 
 std::vector<pid_t>
-qvi_mpi_group::pids(void)
+qvi_mpi_group::pids(void) const
 {
     static_assert(
         sizeof(int) == sizeof(pid_t),
@@ -62,7 +62,7 @@ qvi_mpi_group::pids(void)
 }
 
 int
-qvi_mpi_group::barrier(void)
+qvi_mpi_group::barrier(void) const
 {
     return sleepy_node_barrier(qvcomm.m_mpi_comm);
 }
@@ -72,7 +72,7 @@ qvi_mpi_group::gather_bbuffs(
     const qvi_bbuff &txbuff,
     int root,
     std::vector<qvi_bbuff> &rxbuffs
-) {
+) const {
     const int send_count = (int)txbuff.size();
     const int group_id = qvcomm.m_rank;
     const int group_size = qvcomm.m_size;
@@ -127,7 +127,7 @@ qvi_mpi_group::scatter_bbuffs(
     const std::vector<qvi_bbuff> &txbuffs,
     int root,
     qvi_bbuff &rxbuff
-) {
+) const {
     const int group_size = qvcomm.m_size;
     const int group_id = qvcomm.m_rank;
 
@@ -176,7 +176,7 @@ qvi_mpi_group::scatter_bbuffs(
 int
 qvi_mpi_group::comm_dup(
     MPI_Comm *comm
-) {
+) const {
     const int rc = MPI_Comm_dup(qvcomm.m_mpi_comm, comm);
     if (qvi_unlikely(rc != MPI_SUCCESS)) return QV_ERR_MPI;
     return QV_SUCCESS;
@@ -413,12 +413,13 @@ qvi_mpi::add_group(
 }
 
 int
-qvi_mpi::group_lookup_by_id(
+qvi_mpi::group_from_group_id(
     qvi_group_id_t id,
     qvi_mpi_group &group
 ) {
     auto got = m_group_tab.find(id);
-    if (got == m_group_tab.end()) {
+    if (qvi_unlikely(got == m_group_tab.end())) {
+        group = {};
         return QV_ERR_NOT_FOUND;
     }
     group = got->second;
@@ -426,33 +427,31 @@ qvi_mpi::group_lookup_by_id(
 }
 
 int
-qvi_mpi::group_create_from_group_id(
-    qvi_group_id_t id,
-    qvi_mpi_group **group
-) {
-    qvi_mpi_group tmp_group;
-    int rc = group_lookup_by_id(id, tmp_group);
-    if (rc != QV_SUCCESS) return rc;
-
-    return group_create_from_mpi_comm(
-        tmp_group.qvcomm.m_mpi_comm, group
-    );
-}
-
-int
-qvi_mpi::group_create_from_split(
-    const qvi_mpi_group *parent,
+qvi_mpi::group_from_split(
+    const qvi_mpi_group &parent,
     int color,
     int key,
-    qvi_mpi_group **child
+    qvi_mpi_group &child
 ) {
+    int rc = QV_SUCCESS;
     MPI_Comm split_comm = MPI_COMM_NULL;
-    const int mpirc = MPI_Comm_split(
-        parent->qvcomm.m_mpi_comm, color, key, &split_comm
-    );
-    if (qvi_unlikely(mpirc != MPI_SUCCESS)) return QV_ERR_MPI;
 
-    const int rc = group_create_from_mpi_comm(split_comm, child);
+    do {
+        const int mpirc = MPI_Comm_split(
+            parent.qvcomm.m_mpi_comm, color, key, &split_comm
+        );
+        if (qvi_unlikely(mpirc != MPI_SUCCESS)) {
+            rc = QV_ERR_MPI;
+            break;
+        }
+
+        rc = group_from_mpi_comm(split_comm, child);
+    } while (false);
+
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        child = {};
+    }
+
     if (split_comm != MPI_COMM_NULL) {
         MPI_Comm_free(&split_comm);
     }
@@ -460,26 +459,25 @@ qvi_mpi::group_create_from_split(
 }
 
 int
-qvi_mpi::group_create_from_mpi_comm(
+qvi_mpi::group_from_mpi_comm(
     MPI_Comm comm,
-    qvi_mpi_group **new_group
+    qvi_mpi_group &group
 ) {
-    int rc = qvi_new(new_group);
-    if (rc != QV_SUCCESS) return rc;
-
+    int rc = QV_SUCCESS;
     MPI_Comm node_comm = MPI_COMM_NULL;
-    rc = mpi_comm_to_new_node_comm(comm, &node_comm);
-    if (rc != QV_SUCCESS) goto out;
 
-    rc = group_init_from_mpi_comm(
-        node_comm, **new_group
-    );
-    if (rc != QV_SUCCESS) goto out;
+    do {
+        rc = mpi_comm_to_new_node_comm(comm, &node_comm);
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
 
-    rc = add_group(**new_group);
-out:
+        rc = group_init_from_mpi_comm(node_comm, group);
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
+
+        rc = add_group(group);
+    } while (false);
+
     if (rc != QV_SUCCESS) {
-        qvi_delete(new_group);
+        group = {};
         if (node_comm != MPI_COMM_NULL) {
             MPI_Comm_free(&node_comm);
         }
