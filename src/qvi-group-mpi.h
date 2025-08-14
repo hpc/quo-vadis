@@ -28,15 +28,15 @@ protected:
     /** Task associated with this group. */
     qvi_task m_task;
     /** Points to the base MPI context information. */
-    qvi_mpi_t *m_mpi = nullptr;
+    qvi_mpi *m_mpi = nullptr;
     /** Underlying group instance. */
-    qvi_mpi_group_t *m_mpi_group = nullptr;
+    qvi_mpi_group *m_mpi_group = nullptr;
 public:
     /** Default constructor. */
     qvi_group_mpi(void) = default;
     /** Constructor. */
     qvi_group_mpi(
-        qvi_mpi_t *mpi_ctx
+        qvi_mpi *mpi_ctx
     );
     /** Destructor. */
     virtual ~qvi_group_mpi(void);
@@ -50,24 +50,24 @@ public:
     virtual int
     size(void) const
     {
-        return qvi_mpi_group_size(m_mpi_group);
+        return m_mpi_group->size();
     }
 
     virtual int
     rank(void) const
     {
-        return qvi_mpi_group_rank(m_mpi_group);
+        return m_mpi_group->rank();
     }
 
     virtual std::vector<pid_t>
     pids(void) const {
-        return qvi_mpi_group_pids(m_mpi_group);
+        return m_mpi_group->pids();
     }
 
     virtual int
     barrier(void) const
     {
-        return qvi_mpi_group_barrier(m_mpi_group);
+        return m_mpi_group->barrier();
     }
 
     virtual int
@@ -93,8 +93,8 @@ public:
         int root,
         std::vector<qvi_bbuff> &rxbuffs
     ) const {
-        return qvi_mpi_group_gather_bbuffs(
-            m_mpi_group, txbuff, root, rxbuffs
+        return m_mpi_group->gather_bbuffs(
+            txbuff, root, rxbuffs
         );
     }
 
@@ -104,8 +104,8 @@ public:
         int root,
         qvi_bbuff &rxbuff
     ) const {
-        return qvi_mpi_group_scatter_bbuffs(
-            m_mpi_group, txbuffs, root, rxbuff
+        return m_mpi_group->scatter_bbuffs(
+            txbuffs, root, rxbuff
         );
     }
     /** Returns a duplicate of the underlying MPI group communicator. */
@@ -113,21 +113,18 @@ public:
     comm_dup(
         MPI_Comm *comm
     ) {
-        return qvi_mpi_group_comm_dup(m_mpi_group, comm);
+        return m_mpi_group->comm_dup(comm);
     }
 };
 
-struct qvi_zgroup_mpi_s : public qvi_group_mpi {
+struct qvi_zgroup_mpi : public qvi_group_mpi {
     /** Default constructor. */
-    qvi_zgroup_mpi_s(void) = delete;
+    qvi_zgroup_mpi(void) = delete;
     /** Constructor. */
-    qvi_zgroup_mpi_s(
+    qvi_zgroup_mpi(
         MPI_Comm comm
     ) {
-        int rc = qvi_mpi_new(&m_mpi);
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
-        // Initialize the MPI group with the provided communicator.
-        rc = qvi_mpi_init(m_mpi, comm);
+        int rc = qvi_new(&m_mpi, comm);
         if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
         // Finish task initialization after we finish MPI initialization because
         // the server daemon may have been started during qvi_mpi_init().
@@ -135,9 +132,9 @@ struct qvi_zgroup_mpi_s : public qvi_group_mpi {
         if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
     }
     /** Destructor. */
-    virtual ~qvi_zgroup_mpi_s(void)
+    virtual ~qvi_zgroup_mpi(void)
     {
-        qvi_mpi_delete(&m_mpi);
+        qvi_delete(&m_mpi);
     }
 };
 
