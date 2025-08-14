@@ -28,11 +28,6 @@ qvi_group_mpi::qvi_group_mpi(
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
 }
 
-qvi_group_mpi::~qvi_group_mpi(void)
-{
-    qvi_delete(&m_mpi_group);
-}
-
 int
 qvi_group_mpi::make_intrinsic(
     qv_scope_intrinsic_t scope
@@ -52,8 +47,8 @@ qvi_group_mpi::make_intrinsic(
             return QV_ERR_INVLD_ARG;
     }
 
-    return m_mpi->group_create_from_group_id(
-        mpi_group_type, &m_mpi_group
+    return m_mpi->group_from_group_id(
+        mpi_group_type, m_mpi_group
     );
 }
 
@@ -61,15 +56,18 @@ int
 qvi_group_mpi::self(
     qvi_group **child
 ) {
-    // Create and initialize the child with the parent's MPI context.
+    int rc = QV_SUCCESS;
     qvi_group_mpi *ichild = nullptr;
-    int rc = qvi_new(&ichild, m_mpi);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    // Create the underlying group using MPI_COMM_SELF.
-    rc = m_mpi->group_create_from_mpi_comm(
-        MPI_COMM_SELF, &ichild->m_mpi_group
-    );
-out:
+    do {
+        // Create the child with the parent's MPI context.
+        rc = qvi_new(&ichild, m_mpi);
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
+        // Create the underlying group using MPI_COMM_SELF.
+        rc = m_mpi->group_from_mpi_comm(
+            MPI_COMM_SELF, ichild->m_mpi_group
+        );
+    } while (false);
+
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);
     }
@@ -83,15 +81,18 @@ qvi_group_mpi::split(
     int key,
     qvi_group **child
 ) {
-    // Create and initialize the child with the parent's MPI context.
+    int rc = QV_SUCCESS;
+    // Create the child with the parent's MPI context.
     qvi_group_mpi *ichild = nullptr;
-    int rc = qvi_new(&ichild, m_mpi);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    // Split this group using MPI.
-    rc = m_mpi->group_create_from_split(
-        m_mpi_group, color, key, &ichild->m_mpi_group
-    );
-out:
+    do {
+        rc = qvi_new(&ichild, m_mpi);
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
+        // Split this group using MPI.
+        rc = m_mpi->group_from_split(
+            m_mpi_group, color, key, ichild->m_mpi_group
+        );
+    } while (false);
+
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);
     }
