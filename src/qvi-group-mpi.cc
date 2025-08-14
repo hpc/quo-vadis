@@ -19,7 +19,7 @@
 #include "qvi-utils.h"
 
 qvi_group_mpi::qvi_group_mpi(
-    qvi_mpi_t *mpi_ctx
+    qvi_mpi *mpi_ctx
 ) {
     if (qvi_unlikely(!mpi_ctx)) throw qvi_runtime_error(QV_ERR_INTERNAL);
     m_mpi = mpi_ctx;
@@ -30,7 +30,7 @@ qvi_group_mpi::qvi_group_mpi(
 
 qvi_group_mpi::~qvi_group_mpi(void)
 {
-    qvi_mpi_group_delete(&m_mpi_group);
+    qvi_delete(&m_mpi_group);
 }
 
 int
@@ -52,8 +52,8 @@ qvi_group_mpi::make_intrinsic(
             return QV_ERR_INVLD_ARG;
     }
 
-    return qvi_mpi_group_create_from_group_id(
-        m_mpi, mpi_group_type, &m_mpi_group
+    return m_mpi->group_create_from_group_id(
+        mpi_group_type, &m_mpi_group
     );
 }
 
@@ -66,8 +66,8 @@ qvi_group_mpi::self(
     int rc = qvi_new(&ichild, m_mpi);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Create the underlying group using MPI_COMM_SELF.
-    rc = qvi_mpi_group_create_from_mpi_comm(
-        m_mpi, MPI_COMM_SELF, &ichild->m_mpi_group
+    rc = m_mpi->group_create_from_mpi_comm(
+        MPI_COMM_SELF, &ichild->m_mpi_group
     );
 out:
     if (qvi_unlikely(rc != QV_SUCCESS)) {
@@ -88,9 +88,8 @@ qvi_group_mpi::split(
     int rc = qvi_new(&ichild, m_mpi);
     if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // Split this group using MPI.
-    rc = qvi_mpi_group_create_from_split(
-        m_mpi, m_mpi_group, color,
-        key, &ichild->m_mpi_group
+    rc = m_mpi->group_create_from_split(
+        m_mpi_group, color, key, &ichild->m_mpi_group
     );
 out:
     if (qvi_unlikely(rc != QV_SUCCESS)) {
