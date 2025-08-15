@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2025 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -36,6 +36,7 @@ int
 qv_mpi_scope_get(
     MPI_Comm comm,
     qv_scope_intrinsic_t iscope,
+    qv_scope_flags_t flags,
     qv_scope_t **scope
 );
 

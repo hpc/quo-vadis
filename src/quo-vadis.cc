@@ -34,9 +34,11 @@ qv_version(
     return QV_SUCCESS;
 }
 
-static int
+// TODO(skg)
+static inline int
 qvi_process_scope_get(
     qv_scope_intrinsic_t iscope,
+    qv_scope_flags_t,
     qv_scope_t **scope
 ) {
     // Create the base process group.
@@ -52,13 +54,14 @@ qvi_process_scope_get(
 int
 qv_process_scope_get(
     qv_scope_intrinsic_t iscope,
+    qv_scope_flags_t flags,
     qv_scope_t **scope
 ) {
     if (qvi_unlikely(!scope)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_process_scope_get(iscope, scope);
+        return qvi_process_scope_get(iscope, flags, scope);
     }
     qvi_catch_and_return();
 }

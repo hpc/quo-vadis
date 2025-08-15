@@ -36,7 +36,7 @@ scopei_ep(
 
     qv_scope_t *base_scope;
     int rc = qv_process_scope_get(
-        QV_SCOPE_PROCESS, &base_scope
+        QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &base_scope
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_thread_scope_get() failed";

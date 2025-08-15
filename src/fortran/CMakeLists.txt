@@ -1,6 +1,6 @@
 # -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*-
 #
-# Copyright (c) 2020-2024 Triad National Security, LLC
+# Copyright (c) 2020-2025 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -114,39 +114,6 @@ if(QV_FORTRAN_HAPPY)
     install(
         FILES
           "${CMAKE_Fortran_MODULE_DIRECTORY}/quo_vadisf.mod"
-        DESTINATION
-          include
-    )
-
-    ############################################################################
-    add_library(
-        quo-vadis-processf
-        SHARED
-          quo-vadis-processf.f90
-    )
-
-    target_include_directories(
-        quo-vadis-processf
-        PUBLIC
-          $<TARGET_PROPERTY:quo-vadisf-core,INCLUDE_DIRECTORIES>
-    )
-
-    target_link_libraries(
-        quo-vadis-processf
-        quo-vadisf-core
-        quo-vadis
-    )
-
-    install(
-        TARGETS
-          quo-vadis-processf
-        DESTINATION
-          lib
-    )
-
-    install(
-        FILES
-          "${CMAKE_Fortran_MODULE_DIRECTORY}/quo_vadis_processf.mod"
         DESTINATION
           include
     )

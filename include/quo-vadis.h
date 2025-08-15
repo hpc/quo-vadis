@@ -96,6 +96,24 @@ typedef enum {
 } qv_scope_intrinsic_t;
 
 /**
+ * Intrinsic scope flags that invluence *_scope_get() behavior.
+ *
+ * Note to developers: long long is guaranteed to be at least 64 bits,
+ * which should be plenty for our needs.
+ */
+typedef long long qv_scope_flags_t;
+
+/**
+ * Empty flags, get scope with default behavior.
+ */
+const qv_scope_flags_t QV_SCOPE_FLAG_NONE   = (0LL);
+
+/**
+ * Disable use of SMT.
+ */
+const qv_scope_flags_t QV_SCOPE_FLAG_NO_SMT = (1LL<<0);
+
+/**
  * Hardware object types.
  */
 typedef enum {
@@ -123,12 +141,12 @@ typedef int qv_bind_string_flags_t;
 /**
  * Output the logical binding.
  */
-const qv_bind_string_flags_t QV_BIND_STRING_LOGICAL = 0x00000001;
+const qv_bind_string_flags_t QV_BIND_STRING_LOGICAL = (1<<0);
 
 /**
  * Output the physical (OS) binding.
  */
-const qv_bind_string_flags_t QV_BIND_STRING_PHYSICAL = 0x00000002;
+const qv_bind_string_flags_t QV_BIND_STRING_PHYSICAL = (1<<1);
 
 /**
  * Automatic grouping options for qv_scope_split(). The following values can be
@@ -147,9 +165,13 @@ const int QV_SCOPE_SPLIT_UNDEFINED = -1;
  * (at time of the split call) as much as possible.
  */
 const int QV_SCOPE_SPLIT_AFFINITY_PRESERVING = -2;
-
+/**
+ *
+ */
 const int QV_SCOPE_SPLIT_PACKED = -3;
-
+/**
+ *
+ */
 const int QV_SCOPE_SPLIT_SPREAD = -4;
 
 /**
@@ -204,6 +226,7 @@ qv_strerr(
 int
 qv_process_scope_get(
     qv_scope_intrinsic_t iscope,
+    qv_scope_flags_t flags,
     qv_scope_t **scope
 );
 

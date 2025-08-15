@@ -3,7 +3,6 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 program mpi_fortapi
-
     use mpi
     use quo_vadis_mpif
     use, intrinsic :: iso_c_binding
@@ -45,7 +44,10 @@ program mpi_fortapi
         print *, 'cwsize', cwsize
     end if
 
-    call qv_mpi_scope_get(MPI_COMM_WORLD, QV_SCOPE_USER, scope_user, info)
+    call qv_mpi_scope_get( &
+        MPI_COMM_WORLD, QV_SCOPE_USER, &
+        QV_SCOPE_FLAG_NONE, scope_user, info &
+    )
     if (info .ne. QV_SUCCESS) then
         error stop
     end if

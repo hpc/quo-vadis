@@ -298,7 +298,7 @@ if(QV_FORTRAN_HAPPY)
 
     target_link_libraries(
         test-process-fortapi
-        quo-vadis-processf
+        quo-vadisf
     )
 
     set_target_properties(

@@ -54,6 +54,7 @@ main(
     rc = qv_mpi_scope_get(
         comm,
         QV_SCOPE_PROCESS,
+        QV_SCOPE_FLAG_NONE,
         &self_scope
     );
     if (rc != QV_SUCCESS) {
@@ -72,6 +73,7 @@ main(
     rc = qv_mpi_scope_get(
         comm,
         QV_SCOPE_JOB,
+        QV_SCOPE_FLAG_NONE,
         &base_scope
     );
     if (rc != QV_SUCCESS) {
