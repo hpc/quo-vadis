@@ -1,7 +1,7 @@
 [![QA](https://github.com/hpc/quo-vadis/actions/workflows/qa.yml/badge.svg)
 ](https://github.com/hpc/quo-vadis/actions/workflows/qa.yml)
 
-# quo-vadis
+# quo-vadis (QV)
 
 **This project is under active development and is currently not stable.**
 
@@ -50,13 +50,15 @@ cmake -DQV_SANITIZE=address ..
 ctest
 # Or target a specific suite of tests
 ctest -L core
+# Or verbosely
+ctest -V
 ```
 
 ## Environment Variables
 ```shell
 QV_PORT # The port number used for client/server communication.
 QV_TMPDIR # Directory used for temporary files.
-QV_VEXCEPT # When set provides verbose exception output.
+QV_VEXCEPT # When set to any value provides verbose exception output.
 ```
 
 For developers and debugging:
@@ -71,11 +73,12 @@ build/src/quo-vadisd --port 55996
 ./build/tests/test-process-scopes
 ```
 
+QV supports both manual and automatic quo-vadisd startup for MPI applications.
+For this to work, the path to `quo-vadisd` must be in your `PATH`.
 ```shell
-# Set the communication port via environment variable.
-export QV_PORT=55996
-# Launch the daemon.
-build/src/quo-vadisd
+PATH=$PWD/build/src:$PATH
+# Optionally set the communication port via environment variable.
+# If QV_PORT is not set, then QV will chose a default port for you.
 # Run a test.
 mpiexec -n 2 build/tests/test-mpi-scopes
 ```
