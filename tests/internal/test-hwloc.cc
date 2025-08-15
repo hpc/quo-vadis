@@ -75,7 +75,7 @@ echo_hw_info(
 static int
 echo_task_intersections(
     qvi_hwloc &hwl,
-    char *bitmap_str
+    const char *bitmap_str
 ) {
     const int num_nts = sizeof(nts) / sizeof(hw_name_type_t);
     const pid_t me = qvi_gettid();
@@ -155,7 +155,6 @@ main(void)
     printf("\n# Starting hwloc test\n");
 
     char const *ers = nullptr;
-    char *binds = nullptr;
     qvi_hwloc hwl;
     qvi_hwloc_bitmap bitmap;
     pid_t who = qvi_gettid();
@@ -190,20 +189,14 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qvi_hwloc::bitmap_asprintf(bitmap.cdata(), &binds);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_hwloc::bitmap_asprintf() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    printf("\n# cpuset=%s\n", binds);
+    std::string binds = qvi_hwloc::bitmap_string(bitmap.cdata());
+    printf("\n# cpuset=%s\n", binds.c_str());
 
-    rc = echo_task_intersections(hwl, binds);
+    rc = echo_task_intersections(hwl, binds.c_str());
     if (rc != QV_SUCCESS) {
         ers = "echo_task_intersections() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
-    if (binds) free(binds);
 
     printf("# Done\n");
     return EXIT_SUCCESS;
