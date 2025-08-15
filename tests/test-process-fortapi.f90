@@ -4,7 +4,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 program process_fortapi
 
-    use quo_vadis_processf
+    use quo_vadisf
     use, intrinsic :: iso_c_binding
     implicit none
 
@@ -16,7 +16,9 @@ program process_fortapi
     character(len=:),allocatable :: dev_pci(:)
     character, pointer, dimension(:) :: strerr
 
-    call qv_process_scope_get(QV_SCOPE_USER, scope_user, info)
+    call qv_process_scope_get( &
+        QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, scope_user, info &
+    )
     if (info .ne. QV_SUCCESS) then
         error stop
     end if

@@ -1,5 +1,5 @@
 !
-! Copyright (c) 2013-2024 Triad National Security, LLC
+! Copyright (c) 2013-2025 Triad National Security, LLC
 !                         All rights reserved.
 !
 ! This file is part of the quo-vadis project. See the LICENSE file at the
@@ -12,12 +12,13 @@ module quo_vadis_mpif
 
 interface
     integer(c_int) &
-    function qv_mpi_scope_get_c(comm, iscope, scope) &
+    function qv_mpi_scope_get_c(comm, iscope, flags, scope) &
         bind(c, name='qvi_mpi_scope_get_f2c')
-        use, intrinsic :: iso_c_binding, only: c_ptr, c_int
+        use, intrinsic :: iso_c_binding, only: c_ptr, c_long_long, c_int
         implicit none
-        integer, value :: comm
+        integer(c_int), value :: comm
         integer(c_int), value :: iscope
+        integer(c_long_long), value :: flags
         type(c_ptr), intent(out) :: scope
     end function qv_mpi_scope_get_c
 
@@ -27,21 +28,22 @@ interface
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
-        integer, intent(out) :: comm
+        integer(c_int), intent(out) :: comm
     end function qv_mpi_scope_comm_dup_c
 
 end interface
 
 contains
 
-    subroutine qv_mpi_scope_get(comm, iscope, scope, info)
-        use, intrinsic :: iso_c_binding, only: c_ptr, c_int
+    subroutine qv_mpi_scope_get(comm, iscope, flags, scope, info)
+        use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_long_long
         implicit none
         integer, value :: comm
         integer(c_int), value :: iscope
+        integer(c_long_long), value :: flags
         type(c_ptr), intent(out) :: scope
         integer(c_int), intent(out) :: info
-        info = qv_mpi_scope_get_c(comm, iscope, scope)
+        info = qv_mpi_scope_get_c(comm, iscope, flags, scope)
     end subroutine qv_mpi_scope_get
 
     subroutine qv_mpi_scope_comm_dup(scope, comm, info)

@@ -55,7 +55,7 @@ main(
 
     qv_scope_t *world_scope = NULL;
     rc = qv_mpi_scope_get(
-        comm, QV_SCOPE_USER, &world_scope
+        comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &world_scope
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_scope_get() failed";

@@ -9,120 +9,83 @@
 module quo_vadisf
     use, intrinsic :: iso_c_binding
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! Return Codes
+    ! Return codes
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    integer(c_int) QV_SUCCESS
-    integer(c_int) QV_SUCCESS_ALREADY_DONE
-    integer(c_int) QV_SUCCESS_SHUTDOWN
-    integer(c_int) QV_ERR
-    integer(c_int) QV_ERR_ENV
-    integer(c_int) QV_ERR_INTERNAL
-    integer(c_int) QV_ERR_FILE_IO
-    integer(c_int) QV_ERR_SYS
-    integer(c_int) QV_ERR_OOR
-    integer(c_int) QV_ERR_INVLD_ARG
-    integer(c_int) QV_ERR_CALL_BEFORE_INIT
-    integer(c_int) QV_ERR_HWLOC
-    integer(c_int) QV_ERR_MPI
-    integer(c_int) QV_ERR_MSG
-    integer(c_int) QV_ERR_RPC
-    integer(c_int) QV_ERR_NOT_SUPPORTED
-    integer(c_int) QV_ERR_POP
-    integer(c_int) QV_ERR_NOT_FOUND
-    integer(c_int) QV_ERR_SPLIT
-    integer(c_int) QV_RES_UNAVAILABLE
-
-    parameter (QV_SUCCESS = 0)
-    parameter (QV_SUCCESS_ALREADY_DONE = 1)
-    parameter (QV_SUCCESS_SHUTDOWN = 2)
-    parameter (QV_ERR = 3)
-    parameter (QV_ERR_ENV = 4)
-    parameter (QV_ERR_INTERNAL = 5)
-    parameter (QV_ERR_FILE_IO = 6)
-    parameter (QV_ERR_SYS = 7)
-    parameter (QV_ERR_OOR = 8)
-    parameter (QV_ERR_INVLD_ARG = 9)
-    parameter (QV_ERR_CALL_BEFORE_INIT = 10)
-    parameter (QV_ERR_HWLOC = 11)
-    parameter (QV_ERR_MPI = 12)
-    parameter (QV_ERR_MSG = 13)
-    parameter (QV_ERR_RPC = 14)
-    parameter (QV_ERR_NOT_SUPPORTED = 15)
-    parameter (QV_ERR_POP = 16)
-    parameter (QV_ERR_NOT_FOUND = 18)
-    parameter (QV_ERR_SPLIT = 19)
-    parameter (QV_RES_UNAVAILABLE = 20)
+    integer(c_int), parameter :: QV_SUCCESS = 0
+    integer(c_int), parameter :: QV_SUCCESS_ALREADY_DONE = 1
+    integer(c_int), parameter :: QV_SUCCESS_SHUTDOWN = 2
+    integer(c_int), parameter :: QV_ERR = 3
+    integer(c_int), parameter :: QV_ERR_ENV = 4
+    integer(c_int), parameter :: QV_ERR_INTERNAL = 5
+    integer(c_int), parameter :: QV_ERR_FILE_IO = 6
+    integer(c_int), parameter :: QV_ERR_SYS = 7
+    integer(c_int), parameter :: QV_ERR_OOR = 8
+    integer(c_int), parameter :: QV_ERR_INVLD_ARG = 9
+    integer(c_int), parameter :: QV_ERR_CALL_BEFORE_INIT = 10
+    integer(c_int), parameter :: QV_ERR_HWLOC = 11
+    integer(c_int), parameter :: QV_ERR_MPI = 12
+    integer(c_int), parameter :: QV_ERR_MSG = 13
+    integer(c_int), parameter :: QV_ERR_RPC = 14
+    integer(c_int), parameter :: QV_ERR_NOT_SUPPORTED = 15
+    integer(c_int), parameter :: QV_ERR_POP = 16
+    integer(c_int), parameter :: QV_ERR_NOT_FOUND = 18
+    integer(c_int), parameter :: QV_ERR_SPLIT = 19
+    integer(c_int), parameter :: QV_RES_UNAVAILABLE = 20
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! Intrinsic Scopes
+    ! Intrinsic scopes
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    integer(c_int) QV_SCOPE_SYSTEM
-    integer(c_int) QV_SCOPE_USER
-    integer(c_int) QV_SCOPE_JOB
-    integer(c_int) QV_SCOPE_PROCESS
+    integer(c_int), parameter :: QV_SCOPE_SYSTEM = 0
+    integer(c_int), parameter :: QV_SCOPE_USER = 1
+    integer(c_int), parameter :: QV_SCOPE_JOB = 2
+    integer(c_int), parameter :: QV_SCOPE_PROCESS = 3
 
-    parameter (QV_SCOPE_SYSTEM = 0)
-    parameter (QV_SCOPE_USER = 1)
-    parameter (QV_SCOPE_JOB = 2)
-    parameter (QV_SCOPE_PROCESS = 3)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! Intrinsic scope flags
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    integer(c_long_long), parameter :: QV_SCOPE_FLAG_NONE = &
+        int(ishft(0, 0), kind=c_long_long)
+
+    integer(c_long_long), parameter :: QV_SCOPE_FLAG_NO_SMT = &
+        int(ishft(1, 0), kind=c_long_long)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Hardware Object Types
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    integer(c_int) QV_HW_OBJ_MACHINE
-    integer(c_int) QV_HW_OBJ_PACKAGE
-    integer(c_int) QV_HW_OBJ_CORE
-    integer(c_int) QV_HW_OBJ_PU
-    integer(c_int) QV_HW_OBJ_L1CACHE
-    integer(c_int) QV_HW_OBJ_L2CACHE
-    integer(c_int) QV_HW_OBJ_L3CACHE
-    integer(c_int) QV_HW_OBJ_L4CACHE
-    integer(c_int) QV_HW_OBJ_L5CACHE
-    integer(c_int) QV_HW_OBJ_NUMANODE
-    integer(c_int) QV_HW_OBJ_GPU
-    integer(c_int) QV_HW_OBJ_LAST
-
-    parameter (QV_HW_OBJ_MACHINE = 0)
-    parameter (QV_HW_OBJ_PACKAGE = 1)
-    parameter (QV_HW_OBJ_CORE = 2)
-    parameter (QV_HW_OBJ_PU = 3)
-    parameter (QV_HW_OBJ_L1CACHE = 4)
-    parameter (QV_HW_OBJ_L2CACHE = 5)
-    parameter (QV_HW_OBJ_L3CACHE = 6)
-    parameter (QV_HW_OBJ_L4CACHE = 7)
-    parameter (QV_HW_OBJ_L5CACHE = 8)
-    parameter (QV_HW_OBJ_NUMANODE = 9)
-    parameter (QV_HW_OBJ_GPU = 10)
-    parameter (QV_HW_OBJ_LAST = 11)
+    integer(c_int), parameter :: QV_HW_OBJ_MACHINE = 0
+    integer(c_int), parameter :: QV_HW_OBJ_PACKAGE = 1
+    integer(c_int), parameter :: QV_HW_OBJ_CORE = 2
+    integer(c_int), parameter :: QV_HW_OBJ_PU = 3
+    integer(c_int), parameter :: QV_HW_OBJ_L1CACHE = 4
+    integer(c_int), parameter :: QV_HW_OBJ_L2CACHE = 5
+    integer(c_int), parameter :: QV_HW_OBJ_L3CACHE = 6
+    integer(c_int), parameter :: QV_HW_OBJ_L4CACHE = 7
+    integer(c_int), parameter :: QV_HW_OBJ_L5CACHE = 8
+    integer(c_int), parameter :: QV_HW_OBJ_NUMANODE = 9
+    integer(c_int), parameter :: QV_HW_OBJ_GPU = 10
+    integer(c_int), parameter :: QV_HW_OBJ_LAST = 11
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Binding string representation format flags.
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     integer(c_int), parameter :: QV_BIND_STRING_LOGICAL = &
-        int(Z'00000001', kind=c_int)
+        int(ishft(1, 0), kind=c_int)
 
     integer(c_int), parameter :: QV_BIND_STRING_PHYSICAL = &
-        int(Z'00000002', kind=c_int)
+        int(ishft(1, 1), kind=c_int)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Automatic grouping options for qv_scope_split().
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    integer(c_int) QV_SCOPE_SPLIT_UNDEFINED
-    integer(c_int) QV_SCOPE_SPLIT_AFFINITY_PRESERVING
-
-    parameter (QV_SCOPE_SPLIT_UNDEFINED = -1)
-    parameter (QV_SCOPE_SPLIT_AFFINITY_PRESERVING = -2)
+    integer(c_int), parameter :: QV_SCOPE_SPLIT_UNDEFINED = -1
+    integer(c_int), parameter :: QV_SCOPE_SPLIT_AFFINITY_PRESERVING = -2
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Device ID types
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    integer(c_int) QV_DEVICE_ID_UUID
-    integer(c_int) QV_DEVICE_ID_PCI_BUS_ID
-    integer(c_int) QV_DEVICE_ID_ORDINAL
-
-    parameter (QV_DEVICE_ID_UUID = 0)
-    parameter (QV_DEVICE_ID_PCI_BUS_ID = 1)
-    parameter (QV_DEVICE_ID_ORDINAL = 2)
+    integer(c_int), parameter :: QV_DEVICE_ID_UUID = 0
+    integer(c_int), parameter :: QV_DEVICE_ID_PCI_BUS_ID = 1
+    integer(c_int), parameter :: QV_DEVICE_ID_ORDINAL = 2
 
 interface
     pure function qvif_strlen_c(s) &
@@ -142,6 +105,16 @@ interface
         integer(c_int), intent(out) :: minor
         integer(c_int), intent(out) :: patch
     end function qv_version_c
+
+    integer(c_int) &
+    function qv_process_scope_get_c(iscope, flags, scope) &
+        bind(c, name='qv_process_scope_get')
+        use, intrinsic :: iso_c_binding, only: c_int, c_long_long, c_ptr
+        implicit none
+        integer(c_int), value :: iscope
+        integer(c_long_long), value :: flags
+        type(c_ptr), intent(out) :: scope
+    end function qv_process_scope_get_c
 
     integer(c_int) &
     function qv_scope_free_c(scope) &
@@ -292,6 +265,16 @@ contains
         integer(c_int), intent(out) :: info
         info = qv_version_c(major, minor, patch)
     end subroutine qv_version
+
+    subroutine qv_process_scope_get(iscope, flags, scope, info)
+        use, intrinsic :: iso_c_binding, only: c_ptr, c_long_long, c_int
+        implicit none
+        integer(c_int), value :: iscope
+        integer(c_long_long), value :: flags
+        type(c_ptr), intent(out) :: scope
+        integer(c_int), intent(out) :: info
+        info = qv_process_scope_get_c(iscope, flags, scope)
+    end subroutine qv_process_scope_get
 
     subroutine qv_scope_free(scope, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int

@@ -27,7 +27,7 @@ main(void)
 
     qv_scope_t *self_scope = NULL;
     rc = qv_process_scope_get(
-        QV_SCOPE_PROCESS, &self_scope
+        QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &self_scope
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_get(QV_SCOPE_PROCESS) failed";
@@ -44,7 +44,7 @@ main(void)
 
     qv_scope_t *base_scope;
     rc = qv_process_scope_get(
-        QV_SCOPE_USER, &base_scope
+        QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &base_scope
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_get(QV_SCOPE_USER) failed";

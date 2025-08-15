@@ -31,10 +31,11 @@ int
 qvi_mpi_scope_get_f2c(
     MPI_Fint comm,
     qv_scope_intrinsic_t iscope,
+    qv_scope_flags_t flags,
     qv_scope_t **scope
 ) {
     MPI_Comm c_comm = MPI_Comm_f2c(comm);
-    return qv_mpi_scope_get(c_comm, iscope, scope);
+    return qv_mpi_scope_get(c_comm, iscope, flags, scope);
 }
 
 int
@@ -52,10 +53,12 @@ qvi_mpi_scope_comm_dup_f2c(
 }
 #endif
 
-int
+// TODO(skg)
+static inline int
 qvi_mpi_scope_get(
     MPI_Comm comm,
     qv_scope_intrinsic_t iscope,
+    qv_scope_flags_t,
     qv_scope_t **scope
 ) {
     *scope = nullptr;
@@ -71,13 +74,14 @@ int
 qv_mpi_scope_get(
     MPI_Comm comm,
     qv_scope_intrinsic_t iscope,
+    qv_scope_flags_t flags,
     qv_scope_t **scope
 ) {
     if (qvi_unlikely(comm == MPI_COMM_NULL || !scope)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return qvi_mpi_scope_get(comm, iscope, scope);
+        return qvi_mpi_scope_get(comm, iscope, flags, scope);
     }
     qvi_catch_and_return();
 }

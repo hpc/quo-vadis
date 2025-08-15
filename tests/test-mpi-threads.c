@@ -50,7 +50,9 @@ main(
     ////////////////////////////////////////////////////////////////////////////
     // Get the base scope: RM-given resources.
     qv_scope_t *base_scope;
-    rc = qv_mpi_scope_get(comm, QV_SCOPE_USER, &base_scope);
+    rc = qv_mpi_scope_get(
+        comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &base_scope
+    );
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_scope_get() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
