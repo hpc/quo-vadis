@@ -1,7 +1,7 @@
 [![QA](https://github.com/hpc/quo-vadis/actions/workflows/qa.yml/badge.svg)
 ](https://github.com/hpc/quo-vadis/actions/workflows/qa.yml)
 
-# quo-vadis (QV)
+# quo-vadis
 
 **This project is under active development and is currently not stable.**
 
@@ -19,8 +19,8 @@ mkdir build && cd build && cmake -G Ninja .. && ninja
 ```
 
 ### Build Options
-Below is a table of build options for quo-vadis. Options can be specified in a
-variety of ways using `cmake` or `ccmake`. For example,
+Below is a table of build options for quo-vadis (QV). Options can be specified
+in a variety of ways using `cmake` or `ccmake`. For example,
 ```shell
 cmake -DQV_GPU_SUPPORT=OFF -DQV_FORTRAN_SUPPORT=OFF ..
 ```
@@ -73,9 +73,11 @@ build/src/quo-vadisd --port 55996
 ./build/tests/test-process-scopes
 ```
 
-QV supports both manual and automatic quo-vadisd startup for MPI applications.
+QV supports both manual and automatic `quo-vadisd` startup for MPI applications.
 For this to work, the path to `quo-vadisd` must be in your `PATH`.
 ```shell
+# Set PATH to location of quo-vadisd. For installs
+# this will commonly be set to CMAKE_INSTALL_PREFIX/bin.
 PATH=$PWD/build/src:$PATH
 # Optionally set the communication port via environment variable.
 # If QV_PORT is not set, then QV will chose a default port for you.
