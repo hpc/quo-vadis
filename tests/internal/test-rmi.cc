@@ -82,6 +82,7 @@ client(
     printf("# [%d] Starting Client (%s)\n", getpid(), url);
 
     char const *ers = nullptr;
+    std::string res;
     int portno = 0;
     pid_t who = qvi_gettid();
     qvi_hwloc_bitmap bitmap;
@@ -111,10 +112,8 @@ client(
         goto out;
     }
 
-    char *res;
-    qvi_hwloc::bitmap_asprintf(bitmap.cdata(), &res);
-    printf("# [%d] cpubind = %s\n", who, res);
-    free(res);
+    res = qvi_hwloc::bitmap_string(bitmap.cdata());
+    printf("# [%d] cpubind = %s\n", who, res.c_str());
 
     if (send_shutdown_msg) {
         rc = client->send_shutdown_message();

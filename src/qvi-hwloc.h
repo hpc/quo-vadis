@@ -196,20 +196,18 @@ public:
         size_t *nbits
     );
     /**
-     * Caller is responsible for freeing returned resources.
+     * Like hwloc_bitmap_asprintf(), but returns a string.
      */
-    static int
-    bitmap_asprintf(
-        hwloc_const_cpuset_t cpuset,
-        char **result
+    static std::string
+    bitmap_string(
+        hwloc_const_cpuset_t cpuset
     );
     /**
-     * Caller is responsible for freeing returned resources.
+     * Like hwloc_bitmap_list_asprintf(), but returns a string.
      */
-    static int
-    bitmap_list_asprintf(
-        hwloc_const_cpuset_t cpuset,
-        char **result
+    static std::string
+    bitmap_list_string(
+        hwloc_const_cpuset_t cpuset
     );
     /**
      *
@@ -338,7 +336,7 @@ public:
     get_device_affinity(
         qv_hw_obj_type_t dev_obj,
         int device_id,
-        hwloc_cpuset_t *cpuset
+        qvi_hwloc_bitmap &cpuset
     );
     /**
      * Returns a reference to vector of supported device types.
@@ -360,12 +358,6 @@ public:
     task_set_cpubind_from_cpuset(
         pid_t task_id,
         hwloc_const_cpuset_t cpuset
-    );
-
-    int
-    task_get_cpubind_as_string(
-        pid_t task_id,
-        char **cpusets
     );
     /** */
     int
@@ -527,12 +519,8 @@ public:
     save(
         Archive &archive
     ) const {
-        char *datas = nullptr;
-        const int rc = qvi_hwloc::bitmap_asprintf(m_data, &datas);
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
         // We are sending the string representation of the cpuset.
-        archive(std::string(datas));
-        free(datas);
+        archive(qvi_hwloc::bitmap_string(m_data));
     }
 
     template<class Archive>
@@ -542,7 +530,9 @@ public:
     ) {
         std::string bitmaps;
         archive(bitmaps);
-        int rc = qvi_hwloc::bitmap_sscanf(m_data, (char *)bitmaps.c_str());
+        const int rc = qvi_hwloc::bitmap_sscanf(
+            m_data, const_cast<char *>(bitmaps.c_str())
+        );
         if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
     }
 };

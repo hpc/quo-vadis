@@ -105,7 +105,7 @@ get_pci_busid(
         pcidev->attr->pcidev.func
     );
     if (qvi_unlikely(np >= PCI_BUS_ID_BUFF_SIZE)) {
-        qvi_abort();
+        throw qvi_runtime_error(QV_ERR_INTERNAL);
     }
     busid = std::string(busid_buffer);
     return pcidev;
@@ -157,14 +157,8 @@ qvi_hwloc::bitmap_debug(
 #if QVI_DEBUG_MODE == 0
     qvi_unused(msg);
 #endif
-    assert(cpuset);
-    char *cpusets = nullptr;
-    int rc = qvi_hwloc::bitmap_asprintf(cpuset, &cpusets);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_abort();
-    }
-    qvi_log_debug("{} CPUSET={}", msg, cpusets);
-    free(cpusets);
+    if (!cpuset) throw qvi_runtime_error(QV_ERR_INTERNAL);
+    qvi_log_debug("{} CPUSET={}", msg, qvi_hwloc::bitmap_string(cpuset));
 }
 
 int
@@ -204,12 +198,15 @@ qvi_hwloc::bitmap_dup(
     hwloc_const_cpuset_t src,
     hwloc_cpuset_t *dest
 ) {
+    int rc = QV_SUCCESS;
     hwloc_cpuset_t idest = nullptr;
-    int rc = qvi_hwloc::bitmap_calloc(&idest);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    do {
+        rc = qvi_hwloc::bitmap_calloc(&idest);
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
 
-    rc = qvi_hwloc::bitmap_copy(src, idest);
-out:
+        rc = qvi_hwloc::bitmap_copy(src, idest);
+    } while (false);
+
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_hwloc::bitmap_delete(&idest);
     }
@@ -231,34 +228,30 @@ qvi_hwloc_bitmap_nbits(
     return QV_SUCCESS;
 }
 
-int
-qvi_hwloc::bitmap_asprintf(
-    hwloc_const_cpuset_t cpuset,
-    char **result
+std::string
+qvi_hwloc::bitmap_string(
+    hwloc_const_cpuset_t cpuset
 ) {
     char *iresult = nullptr;
     (void)hwloc_bitmap_asprintf(&iresult, cpuset);
-    if (qvi_unlikely(!iresult)) {
-        qvi_log_error("hwloc_bitmap_asprintf() failed");
-        return QV_ERR_OOR;
-    }
-    *result = iresult;
-    return QV_SUCCESS;
+    if (qvi_unlikely(!iresult)) throw qvi_runtime_error(QV_ERR_OOR);
+
+    std::string result(iresult);
+    free(iresult);
+    return result;
 }
 
-int
-qvi_hwloc::bitmap_list_asprintf(
-    hwloc_const_cpuset_t cpuset,
-    char **result
+std::string
+qvi_hwloc::bitmap_list_string(
+    hwloc_const_cpuset_t cpuset
 ) {
     char *iresult = nullptr;
     (void)hwloc_bitmap_list_asprintf(&iresult, cpuset);
-    if (qvi_unlikely(!iresult)) {
-        qvi_log_error("hwloc_bitmap_list_asprintf() failed");
-        return QV_ERR_OOR;
-    }
-    *result = iresult;
-    return QV_SUCCESS;
+    if (qvi_unlikely(!iresult)) throw qvi_runtime_error(QV_ERR_OOR);
+
+    std::string result(iresult);
+    free(iresult);
+    return result;
 }
 
 int
@@ -329,51 +322,54 @@ qvi_hwloc::topology_init(
 int
 qvi_hwloc::topology_load(void)
 {
+    int rc = QV_SUCCESS;
     cstr_t ers = nullptr;
-    // Set flags that influence hwloc's behavior.
-    // Include resources that are not allowed (e.g., by cgroups) in the base
-    // topology. We will have functions that provide bitmap access to allowed
-    // and disallowed resources depending on need, but we must load it all.
-    const uint_t flags = HWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED;
-    int rc = hwloc_topology_set_flags(m_topo, flags);
-    if (qvi_unlikely(rc != 0)) {
-        ers = "hwloc_topology_set_flags() failed";
-        rc = QV_ERR_HWLOC;
-        goto out;
-    }
+    do {
+        // Set flags that influence hwloc's behavior. Include resources that are
+        // not allowed (e.g., by cgroups) in the base topology. We will have
+        // functions that provide bitmap access to allowed and disallowed
+        // resources depending on need, but we must load it all.
+        const uint_t flags = HWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED;
+        rc = hwloc_topology_set_flags(m_topo, flags);
+        if (qvi_unlikely(rc != 0)) {
+            ers = "hwloc_topology_set_flags() failed";
+            rc = QV_ERR_HWLOC;
+            break;
+        }
 
-    rc = hwloc_topology_set_all_types_filter(
-        m_topo, HWLOC_TYPE_FILTER_KEEP_IMPORTANT
-    );
-    if (qvi_unlikely(rc != 0)) {
-        ers = "hwloc_topology_set_all_types_filter() failed";
-        rc = QV_ERR_HWLOC;
-        goto out;
-    }
+        rc = hwloc_topology_set_all_types_filter(
+            m_topo, HWLOC_TYPE_FILTER_KEEP_IMPORTANT
+        );
+        if (qvi_unlikely(rc != 0)) {
+            ers = "hwloc_topology_set_all_types_filter() failed";
+            rc = QV_ERR_HWLOC;
+            break;
+        }
 
-    rc = hwloc_topology_set_type_filter(
-        m_topo,
-        HWLOC_OBJ_OS_DEVICE,
-        HWLOC_TYPE_FILTER_KEEP_IMPORTANT
-    );
-    if (qvi_unlikely(rc != 0)) {
-        ers = "hwloc_topology_set_type_filter() failed";
-        rc = QV_ERR_HWLOC;
-        goto out;
-    }
+        rc = hwloc_topology_set_type_filter(
+            m_topo,
+            HWLOC_OBJ_OS_DEVICE,
+            HWLOC_TYPE_FILTER_KEEP_IMPORTANT
+        );
+        if (qvi_unlikely(rc != 0)) {
+            ers = "hwloc_topology_set_type_filter() failed";
+            rc = QV_ERR_HWLOC;
+            break;
+        }
 
-    rc = hwloc_topology_load(m_topo);
-    if (qvi_unlikely(rc != 0)) {
-        ers = "hwloc_topology_load() failed";
-        rc = QV_ERR_HWLOC;
-        goto out;
-    }
+        rc = hwloc_topology_load(m_topo);
+        if (qvi_unlikely(rc != 0)) {
+            ers = "hwloc_topology_load() failed";
+            rc = QV_ERR_HWLOC;
+            break;
+        }
 
-    rc = m_discover_devices();
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        ers = "m_discover_devices() failed";
-    }
-out:
+        rc = m_discover_devices();
+        if (qvi_unlikely(rc != QV_SUCCESS)) {
+            ers = "m_discover_devices() failed";
+        }
+    } while (false);
+
     if (qvi_unlikely(ers)) {
         qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
     }
@@ -415,50 +411,52 @@ qvi_hwloc::topology_export(
 ) {
     int qvrc = QV_SUCCESS, rc = 0, fd = 0;
     cstr_t ers = nullptr;
-
-    int err = 0;
-    const bool usable = qvi_access(base_path, R_OK | W_OK, &err);
-    if (qvi_unlikely(!usable)) {
-        ers = "Cannot export hardware topology to {} ({})";
-        qvi_log_error(ers, base_path, strerror(err));
-        return QV_ERR;
-    }
-
     char *topo_xml = nullptr;
-    int topo_xml_len = 0;
-    rc = hwloc_topology_export_xmlbuffer(
-        m_topo, &topo_xml, &topo_xml_len,
-        0 // We don't need 1.x compatible XML export.
-    );
-    if (qvi_unlikely(rc == -1)) {
-        ers = "hwloc_topology_export_xmlbuffer() failed";
-        qvrc = QV_ERR_HWLOC;
-        goto out;
-    }
 
-    qvrc = topo_fname(base_path, m_topo_file);
-    if (qvi_unlikely(qvrc != QV_SUCCESS)) {
-        ers = "topo_fname() failed";
-        goto out;
-    }
+    do {
+        int err = 0;
+        const bool usable = qvi_access(base_path, R_OK | W_OK, &err);
+        if (qvi_unlikely(!usable)) {
+            ers = "Cannot export hardware topology to {} ({})";
+            qvi_log_error(ers, base_path, strerror(err));
+            return QV_ERR;
+        }
 
-    path = m_topo_file;
+        int topo_xml_len = 0;
+        rc = hwloc_topology_export_xmlbuffer(
+            m_topo, &topo_xml, &topo_xml_len,
+            0 // We don't need 1.x compatible XML export.
+        );
+        if (qvi_unlikely(rc == -1)) {
+            ers = "hwloc_topology_export_xmlbuffer() failed";
+            qvrc = QV_ERR_HWLOC;
+            break;
+        }
 
-    qvrc = s_topo_fopen(m_topo_file.c_str(), &fd);
-    if (qvi_unlikely(qvrc != QV_SUCCESS)) {
-        ers = "topo_fopen() failed";
-        goto out;
-    }
+        qvrc = topo_fname(base_path, m_topo_file);
+        if (qvi_unlikely(qvrc != QV_SUCCESS)) {
+            ers = "topo_fname() failed";
+            break;
+        }
 
-    rc = write(fd, topo_xml, topo_xml_len);
-    if (qvi_unlikely(rc == -1 || rc != topo_xml_len)) {
-        const int err = errno;
-        ers = "write() failed";
-        qvi_log_error("{} {}", ers, strerror(err));
-        qvrc = QV_ERR_FILE_IO;
-        goto out;
-    }
-out:
+        path = m_topo_file;
+
+        qvrc = s_topo_fopen(m_topo_file.c_str(), &fd);
+        if (qvi_unlikely(qvrc != QV_SUCCESS)) {
+            ers = "topo_fopen() failed";
+            break;
+        }
+
+        rc = write(fd, topo_xml, topo_xml_len);
+        if (qvi_unlikely(rc == -1 || rc != topo_xml_len)) {
+            const int err = errno;
+            ers = "write() failed";
+            qvi_log_error("{} {}", ers, strerror(err));
+            qvrc = QV_ERR_FILE_IO;
+            break;
+        }
+    } while (false);
+
     if (qvi_unlikely(ers)) {
         qvi_log_error("{} with rc={} ({})", ers, qvrc, qv_strerr(qvrc));
     }
@@ -519,8 +517,8 @@ qvi_hwloc::obj_get_type(
         case(QV_HW_OBJ_GPU):
             return HWLOC_OBJ_OS_DEVICE;
         default:
-            // This is an internal development error.
-            qvi_abort();
+            // This is likely an internal development error.
+            throw qvi_runtime_error(QV_ERR_INTERNAL);
     }
 }
 
@@ -544,8 +542,8 @@ qvi_hwloc::obj_is_host_resource(
         case(QV_HW_OBJ_LAST):
             return false;
         default:
-            // This is an internal development error.
-            qvi_abort();
+            // This is likely an internal development error.
+            throw qvi_runtime_error(QV_ERR_INTERNAL);
     }
 }
 
@@ -572,24 +570,15 @@ qvi_hwloc::m_get_logical_bind_string(
 
     hwloc_obj_t obj_pu = nullptr;
     qvi_hwloc_bitmap logical_bitmap;
-    for (int idx = 0; idx < num_pus; idx++) {
+    for (int i = 0; i < num_pus; ++i) {
         obj_pu = hwloc_get_next_obj_inside_cpuset_by_type(
             m_topo, bitmap, HWLOC_OBJ_PU, obj_pu
         );
         (void)hwloc_bitmap_set(logical_bitmap.data(), obj_pu->logical_index);
     }
 
-    char *logicals = nullptr;
-    const int rc = qvi_hwloc::bitmap_list_asprintf(
-        logical_bitmap.cdata(), &logicals
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        return rc;
-    }
-
     result.append("L");
-    result.append(logicals);
-    free(logicals);
+    result.append(qvi_hwloc::bitmap_list_string(logical_bitmap.cdata()));
 
     return QV_SUCCESS;
 }
@@ -601,15 +590,8 @@ qvi_hwloc::m_get_physical_bind_string(
 ) {
     result.clear();
 
-    char *physicals = nullptr;
-    const int rc = qvi_hwloc::bitmap_list_asprintf(bitmap, &physicals);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        return rc;
-    }
-
     result.append("P");
-    result.append(physicals);
-    free(physicals);
+    result.append(qvi_hwloc::bitmap_list_string(bitmap));
 
     return QV_SUCCESS;
 }
@@ -918,18 +900,6 @@ qvi_hwloc::task_set_cpubind_from_cpuset(
 }
 
 int
-qvi_hwloc::task_get_cpubind_as_string(
-    pid_t task_id,
-    char **cpusets
-) {
-    qvi_hwloc_bitmap cpuset;
-    int rc = task_get_cpubind(task_id, cpuset);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-
-    return qvi_hwloc::bitmap_asprintf(cpuset.cdata(), cpusets);
-}
-
-int
 qvi_hwloc::m_obj_get_by_type(
     qv_hw_obj_type_t type,
     int type_index,
@@ -1129,10 +1099,9 @@ qvi_hwloc::devices_emit(
             return QV_ERR_NOT_SUPPORTED;
     }
     for (auto &dev : *devlist) {
-        char *cpusets = nullptr;
-        int rc = qvi_hwloc::bitmap_asprintf(dev->affinity.cdata(), &cpusets);
-        if (rc != QV_SUCCESS) return rc;
-
+        const std::string cpusets = qvi_hwloc::bitmap_list_string(
+            dev->affinity.cdata()
+        );
         qvi_log_info("  Device Name: {}", dev->name);
         qvi_log_info("  Device PCI Bus ID: {}", dev->pci_bus_id);
         qvi_log_info("  Device UUID: {}", dev->uuid);
@@ -1140,8 +1109,6 @@ qvi_hwloc::devices_emit(
         qvi_log_info("  Device Vendor ID: {}", dev->vendor_id);
         qvi_log_info("  Device SMI: {}", dev->smi);
         qvi_log_info("  Device Visible Device ID: {}\n", dev->id);
-
-        free(cpusets);
     }
     return QV_SUCCESS;
 }
@@ -1297,36 +1264,24 @@ int
 qvi_hwloc::get_device_affinity(
     qv_hw_obj_type_t dev_obj,
     int device_id,
-    hwloc_cpuset_t *cpuset
+    qvi_hwloc_bitmap &cpuset
 ) {
-    int rc = QV_SUCCESS;
-
     qvi_hwloc_dev_list *devlist = nullptr;
-    hwloc_cpuset_t icpuset = nullptr;
 
     switch(dev_obj) {
         case(QV_HW_OBJ_GPU) :
             devlist = &m_gpus;
             break;
         default:
-            rc = QV_ERR_NOT_SUPPORTED;
-            break;
+            return QV_ERR_NOT_SUPPORTED;
     }
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
     // XXX(skg) This isn't the most efficient way of doing this, but the device
     // lists tend to be small, so just perform a linear search for the given ID.
     for (const auto &dev : *devlist) {
         if (dev->id != device_id) continue;
-        rc = qvi_hwloc::bitmap_dup(dev->affinity.cdata(), &icpuset);
-        if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+        return cpuset.set(dev->affinity.cdata());
     }
-    if (!icpuset) rc = QV_ERR_NOT_FOUND;
-out:
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_hwloc::bitmap_delete(&icpuset);
-    }
-    *cpuset = icpuset;
-    return rc;
+    return QV_ERR_NOT_FOUND;
 }
 
 /*
