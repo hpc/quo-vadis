@@ -42,6 +42,7 @@ public:
     make_intrinsic(
         qvi_group *group,
         qv_scope_intrinsic_t iscope,
+        qv_scope_flags_t flags,
         qv_scope_t **scope
     );
     /**

@@ -1260,6 +1260,29 @@ qvi_hwloc::get_cpuset_for_nobjs(
     return rc;
 }
 
+qvi_hwloc_bitmap
+qvi_hwloc::bitmap_disable_smt(
+    const qvi_hwloc_bitmap &bitmap
+) {
+    qvi_hwloc_bitmap nosmt_bitmap;
+    // How many cores are in the unmodified bitmap?
+    const unsigned ncores = hwloc_get_nbobjs_inside_cpuset_by_type(
+        m_topo, bitmap.cdata(), HWLOC_OBJ_CORE
+    );
+
+    for (unsigned i = 0; i < ncores; ++i) {
+        hwloc_obj_t obj = hwloc_get_obj_inside_cpuset_by_type(
+            m_topo, bitmap.cdata(), HWLOC_OBJ_CORE, i
+        );
+        qvi_hwloc_bitmap core_cpuset(obj->cpuset);
+        hwloc_bitmap_singlify(core_cpuset.data());
+        hwloc_bitmap_or(
+            nosmt_bitmap.data(), nosmt_bitmap.cdata(), core_cpuset.cdata()
+        );
+    }
+    return nosmt_bitmap;
+}
+
 int
 qvi_hwloc::get_device_affinity(
     qv_hw_obj_type_t dev_obj,

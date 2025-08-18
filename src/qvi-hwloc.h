@@ -421,6 +421,13 @@ public:
         uint_t nobjs,
         qvi_hwloc_bitmap &result
     );
+    /**
+     * Takes a bitmap and returns a new one with SMT disabled.
+     */
+    qvi_hwloc_bitmap
+    bitmap_disable_smt(
+        const qvi_hwloc_bitmap &bitmap
+    );
 };
 
 /**

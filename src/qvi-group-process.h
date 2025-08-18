@@ -70,7 +70,8 @@ public:
 
     virtual int
     make_intrinsic(
-        qv_scope_intrinsic_t
+        qv_scope_intrinsic_t,
+        qv_scope_flags_t
     ) {
         // NOTE: the provided scope doesn't affect how
         // we create the process group, so we ignore it.

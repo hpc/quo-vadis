@@ -180,9 +180,9 @@ const int QV_SCOPE_SPLIT_SPREAD = -4;
 typedef enum {
     // TODO(skg) Enumerate all actual values.
     // TODO(skg) Add to Fortran interface.
-    QV_SCOPE_CREATE_HINT_NONE      = 0x00000000,
-    QV_SCOPE_CREATE_HINT_EXCLUSIVE = 0x00000001,
-    QV_SCOPE_CREATE_HINT_CLOSE     = 0x00000002
+    QV_SCOPE_CREATE_HINT_NONE      = 0,
+    QV_SCOPE_CREATE_HINT_EXCLUSIVE = 1<<0,
+    QV_SCOPE_CREATE_HINT_CLOSE     = 1<<1
 } qv_scope_create_hints_t;
 
 /**

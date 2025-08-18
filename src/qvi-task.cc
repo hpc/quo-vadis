@@ -56,10 +56,10 @@ qvi_task::m_connect_to_server(void)
     rc = m_rmi.connect(url, portno);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         const std::string msg =
-            "\n\n#############################################\n"
-            "# A client could not communicate with its server.\n"
+            "\n\n################################################\n"
+            "# A client couldn't communicate with its server.\n"
             "# Ensure quo-vadisd is running and reachable."
-            "\n#############################################\n\n";
+            "\n################################################\n\n";
         qvi_log_error("{}", msg);
     }
     return rc;
