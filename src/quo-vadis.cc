@@ -34,11 +34,10 @@ qv_version(
     return QV_SUCCESS;
 }
 
-// TODO(skg)
 static inline int
 qvi_process_scope_get(
     qv_scope_intrinsic_t iscope,
-    qv_scope_flags_t,
+    qv_scope_flags_t flags,
     qv_scope_t **scope
 ) {
     // Create the base process group.
@@ -48,7 +47,7 @@ qvi_process_scope_get(
         *scope = nullptr;
         return rc;
     }
-    return qv_scope::make_intrinsic(zgroup, iscope, scope);
+    return qv_scope::make_intrinsic(zgroup, iscope, flags, scope);
 }
 
 int

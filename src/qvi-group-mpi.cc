@@ -30,7 +30,8 @@ qvi_group_mpi::qvi_group_mpi(
 
 int
 qvi_group_mpi::make_intrinsic(
-    qv_scope_intrinsic_t scope
+    qv_scope_intrinsic_t scope,
+    qv_scope_flags_t
 ) {
     qvi_group_id_t mpi_group_type;
 

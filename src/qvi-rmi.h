@@ -273,11 +273,15 @@ public:
         pid_t task_id,
         const qvi_hwloc_bitmap &cpuset
     );
-    /** Returns a new hardware pool based on the intrinsic scope specifier. */
+    /**
+     * Returns a new hardware pool based on
+     * the intrinsic scope specifier and flags.
+     */
     int
     get_intrinsic_hwpool(
         const std::vector<pid_t> &who,
         qv_scope_intrinsic_t iscope,
+        qv_scope_flags_t flags,
         qvi_hwpool &hwpool
     );
     /** Returns the depth of the provided object type. */

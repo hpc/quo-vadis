@@ -53,7 +53,8 @@ struct qvi_group : qvi_refc {
     /** Makes the calling instance an intrinsic group. */
     virtual int
     make_intrinsic(
-        qv_scope_intrinsic_t intrinsic
+        qv_scope_intrinsic_t intrinsic,
+        qv_scope_flags_t flags
     ) = 0;
     /**
      * Creates a new self group with a single member: the caller.

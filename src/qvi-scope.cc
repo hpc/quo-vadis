@@ -50,16 +50,17 @@ int
 qv_scope::make_intrinsic(
     qvi_group *group,
     qv_scope_intrinsic_t iscope,
+    qv_scope_flags_t flags,
     qv_scope_t **scope
 ) {
     *scope = nullptr;
     // Get the requested intrinsic group.
-    int rc = group->make_intrinsic(iscope);
+    int rc = group->make_intrinsic(iscope, flags);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Get the requested intrinsic hardware pool.
     qvi_hwpool hwpool;
     rc = group->task().rmi().get_intrinsic_hwpool(
-        group->pids(), iscope, hwpool
+        group->pids(), iscope, flags, hwpool
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Create and initialize the scope.

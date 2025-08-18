@@ -460,9 +460,10 @@ int
 qvi_rmi_client::get_intrinsic_hwpool(
     const std::vector<pid_t> &who,
     qv_scope_intrinsic_t iscope,
+    qv_scope_flags_t flags,
     qvi_hwpool &hwpool
 ) {
-    int qvrc = rpc_req(QVI_RMI_FID_GET_INTRINSIC_HWPOOL, who, iscope);
+    int qvrc = rpc_req(QVI_RMI_FID_GET_INTRINSIC_HWPOOL, who, iscope, flags);
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
@@ -640,7 +641,8 @@ qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
     do {
         std::vector<pid_t> who;
         qv_scope_intrinsic_t iscope = {};
-        rpcrc = qvi_bbuff::unpack(input, who, iscope);
+        qv_scope_flags_t flags;
+        rpcrc = qvi_bbuff::unpack(input, who, iscope, flags);
         // Drop the message. Send an empty hardware pool with the error code.
         if (qvi_unlikely(rpcrc != QV_SUCCESS)) break;
 
@@ -662,6 +664,10 @@ qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
                 break;
         }
         if (qvi_unlikely(rpcrc != QV_SUCCESS)) break;
+        // Disable SMT?
+        if (flags & QV_SCOPE_FLAG_NO_SMT) {
+            sbitmap = server->m_hwloc.bitmap_disable_smt(sbitmap);
+        }
         rpcrc = hwpool.initialize(server->m_hwloc, sbitmap);
     } while (false);
 

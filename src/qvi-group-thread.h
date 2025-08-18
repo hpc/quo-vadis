@@ -111,7 +111,8 @@ public:
 
     virtual int
     make_intrinsic(
-        qv_scope_intrinsic_t
+        qv_scope_intrinsic_t,
+        qv_scope_flags_t
     ) {
         // Not supported because a thread group cannot be created outside of
         // another group. For example, a thread_split can be called from a

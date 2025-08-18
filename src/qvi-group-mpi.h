@@ -72,7 +72,8 @@ public:
 
     virtual int
     make_intrinsic(
-        qv_scope_intrinsic_t intrinsic
+        qv_scope_intrinsic_t intrinsic,
+        qv_scope_flags_t flags
     );
 
     virtual int

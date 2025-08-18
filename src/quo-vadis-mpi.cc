@@ -53,12 +53,11 @@ qvi_mpi_scope_comm_dup_f2c(
 }
 #endif
 
-// TODO(skg)
 static inline int
 qvi_mpi_scope_get(
     MPI_Comm comm,
     qv_scope_intrinsic_t iscope,
-    qv_scope_flags_t,
+    qv_scope_flags_t flags,
     qv_scope_t **scope
 ) {
     *scope = nullptr;
@@ -67,7 +66,7 @@ qvi_mpi_scope_get(
     const int rc = qvi_new(&izgroup, comm);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    return qv_scope::make_intrinsic(izgroup, iscope, scope);
+    return qv_scope::make_intrinsic(izgroup, iscope, flags, scope);
 }
 
 int
