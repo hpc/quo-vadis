@@ -82,13 +82,13 @@ main(
     }
 
     int ncores;
-    rc = qv_scope_nobjs(
+    rc = qv_scope_hw_obj_count(
         base_scope,
         QV_HW_OBJ_CORE,
         &ncores
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -123,13 +123,13 @@ main(
     }
 
     /* What resources did I get? */
-    rc = qv_scope_nobjs(
+    rc = qv_scope_hw_obj_count(
         sub_scope,
         QV_HW_OBJ_CORE,
         &ncores
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -159,13 +159,13 @@ main(
 
     /* Launch one kernel per GPU */
     int ngpus;
-    rc = qv_scope_nobjs(
+    rc = qv_scope_hw_obj_count(
         sub_scope,
         QV_HW_OBJ_GPU,
         &ngpus
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Launching %d GPU kernels\n", wrank, ngpus);
@@ -222,13 +222,13 @@ main(
 
     /* Get the number of NUMA domains so that we can
        specify the color/groupid of split_at */
-    rc = qv_scope_nobjs(
+    rc = qv_scope_hw_obj_count(
         base_scope,
         QV_HW_OBJ_NUMANODE,
         &nnumas
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -268,12 +268,12 @@ main(
     }
 
     int my_nnumas;
-    rc = qv_scope_nobjs(
+    rc = qv_scope_hw_obj_count(
             numa_scope,
             QV_HW_OBJ_NUMANODE,
             &my_nnumas);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -291,13 +291,13 @@ main(
     int npus;
     if (my_numa_rank == 0) {
         /* I am the process lead */
-        rc = qv_scope_nobjs(
+        rc = qv_scope_hw_obj_count(
             numa_scope,
             QV_HW_OBJ_PU,
             &npus
         );
         if (rc != QV_SUCCESS) {
-            ers = "qv_scope_nobjs() failed";
+            ers = "qv_scope_hw_obj_count() failed";
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
         printf("=> [%d] NUMA leader: Launching OMP region\n", wrank);
@@ -345,10 +345,10 @@ main(
 
     /* Get the number of GPUs so that we can
        specify the color/groupid of split_at */
-    rc = qv_scope_nobjs(base_scope,
+    rc = qv_scope_hw_obj_count(base_scope,
             QV_HW_OBJ_GPU, &ngpus);
     if (rc != QV_SUCCESS) {
-      ers = "qv_scope_nobjs() failed";
+      ers = "qv_scope_hw_obj_count() failed";
       ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -390,12 +390,12 @@ main(
     }
 
     int my_ngpus;
-    rc = qv_scope_nobjs(
+    rc = qv_scope_hw_obj_count(
             gpu_scope,
             QV_HW_OBJ_GPU,
             &my_ngpus);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 

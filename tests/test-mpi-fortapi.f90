@@ -82,7 +82,7 @@ program mpi_fortapi
     end if
     print *, 'sgrank', sgrank
 
-    call qv_scope_nobjs(scope_user, QV_HW_OBJ_CORE, n_cores, info)
+    call qv_scope_hw_obj_count(scope_user, QV_HW_OBJ_CORE, n_cores, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if
@@ -107,7 +107,7 @@ program mpi_fortapi
         error stop
     end if
 
-    call qv_scope_nobjs(scope_user, QV_HW_OBJ_GPU, n_gpu, info)
+    call qv_scope_hw_obj_count(scope_user, QV_HW_OBJ_GPU, n_gpu, info)
     if (info .ne. QV_SUCCESS) then
         error stop
     end if

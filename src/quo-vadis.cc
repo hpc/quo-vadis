@@ -121,7 +121,7 @@ qv_scope_free(
 }
 
 int
-qv_scope_nobjs(
+qv_scope_hw_obj_count(
     qv_scope_t *scope,
     qv_hw_obj_type_t obj,
     int *nobjs

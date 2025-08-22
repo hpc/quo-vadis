@@ -59,9 +59,9 @@ main(
     }
 
     int nnumas;
-    rc = qv_scope_nobjs(base_scope, QV_HW_OBJ_NUMANODE, &nnumas);
+    rc = qv_scope_hw_obj_count(base_scope, QV_HW_OBJ_NUMANODE, &nnumas);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     // Split at NUMA domains.
@@ -101,16 +101,16 @@ main(
     }
     // Get the number of cores and pus per NUMA part.
     int ncores;
-    rc = qv_scope_nobjs(subnuma, QV_HW_OBJ_CORE, &ncores);
+    rc = qv_scope_hw_obj_count(subnuma, QV_HW_OBJ_CORE, &ncores);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int npus;
-    rc = qv_scope_nobjs(subnuma, QV_HW_OBJ_PU, &npus);
+    rc = qv_scope_hw_obj_count(subnuma, QV_HW_OBJ_PU, &npus);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     ////////////////////////////////////////////////////////////////////////////

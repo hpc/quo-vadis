@@ -103,13 +103,13 @@ main(
     }
 
     int n_pu;
-    rc = qv_scope_nobjs(
+    rc = qv_scope_hw_obj_count(
         base_scope,
         QV_HW_OBJ_PU,
         &n_pu
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Number of PUs in base_scope is %d\n", wrank, n_pu);
@@ -134,13 +134,13 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_nobjs(
+    rc = qv_scope_hw_obj_count(
         sub_scope,
         QV_HW_OBJ_PU,
         &n_pu
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Number of PUs in sub_scope is %d\n", wrank, n_pu);
@@ -160,13 +160,13 @@ main(
         }
 
         int n_core;
-        rc = qv_scope_nobjs(
+        rc = qv_scope_hw_obj_count(
             create_scope,
             QV_HW_OBJ_PU,
             &n_core
         );
         if (rc != QV_SUCCESS) {
-            ers = "qv_scope_nobjs() failed";
+            ers = "qv_scope_hw_obj_count() failed";
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
         printf("[%d] Number of PUs in create_scope is %d\n", wrank, n_core);
@@ -194,13 +194,13 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_nobjs(
+    rc = qv_scope_hw_obj_count(
         sub_sub_scope,
         QV_HW_OBJ_PU,
         &n_pu
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Number of PUs in sub_sub_scope is %d\n", wrank, n_pu);

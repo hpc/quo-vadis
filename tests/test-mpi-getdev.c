@@ -21,9 +21,9 @@ emit_gpu_info(
 ) {
     /* Get number of GPUs */
     int ngpus;
-    int rc = qv_scope_nobjs(scope, QV_HW_OBJ_GPU, &ngpus);
+    int rc = qv_scope_hw_obj_count(scope, QV_HW_OBJ_GPU, &ngpus);
     if (rc != QV_SUCCESS) {
-        const char *ers = "qv_scope_nobjs() failed";
+        const char *ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -99,9 +99,9 @@ main(
 
     /* Get number of GPUs */
     int ngpus;
-    rc = qv_scope_nobjs(base_scope, QV_HW_OBJ_GPU, &ngpus);
+    rc = qv_scope_hw_obj_count(base_scope, QV_HW_OBJ_GPU, &ngpus);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     if (wrank == 0) {
@@ -131,9 +131,9 @@ main(
 
     /* Get num GPUs */
     int rank_ngpus;
-    rc = qv_scope_nobjs(rank_scope, QV_HW_OBJ_GPU, &rank_ngpus);
+    rc = qv_scope_hw_obj_count(rank_scope, QV_HW_OBJ_GPU, &rank_ngpus);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d]: Local scope has %d GPUs\n", wrank, rank_ngpus);

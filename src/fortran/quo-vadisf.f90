@@ -151,14 +151,14 @@ interface
     end function qv_scope_split_at_c
 
     integer(c_int) &
-    function qv_scope_nobjs_c(scope, obj, n) &
-        bind(c, name='qv_scope_nobjs')
+    function qv_scope_hw_obj_count_c(scope, obj, n) &
+        bind(c, name='qv_scope_hw_obj_count')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), value :: obj
         integer(c_int), intent(out) :: n
-    end function qv_scope_nobjs_c
+    end function qv_scope_hw_obj_count_c
 
     integer(c_int) &
     function qv_scope_group_rank_c(scope, taskid) &
@@ -314,15 +314,15 @@ contains
         )
     end subroutine qv_scope_split_at
 
-    subroutine qv_scope_nobjs(scope, obj, n, info)
+    subroutine qv_scope_hw_obj_count(scope, obj, n, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), value :: obj
         integer(c_int), intent(out) :: n
         integer(c_int), intent(out) :: info
-        info = qv_scope_nobjs_c(scope, obj, n)
-    end subroutine qv_scope_nobjs
+        info = qv_scope_hw_obj_count_c(scope, obj, n)
+    end subroutine qv_scope_hw_obj_count
 
     subroutine qv_scope_group_rank(scope, taskid, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
