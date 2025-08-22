@@ -32,9 +32,9 @@ test_create_scope(
   }
 
   int res_ncores;
-  rc = qv_scope_nobjs(core_scope, QV_HW_OBJ_CORE, &res_ncores);
+  rc = qv_scope_hw_obj_count(core_scope, QV_HW_OBJ_CORE, &res_ncores);
   if (rc != QV_SUCCESS) {
-    ers = "qv_scope_nobjs() failed";
+    ers = "qv_scope_hw_obj_count() failed";
     ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
   }
 
@@ -133,13 +133,13 @@ main(
     }
 
     int ncores;
-    rc = qv_scope_nobjs(
+    rc = qv_scope_hw_obj_count(
         base_scope,
         QV_HW_OBJ_CORE,
         &ncores
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -181,13 +181,13 @@ main(
     }
 
     /* What resources did I get? */
-    rc = qv_scope_nobjs(
+    rc = qv_scope_hw_obj_count(
         sub_scope,
         QV_HW_OBJ_CORE,
         &ncores
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 

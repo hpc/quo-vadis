@@ -133,9 +133,9 @@ int main(int argc, char *argv[])
      */
 
     int ncores;
-    rc = qv_scope_nobjs(task_scope, QV_HW_OBJ_CORE, &ncores);
+    rc = qv_scope_hw_obj_count(task_scope, QV_HW_OBJ_CORE, &ncores);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -238,9 +238,9 @@ int main(int argc, char *argv[])
 
     /* Test we have PUs to use in the base scope */
     int npus;
-    rc = qv_scope_nobjs(ctx2, base_scope, QV_HW_OBJ_PU, &npus);
+    rc = qv_scope_hw_obj_count(ctx2, base_scope, QV_HW_OBJ_PU, &npus);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Base scope: npus=%d\n", wrank, npus);

@@ -76,11 +76,11 @@ main(void)
     }
 
     int n_cores;
-    rc = qv_scope_nobjs(
+    rc = qv_scope_hw_obj_count(
         base_scope, QV_HW_OBJ_CORE, &n_cores
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Number of cores in base_scope is %d\n", pid, n_cores);
@@ -95,11 +95,11 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_nobjs(
+    rc = qv_scope_hw_obj_count(
         sub_scope, QV_HW_OBJ_CORE, &n_cores
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Number of cores in sub_scope is %d\n", pid, n_cores);

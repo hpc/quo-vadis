@@ -96,7 +96,7 @@ typedef enum {
 } qv_scope_intrinsic_t;
 
 /**
- * Intrinsic scope flags that invluence *_scope_get() behavior.
+ * Intrinsic scope flags that influence *_scope_get() behavior.
  *
  * Note to developers: long long is guaranteed to be at least 64 bits,
  * which should be plenty for our needs.
@@ -177,6 +177,7 @@ const int QV_SCOPE_SPLIT_SPREAD = -4;
 /**
  *
  */
+// TODO(skg) Merge with qv_scope_flags_t?
 typedef enum {
     // TODO(skg) Enumerate all actual values.
     // TODO(skg) Add to Fortran interface.
@@ -265,7 +266,7 @@ qv_scope_group_size(
  *
  */
 int
-qv_scope_nobjs(
+qv_scope_hw_obj_count(
     qv_scope_t *scope,
     qv_hw_obj_type_t obj,
     int *nobjs

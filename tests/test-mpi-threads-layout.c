@@ -80,14 +80,14 @@ main(void)
     }
     ctu_scope_report(mpi_ctx, mpi_scope, "mpi_process_scope");
 
-    rc = qv_scope_nobjs(
+    rc = qv_scope_hw_obj_count(
             mpi_ctx,
             mpi_scope,
             QV_HW_OBJ_NUMANODE,
             &n_numa
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Number of NUMA in mpi_process_scope is %d\n", wrank, n_numa);
@@ -120,14 +120,14 @@ main(void)
 
     if (my_numa_id == 0)
     {
-        rc = qv_scope_nobjs(
+        rc = qv_scope_hw_obj_count(
                 mpi_ctx,
                 mpi_numa_scope,
                 QV_HW_OBJ_PU,
                 &n_pu
         );
         if (rc != QV_SUCCESS) {
-            ers = "qv_scope_nobjs() failed";
+            ers = "qv_scope_hw_obj_count() failed";
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
 

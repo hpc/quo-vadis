@@ -42,9 +42,9 @@ main(void)
     }
 
     int ncores = 0;
-    rc = qv_scope_nobjs(base_scope, QV_HW_OBJ_CORE, &ncores);
+    rc = qv_scope_hw_obj_count(base_scope, QV_HW_OBJ_CORE, &ncores);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 

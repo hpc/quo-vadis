@@ -43,9 +43,9 @@ scopei_ep(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     // Use the number of cores to determine how many thread scopes to create.
-    rc = qv_scope_nobjs(base_scope, QV_HW_OBJ_CORE, &sinfo->nthreads);
+    rc = qv_scope_hw_obj_count(base_scope, QV_HW_OBJ_CORE, &sinfo->nthreads);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_nobjs() failed";
+        ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
