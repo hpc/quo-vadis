@@ -245,7 +245,7 @@ qv_scope_create(
 );
 
 /**
- *
+ * Returns the caller's group rank in the provided scope.
  */
 int
 qv_scope_group_rank(
@@ -254,7 +254,7 @@ qv_scope_group_rank(
 );
 
 /**
- *
+ * Returns the scope's underlying group's size.
  */
 int
 qv_scope_group_size(
@@ -263,7 +263,7 @@ qv_scope_group_size(
 );
 
 /**
- *
+ * Returns the number of hardware objects contained within the provided scope.
  */
 int
 qv_scope_hw_obj_count(

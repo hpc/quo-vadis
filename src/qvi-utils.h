@@ -276,6 +276,15 @@ qvi_start_qvd(
     int portno
 );
 
+/**
+ *
+ */
+int
+qvi_running(
+    const std::string &name,
+    std::vector<pid_t> &pids
+);
+
 #endif
 
 /*

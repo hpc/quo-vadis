@@ -318,6 +318,50 @@ qvi_start_qvd(
     return QV_SUCCESS;
 }
 
+static inline bool
+is_numeric(
+    const std::string &str
+) {
+    return !str.empty() && std::all_of(str.begin(), str.end(), ::isdigit);
+}
+
+static inline bool
+is_pid_directory(
+    const std::filesystem::path &p
+) {
+    return is_numeric(p.filename().string());
+}
+
+int
+qvi_running(
+    const std::string &name,
+    std::vector<pid_t> &pids
+) {
+    namespace fs = std::filesystem;
+
+    for (const auto &entry : fs::directory_iterator("/proc")) {
+        if (!entry.is_directory()) continue;
+        if (!is_pid_directory(entry.path())) continue;
+        fs::path comm_path = entry.path() / "comm";
+        if (!fs::exists(comm_path)) continue;
+        std::ifstream comm_file(comm_path);
+        std::string process_name;
+        if (std::getline(comm_file, process_name)) {
+            // Remove potential newline character.
+            if (!process_name.empty() &&
+                process_name.back() == '\n') {
+                process_name.pop_back();
+            }
+            if (process_name != name) continue;
+            pid_t pid;
+            const int rc = qvi_stoi(entry.path().filename().string(), pid);
+            if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+            pids.push_back(pid);
+        }
+    }
+    return QV_SUCCESS;
+}
+
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
  */
