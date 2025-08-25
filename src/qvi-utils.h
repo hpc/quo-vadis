@@ -277,12 +277,28 @@ qvi_start_qvd(
 );
 
 /**
- *
+ * Returns a vector of PIDs that match the provided process name.
  */
 int
 qvi_running(
     const std::string &name,
     std::vector<pid_t> &pids
+);
+
+/**
+ * Returns a vector containing the command line arguments
+ * passed to the process identified by the provided PID.
+ */
+int
+qvi_pid_cmdline(
+    pid_t pid,
+    std::vector<std::string> &argv
+);
+
+int
+qvi_pid_envvars(
+    pid_t pid,
+    std::vector<std::string> &envs
 );
 
 #endif

@@ -333,7 +333,7 @@ qvi_mpi::m_start_daemons(void)
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
         // Try to use the requested port.
         if (portno != QVI_PORT_UNSET) {
-            // If there is a session directory using the given port, use it.
+            // If there is an active session using the given port, use it.
             if (qvi_session_exists(portno)) break;
             // Else start up the daemon using the requested port.
             rc = qvi_start_qvd(portno);

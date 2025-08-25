@@ -338,28 +338,114 @@ qvi_running(
     std::vector<pid_t> &pids
 ) {
     namespace fs = std::filesystem;
+    int rc = QV_SUCCESS;
 
-    for (const auto &entry : fs::directory_iterator("/proc")) {
-        if (!entry.is_directory()) continue;
-        if (!is_pid_directory(entry.path())) continue;
-        fs::path comm_path = entry.path() / "comm";
-        if (!fs::exists(comm_path)) continue;
-        std::ifstream comm_file(comm_path);
-        std::string process_name;
-        if (std::getline(comm_file, process_name)) {
-            // Remove potential newline character.
-            if (!process_name.empty() &&
-                process_name.back() == '\n') {
-                process_name.pop_back();
+    try {
+        for (const auto &entry : fs::directory_iterator("/proc")) {
+            if (!entry.is_directory()) continue;
+            if (!is_pid_directory(entry.path())) continue;
+            fs::path comm_path = entry.path() / "comm";
+            if (!fs::exists(comm_path)) continue;
+            std::ifstream comm_file(comm_path);
+            std::string process_name;
+            if (std::getline(comm_file, process_name)) {
+                // Remove potential newline character.
+                if (!process_name.empty() &&
+                    process_name.back() == '\n') {
+                    process_name.pop_back();
+                }
+                if (process_name != name) continue;
+                pid_t pid;
+                rc = qvi_stoi(entry.path().filename().string(), pid);
+                if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+                pids.push_back(pid);
             }
-            if (process_name != name) continue;
-            pid_t pid;
-            const int rc = qvi_stoi(entry.path().filename().string(), pid);
-            if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-            pids.push_back(pid);
         }
     }
-    return QV_SUCCESS;
+    catch (const fs::filesystem_error &e) {
+        qvi_log_error(e.what());
+        rc = QV_ERR_FILE_IO;
+    }
+    return rc;
+}
+
+int
+qvi_pid_cmdline(
+    pid_t pid,
+    std::vector<std::string> &argv
+) {
+    namespace fs = std::filesystem;
+    int rc = QV_SUCCESS;
+
+    try {
+        fs::path cmdline("/proc/" + std::to_string(pid) + "/cmdline");
+        if (!fs::exists(cmdline)) return QV_ERR_NOT_FOUND;
+        // Open as binary to ensure every byte is read exactly as it is.
+        std::ifstream file(cmdline.string(), std::ios::binary);
+        // Read the entire content of the file into a string
+        std::string content(
+            (std::istreambuf_iterator<char>(file)),
+            std::istreambuf_iterator<char>()
+        );
+        // Tokenize the string by null bytes.
+        std::string current_arg;
+        for (char c : content) {
+            if (c == '\0') {
+                // Avoid adding empty strings if multiple nulls occur.
+                if (!current_arg.empty()) {
+                    argv.push_back(current_arg);
+                    current_arg.clear();
+                }
+            }
+            else {
+                current_arg += c;
+            }
+        }
+    }
+    catch (const fs::filesystem_error &e) {
+        qvi_log_error(e.what());
+        rc = QV_ERR_FILE_IO;
+    }
+    return rc;
+}
+
+int
+qvi_pid_envvars(
+    pid_t pid,
+    std::vector<std::string> &envs
+) {
+    namespace fs = std::filesystem;
+    int rc = QV_SUCCESS;
+
+    try {
+        fs::path environ("/proc/" + std::to_string(pid) + "/environ");
+        if (!fs::exists(environ)) return QV_ERR_NOT_FOUND;
+        // Open as binary to ensure every byte is read exactly as it is.
+        std::ifstream file(environ.string(), std::ios::binary);
+        // Read the entire content of the file into a string
+        std::string content(
+            (std::istreambuf_iterator<char>(file)),
+            std::istreambuf_iterator<char>()
+        );
+        // Split the content by the null byte character.
+        std::size_t start = 0;
+        std::size_t end = content.find('\0');
+
+        while (end != std::string::npos) {
+            envs.push_back(content.substr(start, end - start));
+            start = end + 1;
+            end = content.find('\0', start);
+        }
+        // Handle the final entry if there is no trailing null byte.
+        if (start < content.length()) {
+            envs.push_back(content.substr(start));
+        }
+    }
+    catch (const fs::filesystem_error &e) {
+        qvi_log_error(e.what());
+        rc = QV_ERR_FILE_IO;
+    }
+    return rc;
 }
 
 /*
