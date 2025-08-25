@@ -89,9 +89,14 @@ struct qvi_task;
 const int QVI_PORT_UNSET = -1;
 /** Port environment variable string. */
 static const std::string QVI_ENV_PORT = "QV_PORT";
+/** Temporary directory environment variable string. */
 static const std::string QVI_ENV_TMPDIR = "QV_TMPDIR";
+/** Verbose exceptions environment variable string. */
 static const std::string QVI_ENV_VEXCEPT = "QV_VEXCEPT";
 
+/**
+ * Quo Vadis runtime error.
+ */
 struct qvi_rterror : public std::runtime_error {
 private:
     int m_rc = QV_ERR;
