@@ -87,11 +87,13 @@ struct qvi_task;
 // Constants
 /** Unset port number constant. */
 const int QVI_PORT_UNSET = -1;
-/** Port environment variable string. */
+/** Name of the Quo Vadis daemon. */
+static const std::string QVI_DAEMON_NAME = "quo-vadisd";
+/** Port environment variable name. */
 static const std::string QVI_ENV_PORT = "QV_PORT";
-/** Temporary directory environment variable string. */
+/** Temporary directory environment variable name. */
 static const std::string QVI_ENV_TMPDIR = "QV_TMPDIR";
-/** Verbose exceptions environment variable string. */
+/** Verbose exceptions environment variable name. */
 static const std::string QVI_ENV_VEXCEPT = "QV_VEXCEPT";
 
 /**

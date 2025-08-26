@@ -216,7 +216,6 @@ qvi_access(
 int
 qvi_stoi(
     const std::string &str,
-    int &maybe_result,
     int base = 10
 );
 
@@ -244,9 +243,7 @@ qvi_file_size(
 );
 
 int
-qvi_port_from_env(
-    int &portno
-);
+qvi_port_from_env(void);
 
 /**
  * Cantor pairing function.
@@ -255,11 +252,6 @@ int64_t
 qvi_cantor_pairing(
     int a,
     int b
-);
-
-bool
-qvi_session_exists(
-    int portno
 );
 
 int
@@ -272,7 +264,7 @@ qvi_session_discover(
  *
  */
 int
-qvi_start_qvd(
+qvi_start_quo_vadisd(
     int portno
 );
 
@@ -295,6 +287,10 @@ qvi_pid_cmdline(
     std::vector<std::string> &argv
 );
 
+/**
+ * Returns a vector of environment variable pairs
+ * used when the provided PID was started.
+ */
 int
 qvi_pid_envvars(
     pid_t pid,

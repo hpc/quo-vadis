@@ -28,6 +28,8 @@ struct qvid {
     qvi_rmi_server rmi;
     /** Base session directory. */
     std::string session_dir;
+    /** Flag indicating whether we created the session directory. */
+    bool created_session_dir = false;
     /** Run as a daemon flag. */
     bool daemonized = true;
     /** Constructor. */
@@ -129,7 +131,7 @@ struct qvid {
         const std::string tmpdir = qvi_tmpdir();
         // Make sure that the provided temp dir is usable.
         int eno = 0;
-        bool usable = qvi_access(tmpdir, R_OK | W_OK, &eno);
+        const bool usable = qvi_access(tmpdir, R_OK | W_OK, &eno);
         if (qvi_unlikely(!usable)) {
             qvi_panic_log_error(
                 "{} is not usable as a tmp dir (rc={}, {})",
@@ -141,29 +143,17 @@ struct qvid {
         const std::string portnos = std::to_string(rmic.portno);
         const std::string session_dirname = app_name + "." + portnos;
         const std::string full_session_dir = tmpdir + "/" + session_dirname;
-        usable = qvi_access(full_session_dir, R_OK, &eno);
-        if (qvi_unlikely(usable)) {
-            const std::string errs =
-                "A {} session directory was detected at {}. "
-                "This is typically caused by the following situations: "
-                "1. {} is already running using port {}. "
-                "Clients may use this existing connection. "
-                "If a new connection is desired, choose a different port "
-                "and try again. 2. A daemon was forcibly killed and did "
-                "not cleanup completely. In this case, remove {} "
-                "and try again.";
-            qvi_panic_log_error(
-                errs, app_name, full_session_dir, app_name,
-                rmic.portno, full_session_dir
-            );
-        }
-        const int rc = mkdir(full_session_dir.c_str(), 0755);
-        if (qvi_unlikely(rc != 0)) {
-            eno = errno;
-            qvi_panic_log_error(
-                "Failed to create session dir {} (rc={}, {})",
-                full_session_dir , eno, strerror(eno)
-            );
+        const bool sdir_exists = qvi_access(full_session_dir, R_OK | W_OK, &eno);
+        if (!sdir_exists) {
+            const int rc = mkdir(full_session_dir.c_str(), 0755);
+            if (qvi_unlikely(rc != 0)) {
+                eno = errno;
+                qvi_panic_log_error(
+                    "Failed to create session dir {} (rc={}, {})",
+                    full_session_dir , eno, strerror(eno)
+                );
+            }
+            created_session_dir = true;
         }
         session_dir = full_session_dir;
     }
@@ -185,9 +175,11 @@ struct qvid {
     {
         qvi_log_info("Cleaning up");
 
-        const int rc = qvi_rmall(session_dir);
-        if (qvi_unlikely(rc != QV_SUCCESS)) {
-            qvi_log_warn("Removal of {} failed.", session_dir);
+        if (created_session_dir) {
+            const int rc = qvi_rmall(session_dir);
+            if (qvi_unlikely(rc != QV_SUCCESS)) {
+                qvi_log_warn("Removal of {} failed.", session_dir);
+            }
         }
     }
 };
@@ -244,8 +236,7 @@ parse_args(
                 qvd.daemonized = false;
                 break;
             case PORT: {
-                const int rc = qvi_stoi(std::string(optarg), qvd.rmic.portno);
-                if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+                qvd.rmic.portno = qvi_stoi(std::string(optarg));
                 break;
             }
             default:
