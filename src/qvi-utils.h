@@ -292,7 +292,7 @@ qvi_pid_cmdline(
  * used when the provided PID was started.
  */
 int
-qvi_pid_envvars(
+qvi_pid_environ(
     pid_t pid,
     std::vector<std::string> &envs
 );

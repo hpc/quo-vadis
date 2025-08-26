@@ -221,6 +221,26 @@ get_portno_from_pid_cmdline(
 }
 
 static int
+get_portno_from_pid_environ(
+    pid_t pid
+) {
+    const std::string delim = "=";
+    std::vector<std::string> envs;
+    int rc = qvi_pid_environ(pid, envs);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return QVI_PORT_UNSET;
+
+    const size_t len = envs.size();
+    for (size_t i = 0; i < len; ++i) {
+        if (envs[i].rfind(QVI_ENV_PORT + delim, 0) == 0) {
+            const std::string kval = envs[i];
+            const size_t pos = kval.find(delim);
+            return qvi_stoi(kval.substr(pos + delim.length()));
+        }
+    }
+    return QVI_PORT_UNSET;
+}
+
+static int
 discover_impl(
     int &target_port
 ) {
@@ -230,7 +250,10 @@ discover_impl(
 
     for (const auto &pid : pids) {
         int port = get_portno_from_pid_cmdline(pid);
-        if (port == QVI_PORT_UNSET) continue;
+        if (port == QVI_PORT_UNSET) {
+            port = get_portno_from_pid_environ(pid);
+            if (port == QVI_PORT_UNSET) continue;
+        }
         // The caller doesn't care which port to use.
         if (target_port == QVI_PORT_UNSET) {
             target_port = port;
@@ -389,7 +412,7 @@ qvi_pid_cmdline(
 }
 
 int
-qvi_pid_envvars(
+qvi_pid_environ(
     pid_t pid,
     std::vector<std::string> &envs
 ) {
