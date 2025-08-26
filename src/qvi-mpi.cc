@@ -268,7 +268,6 @@ qvi_mpi::m_create_admin_comms(void)
     return QV_SUCCESS;
 }
 
-
 int
 qvi_mpi::get_portno_from_env(
     const qvi_mpi_comm &comm,
@@ -292,9 +291,8 @@ qvi_mpi::get_portno_from_env(
             break;
         }
         if (anyset) {
-            int envport = QVI_PORT_UNSET;
             // If this fails, envport is set to QVI_COMM_PORT_UNSET.
-            (void)qvi_port_from_env(envport);
+            int envport = qvi_port_from_env();
 
             std::vector<int> portnos(comm.m_size);
             mpirc = MPI_Allgather(
@@ -334,18 +332,19 @@ qvi_mpi::m_start_daemons(void)
         // Try to use the requested port.
         if (portno != QVI_PORT_UNSET) {
             // If there is an active session using the given port, use it.
-            if (qvi_session_exists(portno)) break;
+            rc = qvi_session_discover(16, portno);
+            if (rc == QV_SUCCESS) break;
             // Else start up the daemon using the requested port.
-            rc = qvi_start_qvd(portno);
+            rc = qvi_start_quo_vadisd(portno);
             // Done!
             break;
         }
         // No port requested, so try to discover one.
-        rc = qvi_session_discover(10, portno);
+        rc = qvi_session_discover(16, portno);
         // Found one, so use it.
         if (rc == QV_SUCCESS) break;
         // Else, start up the daemon using our default port number.
-        rc = qvi_start_qvd(57550);
+        rc = qvi_start_quo_vadisd(57550);
     } while (false);
     // See if any errors happened above, but all barrier to avoid hangs.
     if (qvi_unlikely(rc != QV_SUCCESS)) ret = rc;

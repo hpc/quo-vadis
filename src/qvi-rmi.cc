@@ -302,7 +302,20 @@ int
 qvi_rmi_client::discover(
     int &portno
 ) {
-    return qvi_session_discover(5000, portno);
+    int rc = QV_SUCCESS;
+    // If this fails, envport is set to QVI_COMM_PORT_UNSET.
+    int envport = qvi_port_from_env();
+    // A connection port is requested via environment variable.
+    if (envport != QVI_PORT_UNSET) {
+        rc = qvi_session_discover(1024, envport);
+        // Found it!
+        if (rc == QV_SUCCESS) {
+            portno = envport;
+            return rc;
+        }
+    }
+    // Try to discover an arbitrary, active session.
+    return qvi_session_discover(1024, portno);
 }
 
 int
@@ -969,8 +982,8 @@ qvi_rmi_get_url(
     static const std::string base = "tcp://127.0.0.1";
 
     if (portno == QVI_PORT_UNSET) {
-        const int rc = qvi_port_from_env(portno);
-        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+        portno = qvi_port_from_env();
+        if (portno == QVI_PORT_UNSET) return QV_ERR_ENV;
     }
 
     url = base + ":" + std::to_string(portno);

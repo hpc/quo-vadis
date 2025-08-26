@@ -140,13 +140,11 @@ set_visdev_id(
     return QV_SUCCESS;
 }
 
-static int
+static std::string
 topo_fname(
-    const std::string &base,
-    std::string &name
+    const std::string &base
 ) {
-    name = base + "/hwtopo.xml";
-    return QV_SUCCESS;
+    return base + "/hwtopo." + std::to_string(getpid()) + ".xml";
 }
 
 void
@@ -158,7 +156,7 @@ qvi_hwloc::bitmap_debug(
     qvi_unused(msg);
 #endif
     if (!cpuset) throw qvi_runtime_error(QV_ERR_INTERNAL);
-    qvi_log_debug("{} CPUSET={}", msg, qvi_hwloc::bitmap_string(cpuset));
+    qvi_log_debug("{} BITMAP={}", msg, qvi_hwloc::bitmap_string(cpuset));
 }
 
 int
@@ -433,13 +431,7 @@ qvi_hwloc::topology_export(
             break;
         }
 
-        qvrc = topo_fname(base_path, m_topo_file);
-        if (qvi_unlikely(qvrc != QV_SUCCESS)) {
-            ers = "topo_fname() failed";
-            break;
-        }
-
-        path = m_topo_file;
+        path = m_topo_file = topo_fname(base_path);
 
         qvrc = s_topo_fopen(m_topo_file.c_str(), &fd);
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {

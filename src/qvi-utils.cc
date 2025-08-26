@@ -84,17 +84,14 @@ qvi_access(
 int
 qvi_stoi(
     const std::string &str,
-    int &maybe_result,
     int base
 ) {
     try {
-        maybe_result = std::stoi(str, nullptr, base);
-        return QV_SUCCESS;
+        return std::stoi(str, nullptr, base);
     }
     catch (const std::invalid_argument &e) { }
     catch (const std::out_of_range &e) { }
-    maybe_result = 0;
-    return QV_ERR_INVLD_ARG;
+    throw qvi_runtime_error(QV_ERR_INVLD_ARG);
 }
 
 static int
@@ -150,26 +147,13 @@ qvi_file_size(
 }
 
 int
-qvi_port_from_env(
-    int &portno
-) {
-    int rc = QV_SUCCESS;
-    do {
-        const cstr_t ports = getenv(QVI_ENV_PORT.c_str());
-        if (!ports) {
-            rc = QV_ERR_ENV;
-            break;
-        }
-        rc = qvi_stoi(std::string(ports), portno);
-        if (qvi_unlikely(rc != QV_SUCCESS)) {
-            rc = QV_ERR_ENV;
-            break;
-        }
-    } while (false);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        portno = QVI_PORT_UNSET;
+qvi_port_from_env(void)
+{
+    const cstr_t ports = getenv(QVI_ENV_PORT.c_str());
+    if (!ports) {
+        return QVI_PORT_UNSET;
     }
-    return rc;
+    return qvi_stoi(std::string(ports));
 }
 
 int64_t
@@ -178,13 +162,6 @@ qvi_cantor_pairing(
     int b
 ) {
     return (a + b) * ((a + b + 1) / 2) + b;
-}
-
-static const std::regex &
-get_session_regex(void)
-{
-    static const std::regex session_re("quo-vadisd\\.([0-9]+)");
-    return session_re;
 }
 
 /**
@@ -198,6 +175,8 @@ discover_with_backoff(
 ) {
     namespace sc = std::chrono;
 
+    int rc = QV_SUCCESS;
+
     const uint_t start_delay = 1;
     if (max_delay_in_ms < start_delay) {
         max_delay_in_ms = start_delay;
@@ -209,7 +188,7 @@ discover_with_backoff(
     std::mt19937 jitter_rng(std::random_device{}());
 
     do {
-        const int rc = discover_fn(portno);
+        rc = discover_fn(portno);
         if (rc == QV_SUCCESS) return rc;
         else {
             // Calculate jitter: e.g., 0% to 50% of current_delay.
@@ -220,48 +199,47 @@ discover_with_backoff(
             cur_delay = std::min(cur_delay * 2, max_delay);
         }
     } while (cur_delay != max_delay);
-    // No port found, so unset it.
-    portno = QVI_PORT_UNSET;
-    return QV_ERR;
+    return rc;
+}
+
+static int
+get_portno_from_pid_cmdline(
+    pid_t pid
+) {
+    std::vector<std::string> argv;
+    int rc = qvi_pid_cmdline(pid, argv);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return QVI_PORT_UNSET;
+
+    const size_t len = argv.size();
+    for (size_t i = 0; i < len; ++i) {
+        // This must match the command line
+        // argument structure set by quo-vadisd.
+        if (argv[i] != "--port") continue;
+        return qvi_stoi(argv.at(i + 1));
+    }
+    return QVI_PORT_UNSET;
 }
 
 static int
 discover_impl(
-    int &portno
+    int &target_port
 ) {
-    namespace fs = std::filesystem;
+    std::vector<pid_t> pids;
+    int rc = qvi_running(QVI_DAEMON_NAME, pids);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    const std::string tmpdir = qvi_tmpdir();
-    const std::regex &session_regex = get_session_regex();
-
-    try {
-        std::smatch match;
-        for (const auto &entry : fs::directory_iterator(tmpdir)) {
-            if (fs::is_directory(entry.path())) {
-                const std::string dirname = entry.path().filename().string();
-                // Found the session directory.
-                if (std::regex_search(dirname, match, session_regex)) {
-                    return qvi_stoi(match[1].str(), portno);
-                }
-            }
+    for (const auto &pid : pids) {
+        int port = get_portno_from_pid_cmdline(pid);
+        if (port == QVI_PORT_UNSET) continue;
+        // The caller doesn't care which port to use.
+        if (target_port == QVI_PORT_UNSET) {
+            target_port = port;
+            return QV_SUCCESS;
         }
-    }
-    catch (const fs::filesystem_error &e) {
-        qvi_log_error(e.what());
-        return QV_ERR_FILE_IO;
+        // Found a daemon that is using the requested port.
+        else if (target_port == port) return QV_SUCCESS;
     }
     return QV_ERR_NOT_FOUND;
-}
-
-bool
-qvi_session_exists(
-    int portno
-) {
-    const std::string tmpdir = qvi_tmpdir();
-    int e;
-    return qvi_access(
-        qvi_tmpdir() + "/quo-vadisd." + std::to_string(portno), R_OK | W_OK, &e
-    );
 }
 
 int
@@ -275,7 +253,7 @@ qvi_session_discover(
 }
 
 int
-qvi_start_qvd(
+qvi_start_quo_vadisd(
     int portno
 ) {
     const pid_t pid = fork();
@@ -283,15 +261,16 @@ qvi_start_qvd(
     if (qvi_unlikely(pid == -1)) {
         qvi_log_error(
             "\n\n#############################################\n"
-            "# fork() failed while starting quo-vadisd"
-            "\n#############################################\n\n"
+            "# fork() failed while starting {}"
+            "\n#############################################\n\n",
+            QVI_DAEMON_NAME
         );
         return QV_ERR_SYS;
     }
     // Child
     else if (pid == 0) {
         std::vector<std::string> argss = {
-            "quo-vadisd",
+            QVI_DAEMON_NAME,
             "--port",
             std::to_string(portno)
         };
@@ -306,12 +285,13 @@ qvi_start_qvd(
         // If we get here, then the command failed.
         qvi_log_error(
             "\n\n#############################################\n"
-            "# Could not start quo-vadisd.\n#\n"
+            "# Could not start {}.\n#\n"
             "# For automatic startup, ensure the path to\n"
-            "# quo-vadisd is in your PATH and try again.\n"
-            "# For manual startup, ensure quo-vadisd is\n"
+            "# {} is in your PATH and try again.\n"
+            "# For manual startup, ensure {} is\n"
             "# running across all the servers in your job."
-            "\n#############################################\n\n"
+            "\n#############################################\n\n",
+            QVI_DAEMON_NAME, QVI_DAEMON_NAME, QVI_DAEMON_NAME
         );
         _exit(EXIT_FAILURE);
     }
@@ -355,8 +335,7 @@ qvi_running(
                     process_name.pop_back();
                 }
                 if (process_name != name) continue;
-                pid_t pid;
-                rc = qvi_stoi(entry.path().filename().string(), pid);
+                const pid_t pid = qvi_stoi(entry.path().filename().string());
                 if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
                 pids.push_back(pid);
             }
