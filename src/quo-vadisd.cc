@@ -138,8 +138,7 @@ struct qvid {
                 tmpdir, eno, strerror(eno)
             );
         }
-        // Make sure that this session directory does not already exist. If it
-        // does, then we can't continue because another daemon is using it.
+        // Determine if we have to create a session directory.
         const std::string portnos = std::to_string(rmic.portno);
         const std::string session_dirname = app_name + "." + portnos;
         const std::string full_session_dir = tmpdir + "/" + session_dirname;
