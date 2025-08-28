@@ -537,16 +537,21 @@ qvi_rmi_client::get_device_in_cpuset(
 
 int
 qvi_rmi_client::get_cpuset_for_nobjs(
-    hwloc_const_cpuset_t cpuset,
+    const qvi_hwloc_bitmap &cpuset,
     qv_hw_obj_type_t obj_type,
     int nobjs,
     qvi_hwloc_bitmap &result
 ) {
-    // TODO(skg) At some point we will acquire the resources
-    // for improved splitting and resource distribution.
-    return m_hwloc.get_cpuset_for_nobjs(
-        cpuset, obj_type, nobjs, result
+    int qvrc = rpc_req(
+        QVI_RMI_FID_GET_CPUSET_FOR_NOBJS,
+        cpuset, obj_type, nobjs
     );
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
+    // Should be set by rpc_rep, so assume an error.
+    int rpcrc = QV_ERR_RPC;
+    qvrc = rpc_rep(rpcrc, result);
+    if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
+    return rpcrc;
 }
 
 int
@@ -573,6 +578,7 @@ qvi_rmi_server::qvi_rmi_server(void)
         {QVI_RMI_FID_SET_CPUBIND, s_rpc_set_cpubind},
         {QVI_RMI_FID_OBJ_TYPE_DEPTH, s_rpc_obj_type_depth},
         {QVI_RMI_FID_GET_NOBJS_IN_CPUSET, s_rpc_get_nobjs_in_cpuset},
+        {QVI_RMI_FID_GET_CPUSET_FOR_NOBJS, s_rpc_get_cpuset_for_nobjs},
         {QVI_RMI_FID_GET_DEVICE_IN_CPUSET, s_rpc_get_device_in_cpuset},
         {QVI_RMI_FID_GET_INTRINSIC_HWPOOL, s_rpc_get_intrinsic_hwpool}
     };
@@ -828,6 +834,35 @@ qvi_rmi_server::s_rpc_get_nobjs_in_cpuset(
     } while (false);
 
     return rpc_pack(output, hdr->fid, rpcrc, nobjs);
+}
+
+int
+qvi_rmi_server::s_rpc_get_cpuset_for_nobjs(
+    qvi_rmi_server *server,
+    qvi_rmi_msg_header *hdr,
+    void *input,
+    qvi_bbuff **output
+) {
+    int rpcrc = QV_SUCCESS;
+    qvi_hwloc_bitmap result;
+
+    do {
+        qvi_hwloc_bitmap cpuset;
+        qv_hw_obj_type_t obj_type;
+        int nobjs;
+        const int qvrc = qvi_bbuff::unpack(
+            input, cpuset, obj_type, nobjs
+        );
+        if (qvi_unlikely(qvrc != QV_SUCCESS)) {
+            rpcrc = qvrc;
+            break;
+        }
+        rpcrc = server->m_hwloc.get_cpuset_for_nobjs(
+            cpuset.cdata(), obj_type, nobjs, result
+        );
+    } while (false);
+
+    return rpc_pack(output, hdr->fid, rpcrc, result);
 }
 
 int

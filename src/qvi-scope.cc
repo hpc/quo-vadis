@@ -89,7 +89,7 @@ qv_scope::create(
     // Get the appropriate cpuset based on the caller's request.
     qvi_hwloc_bitmap cpuset;
     rc = m_group->task().rmi().get_cpuset_for_nobjs(
-        m_hwpool.cpuset().cdata(), type, nobjs, cpuset
+        m_hwpool.cpuset(), type, nobjs, cpuset
     );
     if (rc != QV_SUCCESS) {
         qvi_delete(&group);
