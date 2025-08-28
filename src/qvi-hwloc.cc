@@ -544,8 +544,9 @@ qvi_hwloc::obj_type_depth(
     qv_hw_obj_type_t type,
     int *depth
 ) {
-    const hwloc_obj_type_t obj_type = qvi_hwloc::obj_get_type(type);
-    *depth = hwloc_get_type_depth(m_topo, obj_type);
+    *depth = hwloc_get_type_depth(
+        m_topo, qvi_hwloc::obj_get_type(type)
+    );
     return QV_SUCCESS;
 }
 
@@ -898,21 +899,10 @@ qvi_hwloc::m_obj_get_by_type(
     hwloc_obj_t *obj
 ) {
     const hwloc_obj_type_t obj_type = qvi_hwloc::obj_get_type(type);
-    hwloc_obj_t iobj = hwloc_get_obj_by_type(
+    *obj = hwloc_get_obj_by_type(
         m_topo, obj_type, (uint_t)type_index
     );
-    if (qvi_unlikely(!iobj)) {
-        // There are a couple of reasons why target_obj may be NULL. If this
-        // ever happens and the specified type and obj index are valid, then
-        // improve this code.
-        qvi_log_error(
-            "m_obj_get_by_type() failed. Please submit a bug report."
-        );
-        *obj = nullptr;
-        return QV_ERR_INTERNAL;
-    }
-    *obj = iobj;
-    return QV_SUCCESS;
+    return (*obj != nullptr ? QV_SUCCESS : QV_ERR_HWLOC);
 }
 
 /**
@@ -1051,23 +1041,11 @@ qvi_hwloc::get_obj_in_cpuset_by_depth(
     int index,
     hwloc_obj_t *result_obj
 ) {
-    const hwloc_topology_t topo = m_topo;
+    *result_obj = hwloc_get_obj_inside_cpuset_by_depth(
+        m_topo, cpuset, depth, index
+    );
 
-    bool found = false;
-    int i = 0;
-    hwloc_obj_t obj = nullptr;
-    while ((obj = hwloc_get_next_obj_by_depth(topo, depth, obj))) {
-        if (!hwloc_bitmap_isincluded(obj->cpuset, cpuset)) continue;
-        // Ignore objects with empty sets (can happen when outside of cgroup).
-        if (hwloc_bitmap_iszero(obj->cpuset)) continue;
-        if (i == index) {
-            *result_obj = obj;
-            found = true;
-            break;
-        }
-        i++;
-    }
-    return (found ? QV_SUCCESS : QV_ERR_HWLOC);
+    return (*result_obj != nullptr ? QV_SUCCESS : QV_ERR_HWLOC);
 }
 
 const std::vector<qv_hw_obj_type_t> &
