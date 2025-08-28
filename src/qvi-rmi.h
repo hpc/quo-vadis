@@ -34,6 +34,7 @@ enum qvi_rmi_rpc_fid_t {
     QVI_RMI_FID_SET_CPUBIND,
     QVI_RMI_FID_OBJ_TYPE_DEPTH,
     QVI_RMI_FID_GET_NOBJS_IN_CPUSET,
+    QVI_RMI_FID_GET_CPUSET_FOR_NOBJS,
     QVI_RMI_FID_GET_DEVICE_IN_CPUSET,
     QVI_RMI_FID_GET_INTRINSIC_HWPOOL
 };
@@ -162,6 +163,13 @@ private:
     /** */
     static int
     s_rpc_get_nobjs_in_cpuset(
+        qvi_rmi_server *server,
+        qvi_rmi_msg_header *hdr,
+        void *input,
+        qvi_bbuff **output
+    );
+    static int
+    s_rpc_get_cpuset_for_nobjs(
         qvi_rmi_server *server,
         qvi_rmi_msg_header *hdr,
         void *input,
@@ -309,7 +317,7 @@ public:
     /** Returns a cpuset representing n objects of the requested type. */
     int
     get_cpuset_for_nobjs(
-        hwloc_const_cpuset_t cpuset,
+        const qvi_hwloc_bitmap &cpuset,
         qv_hw_obj_type_t obj_type,
         int nobjs,
         qvi_hwloc_bitmap &result
