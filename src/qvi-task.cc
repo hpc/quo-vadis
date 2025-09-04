@@ -58,9 +58,9 @@ qvi_task::m_connect_to_server(void)
         const std::string msg =
             "\n\n################################################\n"
             "# A client couldn't communicate with its server.\n"
-            "# Ensure quo-vadisd is running and reachable."
+            "# Ensure {} is running and reachable."
             "\n################################################\n\n";
-        qvi_log_error("{}", msg);
+        qvi_log_error(msg, QVI_DAEMON_NAME);
     }
     return rc;
 }
