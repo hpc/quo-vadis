@@ -1028,32 +1028,23 @@ qvi_rmi_get_url(
 std::string
 qvi_rmi_conn_env_ers(void)
 {
-    static const std::string msg =
-        "\n\n#############################################\n"
-        "# Cannot determine connection information.\n"
-        "# Make sure that the following environment\n"
-        "# environment variable is set to an unused\n"
-        "# port number: " + QVI_ENV_PORT + ""
-        "\n#############################################\n\n";
-    return msg;
+    return "\n\n#############################################\n"
+           "# Cannot determine connection information.\n"
+           "# Try setting the following environment\n"
+           "# variable to an unused port number: "
+           + QVI_ENV_PORT + ""
+           "\n#############################################\n\n";
 }
 
 std::string
 qvi_rmi_discovery_ers(void)
 {
-    static const std::string msg =
-        "\n\n#############################################\n"
-        "# Cannot determine connection information.\n"
-        "# Please ensure quo-vadisd is running.\n"
-        "#\n"
-        "# If quo-vadisd is running, then ensure\n"
-        "# both server and clients are using the\n"
-        "# same tmp directory.\n"
-        "#\n"
-        "# For example, ensure TMPDIR or QV_TMPDIR\n"
-        "# are the same for both client and server."
-        "\n#############################################\n\n";
-    return msg;
+    const std::string tids = std::to_string(qvi_gettid());
+
+    return "\n\n#############################################\n"
+           "# A client could not determine its connection\n"
+           "# information. PID: " + tids + ""
+           "\n#############################################\n\n";
 }
 
 /*
