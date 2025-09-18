@@ -219,6 +219,12 @@ qvi_stoi(
     int base = 10
 );
 
+std::vector<std::string>
+qvi_split_string(
+    const std::string &str,
+    const std::string &delimiter
+);
+
 /**
  * Removes the provided path, including all its contents.
  */
