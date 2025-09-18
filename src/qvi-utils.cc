@@ -94,6 +94,26 @@ qvi_stoi(
     throw qvi_runtime_error(QV_ERR_INVLD_ARG);
 }
 
+std::vector<std::string>
+qvi_split_string(
+    const std::string &str,
+    const std::string &delimiter
+) {
+    std::vector<std::string> tokens;
+    size_t start = 0;
+    size_t end = str.find(delimiter);
+
+    while (end != std::string::npos) {
+        tokens.push_back(str.substr(start, end - start));
+        start = end + delimiter.length();
+        end = str.find(delimiter, start);
+    }
+    // Add the last token.
+    tokens.push_back(str.substr(start));
+
+    return tokens;
+}
+
 static int
 rmall_cb(
     const char *path,
@@ -214,8 +234,16 @@ get_portno_from_pid_cmdline(
     for (size_t i = 0; i < len; ++i) {
         // This must match the command line
         // argument structure set by quo-vadisd.
-        if (argv[i] != "--port") continue;
-        return qvi_stoi(argv.at(i + 1));
+        if (argv[i].find("--port=") == 0) {
+            const auto kv = qvi_split_string(argv[i], "=");
+            if (qvi_unlikely(kv.size() != 2)) {
+                throw qvi_runtime_error(QV_ERR_INTERNAL);
+            }
+            return qvi_stoi(kv.at(1));
+        }
+        if (argv[i] == "--port") {
+            return qvi_stoi(argv.at(i + 1));
+        }
     }
     return QVI_PORT_UNSET;
 }
@@ -231,10 +259,12 @@ get_portno_from_pid_environ(
 
     const size_t len = envs.size();
     for (size_t i = 0; i < len; ++i) {
-        if (envs[i].rfind(QVI_ENV_PORT + delim, 0) == 0) {
-            const std::string kval = envs[i];
-            const size_t pos = kval.find(delim);
-            return qvi_stoi(kval.substr(pos + delim.length()));
+        if (envs[i].find(QVI_ENV_PORT + delim) == 0) {
+            const auto kv = qvi_split_string(envs[i], delim);
+            if (qvi_unlikely(kv.size() != 2)) {
+                throw qvi_runtime_error(QV_ERR_INTERNAL);
+            }
+            return qvi_stoi(kv.at(1));
         }
     }
     return QVI_PORT_UNSET;
