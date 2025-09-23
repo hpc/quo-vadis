@@ -184,7 +184,7 @@ endif()
 
 # CPack
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
-# Name the output source packages as quo-vadis-version.*
+# Name the output source packages as quo-vadis-version[-RELID].*
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}")
 set(CPACK_SOURCE_GENERATOR "TBZ2;TGZ;ZIP")
 set(

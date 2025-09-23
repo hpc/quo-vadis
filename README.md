@@ -99,7 +99,13 @@ mpiexec -n 2 build/tests/test-mpi-scopes
 ## Packaging for Developers
 ```shell
 # To generate source distributions, run the following:
-cd build
+git branch -m roll-release
+# Modify CMakeLists.txt to change release version.
+git commit -a -m "Roll a release"
+git clone $PWD release
+mkdir release/build
+cd release/build
+cmake ..
 make package_source
 ```
 
