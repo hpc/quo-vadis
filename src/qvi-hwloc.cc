@@ -379,10 +379,10 @@ qvi_hwloc::topology_load(void)
  */
 int
 qvi_hwloc::s_topo_fopen(
-    const char *path,
+    const std::string &path,
     int *fd
 ) {
-    const int ifd = open(path, O_CREAT | O_RDWR, 0644);
+    const int ifd = open(path.c_str(), O_CREAT | O_RDWR, 0644);
     if (qvi_unlikely(ifd == -1)) {
         const int err = errno;
         cstr_t ers = "open() failed";
@@ -433,7 +433,7 @@ qvi_hwloc::topology_export(
 
         path = m_topo_file = topo_fname(base_path);
 
-        qvrc = s_topo_fopen(m_topo_file.c_str(), &fd);
+        qvrc = s_topo_fopen(m_topo_file, &fd);
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {
             ers = "topo_fopen() failed";
             break;
