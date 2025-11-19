@@ -58,7 +58,7 @@ private:
     /** */
     static int
     s_topo_fopen(
-        const char *path,
+        const std::string &path,
         int *fd
     );
     /**
