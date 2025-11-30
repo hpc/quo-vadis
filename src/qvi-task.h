@@ -31,7 +31,9 @@ private:
     qvi_task_bind_stack m_stack;
     /** Implements the RMI server connection. */
     int
-    m_connect_to_server(void);
+    m_connect_to_server(
+        qv_scope_flags_t flags
+    );
     /** Initializes the bind stack. */
     int
     m_init_bind_stack(void);
@@ -50,7 +52,9 @@ public:
     ~qvi_task(void) = default;
     /** Connects to the server. */
     int
-    connect_to_server(void);
+    connect_to_server(
+        qv_scope_flags_t flags
+    );
     /** Returns a reference to the task's RMI. */
     qvi_rmi_client &
     rmi(void);

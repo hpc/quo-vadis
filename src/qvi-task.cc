@@ -36,8 +36,9 @@ qvi_task::hwloc(void)
 }
 
 int
-qvi_task::m_connect_to_server(void)
-{
+qvi_task::m_connect_to_server(
+    qv_scope_flags_t flags
+) {
     // Discover the server's port number.
     int portno = QVI_PORT_UNSET;
     int rc = qvi_rmi_client::discover(portno);
@@ -53,7 +54,7 @@ qvi_task::m_connect_to_server(void)
         return QV_RES_UNAVAILABLE;
     }
 
-    rc = m_rmi.connect(url, portno);
+    rc = m_rmi.connect(flags, url, portno);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         const std::string msg =
             "\n\n################################################\n"
@@ -78,10 +79,11 @@ qvi_task::m_init_bind_stack(void)
 }
 
 int
-qvi_task::connect_to_server(void)
-{
+qvi_task::connect_to_server(
+    qv_scope_flags_t flags
+) {
     // Connect to our server.
-    int rc = m_connect_to_server();
+    int rc = m_connect_to_server(flags);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Initialize our bind stack.
     return m_init_bind_stack();

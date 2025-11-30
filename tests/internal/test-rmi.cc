@@ -21,7 +21,7 @@ server(
     qvi_rmi_config config;
     qvi_rmi_server server;
 
-    int rc = hwloc.topology_init();
+    int rc = hwloc.topology_init(QVI_HWLOC_FLAG_TOPO_FULL);
     if (rc != QV_SUCCESS) {
         ers = "hwloc.topology_init() failed";
         goto out;
@@ -35,7 +35,7 @@ server(
 
     config.url = std::string(url);
 
-    rc = hwloc.topology_export(qvi_tmpdir(), config.hwtopo_path);
+    rc = hwloc.topology_export(qvi_tmpdir());
     if (rc != QV_SUCCESS) {
         ers = "hwloc.topology_export() failed";
         goto out;
@@ -100,7 +100,7 @@ client(
         goto out;
     }
 
-    rc = client->connect(url, portno);
+    rc = client->connect(QV_SCOPE_FLAG_NONE, url, portno);
     if (rc != QV_SUCCESS) {
         ers = "client->connect() failed";
         goto out;

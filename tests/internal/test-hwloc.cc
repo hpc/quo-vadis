@@ -159,7 +159,7 @@ main(void)
     qvi_hwloc_bitmap bitmap;
     pid_t who = qvi_gettid();
 
-    int rc = hwl.topology_init();
+    int rc = hwl.topology_init(QVI_HWLOC_FLAG_TOPO_FULL);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_topology_init() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));

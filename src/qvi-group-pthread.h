@@ -26,9 +26,10 @@ struct qvi_group_pthread : public qvi_group_thread {
      * base infrastructure required during a thread_split().
      */
     qvi_group_pthread(
+        qv_scope_flags_t flags,
         int group_size,
         const std::vector<int> &colors
-    ) : qvi_group_thread(group_size, colors) { }
+    ) : qvi_group_thread(flags, group_size, colors) { }
     /** Destructor. */
     virtual ~qvi_group_pthread(void) = default;
     /** */

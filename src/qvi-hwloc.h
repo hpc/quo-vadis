@@ -32,12 +32,27 @@ using qvi_hwloc_dev_list = std::vector<
     std::shared_ptr<qvi_hwloc_device>
 >;
 
+/** Flags that influence how the hwloc instance behaves. */
+typedef long long qvi_hwloc_flags_t;
+/** Empty hwloc flags. */
+const qvi_hwloc_flags_t QVI_HWLOC_FLAG_EMPTY = (0LL);
+/** Provides a full system topology. */
+const qvi_hwloc_flags_t QVI_HWLOC_FLAG_TOPO_FULL = (1LL<<0);
+/** Disables use of SMT from the full system topology. */
+const qvi_hwloc_flags_t QVI_HWLOC_FLAG_TOPO_NO_SMT = (1LL<<1);
+/** Indicates that the topology was loaded from exported XML file. */
+const qvi_hwloc_flags_t QVI_HWLOC_FLAG_TOPO_XML = (1LL<<2);
+
+const qvi_hwloc_flags_t QVI_HWLOC_TOPO_MASK = 0x0000000000000003LL;
+
 struct qvi_hwloc {
 private:
     enum task_xop_obj_id {
         TASK_INTERSECTS_OBJ = 0,
         TASK_INCLUDEDIN_OBJ
     };
+    /** My flags. */
+    qvi_hwloc_flags_t m_flags = QVI_HWLOC_FLAG_EMPTY;
     /** The cached node topology. */
     hwloc_topology_t m_topo = nullptr;
     /** Path to exported hardware topology. */
@@ -97,12 +112,6 @@ private:
     );
     /** */
     int
-    m_get_proc_cpubind(
-        pid_t who,
-        qvi_hwloc_bitmap &result
-    );
-    /** */
-    int
     m_task_obj_xop_by_type_id(
         qv_hw_obj_type_t type,
         pid_t task_id,
@@ -158,7 +167,22 @@ private:
         uint_t extent,
         hwloc_bitmap_t result
     );
+    /**
+     * Restricts the hardware topology such that SMT is disabled.
+     */
+    int
+    m_disable_smt(void);
+
 public:
+    static
+    std::vector<qvi_hwloc_flags_t>
+    topo_types(void) {
+        static const std::vector<qvi_hwloc_flags_t> topo_type_flags = {
+            QVI_HWLOC_FLAG_TOPO_FULL,
+            QVI_HWLOC_FLAG_TOPO_NO_SMT
+        };
+        return topo_type_flags;
+    }
     /** */
     static void
     bitmap_debug(
@@ -236,12 +260,19 @@ public:
     operator=(const qvi_hwloc &) = delete;
     /** Delete copy constructor. */
     qvi_hwloc(const qvi_hwloc &) = delete;
+    /** Returns our flags. */
+    qvi_hwloc_flags_t
+    flags(void)
+    const {
+        return m_flags;
+    }
     /**
      * Initialize hardware topology. If an XML path is provided, set
      * the hardware topology based on the contents of the XML file.
      */
     int
     topology_init(
+        qvi_hwloc_flags_t flags,
         const std::string &xml_path = ""
     );
     /**
@@ -254,14 +285,18 @@ public:
      */
     int
     topology_export(
-        const std::string &base_path,
-        std::string &path
+        const std::string &base_path
     );
     /**
      *
      */
     hwloc_topology_t
     topology_get(void);
+    /**
+     * Returns the path to the exported topology XML file.
+     */
+    std::string
+    topology_file(void);
     /**
      *
      */
@@ -421,13 +456,51 @@ public:
         uint_t nobjs,
         qvi_hwloc_bitmap &result
     );
-    /**
-     * Takes a bitmap and returns a new one with SMT disabled.
-     */
-    qvi_hwloc_bitmap
-    bitmap_disable_smt(
-        const qvi_hwloc_bitmap &bitmap
-    );
+};
+
+/**
+ * Maintains multiple hwloc instances that are required to support provided
+ * functionality. In general, we want to maintain a small number here to keep
+ * our memory requirements as low as possible.
+ */
+struct qvi_hwlocs {
+private:
+    /** Maps hardware topology type IDs to the appropriate hwloc instance. */
+    using qvi_hwloc_type_map = std::map<qvi_hwloc_flags_t, qvi_hwloc *>;
+    /** Maps a topology type to an hwloc instance. */
+    qvi_hwloc_type_map m_type2hwloc;
+public:
+    /** Constructor. */
+    qvi_hwlocs(void) {
+        // Initialize the table of hardware topologies we support.
+        for (const auto topo_type : qvi_hwloc::topo_types()) {
+            m_type2hwloc.emplace(topo_type, new qvi_hwloc());
+        }
+    }
+    /** Destructor. */
+    ~qvi_hwlocs(void)
+    {
+        for (auto i : m_type2hwloc) {
+            delete i.second;
+        }
+    }
+    /** Delete assignment operator. */
+    void
+    operator=(const qvi_hwlocs &) = delete;
+    /** Delete copy constructor. */
+    qvi_hwlocs(const qvi_hwlocs &) = delete;
+    /** Returns the appropriate instance given the provided flags. */
+    qvi_hwloc &
+    get(
+        qvi_hwloc_flags_t flags
+    ) {
+        auto got = m_type2hwloc.find(flags & QVI_HWLOC_TOPO_MASK);
+        if (qvi_unlikely(got == m_type2hwloc.end())) {
+            // If this happens, this is a bug.
+            qvi_abort();
+        }
+        return *got->second;
+    }
 };
 
 /**

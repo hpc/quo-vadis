@@ -97,7 +97,6 @@ struct qvid {
 
         qvi_log_info("--URL: {}", rmic.url);
         qvi_log_info("--Port Number: {}", rmic.portno);
-        qvi_log_info("--hwloc XML: {}", rmic.hwtopo_path);
     }
 
     void
@@ -162,7 +161,7 @@ struct qvid {
     {
         qvi_log_info("Publishing hardware information");
 
-        const int rc = rmi.topology_export(session_dir, rmic.hwtopo_path);
+        const int rc = rmi.topology_export(session_dir);
         if (qvi_unlikely(rc != QV_SUCCESS)) {
             const cstr_t ers = "rmi.topology_export() failed";
             qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));

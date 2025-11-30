@@ -56,8 +56,6 @@ struct qvi_rmi_config {
     std::string url;
     /** Connection port number. */
     int portno = QVI_PORT_UNSET;
-    /** Path to hardware topology file. */
-    std::string hwtopo_path;
 };
 
 /**
@@ -69,18 +67,13 @@ private:
     std::map<qvi_rmi_rpc_fid_t, qvi_rmi_rpc_fun_ptr_t> m_rpc_dispatch_table;
     /** Server configuration. */
     qvi_rmi_config m_config;
-    /** Maintains hardware locality information. */
-    qvi_hwloc m_hwloc;
-    /** The base resource pool maintained by the server. */
-    qvi_hwpool m_hwpool;
+    /** Maintains information for multiple hardware localities. */
+    qvi_hwlocs m_hwlocs;
     /** ZMQ context. */
     void *m_zctx = nullptr;
     /** Communication socket. */
     void *m_zsock = nullptr;
-    /** Populates base hardware pool. */
-    int
-    m_populate_base_hwpool(void);
-    /** Reveives messages. */
+    /** Receives messages. */
     int
     m_recv_msg(
         zmq_msg_t *mrx
@@ -95,17 +88,20 @@ private:
     /** */
     int
     m_get_iscope_bitmap_user(
+        qvi_hwloc_flags_t flags,
         qvi_hwloc_bitmap &bitmap
     );
     /** */
     int
     m_get_iscope_bitmap_job(
+        qvi_hwloc_flags_t flags,
         const std::vector<pid_t> &who,
         qvi_hwloc_bitmap &bitmap
     );
     /** */
     int
     m_get_iscope_bitmap_proc(
+        qvi_hwloc_flags_t flags,
         const std::vector<pid_t> &who,
         qvi_hwloc_bitmap &bitmap
     );
@@ -201,11 +197,10 @@ public:
     configure(
         const qvi_rmi_config &config
     );
-    /** Exports hardware topology. */
+    /** Exports the hardware topologies. */
     int
     topology_export(
-        const std::string &base_path,
-        std::string &path
+        const std::string &base_path
     );
     /** Starts the server. */
     int
@@ -227,7 +222,7 @@ private:
     void *m_zsock = nullptr;
     /** Flag indicating whether client is connected to server. */
     bool m_connected = false;
-    /** Reveives messages. */
+    /** Receives messages. */
     int
     m_recv_msg(
         zmq_msg_t *mrx
@@ -248,6 +243,7 @@ private:
     /** Performs connection handshake. */
     int
     m_hello(
+        qvi_hwloc_flags_t flags,
         std::string &hwtopo_path
     );
 public:
@@ -255,7 +251,7 @@ public:
     qvi_rmi_client(void) = default;
     /** Destructor. */
     ~qvi_rmi_client(void);
-    /** Returns a pointer to the client's hwloc instance. */
+    /** Returns a pointer to the client's hwloc instance given the provided type. */
     qvi_hwloc &
     hwloc(void);
     /** Discovers server connection information. */
@@ -266,6 +262,7 @@ public:
     /** Connects a client to to the server specified by the provided info. */
     int
     connect(
+        qv_scope_flags_t scope_flags,
         const std::string &url,
         const int portno
     );

@@ -53,6 +53,8 @@ main(void)
 
     ctu_scope_report(base_scope, "base_scope");
 
+    ctu_change_bind(base_scope);
+
     int srank;
     rc = qv_scope_group_rank(base_scope, &srank);
     if (rc != QV_SUCCESS) {
@@ -75,15 +77,15 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int n_cores;
+    int n_pus;
     rc = qv_scope_hw_obj_count(
-        base_scope, QV_HW_OBJ_CORE, &n_cores
+        base_scope, QV_HW_OBJ_PU, &n_pus
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of cores in base_scope is %d\n", pid, n_cores);
+    printf("[%d] Number of PUs in base_scope is %d\n", pid, n_pus);
 
     const int npieces = 2;
     qv_scope_t *sub_scope;
@@ -96,13 +98,13 @@ main(void)
     }
 
     rc = qv_scope_hw_obj_count(
-        sub_scope, QV_HW_OBJ_CORE, &n_cores
+        sub_scope, QV_HW_OBJ_PU, &n_pus
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of cores in sub_scope is %d\n", pid, n_cores);
+    printf("[%d] Number of PUs in sub_scope is %d\n", pid, n_pus);
 
     ctu_scope_report(sub_scope, "sub_scope");
 

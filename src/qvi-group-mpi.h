@@ -29,17 +29,25 @@ protected:
     qvi_task m_task;
     /** Points to the base MPI context information. */
     qvi_mpi *m_mpi = nullptr;
+    /** Indicates whether I created the MPI context. */
+    bool m_created_mpi_ctx = false;
     /** Underlying group instance. */
     qvi_mpi_group m_mpi_group;
 public:
-    /** Default constructor. */
-    qvi_group_mpi(void) = default;
+    /** Deleted constructor. */
+    qvi_group_mpi(void) = delete;
     /** Constructor. */
     qvi_group_mpi(
+        qv_scope_flags_t flags,
+        MPI_Comm comm
+    );
+    /** Constructor. */
+    qvi_group_mpi(
+        qv_scope_flags_t flags,
         qvi_mpi *mpi_ctx
     );
     /** Destructor. */
-    virtual ~qvi_group_mpi(void) = default;
+    virtual ~qvi_group_mpi(void);
 
     virtual qvi_task &
     task(void)
@@ -115,27 +123,6 @@ public:
         MPI_Comm *comm
     ) const {
         return m_mpi_group.comm_dup(comm);
-    }
-};
-
-struct qvi_zgroup_mpi : public qvi_group_mpi {
-    /** Default constructor. */
-    qvi_zgroup_mpi(void) = delete;
-    /** Constructor. */
-    qvi_zgroup_mpi(
-        MPI_Comm comm
-    ) {
-        int rc = qvi_new(&m_mpi, comm);
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
-        // Finish task initialization after we finish MPI initialization because
-        // the server daemon may have been started during qvi_mpi_init().
-        rc = m_task.connect_to_server();
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
-    }
-    /** Destructor. */
-    virtual ~qvi_zgroup_mpi(void)
-    {
-        qvi_delete(&m_mpi);
     }
 };
 
