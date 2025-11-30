@@ -42,7 +42,7 @@ qvi_process_scope_get(
 ) {
     // Create the base process group.
     qvi_group_process *zgroup = nullptr;
-    const int rc = qvi_new(&zgroup);
+    const int rc = qvi_new(&zgroup, flags);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         *scope = nullptr;
         return rc;

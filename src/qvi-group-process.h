@@ -28,10 +28,14 @@ private:
     /** Task associated with this group. */
     qvi_task m_task;
 public:
+    /** Deleted default constructor. */
+    qvi_group_process(void) = delete;
     /** Constructor. */
-    qvi_group_process(void)
+    qvi_group_process(
+        qv_scope_flags_t flags
+    ) : qvi_group(flags)
     {
-        const int rc = m_task.connect_to_server();
+        const int rc = m_task.connect_to_server(flags);
         if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
     }
     /** Destructor. */
@@ -85,7 +89,7 @@ public:
         // Because this is in the context of a process, the concept of splitting
         // doesn't really apply here, so just create another process group.
         qvi_group_process *ichild = nullptr;
-        const int rc = qvi_new(&ichild);
+        const int rc = qvi_new(&ichild, m_flags);
         if (qvi_unlikely(rc != QV_SUCCESS)) {
             qvi_delete(&ichild);
         }

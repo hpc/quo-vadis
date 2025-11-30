@@ -34,9 +34,11 @@ public:
     qvi_group_thread(void) = delete;
     /** Constructor. */
     qvi_group_thread(
+        qv_scope_flags_t flags,
         int nthreads,
         const std::vector<int> &
-    ) : m_tasks(nthreads)
+    ) : qvi_group(flags)
+      , m_tasks(nthreads)
       , m_tid2index(nthreads * 8) {
         // Note the unused vector of ints are colors. We don't currently use
         // that information because we don't support group splits within a
@@ -44,7 +46,7 @@ public:
 
         // Initialize the tasks.
         for (auto &task : m_tasks) {
-            const int rc = task.connect_to_server();
+            const int rc = task.connect_to_server(flags);
             if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
         }
     }

@@ -28,8 +28,16 @@ using qvi_group_id_t = uint64_t;
  * Virtual base group class. Notice that groups are reference counted.
  */
 struct qvi_group : qvi_refc {
+protected:
+    /** Scope flags. */
+    qv_scope_flags_t m_flags = QV_SCOPE_FLAG_NONE;
+public:
+    /** Deleted constructor. */
+    qvi_group(void) = delete;
     /** Constructor. */
-    qvi_group(void) = default;
+    qvi_group(
+        qv_scope_flags_t flags
+    ) : m_flags(flags) { }
     /** Virtual destructor. */
     virtual ~qvi_group(void) = default;
     /** Returns a reference to the task's hwloc information. */

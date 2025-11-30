@@ -142,9 +142,11 @@ set_visdev_id(
 
 static std::string
 topo_fname(
-    const std::string &base
+    const std::string &base,
+    qvi_hwloc_flags_t flags
 ) {
-    return base + "/hwtopo." + std::to_string(getpid()) + ".xml";
+    return base + "/hwtopo." + std::to_string(getpid()) + "-"
+                + std::to_string(flags) + ".xml";
 }
 
 void
@@ -290,12 +292,19 @@ qvi_hwloc::bitmap_split_by_chunk_id(
 qvi_hwloc::~qvi_hwloc(void)
 {
     if (m_topo) hwloc_topology_destroy(m_topo);
+    // Unlink the file if we exported it.
+    if (!(m_flags & QVI_HWLOC_FLAG_TOPO_XML)) {
+        unlink(m_topo_file.c_str());
+    }
 }
 
 int
 qvi_hwloc::m_topo_set_from_xml(
     const std::string &path
 ) {
+    // Note that this topology was loaded from an XML file.
+    m_flags |= QVI_HWLOC_FLAG_TOPO_XML;
+
     const int rc = hwloc_topology_set_xml(m_topo, path.c_str());
     if (qvi_unlikely(rc == -1)) {
         qvi_log_error("hwloc_topology_set_xml() failed");
@@ -306,13 +315,18 @@ qvi_hwloc::m_topo_set_from_xml(
 
 int
 qvi_hwloc::topology_init(
+    qvi_hwloc_flags_t flags,
     const std::string &xml_path
 ) {
+    // Cache the provided flags that influence our behavior.
+    m_flags = flags;
+
     const int rc = hwloc_topology_init(&m_topo);
     if (qvi_unlikely(rc != 0)) {
         qvi_log_error("hwloc_topology_init() failed");
         return QV_ERR_HWLOC;
     }
+
     if (!xml_path.empty()) return m_topo_set_from_xml(xml_path);
     return QV_SUCCESS;
 }
@@ -327,8 +341,8 @@ qvi_hwloc::topology_load(void)
         // not allowed (e.g., by cgroups) in the base topology. We will have
         // functions that provide bitmap access to allowed and disallowed
         // resources depending on need, but we must load it all.
-        const uint_t flags = HWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED;
-        rc = hwloc_topology_set_flags(m_topo, flags);
+        const uint_t hwloc_flags = HWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED;
+        rc = hwloc_topology_set_flags(m_topo, hwloc_flags);
         if (qvi_unlikely(rc != 0)) {
             ers = "hwloc_topology_set_flags() failed";
             rc = QV_ERR_HWLOC;
@@ -360,6 +374,15 @@ qvi_hwloc::topology_load(void)
             ers = "hwloc_topology_load() failed";
             rc = QV_ERR_HWLOC;
             break;
+        }
+
+        if (m_flags & QVI_HWLOC_FLAG_TOPO_NO_SMT &&
+            !(m_flags & QVI_HWLOC_FLAG_TOPO_XML)) {
+            rc = m_disable_smt();
+            if (qvi_unlikely(rc != QV_SUCCESS)) {
+                ers = "m_disable_smt() failed";
+                break;
+            }
         }
 
         rc = m_discover_devices();
@@ -404,8 +427,7 @@ qvi_hwloc::s_topo_fopen(
 
 int
 qvi_hwloc::topology_export(
-    const std::string &base_path,
-    std::string &path
+    const std::string &base_path
 ) {
     int qvrc = QV_SUCCESS, rc = 0, fd = 0;
     cstr_t ers = nullptr;
@@ -431,7 +453,7 @@ qvi_hwloc::topology_export(
             break;
         }
 
-        path = m_topo_file = topo_fname(base_path);
+        m_topo_file = topo_fname(base_path, flags());
 
         qvrc = s_topo_fopen(m_topo_file, &fd);
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {
@@ -461,6 +483,12 @@ hwloc_topology_t
 qvi_hwloc::topology_get(void)
 {
     return m_topo;
+}
+
+std::string
+qvi_hwloc::topology_file(void)
+{
+    return m_topo_file;
 }
 
 bool
@@ -850,34 +878,15 @@ qvi_hwloc::get_nobjs_by_type(
 }
 
 int
-qvi_hwloc::m_get_proc_cpubind(
-    pid_t who,
-    qvi_hwloc_bitmap &result
-) {
-    int rc = hwloc_get_proc_cpubind(
-        m_topo, who, result.data(), HWLOC_CPUBIND_THREAD
-    );
-    if (qvi_unlikely(rc != 0)) return QV_ERR_HWLOC;
-    // Note in some instances I've noticed that the system's topology cpuset is
-    // a strict subset of a process' cpuset, so protect against that case by
-    // setting the process' cpuset to the system topology's if the above case is
-    // what we are dealing.
-    hwloc_const_cpuset_t tcpuset = topology_get_cpuset();
-    // If the topology's cpuset is less than the process' cpuset, adjust.
-    rc = hwloc_bitmap_compare(tcpuset, result.cdata());
-    if (qvi_unlikely(rc == -1)) {
-        return result.set(tcpuset);
-    }
-    // Else just use the one that was gathered above.
-    return QV_SUCCESS;
-}
-
-int
 qvi_hwloc::task_get_cpubind(
     pid_t who,
     qvi_hwloc_bitmap &result
 ) {
-    return m_get_proc_cpubind(who, result);
+    const int rc = hwloc_get_proc_cpubind(
+        m_topo, who, result.data(), HWLOC_CPUBIND_THREAD
+    );
+    if (qvi_unlikely(rc != 0)) return QV_ERR_HWLOC;
+    return QV_SUCCESS;
 }
 
 int
@@ -888,7 +897,7 @@ qvi_hwloc::task_set_cpubind_from_cpuset(
     const int rc = hwloc_set_proc_cpubind(
         m_topo, task_id, cpuset, HWLOC_CPUBIND_THREAD
     );
-    if (qvi_unlikely(rc == -1)) return QV_ERR_NOT_SUPPORTED;
+    if (qvi_unlikely(rc != 0)) return QV_ERR_NOT_SUPPORTED;
     return QV_SUCCESS;
 }
 
@@ -1230,19 +1239,20 @@ qvi_hwloc::get_cpuset_for_nobjs(
     return rc;
 }
 
-qvi_hwloc_bitmap
-qvi_hwloc::bitmap_disable_smt(
-    const qvi_hwloc_bitmap &bitmap
-) {
-    qvi_hwloc_bitmap nosmt_bitmap;
+int
+qvi_hwloc::m_disable_smt(void)
+{
+    // Get the entire topology.
+    qvi_hwloc_bitmap orig_bitmap(topology_get_disallowed_cpuset());
     // How many cores are in the unmodified bitmap?
     const unsigned ncores = hwloc_get_nbobjs_inside_cpuset_by_type(
-        m_topo, bitmap.cdata(), HWLOC_OBJ_CORE
+        m_topo, orig_bitmap.cdata(), HWLOC_OBJ_CORE
     );
 
+    qvi_hwloc_bitmap nosmt_bitmap;
     for (unsigned i = 0; i < ncores; ++i) {
         hwloc_obj_t obj = hwloc_get_obj_inside_cpuset_by_type(
-            m_topo, bitmap.cdata(), HWLOC_OBJ_CORE, i
+            m_topo, orig_bitmap.cdata(), HWLOC_OBJ_CORE, i
         );
         qvi_hwloc_bitmap core_cpuset(obj->cpuset);
         hwloc_bitmap_singlify(core_cpuset.data());
@@ -1250,7 +1260,12 @@ qvi_hwloc::bitmap_disable_smt(
             nosmt_bitmap.data(), nosmt_bitmap.cdata(), core_cpuset.cdata()
         );
     }
-    return nosmt_bitmap;
+    // Now modify the underlying topology's cpuset to remove the hyper-threads.
+    const int rc = hwloc_topology_restrict(m_topo, nosmt_bitmap.cdata(), 0);
+    if (qvi_unlikely(rc != 0)) {
+        return QV_ERR_HWLOC;
+    }
+    return QV_SUCCESS;
 }
 
 int
