@@ -253,15 +253,18 @@ rpc_pack(
     qvi_rmi_rpc_fid_t fid,
     Types &&...args
 ) {
+    int rc = QV_SUCCESS;
     qvi_bbuff *ibuff = nullptr;
-    int rc = qvi_new(&ibuff);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    // Fill and add header.
-    rc = buffer_append_header(ibuff, fid);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
+    do {
+        rc = qvi_new(&ibuff);
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
+        // Fill and add header.
+        rc = buffer_append_header(ibuff, fid);
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
 
-    rc = ibuff->pack(std::forward<Types>(args)...);
-out:
+        rc = ibuff->pack(std::forward<Types>(args)...);
+    } while (false);
+
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ibuff);
     }
@@ -349,7 +352,6 @@ qvi_rmi_client::connect(
         return QV_RES_UNAVAILABLE;
     }
     // Now initiate the client/server exchange.
-    // TODO(skg)
     qvi_hwloc_flags_t hwloc_flags = QVI_HWLOC_FLAG_TOPO_FULL;
     if (scope_flags & QV_SCOPE_FLAG_NO_SMT) {
         hwloc_flags = QVI_HWLOC_FLAG_TOPO_NO_SMT;
@@ -405,11 +407,15 @@ int
 qvi_rmi_client::rpc_rep(
     Types &&...args
 ) const {
+    int rc = QV_SUCCESS;
     zmq_msg_t msg;
-    int rc = m_recv_msg(&msg);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    rc = rpc_unpack(zmq_msg_data(&msg), std::forward<Types>(args)...);
-out:
+
+    do {
+        rc = m_recv_msg(&msg);
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
+        rc = rpc_unpack(zmq_msg_data(&msg), std::forward<Types>(args)...);
+    } while (false);
+
     zmq_msg_close(&msg);
     return rc;
 }
@@ -926,32 +932,36 @@ qvi_rmi_server::m_rpc_dispatch(
     int rc = QV_SUCCESS;
     bool shutdown = false;
 
-    void *data = zmq_msg_data(command_msg);
+    do {
+        void *const data = zmq_msg_data(command_msg);
 
-    qvi_rmi_msg_header hdr;
-    const size_t trim = unpack_msg_header(data, &hdr);
-    void *body = data_trim(data, trim);
+        qvi_rmi_msg_header hdr;
+        const size_t trim = unpack_msg_header(data, &hdr);
+        void *const body = data_trim(data, trim);
 
-    const auto fidfunp = m_rpc_dispatch_table.find(hdr.fid);
-    if (qvi_unlikely(fidfunp == m_rpc_dispatch_table.end())) {
-        qvi_log_error("Unknown function ID ({}) in RPC. Aborting.", hdr.fid);
-        rc = QV_ERR_RPC;
-        goto out;
-    }
+        const auto fidfunp = m_rpc_dispatch_table.find(hdr.fid);
+        if (qvi_unlikely(fidfunp == m_rpc_dispatch_table.end())) {
+            qvi_log_error(
+                "Unknown function ID ({}) in RPC. Aborting.", hdr.fid
+            );
+            rc = QV_ERR_RPC;
+            break;
+        }
 
-    qvi_bbuff *result;
-    rc = fidfunp->second(this, &hdr, body, &result);
-    if (qvi_unlikely(rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN)) {
-        cstr_t ers = "RPC dispatch failed";
-        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-        goto out;
-    }
-    // Shutdown?
-    if (qvi_unlikely(rc == QV_SUCCESS_SHUTDOWN)) {
-        shutdown = true;
-    }
-    rc = zsock_send_bbuff(zsock, result, bsent);
-out:
+        qvi_bbuff *result = nullptr;
+        rc = fidfunp->second(this, &hdr, body, &result);
+        if (qvi_unlikely(rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN)) {
+            cstr_t ers = "RPC dispatch failed";
+            qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+            break;
+        }
+        // Shutdown?
+        if (qvi_unlikely(rc == QV_SUCCESS_SHUTDOWN)) {
+            shutdown = true;
+        }
+        rc = zsock_send_bbuff(zsock, result, bsent);
+    } while (false);
+
     zmq_msg_close(command_msg);
     return (shutdown ? QV_SUCCESS_SHUTDOWN : rc);
 }
