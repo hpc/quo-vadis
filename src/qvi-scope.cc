@@ -208,21 +208,24 @@ qv_scope::split(
     qv_hw_obj_type_t maybe_obj_type,
     qv_scope_t **child
 ) {
+    int rc = QV_SUCCESS;
     qvi_group *group = nullptr;
     qv_scope_t *ichild = nullptr;
-    // Split the hardware resources based on the provided split parameters.
-    int colorp = 0;
-    qvi_hwpool hwpool;
-    int rc = qvi_hwsplit::split(
-        this, npieces, color, maybe_obj_type, &colorp, hwpool
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    // Split underlying group. Notice the use of colorp here.
-    rc = m_group->split(colorp, m_group->rank(), &group);
-    if (qvi_unlikely(rc != QV_SUCCESS)) goto out;
-    // Create and initialize the new scope.
-    rc = qvi_new(&ichild, group, hwpool);
-out:
+    do {
+        // Split the hardware resources based on the provided split parameters.
+        int colorp = 0;
+        qvi_hwpool hwpool;
+        rc = qvi_hwsplit::split(
+            this, npieces, color, maybe_obj_type, &colorp, hwpool
+        );
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
+        // Split underlying group. Notice the use of colorp here.
+        rc = m_group->split(colorp, m_group->rank(), &group);
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
+        // Create and initialize the new scope.
+        rc = qvi_new(&ichild, group, hwpool);
+    } while (false);
+
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&group);
         qvi_delete(&ichild);
