@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2022-2025 Triad National Security, LLC
+ * Copyright (c) 2022-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -29,21 +29,35 @@ protected:
     qv_scope_create_hints_t m_hints = QV_SCOPE_CREATE_HINT_NONE;
     /** The resource's affinity encoded as a bitmap. */
     qvi_hwloc_bitmap m_affinity;
+    /** Polymorphic equality check. */
+    virtual bool
+    equals(const qvi_hwpool_res &other) const {
+        return m_affinity == other.m_affinity;
+    }
 public:
+    /** Constructor. */
+    qvi_hwpool_res(void) = default;
+    /** Constructor. */
+    qvi_hwpool_res(
+        const qvi_hwloc_bitmap &affinity
+    ) : m_affinity(affinity) { }
     /** Returns the resource's create hints. */
     qv_scope_create_hints_t
     hints(void);
-    /**
-     * Returns a reference to the resource's affinity encoded by a bitmap.
-     */
+    /** Returns a reference to the resource's affinity encoded by a bitmap. */
     qvi_hwloc_bitmap &
     affinity(void);
-    /**
-     * Returns a const reference to the resource's affinity encoded by a bitmap.
-     */
+    /** Returns a const reference to the resource's affinity bitmap. */
     const qvi_hwloc_bitmap &
     affinity(void) const;
-
+    /** Equality operator. */
+    bool
+    operator==(
+        const qvi_hwpool_res &other
+    ) const {
+        return equals(other);
+    }
+    /** Serializes a hardware pool resource. */
     template <class Archive>
     void
     serialize(
@@ -69,14 +83,20 @@ struct qvi_hwpool_dev : qvi_hwpool_res {
 private:
     /** Device type. */
     qv_hw_obj_type_t m_type = QV_HW_OBJ_LAST;
-    /** The bitmap encoding CPU affinity. */
-    qvi_hwloc_bitmap m_affinity;
     /** Device ID (ordinal). */
     int m_id = qvi_hwloc_device::INVALID_ID;
     /** The PCI bus ID. */
     std::string m_pci_bus_id;
     /** Universally Unique Identifier. */
     std::string m_uuid;
+    /** Polymorphic equality check. */
+    virtual bool
+    equals(const qvi_hwpool_res &other) const override {
+        if (auto o = dynamic_cast<const qvi_hwpool_dev *>(&other)) {
+            return m_uuid == o->m_uuid;
+        }
+        return false;
+    }
 public:
     /** Default constructor. */
     qvi_hwpool_dev(void) = default;
@@ -93,8 +113,10 @@ public:
     /** Equality operator. */
     bool
     operator==(
-        const qvi_hwpool_dev &x
-    ) const;
+        const qvi_hwpool_dev &other
+    ) const {
+        return equals(other);
+    }
     /** Returns the device's type. */
     qv_hw_obj_type_t
     type(void) const ;
@@ -121,7 +143,7 @@ public:
  * Maintains a mapping between device types and devices of those types.
  */
 using qvi_hwpool_devs_t = std::multimap<
-    qv_hw_obj_type_t, std::shared_ptr<qvi_hwpool_dev>
+    qv_hw_obj_type_t, qvi_hwpool_dev
 >;
 
 struct qvi_hwpool {
@@ -131,6 +153,11 @@ private:
     qvi_hwpool_cpu m_cpu;
     /** The hardware pool's devices. */
     qvi_hwpool_devs_t m_devs;
+    /** Returns whether a given device is already in pool. */
+    bool
+    m_device_in_pool(
+        const qvi_hwpool_dev &dev
+    );
     /**
      * Adds all devices with affinity to the
      * provided, initialized hardware resource pool.

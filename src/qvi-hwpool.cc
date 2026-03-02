@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2022-2025 Triad National Security, LLC
+ * Copyright (c) 2022-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -35,8 +35,8 @@ qvi_hwpool_res::affinity(void) const
 
 qvi_hwpool_dev::qvi_hwpool_dev(
     const qvi_hwloc_device &dev
-) : m_type(dev.type)
-  , m_affinity(dev.affinity)
+) : qvi_hwpool_res(dev.affinity)
+  , m_type(dev.type)
   , m_id(dev.id)
   , m_pci_bus_id(dev.pci_bus_id)
   , m_uuid(dev.uuid) { }
@@ -44,13 +44,6 @@ qvi_hwpool_dev::qvi_hwpool_dev(
 qvi_hwpool_dev::qvi_hwpool_dev(
     const std::shared_ptr<qvi_hwloc_device> &shdev
 ) : qvi_hwpool_dev(*shdev.get()) { }
-
-bool
-qvi_hwpool_dev::operator==(
-    const qvi_hwpool_dev &x
-) const {
-    return m_uuid == x.m_uuid;
-}
 
 qv_hw_obj_type_t
 qvi_hwpool_dev::type(void)
@@ -84,6 +77,17 @@ qvi_hwpool_dev::id(
         *result = nullptr;
     }
     return rc;
+}
+
+bool
+qvi_hwpool::m_device_in_pool(
+    const qvi_hwpool_dev &dev
+) {
+    auto [first, last] = m_devs.equal_range(dev.type());
+    auto view = std::ranges::subrange(first, last);
+    return std::ranges::any_of(
+        view, [&](const auto &pair) { return pair.second == dev; }
+    );
 }
 
 int
@@ -148,8 +152,9 @@ int
 qvi_hwpool::add_device(
     const qvi_hwpool_dev &dev
 ) {
-    auto shdev = std::make_shared<qvi_hwpool_dev>(dev);
-    m_devs.insert({dev.type(), shdev});
+    if (!m_device_in_pool(dev)) {
+        m_devs.insert({dev.type(), dev});
+    }
     return QV_SUCCESS;
 }
 

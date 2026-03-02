@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2025 Triad National Security, LLC
+ * Copyright (c) 2021-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -205,7 +205,7 @@ qvi_hwsplit::m_osdev_cpusets(
         // Not the type we are looking to split.
         if (m_split_at_type != dinfo.first) continue;
         // Copy the device's affinity to our list of device affinities.
-        result.at(affi++) = dinfo.second->affinity();
+        result.at(affi++) = dinfo.second.affinity();
     }
     return rc;
 }
@@ -288,7 +288,7 @@ qvi_hwsplit::split_devices_user_defined(void)
         for (const auto &dinfo : dinfos) {
             // Not the type we are currently dealing with.
             if (devt != dinfo.first) continue;
-            devs.push_back(dinfo.second.get());
+            devs.push_back(&dinfo.second);
         }
         // Maps colors to device information.
         id2devs_t devmap;
@@ -334,7 +334,7 @@ qvi_hwsplit::split_devices_affinity_preserving(void)
         for (const auto &dinfo : dinfos) {
             // Not the type we are currently dealing with.
             if (devt != dinfo.first) continue;
-            devs.push_back(dinfo.second.get());
+            devs.push_back(&dinfo.second);
         }
         // Store device affinities.
         qvi_hwloc_bitmaps devaffs;
