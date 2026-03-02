@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2025 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -153,20 +153,18 @@ qv_scope::device_id(
     qv_device_id_type_t format,
     char **result
 ) const {
-    *result = nullptr;
     // Look for the requested device.
     int id = 0;
-    qvi_hwpool_dev *finfo = nullptr;
     for (const auto &dinfo : m_hwpool.devices()) {
         if (dev_type != dinfo.first) continue;
         if (id++ == dev_index) {
-            finfo = dinfo.second.get();
-            break;
+            // Format the device ID based on the caller's request.
+            return dinfo.second.id(format, result);
         }
     }
-    if (qvi_unlikely(!finfo)) return QV_ERR_NOT_FOUND;
-    // Format the device ID based on the caller's request.
-    return finfo->id(format, result);
+    // If we are here, then we didn't find it.
+    *result = nullptr;
+    return QV_ERR_NOT_FOUND;
 }
 
 int

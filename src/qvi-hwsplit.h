@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2025 Triad National Security, LLC
+ * Copyright (c) 2021-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -34,7 +34,7 @@ struct qvi_hwsplit {
 private:
     /** The root rank. */
     static constexpr int s_root = 0;
-    /** Constructor. */
+    /** Deleted default constructor. */
     qvi_hwsplit(void) = delete;
     /** Constructor. */
     qvi_hwsplit(
