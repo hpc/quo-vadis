@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2025 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -578,6 +578,20 @@ public:
         return m_data;
     }
     /**
+     * Or (|) operator overload.
+     */
+    qvi_hwloc_bitmap
+    operator|(
+        const qvi_hwloc_bitmap &rhs
+    ) {
+        qvi_hwloc_bitmap result;
+        const int orrc = hwloc_bitmap_or(
+            result.data(), cdata(), rhs.cdata()
+        );
+        if (qvi_unlikely(orrc != 0)) throw qvi_runtime_error(QV_ERR_HWLOC);
+        return result;
+    }
+    /**
      * Returns the result of an hwloc_bitmap_or over the provided bitmaps.
      */
     static qvi_hwloc_bitmap
@@ -593,7 +607,9 @@ public:
         }
         return result;
     }
-
+    /**
+     * Serializes a qvi_hwloc_bitmap.
+     */
     template<class Archive>
     void
     save(
@@ -602,7 +618,9 @@ public:
         // We are sending the string representation of the cpuset.
         archive(qvi_hwloc::bitmap_string(m_data));
     }
-
+    /**
+     * Deserializes a qvi_hwloc_bitmap.
+     */
     template<class Archive>
     void
     load(
