@@ -133,7 +133,7 @@ qvi_hwsplit::qvi_hwsplit(
     uint_t split_size,
     qv_hw_obj_type_t split_at_type
 ) : m_rmi(parent->group().task().rmi())
-  , m_hwpool(parent->hwpool())
+  , m_my_hwpool(parent->hwpool())
   , m_group_size(group_size)
   , m_split_size(split_size)
   , m_split_at_type(split_at_type)
@@ -164,7 +164,7 @@ qvi_hwsplit::m_reserve(void)
 const qvi_hwloc_bitmap &
 qvi_hwsplit::m_cpuset(void) const
 {
-    return m_hwpool.cpuset();
+    return m_base_hwpool.cpuset();
 }
 
 int
@@ -194,14 +194,14 @@ qvi_hwsplit::m_osdev_cpusets(
     // Get the number of devices we have available in the provided scope.
     int nobj = 0;
 
-    int rc = m_hwpool.nobjects(
+    int rc = m_base_hwpool.nobjects(
         m_rmi.hwloc(), m_split_at_type, &nobj
     );
     if (rc != QV_SUCCESS) return rc;
     // Holds the device affinities used for the split.
     result.resize(nobj);
     uint_t affi = 0;
-    for (const auto &dinfo : m_hwpool.devices()) {
+    for (const auto &dinfo : m_base_hwpool.devices()) {
         // Not the type we are looking to split.
         if (m_split_at_type != dinfo.first) continue;
         // Copy the device's affinity to our list of device affinities.
@@ -277,7 +277,7 @@ qvi_hwsplit::split_devices_user_defined(void)
         ncolors_chosen++;
     }
     // Cache all device infos associated with the parent hardware pool.
-    auto dinfos = m_hwpool.devices();
+    auto dinfos = m_base_hwpool.devices();
     // Iterate over the supported device types and split them up round-robin.
     // TODO(skg) Should this be a mapping operation in qvi-map?
     for (const auto devt : qvi_hwloc::supported_devices()) {
@@ -326,7 +326,7 @@ qvi_hwsplit::split_devices_affinity_preserving(void)
     int rc = m_release_devices();
     if (rc != QV_SUCCESS) return rc;
     // Get a pointer to device infos associated with the parent hardware pool.
-    auto dinfos = m_hwpool.devices();
+    auto dinfos = m_base_hwpool.devices();
     // Iterate over the supported device types and split them up.
     for (const auto devt : qvi_hwloc::supported_devices()) {
         // Store device infos.
@@ -601,11 +601,21 @@ qvi_hwsplit::m_gather_split_data(
         group, rootid, color, hwsplit.m_colors
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // The root creates new hardware pools so it can modify them freely.
+    // The root creates new hardware pools so it can modify them freely. Use
+    // m_hwpools as a temporary buffer to store all the base hardware pools.
+    rc = qvi_coll::gather(
+        group, rootid, hwsplit.m_my_hwpool, hwsplit.m_hwpools
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // The root creates the base hardware pool that it will later split.
     if (group.rank() == rootid) {
+        hwsplit.m_base_hwpool  = qvi_hwpool::set_union(hwsplit.m_hwpools);
+        // The temporary hardware pools are no longer needed.
+        hwsplit.m_hwpools.clear();
+        // Create room for the real hardware pools.
         hwsplit.m_hwpools.resize(group.size());
     }
-    return rc;
+    return QV_SUCCESS;
 }
 
 int
@@ -682,6 +692,8 @@ qvi_hwsplit::thread_split(
     // that populates splitagg.
     //No point in doing this in a loop.
     const pid_t taskid = qvi_task::mytid();
+    // Set the base hardware pool. Since the parent has it, just copy it over.
+    hwsplit.m_base_hwpool = hwsplit.m_my_hwpool;
     // Get the task's current affinity.
     qvi_hwloc_bitmap task_affinity;
     int rc = parent->group().task().bind_top(task_affinity);

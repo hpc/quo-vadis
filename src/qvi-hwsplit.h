@@ -47,8 +47,8 @@ private:
     ~qvi_hwsplit(void) = default;
     /** A const reference to my RMI. */
     qvi_rmi_client &m_rmi;
-    /** A const reference to the base hardware pool we are splitting. */
-    const qvi_hwpool &m_hwpool;
+    /** A const reference to my base hardware pool. */
+    const qvi_hwpool &m_my_hwpool;
     /** The number of members that are part of the split. */
     uint_t m_group_size = 0;
     /** The number of pieces in the split. */
@@ -60,6 +60,14 @@ private:
      * split_at() context.
      */
     qv_hw_obj_type_t m_split_at_type;
+    /**
+     * The base hardware pool that is to be split and operated on. This hardware
+     * pool is created by the root by calculating a hardware union over the
+     * m_my_hwpools owned by all the split participants. We do this so that all
+     * hardware resources are consolidated into one hardware pool, valid only at
+     * the root.
+     */
+    qvi_hwpool m_base_hwpool;
     /** The split member's current CPU affinity. */
     qvi_hwloc_bitmap m_cpu_affinity;
     /**
