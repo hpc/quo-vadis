@@ -166,7 +166,13 @@ private:
     m_add_devices_with_affinity(
         qvi_hwloc &hwloc
     );
+    /** Constructor (private). */
+    qvi_hwpool(
+        const qvi_hwloc_bitmap &cpuset
+    ) : m_cpu(cpuset) { }
 public:
+    /** Constructor. */
+    qvi_hwpool(void) = default;
     /**
      * Initializes a hardware pool from the given
      * hardware locality information and cpuset.
@@ -196,7 +202,8 @@ public:
         int *result
     ) const;
     /**
-     * Adds a qvi_hwpool_dev_s device.
+     * Adds a qvi_hwpool_dev_s device. Attempts to insert the same device
+     * multiple times will succeed, but the device will be added exactly once.
      */
     int
     add_device(
@@ -207,7 +214,16 @@ public:
      */
     int
     release_devices(void);
-
+    /**
+     *
+     */
+    static qvi_hwpool
+    set_union(
+        const std::vector<qvi_hwpool> &hwpools
+    );
+    /**
+     * Serializes a hardware pool.
+     */
     template <class Archive>
     void
     serialize(

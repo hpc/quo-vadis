@@ -165,6 +165,27 @@ qvi_hwpool::release_devices(void)
     return QV_SUCCESS;
 }
 
+qvi_hwpool
+qvi_hwpool::set_union(
+    const std::vector<qvi_hwpool> &hwpools
+) {
+    // Calculate the union of the hardware pool cpusets.
+    qvi_hwloc_bitmap cpu_union;
+    for (const auto &hwpool : hwpools) {
+        cpu_union = cpu_union | hwpool.cpuset();
+    }
+    // Create the result hardware pool with the proper cpuset.
+    qvi_hwpool result(cpu_union);
+    // Do the same for its devices. Note that add_device() shall protect against
+    // multiple insertions of the same device into the hardware pool.
+    for (const auto &hwpool : hwpools) {
+        for (const auto &[type, dev] : hwpool.devices()) {
+            result.add_device(dev);
+        }
+    }
+    return result;
+}
+
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
  */
