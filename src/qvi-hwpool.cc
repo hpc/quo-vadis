@@ -179,7 +179,7 @@ qvi_hwpool::set_union(
     // Do the same for its devices. Note that add_device() shall protect against
     // multiple insertions of the same device into the hardware pool.
     for (const auto &hwpool : hwpools) {
-        for (const auto &[type, dev] : hwpool.devices()) {
+        for (const auto &[dev_type, dev] : hwpool.devices()) {
             result.add_device(dev);
         }
     }
