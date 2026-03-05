@@ -532,9 +532,9 @@ qvi_hwsplit::m_split(void)
     bool auto_split = false;
     // Make sure that the supplied colors are consistent and determine the type
     // of coloring we are using. Positive values denote an explicit coloring
-    // provided by the caller. Negative values are reserved for internal
-    // use and shall be constants defined in quo-vadis.h. Note we don't sort the
-    // splitagg's colors directly because they are ordered by task ID.
+    // provided by the caller. Negative values are reserved for internal use and
+    // shall be constants defined in quo-vadis.h. Note we don't sort m_colors
+    // directly because they are ordered by task ID.
     std::vector<int> tcolors(m_colors);
     std::sort(tcolors.begin(), tcolors.end());
     // We have a few possibilities here:
@@ -561,6 +561,7 @@ qvi_hwsplit::m_split(void)
         }
         auto_split = true;
     }
+    // TODO(skg) Favor using function pointers?
     // User-defined splitting.
     if (!auto_split) {
         return split_user_defined();
@@ -609,6 +610,7 @@ qvi_hwsplit::m_gather_split_data(
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // The root creates the base hardware pool that it will later split.
     if (group.rank() == rootid) {
+        // The base hardware pool is the union of all provided hardware pools.
         hwsplit.m_base_hwpool  = qvi_hwpool::set_union(hwsplit.m_hwpools);
         // The temporary hardware pools are no longer needed.
         hwsplit.m_hwpools.clear();
@@ -689,7 +691,7 @@ qvi_hwsplit::thread_split(
     hwsplit.m_reserve();
     // Since this is called by a single task, get its ID and associated
     // hardware affinity here, and replicate them in the following loop
-    // that populates splitagg.
+    // that populates hwsplit.
     //No point in doing this in a loop.
     const pid_t taskid = qvi_task::mytid();
     // Set the base hardware pool. Since the parent has it, just copy it over.
