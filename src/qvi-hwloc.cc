@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2025 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -267,26 +267,43 @@ qvi_hwloc::bitmap_sscanf(
 }
 
 int
-qvi_hwloc::bitmap_split_by_chunk_id(
-    hwloc_const_cpuset_t bitmap,
-    uint_t nchunks,
-    uint_t chunk_id,
-    hwloc_cpuset_t result
+qvi_hwloc::bitmap_split(
+    const qvi_hwloc_bitmap &bitmap,
+    uint_t npieces,
+    std::vector<qvi_hwloc_bitmap> &result
 ) {
-    uint_t chunk_size = 0;
-    const int rc = m_split_cpuset_chunk_size(
-        bitmap, nchunks, &chunk_size
+    int npus = 0;
+    int rc = m_get_nobjs_in_cpuset(
+        QV_HW_OBJ_PU, bitmap.cdata(), npus
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // 0 chunk_size likely caused by nonsensical split request.
-    // Chunk IDs must be < nchunks: 0, 1, ... , nchunks-1.
-    if (chunk_size == 0 || chunk_id >= nchunks) {
-        return QV_ERR_SPLIT;
+    // An empty split.
+    if (qvi_unlikely(npieces == 0 || npus == 0)) {
+        result.clear();
+        return QV_SUCCESS;
     }
+    // Prepare for storing non-empty split.
+    result.resize(npieces);
 
-    return m_split_cpuset_by_range(
-        bitmap, chunk_size * chunk_id, chunk_size, result
-    );
+    const uint_t ntotal = npus;
+    const uint_t base_chunk_size = npus / npieces;
+    uint_t remainder = ntotal % npieces;
+    uint_t current_pos = 0;
+
+    for (uint_t i = 0; i < npieces; ++i) {
+        uint_t current_chunk_size = base_chunk_size + (remainder > 0 ? 1 : 0);
+        if (remainder > 0) remainder--;
+
+        rc = m_split_cpuset_by_range(
+            bitmap, current_pos, current_chunk_size, result[i]
+        );
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
+        current_pos += current_chunk_size;
+    }
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        result.clear();
+    }
+    return rc;
 }
 
 qvi_hwloc::~qvi_hwloc(void)
@@ -975,13 +992,13 @@ int
 qvi_hwloc::m_get_nosdevs_in_cpuset(
     const qvi_hwloc_dev_list &devs,
     hwloc_const_cpuset_t cpuset,
-    int *nobjs
+    int &nobjs
 ) {
     int ndevs = 0;
     for (const auto &dev : devs) {
         if (hwloc_bitmap_isincluded(dev->affinity.cdata(), cpuset)) ndevs++;
     }
-    *nobjs = ndevs;
+    nobjs = ndevs;
 
     return QV_SUCCESS;
 }
@@ -990,7 +1007,7 @@ int
 qvi_hwloc::m_get_nobjs_in_cpuset(
     qv_hw_obj_type_t target_obj,
     hwloc_const_cpuset_t cpuset,
-    int *nobjs
+    int &nobjs
 ) {
     int depth;
     int rc = obj_type_depth(target_obj, &depth);
@@ -1004,7 +1021,7 @@ qvi_hwloc::m_get_nobjs_in_cpuset(
         if (hwloc_bitmap_iszero(obj->cpuset)) continue;
         n++;
     }
-    *nobjs = n;
+    nobjs = n;
     return QV_SUCCESS;
 }
 
@@ -1012,7 +1029,7 @@ int
 qvi_hwloc::get_nobjs_in_cpuset(
     qv_hw_obj_type_t target_obj,
     hwloc_const_cpuset_t cpuset,
-    int *nobjs
+    int &nobjs
 ) {
     switch (target_obj) {
         case(QV_HW_OBJ_GPU) :
@@ -1161,46 +1178,29 @@ qvi_hwloc::get_device_id_in_cpuset(
 }
 
 int
-qvi_hwloc::m_split_cpuset_chunk_size(
-    hwloc_const_cpuset_t cpuset,
-    uint_t npieces,
-    uint_t *chunk_size
-) {
-    int npus = 0;
-    const int rc = m_get_nobjs_in_cpuset(
-        QV_HW_OBJ_PU, cpuset, &npus
-    );
-    if (rc != QV_SUCCESS || npieces == 0 || npus == 0 ) {
-        *chunk_size = 0;
-    }
-    else {
-        *chunk_size = npus / npieces;
-    }
-    return rc;
-}
-
-int
 qvi_hwloc::m_split_cpuset_by_range(
-    hwloc_const_cpuset_t cpuset,
+    const qvi_hwloc_bitmap &bitmap,
     uint_t base,
     uint_t extent,
-    hwloc_bitmap_t result
+    qvi_hwloc_bitmap &result
 ) {
     // Zero-out the result bitmap that will encode the split.
-    hwloc_bitmap_zero(result);
+    hwloc_bitmap_zero(result.data());
     // We use PUs to split resources. Each set bit represents a PU. The number
     // of bits set represents the number of PUs present on the system. The
-    // least-significant (right-most) bit represents logical ID 0.
+    // right-most bit represents logical ID 0.
     int pu_depth = 0;
     int rc = obj_type_depth(QV_HW_OBJ_PU, &pu_depth);
-    if (rc != QV_SUCCESS) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Calculate split based on given range.
     for (uint_t i = base; i < base + extent; ++i) {
         hwloc_obj_t dobj;
-        rc = get_obj_in_cpuset_by_depth(cpuset, pu_depth, i, &dobj);
-        if (rc != QV_SUCCESS) break;
+        rc = get_obj_in_cpuset_by_depth(bitmap.cdata(), pu_depth, i, &dobj);
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
 
-        const int orrc = hwloc_bitmap_or(result, result, dobj->cpuset);
+        const int orrc = hwloc_bitmap_or(
+            result.data(), result.cdata(), dobj->cpuset
+        );
         if (orrc != 0) {
             rc = QV_ERR_HWLOC;
             break;

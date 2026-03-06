@@ -137,14 +137,14 @@ int
 qvi_hwpool::nobjects(
     qvi_hwloc &hwloc,
     qv_hw_obj_type_t obj_type,
-    int *result
+    int &result
 ) const {
     if (qvi_hwloc::obj_is_host_resource(obj_type)) {
         return hwloc.get_nobjs_in_cpuset(
             obj_type, m_cpu.affinity().cdata(), result
         );
     }
-    *result = m_devs.count(obj_type);
+    result = m_devs.count(obj_type);
     return QV_SUCCESS;
 }
 

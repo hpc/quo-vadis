@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2025 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -122,7 +122,7 @@ echo_gpu_info(
 
     int ngpus = 0;
     int rc = hwl.get_nobjs_in_cpuset(
-        QV_HW_OBJ_GPU, hwl.topology_get_cpuset(), &ngpus
+        QV_HW_OBJ_GPU, hwl.topology_get_cpuset(), ngpus
     );
     if (rc != QV_SUCCESS) return rc;
 

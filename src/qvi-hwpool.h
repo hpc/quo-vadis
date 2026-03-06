@@ -10,7 +10,7 @@
 /**
  * @file qvi-hwpool.h
  *
- * Hardware resource pool.
+ * Implements hardware resource types and resource pools.
  */
 
 #ifndef QVI_HWPOOL_H
@@ -199,7 +199,7 @@ public:
     nobjects(
         qvi_hwloc &hwloc,
         qv_hw_obj_type_t obj_type,
-        int *result
+        int &result
     ) const;
     /**
      * Adds a qvi_hwpool_dev_s device. Attempts to insert the same device

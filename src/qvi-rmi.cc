@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2025 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -646,7 +646,7 @@ qvi_rmi_server::m_get_iscope_bitmap_job(
     int rc = QV_SUCCESS;
     const size_t nmembers = who.size();
 
-    qvi_hwloc_bitmaps bitmaps(nmembers);
+    std::vector<qvi_hwloc_bitmap> bitmaps(nmembers);
     for (size_t i = 0; i < nmembers; ++i) {
         rc = m_hwlocs.get(flags).task_get_cpubind(who[i], bitmaps[i]);
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
@@ -855,7 +855,7 @@ qvi_rmi_server::s_rpc_get_nobjs_in_cpuset(
             break;
         }
         rpcrc = server->m_hwlocs.get(flags).get_nobjs_in_cpuset(
-            target_obj, cpuset.cdata(), &nobjs
+            target_obj, cpuset.cdata(), nobjs
         );
     } while (false);
 
