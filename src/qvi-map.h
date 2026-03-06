@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2022-2024 Triad National Security, LLC
+ * Copyright (c) 2022-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -26,7 +26,10 @@ using qvi_map_t = std::map<uint_t, uint_t>;
  * Defines a function pointer to a desired mapping function.
  */
 using qvi_map_fn_t = std::function<
-    int(qvi_map_t &map, uint_t nfids, const qvi_hwloc_bitmaps &tres)
+    int(
+        qvi_map_t &map, uint_t nfids,
+        const std::vector<qvi_hwloc_bitmap> &tres
+    )
 >;
 
 /**
@@ -86,14 +89,14 @@ int
 qvi_map_packed(
     qvi_map_t &map,
     uint_t nfids,
-    const qvi_hwloc_bitmaps &tres
+    const std::vector<qvi_hwloc_bitmap> &tres
 );
 
 int
 qvi_map_spread(
     qvi_map_t &map,
     uint_t nfids,
-    const qvi_hwloc_bitmaps &tres
+    const std::vector<qvi_hwloc_bitmap> &tres
 );
 
 /**
@@ -102,8 +105,8 @@ qvi_map_spread(
  */
 int
 qvi_map_calc_shaffinity(
-    const qvi_hwloc_bitmaps &faffs,
-    const qvi_hwloc_bitmaps &tores,
+    const std::vector<qvi_hwloc_bitmap> &faffs,
+    const std::vector<qvi_hwloc_bitmap> &tores,
     qvi_map_shaffinity_t &res_affinity_map
 );
 
@@ -124,7 +127,7 @@ int
 qvi_map_colors(
     qvi_map_t &map,
     const std::vector<int> &fcolors,
-    const qvi_hwloc_bitmaps &tres
+    const std::vector<qvi_hwloc_bitmap> &tres
 );
 
 /**
@@ -134,8 +137,8 @@ int
 qvi_map_affinity_preserving(
     qvi_map_t &map,
     const qvi_map_fn_t map_rest_fn,
-    const qvi_hwloc_bitmaps &faffs,
-    const qvi_hwloc_bitmaps &tores
+    const std::vector<qvi_hwloc_bitmap> &faffs,
+    const std::vector<qvi_hwloc_bitmap> &tores
 );
 
 /**
@@ -144,7 +147,7 @@ qvi_map_affinity_preserving(
 const qvi_hwloc_bitmap &
 qvi_map_cpuset_at(
     const qvi_map_t &map,
-    const qvi_hwloc_bitmaps &cpusets,
+    const std::vector<qvi_hwloc_bitmap> &cpusets,
     uint_t fid
 );
 

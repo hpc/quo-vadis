@@ -23,8 +23,6 @@
 struct qvi_hwloc_bitmap;
 struct qvi_hwloc_device;
 
-/** Vector of bitmap objects. */
-using qvi_hwloc_bitmaps = std::vector<qvi_hwloc_bitmap>;
 /** Set of device identifiers. */
 using qvi_hwloc_dev_id_set = std::unordered_set<std::string>;
 /** Device list type. */
@@ -143,29 +141,22 @@ private:
     m_get_nobjs_in_cpuset(
         qv_hw_obj_type_t target_obj,
         hwloc_const_cpuset_t cpuset,
-        int *nobjs
+        int &nobjs
     );
     /** */
     int
     m_get_nosdevs_in_cpuset(
         const qvi_hwloc_dev_list &devs,
         hwloc_const_cpuset_t cpuset,
-        int *nobjs
-    );
-
-    int
-    m_split_cpuset_chunk_size(
-        hwloc_const_cpuset_t cpuset,
-        uint_t npieces,
-        uint_t *chunk_size
+        int &nobjs
     );
 
     int
     m_split_cpuset_by_range(
-        hwloc_const_cpuset_t cpuset,
+        const qvi_hwloc_bitmap &bitmap,
         uint_t base,
         uint_t extent,
-        hwloc_bitmap_t result
+        qvi_hwloc_bitmap &result
     );
     /**
      * Restricts the hardware topology such that SMT is disabled.
@@ -245,11 +236,10 @@ public:
      *
      */
     int
-    bitmap_split_by_chunk_id(
-        hwloc_const_cpuset_t bitmap,
-        uint_t nchunks,
-        uint_t chunk_id,
-        hwloc_cpuset_t result
+    bitmap_split(
+        const qvi_hwloc_bitmap &bitmap,
+        uint_t npieces,
+        std::vector<qvi_hwloc_bitmap> &result
     );
     /** Constructor */
     qvi_hwloc(void) = default;
@@ -429,7 +419,7 @@ public:
     get_nobjs_in_cpuset(
         qv_hw_obj_type_t target_obj,
         hwloc_const_cpuset_t cpuset,
-        int *nobjs
+        int &nobjs
     );
     /** */
     int
@@ -596,7 +586,7 @@ public:
      */
     static qvi_hwloc_bitmap
     op_or(
-        const qvi_hwloc_bitmaps &bitmaps
+        const std::vector<qvi_hwloc_bitmap> &bitmaps
     ) {
         qvi_hwloc_bitmap result;
         for (const auto &bitmap : bitmaps) {

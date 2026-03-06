@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2022-2024 Triad National Security, LLC
+ * Copyright (c) 2022-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -129,7 +129,7 @@ int
 qvi_map_colors(
     qvi_map_t &map,
     const std::vector<int> &fcolors,
-    const qvi_hwloc_bitmaps &tres
+    const std::vector<qvi_hwloc_bitmap> &tres
 ) {
     // Note: the array index i of fcolors is the color requested by task i.
     // Determine the number of distinct colors provided in the colors array.
@@ -167,7 +167,7 @@ int
 qvi_map_packed(
     qvi_map_t &map,
     uint_t nfids,
-    const qvi_hwloc_bitmaps &tres
+    const std::vector<qvi_hwloc_bitmap> &tres
 ) {
     const uint_t ntres = tres.size();
     // Max consumers per resource.
@@ -197,7 +197,7 @@ int
 qvi_map_spread(
     qvi_map_t &map,
     uint_t nfids,
-    const qvi_hwloc_bitmaps &tres
+    const std::vector<qvi_hwloc_bitmap> &tres
 ) {
     const uint_t ntres = tres.size();
     for (uint_t fid = 0, tid = 0; fid < nfids; ++fid) {
@@ -228,8 +228,8 @@ qvi_map_disjoint_affinity(
 
 int
 qvi_map_calc_shaffinity(
-    const qvi_hwloc_bitmaps &faffs,
-    const qvi_hwloc_bitmaps &tores,
+    const std::vector<qvi_hwloc_bitmap> &faffs,
+    const std::vector<qvi_hwloc_bitmap> &tores,
     qvi_map_shaffinity_t &res_affinity_map
 ) {
     // Number of consumers.
@@ -254,8 +254,8 @@ int
 qvi_map_affinity_preserving(
     qvi_map_t &map,
     const qvi_map_fn_t map_rest_fn,
-    const qvi_hwloc_bitmaps &faffs,
-    const qvi_hwloc_bitmaps &tores
+    const std::vector<qvi_hwloc_bitmap> &faffs,
+    const std::vector<qvi_hwloc_bitmap> &tores
 ) {
     int rc = QV_SUCCESS;
     // Number of consumers.
@@ -303,7 +303,7 @@ out:
 const qvi_hwloc_bitmap &
 qvi_map_cpuset_at(
     const qvi_map_t &map,
-    const qvi_hwloc_bitmaps &cpusets,
+    const std::vector<qvi_hwloc_bitmap> &cpusets,
     uint_t fid
 ) {
     return cpusets.at(map.at(fid));
