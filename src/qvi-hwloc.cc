@@ -149,18 +149,6 @@ topo_fname(
                 + std::to_string(flags) + ".xml";
 }
 
-void
-qvi_hwloc::bitmap_debug(
-    cstr_t msg,
-    hwloc_const_cpuset_t cpuset
-) {
-#if QVI_DEBUG_MODE == 0
-    qvi_unused(msg);
-#endif
-    if (!cpuset) throw qvi_runtime_error(QV_ERR_INTERNAL);
-    qvi_log_debug("{} BITMAP={}", msg, qvi_hwloc::bitmap_string(cpuset));
-}
-
 int
 qvi_hwloc::bitmap_calloc(
     hwloc_cpuset_t *cpuset
@@ -230,10 +218,10 @@ qvi_hwloc_bitmap_nbits(
 
 std::string
 qvi_hwloc::bitmap_string(
-    hwloc_const_cpuset_t cpuset
+    const qvi_hwloc_bitmap &bitmap
 ) {
     char *iresult = nullptr;
-    (void)hwloc_bitmap_asprintf(&iresult, cpuset);
+    (void)hwloc_bitmap_asprintf(&iresult, bitmap.cdata());
     if (qvi_unlikely(!iresult)) throw qvi_runtime_error(QV_ERR_OOR);
 
     std::string result(iresult);

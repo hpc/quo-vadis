@@ -175,12 +175,6 @@ public:
         return topo_type_flags;
     }
     /** */
-    static void
-    bitmap_debug(
-        cstr_t msg,
-        hwloc_const_cpuset_t cpuset
-    );
-    /** */
     static int
     bitmap_calloc(
         hwloc_cpuset_t *cpuset
@@ -215,7 +209,7 @@ public:
      */
     static std::string
     bitmap_string(
-        hwloc_const_cpuset_t cpuset
+        const qvi_hwloc_bitmap &bitmap
     );
     /**
      * Like hwloc_bitmap_list_asprintf(), but returns a string.
@@ -603,7 +597,7 @@ public:
         Archive &archive
     ) const {
         // We are sending the string representation of the cpuset.
-        archive(qvi_hwloc::bitmap_string(m_data));
+        archive(qvi_hwloc::bitmap_string(qvi_hwloc_bitmap(m_data)));
     }
     /**
      * Deserializes a qvi_hwloc_bitmap.

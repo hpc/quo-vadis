@@ -112,7 +112,7 @@ client(
         goto out;
     }
 
-    res = qvi_hwloc::bitmap_string(bitmap.cdata());
+    res = qvi_hwloc::bitmap_string(bitmap);
     printf("# [%d] cpubind = %s\n", who, res.c_str());
 
     if (send_shutdown_msg) {
