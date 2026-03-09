@@ -180,22 +180,12 @@ int
 qvi_hwsplit::m_osdev_cpusets(
     std::vector<qvi_hwloc_bitmap> &result
 ) const {
-    // Get the number of devices we have available in the provided scope.
-    int nobj = 0;
-    int rc = m_base_hwpool.nobjects(
-        m_rmi.hwloc(), m_split_at_type, nobj
-    );
-    if (rc != QV_SUCCESS) return rc;
-    // Holds the device affinities used for the split.
-    result.resize(nobj);
-    uint_t affi = 0;
-    for (const auto &dinfo : m_base_hwpool.devices()) {
-        // Not the type we are looking to split.
-        if (m_split_at_type != dinfo.first) continue;
-        // Copy the device's affinity to our list of device affinities.
-        result.at(affi++) = dinfo.second.affinity();
+    auto [first, last] = m_base_hwpool.devices().equal_range(m_split_at_type);
+    auto view = std::ranges::subrange(first, last);
+    for (const auto &[dev_type, dev] : view) {
+        result.emplace_back(dev.affinity());
     }
-    return rc;
+    return QV_SUCCESS;
 }
 
 int
