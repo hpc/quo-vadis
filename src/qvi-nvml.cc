@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2025 Triad National Security, LLC
+ * Copyright (c) 2021-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -15,7 +15,7 @@
 #include "qvi-hwloc.h"
 
 #ifdef CUDAToolkit_FOUND
-#include "hwloc/nvml.h"
+#include "hwloc/nvml.h" // IWYU pragma: keep
 #endif
 
 int
@@ -33,7 +33,7 @@ qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
     int rc = QV_SUCCESS;
     // Because we rely on facilities that require that the given topology is the
     // system's topology, we just avoid all that by just catching that here.
-    if (!qvi_hwloc_topo_is_this_system(hwl)) {
+    if (!hwl->topology_is_this_system()) {
         return qvi_hwloc::bitmap_copy(
             hwl->topology_get_cpuset(), cpuset.data()
         );
@@ -46,20 +46,21 @@ qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
     if (nvrc != NVML_SUCCESS) return QV_ERR_HWLOC;
     // Starting from NVML 5, this API causes NVML to initialize the target GPU
     // NVML may initialize additional GPUs if the target GPU is an SLI slave.
-    nvmlDevice_t device;
-    nvrc = nvmlDeviceGetHandleByPciBusId_v2(uuid.c_str(), &device);
-    if (nvrc != NVML_SUCCESS) {
-        rc = QV_ERR_HWLOC;
-        goto out;
-    }
+    do {
+        nvmlDevice_t device;
+        nvrc = nvmlDeviceGetHandleByPciBusId_v2(uuid.c_str(), &device);
+        if (qvi_unlikely(nvrc != NVML_SUCCESS)) {
+            rc = QV_ERR_HWLOC;
+            break;
+        }
 
-    const int hwrc = hwloc_nvml_get_device_cpuset(
-        hwl->topology_get(), device, cpuset.data()
-    );
-    if (hwrc != 0) {
-        rc = QV_ERR_HWLOC;
-    }
-out:
+        const int hwrc = hwloc_nvml_get_device_cpuset(
+            hwl->topology_get(), device, cpuset.data()
+        );
+        if (qvi_unlikely(hwrc != 0)) {
+            rc = QV_ERR_HWLOC;
+        }
+    } while (false);
     // These are reference counted, so always match with our call to nvmlInit.
     (void)nvmlShutdown();
     return rc;
