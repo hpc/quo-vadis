@@ -59,6 +59,7 @@
 #include <new>
 #include <numeric>
 #include <random>
+#include <ranges>
 #include <regex>
 #include <set>
 #include <stack>

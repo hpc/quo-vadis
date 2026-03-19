@@ -257,7 +257,7 @@ qvi_hwloc::bitmap_sscanf(
 int
 qvi_hwloc::bitmap_split(
     const qvi_hwloc_bitmap &bitmap,
-    uint_t npieces,
+    size_t npieces,
     std::vector<qvi_hwloc_bitmap> &result
 ) {
     int npus = 0;
@@ -273,13 +273,13 @@ qvi_hwloc::bitmap_split(
     // Prepare for storing non-empty split.
     result.resize(npieces);
 
-    const uint_t ntotal = npus;
-    const uint_t base_chunk_size = npus / npieces;
-    uint_t remainder = ntotal % npieces;
-    uint_t current_pos = 0;
+    const size_t ntotal = npus;
+    const size_t base_chunk_size = npus / npieces;
+    size_t remainder = ntotal % npieces;
+    size_t current_pos = 0;
 
-    for (uint_t i = 0; i < npieces; ++i) {
-        uint_t current_chunk_size = base_chunk_size + (remainder > 0 ? 1 : 0);
+    for (size_t i = 0; i < npieces; ++i) {
+        size_t current_chunk_size = base_chunk_size + (remainder > 0 ? 1 : 0);
         if (remainder > 0) remainder--;
 
         rc = m_split_cpuset_by_range(

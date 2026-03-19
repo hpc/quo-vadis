@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2025 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -302,6 +302,41 @@ qvi_pid_environ(
     pid_t pid,
     std::vector<std::string> &envs
 );
+
+/**
+ * Splits the provided vector into npieces that are as close to equal size as
+ * possible given the size of the input vector and the number of pieces
+ * requested. The contents of the resulting vectors are copies of the contents
+ * of the input vector.
+ */
+template <typename T>
+std::vector<std::vector<T>>
+qvi_vector_split(
+    const std::vector<T> &vec,
+    size_t npieces
+) {
+    std::vector<std::vector<T>> result;
+    // An empty split.
+    if (qvi_unlikely(npieces == 0 || vec.size() == 0)) {
+        return result;
+    }
+
+    const size_t ntotal = vec.size();
+    const size_t base_chunk_size = ntotal / npieces;
+    size_t remainder = ntotal % npieces;
+
+    auto current_it = vec.begin();
+    for (size_t i = 0; i < npieces; ++i) {
+        const size_t chunk_size = base_chunk_size + (i < remainder ? 1 : 0);
+
+        if (chunk_size > 0) {
+            // Use vector range constructor to copy elements.
+            result.emplace_back(current_it, std::next(current_it, chunk_size));
+            std::advance(current_it, chunk_size);
+        }
+    }
+    return result;
+}
 
 #endif
 

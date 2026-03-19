@@ -19,6 +19,9 @@
 #include "hwloc/rsmi.h" // IWYU pragma: keep
 #endif
 
+// TODO(skg) We should probably return all the device info in one call to avoid
+// calling init, etc. multiple times. That may be costly. Do the same for NVML.
+
 int
 qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
     qvi_hwloc *hwl,

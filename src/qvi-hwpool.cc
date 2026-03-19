@@ -14,6 +14,7 @@
  */
 
 #include "qvi-hwpool.h"
+#include "qvi-utils.h"
 
 qv_scope_create_hints_t
 qvi_hwpool_res::hints(void)
@@ -133,6 +134,19 @@ qvi_hwpool::devices(void) const
     return m_devs;
 }
 
+std::vector<qvi_hwpool_dev>
+qvi_hwpool::devices(
+    qv_hw_obj_type_t obj_type
+) const {
+    auto [first, last] = m_devs.equal_range(obj_type);
+    auto subrange = std::ranges::subrange(first, last);
+    // Extract only the devices from the pairs.
+    auto dev_view = subrange | std::views::values;
+    std::vector<qvi_hwpool_dev> result;
+    std::ranges::copy(dev_view, std::back_inserter(result));
+    return result;
+}
+
 int
 qvi_hwpool::nobjects(
     qvi_hwloc &hwloc,
@@ -183,6 +197,38 @@ qvi_hwpool::set_union(
             result.add_device(dev);
         }
     }
+    return result;
+}
+
+std::vector<qvi_hwpool>
+qvi_hwpool::split_atn(
+    qvi_hwloc &hwloc,
+    qv_hw_obj_type_t obj_type,
+    int npieces
+) {
+    int nobj_type = 0;
+    int rc = nobjects(hwloc, obj_type, nobj_type);
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
+    // Protect against invalid split requests.
+    if (qvi_unlikely(npieces <= 0 || npieces > nobj_type)) {
+        throw qvi_runtime_error(QV_ERR_SPLIT);
+    }
+    std::vector<qvi_hwloc_bitmap> split_bitmaps;
+    // Determine the primary object type that we are splitting over.
+    // Provided a host resource type?
+    // Called from a  split() context?
+    if (qvi_hwloc::obj_is_host_resource(obj_type) ||
+        obj_type == QV_HW_OBJ_LAST) {
+        rc = hwloc.bitmap_split(
+            m_cpu.affinity(), npieces, split_bitmaps
+        );
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
+    }
+    // Provided an OS device.
+    else {
+        auto split_devices = qvi_vector_split(devices(obj_type), npieces);
+    }
+    std::vector<qvi_hwpool> result;
     return result;
 }
 
