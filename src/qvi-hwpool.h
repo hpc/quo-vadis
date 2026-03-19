@@ -153,7 +153,7 @@ private:
     qvi_hwpool_cpu m_cpu;
     /** The hardware pool's devices. */
     qvi_hwpool_devs_t m_devs;
-    /** Returns whether a given device is already in pool. */
+    /** Returns whether a given device is already in the pool. */
     bool
     m_device_in_pool(
         const qvi_hwpool_dev &dev
@@ -193,6 +193,13 @@ public:
     const qvi_hwpool_devs_t &
     devices(void) const;
     /**
+     * Returns a vector of device copies of the given object type.
+     */
+    std::vector<qvi_hwpool_dev>
+    devices(
+        qv_hw_obj_type_t obj_type
+    ) const;
+    /**
      * Returns the number of objects in the hardware pool.
      */
     int
@@ -220,6 +227,15 @@ public:
     static qvi_hwpool
     set_union(
         const std::vector<qvi_hwpool> &hwpools
+    );
+    /**
+     *
+     */
+    std::vector<qvi_hwpool>
+    split_atn(
+        qvi_hwloc &hwloc,
+        qv_hw_obj_type_t obj_type,
+        int npieces
     );
     /**
      * Serializes a hardware pool.

@@ -232,7 +232,7 @@ public:
     int
     bitmap_split(
         const qvi_hwloc_bitmap &bitmap,
-        uint_t npieces,
+        size_t npieces,
         std::vector<qvi_hwloc_bitmap> &result
     );
     /** Constructor */

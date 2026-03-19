@@ -43,7 +43,7 @@ qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
     // maintained. Shutdown only occurs when the reference count reaches zero.
     // Initialize NVML, but don't initialize any GPUs yet.
     nvmlReturn_t nvrc = nvmlInit_v2();
-    if (nvrc != NVML_SUCCESS) return QV_ERR_HWLOC;
+    if (qvi_unlikely(nvrc != NVML_SUCCESS)) return QV_ERR_HWLOC;
     // Starting from NVML 5, this API causes NVML to initialize the target GPU
     // NVML may initialize additional GPUs if the target GPU is an SLI slave.
     do {

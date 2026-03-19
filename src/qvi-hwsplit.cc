@@ -370,6 +370,7 @@ apply_cpuset_mapping(
 /**
  * User-defined split.
  */
+#if 1
 int
 qvi_hwsplit::split_user_defined(void)
 {
@@ -391,6 +392,13 @@ qvi_hwsplit::split_user_defined(void)
     // Use a straightforward device splitting algorithm based on user's request.
     return split_devices_user_defined();
 }
+#else
+int
+qvi_hwsplit::split_user_defined(void)
+{
+
+}
+#endif
 
 int
 qvi_hwsplit::split_affinity_preserving_pass1(void)
@@ -539,6 +547,9 @@ qvi_hwsplit::m_split(void)
         }
         auto_split = true;
     }
+
+    // TODO(skg) One split, then multiple maps?
+
     // TODO(skg) Favor using function pointers?
     // User-defined splitting.
     if (!auto_split) {
