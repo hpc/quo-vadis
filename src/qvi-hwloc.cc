@@ -260,27 +260,25 @@ qvi_hwloc::bitmap_split(
     size_t npieces,
     std::vector<qvi_hwloc_bitmap> &result
 ) {
-    int npus = 0;
+    size_t npus = 0;
     int rc = m_get_nobjs_in_cpuset(
         QV_HW_OBJ_PU, bitmap.cdata(), npus
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // An empty split.
-    if (qvi_unlikely(npieces == 0 || npus == 0)) {
+    if (qvi_unlikely(npieces == 0 || npus == 0 || npieces > npus)) {
         result.clear();
         return QV_SUCCESS;
     }
     // Prepare for storing non-empty split.
     result.resize(npieces);
 
-    const size_t ntotal = npus;
     const size_t base_chunk_size = npus / npieces;
-    size_t remainder = ntotal % npieces;
+    const size_t remainder = npus % npieces;
     size_t current_pos = 0;
 
     for (size_t i = 0; i < npieces; ++i) {
-        size_t current_chunk_size = base_chunk_size + (remainder > 0 ? 1 : 0);
-        if (remainder > 0) remainder--;
+        size_t current_chunk_size = base_chunk_size + (i < remainder ? 1 : 0);
 
         rc = m_split_cpuset_by_range(
             bitmap, current_pos, current_chunk_size, result[i]
@@ -980,14 +978,12 @@ int
 qvi_hwloc::m_get_nosdevs_in_cpuset(
     const qvi_hwloc_dev_list &devs,
     hwloc_const_cpuset_t cpuset,
-    int &nobjs
+    size_t &nobjs
 ) {
-    int ndevs = 0;
+    nobjs = 0;
     for (const auto &dev : devs) {
-        if (hwloc_bitmap_isincluded(dev->affinity.cdata(), cpuset)) ndevs++;
+        if (hwloc_bitmap_isincluded(dev->affinity.cdata(), cpuset)) nobjs++;
     }
-    nobjs = ndevs;
-
     return QV_SUCCESS;
 }
 
@@ -995,21 +991,20 @@ int
 qvi_hwloc::m_get_nobjs_in_cpuset(
     qv_hw_obj_type_t target_obj,
     hwloc_const_cpuset_t cpuset,
-    int &nobjs
+    size_t &nobjs
 ) {
     int depth;
     int rc = obj_type_depth(target_obj, &depth);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    int n = 0;
+    nobjs = 0;
     hwloc_obj_t obj = nullptr;
     while ((obj = hwloc_get_next_obj_by_depth(m_topo, depth, obj))) {
         if (!hwloc_bitmap_isincluded(obj->cpuset, cpuset)) continue;
         // Ignore objects with empty sets (can happen when outside of cgroup).
         if (hwloc_bitmap_iszero(obj->cpuset)) continue;
-        n++;
+        nobjs++;
     }
-    nobjs = n;
     return QV_SUCCESS;
 }
 
@@ -1017,7 +1012,7 @@ int
 qvi_hwloc::get_nobjs_in_cpuset(
     qv_hw_obj_type_t target_obj,
     hwloc_const_cpuset_t cpuset,
-    int &nobjs
+    size_t &nobjs
 ) {
     switch (target_obj) {
         case(QV_HW_OBJ_GPU) :

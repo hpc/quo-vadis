@@ -206,7 +206,7 @@ public:
     nobjects(
         qvi_hwloc &hwloc,
         qv_hw_obj_type_t obj_type,
-        int &result
+        size_t &result
     ) const;
     /**
      * Adds a qvi_hwpool_dev_s device. Attempts to insert the same device
@@ -235,7 +235,7 @@ public:
     split_atn(
         qvi_hwloc &hwloc,
         qv_hw_obj_type_t obj_type,
-        int npieces
+        size_t npieces
     );
     /**
      * Serializes a hardware pool.

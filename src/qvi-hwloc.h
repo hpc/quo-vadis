@@ -141,14 +141,14 @@ private:
     m_get_nobjs_in_cpuset(
         qv_hw_obj_type_t target_obj,
         hwloc_const_cpuset_t cpuset,
-        int &nobjs
+        size_t &nobjs
     );
     /** */
     int
     m_get_nosdevs_in_cpuset(
         const qvi_hwloc_dev_list &devs,
         hwloc_const_cpuset_t cpuset,
-        int &nobjs
+        size_t &nobjs
     );
 
     int
@@ -413,7 +413,7 @@ public:
     get_nobjs_in_cpuset(
         qv_hw_obj_type_t target_obj,
         hwloc_const_cpuset_t cpuset,
-        int &nobjs
+        size_t &nobjs
     );
     /** */
     int

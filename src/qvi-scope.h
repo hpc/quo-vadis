@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2025 Triad National Security, LLC
+ * Copyright (c) 2021-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c)      2021 Lawrence Livermore National Security, LLC
@@ -78,7 +78,7 @@ public:
     int
     group_barrier(void);
     /** Returns the number of hardware objects in the provided scope. */
-    int
+    size_t
     hwpool_nobjects(
         qv_hw_obj_type_t obj
     ) const;

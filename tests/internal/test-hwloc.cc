@@ -110,19 +110,19 @@ echo_gpu_info(
 ) {
     printf("\n# Discovered GPU Devices --------------\n");
 
-    int ngpus = 0;
+    size_t ngpus = 0;
     int rc = hwl.get_nobjs_in_cpuset(
         QV_HW_OBJ_GPU, hwl.topology_get_cpuset(), ngpus
     );
     if (rc != QV_SUCCESS) return rc;
 
-    printf("# Number of GPUs: %u\n", ngpus);
+    printf("# Number of GPUs: %zu\n", ngpus);
 
     rc = hwl.devices_emit(QV_HW_OBJ_GPU);
     if (rc != QV_SUCCESS) return rc;
 
     const unsigned ndevids = sizeof(devnts) / sizeof(device_name_type_t);
-    for (int i = 0; i < ngpus; ++i) {
+    for (size_t i = 0; i < ngpus; ++i) {
         for (unsigned j = 0; j < ndevids; ++j) {
             std::string devids;
             rc = hwl.get_device_id_in_cpuset(
@@ -131,7 +131,7 @@ echo_gpu_info(
                 devnts[j].type, devids
             );
             if (rc != QV_SUCCESS) return rc;
-            printf("# Device %u %s = %s\n", i, devnts[j].name, devids.c_str());
+            printf("# Device %zu %s = %s\n", i, devnts[j].name, devids.c_str());
         }
     }
 

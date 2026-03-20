@@ -130,7 +130,7 @@ qv_scope_hw_obj_count(
         return QV_ERR_INVLD_ARG;
     }
     try {
-        *nobjs = scope->hwpool_nobjects(obj);
+        *nobjs = static_cast<int>(scope->hwpool_nobjects(obj));
         return QV_SUCCESS;
     }
     qvi_catch_and_return();

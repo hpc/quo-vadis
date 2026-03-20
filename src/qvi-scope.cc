@@ -136,11 +136,11 @@ qv_scope::group_rank(void) const
     return m_group->rank();
 }
 
-int
+size_t
 qv_scope::hwpool_nobjects(
     qv_hw_obj_type_t obj
 ) const {
-    int result = 0;
+    size_t result = 0;
     const int rc = m_hwpool.nobjects(m_group->hwloc(), obj, result);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
     return result;
