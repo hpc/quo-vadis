@@ -519,7 +519,7 @@ int
 qvi_rmi_client::get_nobjs_in_cpuset(
     qv_hw_obj_type_t target_obj,
     const qvi_hwloc_bitmap &cpuset,
-    int &nobjs
+    size_t &nobjs
 ) {
     int qvrc = rpc_req(
         QVI_RMI_FID_GET_NOBJS_IN_CPUSET,
@@ -841,7 +841,7 @@ qvi_rmi_server::s_rpc_get_nobjs_in_cpuset(
     qvi_bbuff **output
 ) {
     int rpcrc = QV_SUCCESS;
-    int nobjs = 0;
+    size_t nobjs = 0;
 
     do {
         qvi_hwloc_flags_t flags;

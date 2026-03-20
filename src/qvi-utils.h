@@ -315,25 +315,22 @@ qvi_vector_split(
     const std::vector<T> &vec,
     size_t npieces
 ) {
+    const size_t ntotal = vec.size();
     std::vector<std::vector<T>> result;
     // An empty split.
-    if (qvi_unlikely(npieces == 0 || vec.size() == 0)) {
+    if (qvi_unlikely(npieces == 0 || ntotal == 0 || npieces > ntotal)) {
         return result;
     }
 
-    const size_t ntotal = vec.size();
     const size_t base_chunk_size = ntotal / npieces;
-    size_t remainder = ntotal % npieces;
+    const size_t remainder = ntotal % npieces;
 
     auto current_it = vec.begin();
     for (size_t i = 0; i < npieces; ++i) {
         const size_t chunk_size = base_chunk_size + (i < remainder ? 1 : 0);
-
-        if (chunk_size > 0) {
-            // Use vector range constructor to copy elements.
-            result.emplace_back(current_it, std::next(current_it, chunk_size));
-            std::advance(current_it, chunk_size);
-        }
+        // Use vector range constructor to copy elements.
+        result.emplace_back(current_it, std::next(current_it, chunk_size));
+        std::advance(current_it, chunk_size);
     }
     return result;
 }

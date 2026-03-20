@@ -138,10 +138,10 @@ std::vector<qvi_hwpool_dev>
 qvi_hwpool::devices(
     qv_hw_obj_type_t obj_type
 ) const {
-    auto [first, last] = m_devs.equal_range(obj_type);
-    auto subrange = std::ranges::subrange(first, last);
+    const auto [first, last] = m_devs.equal_range(obj_type);
+    const auto subrange = std::ranges::subrange(first, last);
     // Extract only the devices from the pairs.
-    auto dev_view = subrange | std::views::values;
+    const auto dev_view = subrange | std::views::values;
     std::vector<qvi_hwpool_dev> result;
     std::ranges::copy(dev_view, std::back_inserter(result));
     return result;
@@ -151,7 +151,7 @@ int
 qvi_hwpool::nobjects(
     qvi_hwloc &hwloc,
     qv_hw_obj_type_t obj_type,
-    int &result
+    size_t &result
 ) const {
     if (qvi_hwloc::obj_is_host_resource(obj_type)) {
         return hwloc.get_nobjs_in_cpuset(
@@ -204,9 +204,9 @@ std::vector<qvi_hwpool>
 qvi_hwpool::split_atn(
     qvi_hwloc &hwloc,
     qv_hw_obj_type_t obj_type,
-    int npieces
+    size_t npieces
 ) {
-    int nobj_type = 0;
+    size_t nobj_type = 0;
     int rc = nobjects(hwloc, obj_type, nobj_type);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
     // Protect against invalid split requests.

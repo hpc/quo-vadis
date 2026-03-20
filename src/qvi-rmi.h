@@ -300,7 +300,7 @@ public:
     get_nobjs_in_cpuset(
         qv_hw_obj_type_t target_obj,
         const qvi_hwloc_bitmap &cpuset,
-        int &nobjs
+        size_t &nobjs
     );
     /** Returns a device ID string for the requested device. */
     int
