@@ -188,6 +188,7 @@ qvi_hwsplit::m_osdev_cpusets(
     return QV_SUCCESS;
 }
 
+// TODO(skg) Merge with hwpool things like primary_cpuset_for_split() or delete.
 int
 qvi_hwsplit::m_primary_cpusets(
     std::vector<qvi_hwloc_bitmap> &result

@@ -183,6 +183,16 @@ public:
         const qvi_hwloc_bitmap &cpuset
     );
     /**
+     * Returns a pair where .first is the real split type identified and .second
+     * is the hardware pool's primary cpuset for a given hardware object type.
+     * This is the cpuset that is typically be used for splitting hardware
+     * resources based on the provided hardware object type.
+     */
+    std::pair<qv_hw_obj_type_t, qvi_hwloc_bitmap>
+    primary_cpuset_for_split(
+        qv_hw_obj_type_t requested_type
+    ) const;
+    /**
      * Returns a const reference to the hardware pool's cpuset.
      */
     const qvi_hwloc_bitmap &
@@ -204,7 +214,7 @@ public:
      */
     int
     nobjects(
-        qvi_hwloc &hwloc,
+        const qvi_hwloc &hwloc,
         qv_hw_obj_type_t obj_type,
         size_t &result
     ) const;
@@ -233,7 +243,7 @@ public:
      */
     std::vector<qvi_hwpool>
     split_atn(
-        qvi_hwloc &hwloc,
+        const qvi_hwloc &hwloc,
         qv_hw_obj_type_t obj_type,
         size_t npieces
     );

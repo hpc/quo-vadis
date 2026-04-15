@@ -142,14 +142,14 @@ private:
         qv_hw_obj_type_t target_obj,
         hwloc_const_cpuset_t cpuset,
         size_t &nobjs
-    );
+    ) const;
     /** */
     int
     m_get_nosdevs_in_cpuset(
         const qvi_hwloc_dev_list &devs,
         hwloc_const_cpuset_t cpuset,
         size_t &nobjs
-    );
+    ) const;
 
     int
     m_split_cpuset_by_range(
@@ -157,7 +157,7 @@ private:
         uint_t base,
         uint_t extent,
         qvi_hwloc_bitmap &result
-    );
+    ) const;
     /**
      * Restricts the hardware topology such that SMT is disabled.
      */
@@ -234,7 +234,7 @@ public:
         const qvi_hwloc_bitmap &bitmap,
         size_t npieces,
         std::vector<qvi_hwloc_bitmap> &result
-    );
+    ) const;
     /** Constructor */
     qvi_hwloc(void) = default;
     /** Destructor */
@@ -320,7 +320,7 @@ public:
     obj_type_depth(
         qv_hw_obj_type_t type,
         int *depth
-    );
+    ) const;
     /**
      *
      */
@@ -414,7 +414,7 @@ public:
         qv_hw_obj_type_t target_obj,
         hwloc_const_cpuset_t cpuset,
         size_t &nobjs
-    );
+    ) const;
     /** */
     int
     get_obj_in_cpuset_by_depth(
@@ -422,7 +422,7 @@ public:
         int depth,
         int index,
         hwloc_obj_t *result_obj
-    );
+    ) const;
     /**
      *
      */

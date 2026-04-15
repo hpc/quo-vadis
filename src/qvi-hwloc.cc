@@ -259,7 +259,7 @@ qvi_hwloc::bitmap_split(
     const qvi_hwloc_bitmap &bitmap,
     size_t npieces,
     std::vector<qvi_hwloc_bitmap> &result
-) {
+) const {
     size_t npus = 0;
     int rc = m_get_nobjs_in_cpuset(
         QV_HW_OBJ_PU, bitmap.cdata(), npus
@@ -574,7 +574,7 @@ int
 qvi_hwloc::obj_type_depth(
     qv_hw_obj_type_t type,
     int *depth
-) {
+) const {
     *depth = hwloc_get_type_depth(
         m_topo, qvi_hwloc::obj_get_type(type)
     );
@@ -979,7 +979,7 @@ qvi_hwloc::m_get_nosdevs_in_cpuset(
     const qvi_hwloc_dev_list &devs,
     hwloc_const_cpuset_t cpuset,
     size_t &nobjs
-) {
+) const {
     nobjs = 0;
     for (const auto &dev : devs) {
         if (hwloc_bitmap_isincluded(dev->affinity.cdata(), cpuset)) nobjs++;
@@ -992,7 +992,7 @@ qvi_hwloc::m_get_nobjs_in_cpuset(
     qv_hw_obj_type_t target_obj,
     hwloc_const_cpuset_t cpuset,
     size_t &nobjs
-) {
+) const {
     int depth;
     int rc = obj_type_depth(target_obj, &depth);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
@@ -1013,7 +1013,7 @@ qvi_hwloc::get_nobjs_in_cpuset(
     qv_hw_obj_type_t target_obj,
     hwloc_const_cpuset_t cpuset,
     size_t &nobjs
-) {
+) const {
     switch (target_obj) {
         case(QV_HW_OBJ_GPU) :
             return m_get_nosdevs_in_cpuset(m_gpus, cpuset, nobjs);
@@ -1049,7 +1049,7 @@ qvi_hwloc::get_obj_in_cpuset_by_depth(
     int depth,
     int index,
     hwloc_obj_t *result_obj
-) {
+) const {
     *result_obj = hwloc_get_obj_inside_cpuset_by_depth(
         m_topo, cpuset, depth, index
     );
@@ -1166,7 +1166,7 @@ qvi_hwloc::m_split_cpuset_by_range(
     uint_t base,
     uint_t extent,
     qvi_hwloc_bitmap &result
-) {
+) const {
     // Zero-out the result bitmap that will encode the split.
     hwloc_bitmap_zero(result.data());
     // We use PUs to split resources. Each set bit represents a PU. The number
