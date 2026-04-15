@@ -122,6 +122,39 @@ qvi_hwpool::initialize(
     return m_add_devices_with_affinity(hwloc);
 }
 
+std::pair<qv_hw_obj_type_t, qvi_hwloc_bitmap>
+qvi_hwpool::primary_cpuset_for_split(
+    qv_hw_obj_type_t requested_type
+) const {
+    qv_hw_obj_type_t real_type = requested_type;
+    // Were we provided a real resource type that we have to split? Or was
+    // QV_HW_OBJ_LAST instead provided to indicate that we were called from a
+    // split() context, which uses the host's primary compute resource to split
+    // the resources. If a host has GPUs, use the union of those. Otherwise use
+    // the host's CPU resources.
+    if (requested_type == QV_HW_OBJ_LAST) {
+        if (devices().count(QV_HW_OBJ_GPU) > 0) {
+            real_type = QV_HW_OBJ_GPU;
+        }
+        // No GPUs, so pick PUs as the host resource, since this is the atomic
+        // unit at which host resources are split.
+        else {
+            real_type = QV_HW_OBJ_PU;
+        }
+    }
+
+    if (qvi_hwloc::obj_is_host_resource(real_type)) {
+        return {real_type, m_cpu.affinity()};
+    }
+    // Else, an OS device. The cpuset will be
+    // the union over the devices affinities.
+    qvi_hwloc_bitmap result;
+    for (const auto &dev : devices(real_type)) {
+        result = result | dev.affinity();
+    }
+    return {real_type, result};
+}
+
 const qvi_hwloc_bitmap &
 qvi_hwpool::cpuset(void) const
 {
@@ -149,7 +182,7 @@ qvi_hwpool::devices(
 
 int
 qvi_hwpool::nobjects(
-    qvi_hwloc &hwloc,
+    const qvi_hwloc &hwloc,
     qv_hw_obj_type_t obj_type,
     size_t &result
 ) const {
@@ -158,6 +191,8 @@ qvi_hwpool::nobjects(
             obj_type, m_cpu.affinity().cdata(), result
         );
     }
+    // Note that this path also covers QV_HW_OBJ_LAST because result
+    // will be 0 in the case that QV_HW_OBJ_LAST is passed here.
     result = m_devs.count(obj_type);
     return QV_SUCCESS;
 }
@@ -202,31 +237,22 @@ qvi_hwpool::set_union(
 
 std::vector<qvi_hwpool>
 qvi_hwpool::split_atn(
-    qvi_hwloc &hwloc,
+    const qvi_hwloc &hwloc,
     qv_hw_obj_type_t obj_type,
     size_t npieces
 ) {
-    size_t nobj_type = 0;
-    int rc = nobjects(hwloc, obj_type, nobj_type);
-    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
-    // Protect against invalid split requests.
-    if (qvi_unlikely(npieces <= 0 || npieces > nobj_type)) {
-        throw qvi_runtime_error(QV_ERR_SPLIT);
-    }
     std::vector<qvi_hwloc_bitmap> split_bitmaps;
     // Determine the primary object type that we are splitting over.
-    // Provided a host resource type?
-    // Called from a  split() context?
-    if (qvi_hwloc::obj_is_host_resource(obj_type) ||
-        obj_type == QV_HW_OBJ_LAST) {
-        rc = hwloc.bitmap_split(
-            m_cpu.affinity(), npieces, split_bitmaps
+    auto [real_obj_type, primary_cpuset] = primary_cpuset_for_split(obj_type);
+    if (qvi_hwloc::obj_is_host_resource(real_obj_type)) {
+        const int rc = hwloc.bitmap_split(
+            primary_cpuset, npieces, split_bitmaps
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
     }
     // Provided an OS device.
     else {
-        auto split_devices = qvi_vector_split(devices(obj_type), npieces);
+        auto split_devices = qvi_vector_split(devices(real_obj_type), npieces);
     }
     std::vector<qvi_hwpool> result;
     return result;
