@@ -545,6 +545,9 @@ qvi_hwloc::obj_get_type(
     }
 }
 
+// TODO(skg) Replace with a function that returns a general type for a given
+// resource type. For example, QVI_HWLOC_RES_HOST, QVI_HWLOC_RES_DEV,
+// QVI_HWLOC_RES_LAST.
 bool
 qvi_hwloc::obj_is_host_resource(
     qv_hw_obj_type_t type
