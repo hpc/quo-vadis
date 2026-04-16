@@ -17,8 +17,6 @@
 #include "qvi-common.h"
 #include "qvi-hwloc.h"
 
-// TODO(skg)
-//
 /** Maintains a mapping between 'From IDs' to 'To IDs'. */
 using qvi_map_t = std::map<uint_t, uint_t>;
 
@@ -27,8 +25,9 @@ using qvi_map_t = std::map<uint_t, uint_t>;
  */
 using qvi_map_fn_t = std::function<
     int(
-        qvi_map_t &map, uint_t nfids,
-        const std::vector<qvi_hwloc_bitmap> &tres
+        size_t nfids,
+        size_t ntids,
+        qvi_map_t &map
     )
 >;
 
@@ -87,16 +86,16 @@ qvi_map_fid_mapped(
  */
 int
 qvi_map_packed(
-    qvi_map_t &map,
-    uint_t nfids,
-    const std::vector<qvi_hwloc_bitmap> &tres
+    size_t nfids,
+    size_t ntids,
+    qvi_map_t &map
 );
 
 int
 qvi_map_spread(
-    qvi_map_t &map,
-    uint_t nfids,
-    const std::vector<qvi_hwloc_bitmap> &tres
+    size_t nfids,
+    size_t ntids,
+    qvi_map_t &map
 );
 
 /**
@@ -125,9 +124,9 @@ qvi_map_disjoint_affinity(
  */
 int
 qvi_map_colors(
-    qvi_map_t &map,
     const std::vector<int> &fcolors,
-    const std::vector<qvi_hwloc_bitmap> &tres
+    size_t ntres,
+    qvi_map_t &map
 );
 
 /**

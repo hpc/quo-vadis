@@ -127,9 +127,9 @@ qvi_map_fid_mapped(
 
 int
 qvi_map_colors(
-    qvi_map_t &map,
     const std::vector<int> &fcolors,
-    const std::vector<qvi_hwloc_bitmap> &tres
+    size_t nto,
+    qvi_map_t &map
 ) {
     // Note: the array index i of fcolors is the color requested by task i.
     // Determine the number of distinct colors provided in the colors array.
@@ -150,7 +150,7 @@ qvi_map_colors(
     qvi_map_t csi2cpui;
     // We map packed here because we are assuming that like or near colors
     // should be mapped close together.
-    int rc = qvi_map_packed(csi2cpui, nfrom, tres);
+    int rc = qvi_map_packed(nfrom, nto, csi2cpui);
     if (rc != QV_SUCCESS) return rc;
     // Now map the task colors to their respective cpusets.
     for (uint_t fid = 0; fid < fcolors.size(); ++fid) {
@@ -165,18 +165,17 @@ qvi_map_colors(
 
 int
 qvi_map_packed(
-    qvi_map_t &map,
-    uint_t nfids,
-    const std::vector<qvi_hwloc_bitmap> &tres
+    size_t nfids,
+    size_t ntids,
+    qvi_map_t &map
 ) {
-    const uint_t ntres = tres.size();
     // Max consumers per resource.
-    const uint_t maxcpr = qvi_map_maxiperk(nfids, ntres);
+    const uint_t maxcpr = qvi_map_maxiperk(nfids, ntids);
     // Keeps track of the next consumer ID to map.
     uint_t fid = 0;
     // Number of consumers mapped to a resource.
     uint_t nmapped = qvi_map_nfids_mapped(map);
-    for (uint_t tid = 0; tid < ntres; ++tid) {
+    for (uint_t tid = 0; tid < ntids; ++tid) {
         // Number of consumer IDs to map.
         const uint_t nmap = qvi_map_maxfit(maxcpr, nfids - nmapped);
         for (uint_t i = 0; i < nmap; ++i, ++fid) {
@@ -195,16 +194,15 @@ qvi_map_packed(
  */
 int
 qvi_map_spread(
-    qvi_map_t &map,
-    uint_t nfids,
-    const std::vector<qvi_hwloc_bitmap> &tres
+    size_t nfids,
+    size_t ntids,
+    qvi_map_t &map
 ) {
-    const uint_t ntres = tres.size();
     for (uint_t fid = 0, tid = 0; fid < nfids; ++fid) {
         // Already mapped (potentially by some other mapper).
         if (qvi_map_fid_mapped(map, fid)) continue;
         // Mod to loop around 'to resource' IDs.
-        map.insert({fid, (tid++) % ntres});
+        map.insert({fid, (tid++) % ntids});
     }
     return QV_SUCCESS;
 }
@@ -289,7 +287,7 @@ qvi_map_affinity_preserving(
         rc = qvi_map_disjoint_affinity(map, res_affinity_map);
         if (rc != QV_SUCCESS) goto out;
 
-        rc = map_rest_fn(map, ncon, tores);
+        rc = map_rest_fn(ncon, tores.size(), map);
         if (rc != QV_SUCCESS) goto out;
     }
 out:

@@ -37,6 +37,7 @@ private:
     /** Deleted default constructor. */
     qvi_hwsplit(void) = delete;
     /** Constructor. */
+    // TODO(skg) Change uint_t to size_t
     qvi_hwsplit(
         qv_scope *parent,
         uint_t group_size,
@@ -118,14 +119,6 @@ private:
     m_osdev_cpusets(
         std::vector<qvi_hwloc_bitmap> &result
     ) const;
-
-    int
-    m_primary_cpusets(
-        std::vector<qvi_hwloc_bitmap> &result
-    ) const;
-    /** Releases all devices contained in the hardware split. */
-    int
-    m_release_devices(void);
     /** Gathers group-level split data to the specified root. */
     static int
     m_gather_split_data(
@@ -148,30 +141,31 @@ private:
     /** */
     qvi_map_fn_t
     affinity_preserving_policy(void) const;
-    /** */
-    int
-    split_affinity_preserving_pass1(void);
     /** User-defined split. */
     int
-    split_user_defined(void);
+    split_user_defined(
+        const std::vector<qvi_hwpool> &hwpools
+    );
     /** Affinity preserving split. */
     int
-    split_affinity_preserving(void);
+    split_affinity_preserving(
+        const std::vector<qvi_hwpool> &hwpools
+    );
     /** */
     int
-    split_packed(void);
+    split_packed(
+        const std::vector<qvi_hwpool> &hwpools
+    );
     /** */
     int
-    split_spread(void);
-    /** Straightforward user-defined device splitting. */
-    int
-    split_devices_user_defined(void);
-    /** Affinity preserving device splitting. */
-    int
-    split_devices_affinity_preserving(void);
+    split_spread(
+        const std::vector<qvi_hwpool> &hwpools
+    );
     /** Splits aggregate scope data. This can only be called by the root. */
     int
-    m_split(void);
+    m_split(
+        const qvi_hwloc &hwloc
+    );
 public:
     /** Performs a collective split. */
     static int
