@@ -14,7 +14,7 @@
  */
 
 #include "qvi-hwpool.h"
-#include "qvi-utils.h"
+#include "qvi-map.h"
 
 qv_scope_create_hints_t
 qvi_hwpool_res::hints(void)
@@ -91,6 +91,8 @@ qvi_hwpool::m_device_in_pool(
     );
 }
 
+// TODO(skg) This is suspect. Perhaps we should favor affinity preserving
+// mapping?
 int
 qvi_hwpool::m_add_devices_with_affinity(
     qvi_hwloc &hwloc
@@ -123,7 +125,7 @@ qvi_hwpool::initialize(
 }
 
 std::pair<qv_hw_obj_type_t, qvi_hwloc_bitmap>
-qvi_hwpool::primary_cpuset_for_split(
+qvi_hwpool::m_primary_cpuset_for_split(
     qv_hw_obj_type_t requested_type
 ) const {
     qv_hw_obj_type_t real_type = requested_type;
@@ -177,6 +179,23 @@ qvi_hwpool::devices(
     const auto dev_view = subrange | std::views::values;
     std::vector<qvi_hwpool_dev> result;
     std::ranges::copy(dev_view, std::back_inserter(result));
+    return result;
+}
+
+// TODO(skg) Complete implementation.
+std::vector<qvi_hwloc_bitmap>
+qvi_hwpool::affinities(
+    qv_hw_obj_type_t obj_type
+) const {
+    std::vector<qvi_hwloc_bitmap> result;
+    if (qvi_hwloc::obj_is_host_resource(obj_type)) {
+        throw qvi_runtime_error(QV_ERR_NOT_SUPPORTED);
+    }
+    else {
+        for (const auto &dev : devices(obj_type)) {
+            result.emplace_back(dev.affinity());
+        }
+    }
     return result;
 }
 
@@ -241,20 +260,34 @@ qvi_hwpool::split_atn(
     qv_hw_obj_type_t obj_type,
     size_t npieces
 ) {
-    std::vector<qvi_hwloc_bitmap> split_bitmaps;
     // Determine the primary object type that we are splitting over.
-    auto [real_obj_type, primary_cpuset] = primary_cpuset_for_split(obj_type);
-    if (qvi_hwloc::obj_is_host_resource(real_obj_type)) {
-        const int rc = hwloc.bitmap_split(
-            primary_cpuset, npieces, split_bitmaps
+    const auto [real_type, primary_cpuset] = m_primary_cpuset_for_split(obj_type);
+    // Split the primary cpuset into npieces.
+    std::vector<qvi_hwloc_bitmap> hwpool_cpusets;
+    int rc = hwloc.bitmap_split(primary_cpuset, npieces, hwpool_cpusets);
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
+    // Create the n hardware pools, initiate each with a cpuset from split.
+    std::vector<qvi_hwpool> result;
+    for (size_t i = 0; i < npieces; ++i) {
+        result.emplace_back(qvi_hwpool(hwpool_cpusets[i]));
+    }
+    // Iterate over supported device types and add devices based on affinity.
+    for (const auto devt : qvi_hwloc::supported_devices()) {
+        const auto devs = devices(devt);
+        const auto dev_affinities = affinities(devt);
+        // Map devices to cpusets, trying to maintain good affinity.
+        qvi_map_t map;
+        rc = qvi_map_affinity_preserving(
+            map, qvi_map_spread, dev_affinities, hwpool_cpusets
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
+        // Now that we have the mapping, assign
+        // devices to the associated hardware pools.
+        for (const auto &[devi, pooli] : map) {
+            rc = result[pooli].add_device(devs[devi]);
+            if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
+        }
     }
-    // Provided an OS device.
-    else {
-        auto split_devices = qvi_vector_split(devices(real_obj_type), npieces);
-    }
-    std::vector<qvi_hwpool> result;
     return result;
 }
 
