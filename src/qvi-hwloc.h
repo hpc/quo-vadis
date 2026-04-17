@@ -75,6 +75,14 @@ private:
         int *fd
     );
     /**
+     *
+     */
+    int
+    m_set_device_affinity_by_pci_bus_id(
+        const std::string &busid,
+        qvi_hwloc_device *dev
+    );
+    /**
      * First pass: discover devices that must be added to the list of devices.
      */
     int
@@ -163,7 +171,6 @@ private:
      */
     int
     m_disable_smt(void);
-
 public:
     static
     std::vector<qvi_hwloc_flags_t>

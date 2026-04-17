@@ -17,8 +17,13 @@
 #include "qvi-hwloc.h"
 #include "qvi-utils.h"
 
+#if 0 // XXX(skg) Not sure if we can get away without using these.
 #include "qvi-nvml.h"
 #include "qvi-rsmi.h"
+#endif
+
+// TODO(skg) Why aren't NICs showing up? Fix that. Can we merge GPU and NIC
+// code?
 
 /** Maps a string identifier to a device. */
 using qvi_hwloc_dev_map = std::unordered_map<
@@ -694,10 +699,53 @@ qvi_hwloc::m_set_general_device_info(
 }
 
 int
+qvi_hwloc::m_set_device_affinity_by_pci_bus_id(
+    const std::string &busid,
+    qvi_hwloc_device *dev
+) {
+    int rc = QV_SUCCESS;
+    do {
+        hwloc_obj_t pci_dev = hwloc_get_pcidev_by_busidstring(
+            m_topo, busid.c_str()
+        );
+        if (qvi_unlikely(!pci_dev)) {
+            rc = QV_ERR_NOT_FOUND;
+            break;
+        }
+        // Jump to the closest non-I/O ancestor. This is the
+        // CPU/Memory node the PCI bus is physically wired to.
+        hwloc_obj_t ancestor = hwloc_get_non_io_ancestor_obj(m_topo, pci_dev);
+        // Walk up the parents until we find the package (i.e., CPU socket).
+        hwloc_obj_t package = ancestor;
+        while (package && package->type != HWLOC_OBJ_PACKAGE) {
+            package = package->parent;
+        }
+        // Found it!
+        if (package) {
+            dev->affinity.set(package->cpuset);
+        }
+        else {
+            rc = QV_ERR_NOT_FOUND;
+            break;
+        }
+    } while (false);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        // Do our best here: just set it to the allowed resources.
+        return dev->affinity.set(topology_get_cpuset());
+    }
+    return QV_SUCCESS;
+}
+
+int
 qvi_hwloc::m_set_gpu_device_info(
     hwloc_obj_t obj,
     qvi_hwloc_device *device
 ) {
+    // XXX(skg) I would like to get rid of calls that initialize GPUs in any
+    // way. I've seen issues doing this with other infrastructure that uses
+    // hwloc. Dynamic affinities don't play well here sometimes because
+    // GPU infrastructure is initialized when more processes are active.
+#if 0
     int id = qvi_hwloc_device::INVISIBLE_ID;
     //
     if (sscanf(obj->name, "rsmi%d", &id) == 1) {
@@ -716,6 +764,21 @@ qvi_hwloc::m_set_gpu_device_info(
         );
     }
     return QV_SUCCESS;
+#endif
+    int id = qvi_hwloc_device::INVISIBLE_ID;
+    //
+    if (sscanf(obj->name, "rsmi%d", &id) == 1) {
+        device->smi = id;
+        device->uuid = std::string(hwloc_obj_get_info_by_name(obj, "AMDUUID"));
+        return m_set_device_affinity_by_pci_bus_id(device->pci_bus_id, device);
+    }
+    //
+    if (sscanf(obj->name, "nvml%d", &id) == 1) {
+        device->smi = id;
+        device->uuid = std::string(hwloc_obj_get_info_by_name(obj, "NVIDIAUUID"));
+        return m_set_device_affinity_by_pci_bus_id(device->pci_bus_id, device);
+    }
+    return QV_SUCCESS;
 }
 
 int
@@ -723,9 +786,8 @@ qvi_hwloc::m_set_of_device_info(
     hwloc_obj_t obj,
     qvi_hwloc_device *device
 ) {
-    // TODO(skg) Get cpuset, if available.
     device->uuid = std::string(hwloc_obj_get_info_by_name(obj, "NodeGUID"));
-    return QV_SUCCESS;
+    return m_set_device_affinity_by_pci_bus_id(device->pci_bus_id, device);
 }
 
 /**
