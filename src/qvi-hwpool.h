@@ -126,6 +126,11 @@ public:
         qv_device_id_type_t format,
         char **result
     ) const;
+    /** Returns the device's ID string formatted as specified. */
+    std::string
+    id(
+        qv_device_id_type_t format
+    ) const;
 
     template <class Archive>
     void
@@ -167,7 +172,7 @@ private:
     bool
     m_device_in_pool(
         const qvi_hwpool_dev &dev
-    );
+    ) const;
     /**
      * Adds all devices with affinity to the
      * provided, initialized hardware resource pool.
@@ -220,11 +225,10 @@ public:
     /**
      * Returns the number of objects in the hardware pool.
      */
-    int
+    size_t
     nobjects(
         const qvi_hwloc &hwloc,
-        qv_hw_obj_type_t obj_type,
-        size_t &result
+        qv_hw_obj_type_t obj_type
     ) const;
     /**
      * Adds a qvi_hwpool_dev_s device. Attempts to insert the same device

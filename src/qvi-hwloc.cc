@@ -26,7 +26,7 @@
 // code?
 
 /** Maps a string identifier to a device. */
-using qvi_hwloc_dev_map = std::unordered_map<
+using qvi_hwloc_dev_map = std::map<
     std::string,
     std::shared_ptr<qvi_hwloc_device>
 >;
@@ -593,7 +593,7 @@ int
 qvi_hwloc::m_get_logical_bind_string(
     hwloc_const_bitmap_t bitmap,
     std::string &result
-) {
+) const {
     result.clear();
 
     const int num_pus = hwloc_get_nbobjs_inside_cpuset_by_type(
@@ -619,7 +619,7 @@ int
 qvi_hwloc::m_get_physical_bind_string(
     hwloc_const_bitmap_t bitmap,
     std::string &result
-) {
+) const {
     result.clear();
 
     result.append("P");
