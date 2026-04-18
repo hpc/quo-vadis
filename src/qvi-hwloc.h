@@ -137,13 +137,13 @@ private:
     m_get_logical_bind_string(
         hwloc_const_bitmap_t bitmap,
         std::string &result
-    );
+    ) const;
     /** */
     int
     m_get_physical_bind_string(
         hwloc_const_bitmap_t bitmap,
         std::string &result
-    );
+    ) const;
     /** */
     int
     m_get_nobjs_in_cpuset(

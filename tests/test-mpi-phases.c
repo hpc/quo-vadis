@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -361,7 +361,7 @@ main(
     rc = qv_scope_split_at(
         base_scope,
         QV_HW_OBJ_GPU,
-#ifdef USE_AFFINITY_PRESERVING
+#if (USE_AFFINITY_PRESERVING == 1)
         QV_SCOPE_SPLIT_AFFINITY_PRESERVING,
 #else
         wrank % ngpus,          // color or group id
