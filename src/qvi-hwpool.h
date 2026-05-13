@@ -242,16 +242,6 @@ public:
         const std::vector<qvi_hwpool> &hwpools
     );
     /**
-     *
-     */
-    std::vector<qvi_hwpool>
-    split_atnm(
-        const qvi_hwloc &hwloc,
-        qv_hw_obj_type_t obj_type,
-        size_t npieces,
-        size_t m
-    );
-    /**
      * Serializes a hardware pool.
      */
     template <class Archive>

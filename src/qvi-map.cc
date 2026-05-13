@@ -78,7 +78,7 @@ qvi_map_maxiperk(
 }
 
 size_t
-qvi_map_nsids_mapped(
+qvi_map_nsrcids_mapped(
     const qvi_map_t &map
 ) {
     return map.size();
@@ -142,7 +142,7 @@ qvi_map_packed(
     // Keeps track of the next source ID to map.
     size_t srci = 0;
     // Number of sources mapped to a destination.
-    size_t nmapped = qvi_map_nsids_mapped(map);
+    size_t nmapped = qvi_map_nsrcids_mapped(map);
     for (size_t dsti = 0; dsti < config.ndst; ++dsti) {
         // Number of consumer IDs to map.
         const size_t nmap = qvi_map_maxfit(maxcpr, config.nsrc - nmapped);
@@ -240,14 +240,14 @@ public:
 
 static std::vector<std::set<size_t>>
 group_intersecting_indices(
-    const std::vector<std::set<size_t>> &vec_of_sets
+    const std::vector<std::set<size_t>> &sets
 ) {
-    const size_t n = vec_of_sets.size();
+    const size_t n = sets.size();
     qvi_map_dsu dsu(n);
 
     std::unordered_map<size_t, size_t> element_to_first_index;
     for (size_t i = 0; i < n; ++i) {
-        for (size_t val : vec_of_sets[i]) {
+        for (size_t val : sets[i]) {
             if (element_to_first_index.contains(val)) {
                 dsu.unite(i, element_to_first_index[val]);
             }
@@ -285,7 +285,7 @@ qvi_map_affinity_preserving(
         );
         const auto intersecting_indis = group_intersecting_indices(k_destids);
 
-        for (auto &ii : intersecting_indis) {
+        for (const auto &ii : intersecting_indis) {
             const auto dmap = get_disjoint_affinity(affinity_map, ii);
             std::set<size_t> mapped_srcs;
             for (auto &[src, dsts] : dmap) {
@@ -310,9 +310,12 @@ qvi_map_flatten_to_colors(
 ) {
     std::vector<int> result(map.size());
     for (const auto &[srci, dstis] : map) {
-        for (const auto &[dsti, dstis] : map) {
-            result.at(srci) = (int)dsti;
+        // In this application, there shall only be one destination per source.
+        if (qvi_unlikely(dstis.size() != 1)) {
+            throw qvi_runtime_error(QV_ERR_INTERNAL);
         }
+        // Just use the only value that should be there.
+        result.at(srci) = static_cast<int>(*dstis.begin());
     }
     return result;
 }
@@ -324,7 +327,7 @@ qvi_map_debug_dump(
 #if QVI_DEBUG_MODE == 0
     qvi_unused(map);
 #else
-    qvi_log_debug(" # nsids_mapped={}", qvi_map_nsids_mapped(map));
+    qvi_log_debug(" # nsrcids_mapped={}", qvi_map_nsrcids_mapped(map));
     for (const auto &[srci, dstis] : map) {
         qvi_log_debug(" # srci {} mapped to:", srci);
         for (const auto &dsti : dstis) {

@@ -14,7 +14,6 @@
 #ifndef QVI_MAP_H
 #define QVI_MAP_H
 
-#include "qvi-common.h"
 #include "qvi-hwloc.h"
 
 struct qvi_map_config;
@@ -76,7 +75,7 @@ qvi_map_debug_dump(
  * Returns the number of source IDs that have already been mapped.
  */
 size_t
-qvi_map_nsids_mapped(
+qvi_map_nsrcids_mapped(
     const qvi_map_t &map
 );
 

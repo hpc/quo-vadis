@@ -68,8 +68,8 @@ main(
       ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    if (wrank == 0 && ngpus == 0) {
-        printf("Skipping: no GPUs found!\n");
+    if (ngpus == 0) {
+        if (wrank == 0) printf("Skipping: no GPUs found!\n");
         goto done;
     }
 

@@ -72,7 +72,7 @@ private:
      */
     qvi_hwpool m_base_hwpool;
     /** The split member's current CPU affinity. */
-    qvi_hwloc_bitmap m_cpu_affinity;
+    qvi_hwloc_bitmap m_my_cpu_affinity;
     /**
      * Vector of task TIDs, one for each member of the group. Note that the
      * number of task IDs will always match the group size and that their array
@@ -104,14 +104,6 @@ private:
      */
     void
     m_reserve(void);
-    /**
-     * Returns a const reference to the aggregate cpuset. Note that the cpuset
-     * will be shared among the aggregate, but other resources may be
-     * distributed differently. For example, some hardware pools may have GPUs,
-     * while others may not.
-     */
-    const qvi_hwloc_bitmap &
-    m_cpuset(void) const;
     /** Gathers group-level split data to the specified root. */
     static int
     m_gather_split_data(
