@@ -14,7 +14,6 @@
  */
 
 #include "qvi-hwpool.h"
-#include "qvi-map.h"
 
 qv_scope_create_hints_t
 qvi_hwpool_res::hints(void)
@@ -89,8 +88,8 @@ bool
 qvi_hwpool::m_device_in_pool(
     const qvi_hwpool_dev &dev
 ) const {
-    auto [first, last] = m_devs.equal_range(dev.type());
-    auto view = std::ranges::subrange(first, last);
+    const auto [first, last] = m_devs.equal_range(dev.type());
+    const auto view = std::ranges::subrange(first, last);
     return std::ranges::any_of(
         view, [&](const auto &pair) { return pair.second == dev; }
     );
@@ -129,39 +128,6 @@ qvi_hwpool::initialize(
     return m_add_devices_with_affinity(hwloc);
 }
 
-std::pair<qv_hw_obj_type_t, qvi_hwloc_bitmap>
-qvi_hwpool::m_primary_cpuset_for_split(
-    qv_hw_obj_type_t requested_type
-) const {
-    qv_hw_obj_type_t real_type = requested_type;
-    // Were we provided a real resource type that we have to split? Or was
-    // QV_HW_OBJ_LAST instead provided to indicate that we were called from a
-    // split() context, which uses the host's primary compute resource to split
-    // the resources. If a host has GPUs, use the union of those. Otherwise use
-    // the host's CPU resources.
-    if (requested_type == QV_HW_OBJ_LAST) {
-        if (devices().count(QV_HW_OBJ_GPU) > 0) {
-            real_type = QV_HW_OBJ_GPU;
-        }
-        // No GPUs, so pick PUs as the host resource, since this is the atomic
-        // unit at which host resources are split.
-        else {
-            real_type = QV_HW_OBJ_PU;
-        }
-    }
-
-    if (qvi_hwloc::obj_is_host_resource(real_type)) {
-        return {real_type, m_cpu.affinity()};
-    }
-    // Else, an OS device. The cpuset will be
-    // the union over the devices affinities.
-    qvi_hwloc_bitmap result;
-    for (const auto &dev : devices(real_type)) {
-        result = result | dev.affinity();
-    }
-    return {real_type, result};
-}
-
 const qvi_hwloc_bitmap &
 qvi_hwpool::cpuset(void) const
 {
@@ -187,21 +153,20 @@ qvi_hwpool::devices(
     return result;
 }
 
-// TODO(skg) Complete implementation.
 std::vector<qvi_hwloc_bitmap>
-qvi_hwpool::affinities(
+qvi_hwpool::device_affinities(
     qv_hw_obj_type_t obj_type
 ) const {
-    std::vector<qvi_hwloc_bitmap> result;
-    if (qvi_hwloc::obj_is_host_resource(obj_type)) {
+    if (qvi_unlikely(qvi_hwloc::obj_is_host_resource(obj_type))) {
         throw qvi_runtime_error(QV_ERR_NOT_SUPPORTED);
     }
     else {
+        std::vector<qvi_hwloc_bitmap> result;
         for (const auto &dev : devices(obj_type)) {
             result.emplace_back(dev.affinity());
         }
+        return result;
     }
-    return result;
 }
 
 size_t
@@ -260,47 +225,66 @@ qvi_hwpool::set_union(
     return result;
 }
 
+#if 0
 std::vector<qvi_hwpool>
-qvi_hwpool::split_atn(
+qvi_hwpool::split_atnm(
     const qvi_hwloc &hwloc,
     qv_hw_obj_type_t obj_type,
-    size_t npieces
+    size_t npieces,
+    size_t mresults
 ) {
-    size_t npiecesp = npieces;
-    // Determine the primary object type that we are splitting over.
-    const auto [real_type, primary_cpuset] = m_primary_cpuset_for_split(obj_type);
-    // Not called from a split() context and dealing with GPUs.
-    if (obj_type != QV_HW_OBJ_LAST && real_type == QV_HW_OBJ_GPU) {
-        npiecesp = std::max(npieces, nobjects(hwloc, real_type));
-    }
+    qvi_log_debug("NPIECES={} MRESULTS={}", npieces, mresults);
+    // Determine the primary type and cpuset that we are splitting over.
+    const auto [pri_type, pri_cpuset] = m_primary_cpuset_for_split(obj_type);
     // Split the primary cpuset into npieces.
-    std::vector<qvi_hwloc_bitmap> hwpool_cpusets;
-    int rc = hwloc.bitmap_split(primary_cpuset, npiecesp, hwpool_cpusets);
+    std::vector<qvi_hwloc_bitmap> pri_cpusets;
+    int rc = hwloc.bitmap_split(pri_cpuset, npieces, pri_cpusets);
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
+    //
+    std::vector<qvi_hwloc_bitmap> result_cpusets;
+    rc = hwloc.bitmap_split(pri_cpuset, mresults, result_cpusets);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
     // Create the n hardware pools, initiate each with a cpuset from split.
+    std::vector<qvi_hwpool> pri_hwpools;
+    for (size_t i = 0; i < npieces; ++i) {
+        pri_hwpools.emplace_back(qvi_hwpool(pri_cpusets[i]));
+    }
+    //
     std::vector<qvi_hwpool> result;
-    for (size_t i = 0; i < npiecesp; ++i) {
-        result.emplace_back(qvi_hwpool(hwpool_cpusets[i]));
+    for (size_t i = 0; i < mresults; ++i) {
+        result.emplace_back(qvi_hwpool(result_cpusets[i]));
     }
     // Iterate over supported device types and add devices based on affinity.
     for (const auto devt : qvi_hwloc::supported_devices()) {
         const auto devs = devices(devt);
-        const auto dev_affinities = affinities(devt);
+        if (devs.empty()) continue;
+        // If we have devices, then get their affinities.
+        const auto dev_affinities = device_affinities(devt);
         // Map devices to cpusets, trying to maintain good affinity.
-        qvi_map_t map;
-        rc = qvi_map_affinity_preserving(
-            map, qvi_map_spread, dev_affinities, hwpool_cpusets
+        qvi_map_t devs2pri = qvi_map_affinity_preserving(
+            dev_affinities, pri_cpusets
         );
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
         // Now that we have the mapping, assign
         // devices to the associated hardware pools.
-        for (const auto &[devi, pooli] : map) {
-            rc = result[pooli].add_device(devs[devi]);
-            if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
+        for (const auto &[devi, poolis] : devs2pri) {
+            for (const auto &pooli : poolis) {
+                rc = pri_hwpools[pooli].add_device(devs[devi]);
+                if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
+            }
+        }
+        //
+        qvi_map_t pri2res = qvi_map_affinity_preserving(
+            pri_cpusets, result_cpusets
+        );
+        for (auto &[src, dsts] : pri2res) {
+            for (auto resi : dsts) {
+                result[resi].add_device(devs[src]);
+            }
         }
     }
     return result;
 }
+#endif
 
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab

@@ -158,16 +158,6 @@ private:
     qvi_hwpool_cpu m_cpu;
     /** The hardware pool's devices. */
     qvi_hwpool_devs_t m_devs;
-    /**
-     * Returns a pair where .first is the real split type identified and .second
-     * is the hardware pool's primary cpuset for a given hardware object type.
-     * This is the cpuset that is typically be used for splitting hardware
-     * resources based on the provided hardware object type.
-     */
-    std::pair<qv_hw_obj_type_t, qvi_hwloc_bitmap>
-    m_primary_cpuset_for_split(
-        qv_hw_obj_type_t requested_type
-    ) const;
     /** Returns whether a given device is already in the pool. */
     bool
     m_device_in_pool(
@@ -181,17 +171,18 @@ private:
     m_add_devices_with_affinity(
         qvi_hwloc &hwloc
     );
-    /** Constructor (private). */
+public:
+    /** Constructor (default). */
+    qvi_hwpool(void) = default;
+    /** Constructor (initialize only host resources). */
     qvi_hwpool(
         const qvi_hwloc_bitmap &cpuset
     ) : m_cpu(cpuset) { }
-public:
-    /** Constructor. */
-    qvi_hwpool(void) = default;
     /**
      * Initializes a hardware pool from the given
      * hardware locality information and cpuset.
      */
+    // TODO(skg) I think we should get rid of this.
     int
     initialize(
         qvi_hwloc &hwloc,
@@ -215,11 +206,11 @@ public:
         qv_hw_obj_type_t obj_type
     ) const;
     /**
-     * Returns a vector of affinities, one for each given type present in the
-     * hardware pool.
+     * Returns a vector of affinities, one for each given device type present in
+     * the hardware pool.
      */
     std::vector<qvi_hwloc_bitmap>
-    affinities(
+    device_affinities(
         qv_hw_obj_type_t obj_type
     ) const;
     /**
@@ -254,10 +245,11 @@ public:
      *
      */
     std::vector<qvi_hwpool>
-    split_atn(
+    split_atnm(
         const qvi_hwloc &hwloc,
         qv_hw_obj_type_t obj_type,
-        size_t npieces
+        size_t npieces,
+        size_t m
     );
     /**
      * Serializes a hardware pool.

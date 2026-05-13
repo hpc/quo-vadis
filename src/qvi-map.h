@@ -17,42 +17,51 @@
 #include "qvi-common.h"
 #include "qvi-hwloc.h"
 
-/** Maintains a mapping between 'From IDs' to 'To IDs'. */
-using qvi_map_t = std::map<uint_t, uint_t>;
+struct qvi_map_config;
+
+/**
+ * Maintains a mapping between a source IDs and their destination IDs. Source
+ * IDs shall be unique, whereas destination sets may have intersecting values.
+ * Insertion of a duplicate source ID into the map will result in the associated
+ * destination ID being added to the destination set, if not already present.
+ */
+using qvi_map_t = std::map<size_t, std::set<size_t>>;
 
 /**
  * Defines a function pointer to a desired mapping function.
  */
 using qvi_map_fn_t = std::function<
     int(
-        size_t nfids,
-        size_t ntids,
+        const qvi_map_config &config,
         qvi_map_t &map
     )
 >;
 
-/**
- * Maintains a mapping between resource IDs to a set of
- * consumer IDs that have shared affinity with a given resource.
- */
-using qvi_map_shaffinity_t = std::map<uint_t, std::set<uint_t>>;
+struct qvi_map_config {
+    size_t nsrc;
+    size_t ndst;
+    std::vector<qvi_hwloc_bitmap> src_affinities;
+    std::vector<qvi_hwloc_bitmap> dst_affinities;
+    std::vector<int> src_colors;
+    qvi_map_fn_t map_fn;
+};
 
 /**
  * Returns the largest number that will fit in the space available.
  */
-uint_t
+size_t
 qvi_map_maxfit(
-    uint_t max_chunk,
-    uint_t space_left
+    size_t max_chunk,
+    size_t space_left
 );
 
 /**
  * Returns the max i per k.
  */
-uint_t
+size_t
 qvi_map_maxiperk(
-    uint_t i,
-    uint_t k
+    size_t i,
+    size_t k
 );
 
 /**
@@ -64,20 +73,20 @@ qvi_map_debug_dump(
 );
 
 /**
- * Returns the number of From IDs that have already been mapped.
+ * Returns the number of source IDs that have already been mapped.
  */
-uint_t
-qvi_map_nfids_mapped(
+size_t
+qvi_map_nsids_mapped(
     const qvi_map_t &map
 );
 
 /**
- * Returns whether or not the provided From ID is already mapped.
+ * Returns whether or not the provided source ID is already mapped.
  */
 bool
-qvi_map_fid_mapped(
+qvi_map_srcid_mapped(
     const qvi_map_t &map,
-    uint_t cid
+    size_t srcid
 );
 
 /**
@@ -86,15 +95,13 @@ qvi_map_fid_mapped(
  */
 int
 qvi_map_packed(
-    size_t nfids,
-    size_t ntids,
+    const qvi_map_config &config,
     qvi_map_t &map
 );
 
 int
 qvi_map_spread(
-    size_t nfids,
-    size_t ntids,
+    const qvi_map_config &config,
     qvi_map_t &map
 );
 
@@ -102,21 +109,10 @@ qvi_map_spread(
  * Calculates a shared affinity map of consumer IDs (from)
  * that have shared affinity with the resources (to).
  */
-int
-qvi_map_calc_shaffinity(
-    const std::vector<qvi_hwloc_bitmap> &faffs,
-    const std::vector<qvi_hwloc_bitmap> &tores,
-    qvi_map_shaffinity_t &res_affinity_map
-);
-
-/**
- * The disjoint affinity mapper maps consuer IDs to resource IDs with NO shared
- * affinity. It assumes disjoint affinity in damap.
- */
-int
-qvi_map_disjoint_affinity(
-    qvi_map_t &map,
-    const qvi_map_shaffinity_t &damap
+qvi_map_t
+qvi_map_calc_affinities(
+    const std::vector<qvi_hwloc_bitmap> &src,
+    const std::vector<qvi_hwloc_bitmap> &dst
 );
 
 /**
@@ -124,8 +120,7 @@ qvi_map_disjoint_affinity(
  */
 int
 qvi_map_colors(
-    const std::vector<int> &fcolors,
-    size_t ntres,
+    const qvi_map_config &config,
     qvi_map_t &map
 );
 
@@ -134,25 +129,8 @@ qvi_map_colors(
  */
 int
 qvi_map_affinity_preserving(
-    qvi_map_t &map,
-    const qvi_map_fn_t map_rest_fn,
-    const std::vector<qvi_hwloc_bitmap> &faffs,
-    const std::vector<qvi_hwloc_bitmap> &tores
-);
-
-/**
- * Returns a reference to the cpuset mapped to the given From ID.
- */
-const qvi_hwloc_bitmap &
-qvi_map_cpuset_at(
-    const qvi_map_t &map,
-    const std::vector<qvi_hwloc_bitmap> &cpusets,
-    uint_t fid
-);
-
-std::vector<uint_t>
-qvi_map_flatten(
-    const qvi_map_t &map
+    const qvi_map_config &config,
+    qvi_map_t &map
 );
 
 std::vector<int>
