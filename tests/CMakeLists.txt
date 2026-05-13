@@ -1,6 +1,6 @@
 # -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*-
 #
-# Copyright (c) 2020-2025 Triad National Security, LLC
+# Copyright (c) 2020-2026 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -174,6 +174,16 @@ if(MPI_FOUND)
         quo-vadis-mpi
     )
 
+    add_executable(
+        test-mpi-dev-split
+        test-mpi-dev-split.c
+    )
+
+    target_link_libraries(
+        test-mpi-dev-split
+        quo-vadis-mpi
+    )
+
     # Use the C linker to test for C/C++ linkage problems.
     set_target_properties(
         test-mpi-init
@@ -185,6 +195,7 @@ if(MPI_FOUND)
         test-progress-thread
         test-mpi-scope-create
         test-mpi-getdev
+        test-mpi-dev-split
         PROPERTIES LINKER_LANGUAGE C
     )
 

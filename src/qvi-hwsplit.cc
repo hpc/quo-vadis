@@ -129,8 +129,8 @@ using id2devs_t = std::multimap<int, const qvi_hwpool_dev *>;
 
 qvi_hwsplit::qvi_hwsplit(
     qv_scope *parent,
-    uint_t group_size,
-    uint_t split_size,
+    size_t group_size,
+    size_t split_size,
     qv_hw_obj_type_t split_at_type
 ) : m_rmi(parent->group().task().rmi())
   , m_my_hwpool(parent->hwpool())
@@ -158,7 +158,7 @@ qvi_hwsplit::m_reserve(void)
     m_group_tids.resize(m_group_size);
     m_hwpools.resize(m_group_size);
     m_colors.resize(m_group_size);
-    m_cpu_affinities.resize(m_group_size);
+    m_task_affinities.resize(m_group_size);
 }
 
 const qvi_hwloc_bitmap &
@@ -168,110 +168,21 @@ qvi_hwsplit::m_cpuset(void) const
 }
 
 int
-qvi_hwsplit::m_split_cpuset(
-    std::vector<qvi_hwloc_bitmap> &result
-) const {
-    return m_rmi.hwloc().bitmap_split(
-        m_base_hwpool.cpuset(), m_split_size, result
-    );
-}
-
-int
-qvi_hwsplit::m_osdev_cpusets(
-    std::vector<qvi_hwloc_bitmap> &result
-) const {
-    auto [first, last] = m_base_hwpool.devices().equal_range(m_split_at_type);
-    auto view = std::ranges::subrange(first, last);
-    for (const auto &[dev_type, dev] : view) {
-        result.emplace_back(dev.affinity());
+qvi_hwsplit::m_apply_mapping(
+    const qvi_map_t &map
+) {
+    const size_t nhwpools = m_hwpools.size();
+    for (size_t taski = 0; taski < nhwpools; ++taski) {
+        const auto cpusetis = map.at(taski);
+        // In this application, tasks shall have a unique cpuset.
+        if (qvi_unlikely(cpusetis.size() != 1)) {
+            return QV_ERR_INTERNAL;
+        }
+        for (auto cpuseti : cpusetis) {
+            m_hwpools.at(taski) = qvi_hwpool(m_split_cpusets.at(cpuseti));
+        }
     }
     return QV_SUCCESS;
-}
-
-qvi_map_fn_t
-qvi_hwsplit::affinity_preserving_policy(void) const
-{
-    switch (m_split_at_type) {
-        // For split()
-        case QV_HW_OBJ_LAST:
-            return qvi_map_packed;
-        // For split_at()
-        default:
-            return qvi_map_spread;
-    }
-}
-
-static int
-apply_mapping(
-    const qvi_map_t &map,
-    const std::vector<qvi_hwpool> &src_hwpool,
-    std::vector<qvi_hwpool> &dst_hwpools,
-    std::vector<int> &colors
-) {
-    for (const auto &[dst_index, src_index] : map) {
-        dst_hwpools.at(dst_index) = src_hwpool.at(src_index);
-    }
-    colors = qvi_map_flatten_to_colors(map);
-    return QV_SUCCESS;
-}
-
-/**
- * User-defined split.
- */
-int
-qvi_hwsplit::split_user_defined(
-    const std::vector<qvi_hwpool> &hwpools
-) {
-    // Maintains the mapping between task (consumer) IDs and resource IDs.
-    qvi_map_t map;
-    int rc = qvi_map_colors(m_colors, hwpools.size(), map);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Update the hardware pools and colors to reflect the new mapping.
-    return apply_mapping(map, hwpools, m_hwpools, m_colors);
-}
-
-/**
- * Affinity preserving split.
- */
-int
-qvi_hwsplit::split_affinity_preserving(
-    const std::vector<qvi_hwpool> &hwpools
-) {
-    std::vector<qvi_hwloc_bitmap> cpusets;
-    for (const auto &hwpool : hwpools) {
-        cpusets.emplace_back(hwpool.cpuset());
-    }
-    // Map tasks based on their affinity to resources encoded by the cpusets.
-    qvi_map_t map;
-    const auto policy = affinity_preserving_policy();
-    int rc = qvi_map_affinity_preserving(
-        map, policy, m_cpu_affinities, cpusets
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Update the hardware pools and colors to reflect the new mapping.
-    return apply_mapping(map, hwpools, m_hwpools, m_colors);
-}
-
-int
-qvi_hwsplit::split_packed(
-    const std::vector<qvi_hwpool> &hwpools
-) {
-    qvi_map_t map;
-    int rc = qvi_map_packed(m_group_size, hwpools.size(), map);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Update the hardware pools and colors to reflect the new mapping.
-    return apply_mapping(map, hwpools, m_hwpools, m_colors);
-}
-
-int
-qvi_hwsplit::split_spread(
-    const std::vector<qvi_hwpool> &hwpools
-) {
-    qvi_map_t map;
-    int rc = qvi_map_spread(m_group_size, hwpools.size(), map);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Update the hardware pools and colors to reflect the new mapping.
-    return apply_mapping(map, hwpools, m_hwpools, m_colors);
 }
 
 /**
@@ -280,32 +191,53 @@ qvi_hwsplit::split_spread(
  */
 static int
 clamp_colors(
-    std::vector<int> &values
+    std::vector<int> &colors
 ) {
     // Recall: sets are ordered.
-    std::set<int> valset(values.begin(), values.end());
+    const std::set<int> colorset(colors.begin(), colors.end());
     // Maps the input vector colors to their clamped values.
     std::map<int, int> colors2clamped;
     // color': the clamped color.
     int colorp = 0;
-    for (auto val : valset) {
+    for (const auto val : colorset) {
         colors2clamped.insert({val, colorp++});
     }
-    for (uint_t i = 0; i < values.size(); ++i) {
-        values[i] = colors2clamped[values[i]];
+    for (size_t i = 0; i < colors.size(); ++i) {
+        colors[i] = colors2clamped[colors[i]];
     }
     return QV_SUCCESS;
 }
 
-/**
- * Splits aggregate scope data.
- */
+std::pair<qv_hw_obj_type_t, qvi_hwloc_bitmap>
+qvi_hwsplit::m_primary_cpuset_for_split(
+    qv_hw_obj_type_t requested_type
+) const {
+    qv_hw_obj_type_t real_type = requested_type;
+    // Were we provided a real resource type that we have to split? Or was
+    // QV_HW_OBJ_LAST instead provided to indicate that we were called from a
+    // split() context.
+    if (requested_type == QV_HW_OBJ_LAST) {
+        // Pick PUs as the host resource, since this is
+        // the atomic unit at which host resources are split.
+        real_type = QV_HW_OBJ_PU;
+    }
+
+    if (qvi_hwloc::obj_is_host_resource(real_type)) {
+        return {real_type, m_base_hwpool.cpuset()};
+    }
+    // Else, an OS device. The cpuset will be
+    // the union over the devices affinities.
+    qvi_hwloc_bitmap result;
+    for (const auto &dev : m_base_hwpool.devices(real_type)) {
+        result = result | dev.affinity();
+    }
+    return {real_type, result};
+}
+
 int
-qvi_hwsplit::m_split(
-    const qvi_hwloc &hwloc
-) {
+qvi_hwsplit::m_setup_map_config(void)
+{
     int rc = QV_SUCCESS;
-    bool auto_split = false;
     // Make sure that the supplied colors are consistent and determine the type
     // of coloring we are using. Positive values denote an explicit coloring
     // provided by the caller. Negative values are reserved for internal use and
@@ -323,11 +255,11 @@ qvi_hwsplit::m_split(
     // * A mix if positive and negative values:
     //   - A strict subset is QV_SCOPE_SPLIT_UNDEFINED: user-defined split
     //   - A strict subset is not QV_SCOPE_SPLIT_UNDEFINED: return error code.
-
+    bool auto_split = false;
     // All colors are positive.
     if (tcolors.front() >= 0) {
         rc = clamp_colors(m_colors);
-        if (rc != QV_SUCCESS) return rc;
+        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     }
     // Some values are negative.
     else {
@@ -337,26 +269,65 @@ qvi_hwsplit::m_split(
         }
         auto_split = true;
     }
-    // TODO(skg) try/catch here?
-    const auto split_hwpools = m_base_hwpool.split_atn(hwloc, m_split_at_type, m_split_size);
-    // TODO(skg) Favor using function pointers?
-    // User-defined splitting.
+    // Determine the primary type and cpuset that we are splitting over.
+    const auto [pri_type, pri_cpuset] = m_primary_cpuset_for_split(
+        m_split_at_type
+    );
+    // Split the primary cpuset into the requested split size pieces.
+    rc = m_rmi.hwloc().bitmap_split(
+        pri_cpuset, m_split_size, m_split_cpusets
+    );
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    // User-defined splitting. Map colors to cpusets.
     if (!auto_split) {
-        return split_user_defined(split_hwpools);
+        m_map_config.src_colors = m_colors;
+        m_map_config.ndst = m_split_cpusets.size();
+        m_map_config.map_fn = qvi_map_colors;
+        return QV_SUCCESS;
     }
     // Automatic splitting.
     switch (m_colors[0]) {
-        case QV_SCOPE_SPLIT_AFFINITY_PRESERVING:
-            return split_affinity_preserving(split_hwpools);
-        case QV_SCOPE_SPLIT_PACKED:
-            return split_packed(split_hwpools);
-        case QV_SCOPE_SPLIT_SPREAD:
-            return split_spread(split_hwpools);
+        case QV_SCOPE_SPLIT_AFFINITY_PRESERVING: {
+            m_map_config.src_affinities = m_task_affinities;
+            m_map_config.dst_affinities = m_split_cpusets;
+            m_map_config.map_fn = qvi_map_affinity_preserving;
+            return QV_SUCCESS;
+        }
+        case QV_SCOPE_SPLIT_PACKED: {
+            m_map_config.nsrc = m_group_size;
+            m_map_config.ndst = m_split_cpusets.size();
+            m_map_config.map_fn = qvi_map_packed;
+            return QV_SUCCESS;
+        }
+        case QV_SCOPE_SPLIT_SPREAD: {
+            m_map_config.nsrc = m_group_size;
+            m_map_config.ndst = m_split_cpusets.size();
+            m_map_config.map_fn = qvi_map_spread;
+            return QV_SUCCESS;
+        }
         default:
-            rc = QV_ERR_INVLD_ARG;
-            break;
+            return QV_ERR_INVLD_ARG;
     }
-    return rc;
+    // Shouldn't get here.
+    return QV_ERR;
+}
+
+/**
+ * Splits aggregate scope data.
+ */
+int
+qvi_hwsplit::m_split(void)
+{
+    // Perform the split and map on the host
+    // resources based on the configuration.
+    int rc = m_setup_map_config();
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+
+    qvi_map_t hostres_map;
+    rc = m_map_config.map_fn(m_map_config, hostres_map);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+
+    return m_apply_mapping(hostres_map);
 }
 
 int
@@ -372,7 +343,7 @@ qvi_hwsplit::m_gather_split_data(
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     rc = qvi_coll::gather(
-        group, rootid, hwsplit.m_cpu_affinity, hwsplit.m_cpu_affinities
+        group, rootid, hwsplit.m_cpu_affinity, hwsplit.m_task_affinities
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
@@ -415,7 +386,7 @@ qvi_hwsplit::m_scatter_split_results(
 int
 qvi_hwsplit::split(
     qv_scope_t *parent,
-    uint_t npieces,
+    size_t npieces,
     int color,
     qv_hw_obj_type_t maybe_obj_type,
     int *colorp,
@@ -437,7 +408,7 @@ qvi_hwsplit::split(
     // The root does this calculation.
     int rc2 = QV_SUCCESS;
     if (pgroup.rank() == s_root) {
-        rc2 = hwsplit.m_split(parent->group().task().hwloc());
+        rc2 = hwsplit.m_split();
     }
     // Wait for the split information. Explicitly barrier here in case the
     // underlying collective operations poll heavily for completion.
@@ -455,14 +426,14 @@ qvi_hwsplit::split(
 int
 qvi_hwsplit::thread_split(
     qv_scope_t *parent,
-    uint_t npieces,
+    size_t npieces,
     int *kcolors,
-    uint_t k,
+    size_t k,
     qv_hw_obj_type_t maybe_obj_type,
     std::vector<int> &kcolorps,
     std::vector<qvi_hwpool> &khwpools
 ) {
-    const uint_t group_size = k;
+    const size_t group_size = k;
     // Construct the hardware split.
     qvi_hwsplit hwsplit(parent, group_size, npieces, maybe_obj_type);
     // Eagerly make room for the group member information.
@@ -479,16 +450,16 @@ qvi_hwsplit::thread_split(
     int rc = parent->group().task().bind_top(task_affinity);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Prepare the hwsplit with our parent's information.
-    for (uint_t i = 0; i < group_size; ++i) {
+    for (size_t i = 0; i < group_size; ++i) {
         // Store requested colors in aggregate.
         hwsplit.m_colors.at(i) = kcolors[i];
         // Since this is called by a single task, replicate its task ID, too.
         hwsplit.m_group_tids.at(i) = taskid;
         // Same goes for the task's affinity.
-        hwsplit.m_cpu_affinities.at(i).set(task_affinity.cdata());
+        hwsplit.m_task_affinities.at(i).set(task_affinity.cdata());
     }
     // Split the hardware resources based on the provided split parameters.
-    rc = hwsplit.m_split(parent->group().task().hwloc());
+    rc = hwsplit.m_split();
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Now populate the hardware pools as the result.
     khwpools = hwsplit.m_hwpools;

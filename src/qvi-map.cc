@@ -14,56 +14,27 @@
 #include "qvi-map.h"
 
 /**
- * Performs a k-set intersection of the sets included in the provided set map.
- */
-static int
-k_set_intersection(
-    const qvi_map_shaffinity_t &smap,
-    std::set<uint_t> &result
-) {
-    result.clear();
-    // Nothing to do.
-    if (smap.size() <= 1) {
-        return QV_SUCCESS;
-    }
-    // Remember that this is an ordered map.
-    auto setai = smap.cbegin();
-    auto setbi = std::next(setai);
-    while (setbi != smap.cend()) {
-        std::set_intersection(
-            setai->second.cbegin(),
-            setai->second.cend(),
-            setbi->second.cbegin(),
-            setbi->second.cend(),
-            std::inserter(result, result.begin())
-        );
-        setbi = std::next(setbi);
-    }
-    return QV_SUCCESS;
-}
-
-/**
  * Makes the provided shared affinity map disjoint with regard to affinity. That
  * is, for consumers with shared affinity we remove sharing by assigning a
  * previously shared ID to a single resource round robin; unshared IDs remain in
  * place.
  */
-static int
-make_shared_affinity_map_disjoint(
-    qvi_map_shaffinity_t &samap,
-    const std::set<uint_t> &interids
+static qvi_map_t
+get_disjoint_affinity(
+    const qvi_map_t &samap,
+    const std::set<size_t> &interids
 ) {
+    // Number of source IDs.
+    const size_t nres = samap.size();
     // Number of intersecting consumer IDs.
-    const uint_t ninter = interids.size();
-    // Number of resources.
-    const uint_t nres = samap.size();
+    const size_t ninter = interids.size();
     // Max intersecting consumer IDs per resource.
-    const uint_t maxcpr = qvi_map_maxiperk(ninter, nres);
+    const size_t maxcpr = qvi_map_maxiperk(ninter, nres);
 
-    qvi_map_shaffinity_t dmap;
+    qvi_map_t dmap;
     // First remove all IDs that intersect from the provided set map.
     for (const auto &mi: samap) {
-        const uint_t rid = mi.first;
+        const size_t rid = mi.first;
         std::set_difference(
             mi.second.cbegin(),
             mi.second.cend(),
@@ -73,11 +44,11 @@ make_shared_affinity_map_disjoint(
         );
     }
     // Copy IDs into a set we can modify.
-    std::set<uint_t> coii(interids);
+    std::set<size_t> coii(interids);
     // Assign disjoint IDs to relevant resources.
     for (const auto &mi: samap) {
-        const uint_t rid = mi.first;
-        uint_t nids = 0;
+        const size_t rid = mi.first;
+        size_t nids = 0;
         for (const auto &cid : mi.second) {
             if (coii.find(cid) == coii.end()) continue;
             dmap[rid].insert(cid);
@@ -85,56 +56,50 @@ make_shared_affinity_map_disjoint(
             if (++nids == maxcpr || coii.empty()) break;
         }
     }
-    // Update the provided set map.
-    samap = dmap;
-    return QV_SUCCESS;
+    return dmap;
 }
 
-uint_t
+size_t
 qvi_map_maxfit(
-    uint_t max_chunk,
-    uint_t space_left
+    size_t max_chunk,
+    size_t space_left
 ) {
-    uint_t result = max_chunk;
-    while (result > space_left) {
-        result--;
-    }
-    return result;
+    return std::min(max_chunk, space_left);
 }
 
-uint_t
+size_t
 qvi_map_maxiperk(
-    uint_t i,
-    uint_t k
+    size_t i,
+    size_t k
 ) {
-    return std::ceil(i / float(k));
+    // Guard against division by zero.
+    if (k == 0) return 0;
+    return (i + k - 1) / k;
 }
 
-uint_t
-qvi_map_nfids_mapped(
+size_t
+qvi_map_nsids_mapped(
     const qvi_map_t &map
 ) {
     return map.size();
 }
 
 bool
-qvi_map_fid_mapped(
+qvi_map_srcid_mapped(
     const qvi_map_t &map,
-    uint_t cid
+    size_t srcid
 ) {
-    return map.find(cid) != map.end();
+    return map.find(srcid) != map.end();
 }
 
 int
 qvi_map_colors(
-    const std::vector<int> &fcolors,
-    size_t nto,
+    const qvi_map_config &config,
     qvi_map_t &map
 ) {
     // Note: the array index i of fcolors is the color requested by task i.
     // Determine the number of distinct colors provided in the colors array.
-    std::set<int> color_set(fcolors.begin(), fcolors.end());
-    const uint_t nfrom = color_set.size();
+    std::set<int> color_set(config.src_colors.begin(), config.src_colors.end());
     // For convenience, we convert the set to a vector for later use.
     std::vector<int> color_vec(color_set.begin(), color_set.end());
     // Maps a given color to its corresponding set index.
@@ -142,47 +107,50 @@ qvi_map_colors(
     // color_set = {3, 4, 5}, color_vec = {3, 4, 5}
     // color_set_index (csi) = {0, 1, 2}, since we have three distinct colors.
     // color2csi = {3:0, 4:1, 5:2}.
-    std::map<int, uint_t> color2csi;
-    for (uint_t i = 0; i < color_vec.size(); ++i) {
+    std::map<int, size_t> color2csi;
+    for (size_t i = 0; i < color_vec.size(); ++i) {
         color2csi.insert({color_vec[i], i});
     }
     // Create a mapping of color_set indices to cpuset indices.
     qvi_map_t csi2cpui;
     // We map packed here because we are assuming that like or near colors
     // should be mapped close together.
-    int rc = qvi_map_packed(nfrom, nto, csi2cpui);
-    if (rc != QV_SUCCESS) return rc;
+    qvi_map_config packed_config;
+    packed_config.nsrc = color_set.size();
+    packed_config.ndst = config.ndst;
+    int rc = qvi_map_packed(packed_config, csi2cpui);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Now map the task colors to their respective cpusets.
-    for (uint_t fid = 0; fid < fcolors.size(); ++fid) {
+    for (const auto src : config.src_colors) {
         // Already mapped (potentially by some other mapper).
-        if (qvi_map_fid_mapped(map, fid)) continue;
-        const uint_t csi = color2csi.at(fcolors[fid]);
-        const uint_t tid = csi2cpui.at(csi);
-        map.insert({fid, tid});
+        if (qvi_map_srcid_mapped(map, src)) continue;
+        const size_t csis = color2csi.at(config.src_colors[src]);
+        for (const auto dst : csi2cpui.at(csis)) {
+            map[src].insert(dst);
+        }
     }
-    return rc;
+    return QV_SUCCESS;
 }
 
 int
 qvi_map_packed(
-    size_t nfids,
-    size_t ntids,
+    const qvi_map_config &config,
     qvi_map_t &map
 ) {
     // Max consumers per resource.
-    const uint_t maxcpr = qvi_map_maxiperk(nfids, ntids);
-    // Keeps track of the next consumer ID to map.
-    uint_t fid = 0;
-    // Number of consumers mapped to a resource.
-    uint_t nmapped = qvi_map_nfids_mapped(map);
-    for (uint_t tid = 0; tid < ntids; ++tid) {
+    const size_t maxcpr = qvi_map_maxiperk(config.nsrc, config.ndst);
+    // Keeps track of the next source ID to map.
+    size_t srci = 0;
+    // Number of sources mapped to a destination.
+    size_t nmapped = qvi_map_nsids_mapped(map);
+    for (size_t dsti = 0; dsti < config.ndst; ++dsti) {
         // Number of consumer IDs to map.
-        const uint_t nmap = qvi_map_maxfit(maxcpr, nfids - nmapped);
-        for (uint_t i = 0; i < nmap; ++i, ++fid) {
+        const size_t nmap = qvi_map_maxfit(maxcpr, config.nsrc - nmapped);
+        for (size_t i = 0; i < nmap; ++i, ++srci) {
             // Already mapped (potentially by some other mapper).
-            if (qvi_map_fid_mapped(map, fid)) continue;
+            if (qvi_map_srcid_mapped(map, srci)) continue;
             // Else map the consumer to the resource ID.
-            map.insert({fid, tid});
+            map[srci].insert(dsti);
             nmapped++;
         }
     }
@@ -194,128 +162,146 @@ qvi_map_packed(
  */
 int
 qvi_map_spread(
-    size_t nfids,
-    size_t ntids,
+    const qvi_map_config &config,
     qvi_map_t &map
 ) {
-    for (uint_t fid = 0, tid = 0; fid < nfids; ++fid) {
+    for (size_t srci = 0, dsti = 0; srci < config.nsrc; ++srci) {
         // Already mapped (potentially by some other mapper).
-        if (qvi_map_fid_mapped(map, fid)) continue;
-        // Mod to loop around 'to resource' IDs.
-        map.insert({fid, (tid++) % ntids});
+        if (qvi_map_srcid_mapped(map, srci)) continue;
+        // Mod to loop around destination IDs.
+        map[srci].insert((dsti++) % config.ndst);
     }
     return QV_SUCCESS;
 }
 
-int
-qvi_map_disjoint_affinity(
-    qvi_map_t &map,
-    const qvi_map_shaffinity_t &damap
+qvi_map_t
+qvi_map_calc_affinities(
+    const std::vector<qvi_hwloc_bitmap> &src,
+    const std::vector<qvi_hwloc_bitmap> &dst
 ) {
-    for (auto &tidfids : damap) {
-        const int tid = tidfids.first;
-        for (const auto fid : damap.at(tid)) {
-            // Already mapped (potentially by some other mapper).
-            if (qvi_map_fid_mapped(map, fid)) continue;
-            // Map the consumer ID to its resource ID.
-            map.insert({fid, tid});
-        }
-    }
-    return QV_SUCCESS;
-}
+    qvi_map_t result;
+    // Number of sources.
+    const size_t nsrc = src.size();
+    // Number of destinations we are mapping to.
+    const size_t ndst = dst.size();
 
-int
-qvi_map_calc_shaffinity(
-    const std::vector<qvi_hwloc_bitmap> &faffs,
-    const std::vector<qvi_hwloc_bitmap> &tores,
-    qvi_map_shaffinity_t &res_affinity_map
-) {
-    // Number of consumers.
-    const uint_t ncon = faffs.size();
-    // Number of resource we are mapping to.
-    const uint_t nres = tores.size();
-
-    for (uint_t cid = 0; cid < ncon; ++cid) {
-        for (uint_t rid = 0; rid < nres; ++rid) {
+    for (size_t srci = 0; srci < nsrc; ++srci) {
+        for (size_t dsti = 0; dsti < ndst; ++dsti) {
             const int intersects = hwloc_bitmap_intersects(
-                faffs.at(cid).cdata(), tores.at(rid).cdata()
+                src.at(srci).cdata(), dst.at(dsti).cdata()
             );
             if (intersects) {
-                res_affinity_map[rid].insert(cid);
+                result[srci].insert(dsti);
             }
         }
     }
-    return QV_SUCCESS;
+#if 0
+    for (const auto &[srci, dstis] : result) {
+        qvi_log_debug("# src {} has shared affinity with:", srci);
+        for (const auto &dsti : dstis) {
+            qvi_log_debug("# -- {}", dsti);
+        }
+    }
+#endif
+    return result;
+}
+
+/**
+ * A straightforward Disjoin Set Union implementation.
+ */
+struct qvi_map_dsu {
+private:
+    std::vector<size_t> m_parent;
+public:
+    qvi_map_dsu(
+        size_t n
+    ) : m_parent(n) {
+        std::iota(m_parent.begin(), m_parent.end(), 0);
+    }
+
+    size_t
+    find(
+        size_t i
+    ) {
+        if (m_parent[i] == i) return i;
+        return m_parent[i] = find(m_parent[i]);
+    }
+
+    void
+    unite(
+        size_t i,
+        size_t j
+    ) {
+        const size_t root_i = find(i);
+        const size_t root_j = find(j);
+        if (root_i != root_j) m_parent[root_i] = root_j;
+    }
+};
+
+static std::vector<std::set<size_t>>
+group_intersecting_indices(
+    const std::vector<std::set<size_t>> &vec_of_sets
+) {
+    const size_t n = vec_of_sets.size();
+    qvi_map_dsu dsu(n);
+
+    std::unordered_map<size_t, size_t> element_to_first_index;
+    for (size_t i = 0; i < n; ++i) {
+        for (size_t val : vec_of_sets[i]) {
+            if (element_to_first_index.contains(val)) {
+                dsu.unite(i, element_to_first_index[val]);
+            }
+            else {
+                element_to_first_index[val] = i;
+            }
+        }
+    }
+
+    qvi_map_t groups;
+    for (size_t i = 0; i < n; ++i) {
+        groups[dsu.find(i)].insert(i);
+    }
+
+    std::vector<std::set<size_t>> result;
+    for (auto& [root, indices] : groups) {
+        result.push_back(std::move(indices));
+    }
+    return result;
 }
 
 int
 qvi_map_affinity_preserving(
-    qvi_map_t &map,
-    const qvi_map_fn_t map_rest_fn,
-    const std::vector<qvi_hwloc_bitmap> &faffs,
-    const std::vector<qvi_hwloc_bitmap> &tores
+    const qvi_map_config &config,
+    qvi_map_t &map
 ) {
-    int rc = QV_SUCCESS;
-    // Number of consumers.
-    const uint_t ncon = faffs.size();
-    // Maps resource IDs to consumer IDs with shared affinity.
-    qvi_map_shaffinity_t res_affinity_map;
-    // Stores the consumer IDs that all share affinity with a split resource.
-    std::set<uint_t> affinity_intersection;
-    // Determine the consumer IDs that have shared affinity with the resources.
-    rc = qvi_map_calc_shaffinity(faffs, tores, res_affinity_map);
-    if (rc != QV_SUCCESS) goto out;
-    // Calculate k-set intersection.
-    rc = k_set_intersection(res_affinity_map, affinity_intersection);
-    if (rc != QV_SUCCESS) goto out;
-    // Now make a mapping decision based on the intersection size.
-    // Completely disjoint sets.
-    if (affinity_intersection.size() == 0) {
-        rc = qvi_map_disjoint_affinity(map, res_affinity_map);
-        if (rc != QV_SUCCESS) goto out;
-    }
-    // Only a subset of consumers share a resource. First favor mapping
-    // consumers with affinity to a particular resource, then map the rest.
-    // Note that the subset is not strict, so this branch also covers the
-    // 'all consumers share a resource' case, too.
-    else {
-        rc = make_shared_affinity_map_disjoint(
-            res_affinity_map, affinity_intersection
+    auto affinity_map = qvi_map_calc_affinities(
+        config.src_affinities, config.dst_affinities
+    );
+    do {
+        bool something_mapped = false;
+        const auto destids = affinity_map | std::views::values;
+        const std::vector<std::set<size_t>> k_destids(
+            destids.begin(), destids.end()
         );
-        if (rc != QV_SUCCESS) goto out;
+        const auto intersecting_indis = group_intersecting_indices(k_destids);
 
-        rc = qvi_map_disjoint_affinity(map, res_affinity_map);
-        if (rc != QV_SUCCESS) goto out;
+        for (auto &ii : intersecting_indis) {
+            const auto dmap = get_disjoint_affinity(affinity_map, ii);
+            std::set<size_t> mapped_srcs;
+            for (auto &[src, dsts] : dmap) {
+                for (auto dst : dsts) {
+                    if (mapped_srcs.contains(src)) continue;
+                    map[src].insert(dst);
+                    mapped_srcs.insert(src);
+                    affinity_map.erase(src);
+                    something_mapped = true;
+                }
+            }
+        }
+        if (!something_mapped) break;
+    } while (true);
 
-        rc = map_rest_fn(ncon, tores.size(), map);
-        if (rc != QV_SUCCESS) goto out;
-    }
-out:
-    if (rc != QV_SUCCESS) {
-        // Invalidate the map.
-        map.clear();
-    }
-    return rc;
-}
-
-const qvi_hwloc_bitmap &
-qvi_map_cpuset_at(
-    const qvi_map_t &map,
-    const std::vector<qvi_hwloc_bitmap> &cpusets,
-    uint_t fid
-) {
-    return cpusets.at(map.at(fid));
-}
-
-std::vector<uint_t>
-qvi_map_flatten(
-    const qvi_map_t &map
-) {
-    std::vector<uint_t> result(map.size());
-    for (const auto &mi : map) {
-        result[mi.first] = mi.second;
-    }
-    return result;
+    return QV_SUCCESS;
 }
 
 std::vector<int>
@@ -323,8 +309,10 @@ qvi_map_flatten_to_colors(
     const qvi_map_t &map
 ) {
     std::vector<int> result(map.size());
-    for (const auto &mi : map) {
-        result[mi.first] = (int)mi.second;
+    for (const auto &[srci, dstis] : map) {
+        for (const auto &[dsti, dstis] : map) {
+            result.at(srci) = (int)dsti;
+        }
     }
     return result;
 }
@@ -336,9 +324,12 @@ qvi_map_debug_dump(
 #if QVI_DEBUG_MODE == 0
     qvi_unused(map);
 #else
-    qvi_log_debug(" # nfids_mapped={}", qvi_map_nfids_mapped(map));
-    for (const auto &mi : map) {
-        qvi_log_debug(" # fid={} mapped to tid={}", mi.first, mi.second);
+    qvi_log_debug(" # nsids_mapped={}", qvi_map_nsids_mapped(map));
+    for (const auto &[srci, dstis] : map) {
+        qvi_log_debug(" # srci {} mapped to:", srci);
+        for (const auto &dsti : dstis) {
+            qvi_log_debug(" # -- {}", dsti);
+        }
     }
 #endif
 }

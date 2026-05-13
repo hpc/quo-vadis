@@ -20,6 +20,9 @@
 #include "qvi-map.h"
 #include "qvi-scope.h"
 
+// TODO Consider renaming members that can only be called by the root something
+// obvious.
+
 /**
  * A collection of information relevant to split operations requiring aggregated
  * (e.g., global) knowledge to perform a split.
@@ -37,11 +40,10 @@ private:
     /** Deleted default constructor. */
     qvi_hwsplit(void) = delete;
     /** Constructor. */
-    // TODO(skg) Change uint_t to size_t
     qvi_hwsplit(
         qv_scope *parent,
-        uint_t group_size,
-        uint_t split_size,
+        size_t group_size,
+        size_t split_size,
         qv_hw_obj_type_t split_at_type
     );
     /** Destructor. */
@@ -51,9 +53,9 @@ private:
     /** A const reference to my base hardware pool. */
     const qvi_hwpool &m_my_hwpool;
     /** The number of members that are part of the split. */
-    uint_t m_group_size = 0;
+    size_t m_group_size = 0;
     /** The number of pieces in the split. */
-    uint_t m_split_size = 0;
+    size_t m_split_size = 0;
     /**
      * The potential hardware resource that we are splitting at. QV_HW_OBJ_LAST
      * indicates that we are called from a split() context. Any other hardware
@@ -90,8 +92,12 @@ private:
      * corresponds to a task ID.
      */
     std::vector<int> m_colors;
+    /** Vector of cpusets that resulted from the m_split() operation. */
+    std::vector<qvi_hwloc_bitmap> m_split_cpusets;
     /** Vector of task affinities. */
-    std::vector<qvi_hwloc_bitmap> m_cpu_affinities;
+    std::vector<qvi_hwloc_bitmap> m_task_affinities;
+    /** Mapper configuration. */
+    qvi_map_config m_map_config;
     /**
      * Resizes the relevant containers to make
      * room for |group size| number of elements.
@@ -106,19 +112,6 @@ private:
      */
     const qvi_hwloc_bitmap &
     m_cpuset(void) const;
-    /**
-     * Performs a straightforward splitting of the provided cpuset:
-     * split the provided base cpuset into split_size distinct pieces.
-     */
-    int
-    m_split_cpuset(
-        std::vector<qvi_hwloc_bitmap> &result
-    ) const;
-    /** Returns device affinities that are part of the split. */
-    int
-    m_osdev_cpusets(
-        std::vector<qvi_hwloc_bitmap> &result
-    ) const;
     /** Gathers group-level split data to the specified root. */
     static int
     m_gather_split_data(
@@ -138,40 +131,35 @@ private:
         int *colorp,
         qvi_hwpool &result
     );
-    /** */
-    qvi_map_fn_t
-    affinity_preserving_policy(void) const;
-    /** User-defined split. */
-    int
-    split_user_defined(
-        const std::vector<qvi_hwpool> &hwpools
-    );
-    /** Affinity preserving split. */
-    int
-    split_affinity_preserving(
-        const std::vector<qvi_hwpool> &hwpools
-    );
-    /** */
-    int
-    split_packed(
-        const std::vector<qvi_hwpool> &hwpools
-    );
+    /**
+     * Returns a pair where .first is the real split type identified and .second
+     * is the hardware pool's primary cpuset for a given hardware object type.
+     * This is the cpuset that is typically be used for splitting hardware
+     * resources based on the provided hardware object type. For example, either
+     * the cpuset of the hardware pool (CPU resources) or the union of the GPUs'
+     * hardware affinities.
+     */
+    std::pair<qv_hw_obj_type_t, qvi_hwloc_bitmap>
+    m_primary_cpuset_for_split(
+        qv_hw_obj_type_t requested_type
+    ) const;
     /** */
     int
-    split_spread(
-        const std::vector<qvi_hwpool> &hwpools
+    m_setup_map_config(void);
+    /** */
+    int
+    m_apply_mapping(
+        const qvi_map_t &map
     );
     /** Splits aggregate scope data. This can only be called by the root. */
     int
-    m_split(
-        const qvi_hwloc &hwloc
-    );
+    m_split(void);
 public:
     /** Performs a collective split. */
     static int
     split(
         qv_scope_t *parent,
-        uint_t npieces,
+        size_t npieces,
         int color,
         qv_hw_obj_type_t maybe_obj_type,
         int *colorp,
@@ -181,9 +169,9 @@ public:
     static int
     thread_split(
         qv_scope_t *parent,
-        uint_t npieces,
+        size_t npieces,
         int *kcolors,
-        uint_t k,
+        size_t k,
         qv_hw_obj_type_t maybe_obj_type,
         std::vector<int> &kcolorps,
         std::vector<qvi_hwpool> &khwpools
