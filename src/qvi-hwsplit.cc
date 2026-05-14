@@ -124,67 +124,6 @@ pool_release_cpus_by_cpuset(
 // is zero, then the resource is not in use. For devices, we can take a similar
 // approach using the device IDs instead of the bit positions.
 
-/** Maintains a mapping between IDs to device information. */
-using id2devs_t = std::multimap<int, const qvi_hwpool_dev *>;
-
-qvi_hwsplit::qvi_hwsplit(
-    qv_scope *parent,
-    size_t group_size,
-    size_t split_size,
-    qv_hw_obj_type_t split_at_type
-) : m_rmi(parent->group().task().rmi())
-  , m_my_hwpool(parent->hwpool())
-  , m_group_size(group_size)
-  , m_split_size(split_size)
-  , m_split_at_type(split_at_type)
-{
-    qvi_hwloc_bitmap task_affinity;
-    int rc = parent->group().task().bind_top(task_affinity);
-    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
-
-    rc = m_cpu_affinity.set(task_affinity.cdata());
-    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
-
-    // To save memory we don't eagerly resize our vectors to group_size
-    // since most processes will not use the storage. For example, in the
-    // collective case the root ID process will be the only one needing
-    // group_size elements in our vectors. We'll let the call paths enforce
-    // appropriate vector sizing.
-}
-
-void
-qvi_hwsplit::m_reserve(void)
-{
-    m_group_tids.resize(m_group_size);
-    m_hwpools.resize(m_group_size);
-    m_colors.resize(m_group_size);
-    m_task_affinities.resize(m_group_size);
-}
-
-const qvi_hwloc_bitmap &
-qvi_hwsplit::m_cpuset(void) const
-{
-    return m_base_hwpool.cpuset();
-}
-
-int
-qvi_hwsplit::m_apply_mapping(
-    const qvi_map_t &map
-) {
-    const size_t nhwpools = m_hwpools.size();
-    for (size_t taski = 0; taski < nhwpools; ++taski) {
-        const auto cpusetis = map.at(taski);
-        // In this application, tasks shall have a unique cpuset.
-        if (qvi_unlikely(cpusetis.size() != 1)) {
-            return QV_ERR_INTERNAL;
-        }
-        for (auto cpuseti : cpusetis) {
-            m_hwpools.at(taski) = qvi_hwpool(m_split_cpusets.at(cpuseti));
-        }
-    }
-    return QV_SUCCESS;
-}
-
 /**
  * Takes a vector of colors and clamps their values to [0, ndc)
  * in place, where ndc is the number of distinct numbers found in values.
@@ -204,6 +143,51 @@ clamp_colors(
     }
     for (size_t i = 0; i < colors.size(); ++i) {
         colors[i] = colors2clamped[colors[i]];
+    }
+    return QV_SUCCESS;
+}
+
+qvi_hwsplit::qvi_hwsplit(
+    qv_scope *parent,
+    size_t group_size,
+    size_t split_size,
+    qv_hw_obj_type_t split_at_type
+) : m_rmi(parent->group().task().rmi())
+  , m_my_hwpool(parent->hwpool())
+  , m_group_size(group_size)
+  , m_split_size(split_size)
+  , m_split_at_type(split_at_type)
+{
+    const int rc = parent->group().task().bind_top(m_my_cpu_affinity);
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
+
+    // To save memory we don't eagerly resize our vectors to group_size
+    // since most processes will not use the storage. For example, in the
+    // collective case the root ID process will be the only one needing
+    // group_size elements in our vectors. We'll let the call paths enforce
+    // appropriate vector sizing.
+}
+
+void
+qvi_hwsplit::m_reserve(void)
+{
+    m_group_tids.resize(m_group_size);
+    m_hwpools.resize(m_group_size);
+    m_colors.resize(m_group_size);
+    m_task_affinities.resize(m_group_size);
+}
+
+int
+qvi_hwsplit::m_apply_mapping(
+    const qvi_map_t &map
+) {
+    for (const auto &[taski, cpusetis] : map) {
+        // In this application, tasks shall have a unique cpuset.
+        if (qvi_unlikely(cpusetis.size() != 1)) {
+            return QV_ERR_INTERNAL;
+        }
+        // Just use the only value that should be there.
+        m_hwpools.at(taski) = qvi_hwpool(m_split_cpusets.at(*cpusetis.begin()));
     }
     return QV_SUCCESS;
 }
@@ -343,7 +327,7 @@ qvi_hwsplit::m_gather_split_data(
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     rc = qvi_coll::gather(
-        group, rootid, hwsplit.m_cpu_affinity, hwsplit.m_task_affinities
+        group, rootid, hwsplit.m_my_cpu_affinity, hwsplit.m_task_affinities
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
@@ -456,7 +440,7 @@ qvi_hwsplit::thread_split(
         // Since this is called by a single task, replicate its task ID, too.
         hwsplit.m_group_tids.at(i) = taskid;
         // Same goes for the task's affinity.
-        hwsplit.m_task_affinities.at(i).set(task_affinity.cdata());
+        hwsplit.m_task_affinities.at(i) = task_affinity;
     }
     // Split the hardware resources based on the provided split parameters.
     rc = hwsplit.m_split();
