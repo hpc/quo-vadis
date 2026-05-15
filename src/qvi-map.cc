@@ -12,52 +12,45 @@
  */
 
 #include "qvi-map.h"
+#include "qvi-utils.h"
 
 /**
- * Makes the provided shared affinity map disjoint with regard to affinity. That
- * is, for consumers with shared affinity we remove sharing by assigning a
- * previously shared ID to a single resource round robin; unshared IDs remain in
- * place.
+ * Takes a map and assigns its values as keys and keys as values.
  */
 static qvi_map_t
-get_disjoint_affinity(
-    const qvi_map_t &samap,
-    const std::set<size_t> &interids
+invert_map(
+    const qvi_map_t &original
 ) {
-    // Number of source IDs.
-    const size_t nres = samap.size();
-    // Number of intersecting consumer IDs.
-    const size_t ninter = interids.size();
-    // Max intersecting consumer IDs per resource.
-    const size_t maxcpr = qvi_map_maxiperk(ninter, nres);
-
-    qvi_map_t dmap;
-    // First remove all IDs that intersect from the provided set map.
-    for (const auto &mi: samap) {
-        const size_t rid = mi.first;
-        std::set_difference(
-            mi.second.cbegin(),
-            mi.second.cend(),
-            interids.cbegin(),
-            interids.cend(),
-            std::inserter(dmap[rid], dmap[rid].begin())
-        );
-    }
-    // Copy IDs into a set we can modify.
-    std::set<size_t> coii(interids);
-    // Assign disjoint IDs to relevant resources.
-    for (const auto &mi: samap) {
-        const size_t rid = mi.first;
-        size_t nids = 0;
-        for (const auto &cid : mi.second) {
-            if (coii.find(cid) == coii.end()) continue;
-            dmap[rid].insert(cid);
-            coii.erase(cid);
-            if (++nids == maxcpr || coii.empty()) break;
+    qvi_map_t inverted;
+    for (const auto &[key, values] : original) {
+        for (size_t value : values) {
+            inverted[value].insert(key);
         }
     }
-    return dmap;
+    return inverted;
 }
+
+#if QVI_DEBUG_MODE != 0
+static std::string
+format_assignments(
+    const qvi_map_t &assignments
+) {
+    std::ostringstream oss;
+    oss << "{\n";
+    for (const auto& [src, dests] : assignments) {
+        oss << "  {" << src << ", {";
+        bool first = true;
+        for (size_t dest : dests) {
+            if (!first) oss << ", ";
+            oss << dest;
+            first = false;
+        }
+        oss << "}},\n";
+    }
+    oss << "}";
+    return oss.str();
+}
+#endif
 
 size_t
 qvi_map_maxfit(
@@ -180,9 +173,9 @@ qvi_map_calc_affinities(
     const std::vector<qvi_hwloc_bitmap> &dst
 ) {
     qvi_map_t result;
-    // Number of sources.
+    // number of sources.
     const size_t nsrc = src.size();
-    // Number of destinations we are mapping to.
+    // number of destinations we are mapping to.
     const size_t ndst = dst.size();
 
     for (size_t srci = 0; srci < nsrc; ++srci) {
@@ -195,76 +188,105 @@ qvi_map_calc_affinities(
             }
         }
     }
-#if 0
-    for (const auto &[srci, dstis] : result) {
-        qvi_log_debug("# src {} has shared affinity with:", srci);
-        for (const auto &dsti : dstis) {
-            qvi_log_debug("# -- {}", dsti);
-        }
-    }
-#endif
     return result;
 }
 
 /**
- * A straightforward Disjoin Set Union implementation.
+ * Solves the AP source-to-destination mapping problem using Min-Cost Max-Flow.
+ *
+ * Approach:
+ * 1. Model as a flow network with source S, sink T, source nodes, and destination nodes
+ * 2. Each source must be assigned to exactly one destination (flow = 1)
+ * 3. Destinations have flexible capacity (ceil(n/m)) to handle affinity constraints
+ * 4. Edge costs encourage balanced distribution while respecting affinities
+ * 5. Cost function: base_cost + (assignment_number)^2 for progressive balancing
  */
-struct qvi_map_dsu {
-private:
-    std::vector<size_t> m_parent;
-public:
-    qvi_map_dsu(
-        size_t n
-    ) : m_parent(n) {
-        std::iota(m_parent.begin(), m_parent.end(), 0);
-    }
-
-    size_t
-    find(
-        size_t i
-    ) {
-        if (m_parent[i] == i) return i;
-        return m_parent[i] = find(m_parent[i]);
-    }
-
-    void
-    unite(
-        size_t i,
-        size_t j
-    ) {
-        const size_t root_i = find(i);
-        const size_t root_j = find(j);
-        if (root_i != root_j) m_parent[root_i] = root_j;
-    }
-};
-
-static std::vector<std::set<size_t>>
-group_intersecting_indices(
-    const std::vector<std::set<size_t>> &sets
+static qvi_map_t
+solve_ap_mapping(
+    size_t n,
+    size_t m,
+    const qvi_map_t &affinities
 ) {
-    const size_t n = sets.size();
-    qvi_map_dsu dsu(n);
+    if (qvi_unlikely(n == 0 || m == 0)) {
+        throw qvi_runtime_error(QV_ERR_INTERNAL);
+    }
+    // Node layout:
+    // 0: super source S
+    // 1..n: source nodes (s0, s1, ..., s(n-1))
+    // n+1..n+m: destination nodes (d0, d1, ..., d(m-1))
+    // n+m+1: super sink T
 
-    std::unordered_map<size_t, size_t> element_to_first_index;
+    int super_source = 0;
+    int super_sink = static_cast<int>(n + m + 1);
+    int total_nodes = static_cast<int>(n + m + 2);
+
+    qvi_min_cost_max_flow mcmf(total_nodes);
+
+    // Edge 1: Super source → source nodes (capacity 1, cost 0)
+    // Each source must be assigned exactly once
     for (size_t i = 0; i < n; ++i) {
-        for (size_t val : sets[i]) {
-            if (element_to_first_index.contains(val)) {
-                dsu.unite(i, element_to_first_index[val]);
-            }
-            else {
-                element_to_first_index[val] = i;
+        mcmf.add_edge(super_source, 1 + i, 1, 0);
+    }
+    // Edge 2: Source nodes → destination nodes (capacity 1, progressive cost)
+    // Cost structure encourages balanced distribution:
+    // - For each destination, costs increase with the number of assignments
+    // - This creates a natural load balancing effect
+    for (size_t src = 0; src < n; ++src) {
+        auto it = affinities.find(src);
+        std::set<size_t> src_affinities;
+        if (it != affinities.end()) {
+            src_affinities = it->second;
+        }
+
+        for (size_t dst = 0; dst < m; ++dst) {
+            if (src_affinities.count(dst) > 0) {
+                // Progressive cost: encourages filling destinations up to ideal level
+                // then increases cost for overfilling
+                // Use a quadratic cost based on how far from ideal
+                long long base_cost = 1000;
+                // Add cost to encourage balance - destinations closer to ideal get lower cost
+                long long cost = base_cost + static_cast<long long>(dst * 100);
+                mcmf.add_edge(1 + src, 1 + n + dst, 1, cost);
             }
         }
     }
+    // Edge 3: Destination nodes → super sink (flexible capacity, cost 0). Use
+    // ceil(n/m) capacity per destination to ensure flexibility. This allows the
+    // flow algorithm to find feasible solutions even with uneven affinity
+    // distributions.
+    const size_t max_capacity_per_dest = qvi_map_maxiperk(n, m);
 
-    qvi_map_t groups;
-    for (size_t i = 0; i < n; ++i) {
-        groups[dsu.find(i)].insert(i);
+    for (size_t i = 0; i < m; ++i) {
+        // Each destination can take up to ceil(n/m) sources
+        // This ensures enough total capacity: m * ceil(n/m) >= n
+        mcmf.add_edge(1 + n + i, super_sink, max_capacity_per_dest, 0);
     }
 
-    std::vector<std::set<size_t>> result;
-    for (auto& [root, indices] : groups) {
-        result.push_back(std::move(indices));
+    // Run min-cost max-flow
+    auto [flow, cost] = mcmf.min_cost_flow(super_source, super_sink, n);
+
+    // Verify that all sources were assigned
+    if (flow != static_cast<long long>(n)) {
+        throw std::runtime_error("Failed to assign all sources - no feasible solution exists");
+    }
+
+    // Extract assignment from the flow network
+    std::map<size_t, std::set<size_t>> result;
+    const auto &graph = mcmf.get_graph();
+
+    for (size_t src = 0; src < n; ++src) {
+        int src_node = 1 + src;
+        for (const auto& edge : graph[src_node]) {
+            // Check if this edge goes to a destination node and has flow
+            int dst_node = edge.to;
+            if (dst_node >= static_cast<int>(1 + n) &&
+                dst_node < static_cast<int>(1 + n + m) &&
+                edge.flow > 0
+            ) {
+                size_t dst = dst_node - (1 + n);
+                result[src].insert(dst);
+            }
+        }
     }
     return result;
 }
@@ -274,33 +296,33 @@ qvi_map_affinity_preserving(
     const qvi_map_config &config,
     qvi_map_t &map
 ) {
-    auto affinity_map = qvi_map_calc_affinities(
-        config.src_affinities, config.dst_affinities
-    );
-    do {
-        bool something_mapped = false;
-        const auto destids = affinity_map | std::views::values;
-        const std::vector<std::set<size_t>> k_destids(
-            destids.begin(), destids.end()
-        );
-        const auto intersecting_indis = group_intersecting_indices(k_destids);
+    using aff_type_t = decltype(config.src_affinities);
+    // Did we invert the sources and destinations?
+    bool inverted = false;
+    // The real sources and destinations.
+    auto &rsrc = const_cast<aff_type_t &>(config.src_affinities);
+    auto &rdst = const_cast<aff_type_t &>(config.dst_affinities);
+    // Our algorithm requires that nsrc >= ndst. If that
+    // isn't the case, invert them and note that we did so.
+    if (rsrc.size() < rdst.size()) {
+        rsrc = config.dst_affinities;
+        rdst = config.src_affinities;
+        inverted = true;
+    }
+    // Determine the affinities shared between sources and destinations.
+    const auto affinities = qvi_map_calc_affinities(rsrc, rdst);
+    // Solve the mapping problem.
+    const size_t n = rsrc.size();
+    const size_t m = rdst.size();
+    assert(n >= m);
 
-        for (const auto &ii : intersecting_indis) {
-            const auto dmap = get_disjoint_affinity(affinity_map, ii);
-            std::set<size_t> mapped_srcs;
-            for (auto &[src, dsts] : dmap) {
-                for (auto dst : dsts) {
-                    if (mapped_srcs.contains(src)) continue;
-                    map[src].insert(dst);
-                    mapped_srcs.insert(src);
-                    affinity_map.erase(src);
-                    something_mapped = true;
-                }
-            }
-        }
-        if (!something_mapped) break;
-    } while (true);
-
+    if (inverted) {
+        map = invert_map(solve_ap_mapping(n, m, affinities));
+    }
+    else {
+        map = solve_ap_mapping(n, m, affinities);
+    }
+    //qvi_map_debug_dump("Affinity Preserved" , map);
     return QV_SUCCESS;
 }
 
@@ -322,18 +344,14 @@ qvi_map_flatten_to_colors(
 
 void
 qvi_map_debug_dump(
+    const std::string &name,
     const qvi_map_t &map
 ) {
 #if QVI_DEBUG_MODE == 0
+    qvi_unused(name);
     qvi_unused(map);
 #else
-    qvi_log_debug(" # nsrcids_mapped={}", qvi_map_nsrcids_mapped(map));
-    for (const auto &[srci, dstis] : map) {
-        qvi_log_debug(" # srci {} mapped to:", srci);
-        for (const auto &dsti : dstis) {
-            qvi_log_debug(" # -- {}", dsti);
-        }
-    }
+    qvi_log_debug("{} assignments:\n{}", name, format_assignments(map));
 #endif
 }
 

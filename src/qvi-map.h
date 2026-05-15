@@ -64,10 +64,11 @@ qvi_map_maxiperk(
 );
 
 /**
- * Prints debug output.
+ * Prints map assignments.
  */
 void
 qvi_map_debug_dump(
+    const std::string &name,
     const qvi_map_t &map
 );
 

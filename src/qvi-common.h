@@ -58,6 +58,7 @@
 #include <condition_variable>
 #include <new>
 #include <numeric>
+#include <queue>
 #include <random>
 #include <ranges>
 #include <regex>
