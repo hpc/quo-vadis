@@ -335,17 +335,19 @@ qvi_vector_split(
     return result;
 }
 
-// Min-Cost Max-Flow implementation using SPFA (Shortest Path Faster Algorithm)
+/**
+ * Implements Min-Cost Max-Flow using SPFA (Shortest Path Faster Algorithm).
+ */
 struct qvi_min_cost_max_flow {
 private:
     struct edge {
         int to, rev;
-        long long cap, cost, flow;
+        int64_t cap, cost, flow;
     };
 
     int n;
     std::vector<std::vector<edge>> graph;
-    std::vector<long long> dist;
+    std::vector<int64_t> dist;
     std::vector<int> parent, parent_edge;
 
     bool
@@ -353,7 +355,7 @@ private:
         int s,
         int t
     ) {
-        dist.assign(n, std::numeric_limits<long long>::max());
+        dist.assign(n, std::numeric_limits<int64_t>::max());
         parent.assign(n, -1);
         parent_edge.assign(n, -1);
         std::vector<bool> in_queue(n, false);
@@ -364,7 +366,7 @@ private:
         in_queue[s] = true;
 
         while (!q.empty()) {
-            int u = q.front();
+            const int u = q.front();
             q.pop();
             in_queue[u] = false;
 
@@ -381,7 +383,7 @@ private:
                 }
             }
         }
-        return dist[t] != std::numeric_limits<long long>::max();
+        return dist[t] != std::numeric_limits<int64_t>::max();
     }
 
 public:
@@ -397,35 +399,35 @@ public:
     add_edge(
         int from,
         int to,
-        long long cap,
-        long long cost
+        int64_t cap,
+        int64_t cost
     ) {
         graph[from].push_back({to, (int)graph[to].size(), cap, cost, 0});
         graph[to].push_back({from, (int)graph[from].size() - 1, 0, -cost, 0});
     }
 
-    std::pair<long long, long long>
+    std::pair<int64_t, int64_t>
     min_cost_flow(
         int s,
         int t,
-        long long max_flow
+        int64_t max_flow
     ) {
-        long long flow = 0, cost = 0;
+        int64_t flow = 0, cost = 0;
 
         while (flow < max_flow && spfa(s, t)) {
-            long long push = max_flow - flow;
+            int64_t push = max_flow - flow;
             int v = t;
             while (v != s) {
-                int u = parent[v];
-                int edge_idx = parent_edge[v];
+                const int u = parent[v];
+                const int edge_idx = parent_edge[v];
                 push = std::min(push, graph[u][edge_idx].cap);
                 v = u;
             }
 
             v = t;
             while (v != s) {
-                int u = parent[v];
-                int edge_idx = parent_edge[v];
+                const int u = parent[v];
+                const int edge_idx = parent_edge[v];
                 graph[u][edge_idx].cap -= push;
                 graph[u][edge_idx].flow += push;
                 graph[v][graph[u][edge_idx].rev].cap += push;

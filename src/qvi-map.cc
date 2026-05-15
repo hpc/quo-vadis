@@ -212,25 +212,23 @@ solve_ap_mapping(
     }
     // Node layout:
     // 0: super source S
-    // 1..n: source nodes (s0, s1, ..., s(n-1))
-    // n+1..n+m: destination nodes (d0, d1, ..., d(m-1))
+    // 1...n: source nodes (s0, s1, ..., s(n-1))
+    // n+1...n+m: destination nodes (d0, d1, ..., d(m-1))
     // n+m+1: super sink T
-
-    int super_source = 0;
-    int super_sink = static_cast<int>(n + m + 1);
-    int total_nodes = static_cast<int>(n + m + 2);
-
+    const int super_source = 0;
+    const int super_sink = static_cast<int>(n + m + 1);
+    const int total_nodes = static_cast<int>(n + m + 2);
+    // Create the mcmf.
     qvi_min_cost_max_flow mcmf(total_nodes);
-
-    // Edge 1: Super source → source nodes (capacity 1, cost 0)
+    // Edge 1: Super source --> source nodes (capacity 1, cost 0).
     // Each source must be assigned exactly once
     for (size_t i = 0; i < n; ++i) {
         mcmf.add_edge(super_source, 1 + i, 1, 0);
     }
-    // Edge 2: Source nodes → destination nodes (capacity 1, progressive cost)
+    // Edge 2: Source nodes --> dest nodes (capacity 1, progressive cost).
     // Cost structure encourages balanced distribution:
-    // - For each destination, costs increase with the number of assignments
-    // - This creates a natural load balancing effect
+    // - For each destination, costs increase with the number of assignments.
+    // - This creates a natural load balancing effect.
     for (size_t src = 0; src < n; ++src) {
         auto it = affinities.find(src);
         std::set<size_t> src_affinities;
@@ -240,50 +238,49 @@ solve_ap_mapping(
 
         for (size_t dst = 0; dst < m; ++dst) {
             if (src_affinities.count(dst) > 0) {
-                // Progressive cost: encourages filling destinations up to ideal level
-                // then increases cost for overfilling
-                // Use a quadratic cost based on how far from ideal
-                long long base_cost = 1000;
-                // Add cost to encourage balance - destinations closer to ideal get lower cost
-                long long cost = base_cost + static_cast<long long>(dst * 100);
+                // Progressive cost: encourages filling destinations up to the
+                // ideal level, then increases cost for overfilling.
+                // Use a quadratic cost based on how far from ideal.
+                const int64_t base_cost = 1000;
+                // Add cost to encourage balance:
+                // destinations closer to ideal get lower cost.
+                int64_t cost = base_cost + static_cast<int64_t>(dst * 100);
                 mcmf.add_edge(1 + src, 1 + n + dst, 1, cost);
             }
         }
     }
-    // Edge 3: Destination nodes → super sink (flexible capacity, cost 0). Use
-    // ceil(n/m) capacity per destination to ensure flexibility. This allows the
-    // flow algorithm to find feasible solutions even with uneven affinity
-    // distributions.
+    // Edge 3: Destination nodes --> super sink (flexible capacity, cost 0).
+    // Use maxiperk(n, m) capacity per destination to ensure flexibility. This
+    // allows the flow algorithm to find feasible solutions even with uneven
+    // affinity distributions.
     const size_t max_capacity_per_dest = qvi_map_maxiperk(n, m);
 
     for (size_t i = 0; i < m; ++i) {
-        // Each destination can take up to ceil(n/m) sources
-        // This ensures enough total capacity: m * ceil(n/m) >= n
+        // Each destination can take up to maxiperk(n, m) sources.
+        // This ensures enough total capacity: m * maxiperk(n, m) >= n.
         mcmf.add_edge(1 + n + i, super_sink, max_capacity_per_dest, 0);
     }
-
-    // Run min-cost max-flow
-    auto [flow, cost] = mcmf.min_cost_flow(super_source, super_sink, n);
-
+    // Run min-cost max-flow.
+    const auto [flow, cost] = mcmf.min_cost_flow(super_source, super_sink, n);
     // Verify that all sources were assigned
-    if (flow != static_cast<long long>(n)) {
-        throw std::runtime_error("Failed to assign all sources - no feasible solution exists");
+    if (qvi_unlikely(flow != static_cast<int64_t>(n))) {
+        // Failed to assign all sources: no feasible solution exists.
+        throw qvi_runtime_error(QV_ERR_INTERNAL);
     }
-
-    // Extract assignment from the flow network
-    std::map<size_t, std::set<size_t>> result;
+    // Extract assignment from the flow network.
+    qvi_map_t result;
     const auto &graph = mcmf.get_graph();
 
     for (size_t src = 0; src < n; ++src) {
         int src_node = 1 + src;
-        for (const auto& edge : graph[src_node]) {
-            // Check if this edge goes to a destination node and has flow
-            int dst_node = edge.to;
+        for (const auto &edge : graph[src_node]) {
+            // Check if this edge goes to a destination node and has flow.
+            const int dst_node = edge.to;
             if (dst_node >= static_cast<int>(1 + n) &&
                 dst_node < static_cast<int>(1 + n + m) &&
                 edge.flow > 0
             ) {
-                size_t dst = dst_node - (1 + n);
+                const size_t dst = dst_node - (1 + n);
                 result[src].insert(dst);
             }
         }
@@ -322,7 +319,7 @@ qvi_map_affinity_preserving(
     else {
         map = solve_ap_mapping(n, m, affinities);
     }
-    //qvi_map_debug_dump("Affinity Preserved" , map);
+    qvi_map_debug_dump("Affinity Preserved" , map);
     return QV_SUCCESS;
 }
 
