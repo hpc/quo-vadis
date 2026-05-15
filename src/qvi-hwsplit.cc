@@ -178,16 +178,46 @@ qvi_hwsplit::m_reserve(void)
 }
 
 int
-qvi_hwsplit::m_apply_mapping(
+qvi_hwsplit::m_finalize_mapping(
     const qvi_map_t &map
 ) {
     for (const auto &[taski, cpusetis] : map) {
-        // In this application, tasks shall have a unique cpuset.
-        if (qvi_unlikely(cpusetis.size() != 1)) {
-            return QV_ERR_INTERNAL;
+        for (const auto &c : cpusetis) {
+            // Just use the only value that should be there.
+            m_hwpools.at(taski) = qvi_hwpool(m_split_cpusets.at(c));
         }
-        // Just use the only value that should be there.
-        m_hwpools.at(taski) = qvi_hwpool(m_split_cpusets.at(*cpusetis.begin()));
+    }
+
+    //m_colors = qvi_map_flatten_to_colors(map);
+
+    std::vector<qvi_hwloc_bitmap> hwpool_aff;
+    for (const auto &hwpool : m_hwpools) {
+        hwpool_aff.emplace_back(hwpool.cpuset());
+    }
+    // Iterate over supported device types and add devices based on affinity.
+    for (const auto devt : qvi_hwloc::supported_devices()) {
+        const auto devs = m_base_hwpool.devices(devt);
+        if (devs.empty()) continue;
+        // If we have devices, then get their affinities.
+        const auto dev_affinities = m_base_hwpool.device_affinities(devt);
+        // Map devices to cpusets, trying to maintain good affinity.
+        qvi_map_config devs2hres_config;
+        devs2hres_config.src_affinities = dev_affinities;
+        devs2hres_config.dst_affinities = hwpool_aff;
+        qvi_map_t devs2hres_map;
+        int rc = qvi_map_affinity_preserving(
+            devs2hres_config, devs2hres_map
+        );
+        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+        // Now that we have the mapping, assign
+        // devices to the associated hardware pools.
+        for (const auto &[devi, poolis] : devs2hres_map) {
+            for (const auto &pooli : poolis) {
+                //qvi_log_debug("adding dev {} to hwpool {}", devi, pooli);
+                rc = m_hwpools[pooli].add_device(devs[devi]);
+                if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+            }
+        }
     }
     return QV_SUCCESS;
 }
@@ -257,9 +287,11 @@ qvi_hwsplit::m_setup_map_config(void)
     const auto [pri_type, pri_cpuset] = m_primary_cpuset_for_split(
         m_split_at_type
     );
+    // TODO(skg) Audit this.
+    const size_t real_split_size = std::min(m_split_size, m_group_size);
     // Split the primary cpuset into the requested split size pieces.
     rc = m_rmi.hwloc().bitmap_split(
-        pri_cpuset, m_split_size, m_split_cpusets
+        pri_cpuset, real_split_size, m_split_cpusets
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // User-defined splitting. Map colors to cpusets.
@@ -311,7 +343,7 @@ qvi_hwsplit::m_split(void)
     rc = m_map_config.map_fn(m_map_config, hostres_map);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    return m_apply_mapping(hostres_map);
+    return m_finalize_mapping(hostres_map);
 }
 
 int
