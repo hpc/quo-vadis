@@ -46,24 +46,6 @@ struct qvi_map_config {
 };
 
 /**
- * Returns the largest number that will fit in the space available.
- */
-size_t
-qvi_map_maxfit(
-    size_t max_chunk,
-    size_t space_left
-);
-
-/**
- * Returns the max i per k.
- */
-size_t
-qvi_map_maxiperk(
-    size_t i,
-    size_t k
-);
-
-/**
  * Prints map assignments.
  */
 void

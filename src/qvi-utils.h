@@ -304,6 +304,24 @@ qvi_pid_environ(
 );
 
 /**
+ * Returns the largest number that will fit in the space available.
+ */
+size_t
+qvi_maxfit(
+    size_t max_chunk,
+    size_t space_left
+);
+
+/**
+ * Returns the max i per k.
+ */
+size_t
+qvi_maxiperk(
+    size_t i,
+    size_t k
+);
+
+/**
  * Splits the provided vector into npieces that are as close to equal size as
  * possible given the size of the input vector and the number of pieces
  * requested. The contents of the resulting vectors are copies of the contents

@@ -53,24 +53,6 @@ format_assignments(
 #endif
 
 size_t
-qvi_map_maxfit(
-    size_t max_chunk,
-    size_t space_left
-) {
-    return std::min(max_chunk, space_left);
-}
-
-size_t
-qvi_map_maxiperk(
-    size_t i,
-    size_t k
-) {
-    // Guard against division by zero.
-    if (k == 0) return 0;
-    return (i + k - 1) / k;
-}
-
-size_t
 qvi_map_nsrcids_mapped(
     const qvi_map_t &map
 ) {
@@ -131,14 +113,14 @@ qvi_map_packed(
     qvi_map_t &map
 ) {
     // Max consumers per resource.
-    const size_t maxcpr = qvi_map_maxiperk(config.nsrc, config.ndst);
+    const size_t maxcpr = qvi_maxiperk(config.nsrc, config.ndst);
     // Keeps track of the next source ID to map.
     size_t srci = 0;
     // Number of sources mapped to a destination.
     size_t nmapped = qvi_map_nsrcids_mapped(map);
     for (size_t dsti = 0; dsti < config.ndst; ++dsti) {
         // Number of consumer IDs to map.
-        const size_t nmap = qvi_map_maxfit(maxcpr, config.nsrc - nmapped);
+        const size_t nmap = qvi_maxfit(maxcpr, config.nsrc - nmapped);
         for (size_t i = 0; i < nmap; ++i, ++srci) {
             // Already mapped (potentially by some other mapper).
             if (qvi_map_srcid_mapped(map, srci)) continue;
@@ -253,7 +235,7 @@ solve_ap_mapping(
     // Use maxiperk(n, m) capacity per destination to ensure flexibility. This
     // allows the flow algorithm to find feasible solutions even with uneven
     // affinity distributions.
-    const size_t max_capacity_per_dest = qvi_map_maxiperk(n, m);
+    const size_t max_capacity_per_dest = qvi_maxiperk(n, m);
 
     for (size_t i = 0; i < m; ++i) {
         // Each destination can take up to maxiperk(n, m) sources.
