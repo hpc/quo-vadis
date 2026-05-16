@@ -43,6 +43,32 @@ struct qvi_map_config {
     std::vector<qvi_hwloc_bitmap> dst_affinities;
     std::vector<int> src_colors;
     qvi_map_fn_t map_fn;
+
+    qvi_map_config(void) = default;
+
+    qvi_map_config(
+        size_t nsrc,
+        size_t ndst,
+        qvi_map_fn_t map_fn = {}
+    ) : nsrc(nsrc)
+      , ndst(ndst)
+      , map_fn(map_fn) { }
+
+    qvi_map_config(
+        const std::vector<qvi_hwloc_bitmap> &src_affinities,
+        const std::vector<qvi_hwloc_bitmap> &dst_affinities,
+        qvi_map_fn_t map_fn = {}
+    ) : src_affinities(src_affinities)
+      , dst_affinities(dst_affinities)
+      , map_fn(map_fn) { }
+
+    qvi_map_config(
+        const std::vector<int> &src_colors,
+        const size_t &ndst,
+        qvi_map_fn_t map_fn = {}
+    ) : ndst(ndst)
+      , src_colors(src_colors)
+      , map_fn(map_fn) { }
 };
 
 /**

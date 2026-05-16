@@ -202,9 +202,10 @@ qvi_hwsplit::m_finalize_mapping(
         // If we have devices, then get their affinities.
         const auto dev_affinities = m_base_hwpool.device_affinities(devt);
         // Map devices to cpusets, trying to maintain good affinity.
-        qvi_map_config devs2hres_config;
-        devs2hres_config.src_affinities = dev_affinities;
-        devs2hres_config.dst_affinities = hwpool_aff;
+        qvi_map_config devs2hres_config = {
+            dev_affinities,
+            hwpool_aff
+        };
         qvi_map_t devs2hres_map;
         int rc = qvi_map_affinity_preserving(
             devs2hres_config, devs2hres_map
@@ -297,29 +298,37 @@ qvi_hwsplit::m_setup_map_config(void)
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // User-defined splitting. Map colors to cpusets.
     if (!auto_split) {
-        m_map_config.src_colors = m_colors;
-        m_map_config.ndst = m_split_cpusets.size();
-        m_map_config.map_fn = qvi_map_colors;
+        m_map_config = {
+            m_colors,
+            m_split_cpusets.size(),
+            qvi_map_colors
+        };
         return QV_SUCCESS;
     }
     // Automatic splitting.
     switch (m_colors[0]) {
         case QV_SCOPE_SPLIT_AFFINITY_PRESERVING: {
-            m_map_config.src_affinities = m_task_affinities;
-            m_map_config.dst_affinities = m_split_cpusets;
-            m_map_config.map_fn = qvi_map_affinity_preserving;
+            m_map_config = {
+                m_task_affinities,
+                m_split_cpusets,
+                qvi_map_affinity_preserving
+            };
             return QV_SUCCESS;
         }
         case QV_SCOPE_SPLIT_PACKED: {
-            m_map_config.nsrc = m_group_size;
-            m_map_config.ndst = m_split_cpusets.size();
-            m_map_config.map_fn = qvi_map_packed;
+            m_map_config = {
+                m_group_size,
+                m_split_cpusets.size(),
+                qvi_map_packed
+            };
             return QV_SUCCESS;
         }
         case QV_SCOPE_SPLIT_SPREAD: {
-            m_map_config.nsrc = m_group_size;
-            m_map_config.ndst = m_split_cpusets.size();
-            m_map_config.map_fn = qvi_map_spread;
+            m_map_config = {
+                m_group_size,
+                m_split_cpusets.size(),
+                qvi_map_spread
+            };
             return QV_SUCCESS;
         }
         default:

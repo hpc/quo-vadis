@@ -90,9 +90,10 @@ qvi_map_colors(
     qvi_map_t csi2cpui;
     // We map packed here because we are assuming that like or near colors
     // should be mapped close together.
-    qvi_map_config packed_config;
-    packed_config.nsrc = color_set.size();
-    packed_config.ndst = config.ndst;
+    qvi_map_config packed_config = {
+        color_set.size(),
+        config.ndst
+    };
     int rc = qvi_map_packed(packed_config, csi2cpui);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Now map the task colors to their respective cpusets.
