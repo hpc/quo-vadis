@@ -480,6 +480,24 @@ qvi_pid_environ(
     return rc;
 }
 
+size_t
+qvi_maxfit(
+    size_t max_chunk,
+    size_t space_left
+) {
+    return std::min(max_chunk, space_left);
+}
+
+size_t
+qvi_maxiperk(
+    size_t i,
+    size_t k
+) {
+    // Guard against division by zero.
+    if (k == 0) return 0;
+    return (i + k - 1) / k;
+}
+
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
  */

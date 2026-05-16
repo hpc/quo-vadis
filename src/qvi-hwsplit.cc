@@ -181,9 +181,10 @@ int
 qvi_hwsplit::m_finalize_mapping(
     const qvi_map_t &map
 ) {
+    // Assign cpusets to the tasks' hardware
+    // pools based on the determined mapping.
     for (const auto &[taski, cpusetis] : map) {
         for (const auto &c : cpusetis) {
-            // Just use the only value that should be there.
             m_hwpools.at(taski) = qvi_hwpool(m_split_cpusets.at(c));
         }
     }

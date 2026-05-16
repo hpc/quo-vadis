@@ -225,67 +225,6 @@ qvi_hwpool::set_union(
     return result;
 }
 
-#if 0
-std::vector<qvi_hwpool>
-qvi_hwpool::split_atnm(
-    const qvi_hwloc &hwloc,
-    qv_hw_obj_type_t obj_type,
-    size_t npieces,
-    size_t mresults
-) {
-    qvi_log_debug("NPIECES={} MRESULTS={}", npieces, mresults);
-    // Determine the primary type and cpuset that we are splitting over.
-    const auto [pri_type, pri_cpuset] = m_primary_cpuset_for_split(obj_type);
-    // Split the primary cpuset into npieces.
-    std::vector<qvi_hwloc_bitmap> pri_cpusets;
-    int rc = hwloc.bitmap_split(pri_cpuset, npieces, pri_cpusets);
-    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
-    //
-    std::vector<qvi_hwloc_bitmap> result_cpusets;
-    rc = hwloc.bitmap_split(pri_cpuset, mresults, result_cpusets);
-    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
-    // Create the n hardware pools, initiate each with a cpuset from split.
-    std::vector<qvi_hwpool> pri_hwpools;
-    for (size_t i = 0; i < npieces; ++i) {
-        pri_hwpools.emplace_back(qvi_hwpool(pri_cpusets[i]));
-    }
-    //
-    std::vector<qvi_hwpool> result;
-    for (size_t i = 0; i < mresults; ++i) {
-        result.emplace_back(qvi_hwpool(result_cpusets[i]));
-    }
-    // Iterate over supported device types and add devices based on affinity.
-    for (const auto devt : qvi_hwloc::supported_devices()) {
-        const auto devs = devices(devt);
-        if (devs.empty()) continue;
-        // If we have devices, then get their affinities.
-        const auto dev_affinities = device_affinities(devt);
-        // Map devices to cpusets, trying to maintain good affinity.
-        qvi_map_t devs2pri = qvi_map_affinity_preserving(
-            dev_affinities, pri_cpusets
-        );
-        // Now that we have the mapping, assign
-        // devices to the associated hardware pools.
-        for (const auto &[devi, poolis] : devs2pri) {
-            for (const auto &pooli : poolis) {
-                rc = pri_hwpools[pooli].add_device(devs[devi]);
-                if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
-            }
-        }
-        //
-        qvi_map_t pri2res = qvi_map_affinity_preserving(
-            pri_cpusets, result_cpusets
-        );
-        for (auto &[src, dsts] : pri2res) {
-            for (auto resi : dsts) {
-                result[resi].add_device(devs[src]);
-            }
-        }
-    }
-    return result;
-}
-#endif
-
 /*
  * vim: ft=cpp ts=4 sts=4 sw=4 expandtab
  */
