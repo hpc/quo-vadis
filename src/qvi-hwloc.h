@@ -356,15 +356,6 @@ public:
         qv_hw_obj_type_t obj_type
     );
     /**
-     *
-     */
-    int
-    get_device_affinity(
-        qv_hw_obj_type_t dev_obj,
-        int device_id,
-        qvi_hwloc_bitmap &cpuset
-    );
-    /**
      * Returns a reference to vector of supported device types.
      */
     static const std::vector<qv_hw_obj_type_t> &
@@ -442,7 +433,7 @@ public:
     /** */
     int
     get_cpuset_for_nobjs(
-        hwloc_const_cpuset_t cpuset,
+        const qvi_hwloc_bitmap &cpuset,
         qv_hw_obj_type_t obj_type,
         uint_t nobjs,
         qvi_hwloc_bitmap &result

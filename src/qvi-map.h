@@ -114,8 +114,8 @@ qvi_map_spread(
 );
 
 /**
- * Calculates a shared affinity map of consumer IDs (from)
- * that have shared affinity with the resources (to).
+ * Calculates a mapping between source IDs and the destination IDs with which
+ * they have affinity.
  */
 qvi_map_t
 qvi_map_calc_affinities(

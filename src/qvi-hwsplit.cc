@@ -185,15 +185,15 @@ qvi_hwsplit::m_finalize_mapping(
     // pools based on the determined mapping.
     for (const auto &[taski, cpusetis] : map) {
         for (const auto &c : cpusetis) {
-            m_hwpools.at(taski) = qvi_hwpool(m_split_cpusets.at(c));
+            m_hwpools.at(taski) = {m_split_cpusets.at(c)};
         }
     }
 
     //m_colors = qvi_map_flatten_to_colors(map);
 
-    std::vector<qvi_hwloc_bitmap> hwpool_aff;
+    std::vector<qvi_hwloc_bitmap> hwpool_affinities;
     for (const auto &hwpool : m_hwpools) {
-        hwpool_aff.emplace_back(hwpool.cpuset());
+        hwpool_affinities.emplace_back(hwpool.cpuset());
     }
     // Iterate over supported device types and add devices based on affinity.
     for (const auto devt : qvi_hwloc::supported_devices()) {
@@ -202,15 +202,16 @@ qvi_hwsplit::m_finalize_mapping(
         // If we have devices, then get their affinities.
         const auto dev_affinities = m_base_hwpool.device_affinities(devt);
         // Map devices to cpusets, trying to maintain good affinity.
-        qvi_map_config devs2hres_config = {
+        const qvi_map_config devs2hres_config = {
             dev_affinities,
-            hwpool_aff
+            hwpool_affinities
         };
         qvi_map_t devs2hres_map;
         int rc = qvi_map_affinity_preserving(
             devs2hres_config, devs2hres_map
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+        qvi_map_debug_dump("AP Device Mapping" , devs2hres_map);
         // Now that we have the mapping, assign
         // devices to the associated hardware pools.
         for (const auto &[devi, poolis] : devs2hres_map) {

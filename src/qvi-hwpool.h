@@ -230,11 +230,6 @@ public:
         const qvi_hwpool_dev &dev
     );
     /**
-     * Releases all devices in the hwpool.
-     */
-    int
-    release_devices(void);
-    /**
      *
      */
     static qvi_hwpool

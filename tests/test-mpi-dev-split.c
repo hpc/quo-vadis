@@ -72,6 +72,9 @@ main(
         if (wrank == 0) printf("Skipping: no GPUs found!\n");
         goto done;
     }
+    else {
+        if (wrank == 0) printf("# Number of GPUs found: %d\n", ngpus);
+    }
 
     qv_scope_t *gpu_scope;
     rc = qv_scope_split_at(

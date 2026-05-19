@@ -197,13 +197,6 @@ qvi_hwpool::add_device(
     return QV_SUCCESS;
 }
 
-int
-qvi_hwpool::release_devices(void)
-{
-    m_devs.clear();
-    return QV_SUCCESS;
-}
-
 qvi_hwpool
 qvi_hwpool::set_union(
     const std::vector<qvi_hwpool> &hwpools
