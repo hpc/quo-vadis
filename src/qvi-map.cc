@@ -36,8 +36,9 @@ format_assignments(
     const qvi_map_t &assignments
 ) {
     std::ostringstream oss;
+    oss << "  Key: {src, {dst}}\n";
     oss << "{\n";
-    for (const auto& [src, dests] : assignments) {
+    for (const auto &[src, dests] : assignments) {
         oss << "  {" << src << ", {";
         bool first = true;
         for (size_t dest : dests) {
@@ -245,9 +246,10 @@ solve_ap_mapping(
     }
     // Run min-cost max-flow.
     const auto [flow, cost] = mcmf.min_cost_flow(super_source, super_sink, n);
-    // Verify that all sources were assigned
+    // Verify that all sources were assigned.
     if (qvi_unlikely(flow != static_cast<int64_t>(n))) {
         // Failed to assign all sources: no feasible solution exists.
+        // TODO(skg) We should probably just use some other mapper here.
         throw qvi_runtime_error(QV_ERR_INTERNAL);
     }
     // Extract assignment from the flow network.
@@ -295,6 +297,8 @@ qvi_map_affinity_preserving(
     const size_t n = rsrc.size();
     const size_t m = rdst.size();
     assert(n >= m);
+
+    qvi_log_debug("N={}, M={}", n, m);
 
     if (inverted) {
         map = invert_map(solve_ap_mapping(n, m, affinities));

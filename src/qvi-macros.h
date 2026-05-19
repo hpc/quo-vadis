@@ -40,7 +40,6 @@ do {                                                                           \
 #define qvi_runtime_error(rc)                                                  \
 qvi_rterror(__FILE__ ":" + std::to_string(__LINE__), rc)
 
-// TODO(skg) Get rid of QVI_ENV_VEXCEPT. Just print the exception.
 #define qvi_catch_and_return()                                                 \
 catch (const qvi_rterror &e)                                                   \
 {                                                                              \

@@ -885,7 +885,7 @@ qvi_rmi_server::s_rpc_get_cpuset_for_nobjs(
             break;
         }
         rpcrc = server->m_hwlocs.get(flags).get_cpuset_for_nobjs(
-            cpuset.cdata(), obj_type, nobjs, result
+            cpuset, obj_type, nobjs, result
         );
     } while (false);
 

@@ -26,6 +26,16 @@ target_link_libraries(
     quo-vadis
 )
 
+add_executable(
+    test-process-hardware
+    test-process-hardware.c
+)
+
+target_link_libraries(
+    test-process-hardware
+    quo-vadis
+)
+
 add_test(
     NAME
       process-scopes
@@ -34,14 +44,24 @@ add_test(
       ${CMAKE_CURRENT_BINARY_DIR}/test-process-scopes"
 )
 
+add_test(
+    NAME
+      process-hardware
+    COMMAND
+      bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+      ${CMAKE_CURRENT_BINARY_DIR}/test-process-hardware"
+)
+
 # Use the C linker to test for C/C++ linkage problems.
 set_target_properties(
     test-process-scopes
+    test-process-hardware
     PROPERTIES LINKER_LANGUAGE C
 )
 
 set_tests_properties(
     process-scopes
+    process-hardware
     PROPERTIES
       TIMEOUT 60
     LABELS "process"

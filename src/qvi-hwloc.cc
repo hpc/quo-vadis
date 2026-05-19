@@ -764,7 +764,7 @@ qvi_hwloc::m_set_gpu_device_info(
         );
     }
     return QV_SUCCESS;
-#endif
+#else
     int id = qvi_hwloc_device::INVISIBLE_ID;
     //
     if (sscanf(obj->name, "rsmi%d", &id) == 1) {
@@ -778,7 +778,16 @@ qvi_hwloc::m_set_gpu_device_info(
         device->uuid = std::string(hwloc_obj_get_info_by_name(obj, "NVIDIAUUID"));
         return m_set_device_affinity_by_pci_bus_id(device->pci_bus_id, device);
     }
+    // Do the best we can in this instance: unclear which UUID to use here. Also,
+    // give this the lowest priority, if other identifiers exist.
+    int id2 = qvi_hwloc_device::INVISIBLE_ID;
+    if (sscanf(obj->name, "opencl%dd%d", &id2, &id) == 2) {
+        device->smi = id;
+        device->uuid = {};
+        return m_set_device_affinity_by_pci_bus_id(device->pci_bus_id, device);
+    }
     return QV_SUCCESS;
+#endif
 }
 
 int
@@ -1259,7 +1268,7 @@ qvi_hwloc::m_split_cpuset_by_range(
 
 int
 qvi_hwloc::get_cpuset_for_nobjs(
-    hwloc_const_cpuset_t cpuset,
+    const qvi_hwloc_bitmap &cpuset,
     qv_hw_obj_type_t obj_type,
     uint_t nobjs,
     qvi_hwloc_bitmap &result
@@ -1272,7 +1281,7 @@ qvi_hwloc::get_cpuset_for_nobjs(
     for (uint_t i = 0; i < nobjs; ++i) {
         hwloc_obj_t dobj;
         rc = get_obj_in_cpuset_by_depth(
-            cpuset, obj_depth, i, &dobj
+            cpuset.cdata(), obj_depth, i, &dobj
         );
         if (rc != QV_SUCCESS) break;
 
@@ -1293,12 +1302,12 @@ qvi_hwloc::m_disable_smt(void)
     // Get the entire topology.
     qvi_hwloc_bitmap orig_bitmap(topology_get_disallowed_cpuset());
     // How many cores are in the unmodified bitmap?
-    const unsigned ncores = hwloc_get_nbobjs_inside_cpuset_by_type(
+    const uint_t ncores = hwloc_get_nbobjs_inside_cpuset_by_type(
         m_topo, orig_bitmap.cdata(), HWLOC_OBJ_CORE
     );
 
     qvi_hwloc_bitmap nosmt_bitmap;
-    for (unsigned i = 0; i < ncores; ++i) {
+    for (uint_t i = 0; i < ncores; ++i) {
         hwloc_obj_t obj = hwloc_get_obj_inside_cpuset_by_type(
             m_topo, orig_bitmap.cdata(), HWLOC_OBJ_CORE, i
         );
@@ -1314,30 +1323,6 @@ qvi_hwloc::m_disable_smt(void)
         return QV_ERR_HWLOC;
     }
     return QV_SUCCESS;
-}
-
-int
-qvi_hwloc::get_device_affinity(
-    qv_hw_obj_type_t dev_obj,
-    int device_id,
-    qvi_hwloc_bitmap &cpuset
-) {
-    qvi_hwloc_dev_list *devlist = nullptr;
-
-    switch(dev_obj) {
-        case(QV_HW_OBJ_GPU) :
-            devlist = &m_gpus;
-            break;
-        default:
-            return QV_ERR_NOT_SUPPORTED;
-    }
-    // XXX(skg) This isn't the most efficient way of doing this, but the device
-    // lists tend to be small, so just perform a linear search for the given ID.
-    for (const auto &dev : *devlist) {
-        if (dev->id != device_id) continue;
-        return cpuset.set(dev->affinity.cdata());
-    }
-    return QV_ERR_NOT_FOUND;
 }
 
 /*
