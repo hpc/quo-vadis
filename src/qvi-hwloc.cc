@@ -26,14 +26,6 @@ using qvi_hwloc_dev_map = std::map<
     std::shared_ptr<qvi_hwloc_device>
 >;
 
-static bool
-dev_list_compare_by_visdev_id(
-    const std::shared_ptr<qvi_hwloc_device> &a,
-    const std::shared_ptr<qvi_hwloc_device> &b
-) {
-    return a.get()->id > b.get()->id;
-}
-
 /**
  * Converts the provided hwloc object type to its corresponding internal type.
  */
@@ -874,7 +866,14 @@ qvi_hwloc::m_discover_gpu_devices(void)
         m_gpus.push_back(gpudev);
     }
     // Sort list based on device ID.
-    std::sort(m_gpus.begin(), m_gpus.end(), dev_list_compare_by_visdev_id);
+    std::sort(
+        m_gpus.begin(),
+        m_gpus.end(),
+        [](const std::shared_ptr<qvi_hwloc_device> &a,
+           const std::shared_ptr<qvi_hwloc_device> &b) {
+            return a.get()->id < b.get()->id; // Sort ascending.
+        }
+    );
     return QV_SUCCESS;
 }
 

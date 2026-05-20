@@ -45,12 +45,6 @@ qvi_hwpool_dev::qvi_hwpool_dev(
     const std::shared_ptr<qvi_hwloc_device> &shdev
 ) : qvi_hwpool_dev(*shdev.get()) { }
 
-qv_hw_obj_type_t
-qvi_hwpool_dev::type(void)
-    const {
-    return m_type;
-}
-
 std::string
 qvi_hwpool_dev::id(
     qv_device_id_type_t format
@@ -151,6 +145,15 @@ qvi_hwpool::devices(
     const auto dev_view = subrange | std::views::values;
     std::vector<qvi_hwpool_dev> result;
     std::ranges::copy(dev_view, std::back_inserter(result));
+    // Sort the result by device ID.
+    std::sort(
+        result.begin(),
+        result.end(),
+        [](const qvi_hwpool_dev &a,
+           const qvi_hwpool_dev &b) {
+            return a.id() < b.id(); // Sort ascending.
+        }
+    );
     return result;
 }
 

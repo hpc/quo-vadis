@@ -119,7 +119,16 @@ public:
     }
     /** Returns the device's type. */
     qv_hw_obj_type_t
-    type(void) const ;
+    type(void)
+        const {
+        return m_type;
+    }
+    /** Returns the device's ID. */
+    int
+    id(void)
+        const {
+        return m_id;
+    }
     /** Returns the device's ID string formatted as specified. */
     int
     id(
