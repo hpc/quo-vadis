@@ -129,12 +129,6 @@ qvi_hwpool::cpuset(void) const
     return m_cpu.affinity();
 }
 
-const qvi_hwpool_devs_t &
-qvi_hwpool::devices(void) const
-{
-    return m_devs;
-}
-
 std::vector<qvi_hwpool_dev>
 qvi_hwpool::devices(
     qv_hw_obj_type_t obj_type
@@ -215,8 +209,10 @@ qvi_hwpool::set_union(
     // Do the same for its devices. Note that add_device() shall protect against
     // multiple insertions of the same device into the hardware pool.
     for (const auto &hwpool : hwpools) {
-        for (const auto &[dev_type, dev] : hwpool.devices()) {
-            result.add_device(dev);
+        for (const auto devt : qvi_hwloc::supported_devices()) {
+            for (const auto &dev : hwpool.devices(devt)) {
+                result.add_device(dev);
+            }
         }
     }
     return result;

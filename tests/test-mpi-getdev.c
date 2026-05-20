@@ -41,7 +41,7 @@ main(
     }
 
     if (wrank == 0) {
-        ctu_emit_gpu_info(base_scope, "Base Scope");
+        ctu_emit_device_info(base_scope, QV_HW_OBJ_GPU, "Base Scope");
     }
 
     /* Get number of GPUs */
@@ -85,7 +85,7 @@ main(
     }
     printf("[%d]: Local scope has %d GPUs\n", wrank, rank_ngpus);
     // TODO(skg) Improve this test.
-    ctu_emit_gpu_info(rank_scope, "Rank Scope");
+    ctu_emit_device_info(rank_scope, QV_HW_OBJ_GPU, "Rank Scope");
 
     int total_ngpus;
     MPI_Reduce(&rank_ngpus, &total_ngpus, 1, MPI_INT, MPI_SUM, 0, comm);
