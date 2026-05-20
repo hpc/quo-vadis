@@ -43,6 +43,43 @@ do {                                                                           \
 // We assume that the quo-vadis.h is included before us.
 #ifdef QUO_VADIS
 
+typedef struct {
+    char const *name;
+    qv_hw_obj_type_t type;
+} ctu_hw_obj_name_to_type_t;
+
+typedef struct {
+    char const *name;
+    qv_device_id_type_t devid;
+} ctu_devid_name_to_id_t;
+
+// Maps QV object type names to their underlying values.
+static const ctu_hw_obj_name_to_type_t ctu_hw_obj_name_to_type_tab[] = {
+    {CTU_TOSTRING(QV_HW_OBJ_MACHINE),  QV_HW_OBJ_MACHINE},
+    {CTU_TOSTRING(QV_HW_OBJ_PACKAGE),  QV_HW_OBJ_PACKAGE},
+    {CTU_TOSTRING(QV_HW_OBJ_NUMANODE), QV_HW_OBJ_NUMANODE},
+    {CTU_TOSTRING(QV_HW_OBJ_CORE),     QV_HW_OBJ_CORE},
+    {CTU_TOSTRING(QV_HW_OBJ_PU),       QV_HW_OBJ_PU},
+    {CTU_TOSTRING(QV_HW_OBJ_L1CACHE),  QV_HW_OBJ_L1CACHE},
+    {CTU_TOSTRING(QV_HW_OBJ_L2CACHE),  QV_HW_OBJ_L2CACHE},
+    {CTU_TOSTRING(QV_HW_OBJ_L3CACHE),  QV_HW_OBJ_L3CACHE},
+    {CTU_TOSTRING(QV_HW_OBJ_L4CACHE),  QV_HW_OBJ_L4CACHE},
+    {CTU_TOSTRING(QV_HW_OBJ_L5CACHE),  QV_HW_OBJ_L5CACHE}
+};
+
+static const size_t ctu_hw_obj_name_to_type_tab_size =
+    sizeof(ctu_hw_obj_name_to_type_tab) / sizeof(ctu_hw_obj_name_to_type_t);
+
+// Maps QV device ID type names to their underlying values.
+static const ctu_devid_name_to_id_t ctu_devid_name_to_id_tab[] = {
+    {CTU_TOSTRING(QV_DEVICE_ID_UUID),       QV_DEVICE_ID_UUID},
+    {CTU_TOSTRING(QV_DEVICE_ID_PCI_BUS_ID), QV_DEVICE_ID_PCI_BUS_ID},
+    {CTU_TOSTRING(QV_DEVICE_ID_ORDINAL),    QV_DEVICE_ID_ORDINAL}
+};
+
+static const size_t ctu_devid_name_to_id_tab_size =
+    sizeof(ctu_devid_name_to_id_tab) / sizeof(ctu_devid_name_to_id_t);
+
 static inline pid_t
 ctu_gettid(void)
 {
@@ -264,6 +301,68 @@ ctu_change_bind(
         ers = "qv_scope_barrier() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+}
+
+static inline int
+ctu_emit_host_hw_info(
+    qv_scope_t *scope,
+    const char *scope_name
+) {
+    printf("\n# System Hardware Overview for %s\n", scope_name);
+    for (size_t i = 0; i < ctu_hw_obj_name_to_type_tab_size; ++i) {
+        int n;
+        int rc = qv_scope_hw_obj_count(
+            scope, ctu_hw_obj_name_to_type_tab[i].type, &n
+        );
+        if (rc != QV_SUCCESS) {
+            fprintf(
+                stderr, "qv_scope_hw_obj_count(%s) failed\n",
+                ctu_hw_obj_name_to_type_tab[i].name
+            );
+            return rc;
+        }
+        printf("# %s=%d\n", ctu_hw_obj_name_to_type_tab[i].name, n);
+    }
+    printf("# ---------------------------------------\n");
+    return QV_SUCCESS;
+}
+
+static inline void
+ctu_emit_gpu_info(
+    qv_scope_t *scope,
+    const char *scope_name
+) {
+    // Get number of GPUs.
+    int ngpus;
+    int rc = qv_scope_hw_obj_count(scope, QV_HW_OBJ_GPU, &ngpus);
+    if (rc != QV_SUCCESS) {
+        const char *ers = "qv_scope_hw_obj_count() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    printf("\n# Discovered %d GPU Device(s) in %s\n", ngpus, scope_name);
+    for (int i = 0; i < ngpus; ++i) {
+        for (size_t j = 0; j < ctu_devid_name_to_id_tab_size; ++j) {
+            char *devids = NULL;
+            int rc = qv_scope_device_id_get(
+                scope,
+                QV_HW_OBJ_GPU,
+                i,
+                ctu_devid_name_to_id_tab[j].devid,
+                &devids
+            );
+            if (rc != QV_SUCCESS) {
+                const char *ers = "qv_scope_device_id_get() failed";
+                ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+            }
+            printf(
+                "# Device %u %s = %s\n", i,
+                ctu_devid_name_to_id_tab[j].name, devids
+            );
+            free(devids);
+        }
+    }
+    printf("# -----------------------------------------------------------\n");
 }
 
 #endif // #ifdef QUO_VADIS

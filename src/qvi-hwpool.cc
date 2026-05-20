@@ -61,6 +61,7 @@ qvi_hwpool_dev::id(
         case (QV_DEVICE_ID_PCI_BUS_ID):
             return m_pci_bus_id;
         case (QV_DEVICE_ID_ORDINAL):
+            // TODO(skg) Is this correct?
             return std::to_string(m_id);
         default:
             throw qvi_runtime_error(QV_ERR_INVLD_ARG);
