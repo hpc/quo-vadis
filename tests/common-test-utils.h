@@ -328,8 +328,9 @@ ctu_emit_host_hw_info(
 }
 
 static inline void
-ctu_emit_gpu_info(
+ctu_emit_device_info(
     qv_scope_t *scope,
+    qv_hw_obj_type_t dev_type,
     const char *scope_name
 ) {
     // Get number of GPUs.
@@ -339,14 +340,14 @@ ctu_emit_gpu_info(
         const char *ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
+    // TODO(skg) Generalize GPU name to actual device type.
     printf("\n# Discovered %d GPU Device(s) in %s\n", ngpus, scope_name);
     for (int i = 0; i < ngpus; ++i) {
         for (size_t j = 0; j < ctu_devid_name_to_id_tab_size; ++j) {
             char *devids = NULL;
             int rc = qv_scope_device_id_get(
                 scope,
-                QV_HW_OBJ_GPU,
+                dev_type,
                 i,
                 ctu_devid_name_to_id_tab[j].devid,
                 &devids

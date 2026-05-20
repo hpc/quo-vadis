@@ -203,11 +203,6 @@ public:
     const qvi_hwloc_bitmap &
     cpuset(void) const;
     /**
-     * Returns a const reference to the hardware pool's devices.
-     */
-    const qvi_hwpool_devs_t &
-    devices(void) const;
-    /**
      * Returns a vector of device copies of the given object type.
      */
     std::vector<qvi_hwpool_dev>

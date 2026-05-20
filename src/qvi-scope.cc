@@ -151,17 +151,15 @@ qv_scope::device_id(
     char **result
 ) const {
     // Look for the requested device.
-    int id = 0;
-    for (const auto &dinfo : m_hwpool.devices()) {
-        if (dev_type != dinfo.first) continue;
-        if (id++ == dev_index) {
-            // Format the device ID based on the caller's request.
-            return dinfo.second.id(format, result);
-        }
+    const auto devs = m_hwpool.devices(dev_type);
+    const size_t ndevs = devs.size();
+
+    if (qvi_unlikely(dev_index < 0)) return QV_ERR_INVLD_ARG;
+    if (qvi_unlikely(static_cast<size_t>(dev_index) >= ndevs)) {
+        return QV_ERR_NOT_FOUND;
     }
-    // If we are here, then we didn't find it.
-    *result = nullptr;
-    return QV_ERR_NOT_FOUND;
+    // Format the device ID based on the caller's request.
+    return devs[dev_index].id(format, result);
 }
 
 int
