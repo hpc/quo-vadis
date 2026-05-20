@@ -21,12 +21,10 @@ int
 main(void)
 {
     char const *ers = NULL;
-    int rc = QV_SUCCESS;
-
-    const int pid = getpid();
+    char const *scope_label = "Base Scope";
 
     qv_scope_t *base_scope;
-    rc = qv_process_scope_get(
+    int rc = qv_process_scope_get(
         QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &base_scope
     );
     if (rc != QV_SUCCESS) {
@@ -34,16 +32,9 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int n_pus;
-    rc = qv_scope_hw_obj_count(
-        base_scope, QV_HW_OBJ_PU, &n_pus
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_hw_obj_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    printf("[%d] Number of PUs in base_scope is %d\n", pid, n_pus);
+    ctu_emit_host_hw_info(base_scope, scope_label);
 
+    ctu_emit_gpu_info(base_scope, scope_label);
 
     rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {

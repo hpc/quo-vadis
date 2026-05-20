@@ -298,14 +298,13 @@ qvi_map_affinity_preserving(
     const size_t m = rdst.size();
     assert(n >= m);
 
-    qvi_log_debug("N={}, M={}", n, m);
-
     if (inverted) {
         map = invert_map(solve_ap_mapping(n, m, affinities));
     }
     else {
         map = solve_ap_mapping(n, m, affinities);
     }
+    qvi_log_debug("N={}, M={}", n, m);
     qvi_map_debug_dump("Affinity Preserved" , map);
     return QV_SUCCESS;
 }

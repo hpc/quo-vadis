@@ -2,59 +2,6 @@
 #include "quo-vadis-mpi.h"
 #include "common-test-utils.h"
 
-typedef struct device_name_type_s {
-    char const *name;
-    qv_device_id_type_t type;
-} device_name_type_t;
-
-static const device_name_type_t devnts[] = {
-    {CTU_TOSTRING(QV_DEVICE_ID_UUID),       QV_DEVICE_ID_UUID},
-    {CTU_TOSTRING(QV_DEVICE_ID_PCI_BUS_ID), QV_DEVICE_ID_PCI_BUS_ID},
-    {CTU_TOSTRING(QV_DEVICE_ID_ORDINAL),    QV_DEVICE_ID_ORDINAL}
-};
-
-// TODO(skg) Merge with others
-static void
-emit_gpu_info(
-    qv_scope_t *scope,
-    const char *scope_name
-) {
-    /* Get number of GPUs */
-    int ngpus;
-    int rc = qv_scope_hw_obj_count(scope, QV_HW_OBJ_GPU, &ngpus);
-    if (rc != QV_SUCCESS) {
-        const char *ers = "qv_scope_hw_obj_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    if (ngpus == 0) {
-        printf("\n# No GPU Devices in %s\n", scope_name);
-        return;
-    }
-
-    printf("\n# Discovered GPU Devices in %s\n", scope_name);
-    const unsigned ndevids = sizeof(devnts) / sizeof(device_name_type_t);
-    for (int i = 0; i < ngpus; ++i) {
-        for (unsigned j = 0; j < ndevids; ++j) {
-            char *devids = NULL;
-            int rc = qv_scope_device_id_get(
-                scope,
-                QV_HW_OBJ_GPU,
-                i,
-                devnts[j].type,
-                &devids
-            );
-            if (rc != QV_SUCCESS) {
-                const char *ers = "qv_scope_device_id_get() failed";
-                ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-            }
-            printf("# Device %u %s = %s\n", i, devnts[j].name, devids);
-            free(devids);
-        }
-    }
-    printf("# -----------------------------------------------------------\n");
-}
-
 int
 main(
     int argc,
@@ -94,7 +41,7 @@ main(
     }
 
     if (wrank == 0) {
-        emit_gpu_info(base_scope, "Base Scope");
+        ctu_emit_gpu_info(base_scope, "Base Scope");
     }
 
     /* Get number of GPUs */
@@ -138,7 +85,7 @@ main(
     }
     printf("[%d]: Local scope has %d GPUs\n", wrank, rank_ngpus);
     // TODO(skg) Improve this test.
-    emit_gpu_info(rank_scope, "Rank Scope");
+    ctu_emit_gpu_info(rank_scope, "Rank Scope");
 
     int total_ngpus;
     MPI_Reduce(&rank_ngpus, &total_ngpus, 1, MPI_INT, MPI_SUM, 0, comm);
