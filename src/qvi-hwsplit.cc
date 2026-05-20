@@ -188,7 +188,7 @@ qvi_hwsplit::m_finalize_mapping(
             m_hwpools.at(taski) = {m_split_cpusets.at(c)};
         }
     }
-
+    // TODO(skg) FIXME.
     //m_colors = qvi_map_flatten_to_colors(map);
 
     std::vector<qvi_hwloc_bitmap> hwpool_affinities;
@@ -211,7 +211,9 @@ qvi_hwsplit::m_finalize_mapping(
             devs2hres_config, devs2hres_map
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+#if 0 // TODO(skg) Add an environment variable to expose this to users.
         qvi_map_debug_dump("AP Device Mapping" , devs2hres_map);
+#endif
         // Now that we have the mapping, assign
         // devices to the associated hardware pools.
         for (const auto &[devi, poolis] : devs2hres_map) {

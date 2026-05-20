@@ -17,11 +17,6 @@
 #include "qvi-hwloc.h"
 #include "qvi-utils.h"
 
-#if 0 // XXX(skg) Not sure if we can get away without using these.
-#include "qvi-nvml.h"
-#include "qvi-rsmi.h"
-#endif
-
 // TODO(skg) Why aren't NICs showing up? Fix that. Can we merge GPU and NIC
 // code?
 
@@ -36,7 +31,7 @@ dev_list_compare_by_visdev_id(
     const std::shared_ptr<qvi_hwloc_device> &a,
     const std::shared_ptr<qvi_hwloc_device> &b
 ) {
-    return a.get()->id < b.get()->id;
+    return a.get()->id > b.get()->id;
 }
 
 /**
@@ -741,30 +736,10 @@ qvi_hwloc::m_set_gpu_device_info(
     hwloc_obj_t obj,
     qvi_hwloc_device *device
 ) {
-    // XXX(skg) I would like to get rid of calls that initialize GPUs in any
-    // way. I've seen issues doing this with other infrastructure that uses
-    // hwloc. Dynamic affinities don't play well here sometimes because
-    // GPU infrastructure is initialized when more processes are active.
-#if 0
-    int id = qvi_hwloc_device::INVISIBLE_ID;
-    //
-    if (sscanf(obj->name, "rsmi%d", &id) == 1) {
-        device->smi = id;
-        device->uuid = std::string(hwloc_obj_get_info_by_name(obj, "AMDUUID"));
-        return qvi_hwloc_rsmi_get_device_cpuset_by_device_id(
-            this, device->smi, device->affinity
-        );
-    }
-    //
-    if (sscanf(obj->name, "nvml%d", &id) == 1) {
-        device->smi = id;
-        device->uuid = std::string(hwloc_obj_get_info_by_name(obj, "NVIDIAUUID"));
-        return qvi_hwloc_nvml_get_device_cpuset_by_pci_bus_id(
-            this, device->pci_bus_id, device->affinity
-        );
-    }
-    return QV_SUCCESS;
-#else
+    // Avoid calls that initialize GPUs in any way. I've seen issues doing this
+    // with other infrastructure that uses hwloc. Dynamic affinities sometimes
+    // don't play well here because GPU infrastructure is initialized when more
+    // processes are active.
     int id = qvi_hwloc_device::INVISIBLE_ID;
     //
     if (sscanf(obj->name, "rsmi%d", &id) == 1) {
@@ -787,7 +762,6 @@ qvi_hwloc::m_set_gpu_device_info(
         return m_set_device_affinity_by_pci_bus_id(device->pci_bus_id, device);
     }
     return QV_SUCCESS;
-#endif
 }
 
 int
@@ -1172,13 +1146,11 @@ get_devices_in_cpuset_from_dev_list(
     hwloc_const_cpuset_t cpuset,
     qvi_hwloc_dev_list &devs
 ) {
-    for (auto &dev : devlist) {
+    devs.clear();
+    for (const auto &dev : devlist) {
         if (!hwloc_bitmap_isincluded(dev->affinity.cdata(), cpuset)) continue;
-
-        auto devin = std::make_shared<qvi_hwloc_device>();
-        const int rc = qvi_copy(*dev.get(), devin.get());
-        if (rc != QV_SUCCESS) return rc;
-        devs.push_back(devin);
+        // Else add the included device.
+        devs.emplace_back(dev);
     }
     return QV_SUCCESS;
 }

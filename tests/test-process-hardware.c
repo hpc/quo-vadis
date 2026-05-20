@@ -17,40 +17,44 @@
 #include "quo-vadis.h"
 #include "common-test-utils.h"
 
+typedef struct {
+    char *name;
+    qv_scope_flags_t flags;
+} setup_name_to_flags_t;
+
 int
 main(void)
 {
-    char const *ers = NULL;
-    int rc = QV_SUCCESS;
+    const setup_name_to_flags_t setup_tab[] = {
+        {CTU_TOSTRING(QV_SCOPE_FLAG_NONE),   QV_SCOPE_FLAG_NONE},
+        {CTU_TOSTRING(QV_SCOPE_FLAG_NO_SMT), QV_SCOPE_FLAG_NO_SMT}
+    };
 
-    const int pid = getpid();
+    const size_t n_setups = sizeof(setup_tab) / sizeof(setup_name_to_flags_t);
+    for (size_t i = 0; i < n_setups; i++) {
+        char const *ers = NULL;
 
-    qv_scope_t *base_scope;
-    rc = qv_process_scope_get(
-        QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &base_scope
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_get(QV_SCOPE_USER) failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        qv_scope_t *base_scope;
+        int rc = qv_process_scope_get(
+            QV_SCOPE_USER,
+            setup_tab[i].flags,
+            &base_scope
+        );
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_get(QV_SCOPE_USER) failed";
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
+
+        ctu_emit_host_hw_info(base_scope, setup_tab[i].name);
+
+        ctu_emit_gpu_info(base_scope, setup_tab[i].name);
+
+        rc = qv_scope_free(base_scope);
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_free() failed";
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
     }
-
-    int n_pus;
-    rc = qv_scope_hw_obj_count(
-        base_scope, QV_HW_OBJ_PU, &n_pus
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_hw_obj_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    printf("[%d] Number of PUs in base_scope is %d\n", pid, n_pus);
-
-
-    rc = qv_scope_free(base_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
     return EXIT_SUCCESS;
 }
 

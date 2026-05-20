@@ -93,7 +93,7 @@ private:
     virtual bool
     equals(const qvi_hwpool_res &other) const override {
         if (auto o = dynamic_cast<const qvi_hwpool_dev *>(&other)) {
-            return m_uuid == o->m_uuid;
+            return m_pci_bus_id == o->m_pci_bus_id;
         }
         return false;
     }
