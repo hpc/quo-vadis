@@ -825,7 +825,7 @@ qvi_hwloc::m_discover_gpu_devices(void)
         hwloc_obj_t pci_obj = get_pci_busid(obj, busid);
         if (!pci_obj) continue;
 
-        for (auto &dev : m_devices) {
+        for (const auto &dev : m_devices) {
             // Skip invisible devices.
             if (dev->id == qvi_hwloc_device::INVISIBLE_ID) continue;
             // Skip if this is not the PCI bus ID we are looking for.
@@ -833,37 +833,28 @@ qvi_hwloc::m_discover_gpu_devices(void)
             // Set as much device info as we can. If device support isn't
             // available, then just return success.
             int rc = m_set_gpu_device_info(obj, dev.get());
-            if (rc == QV_ERR_NOT_SUPPORTED) return QV_SUCCESS;
-            else if (rc != QV_SUCCESS) return rc;
+            if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
             // First, determine if this is a new device?
             auto got = devmap.find(busid);
             // New device (i.e., a new PCI bus ID)
             if (got == devmap.end()) {
-                auto gpudev = std::make_shared<qvi_hwloc_device>();
                 // Set base info from current device.
-                rc = qvi_copy(*dev.get(), gpudev.get());
-                if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
                 // Add it to our collection of 'seen' devices.
-                devmap.insert({busid, gpudev});
+                devmap.insert({busid, dev});
             }
             // A device we have seen before. Try to set as much info as
             // possible. Note that we don't copy because we don't know if the
             // source device has a different amount of information.
             else {
-                qvi_hwloc_device *gpudev = got->second.get();
-                rc = m_set_gpu_device_info(obj, gpudev);
+                rc = m_set_gpu_device_info(obj, got->second.get());
                 if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
             }
         }
     }
     // Now populate our GPU device list.
-    for (const auto &mapi : devmap) {
-        auto gpudev = std::make_shared<qvi_hwloc_device>();
-        // Copy device info.
-        const int rc = qvi_copy(*mapi.second.get(), gpudev.get());
-        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-        // Save copy.
-        m_gpus.push_back(gpudev);
+    for (const auto &[_, gpu] : devmap) {
+        // Add the device to our GPU list.
+        m_gpus.emplace_back(gpu);
     }
     // Sort list based on device ID.
     std::sort(
@@ -892,13 +883,10 @@ qvi_hwloc::m_discover_nic_devices(void)
             // Skip if this is not the PCI bus ID we are looking for.
             if (dev->pci_bus_id != busid) continue;
             //
-            int rc = m_set_of_device_info(obj, dev.get());
+            const int rc = m_set_of_device_info(obj, dev.get());
             if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
             //
-            auto nicdev = std::make_shared<qvi_hwloc_device>();
-            rc = qvi_copy(*dev.get(), nicdev.get());
-            if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-            m_nics.push_back(nicdev);
+            m_nics.emplace_back(dev);
         }
     }
     return QV_SUCCESS;
