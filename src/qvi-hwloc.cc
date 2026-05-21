@@ -56,7 +56,7 @@ obj_hwloc2qv(
             return QV_HW_OBJ_NUMANODE;
         case(HWLOC_OBJ_OS_DEVICE):
             return QV_HW_OBJ_GPU;
-        default:
+        [[unlikely]] default:
             // This is an internal development error.
             qvi_abort();
     }
@@ -531,7 +531,7 @@ qvi_hwloc::obj_get_type(
             return HWLOC_OBJ_NUMANODE;
         case(QV_HW_OBJ_GPU):
             return HWLOC_OBJ_OS_DEVICE;
-        default:
+        [[unlikely]] default:
             // This is likely an internal development error.
             throw qvi_runtime_error(QV_ERR_INTERNAL);
     }
@@ -559,7 +559,7 @@ qvi_hwloc::obj_is_host_resource(
         case(QV_HW_OBJ_GPU):
         case(QV_HW_OBJ_LAST):
             return false;
-        default:
+        [[unlikely]] default:
             // This is likely an internal development error.
             throw qvi_runtime_error(QV_ERR_INTERNAL);
     }
@@ -1155,7 +1155,7 @@ qvi_hwloc::get_devices_included_in_cpuset(
         case QV_HW_OBJ_GPU:
             devlist = const_cast<decltype(devlist)>(&m_gpus);
             break;
-        default:
+        [[unlikely]] default:
             return QV_ERR_NOT_SUPPORTED;
     }
 
@@ -1186,7 +1186,7 @@ qvi_hwloc::get_device_id_in_cpuset(
         case (QV_DEVICE_ID_ORDINAL):
             dev_id = devs.at(i)->id;
             break;
-        default:
+        [[unlikely]] default:
             rc = QV_ERR_INVLD_ARG;
             break;
     }

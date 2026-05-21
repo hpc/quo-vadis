@@ -334,7 +334,7 @@ qvi_hwsplit::m_setup_map_config(void)
             };
             return QV_SUCCESS;
         }
-        default:
+        [[unlikely]] default:
             return QV_ERR_INVLD_ARG;
     }
     // Shouldn't get here.

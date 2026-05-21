@@ -282,20 +282,19 @@ qvi_map_affinity_preserving(
     // Did we invert the sources and destinations?
     bool inverted = false;
     // The real sources and destinations.
-    auto &rsrc = const_cast<aff_type_t &>(config.src_affinities);
-    auto &rdst = const_cast<aff_type_t &>(config.dst_affinities);
+    auto rsrc = const_cast<aff_type_t *>(&config.src_affinities);
+    auto rdst = const_cast<aff_type_t *>(&config.dst_affinities);
     // Our algorithm requires that nsrc >= ndst. If that
     // isn't the case, invert them and note that we did so.
-    if (rsrc.size() < rdst.size()) {
-        rsrc = config.dst_affinities;
-        rdst = config.src_affinities;
+    if (rsrc->size() < rdst->size()) {
+        std::swap(rsrc, rdst);
         inverted = true;
     }
     // Determine the affinities shared between sources and destinations.
-    const auto affinities = qvi_map_calc_affinities(rsrc, rdst);
+    const auto affinities = qvi_map_calc_affinities(*rsrc, *rdst);
     // Solve the mapping problem.
-    const size_t n = rsrc.size();
-    const size_t m = rdst.size();
+    const size_t n = rsrc->size();
+    const size_t m = rdst->size();
     assert(n >= m);
 
     if (inverted) {
