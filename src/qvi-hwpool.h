@@ -10,7 +10,8 @@
 /**
  * @file qvi-hwpool.h
  *
- * Implements hardware resource types and resource pools.
+ * Implements hardware resource types and resource pools. These are the
+ * structures that are used within scopes.
  */
 
 #ifndef QVI_HWPOOL_H
@@ -28,7 +29,7 @@ protected:
     /** Resource hint flags. */
     qv_scope_create_hints_t m_hints = QV_SCOPE_CREATE_HINT_NONE;
     /** The resource's affinity encoded as a bitmap. */
-    qvi_hwloc_bitmap m_affinity;
+    qvi_hwloc_bitmap m_affinity = {};
     /** Polymorphic equality check. */
     virtual bool
     equals(const qvi_hwpool_res &other) const {
@@ -86,9 +87,9 @@ private:
     /** Device ID (ordinal). */
     int m_id = qvi_hwloc_device::INVALID_ID;
     /** The PCI bus ID. */
-    std::string m_pci_bus_id;
+    std::string m_pci_bus_id = {};
     /** Universally Unique Identifier. */
-    std::string m_uuid;
+    std::string m_uuid = {};
     /** Polymorphic equality check. */
     virtual bool
     equals(const qvi_hwpool_res &other) const override {
@@ -153,11 +154,16 @@ public:
     }
 };
 
+/** Device list type. */
+using qvi_hwpool_dev_list = std::vector<
+    std::shared_ptr<qvi_hwpool_dev>
+>;
+
 /**
  * Maintains a mapping between device types and devices of those types.
  */
-using qvi_hwpool_devs_t = std::multimap<
-    qv_hw_obj_type_t, qvi_hwpool_dev
+using qvi_hwpool_devs_t = std::map<
+    qv_hw_obj_type_t, qvi_hwpool_dev_list
 >;
 
 struct qvi_hwpool {
@@ -203,9 +209,9 @@ public:
     const qvi_hwloc_bitmap &
     cpuset(void) const;
     /**
-     * Returns a vector of device copies of the given object type.
+     * Returns a const reference to the devices of the given object type.
      */
-    std::vector<qvi_hwpool_dev>
+    const qvi_hwpool_dev_list &
     devices(
         qv_hw_obj_type_t obj_type
     ) const;
