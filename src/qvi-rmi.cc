@@ -703,7 +703,7 @@ qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
             case QV_SCOPE_PROCESS:
                 rpcrc = server->m_get_iscope_bitmap_proc(hwloc_flags, who, sbitmap);
                 break;
-            default:
+            [[unlikely]] default:
                 rpcrc = QV_ERR_INVLD_ARG;
                 break;
         }
