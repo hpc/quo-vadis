@@ -197,7 +197,7 @@ qvi_hwsplit::m_finalize_mapping(
     }
     // Iterate over supported device types and add devices based on affinity.
     for (const auto devt : qvi_hwloc::supported_devices()) {
-        const auto devs = m_base_hwpool.devices(devt);
+        const auto &devs = m_base_hwpool.devices(devt);
         if (devs.empty()) continue;
         // If we have devices, then get their affinities.
         const auto dev_affinities = m_base_hwpool.device_affinities(devt);
@@ -219,7 +219,7 @@ qvi_hwsplit::m_finalize_mapping(
         for (const auto &[devi, poolis] : devs2hres_map) {
             for (const auto &pooli : poolis) {
                 //qvi_log_debug("adding dev {} to hwpool {}", devi, pooli);
-                rc = m_hwpools[pooli].add_device(devs[devi]);
+                rc = m_hwpools[pooli].add_device(*devs[devi].get());
                 if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
             }
         }
@@ -248,7 +248,7 @@ qvi_hwsplit::m_primary_cpuset_for_split(
     // the union over the devices affinities.
     qvi_hwloc_bitmap result;
     for (const auto &dev : m_base_hwpool.devices(real_type)) {
-        result = result | dev.affinity();
+        result = result | dev.get()->affinity();
     }
     return {real_type, result};
 }

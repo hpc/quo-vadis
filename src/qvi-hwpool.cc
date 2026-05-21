@@ -55,7 +55,8 @@ qvi_hwpool_dev::id(
         case (QV_DEVICE_ID_PCI_BUS_ID):
             return m_pci_bus_id;
         case (QV_DEVICE_ID_ORDINAL):
-            // TODO(skg) Is this correct?
+            // TODO(skg) Is this correct? Probably not. Get list and index into
+            // that.
             return std::to_string(m_id);
         default:
             throw qvi_runtime_error(QV_ERR_INVLD_ARG);
@@ -83,15 +84,12 @@ bool
 qvi_hwpool::m_device_in_pool(
     const qvi_hwpool_dev &dev
 ) const {
-    const auto [first, last] = m_devs.equal_range(dev.type());
-    const auto view = std::ranges::subrange(first, last);
-    return std::ranges::any_of(
-        view, [&](const auto &pair) { return pair.second == dev; }
-    );
+    for (const auto &pool_dev : devices(dev.type())) {
+        if (*pool_dev.get() == dev) return true;
+    }
+    return false;
 }
 
-// TODO(skg) This is suspect. Perhaps we should favor affinity preserving
-// mapping?
 int
 qvi_hwpool::m_add_devices_with_affinity(
     qvi_hwloc &hwloc
@@ -100,7 +98,7 @@ qvi_hwpool::m_add_devices_with_affinity(
     // Iterate over the supported device types.
     for (const auto devt : qvi_hwloc::supported_devices()) {
         qvi_hwloc_dev_list devs;
-        rc = hwloc.get_devices_in_cpuset(
+        rc = hwloc.get_devices_included_in_cpuset(
             devt, m_cpu.affinity().cdata(), devs
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
@@ -117,8 +115,7 @@ qvi_hwpool::initialize(
     qvi_hwloc &hwloc,
     const qvi_hwloc_bitmap &cpuset
 ) {
-    const int rc = m_cpu.affinity().set(cpuset.cdata());
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    m_cpu.affinity() = cpuset;
     // Add devices with affinity to the hardware pool.
     return m_add_devices_with_affinity(hwloc);
 }
@@ -129,26 +126,13 @@ qvi_hwpool::cpuset(void) const
     return m_cpu.affinity();
 }
 
-std::vector<qvi_hwpool_dev>
+const qvi_hwpool_dev_list &
 qvi_hwpool::devices(
     qv_hw_obj_type_t obj_type
 ) const {
-    const auto [first, last] = m_devs.equal_range(obj_type);
-    const auto subrange = std::ranges::subrange(first, last);
-    // Extract only the devices from the pairs.
-    const auto dev_view = subrange | std::views::values;
-    std::vector<qvi_hwpool_dev> result;
-    std::ranges::copy(dev_view, std::back_inserter(result));
-    // Sort the result by device ID.
-    std::sort(
-        result.begin(),
-        result.end(),
-        [](const qvi_hwpool_dev &a,
-           const qvi_hwpool_dev &b) {
-            return a.id() < b.id(); // Sort ascending.
-        }
-    );
-    return result;
+    static const qvi_hwpool_dev_list empty_list = {};
+    if (!m_devs.contains(obj_type)) return empty_list;
+    return m_devs.at(obj_type);
 }
 
 std::vector<qvi_hwloc_bitmap>
@@ -161,7 +145,7 @@ qvi_hwpool::device_affinities(
     else {
         std::vector<qvi_hwloc_bitmap> result;
         for (const auto &dev : devices(obj_type)) {
-            result.emplace_back(dev.affinity());
+            result.emplace_back(dev.get()->affinity());
         }
         return result;
     }
@@ -182,7 +166,7 @@ qvi_hwpool::nobjects(
     }
     // Note that this path also covers QV_HW_OBJ_LAST because result
     // will be 0 in the case that QV_HW_OBJ_LAST is passed here.
-    return m_devs.count(obj_type);
+    return devices(obj_type).size();
 }
 
 int
@@ -190,7 +174,20 @@ qvi_hwpool::add_device(
     const qvi_hwpool_dev &dev
 ) {
     if (!m_device_in_pool(dev)) {
-        m_devs.insert({dev.type(), dev});
+        // Safely ensure the vector exists, get iterator to it.
+        auto [it, _] = m_devs.try_emplace(dev.type());
+        // Push the new item safely into the vector.
+        it->second.emplace_back(std::make_shared<qvi_hwpool_dev>(dev));
+        // Sort the list by device ID after each
+        // insertion to maintain correct device ordinals.
+        std::sort(
+            it->second.begin(),
+            it->second.end(),
+            [](const std::shared_ptr<qvi_hwpool_dev> &a,
+               const std::shared_ptr<qvi_hwpool_dev> &b) {
+                return a.get()->id() < b.get()->id(); // Sort ascending.
+            }
+        );
     }
     return QV_SUCCESS;
 }
@@ -211,7 +208,7 @@ qvi_hwpool::set_union(
     for (const auto &hwpool : hwpools) {
         for (const auto devt : qvi_hwloc::supported_devices()) {
             for (const auto &dev : hwpool.devices(devt)) {
-                result.add_device(dev);
+                result.add_device(*dev.get());
             }
         }
     }

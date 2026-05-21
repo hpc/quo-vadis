@@ -151,7 +151,7 @@ qv_scope::device_id(
     char **result
 ) const {
     // Look for the requested device.
-    const auto devs = m_hwpool.devices(dev_type);
+    const auto &devs = m_hwpool.devices(dev_type);
     const size_t ndevs = devs.size();
 
     if (qvi_unlikely(dev_index < 0)) return QV_ERR_INVLD_ARG;
@@ -159,7 +159,7 @@ qv_scope::device_id(
         return QV_ERR_NOT_FOUND;
     }
     // Format the device ID based on the caller's request.
-    return devs[dev_index].id(format, result);
+    return devs[dev_index].get()->id(format, result);
 }
 
 int

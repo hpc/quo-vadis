@@ -1143,7 +1143,7 @@ get_devices_in_cpuset_from_dev_list(
 }
 
 int
-qvi_hwloc::get_devices_in_cpuset(
+qvi_hwloc::get_devices_included_in_cpuset(
     qv_hw_obj_type_t obj_type,
     hwloc_const_cpuset_t cpuset,
     qvi_hwloc_dev_list &devs
@@ -1173,7 +1173,7 @@ qvi_hwloc::get_device_id_in_cpuset(
     std::string &dev_id
 ) {
     qvi_hwloc_dev_list devs;
-    int rc = get_devices_in_cpuset(dev_obj, cpuset, devs);
+    int rc = get_devices_included_in_cpuset(dev_obj, cpuset, devs);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     switch (dev_id_type) {
