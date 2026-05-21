@@ -1147,13 +1147,13 @@ qvi_hwloc::get_devices_included_in_cpuset(
     qv_hw_obj_type_t obj_type,
     hwloc_const_cpuset_t cpuset,
     qvi_hwloc_dev_list &devs
-) {
-    qvi_hwloc_dev_list *devlist = nullptr;
+) const {
+    const qvi_hwloc_dev_list *devlist = nullptr;
     // Make sure that the user provided a valid, supported device type.
     switch (obj_type) {
         // TODO(skg) We can support more devices, so do that eventually.
         case QV_HW_OBJ_GPU:
-            devlist = &m_gpus;
+            devlist = const_cast<decltype(devlist)>(&m_gpus);
             break;
         default:
             return QV_ERR_NOT_SUPPORTED;

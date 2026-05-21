@@ -45,9 +45,6 @@ public:
     /** Returns the resource's create hints. */
     qv_scope_create_hints_t
     hints(void);
-    /** Returns a reference to the resource's affinity encoded by a bitmap. */
-    qvi_hwloc_bitmap &
-    affinity(void);
     /** Returns a const reference to the resource's affinity bitmap. */
     const qvi_hwloc_bitmap &
     affinity(void) const;
@@ -154,25 +151,17 @@ public:
     }
 };
 
-/** Device list type. */
-using qvi_hwpool_dev_list = std::vector<
-    std::shared_ptr<qvi_hwpool_dev>
->;
-
-/**
- * Maintains a mapping between device types and devices of those types.
- */
-using qvi_hwpool_devs_t = std::map<
-    qv_hw_obj_type_t, qvi_hwpool_dev_list
->;
-
 struct qvi_hwpool {
     friend class cereal::access;
+    /** Device list type. */
+    using dev_list_t = std::vector<std::shared_ptr<qvi_hwpool_dev>>;
 private:
+    /** Maps device types to devices of those types. */
+    using dev_map_t = std::map<qv_hw_obj_type_t, dev_list_t>;
     /** The hardware pool's CPU. */
     qvi_hwpool_cpu m_cpu;
     /** The hardware pool's devices. */
-    qvi_hwpool_devs_t m_devs;
+    dev_map_t m_dev_map;
     /** Returns whether a given device is already in the pool. */
     bool
     m_device_in_pool(
@@ -184,7 +173,7 @@ private:
      */
     int
     m_add_devices_with_affinity(
-        qvi_hwloc &hwloc
+        const qvi_hwloc &hwloc
     );
 public:
     /** Constructor (default). */
@@ -194,13 +183,12 @@ public:
         const qvi_hwloc_bitmap &cpuset
     ) : m_cpu(cpuset) { }
     /**
-     * Initializes a hardware pool from the given
+     * Populates a hardware pool from the given
      * hardware locality information and cpuset.
      */
-    // TODO(skg) I think we should get rid of this.
     int
-    initialize(
-        qvi_hwloc &hwloc,
+    populate(
+        const qvi_hwloc &hwloc,
         const qvi_hwloc_bitmap &cpuset
     );
     /**
@@ -211,7 +199,7 @@ public:
     /**
      * Returns a const reference to the devices of the given object type.
      */
-    const qvi_hwpool_dev_list &
+    const qvi_hwpool::dev_list_t &
     devices(
         qv_hw_obj_type_t obj_type
     ) const;
@@ -254,7 +242,7 @@ public:
     serialize(
         Archive &archive
     ) {
-        archive(m_cpu, m_devs);
+        archive(m_cpu, m_dev_map);
     }
 };
 

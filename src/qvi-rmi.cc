@@ -708,7 +708,7 @@ qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
                 break;
         }
         if (qvi_unlikely(rpcrc != QV_SUCCESS)) break;
-        rpcrc = hwpool.initialize(server->m_hwlocs.get(hwloc_flags), sbitmap);
+        rpcrc = hwpool.populate(server->m_hwlocs.get(hwloc_flags), sbitmap);
     } while (false);
 
     return rpc_pack(output, hdr->fid, rpcrc, hwpool);
