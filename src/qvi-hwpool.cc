@@ -21,12 +21,6 @@ qvi_hwpool_res::hints(void)
     return m_hints;
 }
 
-qvi_hwloc_bitmap &
-qvi_hwpool_res::affinity(void)
-{
-    return m_affinity;
-}
-
 const qvi_hwloc_bitmap &
 qvi_hwpool_res::affinity(void) const
 {
@@ -55,10 +49,8 @@ qvi_hwpool_dev::id(
         case (QV_DEVICE_ID_PCI_BUS_ID):
             return m_pci_bus_id;
         case (QV_DEVICE_ID_ORDINAL):
-            // TODO(skg) Is this correct? Probably not. Get list and index into
-            // that.
             return std::to_string(m_id);
-        default:
+        [[unlikely]] default:
             throw qvi_runtime_error(QV_ERR_INVLD_ARG);
     }
 }
@@ -92,7 +84,7 @@ qvi_hwpool::m_device_in_pool(
 
 int
 qvi_hwpool::m_add_devices_with_affinity(
-    qvi_hwloc &hwloc
+    const qvi_hwloc &hwloc
 ) {
     int rc = QV_SUCCESS;
     // Iterate over the supported device types.
@@ -111,11 +103,11 @@ qvi_hwpool::m_add_devices_with_affinity(
 }
 
 int
-qvi_hwpool::initialize(
-    qvi_hwloc &hwloc,
+qvi_hwpool::populate(
+    const qvi_hwloc &hwloc,
     const qvi_hwloc_bitmap &cpuset
 ) {
-    m_cpu.affinity() = cpuset;
+    m_cpu = qvi_hwpool_cpu(cpuset);
     // Add devices with affinity to the hardware pool.
     return m_add_devices_with_affinity(hwloc);
 }
@@ -126,13 +118,13 @@ qvi_hwpool::cpuset(void) const
     return m_cpu.affinity();
 }
 
-const qvi_hwpool_dev_list &
+const qvi_hwpool::dev_list_t &
 qvi_hwpool::devices(
     qv_hw_obj_type_t obj_type
 ) const {
-    static const qvi_hwpool_dev_list empty_list = {};
-    if (!m_devs.contains(obj_type)) return empty_list;
-    return m_devs.at(obj_type);
+    static const dev_list_t empty_list = {};
+    if (!m_dev_map.contains(obj_type)) return empty_list;
+    return m_dev_map.at(obj_type);
 }
 
 std::vector<qvi_hwloc_bitmap>
@@ -175,7 +167,7 @@ qvi_hwpool::add_device(
 ) {
     if (!m_device_in_pool(dev)) {
         // Safely ensure the vector exists, get iterator to it.
-        auto [it, _] = m_devs.try_emplace(dev.type());
+        auto [it, _] = m_dev_map.try_emplace(dev.type());
         // Push the new item safely into the vector.
         it->second.emplace_back(std::make_shared<qvi_hwpool_dev>(dev));
         // Sort the list by device ID after each

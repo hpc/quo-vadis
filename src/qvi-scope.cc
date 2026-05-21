@@ -97,7 +97,7 @@ qv_scope::create(
     }
     // Now that we have the desired cpuset,
     // initialize the new hardware pool.
-    rc = hwpool.initialize(m_group->hwloc(), cpuset);
+    rc = hwpool.populate(m_group->hwloc(), cpuset);
     if (rc != QV_SUCCESS) {
         qvi_delete(&group);
         return rc;
@@ -159,7 +159,7 @@ qv_scope::device_id(
         return QV_ERR_NOT_FOUND;
     }
     // Format the device ID based on the caller's request.
-    return devs[dev_index].get()->id(format, result);
+    return devs.at(dev_index).get()->id(format, result);
 }
 
 int

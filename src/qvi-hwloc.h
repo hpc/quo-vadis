@@ -336,7 +336,7 @@ public:
         qv_hw_obj_type_t obj_type,
         hwloc_const_cpuset_t cpuset,
         qvi_hwloc_dev_list &devs
-    );
+    ) const;
     /**
      *
      */
