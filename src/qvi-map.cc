@@ -30,6 +30,28 @@ invert_map(
     return inverted;
 }
 
+template<typename T>
+std::set<T>
+k_set_intersection(
+    const std::vector<std::set<T>> &sets
+) {
+    if (sets.empty()) return {};
+    if (sets.size() == 1) return sets[0];
+    // Start with the first set
+    std::set<T> result = sets[0];
+    // Intersect with each subsequent set.
+    for (size_t i = 1; i < sets.size(); ++i) {
+        std::set<T> tmp;
+        std::ranges::set_intersection(
+            result, sets[i], std::inserter(tmp, tmp.begin())
+        );
+        result = std::move(tmp);
+        // Early exit if result is empty.
+        if (result.empty()) break;
+    }
+    return result;
+}
+
 #if QVI_DEBUG_MODE != 0
 static std::string
 format_assignments(
@@ -114,21 +136,26 @@ qvi_map_packed(
     const qvi_map_config &config,
     qvi_map_t &map
 ) {
-    // Max consumers per resource.
-    const size_t maxcpr = qvi_maxiperk(config.nsrc, config.ndst);
-    // Keeps track of the next source ID to map.
-    size_t srci = 0;
-    // Number of sources mapped to a destination.
-    size_t nmapped = qvi_map_nsrcids_mapped(map);
-    for (size_t dsti = 0; dsti < config.ndst; ++dsti) {
-        // Number of consumer IDs to map.
-        const size_t nmap = qvi_maxfit(maxcpr, config.nsrc - nmapped);
-        for (size_t i = 0; i < nmap; ++i, ++srci) {
-            // Already mapped (potentially by some other mapper).
-            if (qvi_map_srcid_mapped(map, srci)) continue;
-            // Else map the consumer to the resource ID.
-            map[srci].insert(dsti);
-            nmapped++;
+    const size_t n = config.nsrc;
+    const size_t m = config.ndst;
+    assert(n >= m && "n must be >= m");
+    // Nothing to do.
+    if (n == 0 || m == 0) {
+        map.clear();
+        return QV_SUCCESS;
+    }
+    // Calculate base number of sources per destination and remainder.
+    const size_t base_count = n / m;
+    const size_t extra = n % m;
+
+    size_t source_id = 0;
+    // Distribute sources to destinations.
+    for (size_t dest_id = 0; dest_id < m; ++dest_id) {
+        // First 'extra' destinations get one additional source
+        const size_t count = base_count + (dest_id < extra ? 1 : 0);
+
+        for (size_t i = 0; i < count; ++i) {
+            map[source_id++].insert(dest_id);
         }
     }
     return QV_SUCCESS;
@@ -290,13 +317,31 @@ qvi_map_affinity_preserving(
         std::swap(rsrc, rdst);
         inverted = true;
     }
-    // Determine the affinities shared between sources and destinations.
-    const auto affinities = qvi_map_calc_affinities(*rsrc, *rdst);
-    // Solve the mapping problem.
     const size_t n = rsrc->size();
     const size_t m = rdst->size();
     assert(n >= m);
-
+    // Determine the affinities shared between sources and destinations.
+    const auto affinities = qvi_map_calc_affinities(*rsrc, *rdst);
+    // Extract a view into just the values in the map.
+    const auto avv = affinities | std::views::values;
+    const auto affinity_intersection = k_set_intersection(
+        std::vector<std::set<size_t>>(avv.begin(), avv.end())
+    );
+    // If the destination affinities overlap completely, then just map simply.
+    if (affinity_intersection.size() == m) {
+        qvi_log_debug("AP Detected simple mapping for n={}, m={}", n, m);
+        const qvi_map_config config = {
+            n,
+            m
+        };
+        const int rc = qvi_map_packed(config, map);
+        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+        if (inverted) {
+            map = invert_map(map);
+        }
+        return QV_SUCCESS;
+    }
+    // Solve the more complex mapping problem.
     if (inverted) {
         map = invert_map(solve_ap_mapping(n, m, affinities));
     }
@@ -322,6 +367,27 @@ qvi_map_flatten_to_colors(
         }
         // Just use the only value that should be there.
         result.at(srci) = static_cast<int>(*dstis.begin());
+    }
+    return result;
+}
+
+qvi_map_t
+qvi_map_uniq(
+    const qvi_map_t &map
+) {
+    qvi_map_t result;
+    std::set<size_t> seen;
+    for (const auto &[src, dsts] : map) {
+        for (const auto &dst : dsts) {
+            // Destination is mapped, skip.
+            if (seen.contains(dst)) continue;
+            // Destination is not mapped, so map it.
+            result.insert({src, {dst}});
+            // Make note that we have see that destination.
+            seen.insert(dst);
+            // Done with this src.
+            break;
+        }
     }
     return result;
 }

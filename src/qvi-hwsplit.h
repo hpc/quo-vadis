@@ -140,9 +140,7 @@ private:
     m_setup_map_config(void);
     /** */
     int
-    m_finalize_mapping(
-        const qvi_map_t &map
-    );
+    m_finalize_mapping(void);
     /** Splits aggregate scope data. This can only be called by the root. */
     int
     m_split(void);
