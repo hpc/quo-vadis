@@ -146,6 +146,11 @@ qvi_map_flatten_to_colors(
     const qvi_map_t &map
 );
 
+qvi_map_t
+qvi_map_uniq(
+    const qvi_map_t &map
+);
+
 #endif
 
 /*
