@@ -359,7 +359,6 @@ qvi_hwsplit::m_split(void)
     }
     // TODO(skg) FIXME.
     //m_colors = qvi_map_flatten_to_colors(map);
-
     return m_finalize_mapping();
 }
 

@@ -37,7 +37,7 @@ k_set_intersection(
 ) {
     if (sets.empty()) return {};
     if (sets.size() == 1) return sets[0];
-    // Start with the first set
+    // Start with the first set.
     std::set<T> result = sets[0];
     // Intersect with each subsequent set.
     for (size_t i = 1; i < sets.size(); ++i) {
@@ -147,13 +147,11 @@ qvi_map_packed(
     // Calculate base number of sources per destination and remainder.
     const size_t base_count = n / m;
     const size_t extra = n % m;
-
-    size_t source_id = 0;
     // Distribute sources to destinations.
+    size_t source_id = 0;
     for (size_t dest_id = 0; dest_id < m; ++dest_id) {
-        // First 'extra' destinations get one additional source
+        // First extra destinations get one additional source.
         const size_t count = base_count + (dest_id < extra ? 1 : 0);
-
         for (size_t i = 0; i < count; ++i) {
             map[source_id++].insert(dest_id);
         }
@@ -184,9 +182,9 @@ qvi_map_calc_affinities(
     const std::vector<qvi_hwloc_bitmap> &dst
 ) {
     qvi_map_t result;
-    // number of sources.
+    // Number of sources.
     const size_t nsrc = src.size();
-    // number of destinations we are mapping to.
+    // Number of destinations we are mapping to.
     const size_t ndst = dst.size();
 
     for (size_t srci = 0; srci < nsrc; ++srci) {
@@ -203,14 +201,9 @@ qvi_map_calc_affinities(
 }
 
 /**
- * Solves the AP source-to-destination mapping problem using Min-Cost Max-Flow.
- *
- * Approach:
- * 1. Model as a flow network with source S, sink T, source nodes, and destination nodes
- * 2. Each source must be assigned to exactly one destination (flow = 1)
- * 3. Destinations have flexible capacity (ceil(n/m)) to handle affinity constraints
- * 4. Edge costs encourage balanced distribution while respecting affinities
- * 5. Cost function: base_cost + (assignment_number)^2 for progressive balancing
+ * Solves the affinity-preserving source-to-destination mapping problem using
+ * Min-Cost Max-Flow with progressive cost model and destination ordering
+ * tie-breaker.
  */
 static qvi_map_t
 solve_ap_mapping(
@@ -218,81 +211,84 @@ solve_ap_mapping(
     size_t m,
     const qvi_map_t &affinities
 ) {
-    if (qvi_unlikely(n == 0 || m == 0)) {
-        throw qvi_runtime_error(QV_ERR_INTERNAL);
-    }
+    // Calculate max slots per destination.
+    const size_t max_slots_per_dest = qvi_maxiperk(n, m);
     // Node layout:
-    // 0: super source S
-    // 1...n: source nodes (s0, s1, ..., s(n-1))
-    // n+1...n+m: destination nodes (d0, d1, ..., d(m-1))
-    // n+m+1: super sink T
+    // 0: Super source
+    // 1...n: Source nodes
+    // n+1...n+(m*max_slots_per_dest): Destination slot nodes
+    // last: Super sink
+    const size_t total_slot_nodes = m * max_slots_per_dest;
     const int super_source = 0;
-    const int super_sink = static_cast<int>(n + m + 1);
-    const int total_nodes = static_cast<int>(n + m + 2);
-    // Create the mcmf.
+    const int super_sink = static_cast<int>(1 + n + total_slot_nodes);
+    const int total_nodes = super_sink + 1;
+    // Create the network.
     qvi_min_cost_max_flow mcmf(total_nodes);
-    // Edge 1: Super source --> source nodes (capacity 1, cost 0).
-    // Each source must be assigned exactly once
+    // Edge 1: Super source-->source nodes (capacity 1, cost 0).
     for (size_t i = 0; i < n; ++i) {
         mcmf.add_edge(super_source, 1 + i, 1, 0);
     }
-    // Edge 2: Source nodes --> dest nodes (capacity 1, progressive cost).
-    // Cost structure encourages balanced distribution:
-    // - For each destination, costs increase with the number of assignments.
-    // - This creates a natural load balancing effect.
+    // Edge 2: Source nodes-->destination slot nodes
+    //         (capacity 1, progressive cost).
+    // Cost structure:
+    // 1. Progressive penalty based on slot number
+    //    (strongly prefer first slots).
+    // 2. Small tie-breaker based on destination number
+    //    (prefer lower-numbered destinations).
     for (size_t src = 0; src < n; ++src) {
-        auto it = affinities.find(src);
+        const auto it = affinities.find(src);
         std::set<size_t> src_affinities;
         if (it != affinities.end()) {
             src_affinities = it->second;
         }
 
-        for (size_t dst = 0; dst < m; ++dst) {
-            if (src_affinities.count(dst) > 0) {
-                // Progressive cost: encourages filling destinations up to the
-                // ideal level, then increases cost for overfilling.
-                // Use a quadratic cost based on how far from ideal.
-                const int64_t base_cost = 1000;
-                // Add cost to encourage balance:
-                // destinations closer to ideal get lower cost.
-                int64_t cost = base_cost + static_cast<int64_t>(dst * 100);
-                mcmf.add_edge(1 + src, 1 + n + dst, 1, cost);
+        for (size_t dst : src_affinities) {
+            // Connect source to all slots of this destination.
+            for (size_t slot = 0; slot < max_slots_per_dest; ++slot) {
+                const int slot_node = 1 + n + dst * max_slots_per_dest + slot;
+                // Progressive cost model:
+                // - Base cost: 100000 per slot:
+                //   strongly penalize using later slots.
+                // - Tie-breaker: +dst:
+                //   prefer lower-numbered destinations when slots are equal.
+                const int64_t progressive_penalty = 100000LL * slot;
+                // Small preference for lower destination numbers.
+                const int64_t destination_tiebreaker = dst;
+                const int64_t cost = progressive_penalty + destination_tiebreaker;
+
+                mcmf.add_edge(1 + src, slot_node, 1, cost);
             }
         }
     }
-    // Edge 3: Destination nodes --> super sink (flexible capacity, cost 0).
-    // Use maxiperk(n, m) capacity per destination to ensure flexibility. This
-    // allows the flow algorithm to find feasible solutions even with uneven
-    // affinity distributions.
-    const size_t max_capacity_per_dest = qvi_maxiperk(n, m);
-
-    for (size_t i = 0; i < m; ++i) {
-        // Each destination can take up to maxiperk(n, m) sources.
-        // This ensures enough total capacity: m * maxiperk(n, m) >= n.
-        mcmf.add_edge(1 + n + i, super_sink, max_capacity_per_dest, 0);
+    // Edge 3: Destination slot nodes-->super sink (capacity 1, cost 0).
+    for (size_t dst = 0; dst < m; ++dst) {
+        for (size_t slot = 0; slot < max_slots_per_dest; ++slot) {
+            const int slot_node = 1 + n + dst * max_slots_per_dest + slot;
+            mcmf.add_edge(slot_node, super_sink, 1, 0);
+        }
     }
     // Run min-cost max-flow.
     const auto [flow, cost] = mcmf.min_cost_flow(super_source, super_sink, n);
     // Verify that all sources were assigned.
-    if (qvi_unlikely(flow != static_cast<int64_t>(n))) {
-        // Failed to assign all sources: no feasible solution exists.
-        // TODO(skg) We should probably just use some other mapper here.
-        throw qvi_runtime_error(QV_ERR_INTERNAL);
+    if (flow != static_cast<long long>(n)) {
+        // TODO(skg) Assign using other means?
+        throw std::runtime_error(
+            "Failed to assign all sources: no feasible solution exists."
+        );
     }
-    // Extract assignment from the flow network.
-    qvi_map_t result;
-    const auto &graph = mcmf.get_graph();
+    // Extract assignment from the flow network
+    std::map<size_t, std::set<size_t>> result;
+    const auto& graph = mcmf.get_graph();
 
     for (size_t src = 0; src < n; ++src) {
         int src_node = 1 + src;
         for (const auto &edge : graph[src_node]) {
-            // Check if this edge goes to a destination node and has flow.
-            const int dst_node = edge.to;
-            if (dst_node >= static_cast<int>(1 + n) &&
-                dst_node < static_cast<int>(1 + n + m) &&
-                edge.flow > 0
-            ) {
-                const size_t dst = dst_node - (1 + n);
+            const int slot_node = edge.to;
+            if (slot_node >= static_cast<int>(1 + n) &&
+                slot_node < static_cast<int>(1 + n + total_slot_nodes) &&
+                edge.flow > 0) {
+                const size_t slot_idx = slot_node - (1 + n);
+                const size_t dst = slot_idx / max_slots_per_dest;
                 result[src].insert(dst);
             }
         }
@@ -322,6 +318,7 @@ qvi_map_affinity_preserving(
     assert(n >= m);
     // Determine the affinities shared between sources and destinations.
     const auto affinities = qvi_map_calc_affinities(*rsrc, *rdst);
+    //qvi_map_debug_dump("AP Affinities", affinities);
     // Extract a view into just the values in the map.
     const auto avv = affinities | std::views::values;
     const auto affinity_intersection = k_set_intersection(
