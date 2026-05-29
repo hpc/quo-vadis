@@ -304,14 +304,17 @@ qvi_hwsplit::m_split(void)
     int rc = m_split_cpuset();
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Map the host resources based on the requested configuration.
-    qvi_map_config map_config;
-    rc = m_determine_mapping(map_config);
+    qvi_map_config thr_map_config;
+    rc = m_determine_mapping(thr_map_config);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Task to host hardware (e.g., CPUs) resource map.
     qvi_map_t thr_map;
-    rc = map_config.map_fn(map_config, thr_map);
+    rc = thr_map_config.map_fn(thr_map_config, thr_map);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    //qvi_map_debug_dump("Task ID to Host Hardware Pool", thr_map);
+
+    if (qvi_unlikely(thr_map_config.be_verbose)) {
+        qvi_map_emit("Task ID to Host Hardware Pool", thr_map);
+    }
     // Assign cpusets to the tasks' hardware
     // pools based on the determined mapping.
     for (const auto &[taski, cpusetis] : thr_map) {
@@ -342,18 +345,20 @@ qvi_hwsplit::m_split(void)
             devs2hres_config, devs2hres_map
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-        // TODO(skg) Hmmmm.
+        // If we have more hardware pools than devices, make sure
+        // that hardware pools aren't mapped to multiple devices.
         if (hwpool_affinities.size() > dev_affinities.size()) {
             devs2hres_map = qvi_map_uniq(devs2hres_map);
         }
-#if 0 // TODO(skg) Add an environment variable to expose this to users.
-        qvi_map_debug_dump("AP Device Mapping" , devs2hres_map);
-#endif
+        if (qvi_unlikely(devs2hres_config.be_verbose)) {
+            const auto label = "Final device (devt=" +
+                std::to_string(devt) + ") to hardware pool";
+            qvi_map_emit(label, devs2hres_map);
+        }
         // Now that we have the mapping, assign
         // devices to the associated hardware pools.
         for (const auto &[devi, poolis] : devs2hres_map) {
             for (const auto &pooli : poolis) {
-                //qvi_log_debug("adding dev {} to hwpool {}", devi, pooli);
                 rc = m_hwpools[pooli].add_device(*devs[devi].get());
                 if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
             }

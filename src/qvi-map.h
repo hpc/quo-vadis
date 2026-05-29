@@ -14,6 +14,7 @@
 #ifndef QVI_MAP_H
 #define QVI_MAP_H
 
+#include "qvi-utils.h"
 #include "qvi-hwloc.h"
 
 struct qvi_map_config;
@@ -37,6 +38,7 @@ using qvi_map_fn_t = std::function<
 >;
 
 struct qvi_map_config {
+    bool be_verbose;
     size_t nsrc;
     size_t ndst;
     std::vector<qvi_hwloc_bitmap> src_affinities;
@@ -44,13 +46,15 @@ struct qvi_map_config {
     std::vector<int> src_colors;
     qvi_map_fn_t map_fn;
 
-    qvi_map_config(void) = default;
+    qvi_map_config(void)
+        : be_verbose(qvi_envset(QVI_ENV_VMAP)) { }
 
     qvi_map_config(
         size_t nsrc,
         size_t ndst,
         qvi_map_fn_t map_fn = {}
-    ) : nsrc(nsrc)
+    ) : be_verbose(qvi_envset(QVI_ENV_VMAP))
+      , nsrc(nsrc)
       , ndst(ndst)
       , map_fn(map_fn) { }
 
@@ -58,7 +62,8 @@ struct qvi_map_config {
         const std::vector<qvi_hwloc_bitmap> &src_affinities,
         const std::vector<qvi_hwloc_bitmap> &dst_affinities,
         qvi_map_fn_t map_fn = {}
-    ) : src_affinities(src_affinities)
+    ) : be_verbose(qvi_envset(QVI_ENV_VMAP))
+      , src_affinities(src_affinities)
       , dst_affinities(dst_affinities)
       , map_fn(map_fn) { }
 
@@ -66,7 +71,8 @@ struct qvi_map_config {
         const std::vector<int> &src_colors,
         const size_t &ndst,
         qvi_map_fn_t map_fn = {}
-    ) : ndst(ndst)
+    ) : be_verbose(qvi_envset(QVI_ENV_VMAP))
+      , ndst(ndst)
       , src_colors(src_colors)
       , map_fn(map_fn) { }
 };
@@ -136,7 +142,7 @@ qvi_map_flatten_to_colors(
  * Prints map assignments.
  */
 void
-qvi_map_debug_dump(
+qvi_map_emit(
     const std::string &name,
     const qvi_map_t &map
 );

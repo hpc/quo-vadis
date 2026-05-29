@@ -97,6 +97,8 @@ static const std::string QVI_ENV_PORT = "QV_PORT";
 static const std::string QVI_ENV_TMPDIR = "QV_TMPDIR";
 /** Verbose exceptions environment variable name. */
 static const std::string QVI_ENV_VEXCEPT = "QV_VEXCEPT";
+/** Verbose mapping environment variable name. */
+static const std::string QVI_ENV_VMAP = "QV_VMAP";
 
 /**
  * Quo Vadis runtime error.
