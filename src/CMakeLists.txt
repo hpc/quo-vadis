@@ -1,6 +1,6 @@
 # -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*-
 #
-# Copyright (c) 2020-2025 Triad National Security, LLC
+# Copyright (c) 2020-2026 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -23,8 +23,6 @@ add_library(
       qvi-utils.h
       qvi-bbuff.h
       qvi-hwloc.h
-      qvi-nvml.h
-      qvi-rsmi.h
       qvi-hwpool.h
       qvi-rmi.h
       qvi-task.h
@@ -41,8 +39,6 @@ add_library(
       qvi-utils.cc
       qvi-bbuff.cc
       qvi-hwloc.cc
-      qvi-nvml.cc
-      qvi-rsmi.cc
       qvi-hwpool.cc
       qvi-rmi.cc
       qvi-task.cc
