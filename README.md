@@ -59,6 +59,7 @@ ctest -V
 QV_PORT # The port number used for client/server communication.
 QV_TMPDIR # Directory used for temporary files.
 QV_VEXCEPT # When set to any value provides verbose exception output.
+QV_VMAP # When set to any value provides verbose mapping output.
 ```
 
 For developers and debugging:

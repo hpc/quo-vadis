@@ -52,7 +52,6 @@ k_set_intersection(
     return result;
 }
 
-#if QVI_DEBUG_MODE != 0
 static std::string
 format_assignments(
     const qvi_map_t &assignments
@@ -73,7 +72,6 @@ format_assignments(
     oss << "}";
     return oss.str();
 }
-#endif
 
 qvi_map_t
 qvi_map_uniq(
@@ -298,6 +296,9 @@ qvi_map_affinity_preserving(
     const qvi_map_config &config,
     qvi_map_t &map
 ) {
+    if (qvi_unlikely(config.be_verbose)) {
+        qvi_log_info("APM Mapping Started ===================================");
+    }
     using aff_type_t = decltype(config.src_affinities);
     // Did we invert the sources and destinations?
     bool inverted = false;
@@ -315,7 +316,9 @@ qvi_map_affinity_preserving(
     assert(n >= m);
     // Determine the affinities shared between sources and destinations.
     const auto affinities = qvi_map_calc_affinities(*rsrc, *rdst);
-    //qvi_map_debug_dump("AP Affinities", affinities);
+    if (qvi_unlikely(config.be_verbose)) {
+        qvi_map_emit("APM Affinities", affinities);
+    }
     // Extract a view into just the values in the map.
     const auto avv = affinities | std::views::values;
     const auto affinity_intersection = k_set_intersection(
@@ -323,7 +326,9 @@ qvi_map_affinity_preserving(
     );
     // If the destination affinities overlap completely, then just map simply.
     if (affinity_intersection.size() == m) {
-        //qvi_log_debug("AP Detected simple mapping for n={}, m={}", n, m);
+        if (qvi_unlikely(config.be_verbose)) {
+            qvi_log_info("APM Detected simple mapping for n={}, m={}", n, m);
+        }
         const int rc = qvi_map_packed(qvi_map_config(n, m), map);
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     }
@@ -336,10 +341,13 @@ qvi_map_affinity_preserving(
     if (inverted) {
         map = invert_map(map);
     }
-#if 0 // TODO(skg) Add an environment variable to expose this to users.
-    qvi_log_debug("N={}, M={} (inverted solve={})", n, m, inverted);
-    qvi_map_debug_dump("Affinity Preserved" , map);
-#endif
+    if (qvi_unlikely(config.be_verbose)) {
+        qvi_log_info(
+            "APM done with N={}, M={} (inverted solve={})", n, m, inverted
+        );
+        qvi_map_emit("APM" , map);
+        qvi_log_info("APM Mapping Done ======================================");
+    }
     return QV_SUCCESS;
 }
 
@@ -360,16 +368,11 @@ qvi_map_flatten_to_colors(
 }
 
 void
-qvi_map_debug_dump(
+qvi_map_emit(
     const std::string &name,
     const qvi_map_t &map
 ) {
-#if QVI_DEBUG_MODE == 0
-    qvi_unused(name);
-    qvi_unused(map);
-#else
-    qvi_log_debug("{} assignments:\n{}", name, format_assignments(map));
-#endif
+    qvi_log_info("{} assignments:\n{}", name, format_assignments(map));
 }
 
 /*
