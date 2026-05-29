@@ -685,6 +685,17 @@ qvi_hwloc::m_set_general_device_info(
     return set_visdev_id(device);
 }
 
+/**
+ * Why use this method to get device affinity? I've noticed that in other
+ * dynamic environments calls to things like nvmlInit() and rsmi_init() might
+ * setup GPU infrastructure that persists for the life of the process based on
+ * the state of the system at initialization. In static environments this is
+ * likely fine. In dynamic environments, however, this might be problematic
+ * since the ultimate setup may differ (e.g., fewer processes using the GPUs).
+ * Basically we are avoiding somewhat speculative setups by discovering device
+ * affinities in this way. A bonus is that synthetic topologies work with this
+ * approach.
+ */
 int
 qvi_hwloc::m_set_device_affinity_by_pci_bus_id(
     const std::string &busid,
