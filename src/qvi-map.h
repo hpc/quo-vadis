@@ -72,48 +72,6 @@ struct qvi_map_config {
 };
 
 /**
- * Prints map assignments.
- */
-void
-qvi_map_debug_dump(
-    const std::string &name,
-    const qvi_map_t &map
-);
-
-/**
- * Returns the number of source IDs that have already been mapped.
- */
-size_t
-qvi_map_nsrcids_mapped(
-    const qvi_map_t &map
-);
-
-/**
- * Returns whether or not the provided source ID is already mapped.
- */
-bool
-qvi_map_srcid_mapped(
-    const qvi_map_t &map,
-    size_t srcid
-);
-
-/**
- * Maps From IDs (fids) from 0...nfids-1 to resource indices (resource IDs)
- * by associating contiguous consumer IDs with resource IDs.
- */
-int
-qvi_map_packed(
-    const qvi_map_config &config,
-    qvi_map_t &map
-);
-
-int
-qvi_map_spread(
-    const qvi_map_config &config,
-    qvi_map_t &map
-);
-
-/**
  * Calculates a mapping between source IDs and the destination IDs with which
  * they have affinity.
  */
@@ -128,6 +86,25 @@ qvi_map_calc_affinities(
  */
 int
 qvi_map_colors(
+    const qvi_map_config &config,
+    qvi_map_t &map
+);
+
+/**
+ * Maps source IDs (0...config.nsrc-1) to destination indices
+ * (0...config.ndst-1) by packing source IDs to destination IDs.
+ */
+int
+qvi_map_packed(
+    const qvi_map_config &config,
+    qvi_map_t &map
+);
+
+/**
+ * Maps sources to destinations round-robin.
+ */
+int
+qvi_map_spread(
     const qvi_map_config &config,
     qvi_map_t &map
 );
@@ -148,6 +125,15 @@ qvi_map_flatten_to_colors(
 
 qvi_map_t
 qvi_map_uniq(
+    const qvi_map_t &map
+);
+
+/**
+ * Prints map assignments.
+ */
+void
+qvi_map_debug_dump(
+    const std::string &name,
     const qvi_map_t &map
 );
 
