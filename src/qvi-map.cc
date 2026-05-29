@@ -75,19 +75,28 @@ format_assignments(
 }
 #endif
 
-size_t
-qvi_map_nsrcids_mapped(
-    const qvi_map_t &map
+qvi_map_t
+qvi_map_calc_affinities(
+    const std::vector<qvi_hwloc_bitmap> &src,
+    const std::vector<qvi_hwloc_bitmap> &dst
 ) {
-    return map.size();
-}
+    qvi_map_t result;
+    // Number of sources.
+    const size_t nsrc = src.size();
+    // Number of destinations we are mapping to.
+    const size_t ndst = dst.size();
 
-bool
-qvi_map_srcid_mapped(
-    const qvi_map_t &map,
-    size_t srcid
-) {
-    return map.find(srcid) != map.end();
+    for (size_t srci = 0; srci < nsrc; ++srci) {
+        for (size_t dsti = 0; dsti < ndst; ++dsti) {
+            const int intersects = hwloc_bitmap_intersects(
+                src.at(srci).cdata(), dst.at(dsti).cdata()
+            );
+            if (intersects) {
+                result[srci].insert(dsti);
+            }
+        }
+    }
+    return result;
 }
 
 int
@@ -121,8 +130,6 @@ qvi_map_colors(
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Now map the task colors to their respective cpusets.
     for (const auto src : config.src_colors) {
-        // Already mapped (potentially by some other mapper).
-        if (qvi_map_srcid_mapped(map, src)) continue;
         const size_t csis = color2csi.at(config.src_colors[src]);
         for (const auto dst : csi2cpui.at(csis)) {
             map[src].insert(dst);
@@ -159,45 +166,16 @@ qvi_map_packed(
     return QV_SUCCESS;
 }
 
-/**
- * Maps round-robin over the given resources.
- */
 int
 qvi_map_spread(
     const qvi_map_config &config,
     qvi_map_t &map
 ) {
     for (size_t srci = 0, dsti = 0; srci < config.nsrc; ++srci) {
-        // Already mapped (potentially by some other mapper).
-        if (qvi_map_srcid_mapped(map, srci)) continue;
         // Mod to loop around destination IDs.
         map[srci].insert((dsti++) % config.ndst);
     }
     return QV_SUCCESS;
-}
-
-qvi_map_t
-qvi_map_calc_affinities(
-    const std::vector<qvi_hwloc_bitmap> &src,
-    const std::vector<qvi_hwloc_bitmap> &dst
-) {
-    qvi_map_t result;
-    // Number of sources.
-    const size_t nsrc = src.size();
-    // Number of destinations we are mapping to.
-    const size_t ndst = dst.size();
-
-    for (size_t srci = 0; srci < nsrc; ++srci) {
-        for (size_t dsti = 0; dsti < ndst; ++dsti) {
-            const int intersects = hwloc_bitmap_intersects(
-                src.at(srci).cdata(), dst.at(dsti).cdata()
-            );
-            if (intersects) {
-                result[srci].insert(dsti);
-            }
-        }
-    }
-    return result;
 }
 
 /**
@@ -253,8 +231,8 @@ solve_ap_mapping(
                 //   prefer lower-numbered destinations when slots are equal.
                 const int64_t progressive_penalty = 100000LL * slot;
                 // Small preference for lower destination numbers.
-                const int64_t destination_tiebreaker = dst;
-                const int64_t cost = progressive_penalty + destination_tiebreaker;
+                const int64_t dst_tiebreaker = dst;
+                const int64_t cost = progressive_penalty + dst_tiebreaker;
 
                 mcmf.add_edge(1 + src, slot_node, 1, cost);
             }
@@ -270,15 +248,15 @@ solve_ap_mapping(
     // Run min-cost max-flow.
     const auto [flow, cost] = mcmf.min_cost_flow(super_source, super_sink, n);
     // Verify that all sources were assigned.
-    if (flow != static_cast<long long>(n)) {
+    if (flow != static_cast<int64_t>(n)) {
         // TODO(skg) Assign using other means?
         throw std::runtime_error(
             "Failed to assign all sources: no feasible solution exists."
         );
     }
     // Extract assignment from the flow network
-    std::map<size_t, std::set<size_t>> result;
-    const auto& graph = mcmf.get_graph();
+    qvi_map_t result;
+    const auto &graph = mcmf.get_graph();
 
     for (size_t src = 0; src < n; ++src) {
         int src_node = 1 + src;
@@ -326,7 +304,7 @@ qvi_map_affinity_preserving(
     );
     // If the destination affinities overlap completely, then just map simply.
     if (affinity_intersection.size() == m) {
-        qvi_log_debug("AP Detected simple mapping for n={}, m={}", n, m);
+        //qvi_log_debug("AP Detected simple mapping for n={}, m={}", n, m);
         const qvi_map_config config = {
             n,
             m
@@ -339,11 +317,9 @@ qvi_map_affinity_preserving(
         return QV_SUCCESS;
     }
     // Solve the more complex mapping problem.
+    map = solve_ap_mapping(n, m, affinities);
     if (inverted) {
-        map = invert_map(solve_ap_mapping(n, m, affinities));
-    }
-    else {
-        map = solve_ap_mapping(n, m, affinities);
+        map = invert_map(map);
     }
 #if 0 // TODO(skg) Add an environment variable to expose this to users.
     qvi_log_debug("N={}, M={}", n, m);

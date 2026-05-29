@@ -96,8 +96,6 @@ private:
     std::vector<qvi_hwloc_bitmap> m_split_cpusets;
     /** Vector of task affinities. */
     std::vector<qvi_hwloc_bitmap> m_task_affinities;
-    /** Mapper configuration. */
-    qvi_map_config m_map_config;
     /**
      * Resizes the relevant containers to make
      * room for |group size| number of elements.
@@ -137,10 +135,12 @@ private:
     ) const;
     /** */
     int
-    m_setup_map_config(void);
+    m_determine_mapping(
+        qvi_map_config &map_config
+    );
     /** */
     int
-    m_finalize_mapping(void);
+    m_split_cpuset(void);
     /** Splits aggregate scope data. This can only be called by the root. */
     int
     m_split(void);
