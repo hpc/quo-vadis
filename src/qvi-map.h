@@ -72,6 +72,15 @@ struct qvi_map_config {
 };
 
 /**
+ * Takes the input map and returns a new map where sources are mapped to a
+ * unique destination.
+ */
+qvi_map_t
+qvi_map_uniq(
+    const qvi_map_t &map
+);
+
+/**
  * Calculates a mapping between source IDs and the destination IDs with which
  * they have affinity.
  */
@@ -120,11 +129,6 @@ qvi_map_affinity_preserving(
 
 std::vector<int>
 qvi_map_flatten_to_colors(
-    const qvi_map_t &map
-);
-
-qvi_map_t
-qvi_map_uniq(
     const qvi_map_t &map
 );
 

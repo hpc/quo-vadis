@@ -58,7 +58,7 @@ format_assignments(
     const qvi_map_t &assignments
 ) {
     std::ostringstream oss;
-    oss << "  Key: {src, {dst}}\n";
+    oss << "  Key: {src, {dsts}}\n";
     oss << "{\n";
     for (const auto &[src, dests] : assignments) {
         oss << "  {" << src << ", {";
@@ -74,6 +74,27 @@ format_assignments(
     return oss.str();
 }
 #endif
+
+qvi_map_t
+qvi_map_uniq(
+    const qvi_map_t &map
+) {
+    qvi_map_t result;
+    std::set<size_t> seen;
+    for (const auto &[src, dsts] : map) {
+        for (const auto &dst : dsts) {
+            // Destination is mapped, skip.
+            if (seen.contains(dst)) continue;
+            // Destination is not mapped, so map it.
+            result.insert({src, {dst}});
+            // Make note that we have see that destination.
+            seen.insert(dst);
+            // Done with this src.
+            break;
+        }
+    }
+    return result;
+}
 
 qvi_map_t
 qvi_map_calc_affinities(
@@ -249,10 +270,8 @@ solve_ap_mapping(
     const auto [flow, cost] = mcmf.min_cost_flow(super_source, super_sink, n);
     // Verify that all sources were assigned.
     if (flow != static_cast<int64_t>(n)) {
-        // TODO(skg) Assign using other means?
-        throw std::runtime_error(
-            "Failed to assign all sources: no feasible solution exists."
-        );
+        // Failed to assign all sources: no feasible solution exists.
+        throw qvi_runtime_error(QV_ERR_NOT_SUPPORTED);
     }
     // Extract assignment from the flow network
     qvi_map_t result;
@@ -305,24 +324,20 @@ qvi_map_affinity_preserving(
     // If the destination affinities overlap completely, then just map simply.
     if (affinity_intersection.size() == m) {
         //qvi_log_debug("AP Detected simple mapping for n={}, m={}", n, m);
-        const qvi_map_config config = {
-            n,
-            m
-        };
-        const int rc = qvi_map_packed(config, map);
+        const int rc = qvi_map_packed(qvi_map_config(n, m), map);
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-        if (inverted) {
-            map = invert_map(map);
-        }
-        return QV_SUCCESS;
     }
-    // Solve the more complex mapping problem.
-    map = solve_ap_mapping(n, m, affinities);
+    else {
+        // Solve the more complex mapping problem.
+        map = solve_ap_mapping(n, m, affinities);
+    }
+    // If we did an inverted solve, invert the
+    // result to match the original n and m.
     if (inverted) {
         map = invert_map(map);
     }
 #if 0 // TODO(skg) Add an environment variable to expose this to users.
-    qvi_log_debug("N={}, M={}", n, m);
+    qvi_log_debug("N={}, M={} (inverted solve={})", n, m, inverted);
     qvi_map_debug_dump("Affinity Preserved" , map);
 #endif
     return QV_SUCCESS;
@@ -340,27 +355,6 @@ qvi_map_flatten_to_colors(
         }
         // Just use the only value that should be there.
         result.at(srci) = static_cast<int>(*dstis.begin());
-    }
-    return result;
-}
-
-qvi_map_t
-qvi_map_uniq(
-    const qvi_map_t &map
-) {
-    qvi_map_t result;
-    std::set<size_t> seen;
-    for (const auto &[src, dsts] : map) {
-        for (const auto &dst : dsts) {
-            // Destination is mapped, skip.
-            if (seen.contains(dst)) continue;
-            // Destination is not mapped, so map it.
-            result.insert({src, {dst}});
-            // Make note that we have see that destination.
-            seen.insert(dst);
-            // Done with this src.
-            break;
-        }
     }
     return result;
 }
