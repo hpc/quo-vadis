@@ -69,7 +69,10 @@ format_assignments(
         }
         oss << "}},\n";
     }
-    oss << "}";
+    // Move the put pointer back by 2 character relative to the end
+    // to remove the unneeded ",\n" for the last item in the map.
+    oss.seekp(-2, std::ios_base::end);
+    oss << "\n}";
     return oss.str();
 }
 
@@ -349,22 +352,6 @@ qvi_map_affinity_preserving(
         qvi_log_info("APM Mapping Done ======================================");
     }
     return QV_SUCCESS;
-}
-
-std::vector<int>
-qvi_map_flatten_to_colors(
-    const qvi_map_t &map
-) {
-    std::vector<int> result(map.size());
-    for (const auto &[srci, dstis] : map) {
-        // In this application, there shall only be one destination per source.
-        if (qvi_unlikely(dstis.size() != 1)) {
-            throw qvi_runtime_error(QV_ERR_INTERNAL);
-        }
-        // Just use the only value that should be there.
-        result.at(srci) = static_cast<int>(*dstis.begin());
-    }
-    return result;
 }
 
 void

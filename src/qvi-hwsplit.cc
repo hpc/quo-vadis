@@ -147,12 +147,28 @@ clamp_colors(
     return QV_SUCCESS;
 }
 
+static std::string
+format_coloring(
+    const std::vector<int> &colors
+) {
+    const size_t ncolors = colors.size();
+    std::ostringstream oss;
+    oss << "  Key: (tid, color)\n";
+    oss << "{\n";
+    for (size_t i = 0; i < ncolors; ++i) {
+        oss << "  (" << i << ", " << colors.at(i) << ")";
+        oss << ((i == ncolors - 1 ) ? "\n" : ",\n");
+    }
+    oss << "}\n";
+    return oss.str();
+}
+
 qvi_hwsplit::qvi_hwsplit(
     qv_scope *parent,
     size_t group_size,
     size_t split_size,
     qv_hw_obj_type_t split_at_type
-) : m_rmi(parent->group().task().rmi())
+) : m_my_rmi(parent->group().task().rmi())
   , m_my_hwpool(parent->hwpool())
   , m_group_size(group_size)
   , m_split_size(split_size)
@@ -214,7 +230,7 @@ qvi_hwsplit::m_split_cpuset(void)
     const size_t real_split_size = std::min(m_split_size, m_group_size);
     //qvi_log_debug("Real Split Size: {}", real_split_size);
     // Split the primary cpuset into the requested split size pieces.
-    return m_rmi.hwloc().bitmap_split(
+    return m_my_rmi.hwloc().bitmap_split(
         pri_cpuset, real_split_size, m_split_cpusets
     );
 }
@@ -307,23 +323,27 @@ qvi_hwsplit::m_split(void)
     qvi_map_config thr_map_config;
     rc = m_determine_mapping(thr_map_config);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Task to host hardware (e.g., CPUs) resource map.
-    qvi_map_t thr_map;
-    rc = thr_map_config.map_fn(thr_map_config, thr_map);
+    // Apply task to host hardware (e.g., CPUs) resource map.
+    qvi_map_t tthr_map;
+    rc = thr_map_config.map_fn(thr_map_config, tthr_map);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     if (qvi_unlikely(thr_map_config.be_verbose)) {
-        qvi_map_emit("Task ID to Host Hardware Pool", thr_map);
+        qvi_map_emit("\nTask ID to Host Hardware Pool", tthr_map);
     }
-    // Assign cpusets to the tasks' hardware
-    // pools based on the determined mapping.
-    for (const auto &[taski, cpusetis] : thr_map) {
-        for (const auto &c : cpusetis) {
-            m_hwpools.at(taski) = {m_split_cpusets.at(c)};
+    // Assign cpusets to the tasks' hardware pools based on the determined
+    // mapping. Also assign coloring based on this mapping.
+    m_colors.resize(tthr_map.size());
+    assert(m_colors.size() == m_group_size);
+    for (const auto &[taski, cpusetis] : tthr_map) {
+        for (const auto &cpuseti : cpusetis) {
+            m_hwpools.at(taski) = {m_split_cpusets.at(cpuseti)};
+            m_colors.at(taski) = static_cast<int>(cpuseti);
         }
     }
-    // TODO(skg) FIXME.
-    //m_colors = qvi_map_flatten_to_colors(map);
+    if (qvi_unlikely(thr_map_config.be_verbose)) {
+        qvi_log_info("\nColor assignments:\n{}", format_coloring(m_colors));
+    }
     // Now assign devices to hardware pools.
     std::vector<qvi_hwloc_bitmap> hwpool_affinities;
     for (const auto &hwpool : m_hwpools) {
