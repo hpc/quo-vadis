@@ -133,11 +133,6 @@ qvi_map_affinity_preserving(
     qvi_map_t &map
 );
 
-std::vector<int>
-qvi_map_flatten_to_colors(
-    const qvi_map_t &map
-);
-
 /**
  * Prints map assignments.
  */
