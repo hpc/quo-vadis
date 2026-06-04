@@ -22,6 +22,8 @@
 #define _GNU_SOURCE
 #endif
 
+#include <stdbool.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -30,6 +32,11 @@
 
 #define CTU_STRINGIFY(x) #x
 #define CTU_TOSTRING(x)  CTU_STRINGIFY(x)
+
+#define ctu_unused(x)                                                          \
+do {                                                                           \
+    (void)(x);                                                                 \
+} while (0)
 
 #define ctu_panic(...)                                                         \
 do {                                                                           \
@@ -40,8 +47,12 @@ do {                                                                           \
     exit(EXIT_FAILURE);                                                        \
 } while (0)
 
-// We assume that the quo-vadis.h is included before us.
-#ifdef QUO_VADIS
+typedef enum {
+    CTU_SCOPE_KIND_PROCESS = 0,
+    CTU_SCOPE_KIND_PTHREAD,
+    CTU_SCOPE_KIND_OPENMP,
+    CTU_SCOPE_KIND_MPI
+} ctu_scope_kind_t;
 
 typedef struct {
     char const *name;
@@ -52,6 +63,14 @@ typedef struct {
     char const *name;
     qv_device_id_type_t devid;
 } ctu_devid_name_to_id_t;
+
+typedef struct ctu_scope_reporter {
+    void *printer;
+    void (*init)(struct ctu_scope_reporter *reporter, qv_scope_t *scope);
+    int  (*id)(struct ctu_scope_reporter *reporter);
+    void (*fini)(struct ctu_scope_reporter *reporter);
+    void (*printf)(struct ctu_scope_reporter *reporter, const char *restrict, ...);
+} ctu_scope_reporter_t;
 
 // Maps QV object type names to their underlying values.
 static const ctu_hw_obj_name_to_type_t ctu_hw_obj_name_to_type_tab[] = {
@@ -87,6 +106,46 @@ ctu_gettid(void)
 }
 
 static inline void
+ctu_default_printer_init(
+    ctu_scope_reporter_t *reporter,
+    qv_scope_t *scope
+) {
+    ctu_unused(reporter);
+    ctu_unused(scope);
+}
+
+static inline int
+ctu_default_printer_id(
+    ctu_scope_reporter_t *reporter
+) {
+    ctu_unused(reporter);
+    return ctu_gettid();
+}
+
+static inline void
+ctu_default_printer_fini(
+    ctu_scope_reporter_t *reporter
+) {
+    ctu_unused(reporter);
+}
+
+static inline void
+ctu_default_printer_printf(
+    ctu_scope_reporter_t *reporter,
+    const char *format,
+    ...
+) {
+    ctu_unused(reporter);
+    if (!format) return;
+    // Print formatted message.
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+    fflush(stdout);
+}
+
+static inline void
 ctu_emit_task_bind(
     qv_scope_t *scope
 ) {
@@ -101,43 +160,6 @@ ctu_emit_task_bind(
     }
     printf("[%d] cpubind=%s\n", pid, binds);
     free(binds);
-}
-
-static inline void
-ctu_scope_report(
-    qv_scope_t *scope,
-    const char *const scope_name
-) {
-    char const *ers = NULL;
-
-    const int pid = ctu_gettid();
-
-    int sgrank;
-    int rc = qv_scope_group_rank(scope, &sgrank);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_group_rank() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    int sgsize;
-    rc = qv_scope_group_size(scope, &sgsize);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_group_size() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    printf(
-        "[%d] %s scope group rank is %d\n"
-        "[%d] %s scope group size is %d\n",
-        pid, scope_name, sgrank,
-        pid, scope_name, sgsize
-    );
-
-    rc = qv_scope_barrier(scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_barrier() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 }
 
 /**
@@ -230,79 +252,6 @@ ctu_bind_pop(
     free(bind1s);
 }
 
-/**
- * Collective call over the provided scope that tests pushing and popping of
- * binding policies.
- */
-static inline void
-ctu_change_bind(
-    qv_scope_t *scope
-) {
-    char const *ers = NULL;
-
-    const int pid = ctu_gettid();
-
-    int sgrank;
-    int rc = qv_scope_group_rank(scope, &sgrank);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_group_rank() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    // Get current binding.
-    char *bind0s;
-    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind0s);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_string() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    printf("[%d] Current cpubind is %s\n", pid, bind0s);
-
-    // Change binding.
-    rc = qv_scope_bind_push(scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_push() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    // Get new, current binding.
-    char *bind1s;
-    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind1s);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_string() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    printf("[%d] New cpubind is %s\n", pid, bind1s);
-
-    rc = qv_scope_bind_pop(scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_pop() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    char *bind2s;
-    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind2s);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_string() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    printf("[%d] Popped cpubind is %s\n", pid, bind2s);
-
-    if (strcmp(bind0s, bind2s)) {
-        ers = "bind push/pop mismatch";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    free(bind0s);
-    free(bind1s);
-    free(bind2s);
-
-    rc = qv_scope_barrier(scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_barrier() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-}
-
 static inline int
 ctu_emit_host_hw_info(
     qv_scope_t *scope,
@@ -366,12 +315,337 @@ ctu_emit_device_info(
     printf("# -----------------------------------------------------------\n");
 }
 
-#endif // #ifdef QUO_VADIS
-
+#if 0
+#define QUO_VADIS_MPI
+#include "mpi.h"
+#endif
 // We assume that the infrastructure-specific headers are included before us.
 #ifdef QUO_VADIS_MPI
 
+typedef struct {
+    MPI_Comm comm;
+    int rank;
+    int size;
+    int tok_tag;
+    bool initialized;
+} ctu_mpi_ordered_printer_t;
+
+static inline void
+ctu_mpi_ordered_printer_init(
+    ctu_scope_reporter_t *reporter,
+    qv_scope_t *scope
+) {
+    int rc = MPI_SUCCESS;
+    char *ers = NULL;
+
+    ctu_mpi_ordered_printer_t *printer = (ctu_mpi_ordered_printer_t *)reporter->printer;
+
+    do {
+        printer->initialized = false;
+        printer->tok_tag = 575;
+
+        rc = qv_mpi_scope_comm_dup(scope, &printer->comm);
+        if (rc != QV_SUCCESS) {
+            ers = "qv_mpi_scope_comm_dup";
+            rc = MPI_ERR_COMM;
+            break;
+        }
+
+        rc = MPI_Comm_rank(printer->comm, &printer->rank);
+        if (rc != MPI_SUCCESS) {
+            ers = "MPI_Comm_rank";
+            break;
+        }
+
+        rc = MPI_Comm_size(printer->comm, &printer->size);
+        if (rc != MPI_SUCCESS) {
+            ers = "MPI_Comm_size";
+            break;
+        }
+
+        printer->initialized = true;
+    } while (0);
+
+    if (rc != MPI_SUCCESS) {
+        ctu_panic("%s failed (rc=%d)", ers, rc);
+    }
+}
+
+static inline int
+ctu_mpi_ordered_printer_id(
+    ctu_scope_reporter_t *reporter
+) {
+    ctu_mpi_ordered_printer_t *printer = (ctu_mpi_ordered_printer_t *)reporter->printer;
+    return printer->rank;
+}
+
+static inline void
+ctu_mpi_ordered_printer_fini(
+    ctu_scope_reporter_t *reporter
+) {
+    int rc = MPI_SUCCESS;
+    char *ers = NULL;
+
+    ctu_mpi_ordered_printer_t *printer = (ctu_mpi_ordered_printer_t *)reporter->printer;
+
+    if (!printer || !printer->initialized) return;
+    // Ensure all pending operations are complete.
+    do {
+        rc = MPI_Barrier(printer->comm);
+        if (rc != MPI_SUCCESS) {
+            ers = "MPI_Barrier";
+            break;
+        }
+
+        rc = MPI_Comm_free(&printer->comm);
+        if (rc != MPI_SUCCESS) {
+            ers = "MPI_Comm_free";
+            break;
+        }
+        printer->initialized = false;
+        free(printer);
+    } while (0);
+    if (rc != MPI_SUCCESS) {
+        ctu_panic("%s failed (rc=%d)", ers, rc);
+    }
+}
+
+static inline void
+ctu_mpi_wait_token(
+    ctu_scope_reporter_t *reporter
+) {
+    ctu_mpi_ordered_printer_t *printer = (ctu_mpi_ordered_printer_t *)reporter->printer;
+
+    char token = 'a';
+    // Wait for token from previous rank.
+    if (printer->rank > 0) {
+        const int rc = MPI_Recv(
+            &token, 1, MPI_CHAR, printer->rank - 1,
+            printer->tok_tag, printer->comm, MPI_STATUS_IGNORE
+        );
+        if (rc != MPI_SUCCESS) {
+            ctu_panic("%s failed (rc=%d)", "MPI_Recv", rc);
+        }
+    }
+}
+
+static inline void
+ctu_mpi_release_token(
+    ctu_scope_reporter_t *reporter
+) {
+    ctu_mpi_ordered_printer_t *printer = (ctu_mpi_ordered_printer_t *)reporter->printer;
+
+    char token = 'a';
+    // Send token to next rank.
+    if (printer->rank < printer->size - 1) {
+        const int rc = MPI_Send(
+            &token, 1, MPI_CHAR, printer->rank + 1,
+            printer->tok_tag, printer->comm
+        );
+        if (rc != MPI_SUCCESS) {
+            ctu_panic("%s failed (rc=%d)", "MPI_Send", rc);
+        }
+    }
+}
+
+static inline void
+ctu_mpi_ordered_printer_printf(
+    ctu_scope_reporter_t *reporter,
+    const char *format,
+    ...
+) {
+    ctu_mpi_ordered_printer_t *printer = (ctu_mpi_ordered_printer_t *)reporter->printer;
+
+    if (!printer || !printer->initialized || !format) {
+        return;
+    }
+    // Wait for my turn.
+    ctu_mpi_wait_token(reporter);
+    // Print formatted message.
+    va_list args;
+    va_start(args, format);
+    vprintf(format, args);
+    va_end(args);
+    fflush(stdout);
+    // Pass it on to the next one.
+    ctu_mpi_release_token(reporter);
+    // Wait for everyone to complete print.
+    const int rc = MPI_Barrier(printer->comm);
+    if (rc != MPI_SUCCESS) {
+        ctu_panic("%s failed (rc=%d)", "MPI_Barrier", rc);
+    }
+}
+
 #endif // #ifdef QUO_VADIS_MPI
+
+static inline ctu_scope_reporter_t *
+ctu_reporter_alloc(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind
+) {
+    ctu_scope_reporter_t *reporter = (ctu_scope_reporter_t *)calloc(1, sizeof(*reporter));
+    if (!reporter) ctu_panic("OOR!");
+
+    switch (kind) {
+        case CTU_SCOPE_KIND_PROCESS:
+        case CTU_SCOPE_KIND_PTHREAD:
+        case CTU_SCOPE_KIND_OPENMP:
+            reporter->printer = NULL;
+            reporter->init = &ctu_default_printer_init;
+            reporter->id = &ctu_default_printer_id;
+            reporter->fini = &ctu_default_printer_fini;
+            reporter->printf = &ctu_default_printer_printf;
+            break;
+        case CTU_SCOPE_KIND_MPI:
+#ifdef QUO_VADIS_MPI
+            reporter->printer = calloc(1, sizeof(ctu_mpi_ordered_printer_t));
+            reporter->init = &ctu_mpi_ordered_printer_init;
+            reporter->id = &ctu_mpi_ordered_printer_id;
+            reporter->fini = &ctu_mpi_ordered_printer_fini;
+            reporter->printf = &ctu_mpi_ordered_printer_printf;
+
+            reporter->init(reporter, scope);
+#else
+            ctu_unused(scope);
+#endif
+            break;
+        default:
+            ctu_panic("Invalid scope kind!");
+    }
+    return reporter;
+}
+
+static inline void
+ctu_reporter_free(
+    ctu_scope_reporter_t *reporter
+) {
+    if (reporter) {
+        if (reporter->fini) {
+            reporter->fini(reporter);
+        }
+        free(reporter);
+    }
+}
+
+static inline void
+ctu_scope_report(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind,
+    const char *const scope_name
+) {
+    char const *ers = NULL;
+
+    ctu_scope_reporter_t *reporter = ctu_reporter_alloc(scope, kind);
+    const int myid = reporter->id(reporter);
+
+    int sgrank;
+    int rc = qv_scope_group_rank(scope, &sgrank);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_group_rank() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    int sgsize;
+    rc = qv_scope_group_size(scope, &sgsize);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_group_size() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    reporter->printf(
+        reporter,
+        "[%d] %s scope group rank is %d\n"
+        "[%d] %s scope group size is %d\n",
+        myid, scope_name, sgrank,
+        myid, scope_name, sgsize
+    );
+
+    rc = qv_scope_barrier(scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_barrier() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    ctu_reporter_free(reporter);
+}
+
+/**
+ * Collective call over the provided scope that tests pushing and popping of
+ * binding policies.
+ */
+static inline void
+ctu_change_bind(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind
+) {
+    char const *ers = NULL;
+
+    ctu_scope_reporter_t *reporter = ctu_reporter_alloc(scope, kind);
+    const int myid = reporter->id(reporter);
+
+    int sgrank;
+    int rc = qv_scope_group_rank(scope, &sgrank);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_group_rank() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    // Get current binding.
+    char *bind0s;
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind0s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    reporter->printf(reporter, "[%d] Current cpubind is %s\n", myid, bind0s);
+
+    // Change binding.
+    rc = qv_scope_bind_push(scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_push() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    // Get new, current binding.
+    char *bind1s;
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind1s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    reporter->printf(reporter, "[%d] New cpubind is %s\n", myid, bind1s);
+
+    rc = qv_scope_bind_pop(scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_pop() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    char *bind2s;
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind2s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    reporter->printf(reporter, "[%d] Popped cpubind is %s\n", myid, bind2s);
+
+    if (strcmp(bind0s, bind2s)) {
+        ers = "bind push/pop mismatch";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    free(bind0s);
+    free(bind1s);
+    free(bind2s);
+
+    rc = qv_scope_barrier(scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_barrier() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    ctu_reporter_free(reporter);
+}
+
 
 #endif
 

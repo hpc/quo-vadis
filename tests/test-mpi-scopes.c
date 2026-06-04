@@ -61,7 +61,8 @@ main(
         ers = "qv_mpi_scope_get(QV_SCOPE_PROCESS) failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    ctu_scope_report(self_scope, "self_scope");
+
+    ctu_scope_report(self_scope, CTU_SCOPE_KIND_MPI, "self_scope");
 
     rc = qv_scope_free(self_scope);
     if (rc != QV_SUCCESS) {
@@ -80,7 +81,7 @@ main(
         ers = "qv_mpi_scope_get() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    ctu_scope_report(base_scope, "base_scope");
+    ctu_scope_report(base_scope, CTU_SCOPE_KIND_MPI, "base_scope");
 
     int base_scope_sgsize;
     rc = qv_scope_group_size(
@@ -145,8 +146,8 @@ main(
     }
     printf("[%d] Number of PUs in sub_scope is %d\n", wrank, n_pu);
 
-    ctu_scope_report(sub_scope, "sub_scope");
-    ctu_change_bind(sub_scope);
+    ctu_scope_report(sub_scope, CTU_SCOPE_KIND_MPI, "sub_scope");
+    ctu_change_bind(sub_scope, CTU_SCOPE_KIND_MPI);
 
     if (base_scope_rank == 0) {
         qv_scope_t *create_scope;
@@ -171,7 +172,7 @@ main(
         }
         printf("[%d] Number of PUs in create_scope is %d\n", wrank, n_core);
 
-        ctu_scope_report(create_scope, "create_scope");
+        ctu_scope_report(create_scope, CTU_SCOPE_KIND_MPI, "create_scope");
 
         ctu_bind_push(create_scope);
 
