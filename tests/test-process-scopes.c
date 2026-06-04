@@ -1,14 +1,4 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
-/*
- * Copyright (c) 2020-2023 Triad National Security, LLC
- *                         All rights reserved.
- *
- * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
- *                         All rights reserved.
- *
- * This file is part of the quo-vadis project. See the LICENSE file at the
- * top-level directory of this distribution.
- */
 
 /**
  * @file test-process-scopes.c
@@ -34,7 +24,7 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_scope_report(self_scope, "self_scope");
+    ctu_scope_report(self_scope, CTU_SCOPE_KIND_PROCESS, "self_scope");
 
     rc = qv_scope_free(self_scope);
     if (rc != QV_SUCCESS) {
@@ -51,9 +41,9 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_scope_report(base_scope, "base_scope");
+    ctu_scope_report(base_scope, CTU_SCOPE_KIND_PROCESS, "base_scope");
 
-    ctu_change_bind(base_scope);
+    ctu_change_bind(base_scope, CTU_SCOPE_KIND_PROCESS);
 
     int srank;
     rc = qv_scope_group_rank(base_scope, &srank);
@@ -106,9 +96,9 @@ main(void)
     }
     printf("[%d] Number of PUs in sub_scope is %d\n", pid, n_pus);
 
-    ctu_scope_report(sub_scope, "sub_scope");
+    ctu_scope_report(sub_scope, CTU_SCOPE_KIND_PROCESS, "sub_scope");
 
-    ctu_change_bind(sub_scope);
+    ctu_change_bind(sub_scope, CTU_SCOPE_KIND_PROCESS);
 
     rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {

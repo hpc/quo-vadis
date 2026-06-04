@@ -23,6 +23,7 @@ main(
         ctu_panic("%s (rc=%d)", ers, rc);
     }
 
+    // TODO(skg) Add all post-MPI_Init actions into one spot.
     signal(SIGSEGV, SIG_DFL);
     signal(SIGABRT, SIG_DFL);
     setbuf(stdout, NULL);
@@ -53,7 +54,7 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_scope_report(base_scope, "base_scope");
+    ctu_scope_report(base_scope, CTU_SCOPE_KIND_MPI, "base_scope");
 
     int base_scope_sgsize;
     rc = qv_scope_group_size(
@@ -100,9 +101,9 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_scope_report(sub_scope, "sub_scope");
+    ctu_scope_report(sub_scope, CTU_SCOPE_KIND_MPI, "sub_scope");
 
-    ctu_change_bind(sub_scope);
+    ctu_change_bind(sub_scope, CTU_SCOPE_KIND_MPI);
 
     rc = qv_scope_hw_obj_count(
         sub_scope, QV_HW_OBJ_PU, &n_pu
