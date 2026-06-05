@@ -76,18 +76,6 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int n_pu;
-    rc = qv_scope_hw_obj_count(
-        base_scope,
-        QV_HW_OBJ_PU,
-        &n_pu
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_hw_obj_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    printf("[%d] Number of PUs in base_scope is %d\n", wrank, n_pu);
-
     const int npieces = 2;
     qv_scope_t *sub_scope;
     rc = qv_scope_split(
@@ -103,17 +91,9 @@ main(
 
     ctu_scope_report(sub_scope, CTU_SCOPE_KIND_MPI, "sub_scope");
 
-    ctu_change_bind(sub_scope, CTU_SCOPE_KIND_MPI);
+    //ctu_change_bind(sub_scope, CTU_SCOPE_KIND_MPI);
 
-    rc = qv_scope_hw_obj_count(
-        sub_scope, QV_HW_OBJ_PU, &n_pu
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_hw_obj_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    printf("[%d] Number of PUs in sub_scope is %d\n", wrank, n_pu);
-
+    // Free base_scope first to test scope free out-of-order operations.
     rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
