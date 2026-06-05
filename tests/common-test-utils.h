@@ -70,6 +70,7 @@ typedef struct ctu_scope_reporter {
     int  (*id)(struct ctu_scope_reporter *reporter);
     void (*fini)(struct ctu_scope_reporter *reporter);
     void (*printf)(struct ctu_scope_reporter *reporter, const char *restrict, ...);
+    void (*pprintf)(struct ctu_scope_reporter *reporter, bool print, const char *restrict, ...);
 } ctu_scope_reporter_t;
 
 // Maps QV object type names to their underlying values.
@@ -130,19 +131,44 @@ ctu_default_printer_fini(
 }
 
 static inline void
+ctu_default_printer_vpprintf(
+    struct ctu_scope_reporter *reporter,
+    bool print,
+    const char *format,
+    va_list args
+) {
+    ctu_unused(reporter);
+    if (!format) return;
+    if (print) {
+        // Print formatted message.
+        vprintf(format, args);
+        fflush(stdout);
+    }
+}
+
+static inline void
 ctu_default_printer_printf(
     ctu_scope_reporter_t *reporter,
     const char *format,
     ...
 ) {
-    ctu_unused(reporter);
-    if (!format) return;
-    // Print formatted message.
     va_list args;
     va_start(args, format);
-    vprintf(format, args);
+    ctu_default_printer_vpprintf(reporter, true, format, args);
     va_end(args);
-    fflush(stdout);
+}
+
+static inline void
+ctu_default_printer_pprintf(
+    ctu_scope_reporter_t *reporter,
+    bool print,
+    const char *format,
+    ...
+) {
+    va_list args;
+    va_start(args, format);
+    ctu_default_printer_vpprintf(reporter, print, format, args);
+    va_end(args);
 }
 
 static inline void
@@ -449,31 +475,61 @@ ctu_mpi_release_token(
 }
 
 static inline void
-ctu_mpi_ordered_printer_printf(
-    ctu_scope_reporter_t *reporter,
+ctu_mpi_ordered_printer_vpprintf(
+    struct ctu_scope_reporter *reporter,
+    bool print,
     const char *format,
-    ...
+    va_list args
 ) {
     ctu_mpi_ordered_printer_t *printer = (ctu_mpi_ordered_printer_t *)reporter->printer;
 
     if (!printer || !printer->initialized || !format) {
         return;
     }
-    // Wait for my turn.
-    ctu_mpi_wait_token(reporter);
-    // Print formatted message.
-    va_list args;
-    va_start(args, format);
-    vprintf(format, args);
-    va_end(args);
-    fflush(stdout);
-    // Pass it on to the next one.
-    ctu_mpi_release_token(reporter);
-    // Wait for everyone to complete print.
-    const int rc = MPI_Barrier(printer->comm);
+    // Wait for everyone to complete last operation.
+    int rc = MPI_Barrier(printer->comm);
     if (rc != MPI_SUCCESS) {
         ctu_panic("%s failed (rc=%d)", "MPI_Barrier", rc);
     }
+    // Wait for my turn.
+    ctu_mpi_wait_token(reporter);
+    if (print) {
+        // Print formatted message.
+        vprintf(format, args);
+        fflush(stdout);
+    }
+    // Pass it on to the next one.
+    ctu_mpi_release_token(reporter);
+    // Wait for everyone to complete print.
+    rc = MPI_Barrier(printer->comm);
+    if (rc != MPI_SUCCESS) {
+        ctu_panic("%s failed (rc=%d)", "MPI_Barrier", rc);
+    }
+}
+
+static inline void
+ctu_mpi_ordered_printer_printf(
+    ctu_scope_reporter_t *reporter,
+    const char *format,
+    ...
+) {
+    va_list args;
+    va_start(args, format);
+    ctu_mpi_ordered_printer_vpprintf(reporter, true, format, args);
+    va_end(args);
+}
+
+static inline void
+ctu_mpi_ordered_printer_pprintf(
+    struct ctu_scope_reporter *reporter,
+    bool print,
+    const char *format,
+    ...
+) {
+    va_list args;
+    va_start(args, format);
+    ctu_mpi_ordered_printer_vpprintf(reporter, print, format, args);
+    va_end(args);
 }
 
 #endif // #ifdef QUO_VADIS_MPI
@@ -495,6 +551,7 @@ ctu_reporter_alloc(
             reporter->id = &ctu_default_printer_id;
             reporter->fini = &ctu_default_printer_fini;
             reporter->printf = &ctu_default_printer_printf;
+            reporter->pprintf = &ctu_default_printer_pprintf;
             break;
         case CTU_SCOPE_KIND_MPI:
 #ifdef QUO_VADIS_MPI
@@ -503,6 +560,7 @@ ctu_reporter_alloc(
             reporter->id = &ctu_mpi_ordered_printer_id;
             reporter->fini = &ctu_mpi_ordered_printer_fini;
             reporter->printf = &ctu_mpi_ordered_printer_printf;
+            reporter->pprintf = &ctu_mpi_ordered_printer_pprintf;
 
             reporter->init(reporter, scope);
 #else
@@ -525,6 +583,101 @@ ctu_reporter_free(
         }
         free(reporter);
     }
+}
+
+static inline void
+ctu_hostres_report(
+    qv_scope_t *scope,
+    ctu_scope_reporter_t *reporter
+) {
+    char const *ers = NULL;
+    const int myid = reporter->id(reporter);
+
+    int sgrank;
+    int rc = qv_scope_group_rank(scope, &sgrank);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_group_rank() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    reporter->pprintf(
+        reporter, sgrank == 0,
+        "# System Hardware Overview --------------\n"
+    );
+    for (size_t i = 0; i < ctu_hw_obj_name_to_type_tab_size; ++i) {
+        int n;
+        int rc = qv_scope_hw_obj_count(
+            scope, ctu_hw_obj_name_to_type_tab[i].type, &n
+        );
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_hw_obj_count() failed";
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
+
+        reporter->printf(
+            reporter, "[%d] %s=%d\n", myid,
+            ctu_hw_obj_name_to_type_tab[i].name, n
+        );
+
+        rc = qv_scope_barrier(scope);
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_barrier() failed";
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
+    }
+    reporter->pprintf(
+        reporter, sgrank == 0,
+        "# ---------------------------------------\n"
+    );
+}
+
+static inline void
+ctu_cpuset_report(
+    qv_scope_t *scope,
+    ctu_scope_reporter_t *reporter
+) {
+    char const *ers = NULL;
+    const int myid = reporter->id(reporter);
+
+    int sgrank;
+    int rc = qv_scope_group_rank(scope, &sgrank);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_group_rank() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    reporter->pprintf(
+        reporter, sgrank == 0,
+        "# Process Affinity Overview--------------\n"
+    );
+
+    // Change binding to get the underlying cpuset.
+    rc = qv_scope_bind_push(scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_push() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    // Get new, current binding.
+    char *bind1s;
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind1s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    reporter->printf(reporter, "[%d] scope cpuset is %s\n", myid, bind1s);
+    free(bind1s);
+
+    rc = qv_scope_bind_pop(scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_pop() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    reporter->pprintf(
+        reporter, sgrank == 0,
+        "# ---------------------------------------\n"
+    );
 }
 
 static inline void
@@ -552,12 +705,20 @@ ctu_scope_report(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
+    reporter->pprintf(
+        reporter, sgrank == 0, "\n###### Start scope report for %s\n", scope_name
+    );
+
     reporter->printf(
         reporter,
-        "[%d] %s scope group rank is %d\n"
-        "[%d] %s scope group size is %d\n",
-        myid, scope_name, sgrank,
-        myid, scope_name, sgsize
+        "[%d] hello from group rank %d of %d\n",
+        myid, sgrank, sgsize
+    );
+
+    ctu_cpuset_report(scope, reporter);
+
+    reporter->pprintf(
+        reporter, sgrank == 0, "###### Endof scope report for %s\n", scope_name
     );
 
     rc = qv_scope_barrier(scope);
@@ -645,7 +806,6 @@ ctu_change_bind(
 
     ctu_reporter_free(reporter);
 }
-
 
 #endif
 
