@@ -196,12 +196,12 @@ qv_scope_create(
     }
     qvi_catch_and_return();
 }
-// TODO(skg) Change color to group_id?
+
 int
 qv_scope_split(
     qv_scope_t *scope,
     int npieces,
-    int color,
+    int group_id,
     qv_scope_t **subscope
 ) {
     if (qvi_unlikely(!scope || (npieces <= 0) | !subscope)) {
@@ -211,7 +211,7 @@ qv_scope_split(
         // We use the sentinel value QV_HW_OBJ_LAST to differentiate between
         // calls from split() and split_at(). Since this call doesn't have a
         // hardware type argument, we use QV_HW_OBJ_LAST as the hardware type.
-        return scope->split(npieces, color, QV_HW_OBJ_LAST, subscope);
+        return scope->split(npieces, group_id, QV_HW_OBJ_LAST, subscope);
     }
     qvi_catch_and_return();
 }
