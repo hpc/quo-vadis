@@ -696,6 +696,8 @@ qvi_hwloc::m_set_general_device_info(
  * affinities in this way. A bonus is that synthetic topologies work with this
  * approach.
  */
+// TODO(skg) We probably need to implement proper handling of
+// CUDA_VISIBLE_DEVICES, etc.
 int
 qvi_hwloc::m_set_device_affinity_by_pci_bus_id(
     const std::string &busid,
@@ -989,7 +991,7 @@ qvi_hwloc::m_task_obj_xop_by_type_id(
         case TASK_INCLUDEDIN_OBJ:
             *result = hwloc_bitmap_isincluded(cur_bind.cdata(), obj->cpuset);
             break;
-        default:
+        [[unlikely]] default:
             // Something bad happened to get here.
             qvi_abort();
     }
@@ -1120,7 +1122,7 @@ qvi_hwloc::devices_emit(
         case QV_HW_OBJ_GPU:
             devlist = &m_gpus;
             break;
-        default:
+        [[unlikely]] default:
             return QV_ERR_NOT_SUPPORTED;
     }
     for (auto &dev : *devlist) {
