@@ -17,8 +17,7 @@
 #include "qvi-hwloc.h"
 #include "qvi-utils.h"
 
-// TODO(skg) Why aren't NICs showing up? Fix that. Can we merge GPU and NIC
-// code?
+// TODO(skg) Can we merge device code?
 
 /** Maps a string identifier to a device. */
 using qvi_hwloc_dev_map = std::map<
@@ -26,39 +25,67 @@ using qvi_hwloc_dev_map = std::map<
     std::shared_ptr<qvi_hwloc_device>
 >;
 
-/**
- * Converts the provided hwloc object type to its corresponding internal type.
- */
-static qv_hw_obj_type_t
-obj_hwloc2qv(
-   hwloc_obj_type_t external
+hwloc_obj_type_t
+qvi_hwloc::obj_get_type(
+    qv_hw_obj_type_t external
 ) {
     switch(external) {
-        case(HWLOC_OBJ_MACHINE):
-             return QV_HW_OBJ_MACHINE;
-        case(HWLOC_OBJ_PACKAGE):
-             return QV_HW_OBJ_PACKAGE;
-        case(HWLOC_OBJ_CORE):
-             return QV_HW_OBJ_CORE;
-        case(HWLOC_OBJ_PU):
-             return QV_HW_OBJ_PU;
-        case(HWLOC_OBJ_L1CACHE):
-             return QV_HW_OBJ_L1CACHE;
-        case(HWLOC_OBJ_L2CACHE):
-             return QV_HW_OBJ_L2CACHE;
-        case(HWLOC_OBJ_L3CACHE):
-             return QV_HW_OBJ_L3CACHE;
-        case(HWLOC_OBJ_L4CACHE):
-             return QV_HW_OBJ_L4CACHE;
-        case(HWLOC_OBJ_L5CACHE):
-             return QV_HW_OBJ_L5CACHE;
-        case(HWLOC_OBJ_NUMANODE):
-            return QV_HW_OBJ_NUMANODE;
-        case(HWLOC_OBJ_OS_DEVICE):
-            return QV_HW_OBJ_GPU;
+        case(QV_HW_OBJ_MACHINE):
+            return HWLOC_OBJ_MACHINE;
+        case(QV_HW_OBJ_PACKAGE):
+            return HWLOC_OBJ_PACKAGE;
+        case(QV_HW_OBJ_CORE):
+            return HWLOC_OBJ_CORE;
+        case(QV_HW_OBJ_PU):
+            return HWLOC_OBJ_PU;
+        case(QV_HW_OBJ_L1CACHE):
+            return HWLOC_OBJ_L1CACHE;
+        case(QV_HW_OBJ_L2CACHE):
+            return HWLOC_OBJ_L2CACHE;
+        case(QV_HW_OBJ_L3CACHE):
+            return HWLOC_OBJ_L3CACHE;
+        case(QV_HW_OBJ_L4CACHE):
+            return HWLOC_OBJ_L4CACHE;
+        case(QV_HW_OBJ_L5CACHE):
+            return HWLOC_OBJ_L5CACHE;
+        case(QV_HW_OBJ_NUMANODE):
+            return HWLOC_OBJ_NUMANODE;
+        case(QV_HW_OBJ_GPU):
+            return HWLOC_OBJ_OS_DEVICE;
+        case(QV_HW_OBJ_NIC):
+            return HWLOC_OBJ_OS_DEVICE;
         [[unlikely]] default:
-            // This is an internal development error.
-            qvi_abort();
+            // This is likely an internal development error.
+            throw qvi_runtime_error(QV_ERR_INTERNAL);
+    }
+}
+
+// TODO(skg) Replace with a function that returns a general type for a given
+// resource type. For example, QVI_HWLOC_RES_HOST, QVI_HWLOC_RES_DEV,
+// QVI_HWLOC_RES_LAST.
+bool
+qvi_hwloc::obj_is_host_resource(
+    qv_hw_obj_type_t type
+) {
+    switch(type) {
+        case(QV_HW_OBJ_MACHINE):
+        case(QV_HW_OBJ_PACKAGE):
+        case(QV_HW_OBJ_CORE):
+        case(QV_HW_OBJ_PU):
+        case(QV_HW_OBJ_L1CACHE):
+        case(QV_HW_OBJ_L2CACHE):
+        case(QV_HW_OBJ_L3CACHE):
+        case(QV_HW_OBJ_L4CACHE):
+        case(QV_HW_OBJ_L5CACHE):
+        case(QV_HW_OBJ_NUMANODE):
+            return true;
+        case(QV_HW_OBJ_GPU):
+        case(QV_HW_OBJ_NIC):
+        case(QV_HW_OBJ_LAST):
+            return false;
+        [[unlikely]] default:
+            // This is likely an internal development error.
+            throw qvi_runtime_error(QV_ERR_INTERNAL);
     }
 }
 
@@ -504,67 +531,6 @@ qvi_hwloc::topology_get_disallowed_cpuset(void)
     return hwloc_topology_get_topology_cpuset(m_topo);
 }
 
-hwloc_obj_type_t
-qvi_hwloc::obj_get_type(
-    qv_hw_obj_type_t external
-) {
-    switch(external) {
-        case(QV_HW_OBJ_MACHINE):
-            return HWLOC_OBJ_MACHINE;
-        case(QV_HW_OBJ_PACKAGE):
-            return HWLOC_OBJ_PACKAGE;
-        case(QV_HW_OBJ_CORE):
-            return HWLOC_OBJ_CORE;
-        case(QV_HW_OBJ_PU):
-            return HWLOC_OBJ_PU;
-        case(QV_HW_OBJ_L1CACHE):
-            return HWLOC_OBJ_L1CACHE;
-        case(QV_HW_OBJ_L2CACHE):
-            return HWLOC_OBJ_L2CACHE;
-        case(QV_HW_OBJ_L3CACHE):
-            return HWLOC_OBJ_L3CACHE;
-        case(QV_HW_OBJ_L4CACHE):
-            return HWLOC_OBJ_L4CACHE;
-        case(QV_HW_OBJ_L5CACHE):
-            return HWLOC_OBJ_L5CACHE;
-        case(QV_HW_OBJ_NUMANODE):
-            return HWLOC_OBJ_NUMANODE;
-        case(QV_HW_OBJ_GPU):
-            return HWLOC_OBJ_OS_DEVICE;
-        [[unlikely]] default:
-            // This is likely an internal development error.
-            throw qvi_runtime_error(QV_ERR_INTERNAL);
-    }
-}
-
-// TODO(skg) Replace with a function that returns a general type for a given
-// resource type. For example, QVI_HWLOC_RES_HOST, QVI_HWLOC_RES_DEV,
-// QVI_HWLOC_RES_LAST.
-bool
-qvi_hwloc::obj_is_host_resource(
-    qv_hw_obj_type_t type
-) {
-    switch(type) {
-        case(QV_HW_OBJ_MACHINE):
-        case(QV_HW_OBJ_PACKAGE):
-        case(QV_HW_OBJ_CORE):
-        case(QV_HW_OBJ_PU):
-        case(QV_HW_OBJ_L1CACHE):
-        case(QV_HW_OBJ_L2CACHE):
-        case(QV_HW_OBJ_L3CACHE):
-        case(QV_HW_OBJ_L4CACHE):
-        case(QV_HW_OBJ_L5CACHE):
-        case(QV_HW_OBJ_NUMANODE):
-            return true;
-        case(QV_HW_OBJ_GPU):
-        case(QV_HW_OBJ_LAST):
-            return false;
-        [[unlikely]] default:
-            // This is likely an internal development error.
-            throw qvi_runtime_error(QV_ERR_INTERNAL);
-    }
-}
-
 int
 qvi_hwloc::obj_type_depth(
     qv_hw_obj_type_t type,
@@ -671,6 +637,10 @@ qvi_hwloc::m_set_general_device_info(
         case HWLOC_OBJ_OSDEV_GPU:
         case HWLOC_OBJ_OSDEV_COPROC:
             device->type = QV_HW_OBJ_GPU;
+            break;
+        case HWLOC_OBJ_OSDEV_OPENFABRICS:
+        case HWLOC_OBJ_OSDEV_NETWORK:
+            device->type = QV_HW_OBJ_NIC;
             break;
         default:
             return QV_SUCCESS;
@@ -790,7 +760,8 @@ qvi_hwloc::m_discover_devices_first_pass(void)
         // Consider only what is listed here.
         if (type != HWLOC_OBJ_OSDEV_GPU &&
             type != HWLOC_OBJ_OSDEV_COPROC &&
-            type != HWLOC_OBJ_OSDEV_OPENFABRICS) {
+            type != HWLOC_OBJ_OSDEV_OPENFABRICS &&
+            type != HWLOC_OBJ_OSDEV_NETWORK) {
             continue;
         }
         // Try to get the PCI object.
@@ -1065,30 +1036,11 @@ qvi_hwloc::get_nobjs_in_cpuset(
     switch (target_obj) {
         case(QV_HW_OBJ_GPU) :
             return m_get_nosdevs_in_cpuset(m_gpus, cpuset, nobjs);
+        case(QV_HW_OBJ_NIC) :
+            return m_get_nosdevs_in_cpuset(m_nics, cpuset, nobjs);
         default:
             return m_get_nobjs_in_cpuset(target_obj, cpuset, nobjs);
     }
-}
-
-int
-qvi_hwloc::get_obj_type_in_cpuset(
-    int npieces,
-    hwloc_const_cpuset_t cpuset,
-    qv_hw_obj_type_t *target_obj
-) {
-    const hwloc_topology_t topo = m_topo;
-    hwloc_obj_t obj =  hwloc_get_first_largest_obj_inside_cpuset(topo, cpuset);
-    int num = hwloc_get_nbobjs_inside_cpuset_by_type(topo, cpuset, obj->type);
-
-    int depth = obj->depth;
-    while(!((num > npieces) && (!hwloc_obj_type_is_cache(obj->type)))){
-        depth++;
-        obj = hwloc_get_obj_inside_cpuset_by_depth(topo, cpuset, depth, 0);
-        num = hwloc_get_nbobjs_inside_cpuset_by_type(topo, cpuset, obj->type);
-    }
-
-    *target_obj = obj_hwloc2qv(obj->type);
-    return QV_SUCCESS;
 }
 
 int
@@ -1108,7 +1060,8 @@ qvi_hwloc::get_obj_in_cpuset_by_depth(
 const std::vector<qv_hw_obj_type_t> &
 qvi_hwloc::supported_devices(void) {
     static const std::vector<qv_hw_obj_type_t> supported_devices = {
-        QV_HW_OBJ_GPU
+        QV_HW_OBJ_GPU,
+        QV_HW_OBJ_NIC
     };
     return supported_devices;
 }
@@ -1121,6 +1074,9 @@ qvi_hwloc::devices_emit(
     switch (obj_type) {
         case QV_HW_OBJ_GPU:
             devlist = &m_gpus;
+            break;
+        case QV_HW_OBJ_NIC:
+            devlist = &m_nics;
             break;
         [[unlikely]] default:
             return QV_ERR_NOT_SUPPORTED;
@@ -1164,9 +1120,11 @@ qvi_hwloc::get_devices_included_in_cpuset(
     const qvi_hwloc_dev_list *devlist = nullptr;
     // Make sure that the user provided a valid, supported device type.
     switch (obj_type) {
-        // TODO(skg) We can support more devices, so do that eventually.
         case QV_HW_OBJ_GPU:
             devlist = const_cast<decltype(devlist)>(&m_gpus);
+            break;
+        case QV_HW_OBJ_NIC:
+            devlist = const_cast<decltype(devlist)>(&m_nics);
             break;
         [[unlikely]] default:
             return QV_ERR_NOT_SUPPORTED;

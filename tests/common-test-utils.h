@@ -97,6 +97,28 @@ static const ctu_devid_name_to_id_t ctu_devid_name_to_id_tab[] = {
     {CTU_TOSTRING(QV_DEVICE_ID_ORDINAL),    QV_DEVICE_ID_ORDINAL}
 };
 
+static inline const char *
+ctu_obj_name(
+    qv_hw_obj_type_t type
+) {
+    switch(type) {
+        case QV_HW_OBJ_MACHINE:  return CTU_TOSTRING(QV_HW_OBJ_MACHINE);
+        case QV_HW_OBJ_PACKAGE:  return CTU_TOSTRING(QV_HW_OBJ_PACKAGE);
+        case QV_HW_OBJ_CORE:     return CTU_TOSTRING(QV_HW_OBJ_CORE);
+        case QV_HW_OBJ_PU:       return CTU_TOSTRING(QV_HW_OBJ_PU);
+        case QV_HW_OBJ_L1CACHE:  return CTU_TOSTRING(QV_HW_OBJ_L1CACHE);
+        case QV_HW_OBJ_L2CACHE:  return CTU_TOSTRING(QV_HW_OBJ_L2CACHE);
+        case QV_HW_OBJ_L3CACHE:  return CTU_TOSTRING(QV_HW_OBJ_L3CACHE);
+        case QV_HW_OBJ_L4CACHE:  return CTU_TOSTRING(QV_HW_OBJ_L4CACHE);
+        case QV_HW_OBJ_L5CACHE:  return CTU_TOSTRING(QV_HW_OBJ_L5CACHE);
+        case QV_HW_OBJ_NUMANODE: return CTU_TOSTRING(QV_HW_OBJ_NUMANODE);
+        /** Device types. */
+        case QV_HW_OBJ_GPU:      return CTU_TOSTRING(QV_HW_OBJ_GPU);
+        case QV_HW_OBJ_NIC:      return CTU_TOSTRING(QV_HW_OBJ_NIC);
+        default: return "?";
+    }
+}
+
 static const size_t ctu_devid_name_to_id_tab_size =
     sizeof(ctu_devid_name_to_id_tab) / sizeof(ctu_devid_name_to_id_t);
 
@@ -308,16 +330,19 @@ ctu_emit_device_info(
     qv_hw_obj_type_t dev_type,
     const char *scope_name
 ) {
-    // Get number of GPUs.
-    int ngpus;
-    int rc = qv_scope_hw_obj_count(scope, QV_HW_OBJ_GPU, &ngpus);
+    // Get number of devices.
+    int ndevs;
+    int rc = qv_scope_hw_obj_count(scope, dev_type, &ndevs);
     if (rc != QV_SUCCESS) {
         const char *ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    // TODO(skg) Generalize GPU name to actual device type.
-    printf("\n# Discovered %d GPU Device(s) in %s\n", ngpus, scope_name);
-    for (int i = 0; i < ngpus; ++i) {
+
+    printf(
+        "\n# Discovered %d %s(s) in %s\n",
+        ndevs, ctu_obj_name(dev_type), scope_name
+    );
+    for (int i = 0; i < ndevs; ++i) {
         for (size_t j = 0; j < ctu_devid_name_to_id_tab_size; ++j) {
             char *devids = NULL;
             int rc = qv_scope_device_id_get(

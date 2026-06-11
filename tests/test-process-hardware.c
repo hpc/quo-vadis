@@ -36,8 +36,8 @@ main(void)
         }
 
         ctu_emit_host_hw_info(base_scope, setup_tab[i].name);
-
         ctu_emit_device_info(base_scope, QV_HW_OBJ_GPU, setup_tab[i].name);
+        ctu_emit_device_info(base_scope, QV_HW_OBJ_NIC, setup_tab[i].name);
 
         rc = qv_scope_free(base_scope);
         if (rc != QV_SUCCESS) {

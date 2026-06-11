@@ -421,15 +421,6 @@ public:
         int index,
         hwloc_obj_t *result_obj
     ) const;
-    /**
-     *
-     */
-    int
-    get_obj_type_in_cpuset(
-        int npieces,
-        hwloc_const_cpuset_t cpuset,
-        qv_hw_obj_type_t *target_obj
-    );
     /** */
     int
     get_cpuset_for_nobjs(
