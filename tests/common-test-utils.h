@@ -318,7 +318,7 @@ ctu_emit_host_hw_info(
             );
             return rc;
         }
-        printf("# %s=%d\n", ctu_hw_obj_name_to_type_tab[i].name, n);
+        printf("# %s: n = %d\n", ctu_hw_obj_name_to_type_tab[i].name, n);
     }
     printf("# ---------------------------------------\n");
     return QV_SUCCESS;

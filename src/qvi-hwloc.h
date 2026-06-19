@@ -30,6 +30,11 @@ using qvi_hwloc_dev_list = std::vector<
     std::shared_ptr<qvi_hwloc_device>
 >;
 
+/** Maps supported device types to a list of devices of that type. */
+using qvi_hwloc_dev_map = std::map<
+    qv_hw_obj_type_t, qvi_hwloc_dev_list
+>;
+
 /** Flags that influence how the hwloc instance behaves. */
 typedef long long qvi_hwloc_flags_t;
 /** Empty hwloc flags. */
@@ -55,14 +60,8 @@ private:
     hwloc_topology_t m_topo = nullptr;
     /** Path to exported hardware topology. */
     std::string m_topo_file;
-    /** Cached set of PCI IDs discovered during topology load. */
-    qvi_hwloc_dev_id_set m_device_ids;
-    /** Cached devices discovered during topology load. */
-    qvi_hwloc_dev_list m_devices;
-    /** Cached GPUs discovered during topology load. */
-    qvi_hwloc_dev_list m_gpus;
-    /** Cached NICs discovered during topology load. */
-    qvi_hwloc_dev_list m_nics;
+    /** Map of device types to lists of devices of those types. */
+    qvi_hwloc_dev_map m_devmap;
     /** */
     int
     m_topo_set_from_xml(
@@ -82,23 +81,12 @@ private:
         const std::string &busid,
         qvi_hwloc_device *dev
     );
-    /**
-     * First pass: discover devices that must be added to the list of devices.
-     */
-    int
-    m_discover_devices_first_pass(void);
-    /** */
-    int
-    m_discover_nic_devices(void);
-    /** */
-    int
-    m_discover_gpu_devices(void);
     /** */
     int
     m_discover_devices(void);
     /** */
     int
-    m_set_general_device_info(
+    m_set_device_info(
         hwloc_obj_t obj,
         hwloc_obj_t pci_obj,
         const std::string &pci_bus_id,
@@ -112,7 +100,7 @@ private:
     );
     /** */
     int
-    m_set_of_device_info(
+    m_set_nic_device_info(
         hwloc_obj_t obj,
         qvi_hwloc_device *device
     );
@@ -354,7 +342,7 @@ public:
     int
     devices_emit(
         qv_hw_obj_type_t obj_type
-    );
+    ) const;
     /**
      * Returns a reference to vector of supported device types.
      */
@@ -467,7 +455,7 @@ public:
     get(
         qvi_hwloc_flags_t flags
     ) {
-        auto got = m_type2hwloc.find(flags & QVI_HWLOC_TOPO_MASK);
+        const auto got = m_type2hwloc.find(flags & QVI_HWLOC_TOPO_MASK);
         if (qvi_unlikely(got == m_type2hwloc.end())) {
             // If this happens, this is a bug.
             qvi_abort();
@@ -616,16 +604,14 @@ struct qvi_hwloc_device {
     qvi_hwloc_bitmap affinity;
     /** Vendor ID. */
     int vendor_id = INVALID_ID;
-    /** System Management Interface ID. */
-    int smi = INVALID_ID;
     /** CUDA/ROCm visible devices ID. */
     int id = INVISIBLE_ID;
     /** Device name. */
-    std::string name;
+    std::string name = {};
     /** PCI bus ID. */
-    std::string pci_bus_id;
+    std::string pci_bus_id = {};
     /** Universally Unique Identifier. */
-    std::string uuid;
+    std::string uuid = {};
 };
 
 #endif
