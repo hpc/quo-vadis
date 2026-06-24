@@ -71,25 +71,59 @@ qvi_hwloc::obj_get_type(
 }
 
 /**
- * Returns true if the provided OS type is currently supposed.
+ * Returns whether an input object has the given subtype.
  */
 static inline bool
-osdev_filter_out(
+obj_has_subtype(
+    hwloc_obj_t obj,
+    const std::string &subtype
+) {
+    if (obj->subtype && !strcmp(obj->subtype, subtype.c_str())) return true;
+    return false;
+}
+
+/**
+ * Filters OS devices of interest and avoid duplicates.
+ *
+ * Devices of interest:
+ * (1) GPU-type device (includes AMD-RSMI and NVIDIA-NVML)
+ * (2) OPENFABRICS-type device (includes InfiniBand)
+ * (3) COPROC-type: LevelZero device
+ * (4) NETWORK-type (includes Slingshot and BXI devices)
+ *
+ * Exclude CUDA and OpenCL COPROC devices to avoid
+ * duplication with NVML and RSMI devices.
+ */
+static inline bool
+keep_os_device(
     hwloc_obj_t obj
 ) {
-    // Do we support this device type?
     switch (obj->attr->osdev.type) {
 #ifdef QV_GPU_SUPPORT
         case HWLOC_OBJ_OSDEV_GPU:
+            return true;
         case HWLOC_OBJ_OSDEV_COPROC:
+            return obj_has_subtype(obj, "LevelZero");
 #endif
         case HWLOC_OBJ_OSDEV_OPENFABRICS:
-        case HWLOC_OBJ_OSDEV_NETWORK:
-            // A supported device, so do not filter out.
-            return false;
-        default:
-            // Not a supported device, so filter out.
             return true;
+        case HWLOC_OBJ_OSDEV_NETWORK:
+            if (obj_has_subtype(obj, "BXI")) {
+                return true;
+            }
+            else if (obj_has_subtype(obj, "Slingshot")) {
+                // Keep the CXI (Cassini) interfaces. libfabric uses the CXI
+                // provider to drive the Slingshot network. Linux, on the other
+                // hand, uses the HSI interfaces (TCP).
+                int n;
+                if (sscanf(obj->name, "cxi%d", &n) == 1) return true;
+                else return false;
+            }
+            else {
+                return false;
+            }
+        default:
+            return false;
     }
 }
 
@@ -761,6 +795,8 @@ qvi_hwloc::m_set_nic_device_info(
     return QV_SUCCESS;
 }
 
+// TODO(skg) Was a high-speed network interface found? If so, use it, else use
+// other network interfaces.
 int
 qvi_hwloc::m_discover_devices(void)
 {
@@ -771,7 +807,7 @@ qvi_hwloc::m_discover_devices(void)
     hwloc_obj_t obj = nullptr;
     while ((obj = hwloc_get_next_osdev(m_topo, obj)) != nullptr) {
         // Skip this object?
-        if (osdev_filter_out(obj)) continue;
+        if (!keep_os_device(obj)) continue;
         // Try to get the PCI object.
         const auto [pci_obj, busid] = get_pci_info(obj);
         if (!pci_obj) continue;
