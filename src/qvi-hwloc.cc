@@ -703,7 +703,9 @@ qvi_hwloc::m_set_device_info(
     switch (obj->attr->osdev.type) {
         case HWLOC_OBJ_OSDEV_GPU: {
             device->type = QV_HW_OBJ_GPU;
-            const auto vendor = get_obj_info_by_name(obj, "GPUVendor");
+            const auto vendor_str = get_obj_info_by_name(obj, "GPUVendor");
+            // Expecting something like AMD or NVIDIA Corporation.
+            const auto vendor = qvi_split_string(vendor_str, " ").at(0);
             uuid_info_name = vendor + "UUID";
             break;
         }
@@ -1126,7 +1128,7 @@ qvi_hwloc::m_split_cpuset_by_range(
         const int orrc = hwloc_bitmap_or(
             result.data(), result.cdata(), dobj->cpuset
         );
-        if (orrc != 0) {
+        if (qvi_unlikely(orrc != 0)) {
             rc = QV_ERR_HWLOC;
             break;
         }
