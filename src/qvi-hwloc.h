@@ -88,20 +88,7 @@ private:
     int
     m_set_device_info(
         hwloc_obj_t obj,
-        hwloc_obj_t pci_obj,
         const std::string &pci_bus_id,
-        qvi_hwloc_device *device
-    );
-    /** */
-    int
-    m_set_gpu_device_info(
-        hwloc_obj_t obj,
-        qvi_hwloc_device *device
-    );
-    /** */
-    int
-    m_set_nic_device_info(
-        hwloc_obj_t obj,
         qvi_hwloc_device *device
     );
     /** */
@@ -602,9 +589,7 @@ struct qvi_hwloc_device {
     qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
     /** Device affinity. */
     qvi_hwloc_bitmap affinity;
-    /** Vendor ID. */
-    int vendor_id = INVALID_ID;
-    /** CUDA/ROCm visible devices ID. */
+    /** Device ID. Note: this is not the device's ordinal. */
     int id = INVISIBLE_ID;
     /** Device name. */
     std::string name = {};

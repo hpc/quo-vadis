@@ -71,6 +71,28 @@ qvi_hwloc::obj_get_type(
 }
 
 /**
+ * Get the numeric ID of a device name, e.g.,
+ * rsmi2 -> 2
+ * opencl1d0 -> 10
+ * mlx5_0 -> 50
+ */
+static int
+get_dev_name_id(
+    char *name
+) {
+    char nums[32];
+
+    int j = 0;
+    for (int i = 0; name[i] != '\0'; ++i) {
+        if (isdigit(name[i])) nums[j++] = name[i];
+    }
+    nums[j] = '\0';
+
+    if (nums[0]) return qvi_stoi(nums, 10);
+    return qvi_hwloc_device::INVALID_ID;
+}
+
+/**
  * Returns whether an input object has the given subtype.
  */
 static inline bool
@@ -125,6 +147,17 @@ keep_os_device(
         default:
             return false;
     }
+}
+
+static std::string
+get_obj_info_by_name(
+    hwloc_obj_t obj,
+    const std::string &name
+) {
+    if (name.empty()) return {};
+    const char *maybe_info = hwloc_obj_get_info_by_name(obj, name.c_str());
+    if (!maybe_info) return {};
+    return maybe_info;
 }
 
 // TODO(skg) Replace with a function that returns a general type for a given
@@ -663,33 +696,46 @@ qvi_hwloc::bind_string(
 int
 qvi_hwloc::m_set_device_info(
     hwloc_obj_t obj,
-    hwloc_obj_t pci_obj,
     const std::string &pci_bus_id,
     qvi_hwloc_device *device
 ) {
-    int rc = QV_SUCCESS;
-
+    std::string uuid_info_name = {};
     switch (obj->attr->osdev.type) {
-        // For our purposes a HWLOC_OBJ_OSDEV_COPROC
-        // is the same as a HWLOC_OBJ_OSDEV_GPU.
-        case HWLOC_OBJ_OSDEV_GPU:
-        case HWLOC_OBJ_OSDEV_COPROC:
-            rc = m_set_gpu_device_info(obj, device);
+        case HWLOC_OBJ_OSDEV_GPU: {
+            device->type = QV_HW_OBJ_GPU;
+            const auto vendor = get_obj_info_by_name(obj, "GPUVendor");
+            uuid_info_name = vendor + "UUID";
             break;
-        case HWLOC_OBJ_OSDEV_OPENFABRICS:
-        case HWLOC_OBJ_OSDEV_NETWORK:
-            rc = m_set_nic_device_info(obj, device);
+        }
+        case HWLOC_OBJ_OSDEV_COPROC: {
+            device->type = QV_HW_OBJ_GPU;
+            if (obj_has_subtype(obj, "LevelZero")) {
+                uuid_info_name = "LevelZeroUUID";
+            }
             break;
+        }
+        case HWLOC_OBJ_OSDEV_OPENFABRICS: {
+            device->type = QV_HW_OBJ_NIC;
+            uuid_info_name = "NodeGUID";
+            break;
+        }
+        case HWLOC_OBJ_OSDEV_NETWORK: {
+            device->type = QV_HW_OBJ_NIC;
+            if (obj_has_subtype(obj, "BXI")) uuid_info_name = "BXIUUID";
+            else uuid_info_name = "Address";
+            break;
+        }
         default:
             return QV_SUCCESS;
     }
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Set vendor ID.
-    device->vendor_id = pci_obj->attr->pcidev.vendor_id;
-    // Save device name.
+    // Save the device name.
     device->name = std::string(obj->name);
+    // Set the device ID.
+    device->id = get_dev_name_id(obj->name);
     // Set the PCI bus ID.
     device->pci_bus_id = pci_bus_id;
+    // Set the UUID.
+    device->uuid = get_obj_info_by_name(obj, uuid_info_name);
     // Set the affinity.
     return m_set_device_affinity_by_pci_bus_id(
         pci_bus_id, device
@@ -747,54 +793,6 @@ qvi_hwloc::m_set_device_affinity_by_pci_bus_id(
     return QV_SUCCESS;
 }
 
-int
-qvi_hwloc::m_set_gpu_device_info(
-    hwloc_obj_t obj,
-    qvi_hwloc_device *device
-) {
-    device->type = QV_HW_OBJ_GPU;
-    // Avoid calls that initialize GPUs in any way. I've seen issues doing this
-    // with other infrastructure that uses hwloc. Dynamic affinities sometimes
-    // don't play well here because GPU infrastructure is initialized when more
-    // processes are active.
-    int id, id2;
-    //
-    if (sscanf(obj->name, "rsmi%d", &id) == 1) {
-        device->id = id;
-        device->uuid = std::string(hwloc_obj_get_info_by_name(obj, "AMDUUID"));
-        return QV_SUCCESS;
-    }
-    //
-    if (sscanf(obj->name, "nvml%d", &id) == 1 ||
-        sscanf(obj->name, "cuda%d", &id) == 1) {
-        device->id = id;
-        device->uuid = std::string(hwloc_obj_get_info_by_name(obj, "NVIDIAUUID"));
-        return QV_SUCCESS;
-    }
-    // Do the best we can in this instance: unclear which UUID to use here. It
-    // is likely that a device alias will provide that information.
-    if (sscanf(obj->name, "opencl%dd%d", &id2, &id) == 2) {
-        device->id = id;
-        return QV_SUCCESS;
-    }
-    // If we are here, then let the user know that we
-    // hit a device that isn't currently supported.
-    qvi_log_error("Unsupported device encountered: {}", obj->name);
-    return QV_ERR_NOT_SUPPORTED;
-}
-
-int
-qvi_hwloc::m_set_nic_device_info(
-    hwloc_obj_t obj,
-    qvi_hwloc_device *device
-) {
-    device->type = QV_HW_OBJ_NIC;
-    if (obj->attr->osdev.type == HWLOC_OBJ_OSDEV_OPENFABRICS) {
-        device->uuid = std::string(hwloc_obj_get_info_by_name(obj, "NodeGUID"));
-    }
-    return QV_SUCCESS;
-}
-
 // TODO(skg) Was a high-speed network interface found? If so, use it, else use
 // other network interfaces.
 int
@@ -826,7 +824,7 @@ qvi_hwloc::m_discover_devices(void)
         }
         // Set the information on the device. This could be the first time that
         // the device has been seen, or the nth time.
-        rc = m_set_device_info(obj, pci_obj, busid, dev.get());
+        rc = m_set_device_info(obj, busid, dev.get());
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     }
     // Now that we have all the device information that we are going to get,
@@ -836,18 +834,17 @@ qvi_hwloc::m_discover_devices(void)
         auto [it, _] = m_devmap.try_emplace(dev.get()->type);
         it->second.emplace_back(std::move(dev));
     }
-    // TODO(skg) Need to sort devices.
-#if 0
-    // Sort list based on device ID.
-    std::sort(
-        m_gpus.begin(),
-        m_gpus.end(),
-        [](const std::shared_ptr<qvi_hwloc_device> &a,
-           const std::shared_ptr<qvi_hwloc_device> &b) {
-            return a.get()->id < b.get()->id; // Sort ascending.
-        }
-    );
-#endif
+    // Sort devices based on ID. This will influence their ordinal value.
+    for (auto &[_, devlist] : m_devmap) {
+        std::sort(
+            devlist.begin(),
+            devlist.end(),
+            [](const std::shared_ptr<qvi_hwloc_device> &a,
+               const std::shared_ptr<qvi_hwloc_device> &b) {
+                return a.get()->id < b.get()->id; // Sort ascending.
+            }
+        );
+    }
     return QV_SUCCESS;
 }
 
@@ -1044,7 +1041,6 @@ qvi_hwloc::devices_emit(
         qvi_log_info("  Device PCI Bus ID: {}", dev->pci_bus_id);
         qvi_log_info("  Device UUID: {}", dev->uuid);
         qvi_log_info("  Device affinity: {}", cpusets);
-        qvi_log_info("  Device Vendor ID: {}", dev->vendor_id);
         qvi_log_info("  Device Visible Device ID: {}\n", dev->id);
     }
     return QV_SUCCESS;
@@ -1096,7 +1092,8 @@ qvi_hwloc::get_device_id_in_cpuset(
             dev_id = devs.at(i)->pci_bus_id;
             break;
         case (QV_DEVICE_ID_ORDINAL):
-            dev_id = devs.at(i)->id;
+            // TODO(skg) Is this correct?
+            dev_id = std::to_string(devs.at(i)->id);
             break;
         [[unlikely]] default:
             rc = QV_ERR_INVLD_ARG;
