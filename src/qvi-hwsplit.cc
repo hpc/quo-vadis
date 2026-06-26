@@ -336,7 +336,14 @@ qvi_hwsplit::m_split(void)
     // Assign cpusets to the tasks' hardware pools based on the determined
     // mapping. Also assign coloring based on this mapping.
     m_colors.resize(tthr_map.size());
-    assert(m_colors.size() == m_group_size);
+    //
+    if (qvi_unlikely(m_colors.size() != m_group_size)) {
+        qvi_log_error(
+            "Invalid coloring state: m_colors.size()={} but m_group_size={}",
+            m_colors.size(), m_group_size
+        );
+        return QV_ERR_INTERNAL;
+    }
     for (const auto &[taski, cpusetis] : tthr_map) {
         for (const auto &cpuseti : cpusetis) {
             m_hwpools.at(taski) = {m_split_cpusets.at(cpuseti)};
@@ -419,7 +426,7 @@ qvi_hwsplit::m_gather_split_data(
     // The root creates the base hardware pool that it will later split.
     if (group.rank() == rootid) {
         // The base hardware pool is the union of all provided hardware pools.
-        hwsplit.m_base_hwpool  = qvi_hwpool::set_union(hwsplit.m_hwpools);
+        hwsplit.m_base_hwpool = qvi_hwpool::set_union(hwsplit.m_hwpools);
         // The temporary hardware pools are no longer needed.
         hwsplit.m_hwpools.clear();
         // Create room for the real hardware pools.
