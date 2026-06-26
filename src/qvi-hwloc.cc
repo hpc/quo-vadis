@@ -44,7 +44,7 @@ hwloc_obj_type_t
 qvi_hwloc::obj_get_type(
     qv_hw_obj_type_t external
 ) {
-    switch(external) {
+    switch (external) {
         case(QV_HW_OBJ_MACHINE):
             return HWLOC_OBJ_MACHINE;
         case(QV_HW_OBJ_PACKAGE):
@@ -163,14 +163,11 @@ get_obj_info_by_name(
     return maybe_info;
 }
 
-// TODO(skg) Replace with a function that returns a general type for a given
-// resource type. For example, QVI_HWLOC_RES_HOST, QVI_HWLOC_RES_DEV,
-// QVI_HWLOC_RES_LAST.
-bool
-qvi_hwloc::obj_is_host_resource(
+qvi_hwloc_res_class
+qvi_hwloc::obj_res_class(
     qv_hw_obj_type_t type
 ) {
-    switch(type) {
+    switch (type) {
         case(QV_HW_OBJ_MACHINE):
         case(QV_HW_OBJ_PACKAGE):
         case(QV_HW_OBJ_CORE):
@@ -181,11 +178,12 @@ qvi_hwloc::obj_is_host_resource(
         case(QV_HW_OBJ_L4CACHE):
         case(QV_HW_OBJ_L5CACHE):
         case(QV_HW_OBJ_NUMANODE):
-            return true;
+            return QVI_HWLOC_RES_HOST;
         case(QV_HW_OBJ_GPU):
         case(QV_HW_OBJ_NIC):
+            return QVI_HWLOC_RES_DEV;
         case(QV_HW_OBJ_LAST):
-            return false;
+            return QVI_HWLOC_RES_LAST;
         [[unlikely]] default:
             // This is likely an internal development error.
             throw qvi_runtime_error(QV_ERR_INTERNAL);
@@ -834,11 +832,11 @@ qvi_hwloc::m_discover_devices(void)
     // populate the final device map.
     for (const auto &[pci_busid, dev] : devmap) {
         // Add the new device to our map of available devices.
-        auto [it, _] = m_devmap.try_emplace(dev.get()->type);
+        auto [it, inserted] = m_devmap.try_emplace(dev.get()->type);
         it->second.emplace_back(std::move(dev));
     }
     // Sort devices based on ID. This will influence their ordinal value.
-    for (auto &[_, devlist] : m_devmap) {
+    for (auto &[dev_type, devlist] : m_devmap) {
         std::sort(
             devlist.begin(),
             devlist.end(),

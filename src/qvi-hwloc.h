@@ -48,6 +48,13 @@ const qvi_hwloc_flags_t QVI_HWLOC_FLAG_TOPO_XML = (1LL<<2);
 
 const qvi_hwloc_flags_t QVI_HWLOC_TOPO_MASK = 0x0000000000000003LL;
 
+/** Internal resource type identifiers. */
+enum qvi_hwloc_res_class {
+    QVI_HWLOC_RES_HOST = 0,
+    QVI_HWLOC_RES_DEV,
+    QVI_HWLOC_RES_LAST
+};
+
 struct qvi_hwloc {
 private:
     enum task_xop_obj_id {
@@ -147,6 +154,7 @@ private:
     int
     m_disable_smt(void);
 public:
+    /** */
     static
     std::vector<qvi_hwloc_flags_t>
     topo_types(void) {
@@ -289,10 +297,10 @@ public:
         qv_hw_obj_type_t external
     );
     /**
-     * Returns whether the provided type is a host resource (e.g., core, NUMA node).
+     * Returns the type's general resource class.
      */
-    static bool
-    obj_is_host_resource(
+    static qvi_hwloc_res_class
+    obj_res_class(
         qv_hw_obj_type_t type
     );
     /**
