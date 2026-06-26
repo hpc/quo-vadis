@@ -811,8 +811,8 @@ qvi_hwloc::m_discover_devices(void)
         const auto [pci_obj, busid] = get_pci_info(obj);
         if (!pci_obj) continue;
         std::shared_ptr<qvi_hwloc_device> dev = nullptr;
-        // Have we seen this device already? For example, opencl0d0 and cuda0
-        // may correspond to the same GPU hardware.
+        // Have we seen this device already? For example, opencl0d0
+        // and cuda0 may correspond to the same GPU hardware.
         auto got = devmap.find(busid);
         // New device (i.e., a new PCI bus ID).
         if (got == devmap.end()) {
