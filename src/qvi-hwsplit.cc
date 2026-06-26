@@ -99,7 +99,7 @@ pool_release_cpus_by_cpuset(
 // * Need to deal with resource unavailability.
 // * Split and attach devices properly.
 // * Have bitmap scratch pad that is initialized once, then destroyed? This
-//   approach may be an nice allocation optimization, but in heavily threaded
+//   approach may be a nice allocation optimization, but in heavily threaded
 //   code may be a bottleneck.
 // TODO(skg) Use distance API for device affinity.
 // TODO(skg) Add RMI to acquire/release resources.
@@ -370,7 +370,7 @@ qvi_hwsplit::m_split(void)
             hwpool_affinities
         };
         qvi_map_t devs2hres_map;
-        int rc = qvi_map_affinity_preserving(
+        rc = qvi_map_affinity_preserving(
             devs2hres_config, devs2hres_map
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
