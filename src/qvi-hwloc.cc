@@ -835,7 +835,7 @@ qvi_hwloc::m_discover_devices(void)
         auto [it, inserted] = m_devmap.try_emplace(dev.get()->type);
         it->second.emplace_back(std::move(dev));
     }
-    // Sort devices based on ID. This will influence their ordinal value.
+    // Sort devices based on ID.
     for (auto &[dev_type, devlist] : m_devmap) {
         std::sort(
             devlist.begin(),
@@ -1093,7 +1093,6 @@ qvi_hwloc::get_device_id_in_cpuset(
             dev_id = devs.at(i)->pci_bus_id;
             break;
         case (QV_DEVICE_ID_ORDINAL):
-            // TODO(skg) Is this correct?
             dev_id = std::to_string(devs.at(i)->id);
             break;
         [[unlikely]] default:
