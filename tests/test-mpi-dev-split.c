@@ -116,12 +116,27 @@ main(
     free(binds);
 
     for (int i = 0; i < my_ndevs; ++i) {
-        char *devid;
-        qv_scope_device_id_get(
-            dev_scope, target_dev, i, QV_DEVICE_ID_PCI_BUS_ID, &devid
+        char *pciid, *ordid;
+        rc = qv_scope_device_id_get(
+            dev_scope, target_dev, i, QV_DEVICE_ID_PCI_BUS_ID, &pciid
         );
-        printf("   [%d] Dev %d PCI Bus ID = %s\n", wrank, i, devid);
-        free(devid);
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_device_id_get() failed";
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
+        rc = qv_scope_device_id_get(
+            dev_scope, target_dev, i, QV_DEVICE_ID_ORDINAL, &ordid
+        );
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_device_id_get() failed";
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
+        printf(
+            "   [%d] Dev %d: Ordinal = %s, PCI Bus ID = %s\n",
+            wrank, i, ordid, pciid
+        );
+        free(pciid);
+        free(ordid);
     }
 
     rc = qv_scope_free(dev_scope);
