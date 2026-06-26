@@ -198,25 +198,29 @@ qvi_hwsplit::m_primary_cpuset_for_split(
     qv_hw_obj_type_t requested_type
 ) const {
     qv_hw_obj_type_t real_type = requested_type;
-    // Were we provided a real resource type that we have to split? Or was
-    // QV_HW_OBJ_LAST instead provided to indicate that we were called from a
-    // split() context.
-    if (requested_type == QV_HW_OBJ_LAST) {
-        // Pick PUs as the host resource, since this is
-        // the atomic unit at which host resources are split.
-        real_type = QV_HW_OBJ_PU;
-    }
 
-    if (qvi_hwloc::obj_is_host_resource(real_type)) {
-        return {real_type, m_base_hwpool.cpuset()};
+    switch (qvi_hwloc::obj_res_class(requested_type)) {
+        // Were we provided a real resource type that we have to split? Or was
+        // QV_HW_OBJ_LAST instead provided to indicate that we were called from
+        // a split() context.
+        case QVI_HWLOC_RES_LAST:
+            // Pick PUs as the host resource, since this is
+            // the atomic unit at which host resources are split.
+            real_type = QV_HW_OBJ_PU;
+            // Intentionally fall through.
+        case QVI_HWLOC_RES_HOST:
+            return {real_type, m_base_hwpool.cpuset()};
+        case QVI_HWLOC_RES_DEV: {
+            // The cpuset will be the union over the devices affinities.
+            qvi_hwloc_bitmap result;
+            for (const auto &dev : m_base_hwpool.devices(real_type)) {
+                result = result | dev.get()->affinity();
+            }
+            return {real_type, result};
+        }
+        [[unlikely]] default:
+            throw qvi_runtime_error(QV_ERR_INTERNAL);
     }
-    // Else, an OS device. The cpuset will be
-    // the union over the devices affinities.
-    qvi_hwloc_bitmap result;
-    for (const auto &dev : m_base_hwpool.devices(real_type)) {
-        result = result | dev.get()->affinity();
-    }
-    return {real_type, result};
 }
 
 int

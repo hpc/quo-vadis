@@ -131,15 +131,16 @@ std::vector<qvi_hwloc_bitmap>
 qvi_hwpool::device_affinities(
     qv_hw_obj_type_t obj_type
 ) const {
-    if (qvi_unlikely(qvi_hwloc::obj_is_host_resource(obj_type))) {
-        throw qvi_runtime_error(QV_ERR_NOT_SUPPORTED);
-    }
-    else {
-        std::vector<qvi_hwloc_bitmap> result;
-        for (const auto &dev : devices(obj_type)) {
-            result.emplace_back(dev.get()->affinity());
+    switch (qvi_hwloc::obj_res_class(obj_type)) {
+        case QVI_HWLOC_RES_DEV: {
+            std::vector<qvi_hwloc_bitmap> result;
+            for (const auto &dev : devices(obj_type)) {
+                result.emplace_back(dev.get()->affinity());
+            }
+            return result;
         }
-        return result;
+        [[unlikely]] default:
+            throw qvi_runtime_error(QV_ERR_NOT_SUPPORTED);
     }
 }
 
@@ -148,17 +149,20 @@ qvi_hwpool::nobjects(
     const qvi_hwloc &hwloc,
     qv_hw_obj_type_t obj_type
 ) const {
-    if (qvi_hwloc::obj_is_host_resource(obj_type)) {
-        size_t result;
-        const int rc = hwloc.get_nobjs_in_cpuset(
-            obj_type, m_cpu.affinity().cdata(), result
-        );
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
-        return result;
+    switch (qvi_hwloc::obj_res_class(obj_type)) {
+        case QVI_HWLOC_RES_HOST: {
+            size_t result;
+            const int rc = hwloc.get_nobjs_in_cpuset(
+                obj_type, m_cpu.affinity().cdata(), result
+            );
+            if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
+            return result;
+        }
+        default:
+        // Note that this path also covers QVI_HWLOC_RES_LAST because result
+        // will be 0 in the case that obj_type is QV_HW_OBJ_LAST.
+        return devices(obj_type).size();
     }
-    // Note that this path also covers QV_HW_OBJ_LAST because result
-    // will be 0 in the case that QV_HW_OBJ_LAST is passed here.
-    return devices(obj_type).size();
 }
 
 int
