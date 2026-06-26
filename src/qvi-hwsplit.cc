@@ -313,8 +313,6 @@ qvi_hwsplit::m_determine_mapping(
         [[unlikely]] default:
             return QV_ERR_INVLD_ARG;
     }
-    // Shouldn't get here.
-    return QV_ERR;
 }
 
 int
