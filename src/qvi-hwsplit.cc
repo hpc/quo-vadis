@@ -363,7 +363,7 @@ qvi_hwsplit::m_split(void)
             hwpool_affinities
         };
         qvi_map_t devs2hres_map;
-        int rc = qvi_map_affinity_preserving(
+        rc = qvi_map_affinity_preserving(
             devs2hres_config, devs2hres_map
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
