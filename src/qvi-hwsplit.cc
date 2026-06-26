@@ -99,7 +99,7 @@ pool_release_cpus_by_cpuset(
 // * Need to deal with resource unavailability.
 // * Split and attach devices properly.
 // * Have bitmap scratch pad that is initialized once, then destroyed? This
-//   approach may be an nice allocation optimization, but in heavily threaded
+//   approach may be a nice allocation optimization, but in heavily threaded
 //   code may be a bottleneck.
 // TODO(skg) Use distance API for device affinity.
 // TODO(skg) Add RMI to acquire/release resources.
