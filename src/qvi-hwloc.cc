@@ -17,6 +17,11 @@
 #include "qvi-hwloc.h"
 #include "qvi-utils.h"
 
+/**
+ * Note: we don't honor environment variables such as CUDA_VISIBLE_DEVICES,
+ * ROCR_VISIBLE_DEVICES, etc.
+ */
+
 /** Maps a string identifier to a device. */
 using qvi_hwloc_pci2dev = std::map<
     std::string,
@@ -77,18 +82,16 @@ qvi_hwloc::obj_get_type(
  * mlx5_0 -> 50
  */
 static int
-get_dev_name_id(
-    char *name
+get_dev_id_from_name(
+    const std::string &name
 ) {
-    char nums[32];
+    std::string nums = {};
 
-    int j = 0;
-    for (int i = 0; name[i] != '\0'; ++i) {
-        if (isdigit(name[i])) nums[j++] = name[i];
+    for (size_t i = 0; i < name.length(); ++i) {
+        if (isdigit(name[i])) nums += name[i];
     }
-    nums[j] = '\0';
 
-    if (nums[0]) return qvi_stoi(nums, 10);
+    if (!nums.empty()) return qvi_stoi(nums, 10);
     return qvi_hwloc_device::INVALID_ID;
 }
 
@@ -703,9 +706,9 @@ qvi_hwloc::m_set_device_info(
     switch (obj->attr->osdev.type) {
         case HWLOC_OBJ_OSDEV_GPU: {
             device->type = QV_HW_OBJ_GPU;
-            const auto vendor_str = get_obj_info_by_name(obj, "GPUVendor");
+            const auto vendor_info = get_obj_info_by_name(obj, "GPUVendor");
             // Expecting something like AMD or NVIDIA Corporation.
-            const auto vendor = qvi_split_string(vendor_str, " ").at(0);
+            const auto vendor = qvi_split_string(vendor_info, " ").at(0);
             uuid_info_name = vendor + "UUID";
             break;
         }
@@ -733,7 +736,7 @@ qvi_hwloc::m_set_device_info(
     // Save the device name.
     device->name = std::string(obj->name);
     // Set the device ID.
-    device->id = get_dev_name_id(obj->name);
+    device->id = get_dev_id_from_name(obj->name);
     // Set the PCI bus ID.
     device->pci_bus_id = pci_bus_id;
     // Set the UUID.
@@ -755,8 +758,6 @@ qvi_hwloc::m_set_device_info(
  * affinities in this way. A bonus is that synthetic topologies work with this
  * approach.
  */
-// TODO(skg) We probably need to implement proper handling of
-// CUDA_VISIBLE_DEVICES, etc.
 int
 qvi_hwloc::m_set_device_affinity_by_pci_bus_id(
     const std::string &busid,
@@ -1153,12 +1154,12 @@ qvi_hwloc::get_cpuset_for_nobjs(
         rc = get_obj_in_cpuset_by_depth(
             cpuset.cdata(), obj_depth, i, &dobj
         );
-        if (rc != QV_SUCCESS) break;
+        if (qvi_unlikely(rc != QV_SUCCESS)) break;
 
         const int orrc = hwloc_bitmap_or(
             result.data(), result.cdata(), dobj->cpuset
         );
-        if (orrc != 0) {
+        if (qvi_unlikely(orrc != 0)) {
             rc = QV_ERR_HWLOC;
             break;
         }
