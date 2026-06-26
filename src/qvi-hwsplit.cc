@@ -313,8 +313,6 @@ qvi_hwsplit::m_determine_mapping(
         [[unlikely]] default:
             return QV_ERR_INVLD_ARG;
     }
-    // Shouldn't get here.
-    return QV_ERR;
 }
 
 int
@@ -502,7 +500,7 @@ qvi_hwsplit::thread_split(
     // Since this is called by a single task, get its ID and associated
     // hardware affinity here, and replicate them in the following loop
     // that populates hwsplit.
-    //No point in doing this in a loop.
+    // No point in doing this in a loop.
     const pid_t taskid = qvi_task::mytid();
     // Set the base hardware pool. Since the parent has it, just copy it over.
     hwsplit.m_base_hwpool = hwsplit.m_my_hwpool;
