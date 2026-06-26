@@ -43,11 +43,15 @@ jobs:
         --config ${{matrix.build-type}} -j
 
     - name: Run Core Tests
+      env:
+        UCX_TLS: sm
       working-directory: ${{github.workspace}}/build
       run: |
         ctest -V -LE mpi -C ${{matrix.build-type}} --output-on-failure
 
     - name: Run All Tests
+      env:
+        UCX_TLS: sm
       working-directory: ${{github.workspace}}/build
       if: ${{ matrix.build-type == 'Release' }}
       run: ctest -V -C ${{matrix.build-type}} --output-on-failure
