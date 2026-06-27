@@ -333,17 +333,18 @@ qvi_hwsplit::m_split(void)
     if (qvi_unlikely(thr_map_config.be_verbose)) {
         qvi_map_emit("\nTask ID to Host Hardware Pool", tthr_map);
     }
-    // Assign cpusets to the tasks' hardware pools based on the determined
-    // mapping. Also assign coloring based on this mapping.
-    m_colors.resize(tthr_map.size());
-    //
-    if (qvi_unlikely(m_colors.size() != m_group_size)) {
+    // Ensure that every task is accounted for in mapping.
+    if (qvi_unlikely(tthr_map.size() != m_group_size)) {
         qvi_log_error(
-            "Invalid coloring state: m_colors.size()={} but m_group_size={}",
+            "Invalid coloring state: tthr_map.size()={} but m_group_size={}",
             m_colors.size(), m_group_size
         );
         return QV_ERR_INTERNAL;
     }
+    // Assign cpusets to the tasks' hardware pools based on the determined
+    // mapping. Also assign coloring based on this mapping.
+    m_colors.resize(tthr_map.size());
+    //
     for (const auto &[taski, cpusetis] : tthr_map) {
         for (const auto &cpuseti : cpusetis) {
             m_hwpools.at(taski) = {m_split_cpusets.at(cpuseti)};
@@ -508,7 +509,7 @@ qvi_hwsplit::thread_split(
     // hardware affinity here, and replicate them in the following loop
     // that populates hwsplit.
     // No point in doing this in a loop.
-    const pid_t taskid = qvi_task::mytid();
+    const pid_t task_id = qvi_task::mytid();
     // Set the base hardware pool. Since the parent has it, just copy it over.
     hwsplit.m_base_hwpool = hwsplit.m_my_hwpool;
     // Get the task's current affinity.
@@ -520,7 +521,7 @@ qvi_hwsplit::thread_split(
         // Store requested colors in aggregate.
         hwsplit.m_colors.at(i) = kcolors[i];
         // Since this is called by a single task, replicate its task ID, too.
-        hwsplit.m_group_tids.at(i) = taskid;
+        hwsplit.m_group_tids.at(i) = task_id;
         // Same goes for the task's affinity.
         hwsplit.m_task_affinities.at(i) = task_affinity;
     }
