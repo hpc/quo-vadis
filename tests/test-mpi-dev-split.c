@@ -87,7 +87,7 @@ main(
 
     rc = qv_scope_bind_push(dev_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_bind_push() failed";
+        ers = "qv_scope_bind_push() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
