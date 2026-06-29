@@ -106,7 +106,7 @@ main(
     char *binds;
     rc = qv_scope_bind_string(dev_scope, QV_BIND_STRING_LOGICAL, &binds);
     if (rc != QV_SUCCESS) {
-        ers = "qv_bind_get_list_as_string() failed";
+        ers = "qv_scope_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf(
