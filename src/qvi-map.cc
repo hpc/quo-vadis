@@ -212,13 +212,13 @@ solve_ap_mapping(
     const qvi_map_t &affinities
 ) {
     // Calculate max slots per destination.
-    const size_t max_slots_per_dest = qvi_maxiperk(n, m);
+    const size_t slots_per_dest = qvi_maxiperk(n, m);
     // Node layout:
     // 0: Super source
     // 1...n: Source nodes
     // n+1...n+(m*max_slots_per_dest): Destination slot nodes
     // last: Super sink
-    const size_t total_slot_nodes = m * max_slots_per_dest;
+    const size_t total_slot_nodes = m * slots_per_dest;
     const int super_source = 0;
     const int super_sink = static_cast<int>(1 + n + total_slot_nodes);
     const int total_nodes = super_sink + 1;
@@ -228,42 +228,50 @@ solve_ap_mapping(
     for (size_t i = 0; i < n; ++i) {
         mcmf.add_edge(super_source, 1 + i, 1, 0);
     }
+    // Penalty for using later slots.
+    const int64_t slot_penalty = 100000LL;
+    // High penalty for no-affinity (zero affinity) destinations.
+    const int64_t zaff_penalty = 10000000LL;
     // Edge 2: Source nodes-->destination slot nodes
     //         (capacity 1, progressive cost).
     // Cost structure:
-    // 1. Progressive penalty based on slot number
-    //    (strongly prefer first slots).
-    // 2. Small tie-breaker based on destination number
-    //    (prefer lower-numbered destinations).
+    // 1. Progressive penalty based on slot number:
+    //    strongly prefer first slots.
+    // 2. Small tie-breaker based on destination number:
+    //    prefer lower-numbered destinations.
+    // 3. Huge penalty for non-affinity destinations:
+    //    but still possible as fallback.
     for (size_t src = 0; src < n; ++src) {
         const auto it = affinities.find(src);
         std::set<size_t> src_affinities;
         if (it != affinities.end()) {
             src_affinities = it->second;
         }
-
-        for (size_t dst : src_affinities) {
+        // If affinity set is empty, treat it as "no preference":
+        // allow any destination with low cost.
+        if (src_affinities.empty()) {
+            for (size_t dst = 0; dst < m; ++dst) {
+                src_affinities.insert(dst);
+            }
+        }
+        // Connect to ALL destinations, but use different costs.
+        for (size_t dst = 0; dst < m; ++dst) {
+            const bool is_preferred = src_affinities.count(dst) > 0;
             // Connect source to all slots of this destination.
-            for (size_t slot = 0; slot < max_slots_per_dest; ++slot) {
-                const int slot_node = 1 + n + dst * max_slots_per_dest + slot;
-                // Progressive cost model:
-                // - Base cost: 100000 per slot:
-                //   strongly penalize using later slots.
-                // - Tie-breaker: +dst:
-                //   prefer lower-numbered destinations when slots are equal.
-                const int64_t progressive_penalty = 100000LL * slot;
-                // Small preference for lower destination numbers.
-                const int64_t dst_tiebreaker = dst;
-                const int64_t cost = progressive_penalty + dst_tiebreaker;
-
+            for (size_t slot = 0; slot < slots_per_dest; ++slot) {
+                const int slot_node = 1 + n + dst * slots_per_dest + slot;
+                const int64_t prog_penalty = slot_penalty * slot;
+                const int64_t dest_tiebrkr = dst;
+                const int64_t aff_penalty = is_preferred ? 0 : zaff_penalty;
+                const int64_t cost = aff_penalty + prog_penalty + dest_tiebrkr;
                 mcmf.add_edge(1 + src, slot_node, 1, cost);
             }
         }
     }
     // Edge 3: Destination slot nodes-->super sink (capacity 1, cost 0).
     for (size_t dst = 0; dst < m; ++dst) {
-        for (size_t slot = 0; slot < max_slots_per_dest; ++slot) {
-            const int slot_node = 1 + n + dst * max_slots_per_dest + slot;
+        for (size_t slot = 0; slot < slots_per_dest; ++slot) {
+            const int slot_node = 1 + n + dst * slots_per_dest + slot;
             mcmf.add_edge(slot_node, super_sink, 1, 0);
         }
     }
@@ -286,7 +294,7 @@ solve_ap_mapping(
                 slot_node < static_cast<int>(1 + n + total_slot_nodes) &&
                 edge.flow > 0) {
                 const size_t slot_idx = slot_node - (1 + n);
-                const size_t dst = slot_idx / max_slots_per_dest;
+                const size_t dst = slot_idx / slots_per_dest;
                 result[src].insert(dst);
             }
         }

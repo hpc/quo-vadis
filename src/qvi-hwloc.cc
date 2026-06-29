@@ -178,12 +178,12 @@ qvi_hwloc::obj_res_class(
         case(QV_HW_OBJ_L4CACHE):
         case(QV_HW_OBJ_L5CACHE):
         case(QV_HW_OBJ_NUMANODE):
-            return QVI_HWLOC_RES_HOST;
+            return QVI_HWLOC_RES_CLASS_HOST;
         case(QV_HW_OBJ_GPU):
         case(QV_HW_OBJ_NIC):
-            return QVI_HWLOC_RES_DEV;
+            return QVI_HWLOC_RES_CLASS_DEV;
         case(QV_HW_OBJ_LAST):
-            return QVI_HWLOC_RES_LAST;
+            return QVI_HWLOC_RES_CLASS_LAST;
         [[unlikely]] default:
             // This is likely an internal development error.
             throw qvi_runtime_error(QV_ERR_INTERNAL);
@@ -794,8 +794,6 @@ qvi_hwloc::m_set_device_affinity_by_pci_bus_id(
     return QV_SUCCESS;
 }
 
-// TODO(skg) Was a high-speed network interface found? If so, use it, else use
-// other network interfaces.
 int
 qvi_hwloc::m_discover_devices(void)
 {
