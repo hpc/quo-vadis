@@ -132,7 +132,7 @@ qvi_hwpool::device_affinities(
     qv_hw_obj_type_t obj_type
 ) const {
     switch (qvi_hwloc::obj_res_class(obj_type)) {
-        case QVI_HWLOC_RES_DEV: {
+        case QVI_HWLOC_RES_CLASS_DEV: {
             std::vector<qvi_hwloc_bitmap> result;
             for (const auto &dev : devices(obj_type)) {
                 result.emplace_back(dev.get()->affinity());
@@ -150,7 +150,7 @@ qvi_hwpool::nobjects(
     qv_hw_obj_type_t obj_type
 ) const {
     switch (qvi_hwloc::obj_res_class(obj_type)) {
-        case QVI_HWLOC_RES_HOST: {
+        case QVI_HWLOC_RES_CLASS_HOST: {
             size_t result;
             const int rc = hwloc.get_nobjs_in_cpuset(
                 obj_type, m_cpu.affinity().cdata(), result

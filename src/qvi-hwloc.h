@@ -50,9 +50,9 @@ const qvi_hwloc_flags_t QVI_HWLOC_TOPO_MASK = 0x0000000000000003LL;
 
 /** Internal resource type identifiers. */
 enum qvi_hwloc_res_class {
-    QVI_HWLOC_RES_HOST = 0,
-    QVI_HWLOC_RES_DEV,
-    QVI_HWLOC_RES_LAST
+    QVI_HWLOC_RES_CLASS_HOST = 0,
+    QVI_HWLOC_RES_CLASS_DEV,
+    QVI_HWLOC_RES_CLASS_LAST
 };
 
 struct qvi_hwloc {

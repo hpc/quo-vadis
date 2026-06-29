@@ -203,14 +203,14 @@ qvi_hwsplit::m_primary_cpuset_for_split(
         // Were we provided a real resource type that we have to split? Or was
         // QV_HW_OBJ_LAST instead provided to indicate that we were called from
         // a split() context.
-        case QVI_HWLOC_RES_LAST:
+        case QVI_HWLOC_RES_CLASS_LAST:
             // Pick PUs as the host resource, since this is
             // the atomic unit at which host resources are split.
             real_type = QV_HW_OBJ_PU;
             // Intentionally fall through.
-        case QVI_HWLOC_RES_HOST:
+        case QVI_HWLOC_RES_CLASS_HOST:
             return {real_type, m_base_hwpool.cpuset()};
-        case QVI_HWLOC_RES_DEV: {
+        case QVI_HWLOC_RES_CLASS_DEV: {
             // The cpuset will be the union over the devices affinities.
             qvi_hwloc_bitmap result;
             for (const auto &dev : m_base_hwpool.devices(real_type)) {
