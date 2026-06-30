@@ -116,7 +116,7 @@ test_4(void)
     qvi_log_info("✓ {} PASSED", __func__);
 }
 
-// n == m, with different src/dst affinity test.
+// n > m, with bipartite affinity.
 static void
 test_5(void)
 {
@@ -145,6 +145,139 @@ test_5(void)
     qvi_log_info("✓ {} PASSED", __func__);
 }
 
+// n > m, with reversed bipartite affinity.
+static void
+test_6(void)
+{
+    std::vector<qvi_hwloc_bitmap> src_affinities = ctu_bitmap_split_pus(8, 4);
+    std::reverse(src_affinities.begin(), src_affinities.end());
+    std::vector<qvi_hwloc_bitmap> dst_affinities = ctu_bitmap_split_pus(8, 2);
+
+    qvi_map_config config = {
+        src_affinities,
+        dst_affinities
+    };
+
+    qvi_map_t map;
+    int rc = qvi_map_affinity_preserving(
+        config, map
+    );
+    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+
+    qvi_map_t expected = {
+        {0, {1}},
+        {1, {1}},
+        {2, {0}},
+        {3, {0}}
+    };
+    ctu_assert(map == expected, "unexpected result");
+
+    qvi_log_info("✓ {} PASSED", __func__);
+}
+
+// n > m, all srcs prefer same destination.
+static void
+test_7(void)
+{
+    std::vector<qvi_hwloc_bitmap> src_affinities = ctu_bitmap_split_pus(6, 6);
+    std::vector<qvi_hwloc_bitmap> dst_affinities;
+    for (size_t i = 0; i < 2; ++i) {
+        dst_affinities.emplace_back(ctu_bitmap_gen_pus(0, 6));
+    }
+
+    qvi_map_config config = {
+        src_affinities,
+        dst_affinities
+    };
+
+    qvi_map_t map;
+    int rc = qvi_map_affinity_preserving(
+        config, map
+    );
+    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+
+    qvi_map_t expected = {
+        {0, {0}},
+        {1, {0}},
+        {2, {0}},
+        {3, {1}},
+        {4, {1}},
+        {5, {1}}
+    };
+    ctu_assert(map == expected, "unexpected result");
+
+    qvi_log_info("✓ {} PASSED", __func__);
+}
+
+// n > m, all srcs prefer same destination.
+static void
+test_8(void)
+{
+    std::vector<qvi_hwloc_bitmap> src_affinities = ctu_bitmap_split_pus(3, 3);
+    std::vector<qvi_hwloc_bitmap> dst_affinities;
+    // dst 0 has no preference.
+    dst_affinities.emplace_back(qvi_hwloc_bitmap());
+    // dst 1 has affinity to all PUs.
+    dst_affinities.emplace_back(ctu_bitmap_gen_pus(0, 3));
+
+    qvi_map_config config = {
+        src_affinities,
+        dst_affinities
+    };
+
+    qvi_map_t map;
+    int rc = qvi_map_affinity_preserving(
+        config, map
+    );
+    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+
+    qvi_map_t expected = {
+        {0, {1}},
+        {1, {1}},
+        {2, {0}}
+    };
+    ctu_assert(map == expected, "unexpected result");
+
+    qvi_log_info("✓ {} PASSED", __func__);
+}
+
+// n == m, first 2 have no preference, second 2 have same preference.
+static void
+test_9(void)
+{
+    std::vector<qvi_hwloc_bitmap> src_affinities = ctu_bitmap_split_pus(4, 4);
+    std::vector<qvi_hwloc_bitmap> dst_affinities;
+    // dst 0 has no preference.
+    dst_affinities.emplace_back(qvi_hwloc_bitmap());
+    // dst 1 has no preference.
+    dst_affinities.emplace_back(qvi_hwloc_bitmap());
+    // dst 2 has affinity to last 2 PUs.
+    dst_affinities.emplace_back(ctu_bitmap_gen_pus(2, 4));
+    // dst 3 has affinity to last 2 PUs.
+    dst_affinities.emplace_back(ctu_bitmap_gen_pus(2, 4));
+
+    qvi_map_config config = {
+        src_affinities,
+        dst_affinities
+    };
+
+    qvi_map_t map;
+    int rc = qvi_map_affinity_preserving(
+        config, map
+    );
+    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+
+    qvi_map_t expected = {
+        {0, {0}},
+        {1, {1}},
+        {2, {2}},
+        {3, {3}}
+    };
+    ctu_assert(map == expected, "unexpected result");
+
+    qvi_log_info("✓ {} PASSED", __func__);
+}
+
 int
 main(void)
 {
@@ -155,6 +288,10 @@ main(void)
     test_3();
     test_4();
     test_5();
+    test_6();
+    test_7();
+    test_8();
+    test_9();
 
     qvi_log_info("✓ All tests PASSED");
     return EXIT_SUCCESS;
