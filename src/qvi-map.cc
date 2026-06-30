@@ -239,7 +239,8 @@ qvi_map_spread(
     }
     if (qvi_unlikely(config.be_verbose)) {
         qvi_log_info(
-            "Packed Mapping done with N={}, M={}", n, m
+            "Spread Mapping done with N={}, M={} (inverted solve={})",
+            n, m, inverted
         );
         qvi_map_emit("Spread" , map);
         qvi_log_info("Spread Mapping Done ===================================");
