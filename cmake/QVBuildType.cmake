@@ -1,5 +1,5 @@
 #
-# Copyright (c)      2020 Triad National Security, LLC
+# Copyright (c) 2020-2026 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c)      2020 Lawrence Livermore National Security, LLC
@@ -9,11 +9,25 @@
 # top-level directory of this distribution.
 #
 
-# Set a default build type if none was specified
+# Set a default build type if none was specified.
 set(default_build_type "Release")
-# TODO(skg) Add a more visible flag that tells us if we are in 'dev' mode
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
     set(default_build_type "Debug")
+    set(QVI_IN_GIT_REPO ON)
+else()
+    set(QVI_IN_GIT_REPO OFF)
+endif()
+
+# Developer mode option.
+option(QV_DEVELOPER_MODE "Toggle developer mode" ${QVI_IN_GIT_REPO})
+
+if(QV_DEVELOPER_MODE)
+    message(
+        STATUS "Developer mode enabled. Adding picky compile flags."
+    )
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall -Wextra")
 endif()
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
