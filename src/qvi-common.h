@@ -48,6 +48,7 @@
 
 #ifdef __cplusplus
 #include "qvi-log.h"
+#include <algorithm>
 #include <chrono>
 #include <csignal>
 #include <filesystem>

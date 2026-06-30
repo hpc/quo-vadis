@@ -33,7 +33,7 @@
 #ifdef __cplusplus
 
 static qvi_hwloc_bitmap
-bitmap_gen_pus(
+ctu_bitmap_gen_pus(
     size_t i,
     size_t n
 ) {
@@ -57,7 +57,7 @@ ctu_bitmap_split_pus(
     for (size_t i = 0; i < npieces; ++i) {
         size_t current_chunk_size = base_chunk_size + (i < remainder ? 1 : 0);
         result.emplace_back(
-            bitmap_gen_pus(current_pos, current_pos + current_chunk_size)
+            ctu_bitmap_gen_pus(current_pos, current_pos + current_chunk_size)
         );
         current_pos += current_chunk_size;
     }
