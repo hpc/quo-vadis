@@ -133,7 +133,6 @@ endif()
 option(QV_GPU_SUPPORT "Toggle GPU support" ON)
 
 if(QV_GPU_SUPPORT)
-    # TODO(skg) Set minimum required version?
     find_package(CUDAToolkit)
     find_package(ROCmSMI)
     if (NOT (CUDAToolkit_FOUND OR ROCmSMI_FOUND))
@@ -149,9 +148,6 @@ else()
     message(CHECK_PASS "disabled")
 endif()
 
-# Specify default build type
-include(cmake/QVBuildType.cmake)
-
 # Specify sanitizers
 include(cmake/QVSanitize.cmake)
 
@@ -164,8 +160,8 @@ configure_file(config.h.in include/${PROJECT_NAME}/config.h)
 # Check datatype sizes
 include(cmake/QVCheckTypes.cmake)
 
-# TODO(skg) Improve
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
+# Specify default build type
+include(cmake/QVBuildType.cmake)
 
 # Internal, third-party packages
 include(cmake/QVSpdLog.cmake)
