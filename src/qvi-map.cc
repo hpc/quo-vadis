@@ -88,7 +88,7 @@ qvi_map_uniq(
             if (seen.contains(dst)) continue;
             // Destination is not mapped, so map it.
             result.insert({src, {dst}});
-            // Make note that we have see that destination.
+            // Make note that we have seen that destination.
             seen.insert(dst);
             // Done with this src.
             break;
@@ -204,7 +204,7 @@ qvi_map_packed(
             "Packed Mapping done with N={}, M={} (inverted solve={})",
             n, m, inverted
         );
-        qvi_map_emit("Packed" , map);
+        qvi_map_emit("Packed", map);
         qvi_log_info("Packed Mapping Done ===================================");
     }
     return QV_SUCCESS;
@@ -242,7 +242,7 @@ qvi_map_spread(
             "Spread Mapping done with N={}, M={} (inverted solve={})",
             n, m, inverted
         );
-        qvi_map_emit("Spread" , map);
+        qvi_map_emit("Spread", map);
         qvi_log_info("Spread Mapping Done ===================================");
     }
     return QV_SUCCESS;
@@ -362,19 +362,19 @@ qvi_map_affinity_preserving(
     // Did we invert the sources and destinations?
     bool inverted = false;
     // The real sources and destinations.
-    auto rsrc = const_cast<aff_type_t *>(&config.src_affinities);
-    auto rdst = const_cast<aff_type_t *>(&config.dst_affinities);
+    aff_type_t rsrc = config.src_affinities;
+    aff_type_t rdst = config.dst_affinities;
     // Our algorithm requires that nsrc >= ndst. If that
     // isn't the case, invert them and note that we did so.
-    if (rsrc->size() < rdst->size()) {
+    if (rsrc.size() < rdst.size()) {
         std::swap(rsrc, rdst);
         inverted = true;
     }
-    const size_t n = rsrc->size();
-    const size_t m = rdst->size();
+    const size_t n = rsrc.size();
+    const size_t m = rdst.size();
     assert(n >= m);
     // Determine the affinities shared between sources and destinations.
-    const auto affinities = qvi_map_calc_affinities(*rsrc, *rdst);
+    const auto affinities = qvi_map_calc_affinities(rsrc, rdst);
     if (qvi_unlikely(config.be_verbose)) {
         qvi_map_emit("APM Affinities", affinities);
     }
