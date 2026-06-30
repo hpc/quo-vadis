@@ -142,6 +142,15 @@ qvi_map_emit(
     const qvi_map_t &map
 );
 
+/**
+ * Takes a vector of colors and clamps their values to [0, ndc)
+ * in place, where ndc is the number of distinct numbers found in values.
+ */
+int
+qvi_map_clamp_colors(
+    std::vector<int> &colors
+);
+
 #endif
 
 /*

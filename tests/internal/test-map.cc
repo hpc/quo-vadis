@@ -408,6 +408,35 @@ test_13(void)
     qvi_log_info("✓ {} PASSED", __func__);
 }
 
+// Test qvi_map_colors.
+static void
+test_14(void)
+{
+    std::vector<int> src_colors = {0, 2, 3, 1};
+    std::vector<qvi_hwloc_bitmap> dst_cpusets = ctu_bitmap_split_pus(4, 4);
+
+    qvi_map_config config = {
+        src_colors,
+        dst_cpusets.size()
+    };
+
+    qvi_map_t map;
+    int rc = qvi_map_colors(
+        config, map
+    );
+    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+
+    qvi_map_t expected = {
+        {0, {0}},
+        {1, {2}},
+        {2, {3}},
+        {3, {1}}
+    };
+    ctu_assert(map == expected, "unexpected result");
+
+    qvi_log_info("✓ {} PASSED", __func__);
+}
+
 int
 main(void)
 {
@@ -426,6 +455,7 @@ main(void)
     test_11();
     test_12();
     test_13();
+    test_14();
 
     qvi_log_info("✓ All tests PASSED");
     return EXIT_SUCCESS;
