@@ -216,7 +216,7 @@ solve_ap_mapping(
     // Node layout:
     // 0: Super source
     // 1...n: Source nodes
-    // n+1...n+(m*max_slots_per_dest): Destination slot nodes
+    // n+1...n+(m*slots_per_dest): Destination slot nodes
     // last: Super sink
     const size_t total_slot_nodes = m * slots_per_dest;
     const int super_source = 0;

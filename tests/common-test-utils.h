@@ -30,6 +30,42 @@
 #include <sys/syscall.h>
 #include <unistd.h>
 
+#ifdef __cplusplus
+
+static qvi_hwloc_bitmap
+bitmap_gen_pus(
+    size_t i,
+    size_t n
+) {
+    qvi_hwloc_bitmap result;
+    for (size_t ii = i; ii < n; ++ii) {
+        hwloc_bitmap_set(result.data(), ii);
+    }
+    return result;
+}
+
+static inline std::vector<qvi_hwloc_bitmap>
+ctu_bitmap_split_pus(
+    size_t npus,
+    size_t npieces
+) {
+    std::vector<qvi_hwloc_bitmap> result;
+    const size_t base_chunk_size = npus / npieces;
+    const size_t remainder = npus % npieces;
+    size_t current_pos = 0;
+
+    for (size_t i = 0; i < npieces; ++i) {
+        size_t current_chunk_size = base_chunk_size + (i < remainder ? 1 : 0);
+        result.emplace_back(
+            bitmap_gen_pus(current_pos, current_pos + current_chunk_size)
+        );
+        current_pos += current_chunk_size;
+    }
+    return result;
+}
+
+#endif
+
 #define CTU_STRINGIFY(x) #x
 #define CTU_TOSTRING(x)  CTU_STRINGIFY(x)
 
@@ -45,6 +81,13 @@ do {                                                                           \
     fprintf(stderr, "\n");                                                     \
     fflush(stderr);                                                            \
     exit(EXIT_FAILURE);                                                        \
+} while (0)
+
+#define ctu_assert(condition, ...)                                             \
+do {                                                                           \
+    if (!(condition)) {                                                        \
+        ctu_panic(__VA_ARGS__);                                                \
+    }                                                                          \
 } while (0)
 
 typedef enum {

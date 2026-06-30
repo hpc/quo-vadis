@@ -1,6 +1,6 @@
 # -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*-
 #
-# Copyright (c) 2020-2025 Triad National Security, LLC
+# Copyright (c) 2020-2026 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -34,6 +34,23 @@ add_test(
 ################################################################################
 ################################################################################
 add_executable(
+    test-map
+    test-map.cc
+)
+
+target_link_libraries(
+    test-map
+    quo-vadis
+)
+
+add_test(
+    map
+    test-map
+)
+
+################################################################################
+################################################################################
+add_executable(
     test-rmi
     test-rmi.cc
 )
@@ -60,6 +77,7 @@ add_test(
 set_tests_properties(
     hwloc
     rmi
+    map
     PROPERTIES
       TIMEOUT 60
       LABELS "core"
