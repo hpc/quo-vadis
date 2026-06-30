@@ -278,6 +278,136 @@ test_9(void)
     qvi_log_info("✓ {} PASSED", __func__);
 }
 
+// n == 2m, map packed
+static void
+test_10(void)
+{
+    size_t nsrc = 10;
+    size_t ndst = 5;
+
+    qvi_map_config config = {
+        nsrc,
+        ndst
+    };
+
+    qvi_map_t map;
+    int rc = qvi_map_packed(
+        config, map
+    );
+    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+
+    qvi_map_t expected = {
+        {0, {0}},
+        {1, {0}},
+        {2, {1}},
+        {3, {1}},
+        {4, {2}},
+        {5, {2}},
+        {6, {3}},
+        {7, {3}},
+        {8, {4}},
+        {9, {4}}
+    };
+    ctu_assert(map == expected, "unexpected result");
+
+    qvi_log_info("✓ {} PASSED", __func__);
+}
+
+// n < m, map odd packed
+static void
+test_11(void)
+{
+    size_t nsrc = 5;
+    size_t ndst = 7;
+
+    qvi_map_config config = {
+        nsrc,
+        ndst
+    };
+
+    qvi_map_t map;
+    int rc = qvi_map_packed(
+        config, map
+    );
+    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+
+    qvi_map_t expected = {
+        {0, {0, 1}},
+        {1, {2, 3}},
+        {2, {4}},
+        {3, {5}},
+        {4, {6}}
+    };
+    ctu_assert(map == expected, "unexpected result");
+
+    qvi_log_info("✓ {} PASSED", __func__);
+}
+
+// n == 2m, map spread
+static void
+test_12(void)
+{
+    size_t nsrc = 10;
+    size_t ndst = 5;
+
+    qvi_map_config config = {
+        nsrc,
+        ndst
+    };
+
+    qvi_map_t map;
+    int rc = qvi_map_spread(
+        config, map
+    );
+    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+
+    qvi_map_t expected = {
+        {0, {0}},
+        {1, {1}},
+        {2, {2}},
+        {3, {3}},
+        {4, {4}},
+        {5, {0}},
+        {6, {1}},
+        {7, {2}},
+        {8, {3}},
+        {9, {4}}
+    };
+    ctu_assert(map == expected, "unexpected result");
+
+    qvi_log_info("✓ {} PASSED", __func__);
+}
+
+// n < m, map odd spread
+static void
+test_13(void)
+{
+    size_t nsrc = 5;
+    size_t ndst = 7;
+
+    qvi_map_config config = {
+        nsrc,
+        ndst
+    };
+
+    qvi_map_t map;
+    int rc = qvi_map_spread(
+        config, map
+    );
+    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+
+    qvi_map_t expected = {
+        {0, {0, 5}},
+        {1, {1, 6}},
+        {2, {2}},
+        {3, {3}},
+        {4, {4}}
+    };
+    ctu_assert(map == expected, "unexpected result");
+
+    qvi_log_info("✓ {} PASSED", __func__);
+}
+
 int
 main(void)
 {
@@ -292,6 +422,10 @@ main(void)
     test_7();
     test_8();
     test_9();
+    test_10();
+    test_11();
+    test_12();
+    test_13();
 
     qvi_log_info("✓ All tests PASSED");
     return EXIT_SUCCESS;

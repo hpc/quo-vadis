@@ -165,9 +165,18 @@ qvi_map_packed(
     const qvi_map_config &config,
     qvi_map_t &map
 ) {
-    const size_t n = config.nsrc;
-    const size_t m = config.ndst;
-    assert(n >= m && "n must be >= m");
+    if (qvi_unlikely(config.be_verbose)) {
+        qvi_log_info("Packed Mapping Started ================================");
+    }
+    // Did we invert the sources and destinations?
+    bool inverted = false;
+    size_t n = config.nsrc;
+    size_t m = config.ndst;
+    // More sources than destinations?
+    if (n < m) {
+        std::swap(n, m);
+        inverted = true;
+    }
     // Nothing to do.
     if (n == 0 || m == 0) {
         map.clear();
@@ -185,6 +194,19 @@ qvi_map_packed(
             map[source_id++].insert(dest_id);
         }
     }
+    // If we did an inverted solve, invert the
+    // result to match the original n and m.
+    if (inverted) {
+        map = invert_map(map);
+    }
+    if (qvi_unlikely(config.be_verbose)) {
+        qvi_log_info(
+            "Packed Mapping done with N={}, M={} (inverted solve={})",
+            n, m, inverted
+        );
+        qvi_map_emit("Packed" , map);
+        qvi_log_info("Packed Mapping Done ===================================");
+    }
     return QV_SUCCESS;
 }
 
@@ -193,9 +215,34 @@ qvi_map_spread(
     const qvi_map_config &config,
     qvi_map_t &map
 ) {
-    for (size_t srci = 0, dsti = 0; srci < config.nsrc; ++srci) {
+    if (qvi_unlikely(config.be_verbose)) {
+        qvi_log_info("Spread Mapping Started ================================");
+    }
+
+    // Did we invert the sources and destinations?
+    bool inverted = false;
+    size_t n = config.nsrc;
+    size_t m = config.ndst;
+    // More sources than destinations?
+    if (n < m) {
+        std::swap(n, m);
+        inverted = true;
+    }
+    for (size_t srci = 0, dsti = 0; srci < n; ++srci) {
         // Mod to loop around destination IDs.
-        map[srci].insert((dsti++) % config.ndst);
+        map[srci].insert((dsti++) % m);
+    }
+    // If we did an inverted solve, invert the
+    // result to match the original n and m.
+    if (inverted) {
+        map = invert_map(map);
+    }
+    if (qvi_unlikely(config.be_verbose)) {
+        qvi_log_info(
+            "Packed Mapping done with N={}, M={}", n, m
+        );
+        qvi_map_emit("Spread" , map);
+        qvi_log_info("Spread Mapping Done ===================================");
     }
     return QV_SUCCESS;
 }
