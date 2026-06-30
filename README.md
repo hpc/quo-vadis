@@ -43,7 +43,7 @@ cmake -DQV_SANITIZE=address ..
 | Option              | Default | Comment                                      |
 | ------------------- | ------- | -------------------------------------------- |
 | QV_SANITIZE         | none    | Available: address;thread;undefined          |
-
+| QV_DEVELOPER_MODE   | depends | If in repo, ON by default; OFF otherwise     |
 
 ## Testing
 ```shell
