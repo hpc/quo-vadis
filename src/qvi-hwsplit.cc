@@ -313,7 +313,7 @@ qvi_hwsplit::m_split(void)
     // Ensure that every task is accounted for in mapping.
     if (qvi_unlikely(tthr_map.size() != m_group_size)) {
         qvi_log_error(
-            "Invalid coloring state: tthr_map.size()={} but m_group_size={}",
+            "Invalid split state: tthr_map.size()={} but m_group_size={}",
             tthr_map.size(), m_group_size
         );
         return QV_ERR_INTERNAL;
