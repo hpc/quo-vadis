@@ -21,6 +21,7 @@ static qvi_map_t
 invert_map(
     const qvi_map_t &original
 ) {
+    int foo;
     qvi_map_t inverted;
     for (const auto &[key, values] : original) {
         for (size_t value : values) {
