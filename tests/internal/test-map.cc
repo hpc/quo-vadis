@@ -209,7 +209,7 @@ test_7(void)
     qvi_log_info("✓ {} PASSED", __func__);
 }
 
-// n > m, all srcs prefer same destination.
+// n > m, non-overlapping src-->dst preferences.
 static void
 test_8(void)
 {

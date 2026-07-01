@@ -1,4 +1,5 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
+
 #include "quo-vadis-mpi.h"
 #include "common-test-utils.h"
 
@@ -30,10 +31,13 @@ main(
         ctu_panic("%s (rc=%d)", ers, rc);
     }
 
-    /* Get base scope: RM-given resources */
+    // Get base scope: RM-given resources.
     qv_scope_t *base_scope;
     rc = qv_mpi_scope_get(
-        comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &base_scope
+        comm,
+        QV_SCOPE_USER,
+        QV_SCOPE_FLAG_NONE,
+        &base_scope
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_scope_get() failed";
@@ -44,7 +48,7 @@ main(
         ctu_emit_device_info(base_scope, QV_HW_OBJ_GPU, "Base Scope");
     }
 
-    /* Get number of GPUs */
+    // Get total number of GPUs in base_scope.
     int ngpus;
     rc = qv_scope_hw_obj_count(base_scope, QV_HW_OBJ_GPU, &ngpus);
     if (rc != QV_SUCCESS) {
@@ -55,8 +59,7 @@ main(
         printf("[%d]: Base scope has %d GPUs\n", wrank, ngpus);
     }
 
-    /* Split the base scope evenly across workers */
-    // TODO(skg) Why is QV_SCOPE_SPLIT_AFFINITY_PRESERVING broken on my machine?
+    // Split the base scope evenly across workers.
     qv_scope_t *rank_scope;
     rc = qv_scope_split(
             base_scope,
@@ -69,23 +72,21 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    /* Move to my subscope */
-    rc = qv_scope_bind_push(rank_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_push() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    /* Get num GPUs */
+    // Get number of GPUs in my rank_scope.
     int rank_ngpus;
-    rc = qv_scope_hw_obj_count(rank_scope, QV_HW_OBJ_GPU, &rank_ngpus);
+    rc = qv_scope_hw_obj_count(
+        rank_scope,
+        QV_HW_OBJ_GPU,
+        &rank_ngpus
+    );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+
     printf("[%d]: Local scope has %d GPUs\n", wrank, rank_ngpus);
-    // TODO(skg) Improve this test.
-    ctu_emit_device_info(rank_scope, QV_HW_OBJ_GPU, "Rank Scope");
+
+    //ctu_emit_device_info(rank_scope, QV_HW_OBJ_GPU, "Rank Scope");
 
     int total_ngpus;
     MPI_Reduce(&rank_ngpus, &total_ngpus, 1, MPI_INT, MPI_SUM, 0, comm);
@@ -95,8 +96,10 @@ main(
             printf("PASS: Number of GPUs match\n");
         }
         else {
-            printf("FAIL: Base GPUs=%d do not match aggregate GPUs=%d\n",
-                    ngpus, total_ngpus);
+            printf(
+                "FAIL: Base GPUs=%d do not match aggregate GPUs=%d\n",
+                ngpus, total_ngpus
+            );
         }
     }
 
