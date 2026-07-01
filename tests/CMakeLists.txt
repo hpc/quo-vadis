@@ -16,6 +16,26 @@
 set(QV_START_QVD_WPORT "../src/quo-vadisd --no-daemonize --port 55999")
 set(QV_START_QVD_WENV "../src/quo-vadisd --no-daemonize")
 
+add_library(
+    common-test-utils
+    common-test-utils.h
+    common-test-utils.cc
+)
+
+target_include_directories(
+    common-test-utils
+    PRIVATE
+      $<TARGET_PROPERTY:quo-vadis-core,INCLUDE_DIRECTORIES>
+      $<$<BOOL:${MPI_FOUND}>:${MPI_C_INCLUDE_DIRS}>
+)
+
+target_link_libraries(
+    common-test-utils
+    PRIVATE
+      quo-vadis
+      $<$<BOOL:${MPI_FOUND}>:quo-vadis-mpi>
+)
+
 add_executable(
     test-process-scopes
     test-process-scopes.c
@@ -23,6 +43,7 @@ add_executable(
 
 target_link_libraries(
     test-process-scopes
+    common-test-utils
     quo-vadis
 )
 
@@ -33,6 +54,7 @@ add_executable(
 
 target_link_libraries(
     test-process-hardware
+    common-test-utils
     quo-vadis
 )
 
@@ -109,6 +131,7 @@ if(MPI_FOUND)
 
     target_link_libraries(
         test-mpi-init
+        common-test-utils
         quo-vadis-mpi
     )
 
@@ -119,6 +142,7 @@ if(MPI_FOUND)
 
     target_link_libraries(
         test-mpi-api
+        common-test-utils
         quo-vadis-mpi
     )
 
@@ -129,6 +153,7 @@ if(MPI_FOUND)
 
     target_link_libraries(
         test-mpi-scopes
+        common-test-utils
         quo-vadis-mpi
     )
 
@@ -139,6 +164,7 @@ if(MPI_FOUND)
 
     target_link_libraries(
         test-mpi-scopes-affinity-preserving
+        common-test-utils
         quo-vadis-mpi
     )
 
@@ -149,6 +175,7 @@ if(MPI_FOUND)
 
     target_link_libraries(
         test-mpi-phases
+        common-test-utils
         quo-vadis-mpi
     )
 
@@ -159,6 +186,7 @@ if(MPI_FOUND)
 
     target_link_libraries(
         test-progress-thread
+        common-test-utils
         quo-vadis
         quo-vadis-mpi
     )
@@ -181,6 +209,7 @@ if(MPI_FOUND)
 
     target_link_libraries(
         test-mpi-scope-create
+        common-test-utils
         quo-vadis-mpi
     )
 
@@ -191,6 +220,7 @@ if(MPI_FOUND)
 
     target_link_libraries(
         test-mpi-getdev
+        common-test-utils
         quo-vadis-mpi
     )
 
@@ -201,6 +231,7 @@ if(MPI_FOUND)
 
     target_link_libraries(
         test-mpi-dev-split
+        common-test-utils
         quo-vadis-mpi
     )
 

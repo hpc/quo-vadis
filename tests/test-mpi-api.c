@@ -143,7 +143,7 @@ main(
     }
 
     if (wrank == 0) {
-        printf("Succcess!\n");
+        printf("Success!\n");
     }
 
     MPI_Finalize();
