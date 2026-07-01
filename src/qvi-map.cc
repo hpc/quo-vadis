@@ -69,7 +69,7 @@ format_assignments(
         }
         oss << "}},\n";
     }
-    // Move the put pointer back by 2 character relative to the end
+    // Move the put pointer back by 2 characters relative to the end
     // to remove the unneeded ",\n" for the last item in the map.
     oss.seekp(-2, std::ios_base::end);
     oss << "\n}";
