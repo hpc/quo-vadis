@@ -126,36 +126,31 @@ qvi_map_colors(
     const qvi_map_config &config,
     qvi_map_t &map
 ) {
-    // Note: the array index i of fcolors is the color requested by task i.
-    // Determine the number of distinct colors provided in the colors array.
-    std::set<int> color_set(config.src_colors.begin(), config.src_colors.end());
-    // For convenience, we convert the set to a vector for later use.
-    std::vector<int> color_vec(color_set.begin(), color_set.end());
-    // Maps a given color to its corresponding set index.
-    // For example, given colors = {3, 5, 3, 4}, we get the following:
-    // color_set = {3, 4, 5}, color_vec = {3, 4, 5}
-    // color_set_index (csi) = {0, 1, 2}, since we have three distinct colors.
-    // color2csi = {3:0, 4:1, 5:2}.
-    std::map<int, size_t> color2csi;
-    for (size_t i = 0; i < color_vec.size(); ++i) {
-        color2csi.insert({color_vec[i], i});
+    if (qvi_unlikely(config.be_verbose)) {
+        qvi_log_info("Color Mapping Started =================================");
     }
-    // Create a mapping of color_set indices to cpuset indices.
-    qvi_map_t csi2cpui;
-    // We map packed here because we are assuming that like or near colors
-    // should be mapped close together.
-    qvi_map_config packed_config = {
-        color_set.size(),
-        config.ndst
-    };
-    int rc = qvi_map_packed(packed_config, csi2cpui);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Now map the task colors to their respective cpusets.
-    for (const auto src : config.src_colors) {
-        const size_t csis = color2csi.at(config.src_colors[src]);
-        for (const auto dst : csi2cpui.at(csis)) {
-            map[src].insert(dst);
-        }
+    auto &src_colors = config.src_colors;
+    const size_t n = src_colors.size();
+    const size_t m = config.ndst;
+    // These should be clamped: 0 to n-1, so verify that.
+    const bool all_in_range = std::ranges::all_of(src_colors, [n](int val) {
+        return val >= 0 && val < static_cast<int>(n);
+    });
+    // This is our problem, so throw so we can easily find it.
+    if (qvi_unlikely(!all_in_range)) {
+        throw qvi_runtime_error(QV_ERR_INTERNAL);
+    }
+    // Map the color index to its color value,
+    // which corresponds to the destination index.
+    for (size_t i = 0; i < n; ++i) {
+        map[i].insert(src_colors[i]);
+    }
+    if (qvi_unlikely(config.be_verbose)) {
+        qvi_log_info(
+            "Color Mapping done with N={}, M={}", n, m
+        );
+        qvi_map_emit("Color Mapping", map);
+        qvi_log_info("Color Mapping Done ====================================");
     }
     return QV_SUCCESS;
 }
@@ -404,7 +399,7 @@ qvi_map_affinity_preserving(
         qvi_log_info(
             "APM done with N={}, M={} (inverted solve={})", n, m, inverted
         );
-        qvi_map_emit("APM" , map);
+        qvi_map_emit("APM", map);
         qvi_log_info("APM Mapping Done ======================================");
     }
     return QV_SUCCESS;
@@ -416,6 +411,25 @@ qvi_map_emit(
     const qvi_map_t &map
 ) {
     qvi_log_info("{} assignments:\n{}", name, format_assignments(map));
+}
+
+int
+qvi_map_clamp_colors(
+    std::vector<int> &colors
+) {
+    // Recall: sets are ordered.
+    const std::set<int> colorset(colors.begin(), colors.end());
+    // Maps the input vector colors to their clamped values.
+    std::map<int, int> color2clamped;
+    // color': the clamped color.
+    int colorp = 0;
+    for (const auto val : colorset) {
+        color2clamped.insert({val, colorp++});
+    }
+    for (size_t i = 0; i < colors.size(); ++i) {
+        colors[i] = color2clamped[colors[i]];
+    }
+    return QV_SUCCESS;
 }
 
 /*

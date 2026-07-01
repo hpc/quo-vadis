@@ -124,29 +124,6 @@ pool_release_cpus_by_cpuset(
 // is zero, then the resource is not in use. For devices, we can take a similar
 // approach using the device IDs instead of the bit positions.
 
-/**
- * Takes a vector of colors and clamps their values to [0, ndc)
- * in place, where ndc is the number of distinct numbers found in values.
- */
-static int
-clamp_colors(
-    std::vector<int> &colors
-) {
-    // Recall: sets are ordered.
-    const std::set<int> colorset(colors.begin(), colors.end());
-    // Maps the input vector colors to their clamped values.
-    std::map<int, int> colors2clamped;
-    // color': the clamped color.
-    int colorp = 0;
-    for (const auto val : colorset) {
-        colors2clamped.insert({val, colorp++});
-    }
-    for (size_t i = 0; i < colors.size(); ++i) {
-        colors[i] = colors2clamped[colors[i]];
-    }
-    return QV_SUCCESS;
-}
-
 static std::string
 format_coloring(
     const std::vector<int> &colors
@@ -264,7 +241,7 @@ qvi_hwsplit::m_determine_mapping(
     bool auto_split = false;
     // All colors are positive.
     if (tcolors.front() >= 0) {
-        rc = clamp_colors(m_colors);
+        rc = qvi_map_clamp_colors(m_colors);
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     }
     // Some values are negative.

@@ -20,9 +20,6 @@
 #include "qvi-map.h"
 #include "qvi-scope.h"
 
-// TODO Consider renaming members that can only be called by the root something
-// obvious.
-
 /**
  * A collection of information relevant to split operations requiring aggregated
  * (e.g., global) knowledge to perform a split.
