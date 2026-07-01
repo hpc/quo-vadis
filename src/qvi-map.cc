@@ -133,13 +133,11 @@ qvi_map_colors(
     const size_t n = src_colors.size();
     const size_t m = config.ndst;
     // These should be clamped: 0 to n-1, so verify that.
-    const bool all_in_range = std::ranges::all_of(src_colors, [n](int val) {
-        return val >= 0 && val < static_cast<int>(n);
-    });
-    // This is our problem, so throw so we can easily find it.
-    if (qvi_unlikely(!all_in_range)) {
-        throw qvi_runtime_error(QV_ERR_INTERNAL);
-    }
+    assert(
+        std::ranges::all_of(src_colors, [n](int val) {
+            return val >= 0 && val < static_cast<int>(n);
+        })
+    );
     // Map the color index to its color value,
     // which corresponds to the destination index.
     for (size_t i = 0; i < n; ++i) {
