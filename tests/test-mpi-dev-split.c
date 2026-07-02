@@ -109,10 +109,12 @@ main(
         ers = "qv_scope_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf(
+
+    ctu_dprintf(
         "=> [%d] Split@Dev: got %d %s(s), running on %s\n",
         wrank, my_ndevs, dev_name, binds
     );
+
     free(binds);
 
     for (int i = 0; i < my_ndevs; ++i) {
@@ -131,13 +133,15 @@ main(
             ers = "qv_scope_device_id_get() failed";
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
-        printf(
+        ctu_dprintf(
             "   [%d] Dev %d: Ordinal = %s, PCI Bus ID = %s\n",
             wrank, i, ordid, pciid
         );
         free(pciid);
         free(ordid);
     }
+
+    ctu_dflush();
 
     rc = qv_scope_free(dev_scope);
     if (rc != QV_SUCCESS) {
