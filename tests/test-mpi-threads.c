@@ -14,8 +14,7 @@ thread_work(
     void *arg
 ) {
     // Do work.
-    printf("Hello from pid=%d,tid=%d\n", getpid(), ctu_gettid());
-    ctu_emit_task_bind(arg);
+    ctu_emit_task_bind(arg, CTU_SCOPE_KIND_PROCESS);
     return NULL;
 }
 

@@ -14,11 +14,9 @@
 #include "common-test-utils.h"
 
 #include "quo-vadis/config.h"
-#ifdef MPI_FOUND
-#include "quo-vadis-mpi.h"
-#endif
 
 #include <mutex>
+#include <string>
 
 // Helps with deterministic task output: a
 // deferred output stream implementation.
@@ -27,10 +25,12 @@ private:
     std::mutex m_mutex;
     char *m_buff = nullptr;
     dos(void) = default;
-    ~dos(void) {
+    ~dos(void)
+    {
         free(m_buff);
         m_buff = NULL;
     }
+
 public:
     static dos &
     the_dos(void) {
@@ -74,7 +74,10 @@ public:
     {
         std::scoped_lock lock(m_mutex);
 
-        printf("%s", m_buff);
+        if (m_buff) {
+            printf("%s", m_buff);
+            fflush(stdout);
+        }
         free(m_buff);
         m_buff = nullptr;
     }
@@ -97,231 +100,654 @@ ctu_dflush(void)
     dos::the_dos().flush();
 }
 
+struct odos {
+protected:
+    std::string m_id;
+
+public:
+    odos(void)
+    {
+        m_id = std::to_string(ctu_gettid());
+    }
+
+    ~odos(void)
+    {
+        ctu_dflush();
+    }
+
+    virtual void pvadd(
+        bool pred,
+        const char *format,
+        va_list args
+    ) {
+        if (pred) dos::the_dos().vadd(format, args);
+    }
+
+    virtual void vadd(
+        const char *format,
+        va_list args
+    ) {
+        pvadd(true, format, args);
+    }
+
+    virtual void padd(
+        bool pred,
+        const char *format,
+        ...
+    ) {
+        va_list args;
+        va_start(args, format);
+        pvadd(pred, format, args);
+        va_end(args);
+    }
+
+    virtual void add(
+        const char *format,
+        ...
+    ) {
+        va_list args;
+        va_start(args, format);
+        vadd(format, args);
+        va_end(args);
+    }
+
+    virtual std::string
+    id(void) {
+        return m_id;
+    }
+};
+
 #ifdef MPI_FOUND
 
-typedef struct {
+#include "quo-vadis-mpi.h"
+
+struct mpi_odos : odos {
+private:
+    const int tok_tag = 575;
     MPI_Comm comm;
-    int rank;
-    int size;
-    int tok_tag;
-    bool initialized;
-} ctu_mpi_ordered_printer_t;
+    int rank = -1;
+    int size = -1;
+    bool initialized = false;
 
-static inline void
-ctu_mpi_ordered_printer_init(
-    ctu_scope_reporter_t *reporter,
-    qv_scope_t *scope
-) {
-    int rc = MPI_SUCCESS;
-    const char *ers = NULL;
-
-    ctu_mpi_ordered_printer_t *printer = (ctu_mpi_ordered_printer_t *)reporter->printer;
-
-    do {
-        printer->initialized = false;
-        printer->tok_tag = 575;
-
-        rc = qv_mpi_scope_comm_dup(scope, &printer->comm);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_mpi_scope_comm_dup";
-            rc = MPI_ERR_COMM;
-            break;
+    void
+    wait_token(void) {
+        char token = 'a';
+        // Wait for token from previous rank.
+        if (rank > 0) {
+            const int rc = MPI_Recv(
+                &token, 1, MPI_CHAR, rank - 1,
+                tok_tag, comm, MPI_STATUS_IGNORE
+            );
+            if (rc != MPI_SUCCESS) {
+                ctu_panic("%s failed (rc=%d)", "MPI_Recv", rc);
+            }
         }
+    }
 
-        rc = MPI_Comm_rank(printer->comm, &printer->rank);
+    void
+    release_token(void)
+    {
+        char token = 'a';
+        // Send token to next rank.
+        if (rank < size - 1) {
+            const int rc = MPI_Send(
+                &token, 1, MPI_CHAR, rank + 1, tok_tag, comm
+            );
+            if (rc != MPI_SUCCESS) {
+                ctu_panic("%s failed (rc=%d)", "MPI_Send", rc);
+            }
+        }
+    }
+
+public:
+    mpi_odos(
+        qv_scope_t *scope
+    ) {
+        int rc = MPI_SUCCESS;
+        const char *ers = NULL;
+        do {
+            initialized = false;
+
+            rc = qv_mpi_scope_comm_dup(scope, &comm);
+            if (rc != QV_SUCCESS) {
+                ers = "qv_mpi_scope_comm_dup";
+                rc = MPI_ERR_COMM;
+                break;
+            }
+
+            rc = MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+            if (rc != MPI_SUCCESS) {
+                ers = "MPI_Comm_rank";
+                break;
+            }
+
+            rc = MPI_Comm_size(comm, &size);
+            if (rc != MPI_SUCCESS) {
+                ers = "MPI_Comm_size";
+                break;
+            }
+
+            m_id = std::to_string(rank);
+            initialized = true;
+        } while (0);
+
         if (rc != MPI_SUCCESS) {
-            ers = "MPI_Comm_rank";
-            break;
+            ctu_panic("%s failed (rc=%d)", ers, rc);
         }
+    }
 
-        rc = MPI_Comm_size(printer->comm, &printer->size);
+    ~mpi_odos(void) {
+        int rc = MPI_SUCCESS;
+        const char *ers = NULL;
+
+        if (!initialized) return;
+        // Ensure all pending operations are complete.
+        do {
+            rc = MPI_Barrier(comm);
+            if (rc != MPI_SUCCESS) {
+                ers = "MPI_Barrier";
+                break;
+            }
+
+            rc = MPI_Comm_free(&comm);
+            if (rc != MPI_SUCCESS) {
+                ers = "MPI_Comm_free";
+                break;
+            }
+            dos::the_dos().flush();
+            initialized = false;
+        } while (0);
         if (rc != MPI_SUCCESS) {
-            ers = "MPI_Comm_size";
-            break;
+            ctu_panic("%s failed (rc=%d)", ers, rc);
         }
-
-        printer->initialized = true;
-    } while (0);
-
-    if (rc != MPI_SUCCESS) {
-        ctu_panic("%s failed (rc=%d)", ers, rc);
     }
-}
 
-static inline int
-ctu_mpi_ordered_printer_id(
-    ctu_scope_reporter_t *reporter
-) {
-    ctu_mpi_ordered_printer_t *printer = (ctu_mpi_ordered_printer_t *)reporter->printer;
-    return printer->rank;
-}
-
-static inline void
-ctu_mpi_ordered_printer_fini(
-    ctu_scope_reporter_t *reporter
-) {
-    int rc = MPI_SUCCESS;
-    const char *ers = NULL;
-
-    ctu_mpi_ordered_printer_t *printer = (ctu_mpi_ordered_printer_t *)reporter->printer;
-
-    if (!printer || !printer->initialized) return;
-    // Ensure all pending operations are complete.
-    do {
-        rc = MPI_Barrier(printer->comm);
+    virtual void pvadd(
+        bool pred,
+        const char *format,
+        va_list args
+    ) override {
+        // Wait for everyone to complete last operation.
+        int rc = MPI_Barrier(comm);
         if (rc != MPI_SUCCESS) {
-            ers = "MPI_Barrier";
-            break;
+            ctu_panic("%s failed (rc=%d)", "MPI_Barrier", rc);
         }
-
-        rc = MPI_Comm_free(&printer->comm);
+        // Wait for my turn.
+        wait_token();
+        if (pred) dos::the_dos().vadd(format, args);
+        // Pass it on to the next one.
+        release_token();
+        // Wait for everyone to complete print.
+        rc = MPI_Barrier(comm);
         if (rc != MPI_SUCCESS) {
-            ers = "MPI_Comm_free";
-            break;
-        }
-        printer->initialized = false;
-        free(printer);
-    } while (0);
-    if (rc != MPI_SUCCESS) {
-        ctu_panic("%s failed (rc=%d)", ers, rc);
-    }
-}
-
-static inline void
-ctu_mpi_wait_token(
-    ctu_scope_reporter_t *reporter
-) {
-    ctu_mpi_ordered_printer_t *printer = (ctu_mpi_ordered_printer_t *)reporter->printer;
-
-    char token = 'a';
-    // Wait for token from previous rank.
-    if (printer->rank > 0) {
-        const int rc = MPI_Recv(
-            &token, 1, MPI_CHAR, printer->rank - 1,
-            printer->tok_tag, printer->comm, MPI_STATUS_IGNORE
-        );
-        if (rc != MPI_SUCCESS) {
-            ctu_panic("%s failed (rc=%d)", "MPI_Recv", rc);
+            ctu_panic("%s failed (rc=%d)", "MPI_Barrier", rc);
         }
     }
-}
 
-static inline void
-ctu_mpi_release_token(
-    ctu_scope_reporter_t *reporter
-) {
-    ctu_mpi_ordered_printer_t *printer = (ctu_mpi_ordered_printer_t *)reporter->printer;
-
-    char token = 'a';
-    // Send token to next rank.
-    if (printer->rank < printer->size - 1) {
-        const int rc = MPI_Send(
-            &token, 1, MPI_CHAR, printer->rank + 1,
-            printer->tok_tag, printer->comm
-        );
-        if (rc != MPI_SUCCESS) {
-            ctu_panic("%s failed (rc=%d)", "MPI_Send", rc);
-        }
+    void
+    vadd(
+        const char *format,
+        va_list args
+    ) override {
+        pvadd(true, format, args);
     }
-}
 
-static inline void
-ctu_mpi_ordered_printer_vpprintf(
-    struct ctu_scope_reporter *reporter,
-    bool print,
-    const char *format,
-    va_list args
-) {
-    ctu_mpi_ordered_printer_t *printer = (ctu_mpi_ordered_printer_t *)reporter->printer;
+    virtual void padd(
+        bool pred,
+        const char *format,
+        ...
+    ) override {
+        va_list args;
+        va_start(args, format);
+        pvadd(pred, format, args);
+        va_end(args);
+    }
 
-    if (!printer || !printer->initialized || !format) {
-        return;
+    void
+    add(
+        const char *format,
+        ...
+    ) override {
+        va_list args;
+        va_start(args, format);
+        vadd(format, args);
+        va_end(args);
     }
-    // Wait for everyone to complete last operation.
-    int rc = MPI_Barrier(printer->comm);
-    if (rc != MPI_SUCCESS) {
-        ctu_panic("%s failed (rc=%d)", "MPI_Barrier", rc);
-    }
-    // Wait for my turn.
-    ctu_mpi_wait_token(reporter);
-    if (print) {
-        // Print formatted message.
-        vprintf(format, args);
-        fflush(stdout);
-    }
-    // Pass it on to the next one.
-    ctu_mpi_release_token(reporter);
-    // Wait for everyone to complete print.
-    rc = MPI_Barrier(printer->comm);
-    if (rc != MPI_SUCCESS) {
-        ctu_panic("%s failed (rc=%d)", "MPI_Barrier", rc);
-    }
-}
-
-static inline void
-ctu_mpi_ordered_printer_printf(
-    ctu_scope_reporter_t *reporter,
-    const char *format,
-    ...
-) {
-    va_list args;
-    va_start(args, format);
-    ctu_mpi_ordered_printer_vpprintf(reporter, true, format, args);
-    va_end(args);
-}
-
-static inline void
-ctu_mpi_ordered_printer_pprintf(
-    struct ctu_scope_reporter *reporter,
-    bool print,
-    const char *format,
-    ...
-) {
-    va_list args;
-    va_start(args, format);
-    ctu_mpi_ordered_printer_vpprintf(reporter, print, format, args);
-    va_end(args);
-}
+};
 
 #endif // #ifdef MPI_FOUND
 
-ctu_scope_reporter_t *
-ctu_reporter_alloc(
+odos
+ctu_reporter(
     qv_scope_t *scope,
     ctu_scope_kind_t kind
 ) {
-    ctu_scope_reporter_t *reporter = (ctu_scope_reporter_t *)calloc(1, sizeof(*reporter));
-    if (!reporter) ctu_panic("OOR!");
-
     switch (kind) {
-        case CTU_SCOPE_KIND_PROCESS:
-        case CTU_SCOPE_KIND_PTHREAD:
-        case CTU_SCOPE_KIND_OPENMP:
-            reporter->printer = NULL;
-            reporter->init = &ctu_default_printer_init;
-            reporter->id = &ctu_default_printer_id;
-            reporter->fini = &ctu_default_printer_fini;
-            reporter->printf = &ctu_default_printer_printf;
-            reporter->pprintf = &ctu_default_printer_pprintf;
-            break;
-        case CTU_SCOPE_KIND_MPI:
-#ifdef QUO_VADIS_MPI
-            reporter->printer = calloc(1, sizeof(ctu_mpi_ordered_printer_t));
-            reporter->init = &ctu_mpi_ordered_printer_init;
-            reporter->id = &ctu_mpi_ordered_printer_id;
-            reporter->fini = &ctu_mpi_ordered_printer_fini;
-            reporter->printf = &ctu_mpi_ordered_printer_printf;
-            reporter->pprintf = &ctu_mpi_ordered_printer_pprintf;
-
-            reporter->init(reporter, scope);
-#else
-            ctu_unused(scope);
+        case CTU_SCOPE_KIND_PROCESS: return odos();
+#ifdef MPI_FOUND
+        case CTU_SCOPE_KIND_MPI:     return mpi_odos(scope);
 #endif
-            break;
-        default:
-            ctu_panic("Invalid scope kind!");
+        default: ctu_panic("Unsupported reporter!");
     }
-    return reporter;
+}
+
+void
+ctu_emit(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind,
+    const char *format,
+    ...
+) {
+    auto reporter = ctu_reporter(scope, kind);
+    va_list args;
+    va_start(args, format);
+    reporter.vadd(format, args);
+    va_end(args);
+}
+
+void
+ctu_emit_task_bind(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind
+) {
+    char const *ers = NULL;
+    auto reporter = ctu_reporter(scope, kind);
+    const std::string myid = reporter.id();
+    // Get new, current binding.
+    char *binds = NULL;
+    int rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &binds);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    reporter.add("[%s] cpubind=%s\n", myid.c_str(), binds);
+    free(binds);
+}
+
+void
+ctu_bind_push(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind
+) {
+    char const *ers = NULL;
+    auto reporter = ctu_reporter(scope, kind);
+    const std::string myid = reporter.id();
+
+    int sgrank;
+    int rc = qv_scope_group_rank(scope, &sgrank);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_group_rank() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    // Get current binding.
+    char *bind0s;
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind0s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    reporter.add(
+        "[%s] Current cpubind before qv_bind_push() is %s\n", myid.c_str(), bind0s
+    );
+    // Change binding.
+    rc = qv_scope_bind_push(scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_push() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    // Get new, current binding.
+    char *bind1s;
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind1s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    reporter.add(
+        "[%s] New cpubind after qv_bind_push() is %s\n", myid.c_str(), bind1s
+    );
+
+    free(bind0s);
+    free(bind1s);
+}
+
+void
+ctu_bind_pop(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind
+) {
+    char const *ers = NULL;
+    auto reporter = ctu_reporter(scope, kind);
+    const std::string myid = reporter.id();
+
+    int sgrank;
+    int rc = qv_scope_group_rank(scope, &sgrank);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_group_rank() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    // Get current binding.
+    char *bind0s;
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind0s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    reporter.add(
+        "[%%s] Current cpubind before qv_bind_pop() is %s\n",
+        myid.c_str(), bind0s
+    );
+
+    // Change binding.
+    rc = qv_scope_bind_pop(scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_push() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    // Get new, current binding.
+    char *bind1s;
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind1s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    reporter.add(
+        "[%s] New cpubind after qv_bind_pop() is %s\n",
+        myid.c_str(), bind1s
+    );
+
+    free(bind0s);
+    free(bind1s);
+}
+
+void
+ctu_emit_host_hw_info(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind,
+    const char *scope_name
+) {
+    auto reporter = ctu_reporter(scope, kind);
+    const std::string myid = reporter.id();
+
+    for (size_t i = 0; i < ctu_hw_obj_name_to_type_tab_size; ++i) {
+        int n;
+        int rc = qv_scope_hw_obj_count(
+            scope, ctu_hw_obj_name_to_type_tab[i].type, &n
+        );
+        if (rc != QV_SUCCESS) {
+            ctu_panic(
+                "qv_scope_hw_obj_count(%s) failed\n",
+                ctu_hw_obj_name_to_type_tab[i].name
+            );
+        }
+        reporter.add(
+            "[%s] %s scope: %s: n = %d\n",
+            myid.c_str(), scope_name,
+            ctu_hw_obj_name_to_type_tab[i].name, n
+        );
+    }
+}
+
+void
+ctu_emit_device_info(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind,
+    qv_hw_obj_type_t dev_type,
+    const char *scope_name
+) {
+    auto reporter = ctu_reporter(scope, kind);
+    const std::string myid = reporter.id();
+    // Get number of devices.
+    int ndevs;
+    int rc = qv_scope_hw_obj_count(scope, dev_type, &ndevs);
+    if (rc != QV_SUCCESS) {
+        const char *ers = "qv_scope_hw_obj_count() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    reporter.add(
+        "[%s] Discovered %d %s(s) in %s\n",
+        myid.c_str(), ndevs, ctu_obj_name(dev_type), scope_name
+    );
+    for (int i = 0; i < ndevs; ++i) {
+        for (size_t j = 0; j < ctu_devid_name_to_id_tab_size; ++j) {
+            char *devids = NULL;
+            int rc = qv_scope_device_id_get(
+                scope,
+                dev_type,
+                i,
+                ctu_devid_name_to_id_tab[j].devid,
+                &devids
+            );
+            if (rc != QV_SUCCESS) {
+                const char *ers = "qv_scope_device_id_get() failed";
+                ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+            }
+            reporter.add(
+                "[%s] Device %d %s = %s\n",
+                myid.c_str(), i, ctu_devid_name_to_id_tab[j].name, devids
+            );
+            free(devids);
+        }
+    }
+}
+
+void
+ctu_hostres_report(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind
+) {
+    char const *ers = NULL;
+    auto reporter = ctu_reporter(scope, kind);
+    const std::string myid = reporter.id();
+
+    int sgrank;
+    int rc = qv_scope_group_rank(scope, &sgrank);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_group_rank() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    reporter.padd(
+        sgrank == 0,
+        "# System Hardware Overview --------------\n"
+    );
+
+    for (size_t i = 0; i < ctu_hw_obj_name_to_type_tab_size; ++i) {
+        int n;
+        int rc = qv_scope_hw_obj_count(
+            scope, ctu_hw_obj_name_to_type_tab[i].type, &n
+        );
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_hw_obj_count() failed";
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
+
+        reporter.add(
+            "[%s] %s=%d\n", myid.c_str(),
+            ctu_hw_obj_name_to_type_tab[i].name, n
+        );
+
+        rc = qv_scope_barrier(scope);
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_barrier() failed";
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
+    }
+    reporter.padd(
+        sgrank == 0,
+        "# ---------------------------------------\n"
+    );
+}
+
+void
+ctu_cpuset_report(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind
+) {
+    char const *ers = NULL;
+    auto reporter = ctu_reporter(scope, kind);
+    const std::string myid = reporter.id();
+
+    int sgrank;
+    int rc = qv_scope_group_rank(scope, &sgrank);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_group_rank() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    // Change binding to get the underlying cpuset.
+    rc = qv_scope_bind_push(scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_push() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    // Get new, current binding.
+    char *bind1s;
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind1s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    reporter.add("[%s] scope cpuset is %s\n", myid.c_str(), bind1s);
+    free(bind1s);
+
+    rc = qv_scope_bind_pop(scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_pop() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+}
+
+void
+ctu_scope_report(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind,
+    const char *const scope_name
+) {
+    char const *ers = NULL;
+    auto reporter = ctu_reporter(scope, kind);
+    const std::string myid = reporter.id();
+
+    int sgrank;
+    int rc = qv_scope_group_rank(scope, &sgrank);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_group_rank() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    int sgsize;
+    rc = qv_scope_group_size(scope, &sgsize);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_group_size() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    reporter.padd(
+        sgrank == 0,
+        "\n[%s] Start scope report for %s\n",
+        myid.c_str(), scope_name
+    );
+    reporter.padd(
+        sgrank != 0, ""
+    );
+
+    for (int i = 0; i < sgsize; ++i) {
+        reporter.padd(
+            sgrank == i,
+            "[%s] hello from group rank %d of %d\n",
+            myid.c_str(), sgrank, sgsize
+        );
+        reporter.padd(
+            sgrank != i, ""
+        );
+    }
+
+    ctu_cpuset_report(scope, kind);
+
+    reporter.padd(
+        sgrank == 0,
+        "[%s] Endof scope report for %s\n\n",
+        myid.c_str(), scope_name
+    );
+    reporter.padd(
+        sgrank != 0, ""
+    );
+
+    rc = qv_scope_barrier(scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_barrier() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+}
+
+void
+ctu_change_bind(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind
+) {
+    char const *ers = NULL;
+    auto reporter = ctu_reporter(scope, kind);
+    const std::string myid = reporter.id();
+
+    int sgrank;
+    int rc = qv_scope_group_rank(scope, &sgrank);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_group_rank() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    // Get current binding.
+    char *bind0s;
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind0s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    reporter.add("[%s] Current cpubind is %s\n", myid.c_str(), bind0s);
+
+    // Change binding.
+    rc = qv_scope_bind_push(scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_push() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    // Get new, current binding.
+    char *bind1s;
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind1s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    reporter.add("[%s] New cpubind is %s\n", myid.c_str(), bind1s);
+
+    rc = qv_scope_bind_pop(scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_pop() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    char *bind2s;
+    rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &bind2s);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    reporter.add("[%s] Popped cpubind is %s\n", myid.c_str(), bind2s);
+
+    if (strcmp(bind0s, bind2s)) {
+        ers = "bind push/pop mismatch";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    free(bind0s);
+    free(bind1s);
+    free(bind2s);
+
+    rc = qv_scope_barrier(scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_barrier() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
 }
 
 /*

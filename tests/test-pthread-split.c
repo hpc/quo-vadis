@@ -19,8 +19,8 @@ thread_work(
         char const *ers = "user arguments not forwarded!";
         ctu_panic("%s", ers);
     }
-    printf("Hello from pid=%d,tid=%d\n", getpid(), ctu_gettid());
-    ctu_emit_task_bind(thargs->scope);
+    //printf("Hello from pid=%d,tid=%d\n", getpid(), ctu_gettid());
+    ctu_emit_task_bind(thargs->scope, CTU_SCOPE_KIND_PROCESS);
     return NULL;
 }
 
@@ -48,7 +48,7 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_emit_task_bind(base_scope);
+    ctu_emit_task_bind(base_scope, CTU_SCOPE_KIND_PROCESS);
     //
     // Test qv_pthread_scope_split()
     //
