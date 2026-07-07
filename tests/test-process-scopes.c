@@ -13,8 +13,6 @@ main(void)
     char const *ers = NULL;
     int rc = QV_SUCCESS;
 
-    const int pid = getpid();
-
     qv_scope_t *self_scope = NULL;
     rc = qv_process_scope_get(
         QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &self_scope
@@ -25,6 +23,7 @@ main(void)
     }
 
     ctu_scope_report(self_scope, CTU_SCOPE_KIND_PROCESS, "self_scope");
+    ctu_emit(self_scope, CTU_SCOPE_KIND_PROCESS, "\n");
 
     rc = qv_scope_free(self_scope);
     if (rc != QV_SUCCESS) {
@@ -42,8 +41,10 @@ main(void)
     }
 
     ctu_scope_report(base_scope, CTU_SCOPE_KIND_PROCESS, "base_scope");
+    ctu_emit(base_scope, CTU_SCOPE_KIND_PROCESS, "\n");
 
     ctu_change_bind(base_scope, CTU_SCOPE_KIND_PROCESS);
+    ctu_emit(base_scope, CTU_SCOPE_KIND_PROCESS, "\n");
 
     int srank;
     rc = qv_scope_group_rank(base_scope, &srank);
@@ -75,7 +76,11 @@ main(void)
         ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of PUs in base_scope is %d\n", pid, n_pus);
+
+    ctu_emit_host_hw_info(
+        base_scope, CTU_SCOPE_KIND_PROCESS, "base_scope"
+    );
+    ctu_emit(base_scope, CTU_SCOPE_KIND_PROCESS, "\n");
 
     const int npieces = 2;
     qv_scope_t *sub_scope;
@@ -94,9 +99,12 @@ main(void)
         ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf("[%d] Number of PUs in sub_scope is %d\n", pid, n_pus);
+
+    ctu_emit_host_hw_info(sub_scope, CTU_SCOPE_KIND_PROCESS, "sub_scope");
+    ctu_emit(sub_scope, CTU_SCOPE_KIND_PROCESS, "\n");
 
     ctu_scope_report(sub_scope, CTU_SCOPE_KIND_PROCESS, "sub_scope");
+    ctu_emit(sub_scope, CTU_SCOPE_KIND_PROCESS, "\n");
 
     ctu_change_bind(sub_scope, CTU_SCOPE_KIND_PROCESS);
 

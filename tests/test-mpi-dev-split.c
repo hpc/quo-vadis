@@ -54,13 +54,17 @@ main(
     }
 
     if (ndevs == 0) {
-        if (wrank == 0) ctu_dprintf("Skipping: no %ss found!\n", dev_name);
+        ctu_pemit(
+            base_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
+            "Skipping: no %ss found!\n", dev_name
+        );
         goto done;
     }
     else {
-        if (wrank == 0) {
-            ctu_dprintf("# Number of %ss found: %d\n", dev_name, ndevs);
-        }
+        ctu_pemit(
+            base_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
+            "# Number of %ss found: %d\n", dev_name, ndevs
+        );
     }
 
     qv_scope_t *dev_scope;
@@ -95,7 +99,6 @@ main(
         ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
     // Where did I end up?
     rc = qv_scope_bind_push(dev_scope);
     if (rc != QV_SUCCESS) {
@@ -110,35 +113,28 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_dprintf(
-        "=> [%d] Split@Dev: got %d %s(s), running on %s\n",
-        wrank, my_ndevs, dev_name, binds
-    );
+    for (int i = 0; i < wsize; ++i) {
+        ctu_pemit(
+            dev_scope, CTU_SCOPE_KIND_MPI, wrank == i,
+            "=> [%d] Split@Dev: got %d %s(s), running on %s\n",
+            wrank, my_ndevs, dev_name, binds
+        );
+    }
+    ctu_pemit(dev_scope, CTU_SCOPE_KIND_MPI, wrank == 0, "\n");
 
     free(binds);
-
-    for (int i = 0; i < my_ndevs; ++i) {
-        char *pciid, *ordid;
-        rc = qv_scope_device_id_get(
-            dev_scope, target_dev, i, QV_DEVICE_ID_PCI_BUS_ID, &pciid
-        );
-        if (rc != QV_SUCCESS) {
-            ers = "qv_scope_device_id_get() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    // Completely order device output.
+    for (int i = 0; i < wsize; ++i) {
+        if (wrank == i) {
+            ctu_emit_device_info(
+                dev_scope, CTU_SCOPE_KIND_MPI, target_dev, "Device Scope"
+            );
+            ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "\n");
         }
-        rc = qv_scope_device_id_get(
-            dev_scope, target_dev, i, QV_DEVICE_ID_ORDINAL, &ordid
-        );
-        if (rc != QV_SUCCESS) {
-            ers = "qv_scope_device_id_get() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        else {
+            ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
+            ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
         }
-        ctu_dprintf(
-            "   [%d] Dev %d: Ordinal = %s, PCI Bus ID = %s\n",
-            wrank, i, ordid, pciid
-        );
-        free(pciid);
-        free(ordid);
     }
 
     rc = qv_scope_free(dev_scope);
@@ -148,8 +144,6 @@ main(
     }
 
 done:
-    ctu_dflush();
-
     rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";

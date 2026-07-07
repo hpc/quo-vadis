@@ -107,7 +107,7 @@ protected:
 public:
     odos(void)
     {
-        m_id = std::to_string(ctu_gettid());
+        m_id = std::to_string(getpid());
     }
 
     ~odos(void)
@@ -154,6 +154,14 @@ public:
     virtual std::string
     id(void) {
         return m_id;
+    }
+};
+
+struct thr_odos : odos {
+public:
+    thr_odos(void)
+    {
+        m_id = std::to_string(getpid()) + "," + std::to_string(ctu_gettid());
     }
 };
 
@@ -324,11 +332,23 @@ ctu_reporter(
 ) {
     switch (kind) {
         case CTU_SCOPE_KIND_PROCESS: return odos();
+        case CTU_SCOPE_KIND_THREAD:  return thr_odos();
 #ifdef MPI_FOUND
         case CTU_SCOPE_KIND_MPI:     return mpi_odos(scope);
 #endif
         default: ctu_panic("Unsupported reporter!");
     }
+}
+
+static void
+ctu_vemit(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind,
+    const char *format,
+    va_list args
+) {
+    auto reporter = ctu_reporter(scope, kind);
+    reporter.vadd(format, args);
 }
 
 void
@@ -338,10 +358,42 @@ ctu_emit(
     const char *format,
     ...
 ) {
-    auto reporter = ctu_reporter(scope, kind);
     va_list args;
     va_start(args, format);
-    reporter.vadd(format, args);
+    ctu_vemit(scope, kind, format, args);
+    va_end(args);
+}
+
+static void
+ctu_pvemit(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind,
+    bool pred,
+    const char *format,
+    va_list args
+) {
+    auto reporter = ctu_reporter(scope, kind);
+    if (pred) reporter.vadd(format, args);
+    else reporter.add("");
+    // Sync across the scope.
+    int rc = qv_scope_barrier(scope);
+    if (rc != QV_SUCCESS) {
+        const char *ers = "qv_scope_barrier() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+}
+
+void
+ctu_pemit(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind,
+    bool pred,
+    const char *format,
+    ...
+) {
+    va_list args;
+    va_start(args, format);
+    ctu_pvemit(scope, kind, pred, format, args);
     va_end(args);
 }
 
@@ -533,7 +585,7 @@ ctu_emit_device_info(
 }
 
 void
-ctu_hostres_report(
+ctu_cpuset_report(
     qv_scope_t *scope,
     ctu_scope_kind_t kind
 ) {
@@ -548,51 +600,10 @@ ctu_hostres_report(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    reporter.padd(
-        sgrank == 0,
-        "# System Hardware Overview --------------\n"
-    );
-
-    for (size_t i = 0; i < ctu_hw_obj_name_to_type_tab_size; ++i) {
-        int n;
-        int rc = qv_scope_hw_obj_count(
-            scope, ctu_hw_obj_name_to_type_tab[i].type, &n
-        );
-        if (rc != QV_SUCCESS) {
-            ers = "qv_scope_hw_obj_count() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
-
-        reporter.add(
-            "[%s] %s=%d\n", myid.c_str(),
-            ctu_hw_obj_name_to_type_tab[i].name, n
-        );
-
-        rc = qv_scope_barrier(scope);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_scope_barrier() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
-    }
-    reporter.padd(
-        sgrank == 0,
-        "# ---------------------------------------\n"
-    );
-}
-
-void
-ctu_cpuset_report(
-    qv_scope_t *scope,
-    ctu_scope_kind_t kind
-) {
-    char const *ers = NULL;
-    auto reporter = ctu_reporter(scope, kind);
-    const std::string myid = reporter.id();
-
-    int sgrank;
-    int rc = qv_scope_group_rank(scope, &sgrank);
+    int sgsize;
+    rc = qv_scope_group_size(scope, &sgsize);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_group_rank() failed";
+        ers = "qv_scope_group_size() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     // Change binding to get the underlying cpuset.
@@ -608,7 +619,19 @@ ctu_cpuset_report(
         ers = "qv_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    reporter.add("[%s] scope cpuset is %s\n", myid.c_str(), bind1s);
+
+    for (int i = 0; i < sgsize; ++i) {
+        if (sgrank == i) {
+            ctu_emit(
+                scope, kind, "[%s] scope cpuset is %s\n", myid.c_str(), bind1s
+            );
+        }
+        else {
+            ctu_emit(
+                scope, kind, ""
+            );
+        }
+    }
     free(bind1s);
 
     rc = qv_scope_bind_pop(scope);
@@ -644,7 +667,7 @@ ctu_scope_report(
 
     reporter.padd(
         sgrank == 0,
-        "\n[%s] Start scope report for %s\n",
+        "[%s] Scope report for %s\n",
         myid.c_str(), scope_name
     );
     reporter.padd(
@@ -663,15 +686,6 @@ ctu_scope_report(
     }
 
     ctu_cpuset_report(scope, kind);
-
-    reporter.padd(
-        sgrank == 0,
-        "[%s] Endof scope report for %s\n\n",
-        myid.c_str(), scope_name
-    );
-    reporter.padd(
-        sgrank != 0, ""
-    );
 
     rc = qv_scope_barrier(scope);
     if (rc != QV_SUCCESS) {

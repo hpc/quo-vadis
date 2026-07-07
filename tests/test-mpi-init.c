@@ -52,10 +52,6 @@ main(
 
     MPI_Finalize();
 
-    if (wrank == 0) {
-        printf("Succcess!\n");
-    }
-
     return EXIT_SUCCESS;
 }
 

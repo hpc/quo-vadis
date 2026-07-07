@@ -14,7 +14,7 @@ thread_work(
     void *arg
 ) {
     // Do work.
-    ctu_emit_task_bind(arg, CTU_SCOPE_KIND_PROCESS);
+    ctu_emit_task_bind(arg, CTU_SCOPE_KIND_THREAD);
     return NULL;
 }
 
@@ -116,6 +116,10 @@ main(
     // OpenMP: Launch one thread per core.
     ////////////////////////////////////////////////////////////////////////////
     const int nthreads = ncores;
+    ctu_pemit(
+        base_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
+        "# Starting OpenMP test (nthreads/process=%d)\n", nthreads
+    );
     int *thread_coloring = NULL; // Default thread assignment.
     qv_scope_t **th_scopes;
     rc = qv_thread_scope_split_at(
@@ -140,12 +144,20 @@ main(
         ers = "qv_thread_scopes_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+    ctu_pemit(
+        base_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
+        "# Done!\n"
+    );
     ////////////////////////////////////////////////////////////////////////////
     // POSIX threads:
     // * Launch one thread per hardware thread
     // *   Policy-based placement
     // *   Note num_threads < num_places on SMT
     ////////////////////////////////////////////////////////////////////////////
+    ctu_pemit(
+        base_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
+        "# Starting Pthread test (nthreads/process=%d)\n", nthreads
+    );
     thread_coloring = QV_THREAD_SCOPE_SPLIT_PACKED,
     rc = qv_thread_scope_split_at(
         subnuma, QV_HW_OBJ_PU, thread_coloring, nthreads, &th_scopes
@@ -175,6 +187,10 @@ main(
         }
     }
     free(pthrds);
+    ctu_pemit(
+        base_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
+        "# Done!\n"
+    );
     // When we are done with the scope, clean up.
     rc = qv_thread_scopes_free(nthreads, th_scopes);
     if (rc != QV_SUCCESS) {
