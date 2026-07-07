@@ -199,6 +199,7 @@ if(MPI_FOUND)
 
     target_link_libraries(
         test-pthread-split
+        common-test-utils
         quo-vadis
     )
 
@@ -320,6 +321,7 @@ if(MPI_FOUND)
 
         target_link_libraries(
             test-mpi-threads
+            common-test-utils
             quo-vadis
             quo-vadis-mpi
             OpenMP::OpenMP_C

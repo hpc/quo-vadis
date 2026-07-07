@@ -1,5 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 
+#include "mpi.h"
 #include "quo-vadis-mpi.h"
 #include "common-test-utils.h"
 
@@ -45,9 +46,17 @@ main(
     }
 
     if (wrank == 0) {
-        ctu_emit_device_info(base_scope, QV_HW_OBJ_GPU, "Base Scope");
+        ctu_emit_device_info(
+            base_scope, CTU_SCOPE_KIND_MPI,
+            QV_HW_OBJ_GPU, "Base Scope"
+        );
+        ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "\n");
     }
-
+    else {
+        // Match both ctu_emit*s to avoid deadlocks.
+        ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
+        ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
+    }
     // Get total number of GPUs in base_scope.
     int ngpus;
     rc = qv_scope_hw_obj_count(base_scope, QV_HW_OBJ_GPU, &ngpus);
@@ -55,23 +64,18 @@ main(
         ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    if (wrank == 0) {
-        printf("[%d]: Base scope has %d GPUs\n", wrank, ngpus);
-    }
-
     // Split the base scope evenly across workers.
     qv_scope_t *rank_scope;
     rc = qv_scope_split(
-            base_scope,
-            wsize,
-            wrank,
-            &rank_scope
+        base_scope,
+        wsize,
+        wrank,
+        &rank_scope
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
     // Get number of GPUs in my rank_scope.
     int rank_ngpus;
     rc = qv_scope_hw_obj_count(
@@ -83,24 +87,46 @@ main(
         ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
-    printf("[%d]: Local scope has %d GPUs\n", wrank, rank_ngpus);
-
-    //ctu_emit_device_info(rank_scope, QV_HW_OBJ_GPU, "Rank Scope");
+    // Completely order device output.
+    for (int i = 0; i < wsize; ++i) {
+        if (wrank == i) {
+            ctu_emit_device_info(
+                rank_scope, CTU_SCOPE_KIND_MPI, QV_HW_OBJ_GPU, "Rank Scope"
+            );
+            ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "\n");
+        }
+        else {
+            ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
+            ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
+        }
+    }
 
     int total_ngpus;
-    MPI_Reduce(&rank_ngpus, &total_ngpus, 1, MPI_INT, MPI_SUM, 0, comm);
+    rc = MPI_Reduce(
+        &rank_ngpus, &total_ngpus, 1, MPI_INT, MPI_SUM, 0, comm
+    );
+    if (rc != MPI_SUCCESS) {
+        ers = "MPI_Reduce() failed";
+        ctu_panic("%s (rc=%d)", ers, rc);
+    }
 
     if (wrank == 0) {
         if (ngpus == total_ngpus) {
-            printf("PASS: Number of GPUs match\n");
+            ctu_emit(
+                base_scope, CTU_SCOPE_KIND_MPI,
+                "PASS: Number of GPUs match!\n"
+            );
         }
         else {
-            printf(
-                "FAIL: Base GPUs=%d do not match aggregate GPUs=%d\n",
+            ctu_emit(
+                base_scope, CTU_SCOPE_KIND_MPI,
+                "FAIL: Base GPUs=%d do not match aggregate GPUs=%d!\n",
                 ngpus, total_ngpus
             );
         }
+    }
+    else {
+        ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
     }
 
     qv_scope_free(rank_scope);

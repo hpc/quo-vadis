@@ -33,8 +33,6 @@ main(
         ctu_panic("%s (rc=%d)", ers, rc);
     }
 
-    setbuf(stdout, NULL);
-
     // Get base scope.
     qv_scope_t *base_scope;
     rc = qv_mpi_scope_get(
@@ -56,11 +54,13 @@ main(
     }
 
     if (ndevs == 0) {
-        if (wrank == 0) printf("Skipping: no %ss found!\n", dev_name);
+        if (wrank == 0) ctu_dprintf("Skipping: no %ss found!\n", dev_name);
         goto done;
     }
     else {
-        if (wrank == 0) printf("# Number of %ss found: %d\n", dev_name, ndevs);
+        if (wrank == 0) {
+            ctu_dprintf("# Number of %ss found: %d\n", dev_name, ndevs);
+        }
     }
 
     qv_scope_t *dev_scope;
@@ -85,12 +85,6 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_bind_push(dev_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_bind_push() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
     int my_ndevs;
     rc = qv_scope_hw_obj_count(
         dev_scope,
@@ -103,6 +97,12 @@ main(
     }
 
     // Where did I end up?
+    rc = qv_scope_bind_push(dev_scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_bind_push() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
     char *binds;
     rc = qv_scope_bind_string(dev_scope, QV_BIND_STRING_LOGICAL, &binds);
     if (rc != QV_SUCCESS) {
@@ -141,8 +141,6 @@ main(
         free(ordid);
     }
 
-    ctu_dflush();
-
     rc = qv_scope_free(dev_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
@@ -150,6 +148,8 @@ main(
     }
 
 done:
+    ctu_dflush();
+
     rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
