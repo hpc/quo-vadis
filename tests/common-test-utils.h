@@ -62,8 +62,7 @@ extern "C" {
 
 typedef enum {
     CTU_SCOPE_KIND_PROCESS = 0,
-    CTU_SCOPE_KIND_PTHREAD,
-    CTU_SCOPE_KIND_OPENMP,
+    CTU_SCOPE_KIND_THREAD,
     CTU_SCOPE_KIND_MPI
 } ctu_scope_kind_t;
 
@@ -132,14 +131,18 @@ ctu_gettid(void)
     return (pid_t)syscall(SYS_gettid);
 }
 
-// A deferred printf implementation.
+/**
+ * A deferred printf implementation.
+ */
 void
 ctu_dprintf(
     const char *format,
     ...
 );
 
-// Outputs the stored content filled by calls to ctu_dprintf() to stdout.
+/**
+ * Outputs the stored content filled by calls to ctu_dprintf() to stdout.
+ */
 void
 ctu_dflush(void);
 
@@ -147,6 +150,15 @@ void
 ctu_emit(
     qv_scope_t *scope,
     ctu_scope_kind_t kind,
+    const char *format,
+    ...
+);
+
+void
+ctu_pemit(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind,
+    bool pred,
     const char *format,
     ...
 );
@@ -188,12 +200,6 @@ ctu_emit_device_info(
     ctu_scope_kind_t kind,
     qv_hw_obj_type_t dev_type,
     const char *scope_name
-);
-
-void
-ctu_hostres_report(
-    qv_scope_t *scope,
-    ctu_scope_kind_t kind
 );
 
 void

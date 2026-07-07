@@ -42,10 +42,6 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    if (wrank == 0) {
-        printf("QV Version: %d.%d.%d\n", vmajor, vminor, vpatch);
-    }
-
     qv_scope_t *world_scope = NULL;
     rc = qv_mpi_scope_get(
         comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &world_scope
@@ -54,6 +50,11 @@ main(
         ers = "qv_mpi_scope_get() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+
+    ctu_pemit(
+        world_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
+        "QV Version: %d.%d.%d\n", vmajor, vminor, vpatch
+    );
 
     MPI_Comm wscope_comm = MPI_COMM_NULL;
     rc = qv_mpi_scope_comm_dup(world_scope, &wscope_comm);
@@ -109,14 +110,27 @@ main(
         ctu_panic("%s (rc=%d)", ers, rc);
     }
 
-    if (wrank == 0) {
-        printf("Size of MPI_COMM_WORLD = %d\n", wsize);
-        printf("Size of World Scope    = %d\n", wscope_size);
-        printf(
-            "Size of Split World Scope = %d (1/%d of World Scope)\n",
-            split_wscope_size, wsize
-        );
+    ctu_pemit(
+        world_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
+        "Size of MPI_COMM_WORLD = %d\n", wsize
+    );
+    ctu_pemit(
+        world_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
+        "Size of World Scope    = %d\n", wscope_size
+    );
+
+    float expected_result = (float)1 / wsize;
+    float result = (float)split_wscope_size / wscope_size;
+
+    if (expected_result != result) {
+        ctu_panic("Unexpected result!");
     }
+
+    ctu_pemit(
+        world_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
+        "Size of Split World Scope = %d (1/%d of World Scope)\n",
+        split_wscope_size, wsize
+    );
 
     rc = qv_scope_free(sub_scope);
     if (rc != QV_SUCCESS) {
@@ -140,10 +154,6 @@ main(
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Comm_free() failed";
         ctu_panic("%s (rc=%d)", ers, rc);
-    }
-
-    if (wrank == 0) {
-        printf("Success!\n");
     }
 
     MPI_Finalize();

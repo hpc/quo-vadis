@@ -110,23 +110,18 @@ main(
         ctu_panic("%s (rc=%d)", ers, rc);
     }
 
-    if (wrank == 0) {
-        if (ngpus == total_ngpus) {
-            ctu_emit(
-                base_scope, CTU_SCOPE_KIND_MPI,
-                "PASS: Number of GPUs match!\n"
-            );
-        }
-        else {
-            ctu_emit(
-                base_scope, CTU_SCOPE_KIND_MPI,
-                "FAIL: Base GPUs=%d do not match aggregate GPUs=%d!\n",
-                ngpus, total_ngpus
-            );
-        }
+    if (ngpus == total_ngpus) {
+        ctu_pemit(
+            base_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
+            "PASS: Number of GPUs match!\n"
+        );
     }
     else {
-        ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
+        ctu_pemit(
+            base_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
+            "FAIL: Base GPUs=%d do not match aggregate GPUs=%d!\n",
+            ngpus, total_ngpus
+        );
     }
 
     qv_scope_free(rank_scope);

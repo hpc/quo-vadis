@@ -124,7 +124,6 @@ main(void)
 
     omp_set_num_threads(ep_sinfo.nthreads);
 
-
     #pragma omp parallel
     #pragma omp master
     {
