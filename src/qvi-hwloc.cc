@@ -1139,6 +1139,8 @@ qvi_hwloc::get_cpuset_for_nobjs(
     uint_t nobjs,
     qvi_hwloc_bitmap &result
 ) {
+    // Zero-out the result bitmap that will encode the result.
+    hwloc_bitmap_zero(result.data());
     // Get the target object's depth.
     int obj_depth;
     int rc = obj_type_depth(obj_type, &obj_depth);
