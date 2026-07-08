@@ -84,8 +84,6 @@ qv_scope::create(
     qvi_group *group = nullptr;
     int rc = m_group->self(&group);
     if (rc != QV_SUCCESS) return rc;
-    // Create the hardware pool.
-    qvi_hwpool hwpool;
     // Get the appropriate cpuset based on the caller's request.
     qvi_hwloc_bitmap cpuset;
     rc = m_group->task().rmi().get_cpuset_for_nobjs(
@@ -97,6 +95,7 @@ qv_scope::create(
     }
     // Now that we have the desired cpuset,
     // initialize the new hardware pool.
+    qvi_hwpool hwpool;
     rc = hwpool.populate(m_group->hwloc(), cpuset);
     if (rc != QV_SUCCESS) {
         qvi_delete(&group);

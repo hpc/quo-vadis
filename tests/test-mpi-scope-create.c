@@ -75,7 +75,7 @@ test_create_scope(
         scope_to_test,
         QV_HW_OBJ_CORE,
         ncores,
-        0,
+        QV_SCOPE_CREATE_HINT_NONE,
         &core_scope
     );
     if (rc != QV_SUCCESS) {
@@ -83,7 +83,7 @@ test_create_scope(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    scope_report(base_scope, scope_to_test, scope_name);
+    scope_report(base_scope, core_scope, scope_name);
     free(scope_name);
 
     if (free_scope) {
