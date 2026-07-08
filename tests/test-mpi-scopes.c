@@ -47,9 +47,6 @@ main(
         ers = "MPI_Comm_rank() failed";
         ctu_panic("%s (rc=%d)", ers, rc);
     }
-
-    setbuf(stdout, NULL);
-
     // Self scope test
     qv_scope_t *self_scope;
     rc = qv_mpi_scope_get(
@@ -63,16 +60,26 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_scope_report(self_scope, CTU_SCOPE_KIND_MPI, "self_scope");
+    for (int i = 0; i < wsize; ++i) {
+        if (wrank == i) {
+            ctu_emit_scope_report(self_scope, CTU_SCOPE_KIND_MPI, "self_scope");
+        }
+        else {
+            ctu_emit(self_scope, CTU_SCOPE_KIND_MPI, "");
+        }
+        // Barrier for nicer output.
+        rc = MPI_Barrier(MPI_COMM_WORLD);
+        if (rc != MPI_SUCCESS) {
+            ers = "MPI_Barrier() failed";
+            ctu_panic("%s (rc=%d)", ers, rc);
+        }
+    }
 
     rc = qv_scope_free(self_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    // Barrier for nicer output.
-    MPI_Barrier(comm);
-
     // Base scope test
     qv_scope_t *base_scope;
     rc = qv_mpi_scope_get(
@@ -86,9 +93,8 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_scope_report(base_scope, CTU_SCOPE_KIND_MPI, "base_scope");
-    // Barrier for nicer output.
-    MPI_Barrier(comm);
+    ctu_pemit(base_scope, CTU_SCOPE_KIND_MPI, wrank == 0, "\n");
+    ctu_emit_scope_report(base_scope, CTU_SCOPE_KIND_MPI, "base_scope");
 
     int base_scope_sgsize;
     rc = qv_scope_group_size(
@@ -110,23 +116,19 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int n_pu;
-    rc = qv_scope_hw_obj_count(
-        base_scope,
-        QV_HW_OBJ_PU,
-        &n_pu
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_hw_obj_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
     const int npieces = 2;
     const int gid = get_group_id(
         base_scope_rank,
         base_scope_sgsize,
         npieces
     );
+
+    // Barrier for nicer output.
+    rc = MPI_Barrier(MPI_COMM_WORLD);
+    if (rc != MPI_SUCCESS) {
+        ers = "MPI_Barrier() failed";
+        ctu_panic("%s (rc=%d)", ers, rc);
+    }
 
     qv_scope_t *sub_scope;
     rc = qv_scope_split(
@@ -140,18 +142,8 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_hw_obj_count(
-        sub_scope,
-        QV_HW_OBJ_PU,
-        &n_pu
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_hw_obj_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    ctu_scope_report(sub_scope, CTU_SCOPE_KIND_MPI, "sub_scope");
-    ctu_change_bind(sub_scope, CTU_SCOPE_KIND_MPI);
+    ctu_pemit(sub_scope, CTU_SCOPE_KIND_MPI, wrank == 0, "\n");
+    ctu_emit_scope_report(sub_scope, CTU_SCOPE_KIND_MPI, "sub_scope");
 
     if (base_scope_rank == 0) {
         qv_scope_t *create_scope;
@@ -176,9 +168,7 @@ main(
         }
         printf("[%d] Number of PUs in create_scope is %d\n", wrank, n_core);
 
-        ctu_scope_report(create_scope, CTU_SCOPE_KIND_MPI, "create_scope");
-
-        ctu_bind_push(create_scope, CTU_SCOPE_KIND_MPI);
+        ctu_emit_scope_report(create_scope, CTU_SCOPE_KIND_MPI, "create_scope");
 
         rc = qv_scope_free(create_scope);
         if (rc != QV_SUCCESS) {
@@ -199,6 +189,7 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
+    int n_pu;
     rc = qv_scope_hw_obj_count(
         sub_sub_scope,
         QV_HW_OBJ_PU,

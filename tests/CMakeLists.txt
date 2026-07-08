@@ -36,6 +36,12 @@ target_link_libraries(
       $<$<BOOL:${MPI_FOUND}>:quo-vadis-mpi>
 )
 
+target_compile_options(
+    common-test-utils
+    PRIVATE
+      "$<$<BOOL:${MPI_FOUND}>:-DCTU_HAS_MPI_SUPPORT>"
+)
+
 add_executable(
     test-process-scopes
     test-process-scopes.c

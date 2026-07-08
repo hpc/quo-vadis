@@ -110,8 +110,9 @@ int
 qv_scope_free(
     qv_scope_t *scope
 ) {
+    // Just accept NULL like free() does.
     if (qvi_unlikely(!scope)) {
-        return QV_ERR_INVLD_ARG;
+        return QV_SUCCESS;
     }
     try {
         qvi_delete(&scope);

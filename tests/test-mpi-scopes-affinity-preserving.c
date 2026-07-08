@@ -54,7 +54,7 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_scope_report(base_scope, CTU_SCOPE_KIND_MPI, "base_scope");
+    ctu_emit_scope_report(base_scope, CTU_SCOPE_KIND_MPI, "base_scope");
 
     int base_scope_sgsize;
     rc = qv_scope_group_size(
@@ -89,7 +89,7 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_scope_report(sub_scope, CTU_SCOPE_KIND_MPI, "sub_scope");
+    ctu_emit_scope_report(sub_scope, CTU_SCOPE_KIND_MPI, "sub_scope");
 
     //ctu_change_bind(sub_scope, CTU_SCOPE_KIND_MPI);
 
