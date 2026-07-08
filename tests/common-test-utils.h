@@ -169,24 +169,6 @@ ctu_emit_task_bind(
     ctu_scope_kind_t kind
 );
 
-/**
- * A verbose version of qv_bind_push().
- */
-void
-ctu_bind_push(
-    qv_scope_t *scope,
-    ctu_scope_kind_t kind
-);
-
-/**
- * A verbose version of qv_bind_pop().
- */
-void
-ctu_bind_pop(
-    qv_scope_t *scope,
-    ctu_scope_kind_t kind
-);
-
 void
 ctu_emit_host_hw_info(
     qv_scope_t *scope,
@@ -203,26 +185,10 @@ ctu_emit_device_info(
 );
 
 void
-ctu_cpuset_report(
-    qv_scope_t *scope,
-    ctu_scope_kind_t kind
-);
-
-void
-ctu_scope_report(
+ctu_emit_scope_report(
     qv_scope_t *scope,
     ctu_scope_kind_t kind,
     const char *const scope_name
-);
-
-/**
- * Collective call over the provided scope that tests pushing and popping of
- * binding policies.
- */
-void
-ctu_change_bind(
-    qv_scope_t *scope,
-    ctu_scope_kind_t kind
 );
 
 #ifdef __cplusplus

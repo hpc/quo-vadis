@@ -18,21 +18,6 @@ main(
         ers = "MPI_Init() failed";
         ctu_panic("%s (rc=%d)", ers, rc);
     }
-
-    int wsize;
-    rc = MPI_Comm_size(comm, &wsize);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_size() failed";
-        ctu_panic("%s (rc=%d)", ers, rc);
-    }
-
-    int wrank;
-    rc = MPI_Comm_rank(comm, &wrank);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_rank() failed";
-        ctu_panic("%s (rc=%d)", ers, rc);
-    }
-
     // Get base scope.
     qv_scope_t *base_scope;
     rc = qv_mpi_scope_get(
@@ -45,6 +30,26 @@ main(
         ers = "qv_mpi_scope_get() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+    // Get my base_scope's size and my rank.
+    int base_scope_size;
+    rc = qv_scope_group_size(
+        base_scope,
+        &base_scope_size
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_group_size() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    int base_scope_rank;
+    rc = qv_scope_group_rank(
+        base_scope,
+        &base_scope_rank
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_group_rank() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
 
     int ndevs;
     rc = qv_scope_hw_obj_count(base_scope, target_dev, &ndevs);
@@ -55,15 +60,15 @@ main(
 
     if (ndevs == 0) {
         ctu_pemit(
-            base_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
-            "Skipping: no %ss found!\n", dev_name
+            base_scope, CTU_SCOPE_KIND_MPI, base_scope_rank == 0,
+            "# Skipping: no %ss found!\n", dev_name
         );
         goto done;
     }
     else {
         ctu_pemit(
-            base_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
-            "# Number of %ss found: %d\n", dev_name, ndevs
+            base_scope, CTU_SCOPE_KIND_MPI, base_scope_rank == 0,
+            "# Total number of %ss found: %d\n", dev_name, ndevs
         );
     }
 
@@ -99,41 +104,57 @@ main(
         ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    // Where did I end up?
+    // Push dev_scope binding.
     rc = qv_scope_bind_push(dev_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_bind_push() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
+    // Get my dev_scope binding.
     char *binds;
     rc = qv_scope_bind_string(dev_scope, QV_BIND_STRING_LOGICAL, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
-    for (int i = 0; i < wsize; ++i) {
-        ctu_pemit(
-            dev_scope, CTU_SCOPE_KIND_MPI, wrank == i,
-            "=> [%d] Split@Dev: got %d %s(s), running on %s\n",
-            wrank, my_ndevs, dev_name, binds
-        );
+    // Pop dev_scope binding.
+    rc = qv_scope_bind_pop(dev_scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_bind_pop() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    ctu_pemit(dev_scope, CTU_SCOPE_KIND_MPI, wrank == 0, "\n");
+
+    for (int i = 0; i < base_scope_size; ++i) {
+        ctu_pemit(
+            dev_scope, CTU_SCOPE_KIND_MPI, base_scope_rank == i,
+            "=> [%d] Split@Dev: got %d %s(s), running on %s\n",
+            base_scope_rank, my_ndevs, dev_name, binds
+        );
+        rc = qv_scope_barrier(base_scope);
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_barrier() failed";
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
+    }
+    ctu_pemit(base_scope, CTU_SCOPE_KIND_MPI, base_scope_rank == 0, "\n");
 
     free(binds);
     // Completely order device output.
-    for (int i = 0; i < wsize; ++i) {
-        if (wrank == i) {
+    for (int i = 0; i < base_scope_size; ++i) {
+        if (base_scope_rank == i) {
             ctu_emit_device_info(
                 dev_scope, CTU_SCOPE_KIND_MPI, target_dev, "Device Scope"
             );
-            ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "\n");
+            ctu_emit(dev_scope, CTU_SCOPE_KIND_MPI, "\n");
         }
         else {
-            ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
-            ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
+            ctu_emit(dev_scope, CTU_SCOPE_KIND_MPI, "");
+            ctu_emit(dev_scope, CTU_SCOPE_KIND_MPI, "");
+        }
+        rc = qv_scope_barrier(base_scope);
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_barrier() failed";
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
     }
 
@@ -142,7 +163,6 @@ main(
         ers = "qv_scope_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
 done:
     rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {

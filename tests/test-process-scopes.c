@@ -22,7 +22,7 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_scope_report(self_scope, CTU_SCOPE_KIND_PROCESS, "self_scope");
+    ctu_emit_scope_report(self_scope, CTU_SCOPE_KIND_PROCESS, "self_scope");
     ctu_emit(self_scope, CTU_SCOPE_KIND_PROCESS, "\n");
 
     rc = qv_scope_free(self_scope);
@@ -40,10 +40,7 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_scope_report(base_scope, CTU_SCOPE_KIND_PROCESS, "base_scope");
-    ctu_emit(base_scope, CTU_SCOPE_KIND_PROCESS, "\n");
-
-    ctu_change_bind(base_scope, CTU_SCOPE_KIND_PROCESS);
+    ctu_emit_scope_report(base_scope, CTU_SCOPE_KIND_PROCESS, "base_scope");
     ctu_emit(base_scope, CTU_SCOPE_KIND_PROCESS, "\n");
 
     int srank;
@@ -68,15 +65,6 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int n_pus;
-    rc = qv_scope_hw_obj_count(
-        base_scope, QV_HW_OBJ_PU, &n_pus
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_hw_obj_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
     ctu_emit_host_hw_info(
         base_scope, CTU_SCOPE_KIND_PROCESS, "base_scope"
     );
@@ -92,21 +80,9 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_hw_obj_count(
-        sub_scope, QV_HW_OBJ_PU, &n_pus
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_hw_obj_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
     ctu_emit_host_hw_info(sub_scope, CTU_SCOPE_KIND_PROCESS, "sub_scope");
     ctu_emit(sub_scope, CTU_SCOPE_KIND_PROCESS, "\n");
-
-    ctu_scope_report(sub_scope, CTU_SCOPE_KIND_PROCESS, "sub_scope");
-    ctu_emit(sub_scope, CTU_SCOPE_KIND_PROCESS, "\n");
-
-    ctu_change_bind(sub_scope, CTU_SCOPE_KIND_PROCESS);
+    ctu_emit_scope_report(sub_scope, CTU_SCOPE_KIND_PROCESS, "sub_scope");
 
     rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {
