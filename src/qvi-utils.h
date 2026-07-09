@@ -191,7 +191,7 @@ qvi_copy(
 static inline pid_t
 qvi_gettid(void)
 {
-    return gettid();
+    return (pid_t)syscall(SYS_gettid);
 }
 
 /**
