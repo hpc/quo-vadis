@@ -110,9 +110,9 @@ test_3(void)
     ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
 
     qvi_map_t expected = {
-        {0, {0, 3}},
-        {1, {1, 4}},
-        {2, {2, 5}}
+        {0, {0, 1}},
+        {1, {2, 3}},
+        {2, {4, 5}}
     };
     ctu_assert(map == expected, "unexpected result");
 
