@@ -1,7 +1,7 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 
 /**
- * @file test-threads.c
+ * @file test-omp.c
  */
 
 #include "common-test-utils.h"

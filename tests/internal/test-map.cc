@@ -91,12 +91,12 @@ test_2(void)
     qvi_log_info("✓ {} PASSED", __func__);
 }
 
-// n < m, no affinity test.
+// n > m, no affinity test.
 static void
 test_3(void)
 {
-    std::vector<qvi_hwloc_bitmap> src_affinities(3);
-    std::vector<qvi_hwloc_bitmap> dst_affinities(6);
+    std::vector<qvi_hwloc_bitmap> src_affinities(6);
+    std::vector<qvi_hwloc_bitmap> dst_affinities(3);
 
     qvi_map_config config = {
         src_affinities,
@@ -110,9 +110,12 @@ test_3(void)
     ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
 
     qvi_map_t expected = {
-        {0, {0, 1}},
-        {1, {2, 3}},
-        {2, {4, 5}}
+        {0, {0}},
+        {1, {0}},
+        {2, {1}},
+        {3, {1}},
+        {4, {2}},
+        {5, {2}}
     };
     ctu_assert(map == expected, "unexpected result");
 
