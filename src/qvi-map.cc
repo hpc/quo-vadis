@@ -132,10 +132,10 @@ qvi_map_colors(
     auto &src_colors = config.src_colors;
     const size_t n = src_colors.size();
     const size_t m = config.ndst;
-    // These should be clamped: 0 to n-1, so verify that.
+    // These should be clamped: 0 to m-1, so verify that.
     assert(
-        std::ranges::all_of(src_colors, [n](int val) {
-            return val >= 0 && val < static_cast<int>(n);
+        std::ranges::all_of(src_colors, [m](int val) {
+            return val >= 0 && val < static_cast<int>(m);
         })
     );
     // Map the color index to its color value,
@@ -266,37 +266,36 @@ private:
         }
     };
 
-    bool be_verbose;
-    size_t n_sources;
-    size_t n_destinations;
-    size_t slots_per_dest;
-    size_t total_slots;
+    bool m_be_verbose;
+    size_t m_nsrcs;
+    size_t m_ndsts;
+    size_t m_slots_per_dst;
     // Preference lists.
-    std::map<size_t, std::vector<slot>> source_prefs;
-    std::map<slot, std::vector<size_t>> slot_prefs;
+    std::map<size_t, std::vector<slot>> m_src_prefs;
+    std::map<slot, std::vector<size_t>> m_slot_prefs;
     // Current matching state.
-    std::map<size_t, slot> source_to_slot;
-    std::map<slot, size_t> slot_to_source;
+    std::map<size_t, slot> m_src_to_slot;
+    std::map<slot, size_t> m_slot_to_src;
     // Source ID to next proposal ID.
-    std::map<size_t, size_t> source_next_proposal;
+    std::map<size_t, size_t> m_src_next_proposal;
 
     /**
      * Calculate contention score for each destination.
      * Higher score = more sources want this destination.
      */
     std::map<size_t, size_t>
-    calculate_dst_contention(
+    m_calculate_dst_contention(
         const qvi_map_t &affinities
     ) {
         std::map<size_t, size_t> contention;
-        for (size_t dst = 0; dst < n_destinations; ++dst) {
+        for (size_t dst = 0; dst < m_ndsts; ++dst) {
             contention[dst] = 0;
         }
 
         for (const auto &[src, dsts] : affinities) {
             if (dsts.empty()) {
                 // Empty affinity counts as wanting all destinations.
-                for (size_t dst = 0; dst < n_destinations; ++dst) {
+                for (size_t dst = 0; dst < m_ndsts; ++dst) {
                     contention[dst]++;
                 }
             }
@@ -319,7 +318,7 @@ private:
      * 4. Non-affinity destinations LAST (only as fallback).
      */
     std::vector<slot>
-    build_src_prefs(
+    m_build_src_prefs(
         const std::set<size_t> &affinities,
         bool has_empty_affinity,
         const std::map<size_t, size_t> &contention
@@ -346,16 +345,16 @@ private:
         );
         // Add all slots of affinity destinations
         for (size_t dst : preferred_dests) {
-            for (size_t slot = 0; slot < slots_per_dest; ++slot) {
+            for (size_t slot = 0; slot < m_slots_per_dst; ++slot) {
                 preferences.push_back({dst, slot});
             }
         }
         // === Phase 2: non-affinity destinations (fallback only). ===
         // Only add if source has specific affinities (not empty affinity).
         // These are MUCH less preferred.
-        if (!has_empty_affinity && affinities.size() < n_destinations) {
+        if (!has_empty_affinity && affinities.size() < m_ndsts) {
             std::vector<size_t> non_preferred;
-            for (size_t dst = 0; dst < n_destinations; ++dst) {
+            for (size_t dst = 0; dst < m_ndsts; ++dst) {
                 if (affinities.count(dst) == 0) {
                     non_preferred.push_back(dst);
                 }
@@ -369,7 +368,7 @@ private:
             );
 
             for (size_t dst : non_preferred) {
-                for (size_t slot = 0; slot < slots_per_dest; ++slot) {
+                for (size_t slot = 0; slot < m_slots_per_dst; ++slot) {
                     preferences.push_back({dst, slot});
                 }
             }
@@ -387,14 +386,14 @@ private:
      *    - Only accepted as last resort.
      */
     std::vector<size_t>
-    build_slot_preferences(
+    m_build_slot_preferences(
         const slot &slot,
         const qvi_map_t &affinities
     ) {
         std::vector<size_t> with_affinity;
         std::vector<size_t> without_affinity;
 
-        for (size_t src = 0; src < n_sources; ++src) {
+        for (size_t src = 0; src < m_nsrcs; ++src) {
             auto it = affinities.find(src);
             bool has_affinity = false;
 
@@ -411,7 +410,7 @@ private:
         std::sort(without_affinity.begin(), without_affinity.end());
         // CRITICAL: Affinity sources come first (much higher priority).
         std::vector<size_t> preferences;
-        preferences.reserve(n_sources);
+        preferences.reserve(m_nsrcs);
         preferences.insert(
             preferences.end(),
             with_affinity.begin(),
@@ -426,31 +425,39 @@ private:
     }
 
     /**
-     * Check if slot prefers new_source over current_source
+     * Check if slot prefers new_source over current_source.
      */
     bool
-    slot_prefers(
+    m_slot_prefers(
         const slot &slot,
         size_t new_source,
-        size_t current_source
+        size_t cur_source
     ) const {
-        const auto &prefs = slot_prefs.at(slot);
+        const auto &prefs = m_slot_prefs.at(slot);
+        const size_t nprefs = prefs.size();
+        // Initialize with sentinel values.
+        size_t new_rank = nprefs;
+        size_t cur_rank = nprefs;
 
-        auto new_pos = std::find(prefs.begin(), prefs.end(), new_source);
-        auto current_pos = std::find(prefs.begin(), prefs.end(), current_source);
-
-        return new_pos < current_pos;
+        for (size_t i = 0; i < nprefs; ++i) {
+            if (prefs[i] == new_source) new_rank = i;
+            if (prefs[i] == cur_source) cur_rank = i;
+            // Early termination check.
+            if (new_rank != nprefs && cur_rank != nprefs) break;
+        }
+        // Lower in list, so higher in preference?
+        return new_rank < cur_rank;
     }
 
     std::string
-    format_contention_scores(
+    m_format_contention_scores(
         const std::map<size_t, size_t> &contention
     ) {
             std::ostringstream oss;
             oss << "\nGS Destination contention scores:\n";
             oss << "  Key: {dst, score}\n";
             oss << "{\n";
-            for (size_t dst = 0; dst < n_destinations; ++dst) {
+            for (size_t dst = 0; dst < m_ndsts; ++dst) {
                 size_t score = 0;
                 if (contention.contains(dst)) {
                     score = contention.at(dst);
@@ -467,22 +474,21 @@ public:
         size_t n,
         size_t m,
         const qvi_map_t &affinities,
-        bool verbose_mode
-    ) : be_verbose(verbose_mode)
-      , n_sources(n)
-      , n_destinations(m) {
-
-        slots_per_dest = qvi_maxiperk(n, m);
-        total_slots = m * slots_per_dest;
+        bool be_verbose
+    ) : m_be_verbose(be_verbose)
+      , m_nsrcs(n)
+      , m_ndsts(m)
+      , m_slots_per_dst(qvi_maxiperk(n, m))
+    {
         // Calculate contention for smart ordering.
-        const auto contention = calculate_dst_contention(affinities);
+        const auto contention = m_calculate_dst_contention(affinities);
 
-        if (qvi_unlikely(be_verbose)) {
-            qvi_log_info("{}", format_contention_scores(contention));
+        if (qvi_unlikely(m_be_verbose)) {
+            qvi_log_info("{}", m_format_contention_scores(contention));
         }
         // Build preference lists for sources.
-        for (size_t src = 0; src < n; ++src) {
-            auto it = affinities.find(src);
+        for (size_t src = 0; src < m_nsrcs; ++src) {
+            const auto it = affinities.find(src);
             std::set<size_t> src_affinities;
             bool has_empty_affinity = false;
 
@@ -496,20 +502,19 @@ public:
                     }
                 }
             }
-
-            source_prefs[src] = build_src_prefs(
+            m_src_prefs[src] = m_build_src_prefs(
                 src_affinities,
                 has_empty_affinity,
                 contention
             );
-            source_next_proposal[src] = 0;
+            m_src_next_proposal[src] = 0;
         }
         // Build preference lists for slots.
         for (size_t dst = 0; dst < m; ++dst) {
-            for (size_t slot_id = 0; slot_id < slots_per_dest; ++slot_id) {
-                slot slot{dst, slot_id};
-                slot_prefs[slot] = build_slot_preferences(slot, affinities);
-                slot_to_source[slot] = SIZE_MAX;
+            for (size_t slot_id = 0; slot_id < m_slots_per_dst; ++slot_id) {
+                const slot slot{dst, slot_id};
+                m_slot_prefs[slot] = m_build_slot_preferences(slot, affinities);
+                m_slot_to_src[slot] = SIZE_MAX;
             }
         }
     }
@@ -521,8 +526,7 @@ public:
     solve(void)
     {
         std::queue<size_t> free_sources;
-
-        for (size_t src = 0; src < n_sources; ++src) {
+        for (size_t src = 0; src < m_nsrcs; ++src) {
             free_sources.push(src);
         }
 
@@ -530,29 +534,29 @@ public:
             const size_t source = free_sources.front();
             free_sources.pop();
 
-            if (source_next_proposal[source] >= source_prefs[source].size()) {
+            if (m_src_next_proposal[source] >= m_src_prefs[source].size()) {
                 const auto ers = "Source " + std::to_string(source) +
                     " exhausted all preferences: no feasible solution!";
                 qvi_log_error(ers);
                 throw qvi_runtime_error(QV_ERR_NOT_SUPPORTED);
             }
 
-            slot slot = source_prefs[source][source_next_proposal[source]];
-            source_next_proposal[source]++;
+            slot slot = m_src_prefs[source][m_src_next_proposal[source]];
+            m_src_next_proposal[source]++;
 
-            const size_t current_match = slot_to_source[slot];
+            const size_t current_match = m_slot_to_src[slot];
             // Slot is free.
             if (current_match == SIZE_MAX) {
-                source_to_slot[source] = slot;
-                slot_to_source[slot] = source;
+                m_src_to_slot[source] = slot;
+                m_slot_to_src[slot] = source;
             }
             // Slot is occupied and prefers new source.
-            else if (slot_prefers(slot, source, current_match)) {
-                    // Slot prefers new source.
-                    source_to_slot[source] = slot;
-                    slot_to_source[slot] = source;
-                    source_to_slot.erase(current_match);
-                    free_sources.push(current_match);
+            else if (m_slot_prefers(slot, source, current_match)) {
+                // Slot prefers new source.
+                m_src_to_slot[source] = slot;
+                m_slot_to_src[slot] = source;
+                m_src_to_slot.erase(current_match);
+                free_sources.push(current_match);
             }
             // Slot is occupied and rejects new source.
             else {
@@ -567,7 +571,7 @@ public:
     qvi_map_t
     get_matching(void) const {
         qvi_map_t result;
-        for (const auto &[source, slot] : source_to_slot) {
+        for (const auto &[source, slot] : m_src_to_slot) {
             result[source].insert(slot.destination);
         }
         return result;
@@ -577,15 +581,15 @@ public:
      * Verify stability and analyze affinity satisfaction.
      */
     bool
-    verify_stability(
+    stable(
         const qvi_map_t &affinities
     ) const {
         size_t affinity_satisfied = 0;
         size_t total_with_affinity = 0;
         // Check each source.
-        for (size_t src = 0; src < n_sources; ++src) {
-            auto it = source_to_slot.find(src);
-            if (it == source_to_slot.end()) {
+        for (size_t src = 0; src < m_nsrcs; ++src) {
+            auto it = m_src_to_slot.find(src);
+            if (it == m_src_to_slot.end()) {
                 qvi_log_error("Source {} is unmatched", src);
                 return false;
             }
@@ -601,12 +605,11 @@ public:
                 }
             }
             // Check for blocking pairs.
-            const auto &src_prefs = source_prefs.at(src);
-            for (const auto& preferred_slot : src_prefs) {
+            for (const auto &preferred_slot : m_src_prefs.at(src)) {
                 if (preferred_slot == current_slot) break;
 
-                auto slot_match_it = slot_to_source.find(preferred_slot);
-                if (slot_match_it == slot_to_source.end()) continue;
+                auto slot_match_it = m_slot_to_src.find(preferred_slot);
+                if (slot_match_it == m_slot_to_src.end()) continue;
 
                 size_t other_source = slot_match_it->second;
 
@@ -617,13 +620,13 @@ public:
                     return false;
                 }
 
-                if (slot_prefers(preferred_slot, src, other_source)) {
+                if (m_slot_prefers(preferred_slot, src, other_source)) {
                     qvi_log_error("Blocking pair found!");
                     return false;
                 }
             }
         }
-        if (qvi_unlikely(be_verbose)) {
+        if (qvi_unlikely(m_be_verbose)) {
             qvi_log_info(
                 "GS Affinity satisfaction: {}/{}\n",
                 affinity_satisfied,
@@ -647,7 +650,7 @@ solve_ap_mapping(
     stable_marriage_solver solver(n, m, affinities, be_verbose);
     solver.solve();
 
-    if (!solver.verify_stability(affinities)) {
+    if (!solver.stable(affinities)) {
         qvi_log_error("Solution is not stable!");
         throw qvi_runtime_error(QV_ERR_NOT_SUPPORTED);
     }
@@ -665,23 +668,18 @@ qvi_map_affinity_preserving(
     // Cache relevant input data.
     const auto &src = config.src_affinities;
     const auto &dst = config.dst_affinities;
-    const size_t n = src.size();
-    const size_t m = dst.size();
+    const size_t nsrc = src.size();
+    const size_t ndst = dst.size();
     // Determine the affinities shared between sources and destinations.
     const auto affinities = qvi_map_calc_affinities(src, dst);
     if (qvi_unlikely(config.be_verbose)) {
         qvi_map_emit("APM Affinities", affinities);
     }
-    // Extract a view into just the values in the map.
-    const auto avv = affinities | std::views::values;
-    const auto affinity_intersection = k_set_intersection(
-        std::vector<std::set<size_t>>(avv.begin(), avv.end())
-    );
     // Solve the mapping problem.
     // Note: our algorithm doesn't require that nsrc >= ndst.
-    map = solve_ap_mapping(n, m, affinities, config.be_verbose);
+    map = solve_ap_mapping(nsrc, ndst, affinities, config.be_verbose);
     if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info("APM done with N={}, M={}", n, m);
+        qvi_log_info("APM done with N={}, M={}", nsrc, ndst);
         qvi_map_emit("APM", map);
         qvi_log_info("APM Mapping Done ======================================");
     }
