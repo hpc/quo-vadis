@@ -35,7 +35,7 @@ ExternalProject_Add(
     BUILD_BYPRODUCTS ${QVI_CEREAL_STATIC_LIB}
 )
 
-add_library(cereal STATIC IMPORTED GLOBAL)
+add_library(cereal INTERFACE IMPORTED GLOBAL)
 add_dependencies(cereal libcereal)
 
 set_target_properties(
