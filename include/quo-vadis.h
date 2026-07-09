@@ -277,7 +277,7 @@ qv_scope_hw_obj_count(
  *
  */
 int
-qv_scope_device_id_get(
+qv_scope_device_id(
     qv_scope_t *scope,
     qv_hw_obj_type_t dev_obj,
     int dev_index,
