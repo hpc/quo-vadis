@@ -12,6 +12,7 @@
  */
 
 #include "qvi-map.h"
+#include <string>
 
 /**
  * Takes a map and assigns its values as keys and keys as values.
@@ -265,24 +266,26 @@ private:
         }
     };
 
+    bool be_verbose;
     size_t n_sources;
     size_t n_destinations;
     size_t slots_per_dest;
     size_t total_slots;
-    // Preference lists
+    // Preference lists.
     std::map<size_t, std::vector<slot>> source_prefs;
     std::map<slot, std::vector<size_t>> slot_prefs;
-    // Current matching state
+    // Current matching state.
     std::map<size_t, slot> source_to_slot;
     std::map<slot, size_t> slot_to_source;
-    // For the algorithm
+    // Source ID to next proposal ID.
     std::map<size_t, size_t> source_next_proposal;
+
     /**
-     * Calculate contention score for each destination
-     * Higher score = more sources want this destination
+     * Calculate contention score for each destination.
+     * Higher score = more sources want this destination.
      */
     std::map<size_t, size_t>
-    calculate_destination_contention(
+    calculate_dst_contention(
         const qvi_map_t &affinities
     ) {
         std::map<size_t, size_t> contention;
@@ -305,6 +308,7 @@ private:
         }
         return contention;
     }
+
     /**
      * Build preference list for a source with STRONG affinity preference.
      *
@@ -315,7 +319,7 @@ private:
      * 4. Non-affinity destinations LAST (only as fallback).
      */
     std::vector<slot>
-    build_source_preferences(
+    build_src_prefs(
         const std::set<size_t> &affinities,
         bool has_empty_affinity,
         const std::map<size_t, size_t> &contention
@@ -438,27 +442,44 @@ private:
         return new_pos < current_pos;
     }
 
+    std::string
+    format_contention_scores(
+        const std::map<size_t, size_t> &contention
+    ) {
+            std::ostringstream oss;
+            oss << "\nGS Destination contention scores:\n";
+            oss << "  Key: {dst, score}\n";
+            oss << "{\n";
+            for (size_t dst = 0; dst < n_destinations; ++dst) {
+                size_t score = 0;
+                if (contention.contains(dst)) {
+                    score = contention.at(dst);
+                }
+                oss << "  {" << dst << ", " << score << "},\n";
+            }
+            oss.seekp(-2, std::ios_base::end);
+            oss << "\n}\n";
+            return oss.str();
+    }
+
 public:
     stable_marriage_solver(
         size_t n,
         size_t m,
-        const qvi_map_t &affinities
-    ) : n_sources(n)
+        const qvi_map_t &affinities,
+        bool verbose_mode
+    ) : be_verbose(verbose_mode)
+      , n_sources(n)
       , n_destinations(m) {
 
         slots_per_dest = qvi_maxiperk(n, m);
         total_slots = m * slots_per_dest;
         // Calculate contention for smart ordering.
-        auto contention = calculate_destination_contention(affinities);
-#if 0
-        std::ostringstream oss;
-        oss << "Destination contention scores: ";
-        for (size_t dst = 0; dst < m; ++dst) {
-            oss << "d" << dst << "=" << contention[dst] << " ";
+        const auto contention = calculate_dst_contention(affinities);
+
+        if (qvi_unlikely(be_verbose)) {
+            qvi_log_info("{}", format_contention_scores(contention));
         }
-        oss << "\n";
-        qvi_log_debug("{}", oss.str());
-#endif
         // Build preference lists for sources.
         for (size_t src = 0; src < n; ++src) {
             auto it = affinities.find(src);
@@ -476,7 +497,7 @@ public:
                 }
             }
 
-            source_prefs[src] = build_source_preferences(
+            source_prefs[src] = build_src_prefs(
                 src_affinities,
                 has_empty_affinity,
                 contention
@@ -506,7 +527,7 @@ public:
         }
 
         while (!free_sources.empty()) {
-            size_t source = free_sources.front();
+            const size_t source = free_sources.front();
             free_sources.pop();
 
             if (source_next_proposal[source] >= source_prefs[source].size()) {
@@ -520,23 +541,22 @@ public:
             source_next_proposal[source]++;
 
             const size_t current_match = slot_to_source[slot];
+            // Slot is free.
             if (current_match == SIZE_MAX) {
-                // Slot is free.
                 source_to_slot[source] = slot;
                 slot_to_source[slot] = source;
             }
-            else {
-                // Slot is occupied.
-                if (slot_prefers(slot, source, current_match)) {
+            // Slot is occupied and prefers new source.
+            else if (slot_prefers(slot, source, current_match)) {
                     // Slot prefers new source.
                     source_to_slot[source] = slot;
                     slot_to_source[slot] = source;
                     source_to_slot.erase(current_match);
                     free_sources.push(current_match);
-                } else {
-                    // Slot rejects new source.
-                    free_sources.push(source);
-                }
+            }
+            // Slot is occupied and rejects new source.
+            else {
+                free_sources.push(source);
             }
         }
     }
@@ -547,7 +567,7 @@ public:
     qvi_map_t
     get_matching(void) const {
         qvi_map_t result;
-        for (const auto& [source, slot] : source_to_slot) {
+        for (const auto &[source, slot] : source_to_slot) {
             result[source].insert(slot.destination);
         }
         return result;
@@ -603,16 +623,13 @@ public:
                 }
             }
         }
-#if 0
-        qvi_log_debug(
-            "Affinity satisfaction: {}/{}",
-            affinity_satisfied,
-            total_with_affinity
-        );
-#else
-        qvi_unused(affinity_satisfied);
-        qvi_unused(total_with_affinity);
-#endif
+        if (qvi_unlikely(be_verbose)) {
+            qvi_log_info(
+                "GS Affinity satisfaction: {}/{}\n",
+                affinity_satisfied,
+                total_with_affinity
+            );
+        }
         return true;
     }
 };
@@ -624,9 +641,10 @@ qvi_map_t
 solve_ap_mapping(
     size_t n,
     size_t m,
-    const qvi_map_t &affinities
+    const qvi_map_t &affinities,
+    bool be_verbose
 ) {
-    stable_marriage_solver solver(n, m, affinities);
+    stable_marriage_solver solver(n, m, affinities, be_verbose);
     solver.solve();
 
     if (!solver.verify_stability(affinities)) {
@@ -644,23 +662,13 @@ qvi_map_affinity_preserving(
     if (qvi_unlikely(config.be_verbose)) {
         qvi_log_info("APM Mapping Started ===================================");
     }
-    using aff_type_t = decltype(config.src_affinities);
-    // Did we invert the sources and destinations?
-    bool inverted = false;
-    // The real sources and destinations.
-    aff_type_t rsrc = config.src_affinities;
-    aff_type_t rdst = config.dst_affinities;
-    // Our algorithm requires that nsrc >= ndst. If that
-    // isn't the case, invert them and note that we did so.
-    if (rsrc.size() < rdst.size()) {
-        std::swap(rsrc, rdst);
-        inverted = true;
-    }
-    const size_t n = rsrc.size();
-    const size_t m = rdst.size();
-    assert(n >= m);
+    // Cache relevant input data.
+    const auto &src = config.src_affinities;
+    const auto &dst = config.dst_affinities;
+    const size_t n = src.size();
+    const size_t m = dst.size();
     // Determine the affinities shared between sources and destinations.
-    const auto affinities = qvi_map_calc_affinities(rsrc, rdst);
+    const auto affinities = qvi_map_calc_affinities(src, dst);
     if (qvi_unlikely(config.be_verbose)) {
         qvi_map_emit("APM Affinities", affinities);
     }
@@ -669,27 +677,11 @@ qvi_map_affinity_preserving(
     const auto affinity_intersection = k_set_intersection(
         std::vector<std::set<size_t>>(avv.begin(), avv.end())
     );
-    // If the destination affinities overlap completely, then just map simply.
-    if (affinity_intersection.size() == m) {
-        if (qvi_unlikely(config.be_verbose)) {
-            qvi_log_info("APM Detected simple mapping for n={}, m={}", n, m);
-        }
-        const int rc = qvi_map_packed(qvi_map_config(n, m), map);
-        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    }
-    else {
-        // Solve the more complex mapping problem.
-        map = solve_ap_mapping(n, m, affinities);
-    }
-    // If we did an inverted solve, invert the
-    // result to match the original n and m.
-    if (inverted) {
-        map = invert_map(map);
-    }
+    // Solve the mapping problem.
+    // Note: our algorithm doesn't require that nsrc >= ndst.
+    map = solve_ap_mapping(n, m, affinities, config.be_verbose);
     if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info(
-            "APM done with N={}, M={} (inverted solve={})", n, m, inverted
-        );
+        qvi_log_info("APM done with N={}, M={}", n, m);
         qvi_map_emit("APM", map);
         qvi_log_info("APM Mapping Done ======================================");
     }
