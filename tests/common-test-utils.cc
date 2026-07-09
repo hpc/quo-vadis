@@ -435,7 +435,7 @@ ctu_emit_device_info(
     for (int i = 0; i < ndevs; ++i) {
         for (size_t j = 0; j < ctu_devid_name_to_id_tab_size; ++j) {
             char *devids = NULL;
-            int rc = qv_scope_device_id_get(
+            int rc = qv_scope_device_id(
                 scope,
                 dev_type,
                 i,
@@ -443,7 +443,7 @@ ctu_emit_device_info(
                 &devids
             );
             if (rc != QV_SUCCESS) {
-                const char *ers = "qv_scope_device_id_get() failed";
+                const char *ers = "qv_scope_device_id() failed";
                 ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
             }
             reporter.add(
