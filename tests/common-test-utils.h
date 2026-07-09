@@ -24,6 +24,7 @@
 #define _GNU_SOURCE
 #endif
 
+// IWYU pragma: begin_keep
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -31,6 +32,7 @@
 #include <string.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+// IWYU pragma: end_keep
 
 #define CTU_STRINGIFY(x) #x
 #define CTU_TOSTRING(x)  CTU_STRINGIFY(x)

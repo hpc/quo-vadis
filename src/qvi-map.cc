@@ -12,7 +12,6 @@
  */
 
 #include "qvi-map.h"
-#include "qvi-utils.h"
 
 /**
  * Takes a map and assigns its values as keys and keys as values.
@@ -241,106 +240,400 @@ qvi_map_spread(
     return QV_SUCCESS;
 }
 
+class stable_marriage_solver {
+private:
+    struct slot {
+        size_t destination;
+        size_t slot_index;
+
+        bool
+        operator<(
+            const slot &other
+        ) const {
+            if (destination != other.destination) {
+                return destination < other.destination;
+            }
+            return slot_index < other.slot_index;
+        }
+
+        bool
+        operator==(
+            const slot &other
+        ) const {
+            return destination == other.destination &&
+                   slot_index == other.slot_index;
+        }
+    };
+
+    size_t n_sources;
+    size_t n_destinations;
+    size_t slots_per_dest;
+    size_t total_slots;
+    // Preference lists
+    std::map<size_t, std::vector<slot>> source_prefs;
+    std::map<slot, std::vector<size_t>> slot_prefs;
+    // Current matching state
+    std::map<size_t, slot> source_to_slot;
+    std::map<slot, size_t> slot_to_source;
+    // For the algorithm
+    std::map<size_t, size_t> source_next_proposal;
+    /**
+     * Calculate contention score for each destination
+     * Higher score = more sources want this destination
+     */
+    std::map<size_t, size_t>
+    calculate_destination_contention(
+        const qvi_map_t &affinities
+    ) {
+        std::map<size_t, size_t> contention;
+        for (size_t dst = 0; dst < n_destinations; ++dst) {
+            contention[dst] = 0;
+        }
+
+        for (const auto &[src, dsts] : affinities) {
+            if (dsts.empty()) {
+                // Empty affinity counts as wanting all destinations.
+                for (size_t dst = 0; dst < n_destinations; ++dst) {
+                    contention[dst]++;
+                }
+            }
+            else {
+                for (size_t dst : dsts) {
+                    contention[dst]++;
+                }
+            }
+        }
+        return contention;
+    }
+    /**
+     * Build preference list for a source with STRONG affinity preference.
+     *
+     * Ordering strategy:
+     * 1. Affinity destinations first (with lowest contention preferred).
+     * 2. Within affinity: prefer less contended destinations (better chance).
+     * 3. Within destination: all slots in order.
+     * 4. Non-affinity destinations LAST (only as fallback).
+     */
+    std::vector<slot>
+    build_source_preferences(
+        const std::set<size_t> &affinities,
+        bool has_empty_affinity,
+        const std::map<size_t, size_t> &contention
+    ) {
+        auto preference_sorter = [&contention](size_t a, size_t b) {
+            const size_t cont_a = contention.at(a);
+            const size_t cont_b = contention.at(b);
+            // Less contention first.
+            if (cont_a != cont_b) return cont_a < cont_b;
+            // Tie-breaker: lower destination number.
+            return a < b;
+        };
+        std::vector<slot> preferences;
+        // === Phase 1: affinity destinations (highest priority). ===
+        std::vector<size_t> preferred_dests(
+            affinities.begin(), affinities.end()
+        );
+        // Sort by contention (less contended first = better chance of success).
+        // Break ties by destination number (lower is better).
+        std::sort(
+            preferred_dests.begin(),
+            preferred_dests.end(),
+            preference_sorter
+        );
+        // Add all slots of affinity destinations
+        for (size_t dst : preferred_dests) {
+            for (size_t slot = 0; slot < slots_per_dest; ++slot) {
+                preferences.push_back({dst, slot});
+            }
+        }
+        // === Phase 2: non-affinity destinations (fallback only). ===
+        // Only add if source has specific affinities (not empty affinity).
+        // These are MUCH less preferred.
+        if (!has_empty_affinity && affinities.size() < n_destinations) {
+            std::vector<size_t> non_preferred;
+            for (size_t dst = 0; dst < n_destinations; ++dst) {
+                if (affinities.count(dst) == 0) {
+                    non_preferred.push_back(dst);
+                }
+            }
+            // Sort non-preferred by contention:
+            // (less contended first for better fallback).
+            std::sort(
+                non_preferred.begin(),
+                non_preferred.end(),
+                preference_sorter
+            );
+
+            for (size_t dst : non_preferred) {
+                for (size_t slot = 0; slot < slots_per_dest; ++slot) {
+                    preferences.push_back({dst, slot});
+                }
+            }
+        }
+        return preferences;
+    }
+
+    /**
+     * Build preference list for a destination slot with STRONG affinity preference.
+     *
+     * Ordering strategy:
+     * 1. Sources WITH affinity for this destination (much higher priority).
+     *    - Ordered by source number (lower first for stability).
+     * 2. Sources WITHOUT affinity (much lower priority).
+     *    - Only accepted as last resort.
+     */
+    std::vector<size_t>
+    build_slot_preferences(
+        const slot &slot,
+        const qvi_map_t &affinities
+    ) {
+        std::vector<size_t> with_affinity;
+        std::vector<size_t> without_affinity;
+
+        for (size_t src = 0; src < n_sources; ++src) {
+            auto it = affinities.find(src);
+            bool has_affinity = false;
+
+            if (it != affinities.end()) {
+                // Empty affinity (can go anywhere). Treat as having affinity.
+                if (it->second.empty()) has_affinity = true;
+                else has_affinity = it->second.count(slot.destination) > 0;
+            }
+            if (has_affinity) with_affinity.push_back(src);
+            else without_affinity.push_back(src);
+        }
+        // Sort by source number within each group.
+        std::sort(with_affinity.begin(), with_affinity.end());
+        std::sort(without_affinity.begin(), without_affinity.end());
+        // CRITICAL: Affinity sources come first (much higher priority).
+        std::vector<size_t> preferences;
+        preferences.reserve(n_sources);
+        preferences.insert(
+            preferences.end(),
+            with_affinity.begin(),
+            with_affinity.end()
+        );
+        preferences.insert(
+            preferences.end(),
+            without_affinity.begin(),
+            without_affinity.end()
+        );
+        return preferences;
+    }
+
+    /**
+     * Check if slot prefers new_source over current_source
+     */
+    bool
+    slot_prefers(
+        const slot &slot,
+        size_t new_source,
+        size_t current_source
+    ) const {
+        const auto &prefs = slot_prefs.at(slot);
+
+        auto new_pos = std::find(prefs.begin(), prefs.end(), new_source);
+        auto current_pos = std::find(prefs.begin(), prefs.end(), current_source);
+
+        return new_pos < current_pos;
+    }
+
+public:
+    stable_marriage_solver(
+        size_t n,
+        size_t m,
+        const qvi_map_t &affinities
+    ) : n_sources(n)
+      , n_destinations(m) {
+
+        slots_per_dest = qvi_maxiperk(n, m);
+        total_slots = m * slots_per_dest;
+        // Calculate contention for smart ordering.
+        auto contention = calculate_destination_contention(affinities);
+#if 0
+        std::ostringstream oss;
+        oss << "Destination contention scores: ";
+        for (size_t dst = 0; dst < m; ++dst) {
+            oss << "d" << dst << "=" << contention[dst] << " ";
+        }
+        oss << "\n";
+        qvi_log_debug("{}", oss.str());
+#endif
+        // Build preference lists for sources.
+        for (size_t src = 0; src < n; ++src) {
+            auto it = affinities.find(src);
+            std::set<size_t> src_affinities;
+            bool has_empty_affinity = false;
+
+            if (it != affinities.end()) {
+                src_affinities = it->second;
+                has_empty_affinity = src_affinities.empty();
+
+                if (has_empty_affinity) {
+                    for (size_t dst = 0; dst < m; ++dst) {
+                        src_affinities.insert(dst);
+                    }
+                }
+            }
+
+            source_prefs[src] = build_source_preferences(
+                src_affinities,
+                has_empty_affinity,
+                contention
+            );
+            source_next_proposal[src] = 0;
+        }
+        // Build preference lists for slots.
+        for (size_t dst = 0; dst < m; ++dst) {
+            for (size_t slot_id = 0; slot_id < slots_per_dest; ++slot_id) {
+                slot slot{dst, slot_id};
+                slot_prefs[slot] = build_slot_preferences(slot, affinities);
+                slot_to_source[slot] = SIZE_MAX;
+            }
+        }
+    }
+
+    /**
+     * Run the Gale-Shapley algorithm to find a stable matching.
+     */
+    void
+    solve(void)
+    {
+        std::queue<size_t> free_sources;
+
+        for (size_t src = 0; src < n_sources; ++src) {
+            free_sources.push(src);
+        }
+
+        while (!free_sources.empty()) {
+            size_t source = free_sources.front();
+            free_sources.pop();
+
+            if (source_next_proposal[source] >= source_prefs[source].size()) {
+                const auto ers = "Source " + std::to_string(source) +
+                    " exhausted all preferences: no feasible solution!";
+                qvi_log_error(ers);
+                throw qvi_runtime_error(QV_ERR_NOT_SUPPORTED);
+            }
+
+            slot slot = source_prefs[source][source_next_proposal[source]];
+            source_next_proposal[source]++;
+
+            const size_t current_match = slot_to_source[slot];
+            if (current_match == SIZE_MAX) {
+                // Slot is free.
+                source_to_slot[source] = slot;
+                slot_to_source[slot] = source;
+            }
+            else {
+                // Slot is occupied.
+                if (slot_prefers(slot, source, current_match)) {
+                    // Slot prefers new source.
+                    source_to_slot[source] = slot;
+                    slot_to_source[slot] = source;
+                    source_to_slot.erase(current_match);
+                    free_sources.push(current_match);
+                } else {
+                    // Slot rejects new source.
+                    free_sources.push(source);
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns the final matching.
+     */
+    qvi_map_t
+    get_matching(void) const {
+        qvi_map_t result;
+        for (const auto& [source, slot] : source_to_slot) {
+            result[source].insert(slot.destination);
+        }
+        return result;
+    }
+
+    /**
+     * Verify stability and analyze affinity satisfaction.
+     */
+    bool
+    verify_stability(
+        const qvi_map_t &affinities
+    ) const {
+        size_t affinity_satisfied = 0;
+        size_t total_with_affinity = 0;
+        // Check each source.
+        for (size_t src = 0; src < n_sources; ++src) {
+            auto it = source_to_slot.find(src);
+            if (it == source_to_slot.end()) {
+                qvi_log_error("Source {} is unmatched", src);
+                return false;
+            }
+
+            const slot &current_slot = it->second;
+            size_t assigned_dst = current_slot.destination;
+            // Check affinity satisfaction.
+            auto aff_it = affinities.find(src);
+            if (aff_it != affinities.end() && !aff_it->second.empty()) {
+                total_with_affinity++;
+                if (aff_it->second.count(assigned_dst) > 0) {
+                    affinity_satisfied++;
+                }
+            }
+            // Check for blocking pairs.
+            const auto &src_prefs = source_prefs.at(src);
+            for (const auto& preferred_slot : src_prefs) {
+                if (preferred_slot == current_slot) break;
+
+                auto slot_match_it = slot_to_source.find(preferred_slot);
+                if (slot_match_it == slot_to_source.end()) continue;
+
+                size_t other_source = slot_match_it->second;
+
+                if (other_source == SIZE_MAX) {
+                    qvi_log_error(
+                        "Blocking pair: source {} prefers free slot!", src
+                    );
+                    return false;
+                }
+
+                if (slot_prefers(preferred_slot, src, other_source)) {
+                    qvi_log_error("Blocking pair found!");
+                    return false;
+                }
+            }
+        }
+#if 0
+        qvi_log_debug(
+            "Affinity satisfaction: {}/{}",
+            affinity_satisfied,
+            total_with_affinity
+        );
+#else
+        qvi_unused(affinity_satisfied);
+        qvi_unused(total_with_affinity);
+#endif
+        return true;
+    }
+};
+
 /**
- * Solves the affinity-preserving source-to-destination mapping problem using
- * Min-Cost Max-Flow with progressive cost model and destination ordering
- * tie-breaker.
+ * Solves the mapping problem with STRONG affinity preference.
  */
-static qvi_map_t
+qvi_map_t
 solve_ap_mapping(
     size_t n,
     size_t m,
     const qvi_map_t &affinities
 ) {
-    // Calculate max slots per destination.
-    const size_t slots_per_dest = qvi_maxiperk(n, m);
-    // Node layout:
-    // 0: Super source
-    // 1...n: Source nodes
-    // n+1...n+(m*slots_per_dest): Destination slot nodes
-    // last: Super sink
-    const size_t total_slot_nodes = m * slots_per_dest;
-    const int super_source = 0;
-    const int super_sink = static_cast<int>(1 + n + total_slot_nodes);
-    const int total_nodes = super_sink + 1;
-    // Create the network.
-    qvi_min_cost_max_flow mcmf(total_nodes);
-    // Edge 1: Super source-->source nodes (capacity 1, cost 0).
-    for (size_t i = 0; i < n; ++i) {
-        mcmf.add_edge(super_source, 1 + i, 1, 0);
-    }
-    // Penalty for using later slots.
-    const int64_t slot_penalty = 100000LL;
-    // High penalty for no-affinity (zero affinity) destinations.
-    const int64_t zaff_penalty = 10000000LL;
-    // Edge 2: Source nodes-->destination slot nodes
-    //         (capacity 1, progressive cost).
-    // Cost structure:
-    // 1. Progressive penalty based on slot number:
-    //    strongly prefer first slots.
-    // 2. Small tie-breaker based on destination number:
-    //    prefer lower-numbered destinations.
-    // 3. Huge penalty for non-affinity destinations:
-    //    but still possible as fallback.
-    for (size_t src = 0; src < n; ++src) {
-        const auto it = affinities.find(src);
-        std::set<size_t> src_affinities;
-        if (it != affinities.end()) {
-            src_affinities = it->second;
-        }
-        // If affinity set is empty, treat it as "no preference":
-        // allow any destination with low cost.
-        if (src_affinities.empty()) {
-            for (size_t dst = 0; dst < m; ++dst) {
-                src_affinities.insert(dst);
-            }
-        }
-        // Connect to ALL destinations, but use different costs.
-        for (size_t dst = 0; dst < m; ++dst) {
-            const bool is_preferred = src_affinities.count(dst) > 0;
-            // Connect source to all slots of this destination.
-            for (size_t slot = 0; slot < slots_per_dest; ++slot) {
-                const int slot_node = 1 + n + dst * slots_per_dest + slot;
-                const int64_t prog_penalty = slot_penalty * slot;
-                const int64_t dest_tiebrkr = dst;
-                const int64_t aff_penalty = is_preferred ? 0 : zaff_penalty;
-                const int64_t cost = aff_penalty + prog_penalty + dest_tiebrkr;
-                mcmf.add_edge(1 + src, slot_node, 1, cost);
-            }
-        }
-    }
-    // Edge 3: Destination slot nodes-->super sink (capacity 1, cost 0).
-    for (size_t dst = 0; dst < m; ++dst) {
-        for (size_t slot = 0; slot < slots_per_dest; ++slot) {
-            const int slot_node = 1 + n + dst * slots_per_dest + slot;
-            mcmf.add_edge(slot_node, super_sink, 1, 0);
-        }
-    }
-    // Run min-cost max-flow.
-    const auto [flow, cost] = mcmf.min_cost_flow(super_source, super_sink, n);
-    // Verify that all sources were assigned.
-    if (flow != static_cast<int64_t>(n)) {
-        // Failed to assign all sources: no feasible solution exists.
+    stable_marriage_solver solver(n, m, affinities);
+    solver.solve();
+
+    if (!solver.verify_stability(affinities)) {
+        qvi_log_error("Solution is not stable!");
         throw qvi_runtime_error(QV_ERR_NOT_SUPPORTED);
     }
-    // Extract assignment from the flow network
-    qvi_map_t result;
-    const auto &graph = mcmf.get_graph();
-
-    for (size_t src = 0; src < n; ++src) {
-        int src_node = 1 + src;
-        for (const auto &edge : graph[src_node]) {
-            const int slot_node = edge.to;
-            if (slot_node >= static_cast<int>(1 + n) &&
-                slot_node < static_cast<int>(1 + n + total_slot_nodes) &&
-                edge.flow > 0) {
-                const size_t slot_idx = slot_node - (1 + n);
-                const size_t dst = slot_idx / slots_per_dest;
-                result[src].insert(dst);
-            }
-        }
-    }
-    return result;
+    return solver.get_matching();
 }
 
 int
