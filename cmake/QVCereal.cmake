@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2025 Triad National Security, LLC
+# Copyright (c) 2020-2026 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -25,6 +25,7 @@ ExternalProject_Add(
     URL_MD5 "ab6070fadc7c50072ef4153fb1c46a87"
     PREFIX ${QVI_CEREAL_PREFIX}
     CMAKE_ARGS
+      --no-warn-unused-cli
       -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
       -DCMAKE_INSTALL_PREFIX:PATH=${QVI_CEREAL_PREFIX}
       -DCMAKE_INSTALL_LIBDIR:PATH=lib
