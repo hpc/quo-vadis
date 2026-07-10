@@ -160,13 +160,18 @@ configure_file(config.h.in include/${PROJECT_NAME}/config.h)
 # Check datatype sizes
 include(cmake/QVCheckTypes.cmake)
 
-# Specify default build type
-include(cmake/QVBuildType.cmake)
-
-# Internal, third-party packages
+# Internal, third-party packages.
 include(cmake/QVSpdLog.cmake)
 include(cmake/QVCereal.cmake)
 include(cmake/QVhwloc.cmake)
+
+# Specify default build type.
+include(cmake/QVBuildType.cmake)
+
+# Apply developer flags to our own code only.
+if(QV_DEVELOPER_MODE)
+    add_compile_options(${QVI_PICKY_COMPILE_OPTIONS})
+endif()
 
 # Add our source
 add_subdirectory(include)

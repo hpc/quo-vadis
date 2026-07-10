@@ -25,9 +25,15 @@ if(QV_DEVELOPER_MODE)
     message(
         STATUS "Developer mode enabled. Adding picky compile flags."
     )
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -pedantic")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -pedantic")
-    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -Wall -Wextra")
+    # Store the flags. They get applied to our own source
+    # below after third-party packages are configured.
+    set(
+        QVI_PICKY_COMPILE_OPTIONS
+        -Wall
+        -Wextra
+        $<$<COMPILE_LANGUAGE:C>:-pedantic>
+        $<$<COMPILE_LANGUAGE:CXX>:-pedantic>
+    )
 endif()
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
