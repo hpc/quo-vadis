@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*qv_policy_t
- * Copyright (c) 2022-2025 Triad National Security, LLC
+ * Copyright (c) 2022-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2022-2024 Inria
@@ -141,8 +141,11 @@ qv_thread_scopes_free(
     int nscopes,
     qv_scope_t **scopes
 ) {
-    if (qvi_unlikely(nscopes < 0 || !scopes)) {
+    if (qvi_unlikely(nscopes < 0)) {
         return QV_ERR_INVLD_ARG;
+    }
+    if (!scopes) {
+        return QV_SUCCESS;
     }
     try {
         qv_scope::thread_destroy(&scopes, nscopes);
