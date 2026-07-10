@@ -286,10 +286,10 @@ qvi_port_from_env(void);
 /**
  * Cantor pairing function.
  */
-int64_t
+uint64_t
 qvi_cantor_pairing(
-    int a,
-    int b
+    uint_t a,
+    uint_t b
 );
 
 int

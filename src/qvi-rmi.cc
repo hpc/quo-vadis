@@ -57,12 +57,10 @@ zsocket_close(
     void *sock
 ) {
     if (qvi_unlikely(!sock)) return;
-    if (qvi_likely(sock)) {
-        const int rc = zmq_close(sock);
-        if (qvi_unlikely(rc != 0)) {
-            const int eno = errno;
-            zwrn_msg("zmq_close() failed", eno);
-        }
+    const int rc = zmq_close(sock);
+    if (qvi_unlikely(rc != 0)) {
+        const int eno = errno;
+        zwrn_msg("zmq_close() failed", eno);
     }
 }
 
