@@ -111,7 +111,7 @@ qv_scope_free(
     qv_scope_t *scope
 ) {
     // Just accept NULL like free() does.
-    if (qvi_unlikely(!scope)) {
+    if (!scope) {
         return QV_SUCCESS;
     }
     try {
