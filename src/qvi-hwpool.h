@@ -26,8 +26,8 @@
 struct qvi_hwpool_res {
     friend class cereal::access;
 protected:
-    /** Resource hint flags. */
-    qv_scope_create_hints_t m_hints = QV_SCOPE_CREATE_HINT_NONE;
+    /** Resource flags. */
+    qv_scope_flags_t m_flags = QV_SCOPE_FLAG_NONE;
     /** The resource's affinity encoded as a bitmap. */
     qvi_hwloc_bitmap m_affinity = {};
     /** Polymorphic equality check. */
@@ -42,9 +42,9 @@ public:
     qvi_hwpool_res(
         const qvi_hwloc_bitmap &affinity
     ) : m_affinity(affinity) { }
-    /** Returns the resource's create hints. */
-    qv_scope_create_hints_t
-    hints(void);
+    /** Returns the resource's flags. */
+    qv_scope_flags_t
+    flags(void) const;
     /** Returns a const reference to the resource's affinity bitmap. */
     const qvi_hwloc_bitmap &
     affinity(void) const;
@@ -61,7 +61,7 @@ public:
     serialize(
         Archive &archive
     ) {
-        archive(m_hints, m_affinity);
+        archive(m_flags, m_affinity);
     }
 };
 
@@ -145,7 +145,7 @@ public:
         Archive &archive
     ) {
         archive(
-            m_hints, m_affinity, m_type,
+            m_flags, m_affinity, m_type,
             m_id, m_pci_bus_id, m_uuid
         );
     }

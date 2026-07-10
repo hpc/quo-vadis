@@ -46,14 +46,14 @@ public:
         qv_scope_t **scope
     );
     /**
-     * Creates a new scope based on the specified hardware
-     * type, number of resources, and creation hints.
+     * Creates a new scope based on the specified
+     * flags, hardware type, and number of resources.
      */
     int
     create(
+        qv_scope_flags_t flags,
         qv_hw_obj_type_t type,
         int nobjs,
-        qv_scope_create_hints_t hints,
         qv_scope_t **child
     );
     /** Destroys scopes created by thread_split*. */
