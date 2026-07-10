@@ -252,12 +252,13 @@ qvi_port_from_env(void)
     return qvi_stoi(std::string(ports));
 }
 
-int64_t
+uint64_t
 qvi_cantor_pairing(
-    int a,
-    int b
+    uint_t a,
+    uint_t b
 ) {
-    return (a + b) * ((a + b + 1) / 2) + b;
+    const uint64_t sum = static_cast<uint64_t>(a + b);
+    return (sum * (sum + 1)) / 2 + b;
 }
 
 /**
@@ -283,18 +284,18 @@ discover_with_backoff(
     // Jitter random number generator.
     std::mt19937 jitter_rng(std::random_device{}());
 
-    do {
+    while (true) {
         rc = discover_fn(portno);
         if (rc == QV_SUCCESS) return rc;
-        else {
-            // Calculate jitter: e.g., 0% to 50% of current_delay.
-            std::uniform_int_distribution<int> jdist(0, cur_delay.count() / 2);
-            const sc::milliseconds jitter = sc::milliseconds(jdist(jitter_rng));
-            std::this_thread::sleep_for(cur_delay + jitter);
-            // Double the delay for the next attempt, up to max_delay.
-            cur_delay = std::min(cur_delay * 2, max_delay);
-        }
-    } while (cur_delay != max_delay);
+
+        if (cur_delay >= max_delay) break;
+        // Calculate jitter: e.g., 0% to 50% of current_delay.
+        std::uniform_int_distribution<int> jdist(0, cur_delay.count() / 2);
+        const sc::milliseconds jitter = sc::milliseconds(jdist(jitter_rng));
+        std::this_thread::sleep_for(cur_delay + jitter);
+        // Double the delay for the next attempt, up to max_delay.
+        cur_delay = std::min(cur_delay * 2, max_delay);
+    }
     return rc;
 }
 
@@ -318,6 +319,7 @@ get_portno_from_pid_cmdline(
             return qvi_stoi(kv.at(1));
         }
         if (argv[i] == "--port") {
+            if (qvi_unlikely(i + 1 >= len)) return QVI_PORT_UNSET;
             return qvi_stoi(argv.at(i + 1));
         }
     }
@@ -463,7 +465,6 @@ qvi_running(
                 }
                 if (process_name != name) continue;
                 const pid_t pid = qvi_stoi(entry.path().filename().string());
-                if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
                 pids.push_back(pid);
             }
         }
