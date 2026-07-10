@@ -45,7 +45,7 @@ qvi_pthread_start_routine(
 ) {
     qvi_pthread_args *args = (qvi_pthread_args *)arg;
 
-    const int rc = args->scope->bind_push();
+    int rc = args->scope->bind_push();
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_log_error(
             "An error occurred in bind_push(): {} ({})", rc, qv_strerr(rc)
@@ -54,6 +54,14 @@ qvi_pthread_start_routine(
     }
 
     void *const ret = args->th_routine(args->th_routine_argp);
+
+    rc = args->scope->bind_pop();
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        qvi_log_warn(
+            "An error occurred in bind_pop(): {} ({})", rc, qv_strerr(rc)
+        );
+    }
+
     qvi_delete(&args);
     pthread_exit(ret);
 }

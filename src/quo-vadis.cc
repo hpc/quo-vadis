@@ -205,7 +205,7 @@ qv_scope_split(
     int group_id,
     qv_scope_t **subscope
 ) {
-    if (qvi_unlikely(!scope || (npieces <= 0) | !subscope)) {
+    if (qvi_unlikely(!scope || (npieces <= 0) || !subscope)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
