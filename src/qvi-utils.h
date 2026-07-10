@@ -19,6 +19,9 @@
 
 #include "qvi-common.h" // IWYU pragma: keep
 
+// Max text output line length.
+static constexpr size_t qvi_maxolen = 80;
+
 /**
  * Reference counting base class that provides retain/release semantics.
  */
@@ -223,6 +226,35 @@ std::vector<std::string>
 qvi_split_string(
     const std::string &str,
     const std::string &delimiter
+);
+
+/**
+ * Pads given string with provided padding to a max length.
+ */
+std::string
+qvi_spadtolen(
+    const std::string &text,
+    const std::string &padding,
+    size_t maxlen
+);
+
+/**
+ * Prints the provided text and prints it to
+ * the provided max line length with line breaks.
+ */
+std::string
+qvi_swrap(
+    const std::string &text,
+    size_t max_line_len
+);
+
+/**
+ * Generates a message banner.
+ */
+std::string
+qvi_sbanner(
+    const std::string &text,
+    size_t maxlen
 );
 
 /**

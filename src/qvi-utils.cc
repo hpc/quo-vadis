@@ -114,6 +114,82 @@ qvi_split_string(
     return tokens;
 }
 
+std::string
+qvi_spadtolen(
+    const std::string &text,
+    const std::string &padding,
+    size_t maxlen
+) {
+    // If no padding provided or text already meets/exceeds
+    // max length, return the (possibly truncated) text.
+    if (text.size() >= maxlen || padding.empty()) {
+        return std::string{text.substr(0, maxlen)};
+    }
+
+    std::string result{text};
+    result.reserve(maxlen);
+    // Fill the remaining space by cycling through the padding string.
+    std::size_t pad_idx = 0;
+    while (result.size() < maxlen) {
+        result.push_back(padding[pad_idx]);
+        pad_idx = (pad_idx + 1) % padding.size();
+    }
+    return result;
+}
+
+std::string
+qvi_swrap(
+    const std::string &text,
+    size_t max_line_len
+) {
+    if (max_line_len == 0) return std::string{text};
+
+    std::string result;
+    std::string curline;
+
+    std::istringstream istream{std::string{text}};
+    std::string word;
+
+    while (istream >> word) {
+        // Handle words longer than the max
+        // line length by hard-splitting them.
+        while (word.size() > max_line_len) {
+            if (!curline.empty()) {
+                result += curline + '\n';
+                curline.clear();
+            }
+            result += word.substr(0, max_line_len) + '\n';
+            word = word.substr(max_line_len);
+        }
+
+        if (curline.empty()) {
+            curline = word;
+        }
+        else if (curline.size() + 1 + word.size() <= max_line_len) {
+            curline += ' ' + word;   // fits on current line
+        }
+        else {
+            result += curline + '\n'; // start a new line
+            curline = word;
+        }
+    }
+    if (!curline.empty()) result += curline;
+
+    return result;
+}
+
+std::string
+qvi_sbanner(
+    const std::string &text,
+    size_t maxlen
+) {
+    const auto line = qvi_spadtolen("", "#", maxlen);
+    const auto bantop = "\n\n" + line + "\n";
+    const auto banbot = "\n" + line + "\n\n";
+
+    return bantop + qvi_swrap(text, maxlen) + banbot;
+}
+
 static int
 rmall_cb(
     const char *path,
@@ -309,21 +385,21 @@ int
 qvi_start_quo_vadisd(
     int portno
 ) {
+    const auto dname = QVI_DAEMON_NAME;
     const pid_t pid = fork();
     // Fork failed.
     if (qvi_unlikely(pid == -1)) {
         qvi_log_error(
-            "\n\n#############################################\n"
-            "# fork() failed while starting {}"
-            "\n#############################################\n\n",
-            QVI_DAEMON_NAME
+            qvi_sbanner(
+                "fork() failed while starting " + dname, qvi_maxolen
+            )
         );
         return QV_ERR_SYS;
     }
     // Child
     else if (pid == 0) {
         std::vector<std::string> argss = {
-            QVI_DAEMON_NAME,
+            dname,
             "--port",
             std::to_string(portno)
         };
@@ -337,14 +413,12 @@ qvi_start_quo_vadisd(
         execvp(argv[0], argv.data());
         // If we get here, then the command failed.
         qvi_log_error(
-            "\n\n#############################################\n"
-            "# Could not start {}.\n#\n"
-            "# For automatic startup, ensure the path to\n"
-            "# {} is in your PATH and try again.\n"
-            "# For manual startup, ensure {} is\n"
-            "# running across all the servers in your job."
-            "\n#############################################\n\n",
-            QVI_DAEMON_NAME, QVI_DAEMON_NAME, QVI_DAEMON_NAME
+            qvi_sbanner(
+                "Could not start " + dname + ". For automatic startup, ensure "
+                "the path to " + dname + " is in your PATH and try again. For "
+                "manual startup, ensure " + dname + " is running across all "
+                "the servers in your job.", qvi_maxolen
+            )
         );
         _exit(EXIT_FAILURE);
     }

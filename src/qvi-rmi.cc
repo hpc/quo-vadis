@@ -756,7 +756,7 @@ qvi_rmi_server::s_rpc_hello(
     // Pack relevant configuration information.
     // We are overly protective here for now. Insist the
     // client and server share the exact same release version.
-    if (server_version != client_version) {
+    if (qvi_unlikely(server_version != client_version)) {
         rpcrc = QV_ERR_NOT_SUPPORTED;
     }
     return rpc_pack(
@@ -1059,12 +1059,11 @@ qvi_rmi_get_url(
 std::string
 qvi_rmi_conn_env_ers(void)
 {
-    return "\n\n#############################################\n"
-           "# Cannot determine connection information.\n"
-           "# Try setting the following environment\n"
-           "# variable to an unused port number: "
-           + QVI_ENV_PORT + ""
-           "\n#############################################\n\n";
+    return qvi_sbanner(
+        "Cannot determine connection information. Try setting the "
+        "following environment variable to an unused port number: " +
+        QVI_ENV_PORT + "", qvi_maxolen
+    );
 }
 
 std::string
@@ -1072,10 +1071,10 @@ qvi_rmi_discovery_ers(void)
 {
     const std::string tids = std::to_string(qvi_gettid());
 
-    return "\n\n#############################################\n"
-           "# A client could not determine its connection\n"
-           "# information. PID: " + tids + ""
-           "\n#############################################\n\n";
+    return qvi_sbanner(
+        "A client could not determine its connection "
+        "information. PID: " + tids + "", qvi_maxolen
+    );
 }
 
 /*

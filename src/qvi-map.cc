@@ -14,6 +14,9 @@
 #include "qvi-map.h"
 #include <string>
 
+// Verbose output max length.
+static constexpr size_t vmaxl = qvi_maxolen;
+
 /**
  * Takes a map and assigns its values as keys and keys as values.
  */
@@ -132,7 +135,7 @@ qvi_map_colors(
     qvi_map_t &map
 ) {
     if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info("Color Mapping Started =================================");
+        qvi_log_info(qvi_spadtolen("Color Mapping Started ", "=", vmaxl));
     }
     auto &src_colors = config.src_colors;
     const size_t n = src_colors.size();
@@ -153,7 +156,7 @@ qvi_map_colors(
             "Color Mapping done with N={}, M={}", n, m
         );
         qvi_map_emit("Color Mapping", map);
-        qvi_log_info("Color Mapping Done ====================================");
+        qvi_log_info(qvi_spadtolen("Color Mapping Done ", "=", vmaxl));
     }
     return QV_SUCCESS;
 }
@@ -164,7 +167,7 @@ qvi_map_packed(
     qvi_map_t &map
 ) {
     if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info("Packed Mapping Started ================================");
+        qvi_log_info(qvi_spadtolen("Packed Mapping Started ", "=", vmaxl));
     }
     // Did we invert the sources and destinations?
     bool inverted = false;
@@ -203,7 +206,7 @@ qvi_map_packed(
             n, m, inverted
         );
         qvi_map_emit("Packed", map);
-        qvi_log_info("Packed Mapping Done ===================================");
+        qvi_log_info(qvi_spadtolen("Packed Mapping Done ", "=", vmaxl));
     }
     return QV_SUCCESS;
 }
@@ -214,7 +217,7 @@ qvi_map_spread(
     qvi_map_t &map
 ) {
     if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info("Spread Mapping Started ================================");
+        qvi_log_info(qvi_spadtolen("Spread Mapping Started ", "=", vmaxl));
     }
 
     // Did we invert the sources and destinations?
@@ -241,7 +244,7 @@ qvi_map_spread(
             n, m, inverted
         );
         qvi_map_emit("Spread", map);
-        qvi_log_info("Spread Mapping Done ===================================");
+        qvi_log_info(qvi_spadtolen("Spread Mapping Done ", "=", vmaxl));
     }
     return QV_SUCCESS;
 }
@@ -670,7 +673,7 @@ qvi_map_affinity_preserving(
     qvi_map_t &map
 ) {
     if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info("APM Mapping Started ===================================");
+        qvi_log_info(qvi_spadtolen("APM Mapping Started ", "=", vmaxl));
     }
     // Cache relevant input data.
     const auto &src = config.src_affinities;
@@ -688,7 +691,7 @@ qvi_map_affinity_preserving(
     if (qvi_unlikely(config.be_verbose)) {
         qvi_log_info("APM done with N={}, M={}", nsrc, ndst);
         qvi_map_emit("APM", map);
-        qvi_log_info("APM Mapping Done ======================================");
+        qvi_log_info(qvi_spadtolen("APM Mapping Done ", "=", vmaxl));
     }
     return QV_SUCCESS;
 }
