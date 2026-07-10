@@ -15,10 +15,10 @@
 
 #include "qvi-hwpool.h"
 
-qv_scope_create_hints_t
-qvi_hwpool_res::hints(void)
+qv_scope_flags_t
+qvi_hwpool_res::flags(void) const
 {
-    return m_hints;
+    return m_flags;
 }
 
 const qvi_hwloc_bitmap &

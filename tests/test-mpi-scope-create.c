@@ -73,9 +73,9 @@ test_create_scope(
     qv_scope_t *core_scope;
     int rc = qv_scope_create(
         scope_to_test,
+        QV_SCOPE_FLAG_NONE,
         QV_HW_OBJ_CORE,
         ncores,
-        QV_SCOPE_CREATE_HINT_NONE,
         &core_scope
     );
     if (rc != QV_SUCCESS) {

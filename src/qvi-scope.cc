@@ -74,9 +74,9 @@ qv_scope::make_intrinsic(
 // TODO(skg) Implement use of hints.
 int
 qv_scope::create(
+    qv_scope_flags_t,
     qv_hw_obj_type_t type,
     int nobjs,
-    qv_scope_create_hints_t,
     qv_scope_t **child
 ) {
     *child = nullptr;

@@ -98,12 +98,22 @@ typedef long long qv_scope_flags_t;
 /**
  * Empty flags, get scope with default behavior.
  */
-const qv_scope_flags_t QV_SCOPE_FLAG_NONE   = (0LL);
+const qv_scope_flags_t QV_SCOPE_FLAG_NONE           = (0LL);
 
 /**
  * Disable use of SMT.
  */
-const qv_scope_flags_t QV_SCOPE_FLAG_NO_SMT = (1LL<<0);
+const qv_scope_flags_t QV_SCOPE_FLAG_NO_SMT         = (1LL << 0);
+
+/**
+ * Attempt to create with resources with high affinity to the parent
+ */
+const qv_scope_flags_t QV_SCOPE_FLAG_HINT_CLOSE     = (1LL << 1);
+
+/**
+ *
+ */
+const qv_scope_flags_t QV_SCOPE_FLAG_HINT_EXCLUSIVE = (1LL << 2);
 
 /**
  * Hardware object types.
@@ -168,18 +178,6 @@ const int QV_SCOPE_SPLIT_PACKED = -3;
 const int QV_SCOPE_SPLIT_SPREAD = -4;
 
 /**
- *
- */
-// TODO(skg) Merge with qv_scope_flags_t?
-typedef enum {
-    // TODO(skg) Enumerate all actual values.
-    // TODO(skg) Add to Fortran interface.
-    QV_SCOPE_CREATE_HINT_NONE      = 0,
-    QV_SCOPE_CREATE_HINT_EXCLUSIVE = 1<<0,
-    QV_SCOPE_CREATE_HINT_CLOSE     = 1<<1
-} qv_scope_create_hints_t;
-
-/**
  * Device identifier types.
  */
 typedef enum {
@@ -231,9 +229,9 @@ qv_process_scope_get(
 int
 qv_scope_create(
     qv_scope_t *scope,
+    qv_scope_flags_t flags,
     qv_hw_obj_type_t type,
     int nobjs,
-    qv_scope_create_hints_t hint,
     qv_scope_t **subscope
 );
 

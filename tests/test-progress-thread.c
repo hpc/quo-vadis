@@ -140,15 +140,14 @@ int main(int argc, char *argv[])
     }
 
     qv_scope_t *wk_scope;
-    rc = qv_scope_create(task_scope, QV_HW_OBJ_CORE, ncores-1, 0,
-            &wk_scope);
+    rc = qv_scope_create(task_scope, QV_SCOPE_FLAG_NONE, QV_HW_OBJ_CORE, ncores-1, &wk_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_create() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     qv_scope_t *ut_scope;
-    rc = qv_scope_create(task_scope, QV_HW_OBJ_CORE, 1, 0, &ut_scope);
+    rc = qv_scope_create(task_scope, QV_SCOPE_FLAG_NONE, QV_HW_OBJ_CORE, 1, &ut_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_create() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));

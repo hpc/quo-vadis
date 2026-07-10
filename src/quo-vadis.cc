@@ -184,16 +184,16 @@ qv_scope_barrier(
 int
 qv_scope_create(
     qv_scope_t *scope,
+    qv_scope_flags_t flags,
     qv_hw_obj_type_t type,
     int nobjs,
-    qv_scope_create_hints_t hints,
     qv_scope_t **subscope
 ) {
     if (qvi_unlikely(!scope || (nobjs < 0) || !subscope)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
-        return scope->create(type, nobjs, hints, subscope);
+        return scope->create(flags, type, nobjs, subscope);
     }
     qvi_catch_and_return();
 }

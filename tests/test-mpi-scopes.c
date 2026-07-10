@@ -148,8 +148,11 @@ main(
     if (base_scope_rank == 0) {
         qv_scope_t *create_scope;
         rc = qv_scope_create(
-            sub_scope, QV_HW_OBJ_CORE,
-            1, 0, &create_scope
+            sub_scope,
+            QV_SCOPE_FLAG_NONE,
+            QV_HW_OBJ_CORE,
+            1,
+            &create_scope
         );
         if (rc != QV_SUCCESS) {
             ers = "qv_scope_create() failed";
