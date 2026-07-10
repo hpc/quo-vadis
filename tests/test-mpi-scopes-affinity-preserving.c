@@ -7,38 +7,18 @@
 #include "quo-vadis-mpi.h"
 #include "common-test-utils.h"
 
-#include <signal.h>
-
 int
 main(
     int argc,
     char **argv
 ) {
+    const int npieces = 2;
     char const *ers = NULL;
     MPI_Comm comm = MPI_COMM_WORLD;
 
     int rc = MPI_Init(&argc, &argv);
     if (rc != MPI_SUCCESS) {
         ers = "MPI_Init() failed";
-        ctu_panic("%s (rc=%d)", ers, rc);
-    }
-
-    // TODO(skg) Add all post-MPI_Init actions into one spot.
-    signal(SIGSEGV, SIG_DFL);
-    signal(SIGABRT, SIG_DFL);
-    setbuf(stdout, NULL);
-
-    int wsize;
-    rc = MPI_Comm_size(comm, &wsize);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_size() failed";
-        ctu_panic("%s (rc=%d)", ers, rc);
-    }
-
-    int wrank;
-    rc = MPI_Comm_rank(comm, &wrank);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_rank() failed";
         ctu_panic("%s (rc=%d)", ers, rc);
     }
 
@@ -54,12 +34,11 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_emit_scope_report(base_scope, CTU_SCOPE_KIND_MPI, "base_scope");
-
-    int base_scope_sgsize;
+    // Get my base_scope's size and my rank.
+    int base_scope_size;
     rc = qv_scope_group_size(
         base_scope,
-        &base_scope_sgsize
+        &base_scope_size
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_group_size() failed";
@@ -76,7 +55,22 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    const int npieces = 2;
+    for (int i = 0; i < base_scope_size; ++i) {
+        if (base_scope_rank == i) {
+            ctu_emit_scope_report(
+                base_scope, CTU_SCOPE_KIND_MPI, "base_scope"
+            );
+        }
+        else {
+            ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
+        }
+        rc = qv_scope_barrier(base_scope);
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_barrier() failed";
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
+    }
+
     qv_scope_t *sub_scope;
     rc = qv_scope_split(
         base_scope,
@@ -89,9 +83,21 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_emit_scope_report(sub_scope, CTU_SCOPE_KIND_MPI, "sub_scope");
-
-    //ctu_change_bind(sub_scope, CTU_SCOPE_KIND_MPI);
+    for (int i = 0; i < base_scope_size; ++i) {
+        if (base_scope_rank == i) {
+            ctu_emit_scope_report(
+                sub_scope, CTU_SCOPE_KIND_MPI, " sub_scope"
+            );
+        }
+        else {
+            ctu_emit(sub_scope, CTU_SCOPE_KIND_MPI, "");
+        }
+        rc = qv_scope_barrier(base_scope);
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_barrier() failed";
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
+    }
 
     // Free base_scope first to test scope free out-of-order operations.
     rc = qv_scope_free(base_scope);
