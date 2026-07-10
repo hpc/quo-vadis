@@ -7,24 +7,13 @@
 #include "quo-vadis-mpi.h"
 #include "common-test-utils.h"
 
-static int
-get_group_id(
-    int taskid,
-    int ntask,
-    int npieces
-) {
-    if (npieces != 2) {
-        ctu_panic("This test requires npieces=2");
-    }
-    const int nchunk = (ntask + (ntask % npieces)) / npieces;
-    return taskid / nchunk;
-}
-
 int
 main(
     int argc,
     char **argv
 ) {
+    const int npieces = 2;
+
     char const *ers = NULL;
     MPI_Comm comm = MPI_COMM_WORLD;
 
@@ -62,7 +51,9 @@ main(
 
     for (int i = 0; i < wsize; ++i) {
         if (wrank == i) {
-            ctu_emit_scope_report(self_scope, CTU_SCOPE_KIND_MPI, "self_scope");
+            ctu_emit_scope_report(
+                self_scope, CTU_SCOPE_KIND_MPI, "   self_scope"
+            );
         }
         else {
             ctu_emit(self_scope, CTU_SCOPE_KIND_MPI, "");
@@ -92,14 +83,11 @@ main(
         ers = "qv_mpi_scope_get() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
-    ctu_pemit(base_scope, CTU_SCOPE_KIND_MPI, wrank == 0, "\n");
-    ctu_emit_scope_report(base_scope, CTU_SCOPE_KIND_MPI, "base_scope");
-
-    int base_scope_sgsize;
+    // Get my base_scope's size and my rank.
+    int base_scope_size;
     rc = qv_scope_group_size(
         base_scope,
-        &base_scope_sgsize
+        &base_scope_size
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_group_size() failed";
@@ -116,18 +104,30 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    const int npieces = 2;
-    const int gid = get_group_id(
-        base_scope_rank,
-        base_scope_sgsize,
-        npieces
-    );
+    for (int i = 0; i < base_scope_size; ++i) {
+        if (base_scope_rank == i) {
+            ctu_emit_scope_report(
+                base_scope, CTU_SCOPE_KIND_MPI, "   base_scope"
+            );
+        }
+        else {
+            ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
+        }
+        rc = qv_scope_barrier(base_scope);
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_barrier() failed";
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
+    }
 
-    // Barrier for nicer output.
-    rc = MPI_Barrier(MPI_COMM_WORLD);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Barrier() failed";
-        ctu_panic("%s (rc=%d)", ers, rc);
+    int base_scope_sgsize;
+    rc = qv_scope_group_size(
+        base_scope,
+        &base_scope_sgsize
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_group_size() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     qv_scope_t *sub_scope;
@@ -142,8 +142,21 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_pemit(sub_scope, CTU_SCOPE_KIND_MPI, wrank == 0, "\n");
-    ctu_emit_scope_report(sub_scope, CTU_SCOPE_KIND_MPI, "sub_scope");
+    for (int i = 0; i < base_scope_size; ++i) {
+        if (base_scope_rank == i) {
+            ctu_emit_scope_report(
+                sub_scope, CTU_SCOPE_KIND_MPI, "    sub_scope"
+            );
+        }
+        else {
+            ctu_emit(sub_scope, CTU_SCOPE_KIND_MPI, "");
+        }
+        rc = qv_scope_barrier(base_scope);
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_barrier() failed";
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
+    }
 
     if (base_scope_rank == 0) {
         qv_scope_t *create_scope;
@@ -159,19 +172,9 @@ main(
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
 
-        int n_core;
-        rc = qv_scope_hw_obj_count(
-            create_scope,
-            QV_HW_OBJ_PU,
-            &n_core
+        ctu_emit_scope_report(
+            create_scope, CTU_SCOPE_KIND_MPI, " create_scope"
         );
-        if (rc != QV_SUCCESS) {
-            ers = "qv_scope_hw_obj_count() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
-        printf("[%d] Number of PUs in create_scope is %d\n", wrank, n_core);
-
-        ctu_emit_scope_report(create_scope, CTU_SCOPE_KIND_MPI, "create_scope");
 
         rc = qv_scope_free(create_scope);
         if (rc != QV_SUCCESS) {
@@ -184,7 +187,7 @@ main(
     rc = qv_scope_split(
         sub_scope,
         npieces,
-        gid,
+        QV_SCOPE_SPLIT_SPREAD,
         &sub_sub_scope
     );
     if (rc != QV_SUCCESS) {
@@ -192,17 +195,21 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int n_pu;
-    rc = qv_scope_hw_obj_count(
-        sub_sub_scope,
-        QV_HW_OBJ_PU,
-        &n_pu
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_hw_obj_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    for (int i = 0; i < base_scope_size; ++i) {
+        if (base_scope_rank == i) {
+            ctu_emit_scope_report(
+                sub_sub_scope, CTU_SCOPE_KIND_MPI, "sub_sub_scope"
+            );
+        }
+        else {
+            ctu_emit(sub_sub_scope, CTU_SCOPE_KIND_MPI, "");
+        }
+        rc = qv_scope_barrier(base_scope);
+        if (rc != QV_SUCCESS) {
+            ers = "qv_scope_barrier() failed";
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
     }
-    printf("[%d] Number of PUs in sub_sub_scope is %d\n", wrank, n_pu);
 
     rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {
