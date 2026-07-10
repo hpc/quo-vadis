@@ -16,8 +16,6 @@
  * Resource Management and Inquiry
  */
 
-// TODO(skg) We need to version client/server RPC dispatch.
-
 #include "qvi-rmi.h"
 #include "qvi-bbuff.h"
 #include "qvi-utils.h"
@@ -357,9 +355,9 @@ qvi_rmi_client::connect(
         hwloc_flags = QVI_HWLOC_FLAG_TOPO_NO_SMT;
     }
     std::string hwtopo_path;
-    int rc = m_hello(hwloc_flags, hwtopo_path);
+    int rc = m_hello(QVI_0xVERSION, hwloc_flags, hwtopo_path);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        return QV_RES_UNAVAILABLE;
+        return QV_ERR_NOT_SUPPORTED;
     }
     else {
         m_connected = true;
@@ -441,10 +439,11 @@ qvi_rmi_client::rpc_req(
 ////////////////////////////////////////////////////////////////////////////////
 int
 qvi_rmi_client::m_hello(
+    size_t client_version,
     qvi_hwloc_flags_t flags,
     std::string &hwtopo_path
 ) {
-    int qvrc = rpc_req(QVI_RMI_FID_HELLO, flags, qvi_gettid());
+    int qvrc = rpc_req(QVI_RMI_FID_HELLO, client_version, flags, qvi_gettid());
     if (qvi_unlikely(qvrc != QV_SUCCESS)) return qvrc;
     // Should be set by rpc_rep, so assume an error.
     int rpcrc = QV_ERR_RPC;
@@ -746,13 +745,20 @@ qvi_rmi_server::s_rpc_hello(
     void *input,
     qvi_bbuff **output
 ) {
+    const size_t server_version = QVI_0xVERSION;
     int rpcrc = QV_SUCCESS;
 
+    size_t client_version;
     qvi_hwloc_flags_t flags;
     pid_t whoisit;
-    const int rc = qvi_bbuff::unpack(input, flags, whoisit);
+    const int rc = qvi_bbuff::unpack(input, client_version, flags, whoisit);
     if (qvi_unlikely(rc != QV_SUCCESS)) rpcrc = rc;
     // Pack relevant configuration information.
+    // We are overly protective here for now. Insist the
+    // client and server share the exact same release version.
+    if (server_version != client_version) {
+        rpcrc = QV_ERR_NOT_SUPPORTED;
+    }
     return rpc_pack(
         output, hdr->fid, rpcrc,
         server->m_hwlocs.get(flags).topology_file()

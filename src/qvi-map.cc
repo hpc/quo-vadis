@@ -59,6 +59,7 @@ format_assignments(
     std::ostringstream oss;
     oss << "  Key: {src, {dsts}}\n";
     oss << "{\n";
+    bool wrote_entry = false;
     for (const auto &[src, dests] : assignments) {
         oss << "  {" << src << ", {";
         bool first = true;
@@ -68,10 +69,13 @@ format_assignments(
             first = false;
         }
         oss << "}},\n";
+        wrote_entry = true;
     }
     // Move the put pointer back by 2 characters relative to the end
     // to remove the unneeded ",\n" for the last item in the map.
-    oss.seekp(-2, std::ios_base::end);
+    if (wrote_entry) {
+        oss.seekp(-2, std::ios_base::end);
+    }
     oss << "\n}";
     return oss.str();
 }
@@ -86,7 +90,8 @@ qvi_map_uniq(
         for (const auto &dst : dsts) {
             // Destination is mapped, skip.
             if (seen.contains(dst)) continue;
-            // Destination is not mapped, so map it.
+            // Destination is not mapped, so map it. Note that our intent
+            // is to not allow multiple destinations per source to be mapped.
             result.insert({src, {dst}});
             // Make note that we have seen that destination.
             seen.insert(dst);
@@ -464,7 +469,9 @@ private:
                 }
                 oss << "  {" << dst << ", " << score << "},\n";
             }
-            oss.seekp(-2, std::ios_base::end);
+            if (m_ndsts > 0) {
+                oss.seekp(-2, std::ios_base::end);
+            }
             oss << "\n}\n";
             return oss.str();
     }

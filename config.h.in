@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -21,6 +21,17 @@
 #define PACKAGE_VERSION_MAJOR @quo-vadis_VERSION_MAJOR@
 #define PACKAGE_VERSION_MINOR @quo-vadis_VERSION_MINOR@
 #define PACKAGE_VERSION_PATCH @quo-vadis_VERSION_PATCH@
+
+/**
+ * This number is updated to (X<<16)+(Y<<8)+Z
+ * when a release X.Y.Z modifies the API.
+ *
+ * In python: print(f'{(X<<16)+(Y<<8)+Z:#010x}')
+ */
+#define QVI_0xVERSION                                                         \
+    ((PACKAGE_VERSION_MAJOR << 16) +                                          \
+     (PACKAGE_VERSION_MINOR << 8)  +                                          \
+     (PACKAGE_VERSION_PATCH))
 
 // Debug mode controls
 #ifdef NDEBUG

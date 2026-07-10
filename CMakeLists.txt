@@ -10,10 +10,10 @@
 # top-level directory of this distribution.
 #
 
-# Set minimum required cmake version
+# Set minimum required cmake version.
 cmake_minimum_required(VERSION 3.19)
 
-# Set the project name and version
+# Set the project name and version.
 project(
     quo-vadis
     VERSION 0.0.1
@@ -21,15 +21,15 @@ project(
     LANGUAGES C CXX
 )
 
-# Specify the C standard
+# Specify the C standard.
 set(CMAKE_C_STANDARD 11)
 set(C_STANDARD_REQUIRED TRUE)
 
-# Specify the C++ standard
+# Specify the C++ standard.
 set(CMAKE_CXX_STANDARD 20)
 set(CXX_STANDARD_REQUIRED TRUE)
 
-# Append our module path
+# Append our module path.
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 # Setup Fortran support.
