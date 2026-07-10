@@ -56,11 +56,26 @@ qvi_task::m_connect_to_server(
 
     rc = m_rmi.connect(flags, url, portno);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        const std::string msg =
-            "\n\n################################################\n"
-            "# A client couldn't communicate with its server.\n"
-            "# Ensure {} is running and reachable."
-            "\n################################################\n\n";
+        std::string msg;
+        switch (rc) {
+            // Client/server mismatch.
+            case QV_ERR_NOT_SUPPORTED:
+                msg = "\n\n################################################\n"
+                      "# A client/server version mismatch was detected.\n"
+                      "# Ensure {}'s version matches the one\n"
+                      "# used by your application.\n"
+                      "#\n"
+                      "# A rebuild is likely required."
+                      "\n################################################\n\n";
+                break;
+            case QV_RES_UNAVAILABLE:
+            default:
+                msg = "\n\n################################################\n"
+                      "# A client couldn't communicate with its server.\n"
+                      "# Ensure {} is running and reachable."
+                      "\n################################################\n\n";
+                break;
+        }
         qvi_log_error(msg, QVI_DAEMON_NAME);
     }
     return rc;

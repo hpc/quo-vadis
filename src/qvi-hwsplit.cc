@@ -17,83 +17,6 @@
 #include "qvi-coll.h"
 #include "qvi-scope.h"
 
-#if 0
-/**
- *
- */
-static int
-cpus_available(
-    hwloc_const_cpuset_t which,
-    hwloc_const_cpuset_t from,
-    bool *avail
-) {
-    // TODO(skg) Cache storage for calculation?
-    hwloc_cpuset_t tcpus = nullptr;
-    int rc = qvi_hwloc::bitmap_calloc(&tcpus);
-    if (rc != QV_SUCCESS) return rc;
-
-    int hrc = hwloc_bitmap_and(tcpus, which, from);
-    if (hrc != 0) {
-        rc = QV_ERR_HWLOC;
-    }
-    if (rc == QV_SUCCESS) {
-        *avail = cpusets_equal(tcpus, which);
-    }
-    else {
-        *avail = false;
-    }
-    qvi_hwloc_bitmap_free(&tcpus);
-    return rc;
-}
-#endif
-
-/**
- * Example:
- * obcpuset  0110 0101
- * request   1000 1010
- * obcpuset' 1110 1111
- */
-#if 0
-static int
-pool_obtain_cpus_by_cpuset(
-    qvi_hwpool *pool,
-    hwloc_const_cpuset_t request
-) {
-#if 0
-    int hwrc = hwloc_bitmap_or(
-        pool->obcpuset,
-        pool->obcpuset,
-        request
-    );
-    return (hwrc == 0 ? QV_SUCCESS : QV_ERR_HWLOC);
-#endif
-    qvi_unused(pool);
-    qvi_unused(request);
-    return QV_SUCCESS;
-}
-#endif
-
-/**
- * Example:
- * obcpuset  0110 0101
- * release   0100 0100
- * obcpuset' 0010 0001
- */
-#if 0
-static int
-pool_release_cpus_by_cpuset(
-    qvi_hwpool *pool,
-    hwloc_const_cpuset_t release
-) {
-    int hwrc = hwloc_bitmap_andnot(
-        pool->obcpuset,
-        pool->obcpuset,
-        release
-    );
-    return (hwrc == 0 ? QV_SUCCESS : QV_ERR_HWLOC);
-}
-#endif
-
 // TODOs
 // * Resource reference counting.
 // * Need to deal with resource unavailability.
@@ -101,8 +24,7 @@ pool_release_cpus_by_cpuset(
 // * Have bitmap scratch pad that is initialized once, then destroyed? This
 //   approach may be a nice allocation optimization, but in heavily threaded
 //   code may be a bottleneck.
-// TODO(skg) Use distance API for device affinity.
-// TODO(skg) Add RMI to acquire/release resources.
+// * Add RMI to acquire/release resources.
 
 // Notes:
 // * Does it make sense attempting resource exclusivity? Why not just let the
