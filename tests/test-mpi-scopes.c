@@ -83,6 +83,7 @@ main(
         ers = "qv_mpi_scope_get() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+
     // Get my base_scope's size and my rank.
     int base_scope_size;
     rc = qv_scope_group_size(
