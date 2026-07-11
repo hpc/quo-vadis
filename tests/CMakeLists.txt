@@ -164,12 +164,12 @@ if(MPI_FOUND)
     )
 
     add_executable(
-        test-mpi-scopes-affinity-preserving
-        test-mpi-scopes-affinity-preserving.c
+        test-mpi-double-split
+        test-mpi-double-split.c
     )
 
     target_link_libraries(
-        test-mpi-scopes-affinity-preserving
+        test-mpi-double-split
         common-test-utils
         quo-vadis-mpi
     )
@@ -236,7 +236,7 @@ if(MPI_FOUND)
         test-mpi-init
         test-mpi-api
         test-mpi-scopes
-        test-mpi-scopes-affinity-preserving
+        test-mpi-double-split
         test-pthread-split
         test-progress-thread
         test-mpi-scope-create

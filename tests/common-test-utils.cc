@@ -428,9 +428,17 @@ ctu_emit_device_info(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
+    std::string bind_report = {};
+
+    if (ndevs > 0) {
+        auto binds = ctu_scope_cpuset(scope);
+        bind_report = " on " + binds;
+    }
+
     reporter.add(
-        "[%s] Discovered %d %s(s) in %s\n",
-        myid.c_str(), ndevs, ctu_obj_name(dev_type), scope_name
+        "[%s] %s: Discovered %d %s(s)%s\n",
+        myid.c_str(), scope_name, ndevs,
+        ctu_obj_name(dev_type), bind_report.c_str()
     );
     for (int i = 0; i < ndevs; ++i) {
         for (size_t j = 0; j < ctu_devid_name_to_id_tab_size; ++j) {
