@@ -209,6 +209,16 @@ show_version(void)
     );
 }
 
+static bool
+valid_portno(
+    int portno
+) {
+    // TCP specification (RFC 793).
+    static const int max_tcp_ports = std::pow(2, 16) - 1;
+    if (portno <= 0 || portno > max_tcp_ports) return false;
+    return true;
+}
+
 static int
 parse_args(
     int argc,
@@ -217,21 +227,20 @@ parse_args(
 ) {
     enum {
         FLOOR = 256,
-        HELP,
         NO_DAEMONIZE,
         PORT
     };
 
-    const cstr_t opts = "V";
+    const cstr_t opts = "Vh";
     const struct option lopts[] = {
-        {"help"            , no_argument,       nullptr, HELP                 },
+        {"help"            , no_argument,       nullptr, 'h'                  },
         {"version"         , no_argument,       nullptr, 'V'                  },
         {"no-daemonize"    , no_argument,       nullptr, NO_DAEMONIZE         },
         {"port"            , required_argument, nullptr, PORT                 },
         {nullptr           , 0,                 nullptr, 0                    }
     };
     static const option_help opt_help = {
-        {"[--help]             ", "Show this message and exit."               },
+        {"[-h, --help]         ", "Show this message and exit."               },
         {"[-V, --version]      ", "Display version information and exit."     },
         {"[--no-daemonize]     ", "Do not run as a daemon."                   },
         {"[--port PORTNO]      ", "Specify port number to use."               }
@@ -240,7 +249,7 @@ parse_args(
     int opt;
     while (-1 != (opt = getopt_long_only(argc, argv, opts, lopts, nullptr))) {
         switch (opt) {
-            case HELP:
+            case 'h':
                 show_usage(opt_help);
                 return QV_SUCCESS_SHUTDOWN;
             case 'V':
@@ -251,6 +260,12 @@ parse_args(
                 break;
             case PORT: {
                 qvd.rmic.portno = qvi_stoi(std::string(optarg));
+                if (!valid_portno(qvd.rmic.portno)) {
+                    qvi_log_info(
+                        "portno {} is out of range.", qvd.rmic.portno
+                    );
+                    return QV_ERR_INVLD_ARG;
+                }
                 break;
             }
             default:
