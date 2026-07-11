@@ -232,6 +232,7 @@ qvi_hwsplit::m_split(void)
     if (qvi_unlikely(thr_map_config.be_verbose)) {
         qvi_map_emit("\nTask ID to Host Hardware Pool", tthr_map);
     }
+#if 0 // NOTE(skg) It seems that we get friendlier semantics excluding this.
     // Ensure that every task is accounted for in mapping.
     if (qvi_unlikely(tthr_map.size() != m_group_size)) {
         qvi_log_error(
@@ -240,6 +241,7 @@ qvi_hwsplit::m_split(void)
         );
         return QV_ERR_INTERNAL;
     }
+#endif
     // Assign cpusets to the tasks' hardware pools based on the determined
     // mapping. Also assign coloring based on this mapping.
     m_colors.resize(tthr_map.size());

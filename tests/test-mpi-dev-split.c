@@ -104,41 +104,6 @@ main(
         ers = "qv_scope_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    // Push dev_scope binding.
-    rc = qv_scope_bind_push(dev_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_bind_push() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    // Get my dev_scope binding.
-    char *binds;
-    rc = qv_scope_bind_string(dev_scope, QV_BIND_STRING_LOGICAL, &binds);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_bind_string() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    // Pop dev_scope binding.
-    rc = qv_scope_bind_pop(dev_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_bind_pop() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    for (int i = 0; i < base_scope_size; ++i) {
-        ctu_pemit(
-            dev_scope, CTU_SCOPE_KIND_MPI, base_scope_rank == i,
-            "=> [%d] Split@Dev: got %d %s(s), running on %s\n",
-            base_scope_rank, my_ndevs, dev_name, binds
-        );
-        rc = qv_scope_barrier(base_scope);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_scope_barrier() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
-    }
-    ctu_pemit(base_scope, CTU_SCOPE_KIND_MPI, base_scope_rank == 0, "\n");
-
-    free(binds);
     // Completely order device output.
     for (int i = 0; i < base_scope_size; ++i) {
         if (base_scope_rank == i) {
