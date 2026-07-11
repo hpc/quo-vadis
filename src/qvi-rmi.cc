@@ -355,7 +355,7 @@ qvi_rmi_client::connect(
     std::string hwtopo_path;
     int rc = m_hello(QVI_0xVERSION, hwloc_flags, hwtopo_path);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
-        return QV_ERR_NOT_SUPPORTED;
+        return rc;
     }
     else {
         m_connected = true;
