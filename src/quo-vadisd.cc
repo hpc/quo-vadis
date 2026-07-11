@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2025 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -198,6 +198,17 @@ show_usage(
     }
 }
 
+static void
+show_version(void)
+{
+    qvi_log_info(
+        "{}.{}.{}",
+        PACKAGE_VERSION_MAJOR,
+        PACKAGE_VERSION_MINOR,
+        PACKAGE_VERSION_PATCH
+    );
+}
+
 static int
 parse_args(
     int argc,
@@ -211,15 +222,17 @@ parse_args(
         PORT
     };
 
-    const cstr_t opts = "";
+    const cstr_t opts = "V";
     const struct option lopts[] = {
         {"help"            , no_argument,       nullptr, HELP                 },
+        {"version"         , no_argument,       nullptr, 'V'                  },
         {"no-daemonize"    , no_argument,       nullptr, NO_DAEMONIZE         },
         {"port"            , required_argument, nullptr, PORT                 },
         {nullptr           , 0,                 nullptr, 0                    }
     };
     static const option_help opt_help = {
         {"[--help]             ", "Show this message and exit."               },
+        {"[-V, --version]      ", "Display version information and exit."     },
         {"[--no-daemonize]     ", "Do not run as a daemon."                   },
         {"[--port PORTNO]      ", "Specify port number to use."               }
     };
@@ -229,6 +242,9 @@ parse_args(
         switch (opt) {
             case HELP:
                 show_usage(opt_help);
+                return QV_SUCCESS_SHUTDOWN;
+            case 'V':
+                show_version();
                 return QV_SUCCESS_SHUTDOWN;
             case NO_DAEMONIZE:
                 qvd.daemonized = false;
