@@ -179,6 +179,7 @@ main(
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
     }
+
     // How many GPUs do we have?
     int ngpus;
     rc = qv_scope_hw_obj_count(
@@ -212,7 +213,6 @@ main(
         ers = "qv_scope_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
 
     MPI_Finalize();
 
