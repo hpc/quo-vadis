@@ -22,8 +22,7 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_emit_scope_report(self_scope, CTU_SCOPE_KIND_PROCESS, "self_scope");
-    ctu_emit(self_scope, CTU_SCOPE_KIND_PROCESS, "\n");
+    ctu_emit_scope_report(self_scope, CTU_SCOPE_KIND_PROCESS, "     self_scope");
 
     rc = qv_scope_free(self_scope);
     if (rc != QV_SUCCESS) {
@@ -40,19 +39,7 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_emit_scope_report(base_scope, CTU_SCOPE_KIND_PROCESS, "base_scope");
-    ctu_emit(base_scope, CTU_SCOPE_KIND_PROCESS, "\n");
-
-    int srank;
-    rc = qv_scope_group_rank(base_scope, &srank);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_scope_group_rank() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    if (srank != 0) {
-        ers = "Invalid task ID detected";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_emit_scope_report(base_scope, CTU_SCOPE_KIND_PROCESS, "     base_scope");
 
     int sgsize;
     rc = qv_scope_group_size(base_scope, &sgsize);
@@ -66,23 +53,42 @@ main(void)
     }
 
     ctu_emit_host_hw_info(
-        base_scope, CTU_SCOPE_KIND_PROCESS, "base_scope"
+        base_scope, CTU_SCOPE_KIND_PROCESS, "     base_scope"
     );
     ctu_emit(base_scope, CTU_SCOPE_KIND_PROCESS, "\n");
 
     const int npieces = 2;
-    qv_scope_t *sub_scope;
+    qv_scope_t *sub_scope_left;
     rc = qv_scope_split(
-        base_scope, npieces, srank, &sub_scope
+        base_scope, npieces, 0, &sub_scope_left
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_emit_host_hw_info(sub_scope, CTU_SCOPE_KIND_PROCESS, "sub_scope");
-    ctu_emit(sub_scope, CTU_SCOPE_KIND_PROCESS, "\n");
-    ctu_emit_scope_report(sub_scope, CTU_SCOPE_KIND_PROCESS, "sub_scope");
+    qv_scope_t *sub_scope_right;
+    rc = qv_scope_split(
+        base_scope, npieces, QV_SCOPE_SPLIT_SPREAD, &sub_scope_right
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_split() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    ctu_emit_host_hw_info(
+        sub_scope_left, CTU_SCOPE_KIND_PROCESS, " sub_scope_left"
+    );
+    ctu_emit_scope_report(
+        sub_scope_left, CTU_SCOPE_KIND_PROCESS, " sub_scope_left"
+    );
+    ctu_emit(sub_scope_left, CTU_SCOPE_KIND_PROCESS, "\n");
+    ctu_emit_host_hw_info(
+        sub_scope_right, CTU_SCOPE_KIND_PROCESS, "sub_scope_right"
+    );
+    ctu_emit_scope_report(
+        sub_scope_right, CTU_SCOPE_KIND_PROCESS, "sub_scope_right"
+    );
 
     rc = qv_scope_free(base_scope);
     if (rc != QV_SUCCESS) {
@@ -90,7 +96,13 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(sub_scope);
+    rc = qv_scope_free(sub_scope_left);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_scope_free() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    rc = qv_scope_free(sub_scope_right);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));

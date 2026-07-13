@@ -129,8 +129,12 @@ qvi_hwsplit::m_split_cpuset(void)
     const auto [pri_type, pri_cpuset] = m_primary_cpuset_for_split(
         m_split_at_type
     );
-    // The real split size takes the group size into account.
-    const size_t real_split_size = std::min(m_split_size, m_group_size);
+    // If the real split size takes the group size into account, then splits
+    // called by processes will not split at all, since the group size will
+    // always be 1. Restore old process semantics, and don't take the
+    // min(m_split_size, m_group_size).
+    //const size_t real_split_size = std::min(m_split_size, m_group_size);
+    const size_t real_split_size = m_split_size;
     //qvi_log_debug("Real Split Size: {}", real_split_size);
     // Split the primary cpuset into the requested split size pieces.
     return m_my_rmi.hwloc().bitmap_split(
