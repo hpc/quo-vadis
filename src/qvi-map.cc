@@ -140,21 +140,18 @@ qvi_map_colors(
     auto &src_colors = config.src_colors;
     const size_t n = src_colors.size();
     const size_t m = config.ndst;
-    // These should be clamped: 0 to m-1, so verify that.
+    // Sanity check: this mapper is valid only with positive color values.
     assert(
-        std::ranges::all_of(src_colors, [m](int val) {
-            return val >= 0 && val < static_cast<int>(m);
+        std::ranges::all_of(config.src_colors, [](int val) {
+            return val >= 0;
         })
     );
-    // Map the color index to its color value,
-    // which corresponds to the destination index.
+    // Assign each source to the piece indicated by its color.
     for (size_t i = 0; i < n; ++i) {
         map[i].insert(src_colors[i]);
     }
     if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info(
-            "Color Mapping done with N={}, M={}", n, m
-        );
+        qvi_log_info("Color Mapping done with N={}, M={}", n, m);
         qvi_map_emit("Color Mapping", map);
         qvi_log_info(qvi_spadtolen("Color Mapping Done ", "=", vmaxl));
     }
@@ -173,7 +170,7 @@ qvi_map_packed(
     bool inverted = false;
     size_t n = config.nsrc;
     size_t m = config.ndst;
-    // More sources than destinations?
+    // Fewer sources than destinations?
     if (n < m) {
         std::swap(n, m);
         inverted = true;
@@ -224,7 +221,7 @@ qvi_map_spread(
     bool inverted = false;
     size_t n = config.nsrc;
     size_t m = config.ndst;
-    // More sources than destinations?
+    // Fewer sources than destinations?
     if (n < m) {
         std::swap(n, m);
         inverted = true;
