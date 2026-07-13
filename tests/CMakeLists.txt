@@ -210,17 +210,6 @@ if(MPI_FOUND)
     )
 
     add_executable(
-        test-mpi-getdev
-        test-mpi-getdev.c
-    )
-
-    target_link_libraries(
-        test-mpi-getdev
-        common-test-utils
-        quo-vadis-mpi
-    )
-
-    add_executable(
         test-mpi-dev-split
         test-mpi-dev-split.c
     )
@@ -240,7 +229,6 @@ if(MPI_FOUND)
         test-pthread-split
         test-progress-thread
         test-mpi-scope-create
-        test-mpi-getdev
         test-mpi-dev-split
         PROPERTIES LINKER_LANGUAGE C
     )
@@ -281,13 +269,13 @@ if(MPI_FOUND)
 
     add_test(
         NAME
-          mpi-get-dev
+          mpi-dev-split
         COMMAND
           bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
           ${MPIEXEC_EXECUTABLE} \
           ${MPIEXEC_NUMPROC_FLAG} \
           ${MPIEXEC_MAX_NUMPROCS} \
-          ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-getdev"
+          ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-dev-split"
     )
 
     # Set mpi test properties.
@@ -295,7 +283,7 @@ if(MPI_FOUND)
         mpi-api
         mpi-init
         mpi-scopes
-        mpi-get-dev
+        mpi-dev-split
         PROPERTIES
           TIMEOUT 60
           LABELS "mpi"
