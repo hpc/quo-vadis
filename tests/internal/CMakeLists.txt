@@ -73,6 +73,36 @@ add_test(
 
 ################################################################################
 ################################################################################
+if(MPI_FOUND)
+    add_executable(
+        test-mpi-install
+        test-mpi-install.c
+    )
+
+    target_link_libraries(
+        test-mpi-install
+        ${MPI_C_LIBRARIES}
+    )
+
+    target_include_directories(
+        test-mpi-install
+        PRIVATE
+          ${MPI_C_INCLUDE_DIRS}
+    )
+
+    add_test(
+        NAME
+          test-mpi-install
+        COMMAND
+          bash -c "\
+          ${MPIEXEC_EXECUTABLE} --version && \
+          ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2 \
+          ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-install"
+    )
+endif()
+
+################################################################################
+################################################################################
 # Set core test properties.
 set_tests_properties(
     hwloc

@@ -128,6 +128,7 @@ if(MPI_FOUND)
         quo-vadis-mpi
         quo-vadis-core
         ${MPI_C_LIBRARIES}
+        ${MPI_CXX_LIBRARIES}
     )
 
     install(
