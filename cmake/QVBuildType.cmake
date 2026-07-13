@@ -31,8 +31,11 @@ if(QV_DEVELOPER_MODE)
         QVI_PICKY_COMPILE_OPTIONS
         -Wall
         -Wextra
-        $<$<COMPILE_LANGUAGE:C>:-pedantic>
-        $<$<COMPILE_LANGUAGE:CXX>:-pedantic>
+        $<$<COMPILE_LANGUAGE:C>:-Wpedantic>
+        $<$<COMPILE_LANGUAGE:CXX>:-Wpedantic>
+        # Because of (potentially) false positives in our Fortran tests.
+        $<$<COMPILE_LANGUAGE:Fortran>:-Wno-uninitialized>
+        $<$<COMPILE_LANGUAGE:Fortran>:-Wno-maybe-uninitialized>
     )
 endif()
 
