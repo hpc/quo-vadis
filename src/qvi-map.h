@@ -69,10 +69,8 @@ struct qvi_map_config {
 
     qvi_map_config(
         const std::vector<int> &src_colors,
-        const size_t &ndst,
         qvi_map_fn_t map_fn = {}
     ) : be_verbose(qvi_envset(QVI_ENV_VMAP))
-      , ndst(ndst)
       , src_colors(src_colors)
       , map_fn(map_fn) { }
 };

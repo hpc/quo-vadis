@@ -139,7 +139,6 @@ qvi_map_colors(
     }
     auto &src_colors = config.src_colors;
     const size_t n = src_colors.size();
-    const size_t m = config.ndst;
     // Sanity check: this mapper is valid only with positive color values.
     assert(
         std::ranges::all_of(config.src_colors, [](int val) {
@@ -151,7 +150,7 @@ qvi_map_colors(
         map[i].insert(src_colors[i]);
     }
     if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info("Color Mapping done with N={}, M={}", n, m);
+        qvi_log_info("Color Mapping done with N={}", n);
         qvi_map_emit("Color Mapping", map);
         qvi_log_info(qvi_spadtolen("Color Mapping Done ", "=", vmaxl));
     }
