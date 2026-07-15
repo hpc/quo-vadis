@@ -95,6 +95,17 @@ static const ctu_hw_obj_name_to_type_t ctu_hw_obj_name_to_type_tab[] = {
 static const size_t ctu_hw_obj_name_to_type_tab_size =
     sizeof(ctu_hw_obj_name_to_type_tab) / sizeof(ctu_hw_obj_name_to_type_t);
 
+// Maps QV device ID type names to their underlying values.
+static const ctu_devid_name_to_id_t ctu_devid_name_to_id_tab[] = {
+    {CTU_TOSTRING(QV_DEVICE_ID_UUID),       QV_DEVICE_ID_UUID},
+    {CTU_TOSTRING(QV_DEVICE_ID_PCI_BUS_ID), QV_DEVICE_ID_PCI_BUS_ID},
+    {CTU_TOSTRING(QV_DEVICE_ID_ORDINAL),    QV_DEVICE_ID_ORDINAL}
+};
+
+static const size_t ctu_devid_name_to_id_tab_size =
+    sizeof(ctu_devid_name_to_id_tab) / sizeof(ctu_devid_name_to_id_t);
+
+
 static inline const char *
 ctu_obj_name(
     qv_hw_obj_type_t type
@@ -116,16 +127,6 @@ ctu_obj_name(
         default: return "?";
     }
 }
-
-// Maps QV device ID type names to their underlying values.
-static const ctu_devid_name_to_id_t ctu_devid_name_to_id_tab[] = {
-    {CTU_TOSTRING(QV_DEVICE_ID_UUID),       QV_DEVICE_ID_UUID},
-    {CTU_TOSTRING(QV_DEVICE_ID_PCI_BUS_ID), QV_DEVICE_ID_PCI_BUS_ID},
-    {CTU_TOSTRING(QV_DEVICE_ID_ORDINAL),    QV_DEVICE_ID_ORDINAL}
-};
-
-static const size_t ctu_devid_name_to_id_tab_size =
-    sizeof(ctu_devid_name_to_id_tab) / sizeof(ctu_devid_name_to_id_t);
 
 static inline pid_t
 ctu_gettid(void)

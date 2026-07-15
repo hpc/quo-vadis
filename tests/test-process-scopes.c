@@ -1,9 +1,5 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 
-/**
- * @file test-process-scopes.c
- */
-
 #include "quo-vadis.h"
 #include "common-test-utils.h"
 
@@ -22,7 +18,9 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_emit_scope_report(self_scope, CTU_SCOPE_KIND_PROCESS, "     self_scope");
+    ctu_emit_scope_report(
+        self_scope, CTU_SCOPE_KIND_PROCESS, "     self_scope"
+    );
 
     rc = qv_scope_free(self_scope);
     if (rc != QV_SUCCESS) {
@@ -39,7 +37,9 @@ main(void)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    ctu_emit_scope_report(base_scope, CTU_SCOPE_KIND_PROCESS, "     base_scope");
+    ctu_emit_scope_report(
+        base_scope, CTU_SCOPE_KIND_PROCESS, "     base_scope"
+    );
 
     int sgsize;
     rc = qv_scope_group_size(base_scope, &sgsize);
@@ -58,6 +58,8 @@ main(void)
     ctu_emit(base_scope, CTU_SCOPE_KIND_PROCESS, "\n");
 
     const int npieces = 2;
+    // Provided color in range, so we will get the LHS of the split.
+    // That is, with 2 pieces, the in-range coloring values are 0 and 1.
     qv_scope_t *sub_scope_left;
     rc = qv_scope_split(
         base_scope, npieces, 0, &sub_scope_left
@@ -66,10 +68,11 @@ main(void)
         ers = "qv_scope_split() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
+    // Provided color in range, so we will get the RHS of the split.
+    // That is, with 2 pieces, the in-range coloring values are 0 and 1.
     qv_scope_t *sub_scope_right;
     rc = qv_scope_split(
-        base_scope, npieces, QV_SCOPE_SPLIT_SPREAD, &sub_scope_right
+        base_scope, npieces, 1, &sub_scope_right
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_split() failed";

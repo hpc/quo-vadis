@@ -146,7 +146,6 @@ int
 qvi_hwsplit::m_determine_mapping(
     qvi_map_config &map_config
 ) {
-    int rc = QV_SUCCESS;
     // Make sure that the supplied colors are consistent and determine the type
     // of coloring we are using. Positive values denote an explicit coloring
     // provided by the caller. Negative values are reserved for internal use and
@@ -165,13 +164,23 @@ qvi_hwsplit::m_determine_mapping(
     //   - A strict subset is QV_SCOPE_SPLIT_UNDEFINED: user-defined split
     //   - A strict subset is not QV_SCOPE_SPLIT_UNDEFINED: return error code.
     bool auto_split = false;
-    // All colors are positive.
+    // All colors are positive: user-defined split.
     if (tcolors.front() >= 0) {
-        rc = qvi_map_clamp_colors(m_colors);
-        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+        // Number of destinations.
+        const size_t m = m_split_cpusets.size();
+        const bool all_in_range = std::ranges::all_of(
+            m_colors, [m](int val) {
+            return val >= 0 && val < static_cast<int>(m);
+        });
+        // Clamp if not all provided values are in a usable
+        // color range. Otherwise, use the values as-is.
+        if (!all_in_range) {
+            const int rc = qvi_map_clamp_colors(m_colors);
+            if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+        }
     }
-    // Some values are negative.
-    else {
+    // All colors are negative.
+    else if (tcolors.back() < 0) {
         // TODO(skg) Implement the rest.
         if (tcolors.front() != tcolors.back()) {
             return QV_ERR_INVLD_ARG;
@@ -236,16 +245,12 @@ qvi_hwsplit::m_split(void)
     if (qvi_unlikely(thr_map_config.be_verbose)) {
         qvi_map_emit("\nTask ID to Host Hardware Pool", tthr_map);
     }
-#if 0 // NOTE(skg) It seems that we get friendlier semantics excluding this.
-    // Ensure that every task is accounted for in mapping.
-    if (qvi_unlikely(tthr_map.size() != m_group_size)) {
-        qvi_log_error(
-            "Invalid split state: tthr_map.size()={} but m_group_size={}",
-            tthr_map.size(), m_group_size
-        );
-        return QV_ERR_INTERNAL;
-    }
-#endif
+    //
+    // It seems that we get friendlier semantics if we don't require that
+    // every task is accounted for in the mapping. If that changes, then we can
+    // add the check here by verifying that the group size equals the
+    // size of the task-to-hardware-resource map.
+    //
     // Assign cpusets to the tasks' hardware pools based on the determined
     // mapping. Also assign coloring based on this mapping.
     m_colors.resize(tthr_map.size());
