@@ -191,7 +191,6 @@ qvi_hwsplit::m_determine_mapping(
     if (!auto_split) {
         map_config = {
             m_colors,
-            m_split_cpusets.size(),
             qvi_map_colors
         };
         return QV_SUCCESS;

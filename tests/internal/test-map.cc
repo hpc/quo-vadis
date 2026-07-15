@@ -448,11 +448,9 @@ static void
 test_14(void)
 {
     std::vector<int> src_colors = {0, 2, 3, 1};
-    std::vector<qvi_hwloc_bitmap> dst_cpusets = ctu_bitmap_split_pus(4, 4);
 
     qvi_map_config config = {
         src_colors,
-        dst_cpusets.size()
     };
 
     qvi_map_t map;
