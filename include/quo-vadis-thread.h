@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2022-2025 Triad National Security, LLC
+ * Copyright (c) 2022-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2022-2024 Inria
@@ -28,28 +28,10 @@ extern "C" {
 #endif
 
 /**
- * Placement (or mapping) policy types.
+ * Automatic grouping options for qv_thread_scope_split() and
+ * qv_thread_scope_split_at(). The following values can be used instead of
+ * group_id to influence how automatic task grouping is accomplished.
  */
-// Intel policies (KMP_AFFINITY) are :
-// - disabled: prevents the runtime library from making any affinity-related
-//             system calls (to avoid interference with other platform affinity mechanisms).
-// - compact: threads are placed as close together as possible.
-// - scatter: threads are distributed as evenly as possible across the entire system.
-//            (opposite of compact).
-// - explicit: threads are placed according to a list of OS proc IDs (required)
-// TODO(skg) Do we need all of these synonyms?
-typedef enum {
-    QV_POLICY_PACKED     = 1,
-    QV_POLICY_COMPACT    = 1,
-    QV_POLICY_CLOSE      = 1,
-    QV_POLICY_SPREAD     = 2,
-    QV_POLICY_DISTRIBUTE = 3,
-    QV_POLICY_ALTERNATE  = 3,
-    QV_POLICY_CORESFIRST = 3,
-    QV_POLICY_SCATTER    = 4,
-    QV_POLICY_CHOOSE     = 5
-} qv_thread_placement_t;
-
 int *const QV_THREAD_SCOPE_SPLIT_PACKED              = (int *)0x00000001;
 int *const QV_THREAD_SCOPE_SPLIT_SPREAD              = (int *)0x00000002;
 int *const QV_THREAD_SCOPE_SPLIT_AFFINITY_PRESERVING = (int *)0x00000003;
@@ -81,9 +63,9 @@ qv_thread_scopes_free(
     qv_scope_t **scopes
 );
 
-////////////////////////////////////////////////////////////////////////////////
-// Pthread-specific calls.
-////////////////////////////////////////////////////////////////////////////////
+/* ////////////////////////////////////////////////////////////////////////// */
+/* Pthread-specific calls.                                                    */
+/* ////////////////////////////////////////////////////////////////////////// */
 
 /**
  * Similar to pthread_create(3).

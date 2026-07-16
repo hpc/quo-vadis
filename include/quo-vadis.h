@@ -152,9 +152,9 @@ const qv_bind_string_flags_t QV_BIND_STRING_LOGICAL = (1<<0);
 const qv_bind_string_flags_t QV_BIND_STRING_PHYSICAL = (1<<1);
 
 /**
- * Automatic grouping options for qv_scope_split(). The following values can be
- * used instead of group_id to influence how automatic task grouping is
- * accomplished.
+ * Automatic grouping options for qv_scope_split() and qv_scope_split_at(). The
+ * following values can be used instead of group_id to influence how automatic
+ * task grouping is accomplished.
  */
 
 /**
