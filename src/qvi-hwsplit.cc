@@ -178,6 +178,10 @@ qvi_hwsplit::m_determine_mapping(
             const int rc = qvi_map_clamp_colors(m_colors);
             if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
         }
+        // Make sure that the coloring is valid.
+        const std::set<int> color_set(m_colors.begin(), m_colors.end());
+        // If we have more distinct colors than destinations, that's a problem.
+        if (color_set.size() > m) return QV_ERR_SPLIT;
     }
     // All colors are negative.
     else if (tcolors.back() < 0) {

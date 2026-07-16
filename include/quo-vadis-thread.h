@@ -57,6 +57,7 @@ qv_thread_scope_split_at(
 /**
  * Frees resources allocated by calls to qv_thread_scope_split*.
  */
+// TODO(skg) flip ordering.
 int
 qv_thread_scopes_free(
     int nscopes,
