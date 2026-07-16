@@ -112,6 +112,21 @@ struct qvid {
     }
 
     void
+    set_personality(void)
+    {
+        if (daemonized) {
+            // Redirect all console output to syslog.
+            qvi_logger::console_to_syslog();
+            // Clear umask. Note: this system call always succeeds.
+            umask(0);
+            // Become a session leader to lose controlling TTY.
+            become_session_leader();
+            // Close all file descriptors.
+            closefds();
+        }
+    }
+
+    void
     determine_connection_info(void)
     {
         qvi_log_info("Determining connection information");
@@ -300,17 +315,8 @@ start(
             }
             return rc;
         }
-
-        if (qvd.daemonized) {
-            // Redirect all console output to syslog.
-            qvi_logger::console_to_syslog();
-            // Clear umask. Note: this system call always succeeds.
-            umask(0);
-            // Become a session leader to lose controlling TTY.
-            qvd.become_session_leader();
-            // Close all file descriptors.
-            qvd.closefds();
-        }
+        // Setup based on personality.
+        qvd.set_personality();
         // Determine connection information.
         qvd.determine_connection_info();
         // Create our session directory.
