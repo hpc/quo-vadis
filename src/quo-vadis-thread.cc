@@ -84,8 +84,8 @@ split_color_fixup(
     else if (kcolors == QV_THREAD_SCOPE_SPLIT_SPREAD) {
         real_color = QV_SCOPE_SPLIT_SPREAD;
     }
-    else if (kcolors == QV_THREAD_SCOPE_SPLIT_AFFINITY_PRESERVING) {
-        real_color = QV_SCOPE_SPLIT_AFFINITY_PRESERVING;
+    else if (kcolors == QV_THREAD_SCOPE_SPLIT_CLOSE) {
+        real_color = QV_SCOPE_SPLIT_CLOSE;
     }
     // Nothing to do. An automatic coloring was not requested.
     if (real_color == QV_SCOPE_SPLIT_UNDEFINED) {

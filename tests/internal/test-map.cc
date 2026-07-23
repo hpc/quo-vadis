@@ -54,7 +54,7 @@ test_1(void)
     };
 
     qvi_map_t map;
-    int rc = qvi_map_affinity_preserving(
+    int rc = qvi_map_close(
         config, map
     );
     ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
@@ -76,7 +76,7 @@ test_2(void)
     };
 
     qvi_map_t map;
-    int rc = qvi_map_affinity_preserving(
+    int rc = qvi_map_close(
         config, map
     );
     ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
@@ -104,7 +104,7 @@ test_3(void)
     };
 
     qvi_map_t map;
-    int rc = qvi_map_affinity_preserving(
+    int rc = qvi_map_close(
         config, map
     );
     ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
@@ -135,7 +135,7 @@ test_4(void)
     };
 
     qvi_map_t map;
-    int rc = qvi_map_affinity_preserving(
+    int rc = qvi_map_close(
         config, map
     );
     ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
@@ -164,7 +164,7 @@ test_5(void)
     };
 
     qvi_map_t map;
-    int rc = qvi_map_affinity_preserving(
+    int rc = qvi_map_close(
         config, map
     );
     ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
@@ -194,7 +194,7 @@ test_6(void)
     };
 
     qvi_map_t map;
-    int rc = qvi_map_affinity_preserving(
+    int rc = qvi_map_close(
         config, map
     );
     ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
@@ -226,7 +226,7 @@ test_7(void)
     };
 
     qvi_map_t map;
-    int rc = qvi_map_affinity_preserving(
+    int rc = qvi_map_close(
         config, map
     );
     ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
@@ -261,7 +261,7 @@ test_8(void)
     };
 
     qvi_map_t map;
-    int rc = qvi_map_affinity_preserving(
+    int rc = qvi_map_close(
         config, map
     );
     ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
@@ -297,7 +297,7 @@ test_9(void)
     };
 
     qvi_map_t map;
-    int rc = qvi_map_affinity_preserving(
+    int rc = qvi_map_close(
         config, map
     );
     ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);

@@ -78,7 +78,7 @@ module quo_vadisf
     ! Automatic grouping options for qv_scope_split().
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     integer(c_int), parameter :: QV_SCOPE_SPLIT_UNDEFINED = -1
-    integer(c_int), parameter :: QV_SCOPE_SPLIT_AFFINITY_PRESERVING = -2
+    integer(c_int), parameter :: QV_SCOPE_SPLIT_CLOSE = -2
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Device ID types
