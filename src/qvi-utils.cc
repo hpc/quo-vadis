@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2025 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -19,7 +19,6 @@
 /** Maps return codes to their respective descriptions. */
 static const std::map<uint_t, std::string> qvi_rc2str = {
     {QV_SUCCESS, "Success"},
-    {QV_SUCCESS_ALREADY_DONE, "Success, operation already complete"},
     {QV_SUCCESS_SHUTDOWN, "Success, shut down"},
     {QV_ERR, "Unspecified error"},
     {QV_ERR_ENV, "Environment error"},
@@ -30,7 +29,6 @@ static const std::map<uint_t, std::string> qvi_rc2str = {
     {QV_ERR_INVLD_ARG, "Invalid argument"},
     {QV_ERR_HWLOC, "Hardware locality error"},
     {QV_ERR_MPI, "MPI error"},
-    {QV_ERR_MSG, "Internal message error"},
     {QV_ERR_RPC, "Remote procedure call error"},
     {QV_ERR_NOT_SUPPORTED, "Operation not supported"},
     {QV_ERR_NOT_FOUND, "Not found"},
