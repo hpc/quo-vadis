@@ -182,9 +182,9 @@ public:
         do {
             m_initialized = false;
 
-            rc = qv_mpi_scope_comm_dup(scope, &m_comm);
+            rc = qv_mpi_comm_dup(scope, &m_comm);
             if (rc != QV_SUCCESS) {
-                ers = "qv_mpi_scope_comm_dup";
+                ers = "qv_mpi_comm_dup";
                 rc = MPI_ERR_COMM;
                 break;
             }
@@ -248,16 +248,16 @@ ctu_scope_size_rank(
     char const *ers = NULL;
 
     int sgsize;
-    int rc = qv_scope_group_size(scope, &sgsize);
+    int rc = qv_group_size(scope, &sgsize);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_group_size() failed";
+        ers = "qv_group_size() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int sgrank;
-    rc = qv_scope_group_rank(scope, &sgrank);
+    rc = qv_group_rank(scope, &sgrank);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_group_rank() failed";
+        ers = "qv_group_rank() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -271,9 +271,9 @@ ctu_current_binding(
     char const *ers = NULL;
     // Get current binding.
     char *cpusets;
-    int rc = qv_scope_bind_string(scope, QV_BIND_STRING_LOGICAL, &cpusets);
+    int rc = qv_bind_string(scope, QV_BIND_STRING_LOGICAL, &cpusets);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_bind_string() failed";
+        ers = "qv_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     std::string result(cpusets);
@@ -287,7 +287,7 @@ ctu_scope_cpuset(
 ) {
     char const *ers = NULL;
     // Change binding to get the scope's underlying cpuset.
-    int rc = qv_scope_bind_push(scope);
+    int rc = qv_bind_push(scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -295,7 +295,7 @@ ctu_scope_cpuset(
     // Get the current binding after push.
     auto result = ctu_current_binding(scope);
     // Pop to not affect other calls related to the scope.
-    rc = qv_scope_bind_pop(scope);
+    rc = qv_bind_pop(scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_pop() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -394,12 +394,12 @@ ctu_emit_host_hw_info(
 
     for (size_t i = 0; i < ctu_hw_obj_name_to_type_tab_size; ++i) {
         int n;
-        int rc = qv_scope_hw_obj_count(
+        int rc = qv_hw_obj_count(
             scope, ctu_hw_obj_name_to_type_tab[i].type, &n
         );
         if (rc != QV_SUCCESS) {
             ctu_panic(
-                "qv_scope_hw_obj_count(%s) failed\n",
+                "qv_hw_obj_count(%s) failed\n",
                 ctu_hw_obj_name_to_type_tab[i].name
             );
         }
@@ -422,9 +422,9 @@ ctu_emit_device_info(
     const std::string myid = reporter.id();
     // Get number of devices.
     int ndevs;
-    int rc = qv_scope_hw_obj_count(scope, dev_type, &ndevs);
+    int rc = qv_hw_obj_count(scope, dev_type, &ndevs);
     if (rc != QV_SUCCESS) {
-        const char *ers = "qv_scope_hw_obj_count() failed";
+        const char *ers = "qv_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -443,7 +443,7 @@ ctu_emit_device_info(
     for (int i = 0; i < ndevs; ++i) {
         for (size_t j = 0; j < ctu_devid_name_to_id_tab_size; ++j) {
             char *devids = NULL;
-            int rc = qv_scope_device_id(
+            int rc = qv_device_id(
                 scope,
                 dev_type,
                 i,
@@ -451,7 +451,7 @@ ctu_emit_device_info(
                 &devids
             );
             if (rc != QV_SUCCESS) {
-                const char *ers = "qv_scope_device_id() failed";
+                const char *ers = "qv_device_id() failed";
                 ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
             }
             reporter.add(

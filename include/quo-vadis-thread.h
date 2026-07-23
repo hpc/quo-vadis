@@ -28,8 +28,8 @@ extern "C" {
 #endif
 
 /**
- * Automatic grouping options for qv_thread_scope_split() and
- * qv_thread_scope_split_at(). The following values can be used instead of
+ * Automatic grouping options for qv_thread_split() and
+ * qv_thread_split_at(). The following values can be used instead of
  * group_id to influence how automatic task grouping is accomplished.
  */
 int *const QV_THREAD_SCOPE_SPLIT_PACKED  = (int *)0x00000001;
@@ -37,7 +37,7 @@ int *const QV_THREAD_SCOPE_SPLIT_SPREAD  = (int *)0x00000002;
 int *const QV_THREAD_SCOPE_SPLIT_CLOSE   = (int *)0x00000003;
 
 int
-qv_thread_scope_split(
+qv_thread_split(
     qv_scope_t *scope,
     int npieces,
     int *kcolors,
@@ -46,7 +46,7 @@ qv_thread_scope_split(
 );
 
 int
-qv_thread_scope_split_at(
+qv_thread_split_at(
     qv_scope_t *scope,
     qv_hw_obj_type_t type,
     int *kcolors,
@@ -55,11 +55,11 @@ qv_thread_scope_split_at(
 );
 
 /**
- * Frees resources allocated by calls to qv_thread_scope_split*.
+ * Frees resources allocated by calls to qv_thread_split*.
  */
 // TODO(skg) flip ordering.
 int
-qv_thread_scopes_free(
+qv_thread_free(
     int nscopes,
     qv_scope_t **scopes
 );

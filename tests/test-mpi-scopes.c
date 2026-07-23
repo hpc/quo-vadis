@@ -38,14 +38,14 @@ main(
     }
     // Self scope test
     qv_scope_t *self_scope;
-    rc = qv_mpi_scope_get(
+    rc = qv_mpi_scope(
         comm,
         QV_SCOPE_PROCESS,
         QV_SCOPE_FLAG_NONE,
         &self_scope
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_scope_get(QV_SCOPE_PROCESS) failed";
+        ers = "qv_mpi_scope(QV_SCOPE_PROCESS) failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -66,42 +66,42 @@ main(
         }
     }
 
-    rc = qv_scope_free(self_scope);
+    rc = qv_free(self_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     // Base scope test
     qv_scope_t *base_scope;
-    rc = qv_mpi_scope_get(
+    rc = qv_mpi_scope(
         comm,
         QV_SCOPE_JOB,
         QV_SCOPE_FLAG_NONE,
         &base_scope
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_scope_get() failed";
+        ers = "qv_mpi_scope() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     // Get my base_scope's size and my rank.
     int base_scope_size;
-    rc = qv_scope_group_size(
+    rc = qv_group_size(
         base_scope,
         &base_scope_size
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_group_size() failed";
+        ers = "qv_group_size() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int base_scope_rank;
-    rc = qv_scope_group_rank(
+    rc = qv_group_rank(
         base_scope,
         &base_scope_rank
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_group_rank() failed";
+        ers = "qv_group_rank() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -114,32 +114,32 @@ main(
         else {
             ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
         }
-        rc = qv_scope_barrier(base_scope);
+        rc = qv_barrier(base_scope);
         if (rc != QV_SUCCESS) {
-            ers = "qv_scope_barrier() failed";
+            ers = "qv_barrier() failed";
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
     }
 
     int base_scope_sgsize;
-    rc = qv_scope_group_size(
+    rc = qv_group_size(
         base_scope,
         &base_scope_sgsize
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_group_size() failed";
+        ers = "qv_group_size() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     qv_scope_t *sub_scope;
-    rc = qv_scope_split(
+    rc = qv_split(
         base_scope,
         npieces,
         QV_SCOPE_SPLIT_PACKED,
         &sub_scope
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_split() failed";
+        ers = "qv_split() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -152,16 +152,16 @@ main(
         else {
             ctu_emit(sub_scope, CTU_SCOPE_KIND_MPI, "");
         }
-        rc = qv_scope_barrier(base_scope);
+        rc = qv_barrier(base_scope);
         if (rc != QV_SUCCESS) {
-            ers = "qv_scope_barrier() failed";
+            ers = "qv_barrier() failed";
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
     }
 
     if (base_scope_rank == 0) {
         qv_scope_t *create_scope;
-        rc = qv_scope_create(
+        rc = qv_create_scope(
             sub_scope,
             QV_SCOPE_FLAG_NONE,
             QV_HW_OBJ_CORE,
@@ -169,7 +169,7 @@ main(
             &create_scope
         );
         if (rc != QV_SUCCESS) {
-            ers = "qv_scope_create() failed";
+            ers = "qv_create_scope() failed";
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
 
@@ -177,22 +177,22 @@ main(
             create_scope, CTU_SCOPE_KIND_MPI, " create_scope"
         );
 
-        rc = qv_scope_free(create_scope);
+        rc = qv_free(create_scope);
         if (rc != QV_SUCCESS) {
-            ers = "qv_scope_free() failed";
+            ers = "qv_free() failed";
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
     }
 
     qv_scope_t *sub_sub_scope;
-    rc = qv_scope_split(
+    rc = qv_split(
         sub_scope,
         npieces,
         QV_SCOPE_SPLIT_SPREAD,
         &sub_sub_scope
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_split() failed";
+        ers = "qv_split() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -205,28 +205,28 @@ main(
         else {
             ctu_emit(sub_sub_scope, CTU_SCOPE_KIND_MPI, "");
         }
-        rc = qv_scope_barrier(base_scope);
+        rc = qv_barrier(base_scope);
         if (rc != QV_SUCCESS) {
-            ers = "qv_scope_barrier() failed";
+            ers = "qv_barrier() failed";
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
     }
 
-    rc = qv_scope_free(base_scope);
+    rc = qv_free(base_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(sub_scope);
+    rc = qv_free(sub_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(sub_sub_scope);
+    rc = qv_free(sub_sub_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 

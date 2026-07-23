@@ -33,18 +33,18 @@ main(void)
     fprintf(stdout,"# Starting Pthreads test.\n");
 
     qv_scope_t *base_scope;
-    int rc = qv_process_scope_get(
+    int rc = qv_process_scope(
         QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &base_scope
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_process_scope_get() failed";
+        ers = "qv_process_scope() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int ncores = 0;
-    rc = qv_scope_hw_obj_count(base_scope, QV_HW_OBJ_CORE, &ncores);
+    rc = qv_hw_obj_count(base_scope, QV_HW_OBJ_CORE, &ncores);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_hw_obj_count() failed";
+        ers = "qv_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -61,7 +61,7 @@ main(void)
     );
 
     qv_scope_t **th_scopes = NULL;
-    rc = qv_thread_scope_split(
+    rc = qv_thread_split(
         base_scope, npieces,
         QV_THREAD_SCOPE_SPLIT_PACKED,
         nthreads, &th_scopes
@@ -99,7 +99,7 @@ main(void)
         //fprintf(stdout,"Thread finished with '%s'\n", (char *)ret);
     }
     // Clean up.
-    rc = qv_thread_scopes_free(nthreads, th_scopes);
+    rc = qv_thread_free(nthreads, th_scopes);
     if (rc != QV_SUCCESS) {
         ers = "qv_pthread_scope_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -112,7 +112,7 @@ main(void)
         tid, nthreads, npieces
     );
 
-    rc = qv_thread_scope_split_at(
+    rc = qv_thread_split_at(
         base_scope, QV_HW_OBJ_CORE,
         QV_THREAD_SCOPE_SPLIT_PACKED,
         nthreads, &th_scopes
@@ -147,15 +147,15 @@ main(void)
         //fprintf(stdout,"Thread finished with '%s'\n", (char *)ret);
     }
     // Clean up.
-    rc = qv_thread_scopes_free(nthreads, th_scopes);
+    rc = qv_thread_free(nthreads, th_scopes);
     if (rc != QV_SUCCESS) {
         ers = "qv_pthread_scope_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(base_scope);
+    rc = qv_free(base_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 

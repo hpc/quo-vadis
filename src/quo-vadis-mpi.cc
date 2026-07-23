@@ -35,7 +35,7 @@ qvi_mpi_scope_get_f2c(
     qv_scope_t **scope
 ) {
     MPI_Comm c_comm = MPI_Comm_f2c(comm);
-    return qv_mpi_scope_get(c_comm, iscope, flags, scope);
+    return qv_mpi_scope(c_comm, iscope, flags, scope);
 }
 
 int
@@ -44,7 +44,7 @@ qvi_mpi_scope_comm_dup_f2c(
     MPI_Fint *comm
 ) {
     MPI_Comm c_comm = MPI_COMM_NULL;
-    const int rc = qv_mpi_scope_comm_dup(scope, &c_comm);
+    const int rc = qv_mpi_comm_dup(scope, &c_comm);
     *comm = MPI_Comm_c2f(c_comm);
     return rc;
 }
@@ -70,7 +70,7 @@ qvi_mpi_scope_get(
 }
 
 int
-qv_mpi_scope_get(
+qv_mpi_scope(
     MPI_Comm comm,
     qv_scope_intrinsic_t iscope,
     qv_scope_flags_t flags,
@@ -94,7 +94,7 @@ qvi_mpi_scope_comm_dup(
 }
 
 int
-qv_mpi_scope_comm_dup(
+qv_mpi_comm_dup(
     qv_scope_t *scope,
     MPI_Comm *comm
 ) {

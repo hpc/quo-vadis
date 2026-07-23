@@ -18,9 +18,9 @@ scopei_free(
     scopei *sinfo
 ) {
     char *ers = NULL;
-    const int rc = qv_thread_scopes_free(sinfo->nthreads, sinfo->th_scopes);
+    const int rc = qv_thread_free(sinfo->nthreads, sinfo->th_scopes);
     if (rc != QV_SUCCESS) {
-        ers = "qv_thread_scopes_free() failed";
+        ers = "qv_thread_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
@@ -35,7 +35,7 @@ scopei_ep(
     char *ers = NULL;
 
     qv_scope_t *base_scope;
-    int rc = qv_process_scope_get(
+    int rc = qv_process_scope(
         QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &base_scope
     );
     if (rc != QV_SUCCESS) {
@@ -43,25 +43,25 @@ scopei_ep(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     // Use the number of cores to determine how many thread scopes to create.
-    rc = qv_scope_hw_obj_count(base_scope, QV_HW_OBJ_CORE, &sinfo->nthreads);
+    rc = qv_hw_obj_count(base_scope, QV_HW_OBJ_CORE, &sinfo->nthreads);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_hw_obj_count() failed";
+        ers = "qv_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int *thread_coloring = QV_THREAD_SCOPE_SPLIT_CLOSE;
-    rc = qv_thread_scope_split_at(
+    rc = qv_thread_split_at(
         base_scope, QV_HW_OBJ_CORE, thread_coloring,
         sinfo->nthreads, &sinfo->th_scopes
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_thread_scope_split_at() failed";
+        ers = "qv_thread_split_at() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(base_scope);
+    rc = qv_free(base_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
@@ -71,9 +71,9 @@ scopei_ep_push(
     scopei *sinfo,
     int rank
 ) {
-    const int rc = qv_scope_bind_push(sinfo->th_scopes[rank]);
+    const int rc = qv_bind_push(sinfo->th_scopes[rank]);
     if (rc != QV_SUCCESS) {
-        char *ers = "qv_scope_bind_push() failed";
+        char *ers = "qv_bind_push() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
@@ -83,9 +83,9 @@ scopei_ep_pop(
     scopei *sinfo,
     int rank
 ) {
-    const int rc = qv_scope_bind_pop(sinfo->th_scopes[rank]);
+    const int rc = qv_bind_pop(sinfo->th_scopes[rank]);
     if (rc != QV_SUCCESS) {
-        char *ers = "qv_scope_bind_pop() failed";
+        char *ers = "qv_bind_pop() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
@@ -99,7 +99,7 @@ emit_iter_info(
     char const *ers = NULL;
 
     char *binds;
-    const int rc = qv_scope_bind_string(
+    const int rc = qv_bind_string(
         sinfo->th_scopes[rank], QV_BIND_STRING_LOGICAL, &binds
     );
     if (rc != QV_SUCCESS) {

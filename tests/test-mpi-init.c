@@ -22,17 +22,17 @@ main(
     }
 
     qv_scope_t *scope = NULL;
-    rc = qv_mpi_scope_get(
+    rc = qv_mpi_scope(
         comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &scope
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_scope_get() failed";
+        ers = "qv_mpi_scope() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(scope);
+    rc = qv_free(scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 

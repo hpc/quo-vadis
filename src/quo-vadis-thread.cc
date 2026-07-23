@@ -98,7 +98,7 @@ split_color_fixup(
 }
 
 int
-qv_thread_scope_split(
+qv_thread_split(
     qv_scope_t *scope,
     int npieces,
     int *kcolors,
@@ -123,7 +123,7 @@ qv_thread_scope_split(
 }
 
 int
-qv_thread_scope_split_at(
+qv_thread_split_at(
     qv_scope_t *scope,
     qv_hw_obj_type_t type,
     int *kcolors,
@@ -145,7 +145,7 @@ qv_thread_scope_split_at(
 }
 
 int
-qv_thread_scopes_free(
+qv_thread_free(
     int nscopes,
     qv_scope_t **scopes
 ) {

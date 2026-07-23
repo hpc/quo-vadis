@@ -51,7 +51,7 @@ qvi_process_scope_get(
 }
 
 int
-qv_process_scope_get(
+qv_process_scope(
     qv_scope_intrinsic_t iscope,
     qv_scope_flags_t flags,
     qv_scope_t **scope
@@ -66,7 +66,7 @@ qv_process_scope_get(
 }
 
 int
-qv_scope_bind_push(
+qv_bind_push(
     qv_scope_t *scope
 ) {
     if (qvi_unlikely(!scope)) {
@@ -79,7 +79,7 @@ qv_scope_bind_push(
 }
 
 int
-qv_scope_bind_pop(
+qv_bind_pop(
     qv_scope_t *scope
 ) {
     if (qvi_unlikely(!scope)) {
@@ -92,7 +92,7 @@ qv_scope_bind_pop(
 }
 
 int
-qv_scope_bind_string(
+qv_bind_string(
     qv_scope_t *scope,
     qv_bind_string_flags_t flags,
     char **str
@@ -107,7 +107,7 @@ qv_scope_bind_string(
 }
 
 int
-qv_scope_free(
+qv_free(
     qv_scope_t *scope
 ) {
     // Just accept NULL like free() does.
@@ -122,7 +122,7 @@ qv_scope_free(
 }
 
 int
-qv_scope_hw_obj_count(
+qv_hw_obj_count(
     qv_scope_t *scope,
     qv_hw_obj_type_t obj,
     int *nobjs
@@ -138,7 +138,7 @@ qv_scope_hw_obj_count(
 }
 
 int
-qv_scope_group_rank(
+qv_group_rank(
     qv_scope_t *scope,
     int *rank
 ) {
@@ -153,7 +153,7 @@ qv_scope_group_rank(
 }
 
 int
-qv_scope_group_size(
+qv_group_size(
     qv_scope_t *scope,
     int *group_size
 ) {
@@ -168,7 +168,7 @@ qv_scope_group_size(
 }
 
 int
-qv_scope_barrier(
+qv_barrier(
     qv_scope_t *scope
 ) {
     if (qvi_unlikely(!scope)) {
@@ -182,7 +182,7 @@ qv_scope_barrier(
 
 // TODO(skg) Add Fortran interface.
 int
-qv_scope_create(
+qv_create_scope(
     qv_scope_t *scope,
     qv_scope_flags_t flags,
     qv_hw_obj_type_t type,
@@ -199,7 +199,7 @@ qv_scope_create(
 }
 
 int
-qv_scope_split(
+qv_split(
     qv_scope_t *scope,
     int npieces,
     int group_id,
@@ -218,7 +218,7 @@ qv_scope_split(
 }
 
 int
-qv_scope_split_at(
+qv_split_at(
     qv_scope_t *scope,
     qv_hw_obj_type_t type,
     int group_id,
@@ -234,7 +234,7 @@ qv_scope_split_at(
 }
 
 int
-qv_scope_device_id(
+qv_device_id(
     qv_scope_t *scope,
     qv_hw_obj_type_t dev_obj,
     int dev_index,
