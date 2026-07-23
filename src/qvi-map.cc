@@ -664,7 +664,7 @@ solve_ap_mapping(
 }
 
 int
-qvi_map_affinity_preserving(
+qvi_map_close(
     const qvi_map_config &config,
     qvi_map_t &map
 ) {

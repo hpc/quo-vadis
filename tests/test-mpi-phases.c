@@ -108,8 +108,8 @@ main(
     rc = qv_scope_split(
         base_scope,
         wsize,        // Number of workers
-#ifdef USE_AFFINITY_PRESERVING
-    QV_SCOPE_SPLIT_AFFINITY_PRESERVING,
+#ifdef USE_CLOSE
+    QV_SCOPE_SPLIT_CLOSE,
 #else
     wrank,        // My group color
 #endif
@@ -234,8 +234,8 @@ main(
     rc = qv_scope_split_at(
         base_scope,
         QV_HW_OBJ_NUMANODE,
-#ifdef USE_AFFINITY_PRESERVING
-        QV_SCOPE_SPLIT_AFFINITY_PRESERVING,
+#ifdef USE_CLOSE
+        QV_SCOPE_SPLIT_CLOSE,
 #else
         wrank % nnumas, // color or group id
 #endif

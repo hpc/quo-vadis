@@ -201,11 +201,11 @@ qvi_hwsplit::m_determine_mapping(
     }
     // Automatic splitting.
     switch (m_colors[0]) {
-        case QV_SCOPE_SPLIT_AFFINITY_PRESERVING: {
+        case QV_SCOPE_SPLIT_CLOSE: {
             map_config = {
                 m_task_affinities,
                 m_split_cpusets,
-                qvi_map_affinity_preserving
+                qvi_map_close
             };
             return QV_SUCCESS;
         }
@@ -284,7 +284,7 @@ qvi_hwsplit::m_split(void)
             hwpool_affinities
         };
         qvi_map_t devs2hres_map;
-        rc = qvi_map_affinity_preserving(
+        rc = qvi_map_close(
             devs2hres_config, devs2hres_map
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;

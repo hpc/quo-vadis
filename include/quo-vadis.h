@@ -167,7 +167,7 @@ const int QV_SCOPE_SPLIT_UNDEFINED = -1;
  * Split the provided group by attempting to preserve tasks' current affinities
  * (at time of the split call) as much as possible.
  */
-const int QV_SCOPE_SPLIT_AFFINITY_PRESERVING = -2;
+const int QV_SCOPE_SPLIT_CLOSE = -2;
 /**
  *
  */
