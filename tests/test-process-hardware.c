@@ -25,7 +25,7 @@ main(void)
         char const *ers = NULL;
 
         qv_scope_t *base_scope;
-        int rc = qv_process_scope_get(
+        int rc = qv_process_scope(
             QV_SCOPE_USER,
             setup_tab[i].flags,
             &base_scope
@@ -50,9 +50,9 @@ main(void)
         );
         ctu_emit(base_scope, CTU_SCOPE_KIND_PROCESS, "\n");
 
-        rc = qv_scope_free(base_scope);
+        rc = qv_free(base_scope);
         if (rc != QV_SUCCESS) {
-            ers = "qv_scope_free() failed";
+            ers = "qv_free() failed";
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
     }

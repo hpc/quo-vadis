@@ -88,11 +88,11 @@ int mpi_impl_progr_thread_create(pthread_t *restrict thread,
   #else
   int qv_attr = QV_SCOPE_ATTR_SAME_NUMA | QV_SCOPE_ATTR_EXCLUSIVE;
   #endif
-  rc = qv_scope_create(ctx, base_scope,
+  rc = qv_create_scope(ctx, base_scope,
                QV_HW_OBJ_CORE, 1, qv_attr,
                &sub_scope);
   if (rc != QV_SUCCESS) {
-    ers = "qv_scope_create() failed";
+    ers = "qv_create_scope() failed";
     panic("%s (rc=%s)", ers, qv_strerr(rc));
   }
 

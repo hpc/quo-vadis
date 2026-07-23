@@ -43,11 +43,11 @@ main(
     }
 
     qv_scope_t *world_scope = NULL;
-    rc = qv_mpi_scope_get(
+    rc = qv_mpi_scope(
         comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &world_scope
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_scope_get() failed";
+        ers = "qv_mpi_scope() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -57,9 +57,9 @@ main(
     );
 
     MPI_Comm wscope_comm = MPI_COMM_NULL;
-    rc = qv_mpi_scope_comm_dup(world_scope, &wscope_comm);
+    rc = qv_mpi_comm_dup(world_scope, &wscope_comm);
     if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_scope_comm_dup() failed";
+        ers = "qv_mpi_comm_dup() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -88,18 +88,18 @@ main(
     }
 
     qv_scope_t *sub_scope = NULL;
-    rc = qv_scope_split(
+    rc = qv_split(
         world_scope, wsize, wrank, &sub_scope
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_split() failed";
+        ers = "qv_split() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     MPI_Comm split_wscope_comm = MPI_COMM_NULL;
-    rc = qv_mpi_scope_comm_dup(sub_scope, &split_wscope_comm);
+    rc = qv_mpi_comm_dup(sub_scope, &split_wscope_comm);
     if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_scope_comm_dup() failed";
+        ers = "qv_mpi_comm_dup() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -132,15 +132,15 @@ main(
         split_wscope_size, wsize
     );
 
-    rc = qv_scope_free(sub_scope);
+    rc = qv_free(sub_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(world_scope);
+    rc = qv_free(world_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 

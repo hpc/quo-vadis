@@ -152,7 +152,7 @@ const qv_bind_string_flags_t QV_BIND_STRING_LOGICAL = (1<<0);
 const qv_bind_string_flags_t QV_BIND_STRING_PHYSICAL = (1<<1);
 
 /**
- * Automatic grouping options for qv_scope_split() and qv_scope_split_at(). The
+ * Automatic grouping options for qv_split() and qv_split_at(). The
  * following values can be used instead of group_id to influence how automatic
  * task grouping is accomplished.
  */
@@ -216,7 +216,7 @@ qv_strerr(
  * Creates a process context.
  */
 int
-qv_process_scope_get(
+qv_process_scope(
     qv_scope_intrinsic_t iscope,
     qv_scope_flags_t flags,
     qv_scope_t **scope
@@ -227,7 +227,7 @@ qv_process_scope_get(
  */
 // TODO(skg) Add to Fortran interface.
 int
-qv_scope_create(
+qv_create_scope(
     qv_scope_t *scope,
     qv_scope_flags_t flags,
     qv_hw_obj_type_t type,
@@ -239,7 +239,7 @@ qv_scope_create(
  * Returns the caller's group rank in the provided scope.
  */
 int
-qv_scope_group_rank(
+qv_group_rank(
     qv_scope_t *scope,
     int *rank
 );
@@ -248,7 +248,7 @@ qv_scope_group_rank(
  * Returns the scope's underlying group's size.
  */
 int
-qv_scope_group_size(
+qv_group_size(
     qv_scope_t *scope,
     int *group_size
 );
@@ -257,7 +257,7 @@ qv_scope_group_size(
  * Returns the number of hardware objects contained within the provided scope.
  */
 int
-qv_scope_hw_obj_count(
+qv_hw_obj_count(
     qv_scope_t *scope,
     qv_hw_obj_type_t obj,
     int *nobjs
@@ -267,7 +267,7 @@ qv_scope_hw_obj_count(
  *
  */
 int
-qv_scope_device_id(
+qv_device_id(
     qv_scope_t *scope,
     qv_hw_obj_type_t dev_obj,
     int dev_index,
@@ -279,7 +279,7 @@ qv_scope_device_id(
  *
  */
 int
-qv_scope_barrier(
+qv_barrier(
     qv_scope_t *scope
 );
 
@@ -287,7 +287,7 @@ qv_scope_barrier(
  *
  */
 int
-qv_scope_split(
+qv_split(
     qv_scope_t *scope,
     int npieces,
     int group_id,
@@ -298,7 +298,7 @@ qv_scope_split(
  *
  */
 int
-qv_scope_split_at(
+qv_split_at(
     qv_scope_t *scope,
     qv_hw_obj_type_t type,
     int group_id,
@@ -309,7 +309,7 @@ qv_scope_split_at(
  *
  */
 int
-qv_scope_bind_push(
+qv_bind_push(
     qv_scope_t *scope
 );
 
@@ -317,7 +317,7 @@ qv_scope_bind_push(
  *
  */
 int
-qv_scope_bind_pop(
+qv_bind_pop(
     qv_scope_t *scope
 );
 
@@ -325,7 +325,7 @@ qv_scope_bind_pop(
  *
  */
 int
-qv_scope_bind_string(
+qv_bind_string(
     qv_scope_t *scope,
     qv_bind_string_flags_t flags,
     char **str
@@ -335,7 +335,7 @@ qv_scope_bind_string(
  * Releases resources associated with the provided scope.
  */
 int
-qv_scope_free(
+qv_free(
     qv_scope_t *scope
 );
 

@@ -18,7 +18,7 @@
  * Or
  * qv_scope_set_utility(context, input_scope);
  *
- * (2) Define qv_scope_create_hint for qv_scope_create.
+ * (2) Define qv_create_scope_hint for qv_create_scope.
  * We may need:
  * // Get PUs from the tail of the list
  * QV_SCOPE_CREATE_LAST
@@ -77,24 +77,24 @@ int main(int argc, char *argv[])
     }
 
     qv_scope_t *user_scope;
-    rc = qv_mpi_scope_get(
+    rc = qv_mpi_scope(
         comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &user_scope
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_scope_get() failed";
+        ers = "qv_mpi_scope() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     /* Split user scope evenly across tasks */
     qv_scope_t *task_scope;
-    rc = qv_scope_split(user_scope, wsize, wrank, &task_scope);
+    rc = qv_split(user_scope, wsize, wrank, &task_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_split() failed";
+        ers = "qv_split() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     /* Push into my task scope */
-    rc = qv_scope_bind_push(task_scope);
+    rc = qv_bind_push(task_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
 
     /* Where did I end up? */
     char *binds;
-    rc = qv_scope_bind_string(task_scope, QV_BIND_STRING_LOGICAL, &binds);
+    rc = qv_bind_string(task_scope, QV_BIND_STRING_LOGICAL, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -116,7 +116,7 @@ int main(int argc, char *argv[])
      * how could we set aside cores/pus for the progress threads
      * and not use those resources for the application's work?
      * Currently, we could get around this by implementing
-     * hints in qv_scope_create as detailed in this file.
+     * hints in qv_create_scope as detailed in this file.
      * Another way of doing this is by allowing the creation of
      * intrinsic *named* scopes that can be set by the application
      * and used by the external library.
@@ -133,74 +133,74 @@ int main(int argc, char *argv[])
      */
 
     int ncores;
-    rc = qv_scope_hw_obj_count(task_scope, QV_HW_OBJ_CORE, &ncores);
+    rc = qv_hw_obj_count(task_scope, QV_HW_OBJ_CORE, &ncores);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_hw_obj_count() failed";
+        ers = "qv_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     qv_scope_t *wk_scope;
-    rc = qv_scope_create(task_scope, QV_SCOPE_FLAG_NONE, QV_HW_OBJ_CORE, ncores-1, &wk_scope);
+    rc = qv_create_scope(task_scope, QV_SCOPE_FLAG_NONE, QV_HW_OBJ_CORE, ncores-1, &wk_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_create() failed";
+        ers = "qv_create_scope() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     qv_scope_t *ut_scope;
-    rc = qv_scope_create(task_scope, QV_SCOPE_FLAG_NONE, QV_HW_OBJ_CORE, 1, &ut_scope);
+    rc = qv_create_scope(task_scope, QV_SCOPE_FLAG_NONE, QV_HW_OBJ_CORE, 1, &ut_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_create() failed";
+        ers = "qv_create_scope() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     /* Test work scope */
-    rc = qv_scope_bind_push(wk_scope);
+    rc = qv_bind_push(wk_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    rc = qv_scope_bind_string(wk_scope, QV_BIND_STRING_LOGICAL, &binds);
+    rc = qv_bind_string(wk_scope, QV_BIND_STRING_LOGICAL, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Work scope: running on %s\n", wrank, binds);
     free(binds);
-    rc = qv_scope_bind_pop(wk_scope);
+    rc = qv_bind_pop(wk_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_pop() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     /* Test utility scope */
-    rc = qv_scope_bind_push(ut_scope);
+    rc = qv_bind_push(ut_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    rc = qv_scope_bind_string(ut_scope, QV_BIND_STRING_LOGICAL, &binds);
+    rc = qv_bind_string(ut_scope, QV_BIND_STRING_LOGICAL, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Utility scope: running on %s\n", wrank, binds);
     free(binds);
-    rc = qv_scope_bind_pop(ut_scope);
+    rc = qv_bind_pop(ut_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_pop() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     /* Clean up for now */
-    rc = qv_scope_free(ut_scope);
+    rc = qv_free(ut_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(wk_scope);
+    rc = qv_free(wk_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -237,9 +237,9 @@ int main(int argc, char *argv[])
 
     /* Test we have PUs to use in the base scope */
     int npus;
-    rc = qv_scope_hw_obj_count(ctx2, base_scope, QV_HW_OBJ_PU, &npus);
+    rc = qv_hw_obj_count(ctx2, base_scope, QV_HW_OBJ_PU, &npus);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_hw_obj_count() failed";
+        ers = "qv_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Base scope: npus=%d\n", wrank, npus);
@@ -247,9 +247,9 @@ int main(int argc, char *argv[])
     /* Create the progress thread scope */
     qv_scope_t *pt_scope = user_scope;
     if (npus > 0) {
-        rc = qv_scope_create(ctx2, base_scope, QV_HW_OBJ_PU, 1, 0, &pt_scope);
+        rc = qv_create_scope(ctx2, base_scope, QV_HW_OBJ_PU, 1, 0, &pt_scope);
         if (rc != QV_SUCCESS) {
-            ers = "qv_scope_create() failed";
+            ers = "qv_create_scope() failed";
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
     }
@@ -271,15 +271,15 @@ int main(int argc, char *argv[])
 
 
     /* Clean up */
-    rc = qv_scope_free(ctx2, pt_scope);
+    rc = qv_free(ctx2, pt_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(ctx2, base_scope);
+    rc = qv_free(ctx2, base_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -288,15 +288,15 @@ int main(int argc, char *argv[])
      * Back to the application
      ***************************************/
 
-    rc = qv_scope_free(ctx, task_scope);
+    rc = qv_free(ctx, task_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(ctx, user_scope);
+    rc = qv_free(ctx, user_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 #endif

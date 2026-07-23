@@ -10,7 +10,7 @@ main(void)
     int rc = QV_SUCCESS;
 
     qv_scope_t *self_scope = NULL;
-    rc = qv_process_scope_get(
+    rc = qv_process_scope(
         QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &self_scope
     );
     if (rc != QV_SUCCESS) {
@@ -22,14 +22,14 @@ main(void)
         self_scope, CTU_SCOPE_KIND_PROCESS, "     self_scope"
     );
 
-    rc = qv_scope_free(self_scope);
+    rc = qv_free(self_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     qv_scope_t *base_scope;
-    rc = qv_process_scope_get(
+    rc = qv_process_scope(
         QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &base_scope
     );
     if (rc != QV_SUCCESS) {
@@ -42,9 +42,9 @@ main(void)
     );
 
     int sgsize;
-    rc = qv_scope_group_size(base_scope, &sgsize);
+    rc = qv_group_size(base_scope, &sgsize);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_group_size() failed";
+        ers = "qv_group_size() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     if (sgsize != 1) {
@@ -61,21 +61,21 @@ main(void)
     // Provided color in range, so we will get the LHS of the split.
     // That is, with 2 pieces, the in-range coloring values are 0 and 1.
     qv_scope_t *sub_scope_left;
-    rc = qv_scope_split(
+    rc = qv_split(
         base_scope, npieces, 0, &sub_scope_left
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_split() failed";
+        ers = "qv_split() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     // Provided color in range, so we will get the RHS of the split.
     // That is, with 2 pieces, the in-range coloring values are 0 and 1.
     qv_scope_t *sub_scope_right;
-    rc = qv_scope_split(
+    rc = qv_split(
         base_scope, npieces, 1, &sub_scope_right
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_split() failed";
+        ers = "qv_split() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -93,21 +93,21 @@ main(void)
         sub_scope_right, CTU_SCOPE_KIND_PROCESS, "sub_scope_right"
     );
 
-    rc = qv_scope_free(base_scope);
+    rc = qv_free(base_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(sub_scope_left);
+    rc = qv_free(sub_scope_left);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(sub_scope_right);
+    rc = qv_free(sub_scope_right);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 

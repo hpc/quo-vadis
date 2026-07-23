@@ -16,14 +16,14 @@ emit_gpu_info(
     char const *ers = NULL;
 
     qv_scope_t *split_at_gpu;
-    int rc = qv_scope_split_at(
+    int rc = qv_split_at(
         base_scope,
         QV_HW_OBJ_GPU,
         QV_SCOPE_SPLIT_PACKED,
         &split_at_gpu
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_split_at() failed";
+        ers = "qv_split_at() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -37,16 +37,16 @@ emit_gpu_info(
         else {
             ctu_emit(split_at_gpu, CTU_SCOPE_KIND_MPI, "");
         }
-        rc = qv_scope_barrier(base_scope);
+        rc = qv_barrier(base_scope);
         if (rc != QV_SUCCESS) {
-            ers = "qv_scope_barrier() failed";
+            ers = "qv_barrier() failed";
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
     }
 
-    rc = qv_scope_free(split_at_gpu);
+    rc = qv_free(split_at_gpu);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 }
@@ -66,35 +66,35 @@ main(
     }
 
     qv_scope_t *base_scope;
-    rc = qv_mpi_scope_get(
+    rc = qv_mpi_scope(
         comm,
         QV_SCOPE_USER,
         QV_SCOPE_FLAG_NONE,
         &base_scope
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_scope_get() failed";
+        ers = "qv_mpi_scope() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     // Get my base_scope's size and my rank.
     int base_scope_size;
-    rc = qv_scope_group_size(
+    rc = qv_group_size(
         base_scope,
         &base_scope_size
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_group_size() failed";
+        ers = "qv_group_size() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int base_scope_rank;
-    rc = qv_scope_group_rank(
+    rc = qv_group_rank(
         base_scope,
         &base_scope_rank
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_group_rank() failed";
+        ers = "qv_group_rank() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -107,22 +107,22 @@ main(
         else {
             ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
         }
-        rc = qv_scope_barrier(base_scope);
+        rc = qv_barrier(base_scope);
         if (rc != QV_SUCCESS) {
-            ers = "qv_scope_barrier() failed";
+            ers = "qv_barrier() failed";
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
     }
 
     qv_scope_t *split_at_numa;
-    rc = qv_scope_split_at(
+    rc = qv_split_at(
         base_scope,
         QV_HW_OBJ_NUMANODE,
         QV_SCOPE_SPLIT_PACKED,
         &split_at_numa
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_split_at() failed";
+        ers = "qv_split_at() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -135,32 +135,32 @@ main(
         else {
             ctu_emit(split_at_numa, CTU_SCOPE_KIND_MPI, "");
         }
-        rc = qv_scope_barrier(base_scope);
+        rc = qv_barrier(base_scope);
         if (rc != QV_SUCCESS) {
-            ers = "qv_scope_barrier() failed";
+            ers = "qv_barrier() failed";
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
     }
 
     int ntask_per_numa;
-    rc = qv_scope_group_size(
+    rc = qv_group_size(
         split_at_numa,
         &ntask_per_numa
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_group_size() failed";
+        ers = "qv_group_size() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     qv_scope_t *split_cores_from_numa;
-    rc = qv_scope_split(
+    rc = qv_split(
         split_at_numa,
         ntask_per_numa,
         QV_SCOPE_SPLIT_PACKED,
         &split_cores_from_numa
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_split() failed";
+        ers = "qv_split() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -173,21 +173,21 @@ main(
         else {
             ctu_emit(split_cores_from_numa, CTU_SCOPE_KIND_MPI, "");
         }
-        rc = qv_scope_barrier(base_scope);
+        rc = qv_barrier(base_scope);
         if (rc != QV_SUCCESS) {
-            ers = "qv_scope_barrier() failed";
+            ers = "qv_barrier() failed";
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
     }
 
     // How many GPUs do we have?
     int ngpus;
-    rc = qv_scope_hw_obj_count(
+    rc = qv_hw_obj_count(
         base_scope, QV_HW_OBJ_GPU, &ngpus
 
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_hw_obj_count() failed";
+        ers = "qv_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -196,21 +196,21 @@ main(
     }
 
     // Free base_scope first to test scope free out-of-order operations.
-    rc = qv_scope_free(base_scope);
+    rc = qv_free(base_scope);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(split_at_numa);
+    rc = qv_free(split_at_numa);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_scope_free(split_cores_from_numa);
+    rc = qv_free(split_cores_from_numa);
     if (rc != QV_SUCCESS) {
-        ers = "qv_scope_free() failed";
+        ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 

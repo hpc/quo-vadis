@@ -75,7 +75,7 @@ module quo_vadisf
         int(ishft(1, 1), kind=c_int)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ! Automatic grouping options for qv_scope_split().
+    ! Automatic grouping options for qv_split().
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     integer(c_int), parameter :: QV_SCOPE_SPLIT_UNDEFINED = -1
     integer(c_int), parameter :: QV_SCOPE_SPLIT_CLOSE = -2
@@ -107,90 +107,90 @@ interface
     end function qv_version_c
 
     integer(c_int) &
-    function qv_process_scope_get_c(iscope, flags, scope) &
-        bind(c, name='qv_process_scope_get')
+    function qv_process_scope_c(iscope, flags, scope) &
+        bind(c, name='qv_process_scope')
         use, intrinsic :: iso_c_binding, only: c_int, c_long_long, c_ptr
         implicit none
         integer(c_int), value :: iscope
         integer(c_long_long), value :: flags
         type(c_ptr), intent(out) :: scope
-    end function qv_process_scope_get_c
+    end function qv_process_scope_c
 
     integer(c_int) &
-    function qv_scope_free_c(scope) &
-        bind(c, name='qv_scope_free')
+    function qv_free_c(scope) &
+        bind(c, name='qv_free')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
-    end function qv_scope_free_c
+    end function qv_free_c
 
     integer(c_int) &
-    function qv_scope_split_c( &
+    function qv_split_c( &
         scope, npieces, group_id, subscope &
     ) &
-        bind(c, name='qv_scope_split')
+        bind(c, name='qv_split')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), value :: npieces
         integer(c_int), value :: group_id
         type(c_ptr), intent(out) :: subscope
-    end function qv_scope_split_c
+    end function qv_split_c
 
     integer(c_int) &
-    function qv_scope_split_at_c( &
+    function qv_split_at_c( &
         scope, obj_type, group_id, subscope &
     ) &
-        bind(c, name='qv_scope_split_at')
+        bind(c, name='qv_split_at')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), value :: obj_type
         integer(c_int), value :: group_id
         type(c_ptr), intent(out) :: subscope
-    end function qv_scope_split_at_c
+    end function qv_split_at_c
 
     integer(c_int) &
-    function qv_scope_hw_obj_count_c(scope, obj, n) &
-        bind(c, name='qv_scope_hw_obj_count')
+    function qv_hw_obj_count_c(scope, obj, n) &
+        bind(c, name='qv_hw_obj_count')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), value :: obj
         integer(c_int), intent(out) :: n
-    end function qv_scope_hw_obj_count_c
+    end function qv_hw_obj_count_c
 
     integer(c_int) &
-    function qv_scope_group_rank_c(scope, taskid) &
-        bind(c, name='qv_scope_group_rank')
+    function qv_group_rank_c(scope, taskid) &
+        bind(c, name='qv_group_rank')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: taskid
-    end function qv_scope_group_rank_c
+    end function qv_group_rank_c
 
     integer(c_int) &
-    function qv_scope_group_size_c(scope, ntasks) &
-        bind(c, name='qv_scope_group_size')
+    function qv_group_size_c(scope, ntasks) &
+        bind(c, name='qv_group_size')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: ntasks
-    end function qv_scope_group_size_c
+    end function qv_group_size_c
 
     integer(c_int) &
-    function qv_scope_barrier_c(scope) &
-        bind(c, name='qv_scope_barrier')
+    function qv_barrier_c(scope) &
+        bind(c, name='qv_barrier')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
-    end function qv_scope_barrier_c
+    end function qv_barrier_c
 
     integer(c_int) &
-    function qv_scope_device_id_c( &
+    function qv_device_id_c( &
         scope, dev_obj, i, id_type, dev_id &
     ) &
-        bind(c, name='qv_scope_device_id')
+        bind(c, name='qv_device_id')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
@@ -198,33 +198,33 @@ interface
         integer(c_int), value :: i
         integer(c_int), value :: id_type
         type(c_ptr), intent(out) :: dev_id
-    end function qv_scope_device_id_c
+    end function qv_device_id_c
 
     integer(c_int) &
-    function qv_scope_bind_push_c(scope) &
-        bind(c, name='qv_scope_bind_push')
+    function qv_bind_push_c(scope) &
+        bind(c, name='qv_bind_push')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
-    end function qv_scope_bind_push_c
+    end function qv_bind_push_c
 
     integer(c_int) &
-    function qv_scope_bind_pop_c(scope) &
-        bind(c, name='qv_scope_bind_pop')
+    function qv_bind_pop_c(scope) &
+        bind(c, name='qv_bind_pop')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
-    end function qv_scope_bind_pop_c
+    end function qv_bind_pop_c
 
     integer(c_int) &
-    function qv_scope_bind_string_c(scope, sformat, str) &
-        bind(c, name='qv_scope_bind_string')
+    function qv_bind_string_c(scope, sformat, str) &
+        bind(c, name='qv_bind_string')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), value :: sformat
         type(c_ptr), intent(out) :: str
-    end function qv_scope_bind_string_c
+    end function qv_bind_string_c
 
     type(c_ptr) &
     function qv_strerr_c(ec) &
@@ -266,25 +266,25 @@ contains
         info = qv_version_c(major, minor, patch)
     end subroutine qv_version
 
-    subroutine qv_process_scope_get(iscope, flags, scope, info)
+    subroutine qv_process_scope(iscope, flags, scope, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_long_long, c_int
         implicit none
         integer(c_int), value :: iscope
         integer(c_long_long), value :: flags
         type(c_ptr), intent(out) :: scope
         integer(c_int), intent(out) :: info
-        info = qv_process_scope_get_c(iscope, flags, scope)
-    end subroutine qv_process_scope_get
+        info = qv_process_scope_c(iscope, flags, scope)
+    end subroutine qv_process_scope
 
-    subroutine qv_scope_free(scope, info)
+    subroutine qv_free(scope, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: info
-        info = qv_scope_free_c(scope)
-    end subroutine qv_scope_free
+        info = qv_free_c(scope)
+    end subroutine qv_free
 
-    subroutine qv_scope_split( &
+    subroutine qv_split( &
         scope, npieces, group_id, subscope, info &
     )
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
@@ -294,12 +294,12 @@ contains
         integer(c_int), value :: group_id
         type(c_ptr), intent(out) :: subscope
         integer(c_int), intent(out) :: info
-        info = qv_scope_split_c( &
+        info = qv_split_c( &
             scope, npieces, group_id, subscope &
         )
-    end subroutine qv_scope_split
+    end subroutine qv_split
 
-    subroutine qv_scope_split_at( &
+    subroutine qv_split_at( &
         scope, obj_type, group_id, subscope, info &
     )
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
@@ -309,48 +309,48 @@ contains
         integer(c_int), value :: group_id
         type(c_ptr), intent(out) :: subscope
         integer(c_int), intent(out) :: info
-        info = qv_scope_split_at_c( &
+        info = qv_split_at_c( &
             scope, obj_type, group_id, subscope &
         )
-    end subroutine qv_scope_split_at
+    end subroutine qv_split_at
 
-    subroutine qv_scope_hw_obj_count(scope, obj, n, info)
+    subroutine qv_hw_obj_count(scope, obj, n, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), value :: obj
         integer(c_int), intent(out) :: n
         integer(c_int), intent(out) :: info
-        info = qv_scope_hw_obj_count_c(scope, obj, n)
-    end subroutine qv_scope_hw_obj_count
+        info = qv_hw_obj_count_c(scope, obj, n)
+    end subroutine qv_hw_obj_count
 
-    subroutine qv_scope_group_rank(scope, taskid, info)
+    subroutine qv_group_rank(scope, taskid, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: taskid
         integer(c_int), intent(out) :: info
-        info = qv_scope_group_rank_c(scope, taskid)
-    end subroutine qv_scope_group_rank
+        info = qv_group_rank_c(scope, taskid)
+    end subroutine qv_group_rank
 
-    subroutine qv_scope_group_size(scope, ntasks, info)
+    subroutine qv_group_size(scope, ntasks, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: ntasks
         integer(c_int), intent(out) :: info
-        info = qv_scope_group_size_c(scope, ntasks)
-    end subroutine qv_scope_group_size
+        info = qv_group_size_c(scope, ntasks)
+    end subroutine qv_group_size
 
-    subroutine qv_scope_barrier(scope, info)
+    subroutine qv_barrier(scope, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: info
-        info = qv_scope_barrier_c(scope)
-    end subroutine qv_scope_barrier
+        info = qv_barrier_c(scope)
+    end subroutine qv_barrier
 
-    subroutine qv_scope_device_id( &
+    subroutine qv_device_id( &
         scope, dev_obj, i, id_type, dev_id, info &
     )
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
@@ -366,7 +366,7 @@ contains
         integer(c_size_t) :: strlen
         character, pointer, dimension(:) :: fstrp
 
-        info = qv_scope_device_id_c( &
+        info = qv_device_id_c( &
             scope, dev_obj, i, id_type, cstr &
         )
         ! Now deal with the string
@@ -375,25 +375,25 @@ contains
         allocate(character(strlen) :: dev_id(1))
         dev_id = fstrp
         call qvif_free_c(cstr)
-    end subroutine qv_scope_device_id
+    end subroutine qv_device_id
 
-    subroutine qv_scope_bind_push(scope, info)
+    subroutine qv_bind_push(scope, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: info
-        info = qv_scope_bind_push_c(scope)
-    end subroutine qv_scope_bind_push
+        info = qv_bind_push_c(scope)
+    end subroutine qv_bind_push
 
-    subroutine qv_scope_bind_pop(scope, info)
+    subroutine qv_bind_pop(scope, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: info
-        info = qv_scope_bind_pop_c(scope)
-    end subroutine qv_scope_bind_pop
+        info = qv_bind_pop_c(scope)
+    end subroutine qv_bind_pop
 
-    subroutine qv_scope_bind_string(scope, sformat, fstr, info)
+    subroutine qv_bind_string(scope, sformat, fstr, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_size_t
         implicit none
         type(c_ptr), value :: scope
@@ -405,7 +405,7 @@ contains
         integer(c_size_t) :: strlen
         character, pointer, dimension(:) :: fstrp
 
-        info = qv_scope_bind_string_c(scope, sformat, cstr)
+        info = qv_bind_string_c(scope, sformat, cstr)
         ! Now deal with the string
         strlen = qvif_strlen_c(cstr)
         call c_f_pointer(cstr, fstrp, [strlen])

@@ -12,7 +12,7 @@ module quo_vadis_mpif
 
 interface
     integer(c_int) &
-    function qv_mpi_scope_get_c(comm, iscope, flags, scope) &
+    function qv_mpi_scope_c(comm, iscope, flags, scope) &
         bind(c, name='qvi_mpi_scope_get_f2c')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_long_long, c_int
         implicit none
@@ -20,22 +20,22 @@ interface
         integer(c_int), value :: iscope
         integer(c_long_long), value :: flags
         type(c_ptr), intent(out) :: scope
-    end function qv_mpi_scope_get_c
+    end function qv_mpi_scope_c
 
     integer(c_int) &
-    function qv_mpi_scope_comm_dup_c(scope, comm) &
+    function qv_mpi_comm_dup_c(scope, comm) &
         bind(c, name='qvi_mpi_scope_comm_dup_f2c')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), intent(out) :: comm
-    end function qv_mpi_scope_comm_dup_c
+    end function qv_mpi_comm_dup_c
 
 end interface
 
 contains
 
-    subroutine qv_mpi_scope_get(comm, iscope, flags, scope, info)
+    subroutine qv_mpi_scope(comm, iscope, flags, scope, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_long_long
         implicit none
         integer, value :: comm
@@ -43,17 +43,17 @@ contains
         integer(c_long_long), value :: flags
         type(c_ptr), intent(out) :: scope
         integer(c_int), intent(out) :: info
-        info = qv_mpi_scope_get_c(comm, iscope, flags, scope)
-    end subroutine qv_mpi_scope_get
+        info = qv_mpi_scope_c(comm, iscope, flags, scope)
+    end subroutine qv_mpi_scope
 
-    subroutine qv_mpi_scope_comm_dup(scope, comm, info)
+    subroutine qv_mpi_comm_dup(scope, comm, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer, intent(out) :: comm
         integer(c_int), intent(out) :: info
-        info =  qv_mpi_scope_comm_dup_c(scope, comm)
-    end subroutine qv_mpi_scope_comm_dup
+        info =  qv_mpi_comm_dup_c(scope, comm)
+    end subroutine qv_mpi_comm_dup
 
 end module quo_vadis_mpif
 

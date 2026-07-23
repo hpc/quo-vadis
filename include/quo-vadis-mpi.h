@@ -1,6 +1,6 @@
 /* -*- Mode: C; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2025 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -33,7 +33,7 @@ extern "C" {
  * communicator.
  */
 int
-qv_mpi_scope_get(
+qv_mpi_scope(
     MPI_Comm comm,
     qv_scope_intrinsic_t iscope,
     qv_scope_flags_t flags,
@@ -45,7 +45,7 @@ qv_mpi_scope_get(
  * provided scope. The returned communicator must be freed by MPI_Comm_free().
  */
 int
-qv_mpi_scope_comm_dup(
+qv_mpi_comm_dup(
     qv_scope_t *scope,
     MPI_Comm *comm
 );
