@@ -12,25 +12,21 @@ module quo_vadisf
     ! Return codes
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     integer(c_int), parameter :: QV_SUCCESS = 0
-    integer(c_int), parameter :: QV_SUCCESS_ALREADY_DONE = 1
-    integer(c_int), parameter :: QV_SUCCESS_SHUTDOWN = 2
-    integer(c_int), parameter :: QV_ERR = 3
-    integer(c_int), parameter :: QV_ERR_ENV = 4
-    integer(c_int), parameter :: QV_ERR_INTERNAL = 5
-    integer(c_int), parameter :: QV_ERR_FILE_IO = 6
-    integer(c_int), parameter :: QV_ERR_SYS = 7
-    integer(c_int), parameter :: QV_ERR_OOR = 8
-    integer(c_int), parameter :: QV_ERR_INVLD_ARG = 9
-    integer(c_int), parameter :: QV_ERR_CALL_BEFORE_INIT = 10
-    integer(c_int), parameter :: QV_ERR_HWLOC = 11
-    integer(c_int), parameter :: QV_ERR_MPI = 12
-    integer(c_int), parameter :: QV_ERR_MSG = 13
-    integer(c_int), parameter :: QV_ERR_RPC = 14
-    integer(c_int), parameter :: QV_ERR_NOT_SUPPORTED = 15
-    integer(c_int), parameter :: QV_ERR_POP = 16
-    integer(c_int), parameter :: QV_ERR_NOT_FOUND = 18
-    integer(c_int), parameter :: QV_ERR_SPLIT = 19
-    integer(c_int), parameter :: QV_RES_UNAVAILABLE = 20
+    integer(c_int), parameter :: QV_SUCCESS_SHUTDOWN = 1
+    integer(c_int), parameter :: QV_ERR = 2
+    integer(c_int), parameter :: QV_ERR_ENV = 3
+    integer(c_int), parameter :: QV_ERR_INTERNAL = 4
+    integer(c_int), parameter :: QV_ERR_FILE_IO = 5
+    integer(c_int), parameter :: QV_ERR_SYS = 6
+    integer(c_int), parameter :: QV_ERR_OOR = 7
+    integer(c_int), parameter :: QV_ERR_INVLD_ARG = 8
+    integer(c_int), parameter :: QV_ERR_HWLOC = 9
+    integer(c_int), parameter :: QV_ERR_MPI = 10
+    integer(c_int), parameter :: QV_ERR_RPC = 11
+    integer(c_int), parameter :: QV_ERR_NOT_SUPPORTED = 12
+    integer(c_int), parameter :: QV_ERR_NOT_FOUND = 13
+    integer(c_int), parameter :: QV_ERR_SPLIT = 14
+    integer(c_int), parameter :: QV_RES_UNAVAILABLE = 15
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Intrinsic scopes
