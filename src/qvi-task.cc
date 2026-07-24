@@ -116,8 +116,11 @@ qvi_task::bind_push(
 int
 qvi_task::bind_pop(void)
 {
+    // A pop without a matching push?
+    if (m_stack.empty()) return QV_ERR;
     m_stack.pop();
-
+    // A pop without a matching push?
+    if (m_stack.empty()) return QV_ERR;
     return m_rmi.set_cpubind(mytid(), m_stack.top());
 }
 
