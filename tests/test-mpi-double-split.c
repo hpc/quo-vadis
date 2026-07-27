@@ -7,50 +7,6 @@
 #include "quo-vadis-mpi.h"
 #include "common-test-utils.h"
 
-static void
-emit_gpu_info(
-    qv_scope_t *base_scope,
-    int base_scope_size,
-    int base_scope_rank
-) {
-    char const *ers = NULL;
-
-    qv_scope_t *split_at_gpu;
-    int rc = qv_split_at(
-        base_scope,
-        QV_HW_OBJ_GPU,
-        QV_SCOPE_SPLIT_PACKED,
-        &split_at_gpu
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_split_at() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    for (int i = 0; i < base_scope_size; ++i) {
-        if (base_scope_rank == i) {
-            ctu_emit_device_info(
-                split_at_gpu, CTU_SCOPE_KIND_MPI,
-                QV_HW_OBJ_GPU, "         split_at_gpu"
-            );
-        }
-        else {
-            ctu_emit(split_at_gpu, CTU_SCOPE_KIND_MPI, "");
-        }
-        rc = qv_barrier(base_scope);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_barrier() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
-    }
-
-    rc = qv_free(split_at_gpu);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-}
-
 int
 main(
     int argc,
@@ -77,42 +33,9 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    // Get my base_scope's size and my rank.
-    int base_scope_size;
-    rc = qv_group_size(
-        base_scope,
-        &base_scope_size
+    ctu_emit_scope_report(
+        base_scope, CTU_SCOPE_KIND_MPI, "           base_scope"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_group_size() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    int base_scope_rank;
-    rc = qv_group_rank(
-        base_scope,
-        &base_scope_rank
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_group_rank() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    for (int i = 0; i < base_scope_size; ++i) {
-        if (base_scope_rank == i) {
-            ctu_emit_scope_report(
-                base_scope, CTU_SCOPE_KIND_MPI, "           base_scope"
-            );
-        }
-        else {
-            ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
-        }
-        rc = qv_barrier(base_scope);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_barrier() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
-    }
 
     qv_scope_t *split_at_numa;
     rc = qv_split_at(
@@ -126,21 +49,9 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    for (int i = 0; i < base_scope_size; ++i) {
-        if (base_scope_rank == i) {
-            ctu_emit_scope_report(
-                split_at_numa, CTU_SCOPE_KIND_MPI, "        split_at_numa"
-            );
-        }
-        else {
-            ctu_emit(split_at_numa, CTU_SCOPE_KIND_MPI, "");
-        }
-        rc = qv_barrier(base_scope);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_barrier() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
-    }
+    ctu_emit_scope_report(
+        split_at_numa, CTU_SCOPE_KIND_MPI, "        split_at_numa"
+    );
 
     int ntask_per_numa;
     rc = qv_group_size(
@@ -164,27 +75,14 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    for (int i = 0; i < base_scope_size; ++i) {
-        if (base_scope_rank == i) {
-            ctu_emit_scope_report(
-                split_cores_from_numa, CTU_SCOPE_KIND_MPI, "split_cores_from_numa"
-            );
-        }
-        else {
-            ctu_emit(split_cores_from_numa, CTU_SCOPE_KIND_MPI, "");
-        }
-        rc = qv_barrier(base_scope);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_barrier() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
-    }
+    ctu_emit_scope_report(
+        split_cores_from_numa, CTU_SCOPE_KIND_MPI, "split_cores_from_numa"
+    );
 
-    // How many GPUs do we have?
+    // How many GPUs do we have in the base scope?
     int ngpus;
     rc = qv_hw_obj_count(
         base_scope, QV_HW_OBJ_GPU, &ngpus
-
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_hw_obj_count() failed";
@@ -192,7 +90,28 @@ main(
     }
 
     if (ngpus > 0) {
-        emit_gpu_info(base_scope, base_scope_size, base_scope_rank);
+        qv_scope_t *split_at_gpu;
+        rc = qv_split_at(
+            base_scope,
+            QV_HW_OBJ_GPU,
+            QV_SCOPE_SPLIT_PACKED,
+            &split_at_gpu
+        );
+        if (rc != QV_SUCCESS) {
+            ers = "qv_split_at() failed";
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
+
+        ctu_emit_device_info(
+            split_at_gpu, CTU_SCOPE_KIND_MPI,
+            QV_HW_OBJ_GPU, "         split_at_gpu"
+        );
+
+        rc = qv_free(split_at_gpu);
+        if (rc != QV_SUCCESS) {
+            ers = "qv_free() failed";
+            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        }
     }
 
     // Free base_scope first to test scope free out-of-order operations.

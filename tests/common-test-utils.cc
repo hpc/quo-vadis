@@ -13,139 +13,123 @@
 
 #include "common-test-utils.h"
 
+#include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 
-// Helps with deterministic task output: a
-// deferred output stream implementation.
-struct dos {
-private:
-    std::mutex m_mutex;
-    char *m_buff = nullptr;
-    dos(void) = default;
-    ~dos(void)
-    {
-        free(m_buff);
-        m_buff = NULL;
+static std::string
+vfstring(
+    const char *format,
+    va_list args
+) {
+    // Determine required buffer size.
+    va_list args_copy;
+    va_copy(args_copy, args);
+    const int size = vsnprintf(nullptr, 0, format, args_copy);
+    va_end(args_copy);
+    // An error?
+    if (size < 0) {
+        return {};
     }
+    // Format the message.
+    std::vector<char> buffer(size + 1);
+    vsnprintf(buffer.data(), buffer.size(), format, args);
+    return std::string(buffer.data());
+}
 
-public:
-    static dos &
-    the_dos(void) {
-        static dos singleton;
-        return singleton;
-    }
-    //Disable copy constructor.
-    dos(const dos &) = delete;
-    // Just return the singleton.
-    dos &
-    operator=(
-        const dos &
-    ) {
-        // Just return the singleton.
-        return dos::the_dos();
-    }
-    //
-    void
-    vadd(
-        const char *format,
-        va_list args
-    ) {
-        std::scoped_lock lock(m_mutex);
-
-        char *inbuff = NULL;
-        int np = vasprintf(&inbuff, format, args);
-        if (np == -1) ctu_panic("OOR");
-
-        char *newbuff = NULL;
-        np = asprintf(&newbuff, "%s%s", m_buff ? m_buff : "", inbuff);
-        if (np == -1) ctu_panic("OOR");
-
-        free(inbuff);
-        free(m_buff);
-
-        m_buff = newbuff;
-    }
-
-    void
-    flush(void)
-    {
-        std::scoped_lock lock(m_mutex);
-
-        if (m_buff) {
-            printf("%s", m_buff);
-            fflush(stdout);
-        }
-        free(m_buff);
-        m_buff = nullptr;
-    }
-};
-
-void
-ctu_dprintf(
+static std::string
+fstring(
     const char *format,
     ...
 ) {
     va_list args;
     va_start(args, format);
-    dos::the_dos().vadd(format, args);
+    const auto result = vfstring(format, args);
+    va_end(args);
+    return result;
+}
+
+// Base logger.
+struct logger {
+private:
+    std::mutex m_mutex;
+    logger(void) = default;
+    ~logger(void) = default;
+
+public:
+    static logger &
+    the_logger(void) {
+        static logger singleton;
+        return singleton;
+    }
+    //Disable copy constructor.
+    logger(const logger &) = delete;
+    // Just return the singleton.
+    logger &
+    operator=(
+        const logger &
+    ) {
+        // Just return the singleton.
+        return logger::the_logger();
+    }
+    // Main logging function.
+    void
+    log(
+        const std::string &message
+    ) {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        // Determine if this process has a message to log.
+        if (!message.empty()) {
+            printf("%s", message.c_str());
+            fflush(stdout);
+        }
+    }
+    //
+    void
+    vlogf(
+        const char *format,
+        va_list args
+    ) {
+        log(vfstring(format, args));
+    }
+};
+
+void
+ctu_logf(
+    const char *format,
+    ...
+) {
+    va_list args;
+    va_start(args, format);
+    logger::the_logger().vlogf(format, args);
     va_end(args);
 }
 
-void
-ctu_dflush(void)
-{
-    dos::the_dos().flush();
-}
-
-struct odos {
+struct ologger {
 protected:
     std::string m_id;
 
 public:
-    odos(void)
-    {
-        m_id = std::to_string(getpid());
-    }
+    ologger(void) : m_id(std::to_string(getpid())) { }
 
-    ~odos(void)
-    {
-        ctu_dflush();
-    }
+    virtual ~ologger(void) = default;
 
-    virtual void pvadd(
+    virtual void plog(
         bool pred,
-        const char *format,
-        va_list args
+        const std::string &msg
     ) {
-        if (pred) dos::the_dos().vadd(format, args);
+        if (pred) logger::the_logger().log(msg);
     }
 
-    virtual void vadd(
-        const char *format,
-        va_list args
-    ) {
-        pvadd(true, format, args);
-    }
-
-    virtual void padd(
+    void plogf(
         bool pred,
         const char *format,
         ...
     ) {
         va_list args;
         va_start(args, format);
-        pvadd(pred, format, args);
-        va_end(args);
-    }
-
-    virtual void add(
-        const char *format,
-        ...
-    ) {
-        va_list args;
-        va_start(args, format);
-        vadd(format, args);
+        plog(pred, vfstring(format, args));
         va_end(args);
     }
 
@@ -155,9 +139,9 @@ public:
     }
 };
 
-struct thr_odos : odos {
+struct thr_ologger : ologger {
 public:
-    thr_odos(void)
+    thr_ologger(void)
     {
         m_id = std::to_string(getpid()) + "," + std::to_string(ctu_gettid());
     }
@@ -166,22 +150,20 @@ public:
 #ifdef CTU_HAS_MPI_SUPPORT
 #include "quo-vadis-mpi.h"
 
-struct mpi_odos : odos {
+struct mpi_ologger : ologger {
 private:
-    MPI_Comm m_comm;
+    MPI_Comm m_comm = MPI_COMM_NULL;
     int m_rank = -1;
     int m_size = -1;
     bool m_initialized = false;
 
 public:
-    mpi_odos(
+    mpi_ologger(
         qv_scope_t *scope
     ) {
         int rc = MPI_SUCCESS;
         const char *ers = NULL;
         do {
-            m_initialized = false;
-
             rc = qv_mpi_comm_dup(scope, &m_comm);
             if (rc != QV_SUCCESS) {
                 ers = "qv_mpi_comm_dup";
@@ -189,16 +171,18 @@ public:
                 break;
             }
 
-            rc = MPI_Comm_rank(MPI_COMM_WORLD, &m_rank);
-            if (rc != MPI_SUCCESS) {
-                ers = "MPI_Comm_rank";
-                break;
-            }
+            if (m_comm != MPI_COMM_NULL) {
+                rc = MPI_Comm_rank(MPI_COMM_WORLD, &m_rank);
+                if (rc != MPI_SUCCESS) {
+                    ers = "MPI_Comm_rank";
+                    break;
+                }
 
-            rc = MPI_Comm_size(m_comm, &m_size);
-            if (rc != MPI_SUCCESS) {
-                ers = "MPI_Comm_size";
-                break;
+                rc = MPI_Comm_size(m_comm, &m_size);
+                if (rc != MPI_SUCCESS) {
+                    ers = "MPI_Comm_size";
+                    break;
+                }
             }
 
             m_id = std::to_string(m_rank);
@@ -210,32 +194,108 @@ public:
         }
     }
 
-    ~mpi_odos(void) {
+    virtual ~mpi_ologger(void)
+    {
+        if (m_comm != MPI_COMM_NULL) MPI_Comm_free(&m_comm);
+    }
+
+    void plog(
+        bool pred,
+        const std::string &msg
+    ) override {
         int rc = MPI_SUCCESS;
-        const char *ers = NULL;
 
         if (!m_initialized) return;
-        // Ensure all pending operations are complete.
-        do {
-            for (int i = 0; i < m_size; ++i) {
-                if (m_rank == i) dos::the_dos().flush();
-                rc = MPI_Barrier(m_comm);
-                if (rc != MPI_SUCCESS) {
-                    ers = "MPI_Barrier";
-                    break;
+
+        int world_rank = -1, world_size = -1;
+        rc = MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+        if (rc != MPI_SUCCESS) {
+            ctu_panic("%s failed (rc=%d)", "MPI_Comm_rank", rc);
+        }
+        rc = MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+        if (rc != MPI_SUCCESS) {
+            ctu_panic("%s failed (rc=%d)", "MPI_Comm_size", rc);
+        }
+        // Determine if this process has a message to log
+        const bool have_message = !msg.empty();
+        const int msg_len = static_cast<int>(msg.size());
+        // Strategy: Always route through world rank 0, ordered by world rank.
+        if (world_rank == 0) {
+            // Collect world ranks participating in this communicator.
+            std::vector<int> participating_ranks(world_size, 0);
+            // Check if we're in the communicator.
+            int in_comm = (m_comm != MPI_COMM_NULL) ? 1 : 0;
+            // Gather participation info.
+            rc = MPI_Allgather(
+                &in_comm, 1, MPI_INT,
+                participating_ranks.data(),
+                1, MPI_INT, MPI_COMM_WORLD
+            );
+            if (rc != MPI_SUCCESS) {
+                ctu_panic("%s failed (rc=%d)", "MPI_Allgather", rc);
+            }
+            // Print own message first if we have one.
+            if (have_message) {
+                logger::the_logger().log(msg);
+            }
+            // Receive messages from other world ranks in order
+            for (int src = 1; src < world_size; ++src) {
+                if (participating_ranks[src]) {
+                    // This rank is in the communicator
+                    int recv_len = 0;
+                    rc = MPI_Recv(
+                        &recv_len, 1, MPI_INT, src, 0,
+                        MPI_COMM_WORLD, MPI_STATUS_IGNORE
+                    );
+                    if (rc != MPI_SUCCESS) {
+                        ctu_panic("%s failed (rc=%d)", "MPI_Recv", rc);
+                    }
+                    if (recv_len > 0) {
+                        std::vector<char> buffer(recv_len + 1, '\0');
+                        rc = MPI_Recv(
+                            buffer.data(), recv_len, MPI_CHAR, src,
+                            1, MPI_COMM_WORLD, MPI_STATUS_IGNORE
+                        );
+                        if (rc != MPI_SUCCESS) {
+                            ctu_panic("%s failed (rc=%d)", "MPI_Recv", rc);
+                        }
+                        logger::the_logger().log(std::string(buffer.data()));
+                    }
                 }
             }
-
-            rc = MPI_Comm_free(&m_comm);
-            if (rc != MPI_SUCCESS) {
-                ers = "MPI_Comm_free";
-                break;
-            }
-            m_initialized = false;
-        } while (0);
-        if (rc != MPI_SUCCESS) {
-            ctu_panic("%s failed (rc=%d)", ers, rc);
         }
+        else {
+            // Check if we're in the communicator and participating.
+            const int in_comm = (m_comm != MPI_COMM_NULL && pred) ? 1 : 0;
+            // Participate in gather.
+            std::vector<int> participating_ranks(world_size, 0);
+            rc = MPI_Allgather(
+                &in_comm, 1, MPI_INT,
+                participating_ranks.data(),
+                1, MPI_INT, MPI_COMM_WORLD
+            );
+            if (rc != MPI_SUCCESS) {
+                ctu_panic("%s failed (rc=%d)", "MPI_Allgather", rc);
+            }
+            // If we're in the communicator, send to world rank 0.
+            if (in_comm) {
+                rc = MPI_Send(&msg_len, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+                if (rc != MPI_SUCCESS) {
+                    ctu_panic("%s failed (rc=%d)", "MPI_Send", rc);
+                }
+                if (msg_len > 0) {
+                    rc = MPI_Send(
+                        msg.c_str(), msg_len,
+                        MPI_CHAR,0, 1, MPI_COMM_WORLD
+                    );
+                    if (rc != MPI_SUCCESS) {
+                        ctu_panic("%s failed (rc=%d)", "MPI_Send", rc);
+                    }
+                }
+            }
+        }
+        // Barrier on WORLD communicator to ensure all processes wait for logging to complete
+        MPI_Barrier(MPI_COMM_WORLD);
     }
 };
 
@@ -303,7 +363,7 @@ ctu_scope_cpuset(
     return result;
 }
 
-odos
+std::unique_ptr<ologger>
 ctu_reporter(
     qv_scope_t *scope,
     ctu_scope_kind_t kind
@@ -312,37 +372,13 @@ ctu_reporter(
     (void)scope;
 #endif
     switch (kind) {
-        case CTU_SCOPE_KIND_PROCESS: return odos();
-        case CTU_SCOPE_KIND_THREAD:  return thr_odos();
+        case CTU_SCOPE_KIND_PROCESS: return std::make_unique<ologger>();
+        case CTU_SCOPE_KIND_THREAD:  return std::make_unique<thr_ologger>();
 #ifdef CTU_HAS_MPI_SUPPORT
-        case CTU_SCOPE_KIND_MPI:     return mpi_odos(scope);
+        case CTU_SCOPE_KIND_MPI:     return std::make_unique<mpi_ologger>(scope);
 #endif
         default: ctu_panic("Unsupported reporter!");
     }
-}
-
-static void
-ctu_vemit(
-    qv_scope_t *scope,
-    ctu_scope_kind_t kind,
-    const char *format,
-    va_list args
-) {
-    auto reporter = ctu_reporter(scope, kind);
-    reporter.vadd(format, args);
-}
-
-void
-ctu_emit(
-    qv_scope_t *scope,
-    ctu_scope_kind_t kind,
-    const char *format,
-    ...
-) {
-    va_list args;
-    va_start(args, format);
-    ctu_vemit(scope, kind, format, args);
-    va_end(args);
 }
 
 static void
@@ -354,8 +390,20 @@ ctu_pvemit(
     va_list args
 ) {
     auto reporter = ctu_reporter(scope, kind);
-    if (pred) reporter.vadd(format, args);
-    else reporter.add("");
+    reporter->plog(pred, vfstring(format, args));
+}
+
+void
+ctu_emit(
+    qv_scope_t *scope,
+    ctu_scope_kind_t kind,
+    const char *format,
+    ...
+) {
+    va_list args;
+    va_start(args, format);
+    ctu_pvemit(scope, kind, true, format, args);
+    va_end(args);
 }
 
 void
@@ -378,9 +426,9 @@ ctu_emit_task_bind(
     ctu_scope_kind_t kind
 ) {
     auto reporter = ctu_reporter(scope, kind);
-    const auto myid = reporter.id();
+    const auto myid = reporter->id();
     auto binds = ctu_current_binding(scope);
-    reporter.add("[%s] cpubind=%s\n", myid.c_str(), binds.c_str());
+    reporter->plogf(true, "[%s] cpubind=%s\n", myid.c_str(), binds.c_str());
 }
 
 void
@@ -390,7 +438,8 @@ ctu_emit_host_hw_info(
     const char *scope_name
 ) {
     auto reporter = ctu_reporter(scope, kind);
-    const auto myid = reporter.id();
+    const auto myid = reporter->id();
+    std::string myoutput;
 
     for (size_t i = 0; i < ctu_hw_obj_name_to_type_tab_size; ++i) {
         int n;
@@ -403,12 +452,13 @@ ctu_emit_host_hw_info(
                 ctu_hw_obj_name_to_type_tab[i].name
             );
         }
-        reporter.add(
+        myoutput += fstring(
             "[%s] %s: %s: n = %d\n",
             myid.c_str(), scope_name,
             ctu_hw_obj_name_to_type_tab[i].name, n
         );
     }
+    reporter->plog(true, myoutput);
 }
 
 void
@@ -419,7 +469,8 @@ ctu_emit_device_info(
     const char *scope_name
 ) {
     auto reporter = ctu_reporter(scope, kind);
-    const std::string myid = reporter.id();
+    const std::string myid = reporter->id();
+    std::string myoutput;
     // Get number of devices.
     int ndevs;
     int rc = qv_hw_obj_count(scope, dev_type, &ndevs);
@@ -435,7 +486,7 @@ ctu_emit_device_info(
         bind_report = " on " + binds;
     }
 
-    reporter.add(
+    myoutput += fstring(
         "[%s] %s: Discovered %d %s(s)%s\n",
         myid.c_str(), scope_name, ndevs,
         ctu_obj_name(dev_type), bind_report.c_str()
@@ -454,13 +505,14 @@ ctu_emit_device_info(
                 const char *ers = "qv_device_id() failed";
                 ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
             }
-            reporter.add(
+            myoutput += fstring(
                 "[%s] Device %d %s = %s\n",
                 myid.c_str(), i, ctu_devid_name_to_id_tab[j].name, devids
             );
             free(devids);
         }
     }
+    reporter->plog(true, myoutput);
 }
 
 void
@@ -470,11 +522,12 @@ ctu_emit_scope_report(
     const char *const scope_name
 ) {
     auto reporter = ctu_reporter(scope, kind);
-    const auto myid = reporter.id();
+    const auto myid = reporter->id();
     const auto [sgsize, sgrank] = ctu_scope_size_rank(scope);
 
     auto binds = ctu_scope_cpuset(scope);
-    reporter.add(
+    reporter->plogf(
+        true,
         "[%s] %s: hello from group rank %d of %d on %s\n",
         myid.c_str(), scope_name, sgrank, sgsize, binds.c_str()
     );

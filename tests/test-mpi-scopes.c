@@ -36,7 +36,8 @@ main(
         ers = "MPI_Comm_rank() failed";
         ctu_panic("%s (rc=%d)", ers, rc);
     }
-    // Self scope test
+
+    // Self scope test.
     qv_scope_t *self_scope;
     rc = qv_mpi_scope(
         comm,
@@ -49,22 +50,9 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    for (int i = 0; i < wsize; ++i) {
-        if (wrank == i) {
-            ctu_emit_scope_report(
-                self_scope, CTU_SCOPE_KIND_MPI, "   self_scope"
-            );
-        }
-        else {
-            ctu_emit(self_scope, CTU_SCOPE_KIND_MPI, "");
-        }
-        // Barrier for nicer output.
-        rc = MPI_Barrier(MPI_COMM_WORLD);
-        if (rc != MPI_SUCCESS) {
-            ers = "MPI_Barrier() failed";
-            ctu_panic("%s (rc=%d)", ers, rc);
-        }
-    }
+    ctu_emit_scope_report(
+        self_scope, CTU_SCOPE_KIND_MPI, "   self_scope"
+    );
 
     rc = qv_free(self_scope);
     if (rc != QV_SUCCESS) {
@@ -105,21 +93,9 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    for (int i = 0; i < base_scope_size; ++i) {
-        if (base_scope_rank == i) {
-            ctu_emit_scope_report(
-                base_scope, CTU_SCOPE_KIND_MPI, "   base_scope"
-            );
-        }
-        else {
-            ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
-        }
-        rc = qv_barrier(base_scope);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_barrier() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
-    }
+    ctu_emit_scope_report(
+        base_scope, CTU_SCOPE_KIND_MPI, "   base_scope"
+    );
 
     int base_scope_sgsize;
     rc = qv_group_size(
@@ -143,21 +119,9 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    for (int i = 0; i < base_scope_size; ++i) {
-        if (base_scope_rank == i) {
-            ctu_emit_scope_report(
-                sub_scope, CTU_SCOPE_KIND_MPI, "    sub_scope"
-            );
-        }
-        else {
-            ctu_emit(sub_scope, CTU_SCOPE_KIND_MPI, "");
-        }
-        rc = qv_barrier(base_scope);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_barrier() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
-    }
+    ctu_emit_scope_report(
+        sub_scope, CTU_SCOPE_KIND_MPI, "    sub_scope"
+    );
 
     if (base_scope_rank == 0) {
         qv_scope_t *create_scope;
@@ -183,6 +147,10 @@ main(
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
     }
+    else {
+        // Matching emit to avoid hangs.
+        ctu_emit(NULL, CTU_SCOPE_KIND_MPI, "");
+    }
 
     qv_scope_t *sub_sub_scope;
     rc = qv_split(
@@ -196,21 +164,9 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    for (int i = 0; i < base_scope_size; ++i) {
-        if (base_scope_rank == i) {
-            ctu_emit_scope_report(
-                sub_sub_scope, CTU_SCOPE_KIND_MPI, "sub_sub_scope"
-            );
-        }
-        else {
-            ctu_emit(sub_sub_scope, CTU_SCOPE_KIND_MPI, "");
-        }
-        rc = qv_barrier(base_scope);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_barrier() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
-    }
+    ctu_emit_scope_report(
+        sub_sub_scope, CTU_SCOPE_KIND_MPI, "sub_sub_scope"
+    );
 
     rc = qv_free(base_scope);
     if (rc != QV_SUCCESS) {

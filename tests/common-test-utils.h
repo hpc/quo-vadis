@@ -134,20 +134,11 @@ ctu_gettid(void)
     return (pid_t)syscall(SYS_gettid);
 }
 
-/**
- * A deferred printf implementation.
- */
 void
-ctu_dprintf(
+ctu_logf(
     const char *format,
     ...
 );
-
-/**
- * Outputs the stored content filled by calls to ctu_dprintf() to stdout.
- */
-void
-ctu_dflush(void);
 
 void
 ctu_emit(
