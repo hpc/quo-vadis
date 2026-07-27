@@ -100,30 +100,29 @@ main(
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
         }
     }
-    // Completely order device output.
-    for (int i = 0; i < base_scope_size; ++i) {
-        if (base_scope_rank == i) {
-            ctu_emit_device_info(
-                rank_scope, CTU_SCOPE_KIND_MPI,
-                QV_HW_OBJ_GPU, "rank_scope"
-            );
-            ctu_emit_device_info(
-                rank_scope, CTU_SCOPE_KIND_MPI,
-                QV_HW_OBJ_NIC, "rank_scope"
-            );
-            ctu_emit(rank_scope, CTU_SCOPE_KIND_MPI, "\n");
-        }
-        else {
-            ctu_emit(rank_scope, CTU_SCOPE_KIND_MPI, "");
-            ctu_emit(rank_scope, CTU_SCOPE_KIND_MPI, "");
-            ctu_emit(rank_scope, CTU_SCOPE_KIND_MPI, "");
-        }
-        rc = qv_barrier(base_scope);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_barrier() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
+
+    ctu_emit_device_info(
+        rank_scope, CTU_SCOPE_KIND_MPI,
+        QV_HW_OBJ_GPU, "rank_scope"
+    );
+    ctu_pemit(rank_scope, CTU_SCOPE_KIND_MPI, base_scope_rank == 0, "\n");
+    rc = qv_barrier(base_scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_barrier() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+
+    ctu_emit_device_info(
+        rank_scope, CTU_SCOPE_KIND_MPI,
+        QV_HW_OBJ_NIC, "rank_scope"
+    );
+    ctu_pemit(rank_scope, CTU_SCOPE_KIND_MPI, base_scope_rank == 0, "\n");
+    rc = qv_barrier(base_scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_barrier() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
     // Verify results.
     for (int i = 0; i < ndevs_tested; ++i) {
         // Get total number of GPUs in base_scope.

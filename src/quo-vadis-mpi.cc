@@ -90,6 +90,10 @@ qvi_mpi_scope_comm_dup(
     qv_scope_t *scope,
     MPI_Comm *comm
 ) {
+    if (!scope) {
+        *comm = MPI_COMM_NULL;
+        return QV_SUCCESS;
+    }
     return dynamic_cast<qvi_group_mpi &>(scope->group()).comm_dup(comm);
 }
 
@@ -98,7 +102,7 @@ qv_mpi_comm_dup(
     qv_scope_t *scope,
     MPI_Comm *comm
 ) {
-    if (qvi_unlikely(!scope || !comm)) {
+    if (qvi_unlikely(!comm)) {
         return QV_ERR_INVLD_ARG;
     }
     try {
