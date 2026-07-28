@@ -157,9 +157,9 @@ main(
         "\n# GPU launch on sub_scope(s)\n"
     );
 
-    ctu_str_t *gpuls = ctu_str_new();
+    ctu_str_t *gpuos = ctu_str_new();
     ctu_str_appendf(
-        gpuls,
+        gpuos,
         "[%d] %s: launching %d GPU kernels%s\n",
         base_scope_rank, " sub_scope",
         ngpus, !!ngpus ? " on:" : "."
@@ -172,7 +172,7 @@ main(
             QV_DEVICE_ID_PCI_BUS_ID, &gpu
         );
         ctu_str_appendf(
-            gpuls, "[%d]->PCI Bus ID = %s\n", base_scope_rank, gpu
+            gpuos, "[%d]->PCI Bus ID = %s\n", base_scope_rank, gpu
         );
         // Here are examples on how a user might
         // target the GPUs they got in a QV scope.
@@ -182,8 +182,8 @@ main(
         free(gpu);
     }
 
-    ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "%s", ctu_str_cstr(gpuls));
-    ctu_str_del(gpuls);
+    ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "%s", ctu_str_cstr(gpuos));
+    ctu_str_del(gpuos);
 
     ////////////////////////////////////////////////////////////////////////////
     // Phase 2: One master per resource,
@@ -297,7 +297,6 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    // Allow selecting a leader per NUMA.
     rc = qv_group_rank(
         gpu_scope,
         &my_gpu_rank
@@ -332,9 +331,9 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    gpuls = ctu_str_new();
+    gpuos = ctu_str_new();
     ctu_str_appendf(
-        gpuls,
+        gpuos,
         "[%d] Split@GPU: got %d GPUs running on %s\n",
         base_scope_rank, my_ngpus, binds
     );
@@ -346,14 +345,18 @@ main(
             gpu_scope, QV_HW_OBJ_GPU, i, QV_DEVICE_ID_PCI_BUS_ID, &gpu
         );
         ctu_str_appendf(
-            gpuls,
-            "[%d]->GPU %d PCI Bus ID = %s\n",
-            base_scope_rank, i, gpu
+            gpuos, "[%d]->PCI Bus ID = %s\n", base_scope_rank, gpu
         );
         free(gpu);
     }
-    ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "%s", ctu_str_cstr(gpuls));
-    ctu_str_del(gpuls);
+    ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "%s", ctu_str_cstr(gpuos));
+    ctu_str_del(gpuos);
+
+    rc = qv_bind_pop(gpu_scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_pop() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
 
     ////////////////////////////////////////////////////////////////////////////
     // Clean up.
