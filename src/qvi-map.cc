@@ -669,7 +669,7 @@ qvi_map_close(
     qvi_map_t &map
 ) {
     if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info(qvi_spadtolen("APM Mapping Started ", "=", vmaxl));
+        qvi_log_info(qvi_spadtolen("Close Mapping Started ", "=", vmaxl));
     }
     // Cache relevant input data.
     const auto &src = config.src_affinities;
@@ -679,15 +679,15 @@ qvi_map_close(
     // Determine the affinities shared between sources and destinations.
     const auto affinities = qvi_map_calc_affinities(src, dst);
     if (qvi_unlikely(config.be_verbose)) {
-        qvi_map_emit("APM Affinities", affinities);
+        qvi_map_emit("Close Affinities", affinities);
     }
     // Solve the mapping problem.
     // Note: our algorithm doesn't require that nsrc >= ndst.
     map = solve_ap_mapping(nsrc, ndst, affinities, config.be_verbose);
     if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info("APM done with N={}, M={}", nsrc, ndst);
-        qvi_map_emit("APM", map);
-        qvi_log_info(qvi_spadtolen("APM Mapping Done ", "=", vmaxl));
+        qvi_log_info("Close done with N={}, M={}", nsrc, ndst);
+        qvi_map_emit("Close", map);
+        qvi_log_info(qvi_spadtolen("Close Mapping Done ", "=", vmaxl));
     }
     return QV_SUCCESS;
 }
