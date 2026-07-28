@@ -50,6 +50,43 @@ fstring(
     return result;
 }
 
+struct ctu_str_s {
+    std::string buffer;
+};
+
+ctu_str_t *
+ctu_str_new(void)
+{
+    return new ctu_str_t;
+}
+
+void
+ctu_str_del(
+    ctu_str_t *str
+) {
+    if (!str) return;
+    delete str;
+}
+
+const char *
+ctu_str_cstr(
+    ctu_str_t *str
+) {
+    return str->buffer.c_str();
+}
+
+void
+ctu_str_appendf(
+    ctu_str_t *str,
+    const char *format,
+    ...
+) {
+    va_list args;
+    va_start(args, format);
+    str->buffer += vfstring(format, args);
+    va_end(args);
+}
+
 // Base logger.
 struct logger {
 private:
