@@ -134,6 +134,29 @@ ctu_gettid(void)
     return (pid_t)syscall(SYS_gettid);
 }
 
+struct ctu_str_s;
+typedef struct ctu_str_s ctu_str_t;
+
+ctu_str_t *
+ctu_str_new(void);
+
+void
+ctu_str_del(
+    ctu_str_t *str
+);
+
+const char *
+ctu_str_cstr(
+    ctu_str_t *str
+);
+
+void
+ctu_str_appendf(
+    ctu_str_t *str,
+    const char *format,
+    ...
+);
+
 void
 ctu_logf(
     const char *format,
