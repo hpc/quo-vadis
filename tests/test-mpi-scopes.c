@@ -23,20 +23,6 @@ main(
         ctu_panic("%s (rc=%d)", ers, rc);
     }
 
-    int wsize;
-    rc = MPI_Comm_size(comm, &wsize);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_size() failed";
-        ctu_panic("%s (rc=%d)", ers, rc);
-    }
-
-    int wrank;
-    rc = MPI_Comm_rank(comm, &wrank);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_rank() failed";
-        ctu_panic("%s (rc=%d)", ers, rc);
-    }
-
     // Self scope test.
     qv_scope_t *self_scope;
     rc = qv_mpi_scope(
@@ -59,6 +45,7 @@ main(
         ers = "qv_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
+
     // Base scope test
     qv_scope_t *base_scope;
     rc = qv_mpi_scope(
@@ -69,17 +56,6 @@ main(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_scope() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    // Get my base_scope's size and my rank.
-    int base_scope_size;
-    rc = qv_group_size(
-        base_scope,
-        &base_scope_size
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_group_size() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -96,16 +72,6 @@ main(
     ctu_emit_scope_report(
         base_scope, CTU_SCOPE_KIND_MPI, "   base_scope"
     );
-
-    int base_scope_sgsize;
-    rc = qv_group_size(
-        base_scope,
-        &base_scope_sgsize
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_group_size() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
     qv_scope_t *sub_scope;
     rc = qv_split(

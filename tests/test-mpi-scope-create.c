@@ -7,54 +7,8 @@
 #include "quo-vadis-mpi.h"
 #include "common-test-utils.h"
 
-static void
-scope_report(
-    qv_scope_t *base_scope,
-    qv_scope_t *sub_scope,
-    char *sub_scope_name
-) {
-    char const *ers = NULL;
-    // Get my base_scope's size and my rank.
-    int base_scope_size;
-    int rc = qv_group_size(
-        base_scope,
-        &base_scope_size
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_group_size() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    int base_scope_rank;
-    rc = qv_group_rank(
-        base_scope,
-        &base_scope_rank
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_group_rank() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    for (int i = 0; i < base_scope_size; ++i) {
-        if (base_scope_rank == i) {
-            ctu_emit_scope_report(
-                sub_scope, CTU_SCOPE_KIND_MPI, sub_scope_name
-            );
-        }
-        else {
-            ctu_emit(sub_scope, CTU_SCOPE_KIND_MPI, "");
-        }
-        rc = qv_barrier(base_scope);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_barrier() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
-    }
-}
-
 static qv_scope_t *
 test_create_scope(
-    qv_scope_t *base_scope,
     qv_scope_t *scope_to_test,
     int ncores,
     bool free_scope
@@ -83,7 +37,10 @@ test_create_scope(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    scope_report(base_scope, core_scope, scope_name);
+    ctu_emit_scope_report(
+        core_scope, CTU_SCOPE_KIND_MPI, scope_name
+    );
+
     free(scope_name);
 
     if (free_scope) {
@@ -143,7 +100,10 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    scope_report(base_scope, base_scope, "base_scope");
+    ctu_emit_scope_report(
+        base_scope, CTU_SCOPE_KIND_MPI, "base_scope"
+    );
+
     // Phase 1: Split base scope
     ctu_pemit(
         base_scope, CTU_SCOPE_KIND_MPI, base_scope_rank == 0,
@@ -161,7 +121,10 @@ main(
         ers = "qv_split() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    scope_report(base_scope, sub_scope, "sub_scope");
+
+    ctu_emit_scope_report(
+        sub_scope, CTU_SCOPE_KIND_MPI, " sub_scope"
+    );
 
     // Phase 2: Create core scopes.
     const int n_core_scopes = 4;
@@ -174,8 +137,8 @@ main(
         "\n# Asking and not releasing %d-core and %d-core scopes\n",
         ncore1, ncore2
     );
-    core_scopes[0] = test_create_scope(base_scope, sub_scope, ncore1, false);
-    core_scopes[1] = test_create_scope(base_scope, sub_scope, ncore2, false);
+    core_scopes[0] = test_create_scope(sub_scope, ncore1, false);
+    core_scopes[1] = test_create_scope(sub_scope, ncore2, false);
 
     ncore1 = 5;
     ctu_pemit(
@@ -183,8 +146,8 @@ main(
         "\n# Asking and releasing %d-core scopes\n",
         ncore1
     );
-    core_scopes[2] = test_create_scope(base_scope, sub_scope, ncore1, true);
-    core_scopes[3] = test_create_scope(base_scope, sub_scope, ncore1, true);
+    core_scopes[2] = test_create_scope(sub_scope, ncore1, true);
+    core_scopes[3] = test_create_scope(sub_scope, ncore1, true);
 
     for (int i = 0; i < n_core_scopes; ++i) {
         rc = qv_free(core_scopes[i]);

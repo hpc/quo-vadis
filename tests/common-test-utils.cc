@@ -155,7 +155,6 @@ private:
     MPI_Comm m_comm = MPI_COMM_NULL;
     int m_rank = -1;
     int m_size = -1;
-    bool m_initialized = false;
 
 public:
     mpi_ologger(
@@ -184,9 +183,7 @@ public:
                     break;
                 }
             }
-
             m_id = std::to_string(m_rank);
-            m_initialized = true;
         } while (0);
 
         if (rc != MPI_SUCCESS) {
@@ -203,12 +200,8 @@ public:
         bool pred,
         const std::string &msg
     ) override {
-        int rc = MPI_SUCCESS;
-
-        if (!m_initialized) return;
-
         int world_rank = -1, world_size = -1;
-        rc = MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+        int rc = MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
         if (rc != MPI_SUCCESS) {
             ctu_panic("%s failed (rc=%d)", "MPI_Comm_rank", rc);
         }
@@ -216,7 +209,7 @@ public:
         if (rc != MPI_SUCCESS) {
             ctu_panic("%s failed (rc=%d)", "MPI_Comm_size", rc);
         }
-        // Determine if this process has a message to log
+        // Determine if this process has a message to log.
         const bool have_message = !msg.empty();
         const int msg_len = static_cast<int>(msg.size());
         // Strategy: Always route through world rank 0, ordered by world rank.
@@ -238,7 +231,7 @@ public:
             if (have_message) {
                 logger::the_logger().log(msg);
             }
-            // Receive messages from other world ranks in order
+            // Receive messages from other world ranks in order.
             for (int src = 1; src < world_size; ++src) {
                 if (participating_ranks[src]) {
                     // This rank is in the communicator
@@ -294,8 +287,12 @@ public:
                 }
             }
         }
-        // Barrier on WORLD communicator to ensure all processes wait for logging to complete
-        MPI_Barrier(MPI_COMM_WORLD);
+        // Barrier on world communicator to ensure all
+        // processes wait for logging to complete.
+        rc = MPI_Barrier(MPI_COMM_WORLD);
+        if (rc != MPI_SUCCESS) {
+            ctu_panic("%s failed (rc=%d)", "MPI_Barrier", rc);
+        }
     }
 };
 
