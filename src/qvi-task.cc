@@ -105,7 +105,7 @@ int
 qvi_task::bind_push(
     const qvi_hwloc_bitmap &cpuset
 ) {
-    // Change policy
+    // Change policy.
     const int rc = m_rmi.set_cpubind(mytid(), cpuset);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Push bitmap onto stack.
@@ -117,10 +117,10 @@ int
 qvi_task::bind_pop(void)
 {
     // A pop without a matching push?
-    if (m_stack.empty()) return QV_ERR;
+    if (qvi_unlikely(m_stack.empty())) return QV_ERR;
     m_stack.pop();
     // A pop without a matching push?
-    if (m_stack.empty()) return QV_ERR;
+    if (qvi_unlikely(m_stack.empty())) return QV_ERR;
     return m_rmi.set_cpubind(mytid(), m_stack.top());
 }
 
@@ -128,6 +128,7 @@ int
 qvi_task::bind_top(
     qvi_hwloc_bitmap &result
 ) {
+    if (qvi_unlikely(m_stack.empty())) return QV_ERR;
     return result.set(m_stack.top().cdata());
 }
 
