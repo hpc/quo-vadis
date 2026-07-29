@@ -20,7 +20,7 @@ do_omp_things(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     ctu_logf(
-        "[%d] %s: Doing OpenMP things with %d PUs...\n",
+        "[%d] %s: Doing OpenMP things with %d PU(s)...\n",
         base_rank, scope_name, npus
     );
 }
@@ -38,7 +38,7 @@ do_pthread_things(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     ctu_logf(
-        "[%d] %s: doing Pthread things on %d cores...\n",
+        "[%d] %s: doing Pthread things on %d core(s)...\n",
         base_rank, scope_name, ncores
     );
 }
@@ -160,7 +160,7 @@ main(
     ctu_str_t *gpuos = ctu_str_new();
     ctu_str_appendf(
         gpuos,
-        "[%d] %s: launching %d GPU kernels%s\n",
+        "[%d] %s: launching %d GPU kernel(s)%s\n",
         base_scope_rank, " sub_scope",
         ngpus, !!ngpus ? " on:" : "."
     );
@@ -334,7 +334,7 @@ main(
     gpuos = ctu_str_new();
     ctu_str_appendf(
         gpuos,
-        "[%d] Split@GPU: got %d GPUs running on %s\n",
+        "[%d] Split@GPU: got %d GPU(s) running on %s\n",
         base_scope_rank, my_ngpus, binds
     );
     free(binds);
