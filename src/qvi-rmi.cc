@@ -20,6 +20,14 @@
 #include "qvi-bbuff.h"
 #include "qvi-utils.h"
 
+// So spdlog can print values in the qvi_rmi_rpc_fid_t enum.
+constexpr auto
+format_as(
+    qvi_rmi_rpc_fid_t e
+) {
+    return fmt::underlying(e);
+}
+
 // Indicates whether the server has been signaled to shutdown.
 static volatile std::sig_atomic_t g_server_shutdown_signaled(false);
 
