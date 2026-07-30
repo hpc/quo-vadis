@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020-2022 Triad National Security, LLC
+# Copyright (c) 2020-2026 Triad National Security, LLC
 #                         All rights reserved.
 #
 # Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -12,7 +12,7 @@
 # Includes support for external projects
 include(ExternalProject)
 
-set(QVI_SPDLOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/spdlog/v1.8.5.tar.gz)
+set(QVI_SPDLOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/spdlog/v1.17.0.tar.gz)
 set(QVI_SPDLOG_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/spdlog)
 set(QVI_SPDLOG_STATIC_LIB ${QVI_SPDLOG_PREFIX}/lib/libspdlog.a)
 set(QVI_SPDLOG_INCLUDES ${QVI_SPDLOG_PREFIX}/include)
@@ -22,7 +22,7 @@ file(MAKE_DIRECTORY ${QVI_SPDLOG_INCLUDES})
 ExternalProject_Add(
     libspdlog
     URL file://${QVI_SPDLOG_DIR}
-    URL_MD5 "8755cdbc857794730a022722a66d431a"
+    URL_MD5 "f0d8dd02539fe609bdfd42c0549fe28d"
     PREFIX ${QVI_SPDLOG_PREFIX}
     CMAKE_ARGS
       -DCMAKE_CXX_COMPILER:FILEPATH=${CMAKE_CXX_COMPILER}

@@ -529,8 +529,10 @@ qvi_hwloc::topology_export(
         int err = 0;
         const bool usable = qvi_access(base_path, R_OK | W_OK, &err);
         if (qvi_unlikely(!usable)) {
-            ers = "Cannot export hardware topology to {} ({})";
-            qvi_log_error(ers, base_path, strerror(err));
+            qvi_log_error(
+                "Cannot export hardware topology to {} ({})",
+                base_path, strerror(err)
+            );
             return QV_ERR;
         }
 
