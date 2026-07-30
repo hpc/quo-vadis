@@ -27,6 +27,8 @@ set(C_STANDARD_REQUIRED TRUE)
 
 # Specify the C++ standard.
 set(CMAKE_CXX_STANDARD 20)
+# Strip gnu prefix and enforces strict standard conformance flags.
+set(CMAKE_CXX_EXTENSIONS OFF)
 set(CXX_STANDARD_REQUIRED TRUE)
 
 # Append our module path.
