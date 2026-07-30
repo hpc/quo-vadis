@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022-2024 Triad National Security, LLC
+# Copyright (c) 2022-2026 Triad National Security, LLC
 #                         All rights reserved.
 #
 # This file is part of the quo-vadis project. See the LICENSE file at the
@@ -54,7 +54,7 @@ if (ROCmSMI_FOUND)
           "${ROCmSMI_LIBRARY}"
     )
     if (QV_ROCmSMI_COMPILES)
-        message(STATUS "Found usable ROCm SMI: ${ROCmSMI_INCLUDE_DIR}")
+        message(STATUS "Found usable ROCm SMI: ${ROCmSMI_HOME}")
     else()
         message(STATUS "Could not find a usable ROCm SMI")
         set(ROCmSMI_FOUND FALSE)
