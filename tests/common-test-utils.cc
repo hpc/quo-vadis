@@ -365,7 +365,11 @@ ctu_current_binding(
     char const *ers = NULL;
     // Get current binding.
     char *cpusets;
-    int rc = qv_bind_string(scope, QV_BIND_STRING_LOGICAL, &cpusets);
+    const int rc = qv_bind_string(
+        scope,
+        QV_BIND_STRING_LOGICAL | QV_BIND_STRING_PHYSICAL,
+        &cpusets
+    );
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
