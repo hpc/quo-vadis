@@ -76,14 +76,24 @@ main(
         ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
         ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "");
     }
+    // TODO(skg) Add check for requested device.
     // Split the base scope evenly across workers.
     qv_scope_t *rank_scope;
+#if 1
     rc = qv_split(
         base_scope,
         base_scope_size,
         base_scope_rank,
         &rank_scope
     );
+#else
+    rc = qv_split_at(
+        base_scope,
+        QV_HW_OBJ_GPU,
+        base_scope_rank,
+        &rank_scope
+    );
+#endif
     if (rc != QV_SUCCESS) {
         ers = "qv_split() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));

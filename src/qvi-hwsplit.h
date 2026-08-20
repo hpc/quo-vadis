@@ -89,7 +89,7 @@ private:
      * corresponds to a task ID.
      */
     std::vector<int> m_colors;
-    /** Vector of cpusets that resulted from the m_split() operation. */
+    /** Vector of cpusets that resulted from the m_split_cpuset() operation. */
     std::vector<qvi_hwloc_bitmap> m_split_cpusets;
     /** Vector of task affinities. */
     std::vector<qvi_hwloc_bitmap> m_task_affinities;
@@ -119,25 +119,26 @@ private:
         qvi_hwpool &result
     );
     /**
-     * Returns a pair where .first is the real split type identified and .second
+     * Returns a pair where .first is the resource class identified and .second
      * is the hardware pool's primary cpuset for a given hardware object type.
      * This is the cpuset that is typically be used for splitting hardware
      * resources based on the provided hardware object type. For example, either
      * the cpuset of the hardware pool (CPU resources) or the union of the GPUs'
      * hardware affinities.
      */
-    std::pair<qv_hw_obj_type_t, qvi_hwloc_bitmap>
+    std::pair<qvi_hwloc_res_class, qvi_hwloc_bitmap>
     m_primary_cpuset_for_split(
         qv_hw_obj_type_t requested_type
     ) const;
+    /** Returns the appropriate mapping configuration based on user input.*/
+    qvi_map_config
+    m_determine_mapping_config(void);
     /** */
-    int
-    m_determine_mapping(
-        qvi_map_config &map_config
-    );
-    /** */
-    int
+    std::vector<qvi_hwloc_bitmap>
     m_split_cpuset(void);
+    /** */
+    std::vector<qvi_hwpool>
+    m_split_base_hwpool(void);
     /** Splits aggregate scope data. This can only be called by the root. */
     int
     m_split(void);
