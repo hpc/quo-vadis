@@ -1055,7 +1055,7 @@ qvi_rmi_server::m_rpc_dispatch(
         qvi_rmi_msg_header hdr;
         size_t trim = 0;
         // Guard against truncated/empty messages that cannot hold a header.
-        int mrc = unpack_msg_header_safe(data, data_size, &hdr, &trim);
+        const int mrc = unpack_msg_header_safe(data, data_size, &hdr, &trim);
         if (qvi_unlikely(mrc != QV_SUCCESS)) {
             qvi_log_warn(
                 "Dropping malformed RPC message (size={}).", data_size
@@ -1077,7 +1077,6 @@ qvi_rmi_server::m_rpc_dispatch(
             rc = rpc_pack(&result, QVI_RMI_FID_INVALID, QV_ERR_RPC);
             break;
         }
-
         // Invoke the handler. The status here reflects the server-side
         // machinery (e.g., could we build a reply?), NOT the target operation's
         // result, which the handler packs into the reply buffer for the client.
@@ -1100,7 +1099,6 @@ qvi_rmi_server::m_rpc_dispatch(
             rc = rpc_pack(&result, hdr.fid, QV_ERR_RPC);
         }
     } while (false);
-
     // Send whatever reply we produced. A failure here is a genuine transport
     // error and is treated as fatal by the caller.
     if (qvi_likely(rc == QV_SUCCESS && result)) {
