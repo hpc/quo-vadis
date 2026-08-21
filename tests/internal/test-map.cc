@@ -417,7 +417,7 @@ test_14(void)
 int
 main(void)
 {
-    printf("\n# Starting map test\n");
+    qvi_log_info("\n# Starting map test");
 
     test_1();
     test_2();
