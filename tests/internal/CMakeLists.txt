@@ -34,6 +34,23 @@ add_test(
 ################################################################################
 ################################################################################
 add_executable(
+    test-bbuff
+    test-bbuff.cc
+)
+
+target_link_libraries(
+    test-bbuff
+    quo-vadis
+)
+
+add_test(
+    bbuff
+    test-bbuff
+)
+
+################################################################################
+################################################################################
+add_executable(
     test-map
     test-map.cc
 )
@@ -108,6 +125,7 @@ set_tests_properties(
     hwloc
     rmi
     map
+    bbuff
     PROPERTIES
       TIMEOUT 60
       LABELS "core"
