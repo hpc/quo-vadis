@@ -129,10 +129,9 @@ qvi_map_calc_affinities(
     return result;
 }
 
-int
+qvi_map_t
 qvi_map_colors(
-    const qvi_map_config &config,
-    qvi_map_t &map
+    const qvi_map_config &config
 ) {
     if (qvi_unlikely(config.be_verbose)) {
         qvi_log_info(qvi_spadtolen("Color Mapping Started ", "=", vmaxl));
@@ -145,6 +144,7 @@ qvi_map_colors(
             return val >= 0;
         })
     );
+    qvi_map_t map;
     // Assign each source to the piece indicated by its color.
     for (size_t i = 0; i < n; ++i) {
         map[i].insert(src_colors[i]);
@@ -154,13 +154,12 @@ qvi_map_colors(
         qvi_map_emit("Color Mapping", map);
         qvi_log_info(qvi_spadtolen("Color Mapping Done ", "=", vmaxl));
     }
-    return QV_SUCCESS;
+    return map;
 }
 
-int
+qvi_map_t
 qvi_map_packed(
-    const qvi_map_config &config,
-    qvi_map_t &map
+    const qvi_map_config &config
 ) {
     if (qvi_unlikely(config.be_verbose)) {
         qvi_log_info(qvi_spadtolen("Packed Mapping Started ", "=", vmaxl));
@@ -174,10 +173,10 @@ qvi_map_packed(
         std::swap(n, m);
         inverted = true;
     }
+    qvi_map_t map;
     // Nothing to do.
     if (n == 0 || m == 0) {
-        map.clear();
-        return QV_SUCCESS;
+        return map;
     }
     // Calculate base number of sources per destination and remainder.
     const size_t base_count = n / m;
@@ -204,13 +203,12 @@ qvi_map_packed(
         qvi_map_emit("Packed", map);
         qvi_log_info(qvi_spadtolen("Packed Mapping Done ", "=", vmaxl));
     }
-    return QV_SUCCESS;
+    return map;
 }
 
-int
+qvi_map_t
 qvi_map_spread(
-    const qvi_map_config &config,
-    qvi_map_t &map
+    const qvi_map_config &config
 ) {
     if (qvi_unlikely(config.be_verbose)) {
         qvi_log_info(qvi_spadtolen("Spread Mapping Started ", "=", vmaxl));
@@ -225,6 +223,8 @@ qvi_map_spread(
         std::swap(n, m);
         inverted = true;
     }
+
+    qvi_map_t map;
     for (size_t srci = 0, dsti = 0; srci < n; ++srci) {
         // Mod to loop around destination IDs.
         map[srci].insert((dsti++) % m);
@@ -242,7 +242,7 @@ qvi_map_spread(
         qvi_map_emit("Spread", map);
         qvi_log_info(qvi_spadtolen("Spread Mapping Done ", "=", vmaxl));
     }
-    return QV_SUCCESS;
+    return map;
 }
 
 class stable_marriage_solver {
@@ -663,10 +663,9 @@ solve_ap_mapping(
     return solver.get_matching();
 }
 
-int
+qvi_map_t
 qvi_map_close(
-    const qvi_map_config &config,
-    qvi_map_t &map
+    const qvi_map_config &config
 ) {
     if (qvi_unlikely(config.be_verbose)) {
         qvi_log_info(qvi_spadtolen("Close Mapping Started ", "=", vmaxl));
@@ -683,13 +682,15 @@ qvi_map_close(
     }
     // Solve the mapping problem.
     // Note: our algorithm doesn't require that nsrc >= ndst.
-    map = solve_ap_mapping(nsrc, ndst, affinities, config.be_verbose);
+    const auto map = solve_ap_mapping(
+        nsrc, ndst, affinities, config.be_verbose
+    );
     if (qvi_unlikely(config.be_verbose)) {
         qvi_log_info("Close done with N={}, M={}", nsrc, ndst);
         qvi_map_emit("Close", map);
         qvi_log_info(qvi_spadtolen("Close Mapping Done ", "=", vmaxl));
     }
-    return QV_SUCCESS;
+    return map;
 }
 
 void

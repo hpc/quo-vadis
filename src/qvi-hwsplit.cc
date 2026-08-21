@@ -243,17 +243,8 @@ qvi_hwsplit::m_split_base_hwpool(void)
             dev_affinities,
             m_split_cpusets
         };
-        qvi_map_t devs2hres_map;
-        int rc = qvi_map_close(
-            devs2hres_config,
-            devs2hres_map
-        );
-        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
-        // If we have more hardware pools than devices, make sure
-        // that hardware pools aren't mapped to multiple devices.
-        if (m_split_cpusets.size() > dev_affinities.size()) {
-            devs2hres_map = qvi_map_uniq(devs2hres_map);
-        }
+        const auto devs2hres_map = qvi_map_close(devs2hres_config);
+
         if (qvi_unlikely(devs2hres_config.be_verbose)) {
             const auto label = "Final device (devt=" +
                 std::to_string(devt) + ") to hardware pool";
@@ -263,7 +254,7 @@ qvi_hwsplit::m_split_base_hwpool(void)
         // devices to the associated hardware pools.
         for (const auto &[devi, poolis] : devs2hres_map) {
             for (const auto &pooli : poolis) {
-                rc = result[pooli].add_device(*devs[devi].get());
+                const int rc = result[pooli].add_device(*devs[devi].get());
                 if (qvi_unlikely(rc != QV_SUCCESS)) {
                     throw qvi_runtime_error(rc);
                 }
@@ -274,9 +265,6 @@ qvi_hwsplit::m_split_base_hwpool(void)
 }
 
 // This is the main split function called by the splitting process.
-//
-// Considerations:
-// * For split_at(QV_HW_OBJ_GPU/NIC) ...
 int
 qvi_hwsplit::m_split(void)
 {
@@ -284,19 +272,17 @@ qvi_hwsplit::m_split(void)
     // Map the split_pools based on the requested configuration.
     const auto map_config = m_determine_mapping_config();
     // Calculate the task to hardware pool resource mapping.
-    qvi_map_t hwpool_map;
-    int rc = map_config.map_fn(map_config, hwpool_map);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    const auto hwpool_map = map_config.map_fn(map_config);
 
     if (qvi_unlikely(map_config.be_verbose)) {
         qvi_map_emit("\nTask ID to Host Hardware Pool", hwpool_map);
     }
     // Perform final task to hardware pool assignments
     // and task coloring based on determined mapping.
-    for (const auto &[taski, cpusetis] : hwpool_map) {
-        for (const auto &cpuseti : cpusetis) {
-            m_hwpools.at(taski) = split_hwpools.at(cpuseti);
-            m_colors.at(taski) = static_cast<int>(cpuseti);
+    for (const auto &[taski, hwpoolis] : hwpool_map) {
+        for (const auto &hwpooli : hwpoolis) {
+            m_hwpools.at(taski) = split_hwpools.at(hwpooli);
+            m_colors.at(taski) = static_cast<int>(hwpooli);
         }
     }
     if (qvi_unlikely(map_config.be_verbose)) {
