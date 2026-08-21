@@ -92,60 +92,50 @@ qvi_hwsplit::m_reserve(void)
     m_task_affinities.resize(m_group_size);
 }
 
-std::pair<qv_hw_obj_type_t, qvi_hwloc_bitmap>
+std::pair<qvi_hwloc_res_class, qvi_hwloc_bitmap>
 qvi_hwsplit::m_primary_cpuset_for_split(
     qv_hw_obj_type_t requested_type
 ) const {
-    qv_hw_obj_type_t real_type = requested_type;
-
-    switch (qvi_hwloc::obj_res_class(requested_type)) {
+    const auto res_class = qvi_hwloc::obj_res_class(requested_type);
+    switch (res_class) {
         // Were we provided a real resource type that we have to split? Or was
         // QV_HW_OBJ_LAST instead provided to indicate that we were called from
         // a split() context.
         case QVI_HWLOC_RES_CLASS_LAST:
-            // Pick PUs as the host resource, since this is
-            // the atomic unit at which host resources are split.
-            real_type = QV_HW_OBJ_PU;
-            // Intentionally fall through.
         case QVI_HWLOC_RES_CLASS_HOST:
-            return {real_type, m_base_hwpool.cpuset()};
+            return {res_class, m_base_hwpool.cpuset()};
         case QVI_HWLOC_RES_CLASS_DEV: {
             // The cpuset will be the union over the devices affinities.
             qvi_hwloc_bitmap result;
-            for (const auto &dev : m_base_hwpool.devices(real_type)) {
+            for (const auto &dev : m_base_hwpool.devices(requested_type)) {
                 result = result | dev.get()->affinity();
             }
-            return {real_type, result};
+            return {res_class, result};
         }
         [[unlikely]] default:
             throw qvi_runtime_error(QV_ERR_INTERNAL);
     }
 }
 
-int
+std::vector<qvi_hwloc_bitmap>
 qvi_hwsplit::m_split_cpuset(void)
 {
-    // Determine the primary type and cpuset that we are splitting over.
-    const auto [pri_type, pri_cpuset] = m_primary_cpuset_for_split(
+    // Determine the resource class and cpuset that we are splitting over.
+    const auto [res_class, pri_cpuset] = m_primary_cpuset_for_split(
         m_split_at_type
     );
-    // If the real split size takes the group size into account, then splits
-    // called by processes will not split at all, since the group size will
-    // always be 1. Restore old process semantics, and don't take the
-    // min(m_split_size, m_group_size).
-    const size_t real_split_size = std::min(m_split_size, m_group_size);
-    //const size_t real_split_size = m_split_size;
-    //qvi_log_debug("Real Split Size: {}", real_split_size);
-    // Split the primary cpuset into the requested split size pieces.
-    return m_my_rmi.hwloc().bitmap_split(
-        pri_cpuset, real_split_size, m_split_cpusets
+
+    std::vector<qvi_hwloc_bitmap> result;
+    const int rc = m_my_rmi.hwloc().bitmap_split(
+        pri_cpuset, m_split_size, result
     );
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
+    return result;
 }
 
-int
-qvi_hwsplit::m_determine_mapping(
-    qvi_map_config &map_config
-) {
+qvi_map_config
+qvi_hwsplit::m_determine_mapping_config(void)
+{
     // Make sure that the supplied colors are consistent and determine the type
     // of coloring we are using. Positive values denote an explicit coloring
     // provided by the caller. Negative values are reserved for internal use and
@@ -176,103 +166,73 @@ qvi_hwsplit::m_determine_mapping(
         // color range. Otherwise, use the values as-is.
         if (!all_in_range) {
             const int rc = qvi_map_clamp_colors(m_colors);
-            if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+            if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
         }
         // Make sure that the coloring is valid.
         const std::set<int> color_set(m_colors.begin(), m_colors.end());
         // If we have more distinct colors than destinations, that's a problem.
-        if (color_set.size() > m) return QV_ERR_SPLIT;
+        if (color_set.size() > m) throw qvi_runtime_error(QV_ERR_SPLIT);
     }
     // All colors are negative.
     else if (tcolors.back() < 0) {
         // TODO(skg) Implement the rest.
         if (tcolors.front() != tcolors.back()) {
-            return QV_ERR_INVLD_ARG;
+            throw qvi_runtime_error(QV_ERR_INVLD_ARG);
         }
         auto_split = true;
     }
+    qvi_map_config result;
     // User-defined splitting. Map colors to cpusets.
     if (!auto_split) {
-        map_config = {
+        return result = {
             m_colors,
             qvi_map_colors
         };
-        return QV_SUCCESS;
     }
     // Automatic splitting.
     switch (m_colors[0]) {
         case QV_SCOPE_SPLIT_CLOSE: {
-            map_config = {
+            return result = {
                 m_task_affinities,
                 m_split_cpusets,
                 qvi_map_close
             };
-            return QV_SUCCESS;
         }
         case QV_SCOPE_SPLIT_PACKED: {
-            map_config = {
+            return result = {
                 m_group_size,
                 m_split_cpusets.size(),
                 qvi_map_packed
             };
-            return QV_SUCCESS;
         }
         case QV_SCOPE_SPLIT_SPREAD: {
-            map_config = {
+            return result = {
                 m_group_size,
                 m_split_cpusets.size(),
                 qvi_map_spread
             };
-            return QV_SUCCESS;
         }
         [[unlikely]] default:
-            return QV_ERR_INVLD_ARG;
+            throw qvi_runtime_error(QV_ERR_INVLD_ARG);
     }
 }
 
-int
-qvi_hwsplit::m_split(void)
+/**
+ * Splits the base hardware pool and returns a vector
+ * of qvi_hwpool with |m_split_size| elements.
+ */
+std::vector<qvi_hwpool>
+qvi_hwsplit::m_split_base_hwpool(void)
 {
-    // Split the host resource cpuset.
-    int rc = m_split_cpuset();
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Map the host resources based on the requested configuration.
-    qvi_map_config hres_map_config;
-    rc = m_determine_mapping(hres_map_config);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Apply task to host hardware (e.g., CPUs) resource map.
-    qvi_map_t hres_map;
-    rc = hres_map_config.map_fn(hres_map_config, hres_map);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-
-    if (qvi_unlikely(hres_map_config.be_verbose)) {
-        qvi_map_emit("\nTask ID to Host Hardware Pool", hres_map);
+    // Split the base resource cpuset.
+    m_split_cpusets = m_split_cpuset();
+    // These are the pools that are created from host resource split.
+    std::vector<qvi_hwpool> result;
+    for (const auto &cpuset : m_split_cpusets) {
+        result.emplace_back(qvi_hwpool(cpuset));
     }
-    //
-    // It seems that we get friendlier semantics if we don't require that
-    // every task is accounted for in the mapping. If that changes, then we can
-    // add the check here by verifying that the group size equals the
-    // size of the task-to-hardware-resource map.
-    //
-    // Assign cpusets to the tasks' hardware pools based on the determined
-    // mapping. Also assign coloring based on this mapping.
-    m_colors.resize(hres_map.size());
-    //
-    for (const auto &[taski, cpusetis] : hres_map) {
-        for (const auto &cpuseti : cpusetis) {
-            m_hwpools.at(taski) = {m_split_cpusets.at(cpuseti)};
-            m_colors.at(taski) = static_cast<int>(cpuseti);
-        }
-    }
-    if (qvi_unlikely(hres_map_config.be_verbose)) {
-        qvi_log_info("\nColor assignments:\n{}", format_coloring(m_colors));
-    }
-    // Now assign devices to hardware pools.
-    std::vector<qvi_hwloc_bitmap> hwpool_affinities;
-    for (const auto &hwpool : m_hwpools) {
-        hwpool_affinities.emplace_back(hwpool.cpuset());
-    }
-    // Iterate over supported device types and add devices based on affinity.
+    // Now iterate over supported device types and add
+    // devices based on affinity to the split cpusets.
     for (const auto devt : qvi_hwloc::supported_devices()) {
         const auto &devs = m_base_hwpool.devices(devt);
         if (devs.empty()) continue;
@@ -281,16 +241,17 @@ qvi_hwsplit::m_split(void)
         // Map devices to cpusets, trying to maintain good affinity.
         const qvi_map_config devs2hres_config = {
             dev_affinities,
-            hwpool_affinities
+            m_split_cpusets
         };
         qvi_map_t devs2hres_map;
-        rc = qvi_map_close(
-            devs2hres_config, devs2hres_map
+        int rc = qvi_map_close(
+            devs2hres_config,
+            devs2hres_map
         );
-        if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
         // If we have more hardware pools than devices, make sure
         // that hardware pools aren't mapped to multiple devices.
-        if (hwpool_affinities.size() > dev_affinities.size()) {
+        if (m_split_cpusets.size() > dev_affinities.size()) {
             devs2hres_map = qvi_map_uniq(devs2hres_map);
         }
         if (qvi_unlikely(devs2hres_config.be_verbose)) {
@@ -302,10 +263,44 @@ qvi_hwsplit::m_split(void)
         // devices to the associated hardware pools.
         for (const auto &[devi, poolis] : devs2hres_map) {
             for (const auto &pooli : poolis) {
-                rc = m_hwpools[pooli].add_device(*devs[devi].get());
-                if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+                rc = result[pooli].add_device(*devs[devi].get());
+                if (qvi_unlikely(rc != QV_SUCCESS)) {
+                    throw qvi_runtime_error(rc);
+                }
             }
         }
+    }
+    return result;
+}
+
+// This is the main split function called by the splitting process.
+//
+// Considerations:
+// * For split_at(QV_HW_OBJ_GPU/NIC) ...
+int
+qvi_hwsplit::m_split(void)
+{
+    const auto split_hwpools = m_split_base_hwpool();
+    // Map the split_pools based on the requested configuration.
+    const auto map_config = m_determine_mapping_config();
+    // Calculate the task to hardware pool resource mapping.
+    qvi_map_t hwpool_map;
+    int rc = map_config.map_fn(map_config, hwpool_map);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+
+    if (qvi_unlikely(map_config.be_verbose)) {
+        qvi_map_emit("\nTask ID to Host Hardware Pool", hwpool_map);
+    }
+    // Perform final task to hardware pool assignments
+    // and task coloring based on determined mapping.
+    for (const auto &[taski, cpusetis] : hwpool_map) {
+        for (const auto &cpuseti : cpusetis) {
+            m_hwpools.at(taski) = split_hwpools.at(cpuseti);
+            m_colors.at(taski) = static_cast<int>(cpuseti);
+        }
+    }
+    if (qvi_unlikely(map_config.be_verbose)) {
+        qvi_log_info("\nColor assignments:\n{}", format_coloring(m_colors));
     }
     return QV_SUCCESS;
 }
@@ -345,6 +340,8 @@ qvi_hwsplit::m_gather_split_data(
         hwsplit.m_hwpools.clear();
         // Create room for the real hardware pools.
         hwsplit.m_hwpools.resize(group.size());
+        // And colors.
+        hwsplit.m_colors.resize(group.size());
     }
     return QV_SUCCESS;
 }
