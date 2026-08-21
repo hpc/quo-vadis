@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2025 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -113,6 +113,49 @@ public:
             size_t slen;
             memmove(&slen, pos, sizeof(slen));
             pos += sizeof(slen);
+
+            std::stringstream ss(std::string((const char *)pos, slen));
+            // Scoped to force flush on destruct.
+            {
+                cereal::BinaryInputArchive iarchive(ss);
+                iarchive(std::forward<Types>(args)...);
+            }
+
+            return QV_SUCCESS;
+        }
+        qvi_catch_and_return();
+    }
+
+    /**
+     * Bounds-checked unpack for data that may originate from an untrusted or
+     * possibly corrupt source (e.g., a message received over the wire). Unlike
+     * unpack(), this verifies that the buffer is large enough to hold the
+     * length prefix and the encoded payload it advertises before attempting to
+     * deserialize, guarding against out-of-bounds reads driven by a bogus
+     * length prefix or a truncated payload.
+     */
+    template<typename ...Types>
+    static int
+    unpack_checked(
+        void *data,
+        size_t data_size,
+        Types &&...args
+    ) {
+        try {
+            // Must at least be able to read the length prefix.
+            if (qvi_unlikely(!data || data_size < sizeof(size_t))) {
+                return QV_ERR_RPC;
+            }
+            byte_t *pos = static_cast<byte_t *>(data);
+
+            size_t slen;
+            memmove(&slen, pos, sizeof(slen));
+            pos += sizeof(slen);
+
+            // The advertised payload must fit within the remaining bytes.
+            if (qvi_unlikely(slen > data_size - sizeof(size_t))) {
+                return QV_ERR_RPC;
+            }
 
             std::stringstream ss(std::string((const char *)pos, slen));
             // Scoped to force flush on destruct.

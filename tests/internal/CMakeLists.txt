@@ -90,6 +90,25 @@ add_test(
 
 ################################################################################
 ################################################################################
+add_executable(
+    test-rmi-server
+    test-rmi-server.cc
+)
+
+target_link_libraries(
+    test-rmi-server
+    quo-vadis
+)
+
+add_test(
+    NAME
+      rmi-server
+    COMMAND
+      test-rmi-server "tcp://127.0.0.1:55994"
+)
+
+################################################################################
+################################################################################
 if(MPI_FOUND)
     add_executable(
         test-mpi-install
@@ -124,6 +143,7 @@ endif()
 set_tests_properties(
     hwloc
     rmi
+    rmi-server
     map
     bbuff
     PROPERTIES
