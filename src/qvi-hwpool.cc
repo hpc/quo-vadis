@@ -86,20 +86,18 @@ int
 qvi_hwpool::m_add_devices_with_affinity(
     const qvi_hwloc &hwloc
 ) {
-    int rc = QV_SUCCESS;
     // Iterate over the supported device types.
     for (const auto devt : qvi_hwloc::supported_devices()) {
         qvi_hwloc_dev_list devs;
-        rc = hwloc.get_devices_included_in_cpuset(
+        const int rc = hwloc.get_devices_included_in_cpuset(
             devt, m_cpu.affinity().cdata(), devs
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
         for (const auto &dev : devs) {
-            rc = add_device(qvi_hwpool_dev(dev));
-            if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+            add_device(qvi_hwpool_dev(dev));
         }
     }
-    return rc;
+    return QV_SUCCESS;
 }
 
 int
@@ -165,7 +163,7 @@ qvi_hwpool::nobjects(
     }
 }
 
-int
+void
 qvi_hwpool::add_device(
     const qvi_hwpool_dev &dev
 ) {
@@ -185,7 +183,6 @@ qvi_hwpool::add_device(
             }
         );
     }
-    return QV_SUCCESS;
 }
 
 qvi_hwpool

@@ -118,7 +118,7 @@ qvi_hwsplit::m_primary_cpuset_for_split(
 }
 
 std::vector<qvi_hwloc_bitmap>
-qvi_hwsplit::m_split_cpuset(void)
+qvi_hwsplit::m_split_base_cpuset(void)
 {
     // Determine the resource class and cpuset that we are splitting over.
     const auto [res_class, pri_cpuset] = m_primary_cpuset_for_split(
@@ -157,7 +157,7 @@ qvi_hwsplit::m_determine_mapping_config(void)
     // All colors are positive: user-defined split.
     if (tcolors.front() >= 0) {
         // Number of destinations.
-        const size_t m = m_split_cpusets.size();
+        const size_t m = m_split_size;
         const bool all_in_range = std::ranges::all_of(
             m_colors, [m](int val) {
             return val >= 0 && val < static_cast<int>(m);
@@ -194,21 +194,21 @@ qvi_hwsplit::m_determine_mapping_config(void)
         case QV_SCOPE_SPLIT_CLOSE: {
             return result = {
                 m_task_affinities,
-                m_split_cpusets,
+                m_split_base_cpuset(),
                 qvi_map_close
             };
         }
         case QV_SCOPE_SPLIT_PACKED: {
             return result = {
                 m_group_size,
-                m_split_cpusets.size(),
+                m_split_size,
                 qvi_map_packed
             };
         }
         case QV_SCOPE_SPLIT_SPREAD: {
             return result = {
                 m_group_size,
-                m_split_cpusets.size(),
+                m_split_size,
                 qvi_map_spread
             };
         }
@@ -225,10 +225,10 @@ std::vector<qvi_hwpool>
 qvi_hwsplit::m_split_base_hwpool(void)
 {
     // Split the base resource cpuset.
-    m_split_cpusets = m_split_cpuset();
+    const auto split_cpusets = m_split_base_cpuset();
     // These are the pools that are created from host resource split.
     std::vector<qvi_hwpool> result;
-    for (const auto &cpuset : m_split_cpusets) {
+    for (const auto &cpuset : split_cpusets) {
         result.emplace_back(qvi_hwpool(cpuset));
     }
     // Now iterate over supported device types and add
@@ -241,23 +241,21 @@ qvi_hwsplit::m_split_base_hwpool(void)
         // Map devices to cpusets, trying to maintain good affinity.
         const qvi_map_config devs2hres_config = {
             dev_affinities,
-            m_split_cpusets
+            split_cpusets
         };
         const auto devs2hres_map = qvi_map_close(devs2hres_config);
 
         if (qvi_unlikely(devs2hres_config.be_verbose)) {
-            const auto label = "Final device (devt=" +
-                std::to_string(devt) + ") to hardware pool";
+            const auto label = "Final device (devt="
+                             + std::to_string(devt)
+                             + ") to hardware pool";
             qvi_map_emit(label, devs2hres_map);
         }
         // Now that we have the mapping, assign
         // devices to the associated hardware pools.
         for (const auto &[devi, poolis] : devs2hres_map) {
             for (const auto &pooli : poolis) {
-                const int rc = result[pooli].add_device(*devs[devi].get());
-                if (qvi_unlikely(rc != QV_SUCCESS)) {
-                    throw qvi_runtime_error(rc);
-                }
+                result[pooli].add_device(*devs[devi].get());
             }
         }
     }

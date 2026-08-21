@@ -223,7 +223,7 @@ public:
      * Adds a qvi_hwpool_dev_s device. Attempts to insert the same device
      * multiple times will succeed, but the device will be added exactly once.
      */
-    int
+    void
     add_device(
         const qvi_hwpool_dev &dev
     );

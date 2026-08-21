@@ -89,8 +89,6 @@ private:
      * corresponds to a task ID.
      */
     std::vector<int> m_colors;
-    /** Vector of cpusets that resulted from the m_split_cpuset() operation. */
-    std::vector<qvi_hwloc_bitmap> m_split_cpusets;
     /** Vector of task affinities. */
     std::vector<qvi_hwloc_bitmap> m_task_affinities;
     /**
@@ -135,7 +133,7 @@ private:
     m_determine_mapping_config(void);
     /** */
     std::vector<qvi_hwloc_bitmap>
-    m_split_cpuset(void);
+    m_split_base_cpuset(void);
     /** */
     std::vector<qvi_hwpool>
     m_split_base_hwpool(void);
