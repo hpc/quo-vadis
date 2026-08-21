@@ -53,11 +53,7 @@ test_1(void)
         dst_affinities
     };
 
-    qvi_map_t map;
-    int rc = qvi_map_close(
-        config, map
-    );
-    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+    auto map = qvi_map_close(config);
     ctu_assert(map.empty(), "!map.empty()");
 
     qvi_log_info("✓ {} PASSED", __func__);
@@ -75,11 +71,7 @@ test_2(void)
         dst_affinities
     };
 
-    qvi_map_t map;
-    int rc = qvi_map_close(
-        config, map
-    );
-    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+    auto map = qvi_map_close(config);
 
     qvi_map_t expected = {
         {0, {0}},
@@ -103,11 +95,7 @@ test_3(void)
         dst_affinities
     };
 
-    qvi_map_t map;
-    int rc = qvi_map_close(
-        config, map
-    );
-    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+    auto map = qvi_map_close(config);
 
     qvi_map_t expected = {
         {0, {0}},
@@ -134,11 +122,7 @@ test_4(void)
         dst_affinities
     };
 
-    qvi_map_t map;
-    int rc = qvi_map_close(
-        config, map
-    );
-    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+    auto map = qvi_map_close(config);
 
     qvi_map_t expected = {
         {0, {0}},
@@ -163,11 +147,7 @@ test_5(void)
         dst_affinities
     };
 
-    qvi_map_t map;
-    int rc = qvi_map_close(
-        config, map
-    );
-    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+    auto map = qvi_map_close(config);
 
     qvi_map_t expected = {
         {0, {0}},
@@ -193,11 +173,7 @@ test_6(void)
         dst_affinities
     };
 
-    qvi_map_t map;
-    int rc = qvi_map_close(
-        config, map
-    );
-    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+    auto map = qvi_map_close(config);
 
     qvi_map_t expected = {
         {0, {1}},
@@ -225,11 +201,7 @@ test_7(void)
         dst_affinities
     };
 
-    qvi_map_t map;
-    int rc = qvi_map_close(
-        config, map
-    );
-    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+    auto map = qvi_map_close(config);
 
     qvi_map_t expected = {
         {0, {0}},
@@ -260,11 +232,7 @@ test_8(void)
         dst_affinities
     };
 
-    qvi_map_t map;
-    int rc = qvi_map_close(
-        config, map
-    );
-    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+    auto map = qvi_map_close(config);
 
     qvi_map_t expected = {
         {0, {1}},
@@ -296,11 +264,7 @@ test_9(void)
         dst_affinities
     };
 
-    qvi_map_t map;
-    int rc = qvi_map_close(
-        config, map
-    );
-    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+    auto map = qvi_map_close(config);
 
     qvi_map_t expected = {
         {0, {0}},
@@ -325,11 +289,7 @@ test_10(void)
         ndst
     };
 
-    qvi_map_t map;
-    int rc = qvi_map_packed(
-        config, map
-    );
-    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+    auto map = qvi_map_packed(config);
 
     qvi_map_t expected = {
         {0, {0}},
@@ -360,11 +320,7 @@ test_11(void)
         ndst
     };
 
-    qvi_map_t map;
-    int rc = qvi_map_packed(
-        config, map
-    );
-    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+    auto map = qvi_map_packed(config);
 
     qvi_map_t expected = {
         {0, {0, 1}},
@@ -390,11 +346,7 @@ test_12(void)
         ndst
     };
 
-    qvi_map_t map;
-    int rc = qvi_map_spread(
-        config, map
-    );
-    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+    auto map = qvi_map_spread(config);
 
     qvi_map_t expected = {
         {0, {0}},
@@ -425,11 +377,7 @@ test_13(void)
         ndst
     };
 
-    qvi_map_t map;
-    int rc = qvi_map_spread(
-        config, map
-    );
-    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+    auto map = qvi_map_spread(config);
 
     qvi_map_t expected = {
         {0, {0, 5}},
@@ -453,11 +401,7 @@ test_14(void)
         src_colors,
     };
 
-    qvi_map_t map;
-    int rc = qvi_map_colors(
-        config, map
-    );
-    ctu_assert(rc == QV_SUCCESS, "%d != QV_SUCCESS", rc);
+    auto map = qvi_map_colors(config);
 
     qvi_map_t expected = {
         {0, {0}},

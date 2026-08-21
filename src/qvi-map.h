@@ -31,9 +31,8 @@ using qvi_map_t = std::map<size_t, std::set<size_t>>;
  * Defines a function pointer to a desired mapping function.
  */
 using qvi_map_fn_t = std::function<
-    int(
-        const qvi_map_config &config,
-        qvi_map_t &map
+    qvi_map_t(
+        const qvi_map_config &config
     )
 >;
 
@@ -97,38 +96,34 @@ qvi_map_calc_affinities(
 /**
  * Performs a mapping between the provided colors to the provided cpusets.
  */
-int
+qvi_map_t
 qvi_map_colors(
-    const qvi_map_config &config,
-    qvi_map_t &map
+    const qvi_map_config &config
 );
 
 /**
  * Maps source IDs (0...config.nsrc-1) to destination indices
  * (0...config.ndst-1) by packing source IDs to destination IDs.
  */
-int
+qvi_map_t
 qvi_map_packed(
-    const qvi_map_config &config,
-    qvi_map_t &map
+    const qvi_map_config &config
 );
 
 /**
  * Maps sources to destinations round-robin.
  */
-int
+qvi_map_t
 qvi_map_spread(
-    const qvi_map_config &config,
-    qvi_map_t &map
+    const qvi_map_config &config
 );
 
 /**
  * Performs a close (affinity preserving) mapping.
  */
-int
+qvi_map_t
 qvi_map_close(
-    const qvi_map_config &config,
-    qvi_map_t &map
+    const qvi_map_config &config
 );
 
 /**
