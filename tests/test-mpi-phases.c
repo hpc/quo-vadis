@@ -53,6 +53,7 @@ do_pthread_things(
     );
 }
 
+#if 0
 static void
 print_cpus(int rank, char *header, qv_scope_t *scope, char *scope_name)
 {
@@ -71,7 +72,92 @@ print_cpus(int rank, char *header, qv_scope_t *scope, char *scope_name)
              rank, scope_name, binds);
     free(binds);
 }
+#endif
 
+static void
+print_resources(int rank, char *header, qv_scope_t *scope, char *scope_name)
+{
+    ctu_str_t *str = ctu_str_new();
+    if (rank == 0)
+        ctu_str_appendf(
+            str, "\n# %s\n", header
+        );
+    else
+        // Not needed; used so that header prints first
+        sleep_ms(1);
+
+    char *binds;
+    char const *ers = NULL;
+    int rc = qv_bind_string(scope, QV_BIND_STRING_PHYSICAL, &binds);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_bind_string() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+    ctu_str_appendf(
+        str, "[%d] %s: Running on CPUs %s\n", rank, scope_name, binds
+    );
+    free(binds);
+
+    int nnumas;
+    rc = qv_hw_obj_count(
+        scope,
+        QV_HW_OBJ_NUMANODE,
+        &nnumas
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_hw_obj_count() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    int ncores;
+    rc = qv_hw_obj_count(
+        scope,
+        QV_HW_OBJ_CORE,
+        &ncores
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_hw_obj_count() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    int ngpus;
+    rc = qv_hw_obj_count(
+        scope,
+        QV_HW_OBJ_GPU,
+        &ngpus
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_hw_obj_count() failed";
+        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    ctu_str_appendf(
+        str,
+        "[%d] %s: Got %d NUMAs %d Cores %d GPUs",
+        rank, scope_name, nnumas, ncores, ngpus
+    );
+
+    if (ngpus > 0) {
+        ctu_str_appendf(
+            str, "\n[%d] %s: GPUs ", rank, scope_name
+        );
+        char *gpu;
+        for (int i = 0; i < ngpus; i++) {
+            qv_device_id(
+                 scope, QV_HW_OBJ_GPU, i, QV_DEVICE_ID_PCI_BUS_ID, &gpu
+            );
+            ctu_str_appendf(
+                str, "%s ", gpu
+            );
+        }
+        free(gpu);
+    }
+
+    ctu_logf(
+        "%s\n", ctu_str_cstr(str)
+    );
+    ctu_str_del(str);
+}
 
 // Split at GPUs.
 void split_at_gpu(int rank, qv_scope_t *scope, int color, char *header)
@@ -101,7 +187,7 @@ void split_at_gpu(int rank, qv_scope_t *scope, int color, char *header)
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    print_cpus(rank, header, gpu_scope, "gpu_scope");
+    print_resources(rank, header, gpu_scope, "gpu_scope");
 
     int my_gpu_rank;
     rc = qv_group_rank(
@@ -123,26 +209,6 @@ void split_at_gpu(int rank, qv_scope_t *scope, int color, char *header)
         ers = "qv_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-
-    ctu_str_t *gpustr = ctu_str_new();
-    ctu_str_appendf(
-        gpustr,
-        "[%d] Split@GPU: got %d GPU(s)\n",
-        rank, my_ngpus
-    );
-
-    char *gpu = NULL;
-    for (int i = 0; i < my_ngpus; i++) {
-        qv_device_id(
-            gpu_scope, QV_HW_OBJ_GPU, i, QV_DEVICE_ID_PCI_BUS_ID, &gpu
-        );
-        ctu_str_appendf(
-            gpustr, "[%d]->PCI Bus ID = %s\n", rank, gpu
-        );
-    }
-    free(gpu);
-    ctu_emit(scope, CTU_SCOPE_KIND_MPI, "%s", ctu_str_cstr(gpustr));
-    ctu_str_del(gpustr);
 
     rc = qv_bind_pop(gpu_scope);
     if (rc != QV_SUCCESS) {
@@ -206,7 +272,7 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    print_cpus(comm_rank, "Base scope",
+    print_resources(comm_rank, "Base scope",
                base_scope, "base_scope");
 
 
@@ -234,21 +300,10 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    print_cpus(comm_rank, "Phase 1: Regular split:",
+    print_resources(comm_rank, "Phase 1: Regular split:",
                sub_scope, "sub_scope");
 
     // What resources did I get?
-    int ncores;
-    rc = qv_hw_obj_count(
-        sub_scope,
-        QV_HW_OBJ_CORE,
-        &ncores
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
     int ngpus;
     rc = qv_hw_obj_count(
         sub_scope,
@@ -259,19 +314,11 @@ main(
         ers = "qv_hw_obj_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    ctu_logf(
-        "[%d] sub_scope: Got %d Cores and %d GPUs\n",
-        comm_rank, ncores, ngpus
-    );
 
-    if (comm_rank == 0) {
+    if (comm_rank == 0)
         ctu_logf(
             "\n# Pthread launch on sub_scope(s)\n"
         );
-    }
-
-    // Not needed; used so that header prints first
-    sleep_ms(1);
 
     // Launch Pthreads on respective sub_scope resources.
     do_pthread_things(sub_scope, " sub_scope", comm_rank);
@@ -364,8 +411,8 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    print_cpus(comm_rank, "Phase 2: NUMA split",
-               numa_scope, "numa_scope");
+    print_resources(comm_rank, "Phase 2: NUMA split",
+                    numa_scope, "numa_scope");
 
     // Allow selecting a leader per NUMA.
     int my_numa_rank;
@@ -390,13 +437,6 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    // Todo: What's the difference between ctu_emit and ctu_logf?
-    ctu_emit(
-        base_scope, CTU_SCOPE_KIND_MPI,
-        "[%d] #NUMAs=%d my_numa_id=%d\n",
-        comm_rank, nnumas, my_numa_rank
-    );
-
     // Barrier not needed; used for tidy output
     rc = qv_barrier(base_scope);
     if (rc != QV_SUCCESS) {
@@ -404,11 +444,16 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
+    // Todo: What's the difference between ctu_emit and ctu_logf?
     if (my_numa_rank == 0) {
-        ctu_logf("[%d]->NUMA leader: Launching OMP region\n", comm_rank);
+        ctu_logf("[%d]->NUMA ID %d: Launching OMP region\n",
+                 comm_rank, my_numa_rank);
         do_omp_things(numa_scope, "numa_scope", comm_rank);
+    } else {
+        ctu_logf("[%d]->NUMA ID %d\n", comm_rank, my_numa_rank);
     }
-    // Everybody else waits...
+
+    // Leader works; everybody else waits
     rc = qv_barrier(numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_barrier() failed";
@@ -455,11 +500,12 @@ main(
 
     // Split 1: Use a color
     split_at_gpu(comm_rank, base_scope, comm_rank % ngpus,
-                 "Phase 3: GPU split using color comm_rank%ngpus\n"
-                 "  At most one GPU per process");
+        "Phase 3: GPU split using color comm_rank%ngpus"
+    );
     // Split 2: Use QV_SCOPE_SPLIT_SPREAD
     split_at_gpu(comm_rank, base_scope, QV_SCOPE_SPLIT_SPREAD,
-                 "Phase 3: GPU split using color QV_SCOPE_SPLIT_SPREAD");
+        "Phase 3: GPU split using color QV_SCOPE_SPLIT_SPREAD"
+    );
     // Split 3: Use QV_SCOPE_SPLIT_PACKED
     // Split 4: Use QV_SCOPE_SPLIT_DEFAULT
     // Split 5: Use QV_SCOPE_SPLIT_USE_ALL
