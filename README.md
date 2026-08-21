@@ -54,6 +54,46 @@ ctest -L core
 ctest -V
 ```
 
+## Benchmarking
+A micro-benchmark suite under `tests/benchmarks/` measures the average (plus
+min/max) execution time of the public functions exposed by `quo-vadis.h`,
+`quo-vadis-thread.h`, and `quo-vadis-mpi.h`. Functions that operate on a
+`qv_scope_t` are benchmarked by a shared driver, so the process, thread, and
+MPI suites reuse the same measurement and reporting code.
+
+The benchmarks are registered with `ctest` under the `benchmark` label and run
+against a `quo-vadisd` daemon (started automatically, just like the tests):
+```shell
+# Run all benchmarks.
+ctest -L benchmark -V
+# Or a single scope kind (process, thread, or mpi).
+ctest -R bench-process -V
+ctest -R bench-thread -V
+ctest -R bench-mpi -V
+```
+The benchmark binaries (`qvb-process`, `qvb-thread`, `qvb-mpi`) can also be run
+directly once a daemon is available; the MPI benchmark is launched with
+`mpiexec` and only rank 0 prints results:
+```shell
+# Launch the daemon (see Examples below), then:
+./build/tests/benchmarks/qvb-process
+mpiexec -n 2 ./build/tests/benchmarks/qvb-mpi
+```
+
+The number of timed iterations per function defaults to 10 and can be
+overridden with the `QVB_ITERS` environment variable:
+```shell
+QVB_ITERS=1000 ctest -R bench-process -V
+```
+
+Only performance numbers from `Release` builds should be cited. In-repo builds
+default to `Debug` with developer flags enabled, which are not representative of
+real-world performance; configure a `Release` build before collecting numbers to
+report:
+```shell
+cmake -DCMAKE_BUILD_TYPE=Release ..
+```
+
 ## Environment Variables
 ```shell
 QV_PORT # The port number used for client/server communication.

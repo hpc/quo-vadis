@@ -183,6 +183,7 @@ add_subdirectory(src/fortran)
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
     add_subdirectory(tests/internal)
     add_subdirectory(tests)
+    add_subdirectory(tests/benchmarks)
 endif()
 
 # CPack
