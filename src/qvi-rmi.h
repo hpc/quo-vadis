@@ -45,7 +45,7 @@ enum qvi_rmi_rpc_fid_t {
  * the message buffer and is meant for client-side consumption.
  */
 using qvi_rmi_rpc_fun_ptr_t = std::function<
-    int(qvi_rmi_server *, qvi_rmi_msg_header *, void *, qvi_bbuff **)
+    int(qvi_rmi_server *, qvi_rmi_msg_header *, void *, size_t, qvi_bbuff **)
 >;
 
 /**
@@ -108,12 +108,22 @@ private:
     /** Executes the main server loop. */
     int
     m_enter_main_server_loop(void);
+    /**
+     * Returns whether the provided (wire-supplied) hwloc topology flags select
+     * a valid, known topology. Used to reject malformed flags before indexing
+     * into m_hwlocs, which would otherwise abort the daemon.
+     */
+    bool
+    m_valid_topo_flags(
+        qvi_hwloc_flags_t flags
+    ) const;
     /** */
     static int
     s_rpc_invalid(
         qvi_rmi_server *,
         qvi_rmi_msg_header *,
         void *,
+        size_t,
         qvi_bbuff **
     );
     /** */
@@ -122,6 +132,7 @@ private:
         qvi_rmi_server *,
         qvi_rmi_msg_header *hdr,
         void *,
+        size_t,
         qvi_bbuff **output
     );
     /** */
@@ -130,6 +141,7 @@ private:
         qvi_rmi_server *server,
         qvi_rmi_msg_header *hdr,
         void *input,
+        size_t input_size,
         qvi_bbuff **output
     );
     /** */
@@ -138,6 +150,7 @@ private:
         qvi_rmi_server *server,
         qvi_rmi_msg_header *hdr,
         void *input,
+        size_t input_size,
         qvi_bbuff **output
     );
     /** */
@@ -146,6 +159,7 @@ private:
         qvi_rmi_server *server,
         qvi_rmi_msg_header *hdr,
         void *input,
+        size_t input_size,
         qvi_bbuff **output
     );
     /** */
@@ -154,6 +168,7 @@ private:
         qvi_rmi_server *server,
         qvi_rmi_msg_header *hdr,
         void *input,
+        size_t input_size,
         qvi_bbuff **output
     );
     /** */
@@ -162,6 +177,7 @@ private:
         qvi_rmi_server *server,
         qvi_rmi_msg_header *hdr,
         void *input,
+        size_t input_size,
         qvi_bbuff **output
     );
     static int
@@ -169,6 +185,7 @@ private:
         qvi_rmi_server *server,
         qvi_rmi_msg_header *hdr,
         void *input,
+        size_t input_size,
         qvi_bbuff **output
     );
     /** */
@@ -177,6 +194,7 @@ private:
         qvi_rmi_server *server,
         qvi_rmi_msg_header *hdr,
         void *input,
+        size_t input_size,
         qvi_bbuff **output
     );
     /** */
@@ -185,6 +203,7 @@ private:
         qvi_rmi_server *server,
         qvi_rmi_msg_header *hdr,
         void *input,
+        size_t input_size,
         qvi_bbuff **output
     );
 public:

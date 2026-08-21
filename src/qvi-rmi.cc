@@ -169,6 +169,27 @@ unpack_msg_header(
     return hdrsize;
 }
 
+/**
+ * Safely unpacks a message header from a buffer of the provided size. Guards
+ * against short/truncated messages that cannot contain a full header (which
+ * would otherwise cause an out-of-bounds read). On success, *hdr is populated
+ * and the number of header bytes consumed is returned via *trim.
+ */
+static inline int
+unpack_msg_header_safe(
+    void *data,
+    size_t data_size,
+    qvi_rmi_msg_header *hdr,
+    size_t *trim
+) {
+    const size_t hdrsize = sizeof(*hdr);
+    if (qvi_unlikely(!data || data_size < hdrsize)) {
+        return QV_ERR_RPC;
+    }
+    *trim = unpack_msg_header(data, hdr);
+    return QV_SUCCESS;
+}
+
 static inline int
 zsock_send_bbuff(
     void *zsock,
@@ -634,6 +655,19 @@ qvi_rmi_server::~qvi_rmi_server(void)
     zctx_destroy(&m_zctx);
 }
 
+bool
+qvi_rmi_server::m_valid_topo_flags(
+    qvi_hwloc_flags_t flags
+) const {
+    // Mirror the indexing used by qvi_hwlocs::get(): only the topology-type
+    // bits are significant, and only the known topology types are valid.
+    const qvi_hwloc_flags_t topo = flags & QVI_HWLOC_TOPO_MASK;
+    for (const auto valid : qvi_hwloc::topo_types()) {
+        if (topo == valid) return true;
+    }
+    return false;
+}
+
 int
 qvi_rmi_server::m_get_iscope_bitmap_user(
     qvi_hwloc_flags_t flags,
@@ -669,8 +703,10 @@ qvi_rmi_server::m_get_iscope_bitmap_proc(
     const std::vector<pid_t> &who,
     qvi_hwloc_bitmap &bitmap
 ) {
-    // This is an internal bug.
-    if (qvi_unlikely(who.size() != 1)) qvi_abort();
+    // A process-scope request must name exactly one task. Since the request
+    // arrives over the wire from a (possibly buggy or hostile) client, treat a
+    // malformed 'who' as an invalid argument rather than aborting the daemon.
+    if (qvi_unlikely(who.size() != 1)) return QV_ERR_INVLD_ARG;
     return m_hwlocs.get(flags).task_get_cpubind(who[0], bitmap);
 }
 
@@ -679,6 +715,7 @@ qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
     qvi_rmi_server *server,
     qvi_rmi_msg_header *hdr,
     void *input,
+    size_t input_size,
     qvi_bbuff **output
 ) {
     int rpcrc = QV_SUCCESS;
@@ -691,9 +728,16 @@ qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
         std::vector<pid_t> who;
         qv_scope_intrinsic_t iscope = {};
         qv_scope_flags_t scope_flags;
-        rpcrc = qvi_bbuff::unpack(input, hwloc_flags, who, iscope, scope_flags);
+        rpcrc = qvi_bbuff::unpack_checked(
+            input, input_size, hwloc_flags, who, iscope, scope_flags
+        );
         // Drop the message. Send an empty hardware pool with the error code.
         if (qvi_unlikely(rpcrc != QV_SUCCESS)) break;
+        // Validate wire-supplied flags before indexing into m_hwlocs.
+        if (qvi_unlikely(!server->m_valid_topo_flags(hwloc_flags))) {
+            rpcrc = QV_ERR_INVLD_ARG;
+            break;
+        }
 
         switch (iscope) {
             case QV_SCOPE_SYSTEM:
@@ -725,12 +769,16 @@ qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
 int
 qvi_rmi_server::s_rpc_invalid(
     qvi_rmi_server *,
-    qvi_rmi_msg_header *,
+    qvi_rmi_msg_header *hdr,
     void *,
-    qvi_bbuff **
+    size_t,
+    qvi_bbuff **output
 ) {
-    qvi_log_error("Something bad happened in RPC dispatch.");
-    qvi_abort();
+    // A client sent a request with the reserved invalid function ID. This is a
+    // malformed request, not an internal error, so we must not abort the whole
+    // daemon. Send back an error-coded reply and keep serving.
+    qvi_log_warn("Received RPC with invalid function ID. Ignoring.");
+    return rpc_pack(output, hdr->fid, QV_ERR_RPC);
 }
 
 int
@@ -738,6 +786,7 @@ qvi_rmi_server::s_rpc_shutdown(
     qvi_rmi_server *,
     qvi_rmi_msg_header *hdr,
     void *,
+    size_t,
     qvi_bbuff **output
 ) {
     (void)rpc_pack(output, hdr->fid);
@@ -749,16 +798,34 @@ qvi_rmi_server::s_rpc_hello(
     qvi_rmi_server *server,
     qvi_rmi_msg_header *hdr,
     void *input,
+    size_t input_size,
     qvi_bbuff **output
 ) {
     const size_t server_version = QVI_0xVERSION;
     int rpcrc = QV_SUCCESS;
 
-    size_t client_version;
-    qvi_hwloc_flags_t flags;
+    size_t client_version = 0;
+    qvi_hwloc_flags_t flags = QVI_HWLOC_FLAG_TOPO_FULL;
     pid_t whoisit;
-    const int rc = qvi_bbuff::unpack(input, client_version, flags, whoisit);
-    if (qvi_unlikely(rc != QV_SUCCESS)) rpcrc = rc;
+    const int rc = qvi_bbuff::unpack_checked(
+        input, input_size, client_version, flags, whoisit
+    );
+    // On a malformed request, reply with the error and a valid (default)
+    // topology file rather than dereferencing uninitialized 'flags'.
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        return rpc_pack(
+            output, hdr->fid, rc,
+            server->m_hwlocs.get(QVI_HWLOC_FLAG_TOPO_FULL).topology_file()
+        );
+    }
+    // Validate the requested topology flags before using them to index into
+    // m_hwlocs, which would otherwise abort on an unrecognized value.
+    if (qvi_unlikely(!server->m_valid_topo_flags(flags))) {
+        return rpc_pack(
+            output, hdr->fid, QV_ERR_INVLD_ARG,
+            server->m_hwlocs.get(QVI_HWLOC_FLAG_TOPO_FULL).topology_file()
+        );
+    }
     // Pack relevant configuration information.
     // We are overly protective here for now. Insist the
     // client and server share the exact same release version.
@@ -776,6 +843,7 @@ qvi_rmi_server::s_rpc_get_cpubind(
     qvi_rmi_server *server,
     qvi_rmi_msg_header *hdr,
     void *input,
+    size_t input_size,
     qvi_bbuff **output
 ) {
     int rpcrc = QV_SUCCESS;
@@ -784,9 +852,13 @@ qvi_rmi_server::s_rpc_get_cpubind(
     do {
         qvi_hwloc_flags_t flags;
         pid_t who;
-        const int qvrc = qvi_bbuff::unpack(input, flags, who);
+        const int qvrc = qvi_bbuff::unpack_checked(input, input_size, flags, who);
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {
             rpcrc = qvrc;
+            break;
+        }
+        if (qvi_unlikely(!server->m_valid_topo_flags(flags))) {
+            rpcrc = QV_ERR_INVLD_ARG;
             break;
         }
         rpcrc = server->m_hwlocs.get(flags).task_get_cpubind(who, bitmap);
@@ -800,6 +872,7 @@ qvi_rmi_server::s_rpc_set_cpubind(
     qvi_rmi_server *server,
     qvi_rmi_msg_header *hdr,
     void *input,
+    size_t input_size,
     qvi_bbuff **output
 ) {
     int rpcrc = QV_SUCCESS;
@@ -808,9 +881,15 @@ qvi_rmi_server::s_rpc_set_cpubind(
         qvi_hwloc_flags_t flags;
         pid_t who;
         qvi_hwloc_bitmap cpuset;
-        const int qvrc = qvi_bbuff::unpack(input, flags, who, cpuset);
+        const int qvrc = qvi_bbuff::unpack_checked(
+            input, input_size, flags, who, cpuset
+        );
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {
             rpcrc = qvrc;
+            break;
+        }
+        if (qvi_unlikely(!server->m_valid_topo_flags(flags))) {
+            rpcrc = QV_ERR_INVLD_ARG;
             break;
         }
         rpcrc = server->m_hwlocs.get(flags).task_set_cpubind_from_cpuset(
@@ -826,6 +905,7 @@ qvi_rmi_server::s_rpc_obj_type_depth(
     qvi_rmi_server *server,
     qvi_rmi_msg_header *hdr,
     void *input,
+    size_t input_size,
     qvi_bbuff **output
 ) {
     int rpcrc = QV_SUCCESS;
@@ -834,9 +914,13 @@ qvi_rmi_server::s_rpc_obj_type_depth(
     do {
         qvi_hwloc_flags_t flags;
         qv_hw_obj_type_t obj;
-        const int qvrc = qvi_bbuff::unpack(input, flags, obj);
+        const int qvrc = qvi_bbuff::unpack_checked(input, input_size, flags, obj);
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {
             rpcrc = qvrc;
+            break;
+        }
+        if (qvi_unlikely(!server->m_valid_topo_flags(flags))) {
+            rpcrc = QV_ERR_INVLD_ARG;
             break;
         }
         rpcrc = server->m_hwlocs.get(flags).obj_type_depth(obj, &depth);
@@ -850,6 +934,7 @@ qvi_rmi_server::s_rpc_get_nobjs_in_cpuset(
     qvi_rmi_server *server,
     qvi_rmi_msg_header *hdr,
     void *input,
+    size_t input_size,
     qvi_bbuff **output
 ) {
     int rpcrc = QV_SUCCESS;
@@ -859,11 +944,15 @@ qvi_rmi_server::s_rpc_get_nobjs_in_cpuset(
         qvi_hwloc_flags_t flags;
         qv_hw_obj_type_t target_obj;
         qvi_hwloc_bitmap cpuset;
-        const int qvrc = qvi_bbuff::unpack(
-            input, flags, target_obj, cpuset
+        const int qvrc = qvi_bbuff::unpack_checked(
+            input, input_size, flags, target_obj, cpuset
         );
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {
             rpcrc = qvrc;
+            break;
+        }
+        if (qvi_unlikely(!server->m_valid_topo_flags(flags))) {
+            rpcrc = QV_ERR_INVLD_ARG;
             break;
         }
         rpcrc = server->m_hwlocs.get(flags).get_nobjs_in_cpuset(
@@ -879,6 +968,7 @@ qvi_rmi_server::s_rpc_get_cpuset_for_nobjs(
     qvi_rmi_server *server,
     qvi_rmi_msg_header *hdr,
     void *input,
+    size_t input_size,
     qvi_bbuff **output
 ) {
     int rpcrc = QV_SUCCESS;
@@ -889,11 +979,15 @@ qvi_rmi_server::s_rpc_get_cpuset_for_nobjs(
         qvi_hwloc_bitmap cpuset;
         qv_hw_obj_type_t obj_type;
         int nobjs;
-        const int qvrc = qvi_bbuff::unpack(
-            input, flags, cpuset, obj_type, nobjs
+        const int qvrc = qvi_bbuff::unpack_checked(
+            input, input_size, flags, cpuset, obj_type, nobjs
         );
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {
             rpcrc = qvrc;
+            break;
+        }
+        if (qvi_unlikely(!server->m_valid_topo_flags(flags))) {
+            rpcrc = QV_ERR_INVLD_ARG;
             break;
         }
         rpcrc = server->m_hwlocs.get(flags).get_cpuset_for_nobjs(
@@ -909,6 +1003,7 @@ qvi_rmi_server::s_rpc_get_device_in_cpuset(
     qvi_rmi_server *server,
     qvi_rmi_msg_header *hdr,
     void *input,
+    size_t input_size,
     qvi_bbuff **output
 ) {
     int rpcrc = QV_SUCCESS;
@@ -920,11 +1015,15 @@ qvi_rmi_server::s_rpc_get_device_in_cpuset(
         int dev_i;
         qvi_hwloc_bitmap cpuset;
         qv_device_id_type_t devid_type;
-        const int qvrc = qvi_bbuff::unpack(
-            input, flags, dev_obj, dev_i, cpuset, devid_type
+        const int qvrc = qvi_bbuff::unpack_checked(
+            input, input_size, flags, dev_obj, dev_i, cpuset, devid_type
         );
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {
             rpcrc = qvrc;
+            break;
+        }
+        if (qvi_unlikely(!server->m_valid_topo_flags(flags))) {
+            rpcrc = QV_ERR_INVLD_ARG;
             break;
         }
         rpcrc = server->m_hwlocs.get(flags).get_device_id_in_cpuset(
@@ -943,36 +1042,78 @@ qvi_rmi_server::m_rpc_dispatch(
 ) {
     int rc = QV_SUCCESS;
     bool shutdown = false;
+    // The reply that will be sent back to the client. A ZMQ REP socket must
+    // send exactly one reply for every request it receives; failing to do so
+    // wedges the REQ/REP state machine and hangs the next client. So for every
+    // request we receive we are careful to always produce some reply.
+    qvi_bbuff *result = nullptr;
 
     do {
         void *const data = zmq_msg_data(command_msg);
+        const size_t data_size = zmq_msg_size(command_msg);
 
         qvi_rmi_msg_header hdr;
-        const size_t trim = unpack_msg_header(data, &hdr);
+        size_t trim = 0;
+        // Guard against truncated/empty messages that cannot hold a header.
+        int mrc = unpack_msg_header_safe(data, data_size, &hdr, &trim);
+        if (qvi_unlikely(mrc != QV_SUCCESS)) {
+            qvi_log_warn(
+                "Dropping malformed RPC message (size={}).", data_size
+            );
+            // Reply with an error so the client (and REP socket) stay sane.
+            rc = rpc_pack(&result, QVI_RMI_FID_INVALID, QV_ERR_RPC);
+            break;
+        }
         void *const body = data_trim(data, trim);
+        const size_t body_size = data_size - trim;
 
         const auto fidfunp = m_rpc_dispatch_table.find(hdr.fid);
         if (qvi_unlikely(fidfunp == m_rpc_dispatch_table.end())) {
-            qvi_log_error(
-                "Unknown function ID ({}) in RPC. Aborting.", hdr.fid
+            qvi_log_warn(
+                "Unknown function ID ({}) in RPC. Ignoring.", hdr.fid
             );
-            rc = QV_ERR_RPC;
+            // Reply with an error rather than dropping the message, which would
+            // otherwise leave the REP socket waiting to send a reply forever.
+            rc = rpc_pack(&result, QVI_RMI_FID_INVALID, QV_ERR_RPC);
             break;
         }
 
-        qvi_bbuff *result = nullptr;
-        rc = fidfunp->second(this, &hdr, body, &result);
-        if (qvi_unlikely(rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN)) {
-            cstr_t ers = "RPC dispatch failed";
-            qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
-            break;
-        }
-        // Shutdown?
+        // Invoke the handler. The status here reflects the server-side
+        // machinery (e.g., could we build a reply?), NOT the target operation's
+        // result, which the handler packs into the reply buffer for the client.
+        rc = fidfunp->second(this, &hdr, body, body_size, &result);
+        // A shutdown request is signaled via QV_SUCCESS_SHUTDOWN; the handler
+        // still produces a valid reply that we must deliver below.
         if (qvi_unlikely(rc == QV_SUCCESS_SHUTDOWN)) {
             shutdown = true;
+            rc = QV_SUCCESS;
         }
-        rc = zsock_send_bbuff(zsock, result, bsent);
+        // If the handler itself failed to produce a reply, there is nothing
+        // sensible to send. Synthesize a minimal error reply so we honor the
+        // REQ/REP contract and keep the server alive.
+        else if (qvi_unlikely(rc != QV_SUCCESS)) {
+            qvi_log_warn(
+                "RPC handler for FID {} failed with rc={} ({}).",
+                hdr.fid, rc, qv_strerr(rc)
+            );
+            qvi_delete(&result);
+            rc = rpc_pack(&result, hdr.fid, QV_ERR_RPC);
+        }
     } while (false);
+
+    // Send whatever reply we produced. A failure here is a genuine transport
+    // error and is treated as fatal by the caller.
+    if (qvi_likely(rc == QV_SUCCESS && result)) {
+        rc = zsock_send_bbuff(zsock, result, bsent);
+    }
+    else {
+        // We could not even build a reply (e.g., OOM while packing). Clean up;
+        // *bsent stays untouched/zero. This is treated as a transport-level
+        // failure by the caller.
+        *bsent = 0;
+        qvi_delete(&result);
+        if (rc == QV_SUCCESS) rc = QV_ERR_RPC;
+    }
 
     zmq_msg_close(command_msg);
     return (shutdown ? QV_SUCCESS_SHUTDOWN : rc);
