@@ -96,22 +96,22 @@ typedef long long qv_scope_flags_t;
 /**
  * Empty flags, get scope with default behavior.
  */
-const qv_scope_flags_t QV_SCOPE_FLAG_NONE           = (0LL);
+#define QV_SCOPE_FLAG_NONE           (0LL)
 
 /**
  * Disable use of SMT.
  */
-const qv_scope_flags_t QV_SCOPE_FLAG_NO_SMT         = (1LL << 0);
+#define QV_SCOPE_FLAG_NO_SMT         (1LL << 0)
 
 /**
  * Attempt to create with resources with high affinity to the parent
  */
-const qv_scope_flags_t QV_SCOPE_FLAG_HINT_CLOSE     = (1LL << 1);
+#define QV_SCOPE_FLAG_HINT_CLOSE     (1LL << 1)
 
 /**
  *
  */
-const qv_scope_flags_t QV_SCOPE_FLAG_HINT_EXCLUSIVE = (1LL << 2);
+#define QV_SCOPE_FLAG_HINT_EXCLUSIVE (1LL << 2)
 
 /**
  * Hardware object types.
@@ -142,38 +142,41 @@ typedef int qv_bind_string_flags_t;
 /**
  * Output the logical binding.
  */
-const qv_bind_string_flags_t QV_BIND_STRING_LOGICAL = (1<<0);
+#define QV_BIND_STRING_LOGICAL  (1 << 0)
 
 /**
  * Output the physical (OS) binding.
  */
-const qv_bind_string_flags_t QV_BIND_STRING_PHYSICAL = (1<<1);
+#define QV_BIND_STRING_PHYSICAL (1 << 1)
 
 /**
  * Automatic grouping options for qv_split() and qv_split_at(). The
  * following values can be used instead of group_id to influence how automatic
  * task grouping is accomplished.
  */
-
-/**
- * Constant used to indicate undefined or unknown integer value. This means that
- * the caller will not be considered in the split, and therefore receive an
- * empty scope.
- */
-const int QV_SCOPE_SPLIT_UNDEFINED = -1;
-/**
- * Split the provided group by attempting to preserve tasks' current affinities
- * (at time of the split call) as much as possible.
- */
-const int QV_SCOPE_SPLIT_CLOSE = -2;
-/**
- *
- */
-const int QV_SCOPE_SPLIT_PACKED = -3;
-/**
- *
- */
-const int QV_SCOPE_SPLIT_SPREAD = -4;
+enum {
+    /**
+     * Constant used to indicate undefined or unknown integer value. This means
+     * that the caller will not be considered in the split, and therefore
+     * receive an empty scope.
+     */
+    QV_SCOPE_SPLIT_UNDEFINED = -1,
+    /**
+     * Split the provided group by attempting to preserve tasks' current
+     * affinities (at time of the split call) as much as possible.
+     */
+    QV_SCOPE_SPLIT_CLOSE = -2,
+    /**
+     * Split the provided group by packing tasks together as tightly as
+     * possible onto resources before moving on to the next resource.
+     */
+    QV_SCOPE_SPLIT_PACKED = -3,
+    /**
+     * Split the provided group by spreading tasks across the available
+     * resources as evenly as possible.
+     */
+    QV_SCOPE_SPLIT_SPREAD = -4
+};
 
 /**
  * Device identifier types.
