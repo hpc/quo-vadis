@@ -12,20 +12,26 @@
 #
 # The shared driver (qvb-common.c) benchmarks every scope-kind-agnostic public
 # function once; each backend (process/thread/mpi) is a thin binary that reuses
-# it and adds only its kind-specific entry points.
+# it and adds only its kind-specific entry points. All are compiled as C.
 ################################################################################
 
 # Process-scope benchmarks (always built).
 add_executable(
     qvb-process
     qvb.h
-    qvb-common.cc
-    qvb-process.cc
+    qvb-common.c
+    qvb-process.c
 )
 
 target_link_libraries(
     qvb-process
     quo-vadis
+)
+
+# Use the C linker to test for C/C++ linkage problems.
+set_target_properties(
+    qvb-process
+    PROPERTIES LINKER_LANGUAGE C
 )
 
 add_test(
@@ -49,14 +55,20 @@ set_tests_properties(
 add_executable(
     qvb-thread
     qvb.h
-    qvb-common.cc
-    qvb-thread.cc
+    qvb-common.c
+    qvb-thread.c
 )
 
 target_link_libraries(
     qvb-thread
     quo-vadis
     Threads::Threads
+)
+
+# Use the C linker to test for C/C++ linkage problems.
+set_target_properties(
+    qvb-thread
+    PROPERTIES LINKER_LANGUAGE C
 )
 
 add_test(
@@ -83,14 +95,20 @@ if(MPI_FOUND)
     add_executable(
         qvb-mpi
         qvb.h
-        qvb-common.cc
-        qvb-mpi.cc
+        qvb-common.c
+        qvb-mpi.c
     )
 
     target_link_libraries(
         qvb-mpi
         quo-vadis
         quo-vadis-mpi
+    )
+
+    # Use the C linker to test for C/C++ linkage problems.
+    set_target_properties(
+        qvb-mpi
+        PROPERTIES LINKER_LANGUAGE C
     )
 
     add_test(
