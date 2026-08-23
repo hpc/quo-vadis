@@ -151,8 +151,8 @@ qvi_hwsplit::m_determine_mapping_config(void)
     //   - All the same, undefined constant: user-defined split, but this is a
     //     strange case since all participants will get empty sets.
     // * A mix if positive and negative values:
-    //   - A strict subset is QV_SCOPE_SPLIT_UNDEFINED: user-defined split
-    //   - A strict subset is not QV_SCOPE_SPLIT_UNDEFINED: return error code.
+    //   - A strict subset is QV_SPLIT_UNDEFINED: user-defined split
+    //   - A strict subset is not QV_SPLIT_UNDEFINED: return error code.
     bool auto_split = false;
     // All colors are positive: user-defined split.
     if (tcolors.front() >= 0) {
@@ -191,21 +191,21 @@ qvi_hwsplit::m_determine_mapping_config(void)
     }
     // Automatic splitting.
     switch (m_colors[0]) {
-        case QV_SCOPE_SPLIT_CLOSE: {
+        case QV_SPLIT_CLOSE: {
             return result = {
                 m_task_affinities,
                 m_split_base_cpuset(),
                 qvi_map_close
             };
         }
-        case QV_SCOPE_SPLIT_PACKED: {
+        case QV_SPLIT_PACKED: {
             return result = {
                 m_group_size,
                 m_split_size,
                 qvi_map_packed
             };
         }
-        case QV_SCOPE_SPLIT_SPREAD: {
+        case QV_SPLIT_SPREAD: {
             return result = {
                 m_group_size,
                 m_split_size,
