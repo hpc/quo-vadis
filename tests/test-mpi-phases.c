@@ -411,7 +411,8 @@ main(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    print_resources(comm_rank, "Phase 2: NUMA split",
+    // Todo: Need to add ordinal color and SPLIT_USE_ALL
+    print_resources(comm_rank, "Phase 2: NUMA split w/SPLIT_SPREAD",
                     numa_scope, "numa_scope");
 
     // Allow selecting a leader per NUMA.
@@ -490,6 +491,18 @@ main(
             ctu_logf("->Skipping: No GPUs found!\n");
         goto done;
     }
+
+    // Todo: Create Github Issue
+    // Todo: I think we should have the following policies:
+    // SPLIT_SPREAD
+    //   Only matters when num_tasks < num_scopes
+    // SPLIT_COMPACT
+    //   Only matters when num_tasks < num_scopes
+    // SPLIT_USE_ALL
+    //   Only matters when num_tasks < num_scopes
+    // SPLIT_DEFAULT
+    //   Wrapper pointing to an existing policy given certain conditions
+    // Ordinal color
 
     // Todo: What's the difference between
     // SPLIT_CLOSE and SPLIT_PACKED
