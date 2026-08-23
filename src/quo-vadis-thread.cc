@@ -72,23 +72,23 @@ split_color_fixup(
     int k,
     std::vector<int> &kcolorsp
 ) {
-    int real_color = QV_SCOPE_SPLIT_UNDEFINED;
+    int real_color = QV_SPLIT_UNDEFINED;
     if (kcolors == nullptr) {
         // This is the default coloring if NULL
         // is passed to the split functions.
-        real_color = QV_SCOPE_SPLIT_PACKED;
+        real_color = QV_SPLIT_PACKED;
     }
     else if (kcolors == QV_THREAD_SCOPE_SPLIT_PACKED) {
-        real_color = QV_SCOPE_SPLIT_PACKED;
+        real_color = QV_SPLIT_PACKED;
     }
     else if (kcolors == QV_THREAD_SCOPE_SPLIT_SPREAD) {
-        real_color = QV_SCOPE_SPLIT_SPREAD;
+        real_color = QV_SPLIT_SPREAD;
     }
     else if (kcolors == QV_THREAD_SCOPE_SPLIT_CLOSE) {
-        real_color = QV_SCOPE_SPLIT_CLOSE;
+        real_color = QV_SPLIT_CLOSE;
     }
     // Nothing to do. An automatic coloring was not requested.
-    if (real_color == QV_SCOPE_SPLIT_UNDEFINED) {
+    if (real_color == QV_SPLIT_UNDEFINED) {
         return QV_SUCCESS;
     }
     // An automatic coloring was requested.

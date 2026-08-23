@@ -160,22 +160,22 @@ enum {
      * that the caller will not be considered in the split, and therefore
      * receive an empty scope.
      */
-    QV_SCOPE_SPLIT_UNDEFINED = -1,
+    QV_SPLIT_UNDEFINED = -1,
     /**
      * Split the provided group by attempting to preserve tasks' current
      * affinities (at time of the split call) as much as possible.
      */
-    QV_SCOPE_SPLIT_CLOSE = -2,
+    QV_SPLIT_CLOSE = -2,
     /**
      * Split the provided group by packing tasks together as tightly as
      * possible onto resources before moving on to the next resource.
      */
-    QV_SCOPE_SPLIT_PACKED = -3,
+    QV_SPLIT_PACKED = -3,
     /**
      * Split the provided group by spreading tasks across the available
      * resources as evenly as possible.
      */
-    QV_SCOPE_SPLIT_SPREAD = -4
+    QV_SPLIT_SPREAD = -4
 };
 
 /**

@@ -77,7 +77,7 @@ main(
     rc = qv_split(
         base_scope,
         npieces,
-        QV_SCOPE_SPLIT_PACKED,
+        QV_SPLIT_PACKED,
         &sub_scope
     );
     if (rc != QV_SUCCESS) {
@@ -122,7 +122,7 @@ main(
     rc = qv_split(
         sub_scope,
         npieces,
-        QV_SCOPE_SPLIT_SPREAD,
+        QV_SPLIT_SPREAD,
         &sub_sub_scope
     );
     if (rc != QV_SUCCESS) {

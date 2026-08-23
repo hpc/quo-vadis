@@ -41,7 +41,7 @@ main(
     rc = qv_split_at(
         base_scope,
         QV_HW_OBJ_NUMANODE,
-        QV_SCOPE_SPLIT_PACKED,
+        QV_SPLIT_PACKED,
         &split_at_numa
     );
     if (rc != QV_SUCCESS) {
@@ -67,7 +67,7 @@ main(
     rc = qv_split(
         split_at_numa,
         ntask_per_numa,
-        QV_SCOPE_SPLIT_PACKED,
+        QV_SPLIT_PACKED,
         &split_cores_from_numa
     );
     if (rc != QV_SUCCESS) {
@@ -94,7 +94,7 @@ main(
         rc = qv_split_at(
             base_scope,
             QV_HW_OBJ_GPU,
-            QV_SCOPE_SPLIT_PACKED,
+            QV_SPLIT_PACKED,
             &split_at_gpu
         );
         if (rc != QV_SUCCESS) {

@@ -396,7 +396,7 @@ main(
     rc = qv_split_at(
         base_scope,
         QV_HW_OBJ_NUMANODE,
-        QV_SCOPE_SPLIT_SPREAD,
+        QV_SPLIT_SPREAD,
         &numa_scope
     );
     if (rc != QV_SUCCESS) {
@@ -508,20 +508,17 @@ main(
     // SPLIT_CLOSE and SPLIT_PACKED
     // how about SPLIT_BLOCK?
 
-    // Todo: Can we drop the 'SCOPE' in
-    // QV_SCOPE_SPLIT_XXXX
-
     // Split 1: Use a color
     split_at_gpu(comm_rank, base_scope, comm_rank % ngpus,
         "Phase 3: GPU split using color comm_rank%ngpus"
     );
-    // Split 2: Use QV_SCOPE_SPLIT_SPREAD
-    split_at_gpu(comm_rank, base_scope, QV_SCOPE_SPLIT_SPREAD,
-        "Phase 3: GPU split using color QV_SCOPE_SPLIT_SPREAD"
+    // Split 2: Use QV_SPLIT_SPREAD
+    split_at_gpu(comm_rank, base_scope, QV_SPLIT_SPREAD,
+        "Phase 3: GPU split using color QV_SPLIT_SPREAD"
     );
-    // Split 3: Use QV_SCOPE_SPLIT_PACKED
-    // Split 4: Use QV_SCOPE_SPLIT_DEFAULT
-    // Split 5: Use QV_SCOPE_SPLIT_USE_ALL
+    // Split 3: Use QV_SPLIT_PACKED
+    // Split 4: Use QV_SPLIT_DEFAULT
+    // Split 5: Use QV_SPLIT_USE_ALL
 
     ///////////////////////////////////////////////////////////////////////
     // Clean up.
