@@ -701,9 +701,9 @@ qvi_map_emit(
     qvi_log_info("{} assignments:\n{}", name, format_assignments(map));
 }
 
-int
+std::vector<int>
 qvi_map_clamp_colors(
-    std::vector<int> &colors
+    const std::vector<int> &colors
 ) {
     // Recall: sets are ordered.
     const std::set<int> colorset(colors.begin(), colors.end());
@@ -714,10 +714,11 @@ qvi_map_clamp_colors(
     for (const auto val : colorset) {
         color2clamped.insert({val, colorp++});
     }
+    std::vector<int> result(colors.size());
     for (size_t i = 0; i < colors.size(); ++i) {
-        colors[i] = color2clamped[colors[i]];
+        result[i] = color2clamped[colors[i]];
     }
-    return QV_SUCCESS;
+    return result;
 }
 
 /*
