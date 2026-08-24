@@ -44,14 +44,14 @@ qvi_task::m_connect_to_server(
     int rc = qvi_rmi_client::discover(portno);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_log_error("{}", qvi_rmi_discovery_ers());
-        return QV_RES_UNAVAILABLE;
+        return QV_ERR_UNAVAILABLE;
     }
 
     std::string url;
     rc = qvi_rmi_get_url(url, portno);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_log_error("{}", qvi_rmi_conn_env_ers());
-        return QV_RES_UNAVAILABLE;
+        return QV_ERR_UNAVAILABLE;
     }
 
     rc = m_rmi.connect(flags, url, portno);
@@ -66,7 +66,7 @@ qvi_task::m_connect_to_server(
                       "the one used by your application. A rebuild is "
                       "likely required.";
                 break;
-            case QV_RES_UNAVAILABLE:
+            case QV_ERR_UNAVAILABLE:
             default:
                 msg = "A client (PID=" + tids + ") could not communicate "
                       "with its server. Please ensure " + QVI_DAEMON_NAME +

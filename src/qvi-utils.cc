@@ -33,7 +33,7 @@ static const std::map<uint_t, std::string> qvi_rc2str = {
     {QV_ERR_NOT_SUPPORTED, "Operation not supported"},
     {QV_ERR_NOT_FOUND, "Not found"},
     {QV_ERR_SPLIT, "Split error"},
-    {QV_RES_UNAVAILABLE, "Resources unavailable"}
+    {QV_ERR_UNAVAILABLE, "Resources unavailable"}
 };
 
 const char *
