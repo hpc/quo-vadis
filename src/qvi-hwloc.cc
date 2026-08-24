@@ -343,21 +343,20 @@ qvi_hwloc::bitmap_sscanf(
     return QV_SUCCESS;
 }
 
-int
+std::vector<qvi_hwloc_bitmap>
 qvi_hwloc::bitmap_split(
     const qvi_hwloc_bitmap &bitmap,
-    size_t npieces,
-    std::vector<qvi_hwloc_bitmap> &result
+    size_t npieces
 ) const {
     size_t npus = 0;
     int rc = m_get_nobjs_in_cpuset(
         QV_HW_OBJ_PU, bitmap.cdata(), npus
     );
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
     // An empty split.
+    std::vector<qvi_hwloc_bitmap> result;
     if (qvi_unlikely(npieces == 0 || npus == 0 || npieces > npus)) {
-        result.clear();
-        return QV_SUCCESS;
+        return result;
     }
     // Prepare for storing non-empty split.
     result.resize(npieces);
@@ -367,18 +366,16 @@ qvi_hwloc::bitmap_split(
     size_t current_pos = 0;
 
     for (size_t i = 0; i < npieces; ++i) {
-        size_t current_chunk_size = base_chunk_size + (i < remainder ? 1 : 0);
+        const size_t cur_chunk_size = base_chunk_size + (i < remainder ? 1 : 0);
 
         rc = m_split_cpuset_by_range(
-            bitmap, current_pos, current_chunk_size, result[i]
+            bitmap, current_pos, cur_chunk_size, result[i]
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
-        current_pos += current_chunk_size;
+        current_pos += cur_chunk_size;
     }
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        result.clear();
-    }
-    return rc;
+    if (qvi_unlikely(rc != QV_SUCCESS)) result.clear();
+    return result;
 }
 
 qvi_hwloc::~qvi_hwloc(void)

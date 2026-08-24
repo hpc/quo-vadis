@@ -120,15 +120,9 @@ qvi_hwsplit::m_primary_cpuset_for_split(
 std::vector<qvi_hwloc_bitmap>
 qvi_hwsplit::m_split_base_cpuset(void)
 {
-    // Determine the resource class and cpuset that we are splitting over.
+    // Determine the cpuset that we are splitting over.
     const auto pri_cpuset = m_primary_cpuset_for_split(m_split_at_type);
-
-    std::vector<qvi_hwloc_bitmap> result;
-    const int rc = m_my_rmi.hwloc().bitmap_split(
-        pri_cpuset, m_split_size, result
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
-    return result;
+    return m_my_rmi.hwloc().bitmap_split(pri_cpuset, m_split_size);
 }
 
 static std::vector<int>
@@ -208,38 +202,36 @@ determine_actual_split_size(
 qvi_map_config
 qvi_hwsplit::m_get_map_config(void)
 {
-    qvi_map_config result;
-
     switch (m_colors.front()) {
         case QV_SPLIT_CLOSE:
-            return result = {
+            return qvi_map_config(
                 m_task_affinities,
                 m_split_base_cpuset(),
                 qvi_map_close
-            };
+            );
         case QV_SPLIT_PACKED:
-            return result = {
+            return qvi_map_config(
                 m_group_size,
                 m_split_size,
                 qvi_map_packed
-            };
+            );
         case QV_SPLIT_SPREAD:
-            return result = {
+            return qvi_map_config(
                 m_group_size,
                 m_split_size,
                 qvi_map_spread
-            };
+            );
         case QV_SPLIT_ENTIRE:
-            return result = {
+            return qvi_map_config(
                 m_group_size,
                 m_split_size,
                 qvi_map_packed
-            };
+            );
         default: { // User-defined splitting.
-            return result = {
+            return qvi_map_config(
                 m_colors,
                 qvi_map_colors
-            };
+            );
         }
     }
 }

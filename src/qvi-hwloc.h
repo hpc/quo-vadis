@@ -219,11 +219,10 @@ public:
     /**
      *
      */
-    int
+    std::vector<qvi_hwloc_bitmap>
     bitmap_split(
         const qvi_hwloc_bitmap &bitmap,
-        size_t npieces,
-        std::vector<qvi_hwloc_bitmap> &result
+        size_t npieces
     ) const;
     /** Constructor */
     qvi_hwloc(void) = default;

@@ -54,7 +54,7 @@ enum {
     QV_ERR_NOT_FOUND,
     QV_ERR_SPLIT,
     /** Resources unavailable. */
-    QV_RES_UNAVAILABLE
+    QV_ERR_UNAVAILABLE
 };
 
 /**

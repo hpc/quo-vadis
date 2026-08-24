@@ -354,16 +354,16 @@ qvi_rmi_client::connect(
 ) {
     // Create a new ZMQ context.
     m_zctx = zmq_ctx_new();
-    if (qvi_unlikely(!m_zctx)) return QV_RES_UNAVAILABLE;
+    if (qvi_unlikely(!m_zctx)) return QV_ERR_UNAVAILABLE;
     // Create the ZMQ socket used for communication with the server.
     m_zsock = zsocket_create(m_zctx, ZMQ_REQ);
-    if (qvi_unlikely(!m_zsock)) return QV_RES_UNAVAILABLE;
+    if (qvi_unlikely(!m_zsock)) return QV_ERR_UNAVAILABLE;
     // Note: ZMQ_CONNECT_TIMEOUT doesn't seem to have an appreciable effect.
     int zrc = zsocket_connect(m_zsock, url.c_str());
     if (qvi_unlikely(zrc != 0)) {
         const int eno = errno;
         zerr_msg("zsocket_connect() failed", eno);
-        return QV_RES_UNAVAILABLE;
+        return QV_ERR_UNAVAILABLE;
     }
     // To avoid hangs in faulty connections, set a timeout
     // before initiating the first client/server exchange.
@@ -374,7 +374,7 @@ qvi_rmi_client::connect(
     if (qvi_unlikely(zrc != 0)) {
         const int eno = errno;
         zerr_msg("zmq_setsockopt(ZMQ_RCVTIMEO) failed", eno);
-        return QV_RES_UNAVAILABLE;
+        return QV_ERR_UNAVAILABLE;
     }
     // Now initiate the client/server exchange.
     qvi_hwloc_flags_t hwloc_flags = QVI_HWLOC_FLAG_TOPO_FULL;
@@ -395,10 +395,10 @@ qvi_rmi_client::connect(
     m_config.url = url;
     // Now we can initialize and load our topology.
     rc = m_hwloc.topology_init(hwloc_flags, hwtopo_path);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return QV_RES_UNAVAILABLE;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return QV_ERR_UNAVAILABLE;
 
     rc = m_hwloc.topology_load();
-    if (qvi_unlikely(rc != QV_SUCCESS)) return QV_RES_UNAVAILABLE;
+    if (qvi_unlikely(rc != QV_SUCCESS)) return QV_ERR_UNAVAILABLE;
 
     return QV_SUCCESS;
 }
