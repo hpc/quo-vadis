@@ -227,12 +227,11 @@ qvi_hwsplit::m_get_map_config(void)
                 m_split_size,
                 qvi_map_packed
             );
-        default: { // User-defined splitting.
+        default: // User-defined splitting.
             return qvi_map_config(
                 m_colors,
                 qvi_map_colors
             );
-        }
     }
 }
 
