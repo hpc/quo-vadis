@@ -117,20 +117,19 @@ private:
         qvi_hwpool &result
     );
     /**
-     * Returns a pair where .first is the resource class identified and .second
-     * is the hardware pool's primary cpuset for a given hardware object type.
-     * This is the cpuset that is typically be used for splitting hardware
+     * Returns the hardware pool's primary cpuset for a given hardware object
+     * type. This is the cpuset that is typically be used for splitting hardware
      * resources based on the provided hardware object type. For example, either
      * the cpuset of the hardware pool (CPU resources) or the union of the GPUs'
      * hardware affinities.
      */
-    std::pair<qvi_hwloc_res_class, qvi_hwloc_bitmap>
+    qvi_hwloc_bitmap
     m_primary_cpuset_for_split(
         qv_hw_obj_type_t requested_type
     ) const;
     /** Returns the appropriate mapping configuration based on user input.*/
     qvi_map_config
-    m_setup_mapping_config(void);
+    m_get_map_config(void);
     /** */
     std::vector<qvi_hwloc_bitmap>
     m_split_base_cpuset(void);
