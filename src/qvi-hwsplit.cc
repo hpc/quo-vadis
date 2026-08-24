@@ -134,7 +134,7 @@ qvi_hwsplit::m_split_base_cpuset(void)
 }
 
 qvi_map_config
-qvi_hwsplit::m_determine_mapping_config(void)
+qvi_hwsplit::m_setup_mapping_config(void)
 {
     // Make sure that the supplied colors are consistent and determine the type
     // of coloring we are using. Positive values denote an explicit coloring
@@ -212,6 +212,22 @@ qvi_hwsplit::m_determine_mapping_config(void)
                 qvi_map_spread
             };
         }
+        case QV_SPLIT_ENTIRE: {
+            // QV_SPLIT_ENTIRE has different semantics than the other split
+            // options: it guarantees that all the resources in the parent scope
+            // are used across the children. If the group size is smaller than
+            // the requested split size, adjust the split size to match the
+            // group size so that the split does not leave a subset of the
+            // parent's resources unused.
+            if (m_group_size < m_split_size) {
+                m_split_size = m_group_size;
+            }
+            return result = {
+                m_group_size,
+                m_split_size,
+                qvi_map_packed
+            };
+        }
         [[unlikely]] default:
             throw qvi_runtime_error(QV_ERR_INVLD_ARG);
     }
@@ -266,9 +282,10 @@ qvi_hwsplit::m_split_base_hwpool(void)
 int
 qvi_hwsplit::m_split(void)
 {
+    // Determine the mapping configuration based on the user's request.
+    const auto map_config = m_setup_mapping_config();
+    // Split the base hardware pool based on that request.
     const auto split_hwpools = m_split_base_hwpool();
-    // Map the split_pools based on the requested configuration.
-    const auto map_config = m_determine_mapping_config();
     // Calculate the task to hardware pool resource mapping.
     const auto hwpool_map = map_config.map_fn(map_config);
 

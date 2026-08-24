@@ -77,6 +77,7 @@ module quo_vadisf
     integer(c_int), parameter :: QV_SPLIT_CLOSE = -2
     integer(c_int), parameter :: QV_SPLIT_PACKED = -3
     integer(c_int), parameter :: QV_SPLIT_SPREAD = -4
+    integer(c_int), parameter :: QV_SPLIT_ENTIRE = -5
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Device ID types
