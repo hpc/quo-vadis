@@ -130,7 +130,7 @@ private:
     ) const;
     /** Returns the appropriate mapping configuration based on user input.*/
     qvi_map_config
-    m_determine_mapping_config(void);
+    m_setup_mapping_config(void);
     /** */
     std::vector<qvi_hwloc_bitmap>
     m_split_base_cpuset(void);

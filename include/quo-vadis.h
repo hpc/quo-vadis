@@ -175,7 +175,15 @@ enum {
      * Split the provided group by spreading tasks across the available
      * resources as evenly as possible.
      */
-    QV_SPLIT_SPREAD = -4
+    QV_SPLIT_SPREAD = -4,
+    /**
+     * Split the provided group so that all the resources in the parent scope
+     * are used across the children. If the group size is smaller than the
+     * requested number of pieces, the split size is reduced to match the group
+     * size, ensuring that the entire set of parent resources is distributed
+     * across the group members.
+     */
+    QV_SPLIT_ENTIRE = -5
 };
 
 /**
