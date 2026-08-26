@@ -26,7 +26,7 @@ module quo_vadisf
     integer(c_int), parameter :: QV_ERR_NOT_SUPPORTED = 12
     integer(c_int), parameter :: QV_ERR_NOT_FOUND = 13
     integer(c_int), parameter :: QV_ERR_SPLIT = 14
-    integer(c_int), parameter :: QV_RES_UNAVAILABLE = 15
+    integer(c_int), parameter :: QV_ERR_UNAVAILABLE = 15
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Intrinsic scopes
@@ -45,6 +45,12 @@ module quo_vadisf
     integer(c_long_long), parameter :: QV_SCOPE_FLAG_NO_SMT = &
         int(ishft(1, 0), kind=c_long_long)
 
+    integer(c_long_long), parameter :: QV_SCOPE_FLAG_HINT_CLOSE = &
+        int(ishft(1, 1), kind=c_long_long)
+
+    integer(c_long_long), parameter :: QV_SCOPE_FLAG_HINT_EXCLUSIVE = &
+        int(ishft(1, 2), kind=c_long_long)
+
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Hardware Object Types
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -59,7 +65,8 @@ module quo_vadisf
     integer(c_int), parameter :: QV_HW_OBJ_L5CACHE = 8
     integer(c_int), parameter :: QV_HW_OBJ_NUMANODE = 9
     integer(c_int), parameter :: QV_HW_OBJ_GPU = 10
-    integer(c_int), parameter :: QV_HW_OBJ_LAST = 11
+    integer(c_int), parameter :: QV_HW_OBJ_NIC = 11
+    integer(c_int), parameter :: QV_HW_OBJ_LAST = 12
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Binding string representation format flags.
@@ -116,6 +123,18 @@ interface
     end function qv_process_scope_c
 
     integer(c_int) &
+    function qv_create_scope_c(scope, flags, obj_type, nobjs, subscope) &
+        bind(c, name='qv_create_scope')
+        use, intrinsic :: iso_c_binding, only: c_int, c_long_long, c_ptr
+        implicit none
+        type(c_ptr), value :: scope
+        integer(c_long_long), value :: flags
+        integer(c_int), value :: obj_type
+        integer(c_int), value :: nobjs
+        type(c_ptr), intent(out) :: subscope
+    end function qv_create_scope_c
+
+    integer(c_int) &
     function qv_free_c(scope) &
         bind(c, name='qv_free')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
@@ -150,31 +169,31 @@ interface
     end function qv_split_at_c
 
     integer(c_int) &
-    function qv_hw_obj_count_c(scope, obj, n) &
+    function qv_hw_obj_count_c(scope, obj, nobjs) &
         bind(c, name='qv_hw_obj_count')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), value :: obj
-        integer(c_int), intent(out) :: n
+        integer(c_int), intent(out) :: nobjs
     end function qv_hw_obj_count_c
 
     integer(c_int) &
-    function qv_group_rank_c(scope, taskid) &
+    function qv_group_rank_c(scope, rank) &
         bind(c, name='qv_group_rank')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
-        integer(c_int), intent(out) :: taskid
+        integer(c_int), intent(out) :: rank
     end function qv_group_rank_c
 
     integer(c_int) &
-    function qv_group_size_c(scope, ntasks) &
+    function qv_group_size_c(scope, group_size) &
         bind(c, name='qv_group_size')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
-        integer(c_int), intent(out) :: ntasks
+        integer(c_int), intent(out) :: group_size
     end function qv_group_size_c
 
     integer(c_int) &
@@ -187,14 +206,14 @@ interface
 
     integer(c_int) &
     function qv_device_id_c( &
-        scope, dev_obj, i, id_type, dev_id &
+        scope, dev_obj, dev_index, id_type, dev_id &
     ) &
         bind(c, name='qv_device_id')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), value :: dev_obj
-        integer(c_int), value :: i
+        integer(c_int), value :: dev_index
         integer(c_int), value :: id_type
         type(c_ptr), intent(out) :: dev_id
     end function qv_device_id_c
@@ -216,12 +235,12 @@ interface
     end function qv_bind_pop_c
 
     integer(c_int) &
-    function qv_bind_string_c(scope, sformat, str) &
+    function qv_bind_string_c(scope, flags, str) &
         bind(c, name='qv_bind_string')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
-        integer(c_int), value :: sformat
+        integer(c_int), value :: flags
         type(c_ptr), intent(out) :: str
     end function qv_bind_string_c
 
@@ -275,6 +294,22 @@ contains
         info = qv_process_scope_c(iscope, flags, scope)
     end subroutine qv_process_scope
 
+    subroutine qv_create_scope( &
+        scope, flags, obj_type, nobjs, subscope, info &
+    )
+        use, intrinsic :: iso_c_binding, only: c_ptr, c_long_long, c_int
+        implicit none
+        type(c_ptr), value :: scope
+        integer(c_long_long), value :: flags
+        integer(c_int), value :: obj_type
+        integer(c_int), value :: nobjs
+        type(c_ptr), intent(out) :: subscope
+        integer(c_int), intent(out) :: info
+        info = qv_create_scope_c( &
+            scope, flags, obj_type, nobjs, subscope &
+        )
+    end subroutine qv_create_scope
+
     subroutine qv_free(scope, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
@@ -313,32 +348,32 @@ contains
         )
     end subroutine qv_split_at
 
-    subroutine qv_hw_obj_count(scope, obj, n, info)
+    subroutine qv_hw_obj_count(scope, obj, nobjs, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), value :: obj
-        integer(c_int), intent(out) :: n
+        integer(c_int), intent(out) :: nobjs
         integer(c_int), intent(out) :: info
-        info = qv_hw_obj_count_c(scope, obj, n)
+        info = qv_hw_obj_count_c(scope, obj, nobjs)
     end subroutine qv_hw_obj_count
 
-    subroutine qv_group_rank(scope, taskid, info)
+    subroutine qv_group_rank(scope, rank, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
-        integer(c_int), intent(out) :: taskid
+        integer(c_int), intent(out) :: rank
         integer(c_int), intent(out) :: info
-        info = qv_group_rank_c(scope, taskid)
+        info = qv_group_rank_c(scope, rank)
     end subroutine qv_group_rank
 
-    subroutine qv_group_size(scope, ntasks, info)
+    subroutine qv_group_size(scope, group_size, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
-        integer(c_int), intent(out) :: ntasks
+        integer(c_int), intent(out) :: group_size
         integer(c_int), intent(out) :: info
-        info = qv_group_size_c(scope, ntasks)
+        info = qv_group_size_c(scope, group_size)
     end subroutine qv_group_size
 
     subroutine qv_barrier(scope, info)
@@ -350,13 +385,13 @@ contains
     end subroutine qv_barrier
 
     subroutine qv_device_id( &
-        scope, dev_obj, i, id_type, dev_id, info &
+        scope, dev_obj, dev_index, id_type, dev_id, info &
     )
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), value :: dev_obj
-        integer(c_int), value :: i
+        integer(c_int), value :: dev_index
         integer(c_int), value :: id_type
         character(len=:), allocatable, intent(out) :: dev_id(:)
         integer(c_int), intent(out) :: info
@@ -366,7 +401,7 @@ contains
         character, pointer, dimension(:) :: fstrp
 
         info = qv_device_id_c( &
-            scope, dev_obj, i, id_type, cstr &
+            scope, dev_obj, dev_index, id_type, cstr &
         )
         ! Now deal with the string
         strlen = qvif_strlen_c(cstr)
@@ -392,11 +427,11 @@ contains
         info = qv_bind_pop_c(scope)
     end subroutine qv_bind_pop
 
-    subroutine qv_bind_string(scope, sformat, fstr, info)
+    subroutine qv_bind_string(scope, flags, fstr, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_size_t
         implicit none
         type(c_ptr), value :: scope
-        integer(c_int), value :: sformat
+        integer(c_int), value :: flags
         character(len=:), allocatable, intent(out) :: fstr(:)
         integer(c_int), intent(out) :: info
 
@@ -404,7 +439,7 @@ contains
         integer(c_size_t) :: strlen
         character, pointer, dimension(:) :: fstrp
 
-        info = qv_bind_string_c(scope, sformat, cstr)
+        info = qv_bind_string_c(scope, flags, cstr)
         ! Now deal with the string
         strlen = qvif_strlen_c(cstr)
         call c_f_pointer(cstr, fstrp, [strlen])

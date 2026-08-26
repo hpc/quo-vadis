@@ -266,7 +266,6 @@ qv_process_scope(
 /**
  *
  */
-// TODO(skg) Add to Fortran interface.
 int
 qv_create_scope(
     qv_scope_t *scope,
