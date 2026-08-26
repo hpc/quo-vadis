@@ -1,10 +1,12 @@
 /**
- * @file test-mpi-split-entire.c
+ * @file test-mpi-split-auto.c
  *
- * Tests the QV_SPLIT_ENTIRE automatic grouping option. Unlike the other
+ * Tests the QV_SPLIT_AUTO automatic grouping option. Unlike the other
  * QV_SPLIT_* options, which honor the requested number of pieces verbatim,
- * QV_SPLIT_ENTIRE guarantees that all the resources in the parent scope are
- * distributed across the children. This test exercises both possibilities:
+ * QV_SPLIT_AUTO automatically determines a reasonable grouping and splitting
+ * based on the resources being split, the requested split size, and the group
+ * size. In doing so it distributes all the resources in the parent scope
+ * across the children. This test exercises both possibilities:
  *
  *   1. The group size is smaller than the requested number of pieces. Here the
  *      split size is reduced to match the group size so that no parent resource
@@ -68,7 +70,7 @@ main(
     // Deliberately request more pieces than there are members. With the other
     // QV_SPLIT_* options this would carve the parent's resources into
     // |npieces| pieces and leave the pieces beyond the group size unused. With
-    // QV_SPLIT_ENTIRE the split size is clamped to the group size so that all
+    // QV_SPLIT_AUTO the split size is clamped to the group size so that all
     // parent resources end up distributed across the children.
     int npieces = group_size + 2;
 
@@ -76,11 +78,11 @@ main(
     rc = qv_split(
         base_scope,
         npieces,
-        QV_SPLIT_ENTIRE,
+        QV_SPLIT_AUTO,
         &sub_scope
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_split(QV_SPLIT_ENTIRE) failed";
+        ers = "qv_split(QV_SPLIT_AUTO) failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -99,10 +101,10 @@ main(
     // Every member should have received a non-empty piece of the parent.
     ctu_assert(
         my_npus > 0,
-        "QV_SPLIT_ENTIRE produced an empty scope (my_npus=%d)", my_npus
+        "QV_SPLIT_AUTO produced an empty scope (my_npus=%d)", my_npus
     );
 
-    // Since QV_SPLIT_ENTIRE assigns each member a distinct piece and uses the
+    // Since QV_SPLIT_AUTO assigns each member a distinct piece and uses the
     // entire parent, the union of the members' PUs must equal the parent's PU
     // count. Members receive disjoint pieces, so summing PU counts recovers the
     // total number of parent PUs.
@@ -117,12 +119,12 @@ main(
 
     ctu_assert(
         total_npus == parent_npus,
-        "QV_SPLIT_ENTIRE did not use all parent resources "
+        "QV_SPLIT_AUTO did not use all parent resources "
         "(total_npus=%d, parent_npus=%d)", total_npus, parent_npus
     );
 
     ctu_logf(
-        "QV_SPLIT_ENTIRE: group_size=%d npieces=%d parent_npus=%d "
+        "QV_SPLIT_AUTO: group_size=%d npieces=%d parent_npus=%d "
         "my_npus=%d total_npus=%d\n",
         group_size, npieces, parent_npus, my_npus, total_npus
     );
@@ -134,7 +136,7 @@ main(
     }
 
     // Now test the other possibility: the group size is >= the requested split
-    // size. Here QV_SPLIT_ENTIRE has no need to clamp the split size, so it
+    // size. Here QV_SPLIT_AUTO has no need to clamp the split size, so it
     // honors |npieces| verbatim, carving the parent into that many pieces and
     // distributing the members across them. The entire parent must still be
     // used, so the union of the members' PUs equals the parent's PU count.
@@ -145,11 +147,11 @@ main(
     rc = qv_split(
         base_scope,
         npieces,
-        QV_SPLIT_ENTIRE,
+        QV_SPLIT_AUTO,
         &sub_scope
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_split(QV_SPLIT_ENTIRE) failed";
+        ers = "qv_split(QV_SPLIT_AUTO) failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -167,13 +169,13 @@ main(
     // Every member should have received a non-empty piece of the parent.
     ctu_assert(
         my_npus > 0,
-        "QV_SPLIT_ENTIRE produced an empty scope (my_npus=%d)", my_npus
+        "QV_SPLIT_AUTO produced an empty scope (my_npus=%d)", my_npus
     );
 
     // Determine this member's rank within its piece. Members that land in the
     // same piece share an intra-piece group; the group's rank tells us who is
     // the piece representative (rank 0). Since the group size is >= the
-    // requested split size, QV_SPLIT_ENTIRE must honor the requested number of
+    // requested split size, QV_SPLIT_AUTO must honor the requested number of
     // pieces verbatim (no clamping occurs).
     int my_piece_rank;
     rc = qv_group_rank(sub_scope, &my_piece_rank);
@@ -197,7 +199,7 @@ main(
 
     ctu_assert(
         total_npus == parent_npus,
-        "QV_SPLIT_ENTIRE did not use all parent resources "
+        "QV_SPLIT_AUTO did not use all parent resources "
         "(total_npus=%d, parent_npus=%d)", total_npus, parent_npus
     );
 
@@ -216,12 +218,12 @@ main(
 
     ctu_assert(
         num_pieces == npieces,
-        "QV_SPLIT_ENTIRE did not honor the requested split size "
+        "QV_SPLIT_AUTO did not honor the requested split size "
         "(num_pieces=%d, npieces=%d)", num_pieces, npieces
     );
 
     ctu_logf(
-        "QV_SPLIT_ENTIRE: group_size=%d npieces=%d parent_npus=%d "
+        "QV_SPLIT_AUTO: group_size=%d npieces=%d parent_npus=%d "
         "my_npus=%d total_npus=%d num_pieces=%d\n",
         group_size, npieces, parent_npus, my_npus, total_npus, num_pieces
     );

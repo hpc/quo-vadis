@@ -192,13 +192,13 @@ enum {
      */
     QV_SPLIT_SPREAD = -4,
     /**
-     * Split the provided group so that all the resources in the parent scope
-     * are used across the children. If the group size is smaller than the
-     * requested number of pieces, the split size is reduced to match the group
-     * size, ensuring that the entire set of parent resources is distributed
-     * across the group members.
+     * Split and group the provided group automatically. This option attempts to
+     * provide a reasonable grouping and splitting based on the resources being
+     * split, the requested split size, and the group size. The goal is to make
+     * use of the available parent resources sensibly without requiring the
+     * caller to select a specific splitting strategy.
      */
-    QV_SPLIT_ENTIRE = -5
+    QV_SPLIT_AUTO = -5
 };
 
 /**
