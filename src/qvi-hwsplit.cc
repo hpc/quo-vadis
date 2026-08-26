@@ -187,11 +187,12 @@ determine_actual_split_size(
     size_t requested_split_size
 ) {
     switch (colors.front()) {
-        case QV_SPLIT_ENTIRE:
-            // QV_SPLIT_ENTIRE has different semantics than the other split
-            // options: it guarantees that all the resources in the parent scope
-            // are used across the children. If the group size is smaller than
-            // the requested split size, return the group size so that the split
+        case QV_SPLIT_AUTO:
+            // QV_SPLIT_AUTO has different semantics than the other split
+            // options: it automatically determines a reasonable grouping and
+            // splitting based on the resources being split, the requested split
+            // size, and the group size. If the group size is smaller than the
+            // requested split size, return the group size so that the split
             // does not leave a subset of the parent's resources unused.
             return std::min(group_size, requested_split_size);
         default:
@@ -221,7 +222,7 @@ qvi_hwsplit::m_get_map_config(void)
                 m_split_size,
                 qvi_map_spread
             );
-        case QV_SPLIT_ENTIRE:
+        case QV_SPLIT_AUTO:
             return qvi_map_config(
                 m_group_size,
                 m_split_size,

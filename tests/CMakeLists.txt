@@ -186,12 +186,12 @@ if(MPI_FOUND)
     )
 
     add_executable(
-        test-mpi-split-entire
-        test-mpi-split-entire.c
+        test-mpi-split-auto
+        test-mpi-split-auto.c
     )
 
     target_link_libraries(
-        test-mpi-split-entire
+        test-mpi-split-auto
         common-test-utils
         quo-vadis-mpi
     )
@@ -249,7 +249,7 @@ if(MPI_FOUND)
         test-mpi-scopes
         test-mpi-double-split
         test-mpi-phases
-        test-mpi-split-entire
+        test-mpi-split-auto
         test-pthread-split
         test-progress-thread
         test-mpi-scope-create
@@ -304,13 +304,13 @@ if(MPI_FOUND)
 
     add_test(
         NAME
-          mpi-split-entire
+          mpi-split-auto
         COMMAND
           bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
           ${MPIEXEC_EXECUTABLE} \
           ${MPIEXEC_NUMPROC_FLAG} \
           ${MPIEXEC_MAX_NUMPROCS} \
-          ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-split-entire"
+          ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-split-auto"
     )
 
     # Set mpi test properties.
@@ -319,7 +319,7 @@ if(MPI_FOUND)
         mpi-init
         mpi-scopes
         mpi-dev-split
-        mpi-split-entire
+        mpi-split-auto
         PROPERTIES
           TIMEOUT 60
           LABELS "mpi"
