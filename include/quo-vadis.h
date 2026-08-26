@@ -38,20 +38,35 @@ typedef struct qv_scope qv_scope_t;
  * Return codes.
  */
 enum {
+    /** Success. */
     QV_SUCCESS = 0,
+    /** Success, but shut down. */
     QV_SUCCESS_SHUTDOWN,
+    /** Unspecified error. */
     QV_ERR,
+    /** Environment error. */
     QV_ERR_ENV,
+    /** Internal library error. */
     QV_ERR_INTERNAL,
+    /** File I/O error. */
     QV_ERR_FILE_IO,
+    /** System error. */
     QV_ERR_SYS,
+    /** Out of resources. */
     QV_ERR_OOR,
+    /** Invalid argument. */
     QV_ERR_INVLD_ARG,
+    /** Hardware locality (hwloc) error. */
     QV_ERR_HWLOC,
+    /** MPI error. */
     QV_ERR_MPI,
+    /** Remote procedure call error. */
     QV_ERR_RPC,
+    /** Operation not supported. */
     QV_ERR_NOT_SUPPORTED,
+    /** Requested item not found. */
     QV_ERR_NOT_FOUND,
+    /** Scope split error. */
     QV_ERR_SPLIT,
     /** Resources unavailable. */
     QV_ERR_UNAVAILABLE
@@ -190,8 +205,19 @@ enum {
  * Device identifier types.
  */
 typedef enum {
+    /**
+     * Universally Unique Identifier (UUID) string:
+     * GPU-00000000-0000-0000-0000-000000000000.
+     */
     QV_DEVICE_ID_UUID = 0,
+    /**
+     * PCI bus identifier string: 0000:00:00.0.
+     */
     QV_DEVICE_ID_PCI_BUS_ID,
+    /**
+     * Vendor-visible logical device number (ordinal) as a string:
+     * the value used by CUDA_VISIBLE_DEVICES, for example.
+     */
     QV_DEVICE_ID_ORDINAL
 } qv_device_id_type_t;
 
@@ -214,7 +240,13 @@ qv_version(
 );
 
 /**
- * Returns a pointer to a string describing the error code passed in the argument ec.
+ * Returns a string describing the provided return code.
+ *
+ * @param[in] ec The return code to describe.
+ *
+ * @retval A pointer to a null-terminated, statically allocated string
+ * describing the return code, or an empty string if the code is unrecognized.
+ * The caller must not free the returned string.
  */
 const char *
 qv_strerr(
@@ -246,6 +278,12 @@ qv_create_scope(
 
 /**
  * Returns the caller's group rank in the provided scope.
+ *
+ * @param[in] scope The scope whose group is queried.
+ *
+ * @param[out] rank The caller's rank within the scope's group.
+ *
+ * @retval QV_SUCCESS if the operation completed successfully.
  */
 int
 qv_group_rank(
@@ -255,6 +293,12 @@ qv_group_rank(
 
 /**
  * Returns the scope's underlying group's size.
+ *
+ * @param[in] scope The scope whose group is queried.
+ *
+ * @param[out] group_size The number of members in the scope's group.
+ *
+ * @retval QV_SUCCESS if the operation completed successfully.
  */
 int
 qv_group_size(
@@ -264,6 +308,15 @@ qv_group_size(
 
 /**
  * Returns the number of hardware objects contained within the provided scope.
+ *
+ * @param[in] scope The scope whose hardware objects are counted.
+ *
+ * @param[in] obj The type of hardware object to count.
+ *
+ * @param[out] nobjs The number of hardware objects of the given type contained
+ * within the scope.
+ *
+ * @retval QV_SUCCESS if the operation completed successfully.
  */
 int
 qv_hw_obj_count(
@@ -285,7 +338,13 @@ qv_device_id(
 );
 
 /**
+ * Synchronizes all members of the provided scope's group.
  *
+ * @param[in] scope The scope whose group participates in the barrier. All
+ * members of the group must call this function because it blocks until every
+ * member has arrived.
+ *
+ * @retval QV_SUCCESS if the operation completed successfully.
  */
 int
 qv_barrier(
@@ -315,7 +374,12 @@ qv_split_at(
 );
 
 /**
+ * Pushes the provided scope's resources onto the caller's binding stack,
+ * binding the caller to the scope's resources.
  *
+ * @param[in] scope The scope whose resources the caller is bound to.
+ *
+ * @retval QV_SUCCESS if the operation completed successfully.
  */
 int
 qv_bind_push(
@@ -323,7 +387,12 @@ qv_bind_push(
 );
 
 /**
+ * Pops the most recent binding off the caller's binding stack, restoring the
+ * previous binding established before the corresponding qv_bind_push() call.
  *
+ * @param[in] scope The scope whose binding is popped.
+ *
+ * @retval QV_SUCCESS if the operation completed successfully.
  */
 int
 qv_bind_pop(
@@ -331,7 +400,19 @@ qv_bind_pop(
 );
 
 /**
+ * Returns a string representation of the caller's current binding within the
+ * provided scope.
  *
+ * @param[in] scope The scope in which the caller's binding is queried.
+ *
+ * @param[in] flags Format flags controlling the representation, such as
+ * QV_BIND_STRING_LOGICAL or QV_BIND_STRING_PHYSICAL.
+ *
+ * @param[out] str Address of a pointer that will receive a newly allocated,
+ * null-terminated string describing the binding. The caller is responsible for
+ * freeing this string.
+ *
+ * @retval QV_SUCCESS if the operation completed successfully.
  */
 int
 qv_bind_string(
@@ -342,6 +423,10 @@ qv_bind_string(
 
 /**
  * Releases resources associated with the provided scope.
+ *
+ * @param[in] scope The scope to free.
+ *
+ * @retval QV_SUCCESS if the operation completed successfully.
  */
 int
 qv_free(
