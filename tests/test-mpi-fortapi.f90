@@ -88,7 +88,10 @@ program mpi_fortapi
     end if
     print *, 'ncores', n_cores
 
-    call qv_split(scope_user, 2, sgrank, sub_scope, info)
+    call qv_split(scope_user, 2, QV_SPLIT_PACKED, sub_scope, info)
+    if (info .ne. QV_SUCCESS) then
+        error stop
+    end if
 
     call qv_bind_push(sub_scope, info)
     if (info .ne. QV_SUCCESS) then

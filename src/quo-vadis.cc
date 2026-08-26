@@ -180,7 +180,6 @@ qv_barrier(
     qvi_catch_and_return();
 }
 
-// TODO(skg) Add Fortran interface.
 int
 qv_create_scope(
     qv_scope_t *scope,
@@ -192,6 +191,9 @@ qv_create_scope(
     if (qvi_unlikely(!scope || (nobjs < 0) || !subscope)) {
         return QV_ERR_INVLD_ARG;
     }
+    // Initialize the output so callers always observe a well-defined value,
+    // even if an exception is thrown below.
+    *subscope = nullptr;
     try {
         return scope->create(flags, type, nobjs, subscope);
     }
@@ -208,6 +210,9 @@ qv_split(
     if (qvi_unlikely(!scope || (npieces <= 0) || !subscope)) {
         return QV_ERR_INVLD_ARG;
     }
+    // Initialize the output so callers always observe a well-defined value,
+    // even if an exception is thrown below.
+    *subscope = nullptr;
     try {
         // We use the sentinel value QV_HW_OBJ_LAST to differentiate between
         // calls from split() and split_at(). Since this call doesn't have a
@@ -227,6 +232,9 @@ qv_split_at(
     if (qvi_unlikely(!scope || !subscope)) {
         return QV_ERR_INVLD_ARG;
     }
+    // Initialize the output so callers always observe a well-defined value,
+    // even if an exception is thrown below.
+    *subscope = nullptr;
     try {
         return scope->split_at(type, group_id, subscope);
     }
