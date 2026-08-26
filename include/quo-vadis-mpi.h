@@ -31,6 +31,20 @@ extern "C" {
 /**
  * Creates a context containing the MPI processes contained within the provided
  * communicator.
+ *
+ * @param[in] comm The MPI communicator whose processes comprise the resulting
+ * scope's group. All processes in the communicator must call this function
+ * because it is collective over comm.
+ *
+ * @param[in] iscope The intrinsic scope type used to determine the hardware
+ * resources included in the resulting scope.
+ *
+ * @param[in] flags Flags that influence how the scope is created.
+ *
+ * @param[out] scope Address of a pointer that will receive the newly created
+ * scope. The caller is responsible for freeing this scope with qv_free().
+ *
+ * @retval QV_SUCCESS if the operation completed successfully.
  */
 int
 qv_mpi_scope(
@@ -43,6 +57,14 @@ qv_mpi_scope(
 /**
  * Returns a duplicate of the underlying MPI communicator associated with the
  * provided scope. The returned communicator must be freed by MPI_Comm_free().
+ *
+ * @param[in] scope The scope whose underlying MPI communicator is duplicated.
+ *
+ * @param[out] comm Address of an MPI_Comm that will receive the duplicated
+ * communicator. The caller is responsible for freeing this communicator with
+ * MPI_Comm_free().
+ *
+ * @retval QV_SUCCESS if the operation completed successfully.
  */
 int
 qv_mpi_comm_dup(
