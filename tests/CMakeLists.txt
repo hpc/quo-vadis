@@ -175,17 +175,6 @@ if(MPI_FOUND)
     )
 
     add_executable(
-        test-mpi-phases
-        test-mpi-phases.c
-    )
-
-    target_link_libraries(
-        test-mpi-phases
-        common-test-utils
-        quo-vadis-mpi
-    )
-
-    add_executable(
         test-mpi-split-auto
         test-mpi-split-auto.c
     )
@@ -248,7 +237,6 @@ if(MPI_FOUND)
         test-mpi-api
         test-mpi-scopes
         test-mpi-double-split
-        test-mpi-phases
         test-mpi-split-auto
         test-pthread-split
         test-progress-thread

@@ -179,6 +179,11 @@ endif()
 add_subdirectory(include)
 add_subdirectory(src)
 add_subdirectory(src/fortran)
+# Conditionally add example source. Examples build by default (like tests) but
+# are not part of the test harness.
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    add_subdirectory(examples)
+endif()
 # Conditionally add test source
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
     add_subdirectory(tests/internal)
