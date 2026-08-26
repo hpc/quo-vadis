@@ -112,6 +112,49 @@ qvb_iters(void)
 }
 
 /**
+ * Per-instance timing sample fed into the (optional) cross-instance reduction.
+ * A single benchmarked function contributes one of these per participating
+ * rank/instance: the summed time across all iterations, plus the local min and
+ * max single-iteration times.
+ */
+typedef struct {
+    uint64_t total_ns; /**< Sum of all per-iteration times on this instance. */
+    uint64_t min_ns;   /**< Fastest single iteration on this instance. */
+    uint64_t max_ns;   /**< Slowest single iteration on this instance. */
+} qvb_sample_t;
+
+/**
+ * Optional cross-instance reduction hook.
+ *
+ * For multi-instance backends (e.g. MPI, where every rank independently times
+ * the same function) the reported avg/min/max should reflect ALL instances,
+ * not just the reporting rank. This callback is the single extension point for
+ * that: given the calling instance's local sample it must perform a COLLECTIVE
+ * reduction across every instance and return the aggregate.
+ *
+ * It is called by every instance (all must participate, so the collective does
+ * not deadlock), but only the reporting instance uses the results.
+ *
+ * @param ctx        Backend-private context (e.g. the MPI communicator).
+ * @param local      This instance's local sample.
+ * @param out_total  [out] Sum of total_ns across all instances.
+ * @param out_min    [out] Minimum min_ns across all instances.
+ * @param out_max    [out] Maximum max_ns across all instances.
+ * @param out_ninst  [out] Number of participating instances.
+ *
+ * Backends that measure a single instance (process, thread) leave this NULL,
+ * and the local sample is reported verbatim.
+ */
+typedef void (*qvb_reduce_fn)(
+    void *ctx,
+    const qvb_sample_t *local,
+    uint64_t *out_total,
+    uint64_t *out_min,
+    uint64_t *out_max,
+    long *out_ninst
+);
+
+/**
  * Timing accumulator + reporter. A single instance is shared by the common
  * driver and each backend so all functions are reported through one table.
  */
@@ -119,6 +162,13 @@ typedef struct {
     qvb_kind_t kind;
     bool active;   /**< Only the "reporting" rank prints (rank 0 for MPI). */
     bool header_emitted;
+    /**
+     * Optional cross-instance reduction. When set, avg/min/max are computed
+     * across ALL instances via a collective; when NULL only the local sample
+     * is reported. Set by multi-instance backends (MPI); see qvb_reduce_fn.
+     */
+    qvb_reduce_fn reduce;
+    void *reduce_ctx; /**< Passed verbatim to `reduce`. */
 } qvb_reporter_t;
 
 static inline void
@@ -127,6 +177,19 @@ qvb_reporter_init(qvb_reporter_t *r, qvb_kind_t kind, bool active)
     r->kind = kind;
     r->active = active;
     r->header_emitted = false;
+    r->reduce = NULL;
+    r->reduce_ctx = NULL;
+}
+
+/**
+ * Registers a cross-instance reduction on the reporter. All measurements taken
+ * after this call will report avg/min/max reduced across every instance.
+ */
+static inline void
+qvb_reporter_set_reduce(qvb_reporter_t *r, qvb_reduce_fn reduce, void *ctx)
+{
+    r->reduce = reduce;
+    r->reduce_ctx = ctx;
 }
 
 static inline void
@@ -136,13 +199,32 @@ qvb_emit_header(qvb_reporter_t *r)
     printf(
         "# quo-vadis micro-benchmarks [%s scope]\n", qvb_kind_name(r->kind)
     );
-    printf(
-        "# %-24s %10s %14s %14s %14s\n",
-        "function", "iters", "avg (ns)", "min (ns)", "max (ns)"
-    );
+    if (r->reduce) {
+        // Multi-instance: stats are reduced across all instances (ranks).
+        printf(
+            "# %-24s %10s %8s %14s %14s %14s\n",
+            "function", "iters", "insts",
+            "avg (ns)", "min (ns)", "max (ns)"
+        );
+    }
+    else {
+        printf(
+            "# %-24s %10s %14s %14s %14s\n",
+            "function", "iters", "avg (ns)", "min (ns)", "max (ns)"
+        );
+    }
     r->header_emitted = true;
 }
 
+/**
+ * Reports a single benchmarked function. `total_ns`/`min_ns`/`max_ns` are the
+ * calling instance's LOCAL sample (summed time, local min, local max). When a
+ * cross-instance reduction is registered on the reporter, this performs the
+ * collective (every instance must call this) and reports the aggregate; the
+ * avg is then the mean per-iteration time across all instances. Without a
+ * reduction the local sample is reported verbatim, preserving the original
+ * single-instance behavior for the process/thread suites.
+ */
 static inline void
 qvb_report(
     qvb_reporter_t *r,
@@ -152,14 +234,37 @@ qvb_report(
     uint64_t min_ns,
     uint64_t max_ns
 ) {
+    long ninst = 1;
+    if (r->reduce) {
+        // Collective: ALL instances must participate, so this runs before the
+        // active-only bail-out below.
+        const qvb_sample_t local = {
+            .total_ns = total_ns, .min_ns = min_ns, .max_ns = max_ns
+        };
+        r->reduce(
+            r->reduce_ctx, &local, &total_ns, &min_ns, &max_ns, &ninst
+        );
+    }
+
     if (!r->active) return;
     qvb_emit_header(r);
-    const double avg = iters > 0 ? (double)total_ns / (double)iters : 0.0;
-    printf(
-        "  %-24s %10ld %14.2f %14llu %14llu\n",
-        name, iters, avg,
-        (unsigned long long)min_ns, (unsigned long long)max_ns
-    );
+    // Average per-iteration time across every instance.
+    const long samples = iters * ninst;
+    const double avg = samples > 0 ? (double)total_ns / (double)samples : 0.0;
+    if (r->reduce) {
+        printf(
+            "  %-24s %10ld %8ld %14.2f %14llu %14llu\n",
+            name, iters, ninst, avg,
+            (unsigned long long)min_ns, (unsigned long long)max_ns
+        );
+    }
+    else {
+        printf(
+            "  %-24s %10ld %14.2f %14llu %14llu\n",
+            name, iters, avg,
+            (unsigned long long)min_ns, (unsigned long long)max_ns
+        );
+    }
     fflush(stdout);
 }
 
