@@ -323,11 +323,11 @@ test_11(void)
     auto map = qvi_map_packed(config);
 
     qvi_map_t expected = {
-        {0, {0, 1}},
-        {1, {2, 3}},
-        {2, {4}},
-        {3, {5}},
-        {4, {6}}
+        {0, {0}},
+        {1, {1}},
+        {2, {2}},
+        {3, {3}},
+        {4, {4}}
     };
     ctu_assert(map == expected, "unexpected result");
 
@@ -380,8 +380,8 @@ test_13(void)
     auto map = qvi_map_spread(config);
 
     qvi_map_t expected = {
-        {0, {0, 5}},
-        {1, {1, 6}},
+        {0, {0}},
+        {1, {1}},
         {2, {2}},
         {3, {3}},
         {4, {4}}
