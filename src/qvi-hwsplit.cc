@@ -330,7 +330,7 @@ qvi_hwsplit::m_split(void)
     const auto hwpool_map = map_config.map_fn(map_config);
 
     if (qvi_unlikely(map_config.be_verbose)) {
-        qvi_map_emit("\nTask ID to Host Hardware Pool", hwpool_map);
+        qvi_map_emit("\n## Task ID to Host Hardware Pool", hwpool_map);
     }
     // Perform final task to hardware pool assignments
     // and task coloring based on determined mapping.
@@ -340,20 +340,11 @@ qvi_hwsplit::m_split(void)
             m_colors.at(taski) = static_cast<int>(hwpooli);
         }
     }
-    // Members that opted out via QV_SPLIT_UNDEFINED are not present in the
-    // mapping, so their hardware pool remains empty (a default-constructed
-    // qvi_hwpool has an empty cpuset). Give each such member its own unique
-    // group color beyond the real piece range so that it forms a valid,
-    // singleton group holding no resources. The scope layer detects the opt-out
-    // and returns a NULL scope to the caller rather than wrapping this pool.
-    int excluded_color = static_cast<int>(m_split_size);
-    for (size_t taski = 0; taski < m_colors.size(); ++taski) {
-        if (m_colors.at(taski) == QV_SPLIT_UNDEFINED) {
-            m_colors.at(taski) = excluded_color++;
-        }
-    }
     if (qvi_unlikely(map_config.be_verbose)) {
-        qvi_log_info("\nColor assignments:\n{}", format_coloring(m_colors));
+        qvi_log_info(
+            "\n## Final Color assignments:\n{}",
+            format_coloring(m_colors)
+        );
     }
     return QV_SUCCESS;
 }

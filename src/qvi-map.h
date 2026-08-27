@@ -127,6 +127,14 @@ qvi_map_close(
 );
 
 /**
+ * Takes a map and assigns its values as keys and keys as values.
+ */
+qvi_map_t
+qvi_map_invert(
+    const qvi_map_t &original
+);
+
+/**
  * Prints map assignments.
  */
 void
