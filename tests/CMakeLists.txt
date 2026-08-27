@@ -12,9 +12,6 @@
 
 ################################################################################
 ################################################################################
-# Used to test QVD with specified port and no QV_PORT.
-set(QV_START_QVD_WPORT "../src/quo-vadisd --no-daemonize --port 55999")
-set(QV_START_QVD_WENV "../src/quo-vadisd --no-daemonize")
 
 add_library(
     common-test-utils
@@ -68,7 +65,8 @@ add_test(
     NAME
       process-scopes
     COMMAND
-      bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+      bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+      ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
       ${CMAKE_CURRENT_BINARY_DIR}/test-process-scopes"
 )
 
@@ -76,7 +74,8 @@ add_test(
     NAME
       process-hardware
     COMMAND
-      bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+      bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+      ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
       ${CMAKE_CURRENT_BINARY_DIR}/test-process-hardware"
 )
 
@@ -109,13 +108,14 @@ if (OPENMP_FOUND)
         OpenMP::OpenMP_C
     )
 
-    add_test(
-        NAME
-          omp
-        COMMAND
-          bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
-          ${CMAKE_CURRENT_BINARY_DIR}/test-omp"
-    )
+        add_test(
+            NAME
+              omp
+            COMMAND
+              bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+              ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+              ${CMAKE_CURRENT_BINARY_DIR}/test-omp"
+        )
 
     # Set omp test properties.
     set_tests_properties(
@@ -250,7 +250,8 @@ if(MPI_FOUND)
         NAME
           mpi-api
         COMMAND
-          bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+          bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+          ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
           ${MPIEXEC_EXECUTABLE} \
           ${MPIEXEC_NUMPROC_FLAG} \
           ${MPIEXEC_MAX_NUMPROCS} \
@@ -261,7 +262,8 @@ if(MPI_FOUND)
         NAME
           mpi-init
         COMMAND
-          bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+          bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+          ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
           ${MPIEXEC_EXECUTABLE} \
           ${MPIEXEC_NUMPROC_FLAG} \
           ${MPIEXEC_MAX_NUMPROCS} \
@@ -272,7 +274,8 @@ if(MPI_FOUND)
         NAME
           mpi-scopes
         COMMAND
-          bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+          bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+          ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
           ${MPIEXEC_EXECUTABLE} \
           ${MPIEXEC_NUMPROC_FLAG} \
           ${MPIEXEC_MAX_NUMPROCS} \
@@ -283,7 +286,8 @@ if(MPI_FOUND)
         NAME
           mpi-dev-split
         COMMAND
-          bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+          bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+          ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
           ${MPIEXEC_EXECUTABLE} \
           ${MPIEXEC_NUMPROC_FLAG} \
           ${MPIEXEC_MAX_NUMPROCS} \
@@ -294,7 +298,8 @@ if(MPI_FOUND)
         NAME
           mpi-split-auto
         COMMAND
-          bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+          bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+          ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
           ${MPIEXEC_EXECUTABLE} \
           ${MPIEXEC_NUMPROC_FLAG} \
           ${MPIEXEC_MAX_NUMPROCS} \
@@ -342,7 +347,8 @@ if(MPI_FOUND)
             NAME
               mpi-threads
             COMMAND
-              bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+              bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+              ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
               ${MPIEXEC_EXECUTABLE} \
               ${MPIEXEC_NUMPROC_FLAG} \
               ${MPIEXEC_MAX_NUMPROCS} \
@@ -379,7 +385,8 @@ if(QV_FORTRAN_HAPPY)
         NAME
           process-fortapi
         COMMAND
-          bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+          bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+          ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
           ${CMAKE_CURRENT_BINARY_DIR}/test-process-fortapi"
     )
 
@@ -411,7 +418,8 @@ if(QV_FORTRAN_HAPPY)
             NAME
               mpi-fortapi
             COMMAND
-              bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+              bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+              ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
               ${MPIEXEC_EXECUTABLE} \
               ${MPIEXEC_NUMPROC_FLAG} \
               ${MPIEXEC_MAX_NUMPROCS} \

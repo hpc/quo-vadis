@@ -67,6 +67,40 @@ add_test(
 
 ################################################################################
 ################################################################################
+# C++ test that verifies the exact resource mapping (cpusets) of all
+# qv_split combinations (automatic and explicit groupings) using internal APIs.
+add_executable(
+    test-process-all-split
+    test-process-all-split.cc
+)
+
+target_link_libraries(
+    test-process-all-split
+    common-test-utils
+    quo-vadis
+)
+
+# This test drives the public qv_split() API, which talks to quo-vadisd, so it
+# must be wrapped by run-dtest.sh to bring up (and tear down) the daemon.
+# run-dtest.sh requires QV_DAEMON to point to the quo-vadisd binary.
+add_test(
+    NAME
+      process-all-split
+    COMMAND
+      bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+      ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+      ${CMAKE_CURRENT_BINARY_DIR}/test-process-all-split"
+)
+
+set_tests_properties(
+    process-all-split
+    PROPERTIES
+      TIMEOUT 60
+      LABELS "process"
+)
+
+################################################################################
+################################################################################
 add_executable(
     test-rmi
     test-rmi.cc

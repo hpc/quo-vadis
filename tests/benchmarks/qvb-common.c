@@ -11,7 +11,7 @@
  * @file qvb-common.c
  *
  * Shared driver that benchmarks every scope-kind-agnostic public function in
- * quo-vadis.h exactly once. Reused verbatim by the process, thread, and MPI
+ * quo-vadis.h exactly once. Reused as-is by the process, thread, and MPI
  * benchmark binaries; the only per-suite variation is the backend that
  * supplies the root scope.
  */

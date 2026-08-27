@@ -173,7 +173,7 @@ enum {
     /**
      * Constant used to indicate undefined or unknown integer value. This means
      * that the caller will not be considered in the split, and therefore
-     * receive an empty scope.
+     * receive no subscope (a NULL scope is returned to the caller).
      */
     QV_SPLIT_UNDEFINED = -1,
     /**
@@ -351,7 +351,22 @@ qv_barrier(
 );
 
 /**
+ * Splits the provided scope into a number of pieces, returning the subscope
+ * the caller belongs to.
  *
+ * @param[in] scope The scope to split.
+ *
+ * @param[in] npieces The number of pieces to split the scope into.
+ *
+ * @param[in] group_id The color selecting which piece the caller joins, or
+ * QV_SPLIT_UNDEFINED to opt out of the split (see below), or one of the
+ * automatic QV_SPLIT_* grouping constants.
+ *
+ * @param[out] subscope The resulting subscope the caller belongs to. If the
+ * caller provided QV_SPLIT_UNDEFINED, it is excluded from the split and
+ * *subscope is set to NULL to signal that no subscope was returned.
+ *
+ * @retval QV_SUCCESS if the operation completed successfully.
  */
 int
 qv_split(
@@ -362,7 +377,22 @@ qv_split(
 );
 
 /**
+ * Splits the provided scope at the given hardware object type, returning the
+ * subscope the caller belongs to.
  *
+ * @param[in] scope The scope to split.
+ *
+ * @param[in] type The hardware object type to split at.
+ *
+ * @param[in] group_id The color selecting which piece the caller joins, or
+ * QV_SPLIT_UNDEFINED to opt out of the split (see below), or one of the
+ * automatic QV_SPLIT_* grouping constants.
+ *
+ * @param[out] subscope The resulting subscope the caller belongs to. If the
+ * caller provided QV_SPLIT_UNDEFINED, it is excluded from the split and
+ * *subscope is set to NULL to signal that no subscope was returned.
+ *
+ * @retval QV_SUCCESS if the operation completed successfully.
  */
 int
 qv_split_at(

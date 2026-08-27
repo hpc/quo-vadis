@@ -186,8 +186,10 @@ if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
 endif()
 # Conditionally add test source
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
-    add_subdirectory(tests/internal)
+    # tests/ defines the common-test-utils library, so it must be added before
+    # subdirectories that link against it (tests/internal, tests/benchmarks).
     add_subdirectory(tests)
+    add_subdirectory(tests/internal)
     add_subdirectory(tests/benchmarks)
 endif()
 

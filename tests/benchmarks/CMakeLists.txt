@@ -38,7 +38,8 @@ add_test(
     NAME
       bench-process
     COMMAND
-      bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+      bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+      ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
       ${CMAKE_CURRENT_BINARY_DIR}/qvb-process"
     WORKING_DIRECTORY
       ${CMAKE_BINARY_DIR}/tests
@@ -75,7 +76,8 @@ add_test(
     NAME
       bench-thread
     COMMAND
-      bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+      bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+      ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
       ${CMAKE_CURRENT_BINARY_DIR}/qvb-thread"
     WORKING_DIRECTORY
       ${CMAKE_BINARY_DIR}/tests
@@ -115,7 +117,8 @@ if(MPI_FOUND)
         NAME
           bench-mpi
         COMMAND
-          bash -c "${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+          bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+          ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
           ${MPIEXEC_EXECUTABLE} \
           ${MPIEXEC_NUMPROC_FLAG} \
           ${MPIEXEC_MAX_NUMPROCS} \

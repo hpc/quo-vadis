@@ -136,8 +136,10 @@ qvi_map_emit(
 );
 
 /**
- * Takes a vector of colors and clamps their values to [0, ndc)
- * in place, where ndc is the number of distinct numbers found in values.
+ * Takes a vector of colors and clamps their values to [0, ndc), where ndc is
+ * the number of distinct non-negative colors found in values. QV_SPLIT_UNDEFINED
+ * entries opt out of the split: they are excluded from the distinct-color count
+ * and passed through unchanged rather than folded into a real color.
  */
 std::vector<int>
 qvi_map_clamp_colors(
