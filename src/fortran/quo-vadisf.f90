@@ -81,10 +81,10 @@ module quo_vadisf
     ! Automatic grouping options for qv_split().
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     integer(c_int), parameter :: QV_SPLIT_UNDEFINED = -1
-    integer(c_int), parameter :: QV_SPLIT_CLOSE = -2
+    integer(c_int), parameter :: QV_SPLIT_AUTO = -2
     integer(c_int), parameter :: QV_SPLIT_PACKED = -3
     integer(c_int), parameter :: QV_SPLIT_SPREAD = -4
-    integer(c_int), parameter :: QV_SPLIT_AUTO = -5
+    integer(c_int), parameter :: QV_SPLIT_CLOSE = -5
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Device ID types

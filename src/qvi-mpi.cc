@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2025 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -435,12 +435,27 @@ qvi_mpi::group_from_split(
     int rc = QV_SUCCESS;
     MPI_Comm split_comm = MPI_COMM_NULL;
 
+    // A member that opted out of the split (QV_SPLIT_UNDEFINED) must not be
+    // placed into any child communicator. MPI_Comm_split() only accepts a
+    // non-negative color or the special MPI_UNDEFINED sentinel; the QV-level
+    // QV_SPLIT_UNDEFINED value (-1) is neither, so translate it here.
+    const int mpi_color = (color == QV_SPLIT_UNDEFINED)
+        ? MPI_UNDEFINED
+        : color;
+
     do {
         const int mpirc = MPI_Comm_split(
-            parent.qvcomm.m_mpi_comm, color, key, &split_comm
+            parent.qvcomm.m_mpi_comm, mpi_color, key, &split_comm
         );
         if (qvi_unlikely(mpirc != MPI_SUCCESS)) {
             rc = QV_ERR_MPI;
+            break;
+        }
+        // A member that opted out receives MPI_COMM_NULL from the split. It has
+        // no child group; the scope layer discards it (returning a NULL scope
+        // to the caller), so just hand back an empty group here.
+        if (split_comm == MPI_COMM_NULL) {
+            child = {};
             break;
         }
 
