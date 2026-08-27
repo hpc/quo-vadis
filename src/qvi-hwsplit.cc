@@ -125,54 +125,83 @@ qvi_hwsplit::m_split_base_cpuset(void)
     return m_my_rmi.hwloc().bitmap_split(pri_cpuset, m_split_size);
 }
 
+/**
+ * Determine which kind of coloring we are dealing with and validate it.
+ *
+ * There are exactly two mutually exclusive kinds of coloring:
+ *
+ * 1. User-defined coloring: every value is either a non-negative,
+ * caller-provided color, or the QV_SPLIT_UNDEFINED sentinel. Non-negative
+ * colors select the piece a member joins; QV_SPLIT_UNDEFINED members opt out of
+ * the split and receive no subscope (the scope layer returns a NULL scope to
+ * such callers). A coloring consisting entirely of QV_SPLIT_UNDEFINED is
+ * unusual (every member opts out) but valid.
+ *
+ * 2. Automatic grouping: every value is the *same* automatic grouping constant
+ * (QV_SPLIT_CLOSE, QV_SPLIT_PACKED, QV_SPLIT_SPREAD, or QV_SPLIT_AUTO).
+ * QV_SPLIT_UNDEFINED is NOT an automatic grouping constant and may not appear
+ * in an automatic split.
+ *
+ * Any other combination (e.g. mixing a real color or QV_SPLIT_UNDEFINED with an
+ * automatic constant, or mixing different automatic constants) is invalid.
+ *
+ * QV_SPLIT_UNDEFINED is the discriminator: it is only ever legal alongside
+ * non-negative user-defined colors, never with the automatic constants.
+ */
 static std::vector<int>
 normalize_colors(
     const std::vector<int> &colors,
     size_t split_size
 ) {
-    // Make sure that the supplied colors are consistent and determine the type
-    // of coloring we are using. Positive values denote an explicit coloring
-    // provided by the caller. Negative values are reserved for internal use and
-    // shall be constants defined in quo-vadis.h. Note we don't sort colors
-    // directly because they are ordered by task ID.
-    std::vector<int> tcolors(colors);
-    std::sort(tcolors.begin(), tcolors.end());
-    // We have a few possibilities here:
-    // * The values are all positive: user-defined split, but we have to clamp
-    //   their values to a usable range for internal consumption.
-    // * The values are negative and equal:
-    //   - All the same, valid auto split constant: auto split
-    //   - All the same, undefined constant: user-defined split, but this is a
-    //     strange case since all participants will get empty sets.
-    // * A mix if positive and negative values:
-    //   - A strict subset is QV_SPLIT_UNDEFINED: user-defined split
-    //   - A strict subset is not QV_SPLIT_UNDEFINED: return error code.
-    // All colors are positive: user-defined split.
-    if (tcolors.front() >= 0) {
-        std::vector<int> result;
+    const bool have_undefined = std::ranges::any_of(
+        colors, [](int val) { return val == QV_SPLIT_UNDEFINED; }
+    );
+    const bool have_nonneg = std::ranges::any_of(
+        colors, [](int val) { return val >= 0; }
+    );
+    // User-defined coloring: any non-negative color is present, or the caller
+    // opted out via QV_SPLIT_UNDEFINED. Every value must then be either
+    // non-negative or QV_SPLIT_UNDEFINED; an automatic constant here is a
+    // programming error (automatic grouping cannot be mixed with an explicit
+    // coloring or with opting out).
+    if (have_nonneg || have_undefined) {
+        const bool only_userdefined = std::ranges::all_of(
+            colors, [](int val) {
+                return val >= 0 || val == QV_SPLIT_UNDEFINED;
+            }
+        );
+        if (!only_userdefined) {
+            // A user-defined coloring was mixed with an automatic grouping
+            // constant (or some other reserved negative value).
+            throw qvi_runtime_error(QV_ERR_INVLD_ARG);
+        }
+        // Clamp the caller-provided colors to a usable [0, ndistinct) range for
+        // internal consumption, unless they already sit in [0, split_size).
+        // qvi_map_clamp_colors leaves QV_SPLIT_UNDEFINED members unchanged, so
+        // they remain excluded from the split rather than folded into a color.
         const bool all_in_range = std::ranges::all_of(
             colors, [split_size](int val) {
-            return val >= 0 && val < static_cast<int>(split_size);
-        });
-        // Clamp if not all provided values are in a usable
-        // color range. Otherwise, use the values as-is.
-        if (!all_in_range) {
-            result = qvi_map_clamp_colors(colors);
-        }
-        else {
-            result = colors;
-        }
-        // Make sure that the coloring is valid.
-        const std::set<int> color_set(result.begin(), result.end());
-        // If we have more distinct colors than destinations, that's a problem.
+                return val == QV_SPLIT_UNDEFINED ||
+                       (val >= 0 && val < static_cast<int>(split_size));
+            }
+        );
+        const auto result = all_in_range
+            ? colors
+            : qvi_map_clamp_colors(colors);
+        // Validate the coloring. QV_SPLIT_UNDEFINED members do not occupy a
+        // piece, so they do not count as distinct destinations.
+        std::set<int> color_set(result.begin(), result.end());
+        color_set.erase(QV_SPLIT_UNDEFINED);
         if (color_set.size() > split_size) {
             throw qvi_runtime_error(QV_ERR_SPLIT);
         }
         return result;
     }
-    // All colors are negative: automatic split. Verify its state.
+    // Automatic grouping: no non-negative colors and no QV_SPLIT_UNDEFINED.
+    // Every value must be the same automatic grouping constant.
     else {
-        // TODO(skg) Implement the rest.
+        std::vector<int> tcolors(colors);
+        std::sort(tcolors.begin(), tcolors.end());
         if (tcolors.front() != tcolors.back()) {
             throw qvi_runtime_error(QV_ERR_INVLD_ARG);
         }
@@ -309,6 +338,18 @@ qvi_hwsplit::m_split(void)
         for (const auto &hwpooli : hwpoolis) {
             m_hwpools.at(taski) = split_hwpools.at(hwpooli);
             m_colors.at(taski) = static_cast<int>(hwpooli);
+        }
+    }
+    // Members that opted out via QV_SPLIT_UNDEFINED are not present in the
+    // mapping, so their hardware pool remains empty (a default-constructed
+    // qvi_hwpool has an empty cpuset). Give each such member its own unique
+    // group color beyond the real piece range so that it forms a valid,
+    // singleton group holding no resources. The scope layer detects the opt-out
+    // and returns a NULL scope to the caller rather than wrapping this pool.
+    int excluded_color = static_cast<int>(m_split_size);
+    for (size_t taski = 0; taski < m_colors.size(); ++taski) {
+        if (m_colors.at(taski) == QV_SPLIT_UNDEFINED) {
+            m_colors.at(taski) = excluded_color++;
         }
     }
     if (qvi_unlikely(map_config.be_verbose)) {

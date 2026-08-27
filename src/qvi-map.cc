@@ -138,15 +138,20 @@ qvi_map_colors(
     }
     auto &src_colors = config.src_colors;
     const size_t n = src_colors.size();
-    // Sanity check: this mapper is valid only with positive color values.
+    // Sanity check: this mapper accepts non-negative colors and the special
+    // QV_SPLIT_UNDEFINED sentinel. QV_SPLIT_UNDEFINED sources are excluded from
+    // the split, so they are intentionally left unmapped here.
     assert(
         std::ranges::all_of(config.src_colors, [](int val) {
-            return val >= 0;
+            return val >= 0 || val == QV_SPLIT_UNDEFINED;
         })
     );
     qvi_map_t map;
-    // Assign each source to the piece indicated by its color.
+    // Assign each source to the piece indicated by its color. Sources colored
+    // QV_SPLIT_UNDEFINED are skipped so they receive no resources (an empty
+    // scope), per the documented semantics in quo-vadis.h.
     for (size_t i = 0; i < n; ++i) {
+        if (src_colors[i] == QV_SPLIT_UNDEFINED) continue;
         map[i].insert(src_colors[i]);
     }
     if (qvi_unlikely(config.be_verbose)) {
@@ -705,8 +710,11 @@ std::vector<int>
 qvi_map_clamp_colors(
     const std::vector<int> &colors
 ) {
-    // Recall: sets are ordered.
-    const std::set<int> colorset(colors.begin(), colors.end());
+    // Recall: sets are ordered. QV_SPLIT_UNDEFINED marks a member that opts out
+    // of the split, so it is excluded from the distinct-color ranking and
+    // passed through unchanged rather than folded into a real color.
+    std::set<int> colorset(colors.begin(), colors.end());
+    colorset.erase(QV_SPLIT_UNDEFINED);
     // Maps the input vector colors to their clamped values.
     std::map<int, int> color2clamped;
     // color': the clamped color.
@@ -716,7 +724,9 @@ qvi_map_clamp_colors(
     }
     std::vector<int> result(colors.size());
     for (size_t i = 0; i < colors.size(); ++i) {
-        result[i] = color2clamped[colors[i]];
+        result[i] = colors[i] == QV_SPLIT_UNDEFINED
+            ? QV_SPLIT_UNDEFINED
+            : color2clamped[colors[i]];
     }
     return result;
 }

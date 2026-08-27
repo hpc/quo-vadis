@@ -143,7 +143,7 @@ typedef struct {
  * @param out_ninst  [out] Number of participating instances.
  *
  * Backends that measure a single instance (process, thread) leave this NULL,
- * and the local sample is reported verbatim.
+ * and the local sample is reported as-is.
  */
 typedef void (*qvb_reduce_fn)(
     void *ctx,
@@ -168,7 +168,7 @@ typedef struct {
      * is reported. Set by multi-instance backends (MPI); see qvb_reduce_fn.
      */
     qvb_reduce_fn reduce;
-    void *reduce_ctx; /**< Passed verbatim to `reduce`. */
+    void *reduce_ctx; /**< Passed through unchanged to `reduce`. */
 } qvb_reporter_t;
 
 static inline void
@@ -222,7 +222,7 @@ qvb_emit_header(qvb_reporter_t *r)
  * cross-instance reduction is registered on the reporter, this performs the
  * collective (every instance must call this) and reports the aggregate; the
  * avg is then the mean per-iteration time across all instances. Without a
- * reduction the local sample is reported verbatim, preserving the original
+ * reduction the local sample is reported as-is, preserving the original
  * single-instance behavior for the process/thread suites.
  */
 static inline void

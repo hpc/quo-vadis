@@ -211,14 +211,21 @@ qv_scope::split(
             this, npieces, color, maybe_obj_type, &colorp, hwpool
         );
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
-        // Split underlying group. Notice the use of colorp here.
+        // Split underlying group. Notice the use of colorp here. Every member
+        // must participate in this collective, including those that opted out
+        // via QV_SPLIT_UNDEFINED (they are placed in their own singleton group).
         rc = m_group->split(colorp, m_group->rank(), &group);
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
+        // A member that provided QV_SPLIT_UNDEFINED opted out of the split and
+        // therefore receives no scope: signal this by returning a nullptr child
+        // rather than an empty scope. The transient group created above is
+        // discarded below since it is not wrapped in a scope.
+        if (color == QV_SPLIT_UNDEFINED) break;
         // Create and initialize the new scope.
         rc = qvi_new(&ichild, group, hwpool);
     } while (false);
 
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
+    if (qvi_unlikely(rc != QV_SUCCESS) || color == QV_SPLIT_UNDEFINED) {
         qvi_delete(&group);
         qvi_delete(&ichild);
     }
