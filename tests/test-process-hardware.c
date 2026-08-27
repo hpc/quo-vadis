@@ -16,8 +16,8 @@ int
 main(void)
 {
     const setup_name_to_flags_t setup_tab[] = {
-        {CTU_TOSTRING(QV_SCOPE_FLAG_NONE),   QV_SCOPE_FLAG_NONE},
-        {CTU_TOSTRING(QV_SCOPE_FLAG_NO_SMT), QV_SCOPE_FLAG_NO_SMT}
+        {"QV_SCOPE_FLAG_NONE",   QV_SCOPE_FLAG_NONE},
+        {"QV_SCOPE_FLAG_NO_SMT", QV_SCOPE_FLAG_NO_SMT}
     };
 
     const size_t n_setups = sizeof(setup_tab) / sizeof(setup_name_to_flags_t);
