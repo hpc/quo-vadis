@@ -395,7 +395,7 @@ if(QV_FORTRAN_HAPPY)
         process-fortapi
         PROPERTIES
           TIMEOUT 60
-          LABELS "process-fortran"
+          LABELS "fortran"
     )
 
     if(MPI_Fortran_FOUND)

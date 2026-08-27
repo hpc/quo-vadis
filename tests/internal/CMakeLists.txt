@@ -67,6 +67,32 @@ add_test(
 
 ################################################################################
 ################################################################################
+# Shared verification helpers for the qv_split() tests. These reach into the
+# internal scope representation and reuse the library's own mapping primitives,
+# so (unlike common-test-utils) they intentionally depend on internal QV
+# headers. The process, thread, and MPI split tests all link against this and
+# share its scope-kind-agnostic driver (ctu_split::run_all_split_tests).
+add_library(
+    common-split-utils
+    common-split-utils.h
+    common-split-utils.cc
+)
+
+target_link_libraries(
+    common-split-utils
+    PUBLIC
+      common-test-utils
+      quo-vadis
+)
+
+target_compile_options(
+    common-split-utils
+    PRIVATE
+      "$<$<BOOL:${MPI_FOUND}>:-DCTU_HAS_MPI_SUPPORT>"
+)
+
+################################################################################
+################################################################################
 # C++ test that verifies the exact resource mapping (cpusets) of all
 # qv_split combinations (automatic and explicit groupings) using internal APIs.
 add_executable(
@@ -76,6 +102,7 @@ add_executable(
 
 target_link_libraries(
     test-process-all-split
+    common-split-utils
     common-test-utils
     quo-vadis
 )
@@ -97,6 +124,39 @@ set_tests_properties(
     PROPERTIES
       TIMEOUT 60
       LABELS "process"
+)
+
+################################################################################
+################################################################################
+# Thread counterpart: the same qv_split verification battery, but the calling
+# group is a set of thread subscopes produced by qv_thread_split. Reuses the
+# shared driver via the thread backend.
+add_executable(
+    test-thread-all-split
+    test-thread-all-split.cc
+)
+
+target_link_libraries(
+    test-thread-all-split
+    common-split-utils
+    common-test-utils
+    quo-vadis
+)
+
+add_test(
+    NAME
+      thread-all-split
+    COMMAND
+      bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+      ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+      ${CMAKE_CURRENT_BINARY_DIR}/test-thread-all-split"
+)
+
+set_tests_properties(
+    thread-all-split
+    PROPERTIES
+      TIMEOUT 60
+      LABELS "thread"
 )
 
 ################################################################################
@@ -168,6 +228,44 @@ if(MPI_FOUND)
           ${MPIEXEC_EXECUTABLE} --version && \
           ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2 \
           ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-install"
+    )
+
+    ############################################################################
+    # C++ MPI counterpart of test-process-all-split: verifies the exact
+    # resource mapping (cpusets) of all qv_split combinations across many tasks,
+    # reusing the shared verification helpers in common-split-utils.
+    add_executable(
+        test-mpi-all-split
+        test-mpi-all-split.cc
+    )
+
+    target_link_libraries(
+        test-mpi-all-split
+        common-split-utils
+        common-test-utils
+        quo-vadis
+        quo-vadis-mpi
+    )
+
+    # This test drives the public qv_split() API, which talks to quo-vadisd, so
+    # it must be wrapped by run-dtest.sh to bring up (and tear down) the daemon.
+    add_test(
+        NAME
+          mpi-all-split
+        COMMAND
+          bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+          ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+          ${MPIEXEC_EXECUTABLE} \
+          ${MPIEXEC_NUMPROC_FLAG} \
+          ${MPIEXEC_MAX_NUMPROCS} \
+          ${CMAKE_CURRENT_BINARY_DIR}/test-mpi-all-split"
+    )
+
+    set_tests_properties(
+        mpi-all-split
+        PROPERTIES
+          TIMEOUT 60
+          LABELS "mpi"
     )
 endif()
 

@@ -177,10 +177,13 @@ enum {
      */
     QV_SPLIT_UNDEFINED = -1,
     /**
-     * Split the provided group by attempting to preserve tasks' current
-     * affinities (at time of the split call) as much as possible.
+     * Split and group the provided group automatically. This option attempts to
+     * provide a reasonable grouping and splitting based on the resources being
+     * split, the requested split size, and the group size. The goal is to make
+     * use of the available parent resources sensibly without requiring the
+     * caller to select a specific splitting strategy.
      */
-    QV_SPLIT_CLOSE = -2,
+    QV_SPLIT_AUTO = -2,
     /**
      * Split the provided group by packing tasks together as tightly as
      * possible onto resources before moving on to the next resource.
@@ -192,13 +195,10 @@ enum {
      */
     QV_SPLIT_SPREAD = -4,
     /**
-     * Split and group the provided group automatically. This option attempts to
-     * provide a reasonable grouping and splitting based on the resources being
-     * split, the requested split size, and the group size. The goal is to make
-     * use of the available parent resources sensibly without requiring the
-     * caller to select a specific splitting strategy.
+     * Split the provided group by attempting to preserve tasks' current
+     * affinities (at time of the split call) as much as possible.
      */
-    QV_SPLIT_AUTO = -5
+    QV_SPLIT_CLOSE = -5
 };
 
 /**
