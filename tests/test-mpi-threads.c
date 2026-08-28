@@ -158,7 +158,7 @@ main(
         base_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
         "# Starting Pthread test (nthreads/process=%d)\n", nthreads
     );
-    thread_coloring = QV_THREAD_SCOPE_SPLIT_PACKED,
+    thread_coloring = QV_THREAD_SPLIT_PACKED,
     rc = qv_thread_split_at(
         subnuma, QV_HW_OBJ_PU, thread_coloring, nthreads, &th_scopes
     );
