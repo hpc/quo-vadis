@@ -119,7 +119,7 @@ struct thread_backend : split_backend {
                       label + ": qv_group_size(sub) failed");
             }
         }
-        check(qv_thread_free(m_k, subs), label + ": qv_thread_free() failed");
+        check(qv_thread_free(subs, m_k), label + ": qv_thread_free() failed");
         return results;
     }
 

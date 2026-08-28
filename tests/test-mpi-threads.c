@@ -139,7 +139,7 @@ main(
         thread_work(th_scopes[tid]);
     }
     // When we are done with the scope, clean up.
-    rc = qv_thread_free(nthreads, th_scopes);
+    rc = qv_thread_free(th_scopes, nthreads);
     if (rc != QV_SUCCESS) {
         ers = "qv_thread_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -192,7 +192,7 @@ main(
         "# Done!\n"
     );
     // When we are done with the scope, clean up.
-    rc = qv_thread_free(nthreads, th_scopes);
+    rc = qv_thread_free(th_scopes, nthreads);
     if (rc != QV_SUCCESS) {
         ers = "qv_thread_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));

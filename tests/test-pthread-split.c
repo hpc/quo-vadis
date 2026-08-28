@@ -99,7 +99,7 @@ main(void)
         //fprintf(stdout,"Thread finished with '%s'\n", (char *)ret);
     }
     // Clean up.
-    rc = qv_thread_free(nthreads, th_scopes);
+    rc = qv_thread_free(th_scopes, nthreads);
     if (rc != QV_SUCCESS) {
         ers = "qv_pthread_scope_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -147,7 +147,7 @@ main(void)
         //fprintf(stdout,"Thread finished with '%s'\n", (char *)ret);
     }
     // Clean up.
-    rc = qv_thread_free(nthreads, th_scopes);
+    rc = qv_thread_free(th_scopes, nthreads);
     if (rc != QV_SUCCESS) {
         ers = "qv_pthread_scope_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));

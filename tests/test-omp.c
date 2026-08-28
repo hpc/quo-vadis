@@ -18,7 +18,7 @@ scopei_free(
     scopei *sinfo
 ) {
     char *ers = NULL;
-    const int rc = qv_thread_free(sinfo->nthreads, sinfo->th_scopes);
+    const int rc = qv_thread_free(sinfo->th_scopes, sinfo->nthreads);
     if (rc != QV_SUCCESS) {
         ers = "qv_thread_free() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));

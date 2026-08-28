@@ -56,7 +56,7 @@ body_thread_split(void *v)
         ),
         "qv_thread_split"
     );
-    qvb_check(qv_thread_free(c->nthreads, subs), "qv_thread_free");
+    qvb_check(qv_thread_free(subs, c->nthreads), "qv_thread_free");
 }
 
 // qv_thread_split_at + qv_thread_free as a balanced cycle.
@@ -72,7 +72,7 @@ body_thread_split_at(void *v)
         ),
         "qv_thread_split_at"
     );
-    qvb_check(qv_thread_free(c->nthreads, subs), "qv_thread_free");
+    qvb_check(qv_thread_free(subs, c->nthreads), "qv_thread_free");
 }
 
 // qv_pthread_create + join, using a scope from a fresh split each iteration.
@@ -95,7 +95,7 @@ body_pthread_create(void *v)
     }
     pthread_join(tid, NULL);
 
-    qvb_check(qv_thread_free(1, subs), "qv_thread_free");
+    qvb_check(qv_thread_free(subs, 1), "qv_thread_free");
 }
 
 int
