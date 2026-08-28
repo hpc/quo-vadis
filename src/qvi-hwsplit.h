@@ -136,6 +136,11 @@ private:
     /** */
     std::vector<qvi_hwpool>
     m_split_base_hwpool(void);
+    /** */
+    std::vector<qvi_hwpool>
+    m_split_fixup(
+        const std::vector<qvi_hwpool> &hwpools
+    );
     /** Splits aggregate scope data. This can only be called by the root. */
     int
     m_split(void);
