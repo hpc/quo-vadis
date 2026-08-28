@@ -150,17 +150,17 @@ qv_thread_split_at(
 
 int
 qv_thread_free(
-    int nscopes,
-    qv_scope_t **scopes
+    qv_scope_t **kscopes,
+    int k
 ) {
-    if (qvi_unlikely(nscopes < 0)) {
+    if (qvi_unlikely(k < 0)) {
         return QV_ERR_INVLD_ARG;
     }
-    if (!scopes) {
+    if (!kscopes) {
         return QV_SUCCESS;
     }
     try {
-        qv_scope::thread_destroy(&scopes, nscopes);
+        qv_scope::thread_destroy(&kscopes, k);
         return QV_SUCCESS;
     }
     qvi_catch_and_return();

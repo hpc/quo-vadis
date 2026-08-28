@@ -31,6 +31,8 @@ extern "C" {
  * Automatic grouping options for qv_thread_split() and
  * qv_thread_split_at(). The following values can be used instead of
  * group_id to influence how automatic task grouping is accomplished.
+ *
+ * See quo-vadis.h for further details.
  */
 #define QV_THREAD_SPLIT_AUTO      ((int *)0x00000001)
 #define QV_THREAD_SPLIT_PACKED    ((int *)0x00000002)
@@ -58,11 +60,10 @@ qv_thread_split_at(
 /**
  * Frees resources allocated by calls to qv_thread_split*.
  */
-// TODO(skg) flip ordering.
 int
 qv_thread_free(
-    int nscopes,
-    qv_scope_t **scopes
+    qv_scope_t **kscopes,
+    int k
 );
 
 /* ////////////////////////////////////////////////////////////////////////// */
