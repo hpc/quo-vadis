@@ -498,15 +498,20 @@ main(
 
     // Split 1: Use a color
     split_at_gpu(comm_rank, base_scope, comm_rank % ngpus,
-        "Phase 3: GPU split using color comm_rank%ngpus"
+        "Phase 3: GPU split using color comm_rank %n gpus"
     );
     // Split 2: Use QV_SPLIT_SPREAD
     split_at_gpu(comm_rank, base_scope, QV_SPLIT_SPREAD,
         "Phase 3: GPU split using color QV_SPLIT_SPREAD"
     );
     // Split 3: Use QV_SPLIT_PACKED
-    // Split 4: Use QV_SPLIT_DEFAULT
-    // Split 5: Use QV_SPLIT_USE_ALL
+    split_at_gpu(comm_rank, base_scope, QV_SPLIT_PACKED,
+        "Phase 3: GPU split using color QV_SPLIT_PACKED"
+    );
+    // Split 4: Use QV_SPLIT_AUTO
+    split_at_gpu(comm_rank, base_scope, QV_SPLIT_AUTO,
+        "Phase 3: GPU split using color QV_SPLIT_AUTO"
+    );
 
     ///////////////////////////////////////////////////////////////////////
     // Clean up.

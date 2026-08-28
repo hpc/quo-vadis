@@ -202,12 +202,27 @@ qvi_map_spread(
     if (qvi_unlikely(config.be_verbose)) {
         qvi_log_info(qvi_spadtolen("Spread Mapping Started ", "=", vmaxl));
     }
-    size_t n = config.nsrc;
-    size_t m = config.ndst;
+    const size_t n = config.nsrc;
+    const size_t m = config.ndst;
     qvi_map_t map;
-    for (size_t srci = 0, dsti = 0; srci < n; ++srci) {
-        // Mod to loop around destination IDs.
-        map[srci].insert((dsti++) % m);
+    // Nothing to do.
+    if (n == 0 || m == 0) {
+        return map;
+    }
+    if (n < m) {
+        // Spread sources out across destinations.
+        const size_t stride = m / n;
+        for (size_t srci = 0, dsti = 0; srci < n; ++srci) {
+            map[srci].insert(dsti);
+            dsti += stride;
+        }
+    }
+    else {
+        // When n >= m, spread acts like a cyclic distribution.
+        for (size_t srci = 0, dsti = 0; srci < n; ++srci) {
+            // Mod to loop around destination IDs.
+            map[srci].insert((dsti++) % m);
+        }
     }
     if (qvi_unlikely(config.be_verbose)) {
         qvi_log_info(
