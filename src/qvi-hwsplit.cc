@@ -122,8 +122,7 @@ qvi_hwsplit::m_split_base_cpuset(void)
 {
     // Determine the cpuset that we are splitting over.
     const auto pri_cpuset = m_primary_cpuset_for_split(m_split_at_type);
-    const auto result = m_my_rmi.hwloc().bitmap_split(pri_cpuset, m_split_size);
-    return m_split_base_cpuset_fixup(result);
+    return m_my_rmi.hwloc().bitmap_split(pri_cpuset, m_split_size);
 }
 
 /**
@@ -210,9 +209,9 @@ normalize_colors(
     }
 }
 
-std::vector<qvi_hwloc_bitmap>
-qvi_hwsplit::m_split_base_cpuset_fixup(
-    const std::vector<qvi_hwloc_bitmap> &bitmaps
+std::vector<qvi_hwpool>
+qvi_hwsplit::m_split_fixup(
+    const std::vector<qvi_hwpool> &hwpools
 ) {
     switch (m_colors.front()) {
         case QV_SPLIT_AUTO:
@@ -225,25 +224,21 @@ qvi_hwsplit::m_split_base_cpuset_fixup(
             if (m_group_size < m_split_size) {
                 // Update to the new split size.
                 m_split_size = m_group_size;
-                // Split the bitmaps into m_group_size packed groups, then union
-                // each grouping into a single bitmap so that fixup ends up with
+                // Split the pools into m_group_size packed groups, then union
+                // each group into a single pool so that resultp ends up with
                 // exactly m_group_size elements: the updated split size.
-                const auto vvbitmaps = qvi_vector_split(bitmaps, m_group_size);
+                const auto vvpools = qvi_vector_split(hwpools, m_group_size);
                 // Create and populate the fixup.
-                std::vector<qvi_hwloc_bitmap> fixup;
-                for (const auto &vbitmaps : vvbitmaps) {
-                    qvi_hwloc_bitmap cpu_union;
-                    for (const auto &bitmap : vbitmaps) {
-                        cpu_union = cpu_union | bitmap;
-                    }
-                    fixup.emplace_back(cpu_union);
+                std::vector<qvi_hwpool> fixup;
+                for (const auto &vpools : vvpools) {
+                    fixup.emplace_back(qvi_hwpool::set_union(vpools));
                 }
                 return fixup;
             }
             // else fall through because no fixup is needed.
             [[fallthrough]];
         default: // No fixup needed.
-            return bitmaps;
+            return hwpools;
     }
 }
 
@@ -325,7 +320,7 @@ qvi_hwsplit::m_split_base_hwpool(void)
             }
         }
     }
-    return result;
+    return m_split_fixup(result);
 }
 
 // This is the main split function called by the splitting process.

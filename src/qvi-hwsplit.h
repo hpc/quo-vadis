@@ -137,9 +137,9 @@ private:
     std::vector<qvi_hwpool>
     m_split_base_hwpool(void);
     /** */
-    std::vector<qvi_hwloc_bitmap>
-    m_split_base_cpuset_fixup(
-        const std::vector<qvi_hwloc_bitmap> &bitmaps
+    std::vector<qvi_hwpool>
+    m_split_fixup(
+        const std::vector<qvi_hwpool> &hwpools
     );
     /** Splits aggregate scope data. This can only be called by the root. */
     int
