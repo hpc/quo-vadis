@@ -80,6 +80,40 @@ expected_chunks(
     return chunks;
 }
 
+// Packs |chunks.size()| base pieces into |npieces| groups (in packed order,
+// matching qvi_vector_split) and unions each group's cpusets. This mirrors the
+// library's QV_SPLIT_AUTO behavior when the group size clamps the effective
+// split size below the requested piece count: the base is first carved into
+// the requested number of pieces, then adjacent pieces are coalesced (unioned)
+// in packed order down to the clamped count.
+std::vector<qvi_hwloc_bitmap>
+pack_union_chunks(
+    const std::vector<qvi_hwloc_bitmap> &chunks,
+    int npieces
+) {
+    const int ntotal = static_cast<int>(chunks.size());
+    ctu_assert(
+        npieces > 0 && npieces <= ntotal,
+        "pack_union_chunks: invalid npieces %d for %d chunks", npieces, ntotal
+    );
+    const int base_chunk = ntotal / npieces;
+    const int remainder = ntotal % npieces;
+
+    std::vector<qvi_hwloc_bitmap> result(npieces);
+    int pos = 0;
+    for (int i = 0; i < npieces; ++i) {
+        const int sz = base_chunk + (i < remainder ? 1 : 0);
+        for (int k = 0; k < sz; ++k) {
+            const int orrc = hwloc_bitmap_or(
+                result[i].data(), result[i].cdata(), chunks[pos++].cdata()
+            );
+            ctu_assert(orrc == 0, "hwloc_bitmap_or() failed");
+        }
+    }
+    ctu_assert(pos == ntotal, "packing consumed %d of %d chunks", pos, ntotal);
+    return result;
+}
+
 void
 assert_same_cpuset(
     const qvi_hwloc_bitmap &got,
@@ -446,8 +480,6 @@ test_automatic(
 ) {
     const int gsize = backend.group_size();
     const int base_npus = npus(backend.base_cpuset());
-    hwloc_topology_t topo = backend.topology();
-    const qvi_hwloc_bitmap &base = backend.base_cpuset();
 
     const struct { int kind; const char *name; } auto_kinds[] = {
         {QV_SPLIT_PACKED, "QV_SPLIT_PACKED"},
@@ -458,14 +490,17 @@ test_automatic(
     for (const auto &ak : auto_kinds) {
         const std::string label =
             std::string("auto/") + ak.name + "[" + std::to_string(npieces) + "]";
-        // AUTO clamps the effective split size to min(group_size, npieces); the
-        // chunk vector must be recomputed at that clamped size.
+        // AUTO clamps the effective split size to min(group_size, npieces).
+        // When clamped, the library carves the base into |npieces| pieces and
+        // then coalesces them in packed order down to the clamped count, so the
+        // expected chunks are the packed unions of the base pieces rather than a
+        // fresh split at the clamped size.
         const int eff_pieces = (ak.kind == QV_SPLIT_AUTO)
             ? std::min(gsize, npieces) : npieces;
         const std::vector<qvi_hwloc_bitmap> eff_chunks =
             (eff_pieces == npieces)
                 ? chunks
-                : expected_chunks(topo, base, eff_pieces);
+                : pack_union_chunks(chunks, eff_pieces);
 
         const std::vector<int> colors(gsize, ak.kind);
         const auto results = backend.do_split(npieces, colors, label);

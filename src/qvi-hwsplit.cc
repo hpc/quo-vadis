@@ -209,13 +209,11 @@ normalize_colors(
     }
 }
 
-static size_t
-determine_actual_split_size(
-    const std::vector<int> &colors,
-    size_t group_size,
-    size_t requested_split_size
+std::vector<qvi_hwpool>
+qvi_hwsplit::m_split_fixup(
+    const std::vector<qvi_hwpool> &hwpools
 ) {
-    switch (colors.front()) {
+    switch (m_colors.front()) {
         case QV_SPLIT_AUTO:
             // QV_SPLIT_AUTO has different semantics than the other split
             // options: it automatically determines a reasonable grouping and
@@ -223,9 +221,24 @@ determine_actual_split_size(
             // size, and the group size. If the group size is smaller than the
             // requested split size, return the group size so that the split
             // does not leave a subset of the parent's resources unused.
-            return std::min(group_size, requested_split_size);
-        default:
-            return requested_split_size;
+            if (m_group_size < m_split_size) {
+                // Update to the new split size.
+                m_split_size = m_group_size;
+                // Split the pools into m_group_size packed groups, then union
+                // each group into a single pool so that resultp ends up with
+                // exactly m_group_size elements: the updated split size.
+                const auto vvpools = qvi_vector_split(hwpools, m_group_size);
+                // Create and populate the fixup.
+                std::vector<qvi_hwpool> fixup;
+                for (const auto &vpools : vvpools) {
+                    fixup.emplace_back(qvi_hwpool::set_union(vpools));
+                }
+                return fixup;
+            }
+            // else fall through because no fixup is needed.
+            [[fallthrough]];
+        default: // No fixup needed.
+            return hwpools;
     }
 }
 
@@ -307,25 +320,20 @@ qvi_hwsplit::m_split_base_hwpool(void)
             }
         }
     }
-    return result;
+    return m_split_fixup(result);
 }
 
 // This is the main split function called by the splitting process.
 int
 qvi_hwsplit::m_split(void)
 {
-    // First update instance state to reflect important split characteristics.
     // Update m_colors: verify and normalize input colors.
     m_colors = normalize_colors(m_colors, m_split_size);
-    // Update m_split_size: reflect the requirements of the upcoming split.
-    m_split_size = determine_actual_split_size(
-        m_colors, m_group_size, m_split_size
-    );
+    // Split the base hardware pool based on the request.
+    const auto split_hwpools = m_split_base_hwpool();
     // Now that those characteristics are updated, proceed with the split.
     // Determine the mapping configuration based on the user's request.
     const auto map_config = m_get_map_config();
-    // Split the base hardware pool based on that request.
-    const auto split_hwpools = m_split_base_hwpool();
     // Calculate the task to hardware pool resource mapping.
     const auto hwpool_map = map_config.map_fn(map_config);
 
