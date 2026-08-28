@@ -224,10 +224,11 @@ qvi_hwsplit::m_split_fixup(
             if (m_group_size < m_split_size) {
                 // Update to the new split size.
                 m_split_size = m_group_size;
-                // Split the pools into m_group_size packed groups, then union
-                // each group into a single pool so that resultp ends up with
-                // exactly m_group_size elements: the updated split size.
-                const auto vvpools = qvi_vector_split(hwpools, m_group_size);
+                // Split the pools into m_split_size packed groups, then union
+                // each group into a single pool so that fixup ends up with
+                // exactly m_split_size elements: the updated split size based
+                // on the group size.
+                const auto vvpools = qvi_vector_split(hwpools, m_split_size);
                 // Create and populate the fixup.
                 std::vector<qvi_hwpool> fixup;
                 for (const auto &vpools : vvpools) {
@@ -242,37 +243,44 @@ qvi_hwsplit::m_split_fixup(
     }
 }
 
-qvi_map_config
-qvi_hwsplit::m_get_map_config(void)
-{
-    switch (m_colors.front()) {
+/** Returns the appropriate mapping configuration based on the provided input.*/
+static qvi_map_config
+get_mapping_config(
+    const std::vector<int> &colors,
+    const std::vector<qvi_hwloc_bitmap> &task_affinities,
+    const std::vector<qvi_hwloc_bitmap> &hwpool_cpusets
+) {
+    const size_t group_size = task_affinities.size();
+    const size_t split_size = hwpool_cpusets.size();
+
+    switch (colors.front()) {
         case QV_SPLIT_CLOSE:
             return qvi_map_config(
-                m_task_affinities,
-                m_split_base_cpuset(),
+                task_affinities,
+                hwpool_cpusets,
                 qvi_map_close
             );
         case QV_SPLIT_PACKED:
             return qvi_map_config(
-                m_group_size,
-                m_split_size,
+                group_size,
+                split_size,
                 qvi_map_packed
             );
         case QV_SPLIT_SPREAD:
             return qvi_map_config(
-                m_group_size,
-                m_split_size,
+                group_size,
+                split_size,
                 qvi_map_spread
             );
         case QV_SPLIT_AUTO:
             return qvi_map_config(
-                m_group_size,
-                m_split_size,
+                group_size,
+                split_size,
                 qvi_map_packed
             );
         default: // User-defined splitting.
             return qvi_map_config(
-                m_colors,
+                colors,
                 qvi_map_colors
             );
     }
@@ -320,7 +328,7 @@ qvi_hwsplit::m_split_base_hwpool(void)
             }
         }
     }
-    return m_split_fixup(result);
+    return result;
 }
 
 // This is the main split function called by the splitting process.
@@ -330,10 +338,15 @@ qvi_hwsplit::m_split(void)
     // Update m_colors: verify and normalize input colors.
     m_colors = normalize_colors(m_colors, m_split_size);
     // Split the base hardware pool based on the request.
-    const auto split_hwpools = m_split_base_hwpool();
-    // Now that those characteristics are updated, proceed with the split.
-    // Determine the mapping configuration based on the user's request.
-    const auto map_config = m_get_map_config();
+    auto new_hwpools = m_split_base_hwpool();
+    // Potentially fixup the hardware pool split.
+    new_hwpools = m_split_fixup(new_hwpools);
+    // Get the cpusets from the new hardware pools.
+    const auto split_cpusets = qvi_hwpool::cpusets(new_hwpools);
+    // Determine the mapping configuration based on the current setup.
+    const auto map_config = get_mapping_config(
+        m_colors, m_task_affinities, split_cpusets
+    );
     // Calculate the task to hardware pool resource mapping.
     const auto hwpool_map = map_config.map_fn(map_config);
 
@@ -344,7 +357,7 @@ qvi_hwsplit::m_split(void)
     // and task coloring based on determined mapping.
     for (const auto &[taski, hwpoolis] : hwpool_map) {
         for (const auto &hwpooli : hwpoolis) {
-            m_hwpools.at(taski) = split_hwpools.at(hwpooli);
+            m_hwpools.at(taski) = new_hwpools.at(hwpooli);
             m_colors.at(taski) = static_cast<int>(hwpooli);
         }
     }

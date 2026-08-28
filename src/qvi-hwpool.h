@@ -228,6 +228,13 @@ public:
         const qvi_hwpool_dev &dev
     );
     /**
+     * Returns a vector of cpusets, one for each hardware pool in hwpools.
+     */
+    static std::vector<qvi_hwloc_bitmap>
+    cpusets(
+        const std::vector<qvi_hwpool> &hwpools
+    );
+    /**
      *
      */
     static qvi_hwpool

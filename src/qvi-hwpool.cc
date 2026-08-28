@@ -185,6 +185,17 @@ qvi_hwpool::add_device(
     }
 }
 
+std::vector<qvi_hwloc_bitmap>
+qvi_hwpool::cpusets(
+    const std::vector<qvi_hwpool> &hwpools
+) {
+    std::vector<qvi_hwloc_bitmap> result;
+    for (const auto &hwpool : hwpools) {
+        result.emplace_back(hwpool.cpuset());
+    }
+    return result;
+}
+
 qvi_hwpool
 qvi_hwpool::set_union(
     const std::vector<qvi_hwpool> &hwpools

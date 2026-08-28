@@ -127,9 +127,6 @@ private:
     m_primary_cpuset_for_split(
         qv_hw_obj_type_t requested_type
     ) const;
-    /** Returns the appropriate mapping configuration based on user input.*/
-    qvi_map_config
-    m_get_map_config(void);
     /** */
     std::vector<qvi_hwloc_bitmap>
     m_split_base_cpuset(void);
