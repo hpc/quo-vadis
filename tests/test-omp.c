@@ -49,7 +49,7 @@ scopei_ep(
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    int *thread_coloring = QV_THREAD_SCOPE_SPLIT_CLOSE;
+    int *thread_coloring = QV_THREAD_SPLIT_CLOSE;
     rc = qv_thread_split_at(
         base_scope, QV_HW_OBJ_CORE, thread_coloring,
         sinfo->nthreads, &sinfo->th_scopes

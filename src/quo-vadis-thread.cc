@@ -72,19 +72,23 @@ split_color_fixup(
     int k,
     std::vector<int> &kcolorsp
 ) {
+    // Set to a sentinel value initially.
     int real_color = QV_SPLIT_UNDEFINED;
     if (kcolors == nullptr) {
         // This is the default coloring if NULL
         // is passed to the split functions.
+        real_color = QV_SPLIT_AUTO;
+    }
+    else if (kcolors == QV_THREAD_SPLIT_AUTO) {
+        real_color = QV_SPLIT_AUTO;
+    }
+    else if (kcolors == QV_THREAD_SPLIT_PACKED) {
         real_color = QV_SPLIT_PACKED;
     }
-    else if (kcolors == QV_THREAD_SCOPE_SPLIT_PACKED) {
-        real_color = QV_SPLIT_PACKED;
-    }
-    else if (kcolors == QV_THREAD_SCOPE_SPLIT_SPREAD) {
+    else if (kcolors == QV_THREAD_SPLIT_SPREAD) {
         real_color = QV_SPLIT_SPREAD;
     }
-    else if (kcolors == QV_THREAD_SCOPE_SPLIT_CLOSE) {
+    else if (kcolors == QV_THREAD_SPLIT_CLOSE) {
         real_color = QV_SPLIT_CLOSE;
     }
     // Nothing to do. An automatic coloring was not requested.

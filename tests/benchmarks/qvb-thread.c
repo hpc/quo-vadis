@@ -52,7 +52,7 @@ body_thread_split(void *v)
     qv_scope_t **subs = NULL;
     qvb_check(
         qv_thread_split(
-            c->base, 1, QV_THREAD_SCOPE_SPLIT_PACKED, c->nthreads, &subs
+            c->base, 1, QV_THREAD_SPLIT_PACKED, c->nthreads, &subs
         ),
         "qv_thread_split"
     );
@@ -68,7 +68,7 @@ body_thread_split_at(void *v)
     qvb_check(
         qv_thread_split_at(
             c->base, QV_HW_OBJ_CORE,
-            QV_THREAD_SCOPE_SPLIT_PACKED, c->nthreads, &subs
+            QV_THREAD_SPLIT_PACKED, c->nthreads, &subs
         ),
         "qv_thread_split_at"
     );
@@ -83,7 +83,7 @@ body_pthread_create(void *v)
     qv_scope_t **subs = NULL;
     qvb_check(
         qv_thread_split(
-            c->base, 1, QV_THREAD_SCOPE_SPLIT_PACKED, 1, &subs
+            c->base, 1, QV_THREAD_SPLIT_PACKED, 1, &subs
         ),
         "qv_thread_split"
     );

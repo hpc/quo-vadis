@@ -32,9 +32,10 @@ extern "C" {
  * qv_thread_split_at(). The following values can be used instead of
  * group_id to influence how automatic task grouping is accomplished.
  */
-#define QV_THREAD_SCOPE_SPLIT_PACKED ((int *)0x00000001)
-#define QV_THREAD_SCOPE_SPLIT_SPREAD ((int *)0x00000002)
-#define QV_THREAD_SCOPE_SPLIT_CLOSE  ((int *)0x00000003)
+#define QV_THREAD_SPLIT_AUTO      ((int *)0x00000001)
+#define QV_THREAD_SPLIT_PACKED    ((int *)0x00000002)
+#define QV_THREAD_SPLIT_SPREAD    ((int *)0x00000003)
+#define QV_THREAD_SPLIT_CLOSE     ((int *)0x00000004)
 
 int
 qv_thread_split(

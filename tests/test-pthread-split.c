@@ -63,7 +63,7 @@ main(void)
     qv_scope_t **th_scopes = NULL;
     rc = qv_thread_split(
         base_scope, npieces,
-        QV_THREAD_SCOPE_SPLIT_PACKED,
+        QV_THREAD_SPLIT_PACKED,
         nthreads, &th_scopes
     );
     if (rc != QV_SUCCESS) {
@@ -114,7 +114,7 @@ main(void)
 
     rc = qv_thread_split_at(
         base_scope, QV_HW_OBJ_CORE,
-        QV_THREAD_SCOPE_SPLIT_PACKED,
+        QV_THREAD_SPLIT_PACKED,
         nthreads, &th_scopes
     );
     if (rc != QV_SUCCESS) {
