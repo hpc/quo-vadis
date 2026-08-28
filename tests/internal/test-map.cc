@@ -334,7 +334,7 @@ test_11(void)
     qvi_log_info("✓ {} PASSED", __func__);
 }
 
-// n == 2m, map spread
+// n == 2m, map spread (cyclic)
 static void
 test_12(void)
 {
@@ -369,8 +369,8 @@ test_12(void)
 static void
 test_13(void)
 {
-    size_t nsrc = 5;
-    size_t ndst = 7;
+    size_t nsrc = 3;
+    size_t ndst = 8;
 
     qvi_map_config config = {
         nsrc,
@@ -381,10 +381,8 @@ test_13(void)
 
     qvi_map_t expected = {
         {0, {0}},
-        {1, {1}},
-        {2, {2}},
-        {3, {3}},
-        {4, {4}}
+        {1, {2}},
+        {2, {4}}
     };
     ctu_assert(map == expected, "unexpected result");
 
