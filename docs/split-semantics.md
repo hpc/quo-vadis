@@ -53,15 +53,15 @@ QV_SPLIT_SPREAD;
 
 As mentioned above, the color specifies the mapping of processes to pieces. The semantics of these implicit colors depend on whether there are more processes than pieces and viceversa. Unlike an ordinal color, using an implicit color may result in at least one process having more than one piece in its associated subscope. In addition, implicit colors can be used on both the regular split and the device-based split.  
 
-### Auto
+### Auto (Entire-Block)
 
 This color assings *all* of the pieces to processes, leaving no piece unassigned. Its semantics are as follows.
 
 `Num. processes < num. pieces`<br>
-Since the number of processes is stricly less than the number of pieces, a one-to-one mapping leaves pieces unassigned. The auto color assigns *all* of the pieces to processes, which results in at least one process having more than one piece. Thus, at least one output subscope includes more than one piece.
+Since the number of processes is stricly less than the number of pieces, a one-to-one mapping leaves pieces unassigned. The auto color assigns *all* of the pieces (the *entire* resources) to processes, which results in at least one process having more than one piece. Thus, at least one output subscope includes more than one piece.
 
 `Num. processes >= num. pieces`<br>
-Distributes the processes over the pieces as evenly as possible. At least one process is assigned to more than one piece, which is encapsulated in its output subscope. 
+Distributes the processes over the pieces as evenly as possible in a *block* manner. At least one process is assigned to more than one piece, which is encapsulated in its output subscope. 
 
 
 ### Packed-Block
