@@ -19,7 +19,7 @@ do {                                                                           \
     exit(EXIT_FAILURE);                                                        \
 } while (0)
 
-static void
+void
 sleep_ms(long ms) {
     struct timespec ts;
     ts.tv_sec = ms / 1000;              // Whole seconds
@@ -28,71 +28,46 @@ sleep_ms(long ms) {
     nanosleep(&ts, NULL);
 }
 
+static char
+get_phase_id() {
+    static char phase = 'A';
+    return phase++;
+}
+
 static void
-do_omp_things(
-    qv_scope_t *scope,
-    char *scope_name,
-    int base_rank
-) {
+do_omp_things(qv_scope_t *scope, int rank, char phase)
+{
     int npus;
     int rc = qv_hw_obj_count(scope, QV_HW_OBJ_PU, &npus);
     if (rc != QV_SUCCESS) {
         char const *ers = "qv_hw_obj_count() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf(
-        "[%d] %s: doing OpenMP things on %d PUs...\n",
-        base_rank, scope_name, npus
-    );
+    printf("[%c%d]-> Doing OpenMP things on %d PUs...\n",
+           phase, rank, npus);
 }
 
 static void
-do_pthread_things(
-    qv_scope_t *scope,
-    char *scope_name,
-    int base_rank
-) {
+do_pthread_things(qv_scope_t *scope, int rank, char phase)
+{
     int ncores;
     int rc = qv_hw_obj_count(scope, QV_HW_OBJ_CORE, &ncores);
     if (rc != QV_SUCCESS) {
         char const *ers = "qv_hw_obj_count() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf(
-        "[%d] %s: doing Pthread things on %d Cores...\n",
-        base_rank, scope_name, ncores
-    );
+    printf("[%c%d]-> Doing Pthread things on %d Cores...\n",
+           phase, rank, ncores);
 }
 
-#if 0
 static void
-print_cpus(int rank, char *header, qv_scope_t *scope, char *scope_name)
+print_resources(int rank, char *header, qv_scope_t *scope, char phase)
 {
-    if (rank == 0) printf("\n# %s\n", header);
-    // Not needed; used so that header prints first
-    sleep_ms(1);
+    int nc = 0;
+    char str[256];
 
-    char *binds;
-    char const *ers = NULL;
-    int rc = qv_bind_string(scope, QV_BIND_STRING_PHYSICAL, &binds);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_string() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-    printf("[%d] %s: Running on CPUs %s\n",
-             rank, scope_name, binds);
-    free(binds);
-}
-#endif
-
-static void
-print_resources(int rank, char *header, qv_scope_t *scope, char *scope_name)
-{
     if (rank == 0)
-        printf("\n# %s\n", header);
-    else
-        // Not needed; used so that header prints first
-        sleep_ms(1);
+        printf("%c### %s\n", phase, header);
 
     char *binds;
     char const *ers = NULL;
@@ -101,78 +76,65 @@ print_resources(int rank, char *header, qv_scope_t *scope, char *scope_name)
         ers = "qv_bind_string() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    printf(
-        "[%d] %s: Running on CPUs %s\n", rank, scope_name, binds
-    );
+    nc += snprintf(str+nc, sizeof(str)-nc,
+                   "[%c%d] Running on CPUs %s\n",
+                   phase, rank, binds);
     free(binds);
 
     int nnumas;
-    rc = qv_hw_obj_count(
-        scope,
-        QV_HW_OBJ_NUMANODE,
-        &nnumas
-    );
+    rc = qv_hw_obj_count(scope, QV_HW_OBJ_NUMANODE, &nnumas);
     if (rc != QV_SUCCESS) {
         ers = "qv_hw_obj_count() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int ncores;
-    rc = qv_hw_obj_count(
-        scope,
-        QV_HW_OBJ_CORE,
-        &ncores
-    );
+    rc = qv_hw_obj_count(scope, QV_HW_OBJ_CORE, &ncores);
     if (rc != QV_SUCCESS) {
         ers = "qv_hw_obj_count() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int ngpus;
-    rc = qv_hw_obj_count(
-        scope,
-        QV_HW_OBJ_GPU,
-        &ngpus
-    );
+    rc = qv_hw_obj_count(scope, QV_HW_OBJ_GPU, &ngpus);
     if (rc != QV_SUCCESS) {
         ers = "qv_hw_obj_count() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    printf(
-        "[%d] %s: Got %d NUMAs %d Cores %d GPUs",
-        rank, scope_name, nnumas, ncores, ngpus
-    );
+    nc += snprintf(str+nc, sizeof(str)-nc,
+                   "[%c%d] Got %d NUMAs %d Cores %d GPUs\n",
+                   phase, rank, nnumas, ncores, ngpus);
 
     if (ngpus > 0) {
-        printf("\n[%d] %s: GPUs ", rank, scope_name);
+        nc += snprintf(str+nc, sizeof(str)-nc,
+                       "[%c%d] GPUs ",
+                       phase, rank);
         char *gpu;
         for (int i = 0; i < ngpus; i++) {
-            qv_device_id(
-                 scope, QV_HW_OBJ_GPU, i, QV_DEVICE_ID_PCI_BUS_ID, &gpu
-            );
-            printf("%s ", gpu);
+            qv_device_id(scope, QV_HW_OBJ_GPU, i,
+                         QV_DEVICE_ID_PCI_BUS_ID, &gpu);
+            nc += snprintf(str+nc, sizeof(str)-nc,
+                           "%s ",
+                           gpu);
         }
         free(gpu);
     }
 
-    printf("\n");
+    printf("%s\n", str);
 }
 
-// Split at GPUs.
-void split_at_gpu(int rank, qv_scope_t *scope, int color, char *header)
+static void
+split_at_device(int rank, qv_scope_t *scope,
+                qv_hw_obj_type_t device, int color,
+                char phase, char *header)
 {
-    // Split 1: Use a color
-    // Split 2: Use flag QV_SPLIT_BLOCK
-    // Split 3: Use flag QV_SPLIT_SPREAD
-    // Split 4: Use flag QV_SPLIT_USE_ALL
-
-    qv_scope_t *gpu_scope;
+    qv_scope_t *dev_scope;
     int rc = qv_split_at(
         scope,
-        QV_HW_OBJ_GPU,
+        device,
         color,
-        &gpu_scope
+        &dev_scope
     );
     char const *ers = NULL;
     if (rc != QV_SUCCESS) {
@@ -181,42 +143,21 @@ void split_at_gpu(int rank, qv_scope_t *scope, int color, char *header)
     }
 
     // Move into my scope
-    rc = qv_bind_push(gpu_scope);
+    rc = qv_bind_push(dev_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    print_resources(rank, header, gpu_scope, "gpu_scope");
+    print_resources(rank, header, dev_scope, phase);
 
-    int my_gpu_rank;
-    rc = qv_group_rank(
-        gpu_scope,
-        &my_gpu_rank
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_group_rank() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    int my_ngpus;
-    rc = qv_hw_obj_count(
-        gpu_scope,
-        QV_HW_OBJ_GPU,
-        &my_ngpus
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
-    rc = qv_bind_pop(gpu_scope);
+    rc = qv_bind_pop(dev_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_pop() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    rc = qv_free(gpu_scope);
+    rc = qv_free(dev_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_free() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
@@ -224,11 +165,8 @@ void split_at_gpu(int rank, qv_scope_t *scope, int color, char *header)
 }
 
 
-int
-main(
-    int argc,
-    char **argv
-) {
+int main(int argc, char **argv)
+{
     MPI_Comm comm = MPI_COMM_WORLD;
     char const *ers = NULL;
 
@@ -238,7 +176,7 @@ main(
         panic("%s (rc=%d)", ers, rc);
     }
 
-    // Get my communicator's size and rank.
+    // My communicator's size and rank.
     int comm_size;
     rc = MPI_Comm_size(
         comm,
@@ -272,8 +210,10 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
+    // What resources do I have in the given scope
     print_resources(comm_rank, "Base scope",
-               base_scope, "base_scope");
+                    base_scope, get_phase_id());
+
 
 
     ///////////////////////////////////////////////////////////////////////
@@ -284,8 +224,8 @@ main(
     qv_scope_t *sub_scope;
     rc = qv_split(
         base_scope,
-        comm_size, // Number of workers.
-        comm_rank, // My group color.
+        comm_size, // Number of pieces
+        comm_rank, // My color/piece
         &sub_scope
     );
     if (rc != QV_SUCCESS) {
@@ -300,26 +240,16 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    print_resources(comm_rank, "Phase 1: Regular split:",
-               sub_scope, "sub_scope");
-
     // What resources did I get?
-    int ngpus;
-    rc = qv_hw_obj_count(
-        sub_scope,
-        QV_HW_OBJ_GPU,
-        &ngpus
-    );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    print_resources(comm_rank, "Phase 1: Regular split",
+                    sub_scope, get_phase_id());
 
+    char phase = get_phase_id();
     if (comm_rank == 0)
-        printf("\n# Pthread launch on sub_scope(s)\n");
+        printf("%c###-> Pthread launch on sub_scope(s)\n", phase);
 
     // Launch Pthreads on respective sub_scope resources.
-    do_pthread_things(sub_scope, " sub_scope", comm_rank);
+    do_pthread_things(sub_scope, comm_rank, phase);
 
     // Need to finish Pthread work before GPU work
     rc = qv_barrier(base_scope);
@@ -328,23 +258,27 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    // E.g., launch one kernel per GPU, if GPUs are available.
-    if (comm_rank == 0)
-        printf("\n# GPU launch on sub_scope(s)\n");
+    int ngpus;
+    rc = qv_hw_obj_count(sub_scope, QV_HW_OBJ_GPU, &ngpus);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_hw_obj_count() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
 
-    printf(
-        "[%d] %s: launching %d GPU kernel(s)%s\n",
-        comm_rank, " sub_scope",
-        ngpus, !!ngpus ? " on:" : "."
-    );
+    // Launch one kernel per GPU, if GPUs are available.
+    if (ngpus > 0) {
+        phase = get_phase_id();
+        if (comm_rank == 0)
+            printf("%c###-> GPU launch on sub_scope(s)\n", phase);
+        printf("[%c%d]--> Launching %d GPU kernel(s)%s\n",
+               phase, comm_rank, ngpus, !!ngpus ? " on:" : ".");
+    }
 
     for (int i = 0; i < ngpus; i++) {
         char *gpu;
-        qv_device_id(
-            sub_scope, QV_HW_OBJ_GPU, i,
-            QV_DEVICE_ID_PCI_BUS_ID, &gpu
-        );
-        printf("[%d]->PCI Bus ID = %s\n", comm_rank, gpu);
+        qv_device_id(sub_scope, QV_HW_OBJ_GPU, i,
+                     QV_DEVICE_ID_PCI_BUS_ID, &gpu);
+        printf("[%c%d]--> PCI Bus ID = %s\n", phase, comm_rank, gpu);
         // Here are examples on how a user might
         // target the GPUs they got in a QV scope.
         //cudaDeviceGetByPCIBusId(&dev, gpu);
@@ -354,38 +288,35 @@ main(
     }
 
     // Pop back up to the base scope
-    // Todo: Do we need to pass a scope to the pop operation?
     rc = qv_bind_pop(sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_pop() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
+    // Make sure everbody finishes GPU work
+    // Todo: Is there an implicit barrier associated with pop()?
+    rc = qv_barrier(base_scope);
+    if (rc != QV_SUCCESS) {
+        ers = "qv_barrier() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
 
     ///////////////////////////////////////////////////////////////////////
-    // Phase 2: One master per resource,
-    //          others sleep, ay.
+    // Phase 2: One master per NUMA, others sleep.
     ///////////////////////////////////////////////////////////////////////
     // We could also do this by finding how many NUMA objects are there in the
     // scope, and then splitting over that number. Then, we could ask for a
-    // leader of each subscope. However, this does not guarantee a NUMA split.
-    // Thus, we use qv_split_at.
+    // leader of each subscope. However, this may not guarantee respecting
+    // NUMA boundaries. Thus, we use qv_split_at.
 
-    // Todo: It'd be nice to have a QV_SPLIT_DEFAULT flag
-    // so that users don't have to think about about this,
-    // unless there's specific requirements, e.g.,
-    // SPREAD, BLOCK, USE_ALL
-    // Implementation-wise, DEFAULT may simply be an alias
-    // to another policy given the specific situation, e.g.,
-    // USE_ALL if num_processes less than num_devices
-    // Need to document all these flags, too.
-
-    // Split at NUMA domains.
+    // Split at NUMA domains
     qv_scope_t *numa_scope;
     rc = qv_split_at(
         base_scope,
         QV_HW_OBJ_NUMANODE,
-        QV_SPLIT_SPREAD,
+        QV_SPLIT_AUTO,
         &numa_scope
     );
     if (rc != QV_SUCCESS) {
@@ -400,9 +331,8 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    // Todo: Need to add ordinal color and SPLIT_USE_ALL
-    print_resources(comm_rank, "Phase 2: NUMA split w/SPLIT_SPREAD",
-                    numa_scope, "numa_scope");
+    print_resources(comm_rank, "Phase 2: NUMA split w/SPLIT_AUTO",
+                    numa_scope, get_phase_id());
 
     // Allow selecting a leader per NUMA.
     int my_numa_rank;
@@ -427,22 +357,17 @@ main(
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
-    // Barrier not needed; used for tidy output
-    rc = qv_barrier(base_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_barrier() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
-
+    phase = get_phase_id();
     if (my_numa_rank == 0) {
-        printf("[%d]->NUMA ID %d: Launching OMP region\n",
-                 comm_rank, my_numa_rank);
-        do_omp_things(numa_scope, "numa_scope", comm_rank);
+        printf("[%c%d]-> NUMA ID %d: Launching OMP region\n",
+               phase, comm_rank, my_numa_rank);
+        do_omp_things(numa_scope, comm_rank, phase);
     } else {
-        printf("[%d]->NUMA ID %d\n", comm_rank, my_numa_rank);
+        printf("[%c%d]-> NUMA ID %d\n",
+               phase, comm_rank, my_numa_rank);
     }
 
-    // Leader works; everybody else waits
+    // NUMA leader works; everybody else waits
     rc = qv_barrier(numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_barrier() failed";
@@ -450,16 +375,20 @@ main(
     }
 
     // Pop back up to the base scope
-    // Todo: Do we need to pass a scope to the pop operation?
     rc = qv_bind_pop(numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_pop() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
+    // Test NUMA split using ordinal color
+    split_at_device(comm_rank, base_scope, QV_HW_OBJ_NUMANODE,
+                    comm_rank % nnumas, get_phase_id(),
+                    "Phase 2: NUMA split w/comm_rank % nnumas");
+
 
     ///////////////////////////////////////////////////////////////////////
-    // Phase 3: GPU work!
+    // Phase 3: GPU work
     ///////////////////////////////////////////////////////////////////////
 
     // Get the number of GPUs so that we can
@@ -475,43 +404,28 @@ main(
     }
 
     if (ngpus == 0) {
+        phase = get_phase_id();
         if (comm_rank == 0)
-            printf("->Skipping: No GPUs found!\n");
+            printf("%c### Phase 3: No GPUs found\n", phase);
         goto done;
     }
 
-    // Todo: Create Github Issue
-    // Todo: I think we should have the following policies:
-    // SPLIT_SPREAD
-    //   Only matters when num_tasks < num_scopes
-    // SPLIT_COMPACT
-    //   Only matters when num_tasks < num_scopes
-    // SPLIT_USE_ALL
-    //   Only matters when num_tasks < num_scopes
-    // SPLIT_DEFAULT
-    //   Wrapper pointing to an existing policy given certain conditions
-    // Ordinal color
-
-    // Todo: What's the difference between
-    // SPLIT_CLOSE and SPLIT_PACKED
-    // how about SPLIT_BLOCK?
-
-    // Split 1: Use a color
-    split_at_gpu(comm_rank, base_scope, comm_rank % ngpus,
-        "Phase 3: GPU split using color comm_rank %n gpus"
-    );
+    // Split 1: Use ordinal color
+    split_at_device(comm_rank, base_scope, QV_HW_OBJ_GPU,
+                    comm_rank % ngpus, get_phase_id(),
+                    "Phase 3: GPU split w/comm_rank % ngpus");
     // Split 2: Use QV_SPLIT_SPREAD
-    split_at_gpu(comm_rank, base_scope, QV_SPLIT_SPREAD,
-        "Phase 3: GPU split using color QV_SPLIT_SPREAD"
-    );
+    split_at_device(comm_rank, base_scope, QV_HW_OBJ_GPU,
+                    QV_SPLIT_SPREAD, get_phase_id(),
+                    "Phase 3: GPU split w/QV_SPLIT_SPREAD");
     // Split 3: Use QV_SPLIT_PACKED
-    split_at_gpu(comm_rank, base_scope, QV_SPLIT_PACKED,
-        "Phase 3: GPU split using color QV_SPLIT_PACKED"
-    );
+    split_at_device(comm_rank, base_scope, QV_HW_OBJ_GPU,
+                    QV_SPLIT_PACKED, get_phase_id(),
+                    "Phase 3: GPU split w/QV_SPLIT_PACKED");
     // Split 4: Use QV_SPLIT_AUTO
-    split_at_gpu(comm_rank, base_scope, QV_SPLIT_AUTO,
-        "Phase 3: GPU split using color QV_SPLIT_AUTO"
-    );
+    split_at_device(comm_rank, base_scope, QV_HW_OBJ_GPU,
+                    QV_SPLIT_AUTO, get_phase_id(),
+                    "Phase 3: GPU split w/QV_SPLIT_AUTO");
 
     ///////////////////////////////////////////////////////////////////////
     // Clean up.
