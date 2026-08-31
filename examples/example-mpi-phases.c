@@ -29,7 +29,7 @@ sleep_ms(long ms) {
 }
 
 static char
-get_phase_id() {
+get_phase_id(void) {
     static char phase = 'A';
     return phase++;
 }
@@ -382,6 +382,15 @@ int main(int argc, char **argv)
     }
 
     // Test NUMA split using ordinal color
+    rc = qv_hw_obj_count(
+        base_scope,
+        QV_HW_OBJ_NUMANODE,
+        &nnumas
+    );
+    if (rc != QV_SUCCESS) {
+        ers = "qv_hw_obj_count() failed";
+        panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
     split_at_device(comm_rank, base_scope, QV_HW_OBJ_NUMANODE,
                     comm_rank % nnumas, get_phase_id(),
                     "Phase 2: NUMA split w/comm_rank % nnumas");
