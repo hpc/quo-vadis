@@ -17,7 +17,7 @@
 #include "qvi-common.h"
 #include "qvi-hwloc.h"
 #include "qvi-hwpool.h"
-#include "qvi-map.h"
+#include "qvi-map.h" // IWYU pragma: begin_keep
 #include "qvi-scope.h"
 
 /**
