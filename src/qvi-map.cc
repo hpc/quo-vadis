@@ -166,8 +166,8 @@ qvi_map_packed(
     if (qvi_unlikely(config.be_verbose)) {
         qvi_log_info(qvi_spadtolen("Packed Mapping Started ", "=", vmaxl));
     }
-    size_t n = config.nsrc;
-    size_t m = config.ndst;
+    const size_t n = config.nsrc;
+    const size_t m = config.ndst;
     qvi_map_t map;
     // Nothing to do.
     if (n == 0 || m == 0) {

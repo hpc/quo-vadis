@@ -64,7 +64,7 @@ static void
 print_resources(int rank, char *header, qv_scope_t *scope, char phase)
 {
     int nc = 0;
-    char str[256];
+    char str[2048];
 
     if (rank == 0)
         printf("%c### %s\n", phase, header);
@@ -114,11 +114,9 @@ print_resources(int rank, char *header, qv_scope_t *scope, char phase)
         for (int i = 0; i < ngpus; i++) {
             qv_device_id(scope, QV_HW_OBJ_GPU, i,
                          QV_DEVICE_ID_PCI_BUS_ID, &gpu);
-            nc += snprintf(str+nc, sizeof(str)-nc,
-                           "%s ",
-                           gpu);
+            nc += snprintf(str+nc, sizeof(str)-nc, "%s ", gpu);
+            free(gpu);
         }
-        free(gpu);
     }
 
     printf("%s\n", str);
