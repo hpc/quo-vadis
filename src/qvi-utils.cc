@@ -182,8 +182,8 @@ qvi_sbanner(
     size_t maxlen
 ) {
     const auto line = qvi_spadtolen("", "#", maxlen);
-    const auto bantop = "\n\n" + line + "\n";
-    const auto banbot = "\n" + line + "\n\n";
+    const auto bantop = "\n" + line + "\n";
+    const auto banbot = "\n" + line + "\n";
 
     return bantop + qvi_swrap(text, maxlen) + banbot;
 }
