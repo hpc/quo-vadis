@@ -683,14 +683,14 @@ qvi_map_close(
 }
 
 qvi_map_t
-qvi_map_devices(
+qvi_map_afpacked(
     const qvi_map_config &config
 ) {
     if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info(qvi_spadtolen("Devices Mapping Started ", "=", vmaxl));
+        qvi_log_info(qvi_spadtolen("Afpacked Mapping Started ", "=", vmaxl));
     }
-    // Cache relevant input data. Sources are device affinities; destinations
-    // are the affinities of the places where the devices will be mapped.
+    // Cache relevant input data. Sources are the source affinities; destinations
+    // are the affinities of the places where the sources will be mapped.
     const auto &src = config.src_affinities;
     const auto &dst = config.dst_affinities;
     const size_t nsrc = src.size();
@@ -700,15 +700,15 @@ qvi_map_devices(
     if (nsrc == 0 || ndst == 0) {
         return map;
     }
-    // Tracks whether a given device has already been mapped. Devices must be
+    // Tracks whether a given source has already been mapped. Sources must be
     // mapped exactly once.
     std::vector<bool> placed(nsrc, false);
-    // Soft per-destination capacity: ceil(nsrc / ndst). Devices are packed onto
+    // Soft per-destination capacity: ceil(nsrc / ndst). Sources are packed onto
     // destinations up to this capacity. The capacity is a soft target: if all
-    // of a device's affinity destinations are already full, the device still
+    // of a source's affinity destinations are already full, the source still
     // overflows into the first destination it has affinity to.
     const size_t cap = qvi_maxiperk(nsrc, ndst);
-    // Tracks how many devices have been assigned to each destination.
+    // Tracks how many sources have been assigned to each destination.
     std::vector<size_t> count(ndst, 0);
     // Affinity predicates.
     const auto included = [&](size_t srci, size_t dsti) {
@@ -722,7 +722,7 @@ qvi_map_devices(
         ) != 0;
     };
     // Returns the first (lowest-index) destination satisfying the predicate for
-    // device srci that is also under capacity, or ndst if none qualifies.
+    // source srci that is also under capacity, or ndst if none qualifies.
     const auto first_fit = [&](size_t srci, const auto &predicate) -> size_t {
         for (size_t dsti = 0; dsti < ndst; ++dsti) {
             if (predicate(srci, dsti) && count[dsti] < cap) return dsti;
@@ -730,26 +730,26 @@ qvi_map_devices(
         return ndst;
     };
     // Returns the first (lowest-index) destination satisfying the predicate for
-    // device srci, ignoring capacity, or ndst if none qualifies.
+    // source srci, ignoring capacity, or ndst if none qualifies.
     const auto first_affinity = [&](size_t srci, const auto &predicate) -> size_t {
         for (size_t dsti = 0; dsti < ndst; ++dsti) {
             if (predicate(srci, dsti)) return dsti;
         }
         return ndst;
     };
-    // Pack each device onto a destination in device order.
+    // Pack each source onto a destination in source order.
     //
-    // Priority per device:
-    //   1. First destination that fully contains the device's affinity and is
+    // Priority per source:
+    //   1. First destination that fully contains the source's affinity and is
     //      under capacity (containment is preferred).
     //   2. First destination that shares any affinity and is under capacity.
-    //   3. Soft-cap overflow: first destination the device has affinity to,
+    //   3. Soft-cap overflow: first destination the source has affinity to,
     //      preferring containment, then intersection, ignoring capacity.
     for (size_t srci = 0; srci < nsrc; ++srci) {
         size_t dsti = first_fit(srci, included);
         if (dsti == ndst) dsti = first_fit(srci, intersects);
         // All affinity destinations are at capacity: overflow into the first
-        // destination the device has affinity to (containment first).
+        // destination the source has affinity to (containment first).
         if (dsti == ndst) dsti = first_affinity(srci, included);
         if (dsti == ndst) dsti = first_affinity(srci, intersects);
         if (dsti != ndst) {
@@ -758,22 +758,22 @@ qvi_map_devices(
             count[dsti]++;
         }
     }
-    // Every device is expected to have affinity to at least one destination and
-    // therefore must have been mapped exactly once. If any device was left
+    // Every source is expected to have affinity to at least one destination and
+    // therefore must have been mapped exactly once. If any source was left
     // unplaced, the input has no feasible mapping.
     for (size_t srci = 0; srci < nsrc; ++srci) {
         if (!placed[srci]) {
             qvi_log_error(
-                "Device {} has no affinity to any destination: "
+                "Source {} has no affinity to any destination: "
                 "no feasible mapping!", srci
             );
             throw qvi_runtime_error(QV_ERR_NOT_SUPPORTED);
         }
     }
     if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info("Devices done with N={}, M={}", nsrc, ndst);
-        qvi_map_emit("Devices", map);
-        qvi_log_info(qvi_spadtolen("Devices Mapping Done ", "=", vmaxl));
+        qvi_log_info("Afpacked done with N={}, M={}", nsrc, ndst);
+        qvi_map_emit("Afpacked", map);
+        qvi_log_info(qvi_spadtolen("Afpacked Mapping Done ", "=", vmaxl));
     }
     return map;
 }
