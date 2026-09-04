@@ -127,6 +127,25 @@ qvi_map_close(
 );
 
 /**
+ * Maps devices (source affinities) to destinations (destination affinities)
+ * based on affinity. Each device is mapped to exactly one destination.
+ *
+ * This is a packed mapping with affinity awareness: devices are packed onto
+ * destinations in device order, each destination holding up to
+ * ceil(nsrc / ndst) devices. For each device, the first (lowest-index)
+ * under-capacity destination that fully contains the device's affinity is
+ * preferred; otherwise the first under-capacity destination that shares any
+ * affinity is used. If all of a device's affinity destinations are already at
+ * capacity, the device overflows into the first destination it has affinity to
+ * (this soft capacity keeps every device mapped). Every device is expected to
+ * have affinity to at least one destination.
+ */
+qvi_map_t
+qvi_map_devices(
+    const qvi_map_config &config
+);
+
+/**
  * Takes a map and assigns its values as keys and keys as values.
  */
 qvi_map_t

@@ -412,6 +412,83 @@ test_14(void)
     qvi_log_info("✓ {} PASSED", __func__);
 }
 
+// Map devices: mimics two NUMAs with 2 GPUs on only one NUMA.
+static void
+test_15(void)
+{
+    const auto numa0 = ctu_bitmap_gen_pus(0, 2);
+    const auto numa1 = ctu_bitmap_gen_pus(2, 4);
+    //qvi_log_info("NUMA0={}", qvi_hwloc::bitmap_string(numa0));
+    //qvi_log_info("NUMA1={}", qvi_hwloc::bitmap_string(numa1));
+
+    std::vector<qvi_hwloc_bitmap> dev_affinities(2, numa0);
+    std::vector<qvi_hwloc_bitmap> dst_affinities;
+    dst_affinities.push_back(numa0);
+    dst_affinities.push_back(numa1);
+
+    qvi_map_config config = {
+        dev_affinities,
+        dst_affinities
+    };
+
+    auto map = qvi_map_devices(config);
+
+    qvi_map_t expected = {
+        {0, {0}},
+        {1, {0}}
+    };
+    ctu_assert(map == expected, "unexpected result");
+
+    qvi_log_info("✓ {} PASSED", __func__);
+}
+
+// Map devices: mimics two NUMAs with 4 GPUs per NUMA with an uneven split.
+static void
+test_16(void)
+{
+    const int npus = 48;
+    const auto numa0 = ctu_bitmap_gen_pus(0, npus / 2);
+    const auto numa1 = ctu_bitmap_gen_pus(npus / 2, npus);
+    //qvi_log_info("NUMA0={}", qvi_hwloc::bitmap_string(numa0));
+    //qvi_log_info("NUMA1={}", qvi_hwloc::bitmap_string(numa1));
+
+    std::vector<qvi_hwloc_bitmap> numa0_affinities(4, numa0);
+    std::vector<qvi_hwloc_bitmap> numa1_affinities(4, numa1);
+    // 8 devices, 4 on one NUMA, 4 on another.
+    std::vector<qvi_hwloc_bitmap> dev_affinities(numa0_affinities);
+    dev_affinities.insert(
+        dev_affinities.end(),
+        numa1_affinities.begin(),
+        numa1_affinities.end()
+    );
+
+    const auto dst_affinities = ctu_bitmap_split_pus(npus, 3);
+    //for (const auto &bitmap : dst_affinities) {
+    //    qvi_log_info("bitmap={}", qvi_hwloc::bitmap_string(bitmap));
+    //}
+
+    qvi_map_config config = {
+        dev_affinities,
+        dst_affinities
+    };
+
+    auto map = qvi_map_devices(config);
+
+    qvi_map_t expected = {
+        {0, {0}},
+        {1, {0}},
+        {2, {0}},
+        {3, {1}},
+        {4, {1}},
+        {5, {1}},
+        {6, {2}},
+        {7, {2}},
+    };
+    ctu_assert(map == expected, "unexpected result");
+
+    qvi_log_info("✓ {} PASSED", __func__);
+}
+
 int
 main(void)
 {
@@ -431,6 +508,8 @@ main(void)
     test_12();
     test_13();
     test_14();
+    test_15();
+    test_16();
 
     qvi_log_info("✓ All tests PASSED");
     return EXIT_SUCCESS;

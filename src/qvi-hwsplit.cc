@@ -312,7 +312,7 @@ qvi_hwsplit::m_split_base_hwpool(void)
             dev_affinities,
             split_cpusets
         };
-        const auto devs2hres_map = qvi_map_close(devs2hres_config);
+        const auto devs2hres_map = qvi_map_devices(devs2hres_config);
 
         if (qvi_unlikely(devs2hres_config.be_verbose)) {
             const auto label = "Final device (devt="
