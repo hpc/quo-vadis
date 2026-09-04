@@ -412,7 +412,7 @@ test_14(void)
     qvi_log_info("✓ {} PASSED", __func__);
 }
 
-// Map devices: mimics two NUMAs with 2 GPUs on only one NUMA.
+// Afpacked map: mimics two NUMAs with 2 GPUs on only one NUMA.
 static void
 test_15(void)
 {
@@ -431,7 +431,7 @@ test_15(void)
         dst_affinities
     };
 
-    auto map = qvi_map_devices(config);
+    auto map = qvi_map_afpacked(config);
 
     qvi_map_t expected = {
         {0, {0}},
@@ -442,7 +442,7 @@ test_15(void)
     qvi_log_info("✓ {} PASSED", __func__);
 }
 
-// Map devices: mimics two NUMAs with 4 GPUs per NUMA with an uneven split.
+// Afpacked map: mimics two NUMAs with 4 GPUs per NUMA with an uneven split.
 static void
 test_16(void)
 {
@@ -472,7 +472,7 @@ test_16(void)
         dst_affinities
     };
 
-    auto map = qvi_map_devices(config);
+    auto map = qvi_map_afpacked(config);
 
     qvi_map_t expected = {
         {0, {0}},
