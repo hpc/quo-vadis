@@ -682,6 +682,102 @@ qvi_map_close(
     return map;
 }
 
+qvi_map_t
+qvi_map_devices(
+    const qvi_map_config &config
+) {
+    if (qvi_unlikely(config.be_verbose)) {
+        qvi_log_info(qvi_spadtolen("Devices Mapping Started ", "=", vmaxl));
+    }
+    // Cache relevant input data. Sources are device affinities; destinations
+    // are the affinities of the places where the devices will be mapped.
+    const auto &src = config.src_affinities;
+    const auto &dst = config.dst_affinities;
+    const size_t nsrc = src.size();
+    const size_t ndst = dst.size();
+    qvi_map_t map;
+    // Nothing to do.
+    if (nsrc == 0 || ndst == 0) {
+        return map;
+    }
+    // Tracks whether a given device has already been mapped. Devices must be
+    // mapped exactly once.
+    std::vector<bool> placed(nsrc, false);
+    // Soft per-destination capacity: ceil(nsrc / ndst). Devices are packed onto
+    // destinations up to this capacity. The capacity is a soft target: if all
+    // of a device's affinity destinations are already full, the device still
+    // overflows into the first destination it has affinity to.
+    const size_t cap = qvi_maxiperk(nsrc, ndst);
+    // Tracks how many devices have been assigned to each destination.
+    std::vector<size_t> count(ndst, 0);
+    // Affinity predicates.
+    const auto included = [&](size_t srci, size_t dsti) {
+        return hwloc_bitmap_isincluded(
+            src.at(srci).cdata(), dst.at(dsti).cdata()
+        ) != 0;
+    };
+    const auto intersects = [&](size_t srci, size_t dsti) {
+        return hwloc_bitmap_intersects(
+            src.at(srci).cdata(), dst.at(dsti).cdata()
+        ) != 0;
+    };
+    // Returns the first (lowest-index) destination satisfying the predicate for
+    // device srci that is also under capacity, or ndst if none qualifies.
+    const auto first_fit = [&](size_t srci, const auto &predicate) -> size_t {
+        for (size_t dsti = 0; dsti < ndst; ++dsti) {
+            if (predicate(srci, dsti) && count[dsti] < cap) return dsti;
+        }
+        return ndst;
+    };
+    // Returns the first (lowest-index) destination satisfying the predicate for
+    // device srci, ignoring capacity, or ndst if none qualifies.
+    const auto first_affinity = [&](size_t srci, const auto &predicate) -> size_t {
+        for (size_t dsti = 0; dsti < ndst; ++dsti) {
+            if (predicate(srci, dsti)) return dsti;
+        }
+        return ndst;
+    };
+    // Pack each device onto a destination in device order.
+    //
+    // Priority per device:
+    //   1. First destination that fully contains the device's affinity and is
+    //      under capacity (containment is preferred).
+    //   2. First destination that shares any affinity and is under capacity.
+    //   3. Soft-cap overflow: first destination the device has affinity to,
+    //      preferring containment, then intersection, ignoring capacity.
+    for (size_t srci = 0; srci < nsrc; ++srci) {
+        size_t dsti = first_fit(srci, included);
+        if (dsti == ndst) dsti = first_fit(srci, intersects);
+        // All affinity destinations are at capacity: overflow into the first
+        // destination the device has affinity to (containment first).
+        if (dsti == ndst) dsti = first_affinity(srci, included);
+        if (dsti == ndst) dsti = first_affinity(srci, intersects);
+        if (dsti != ndst) {
+            map[srci].insert(dsti);
+            placed[srci] = true;
+            count[dsti]++;
+        }
+    }
+    // Every device is expected to have affinity to at least one destination and
+    // therefore must have been mapped exactly once. If any device was left
+    // unplaced, the input has no feasible mapping.
+    for (size_t srci = 0; srci < nsrc; ++srci) {
+        if (!placed[srci]) {
+            qvi_log_error(
+                "Device {} has no affinity to any destination: "
+                "no feasible mapping!", srci
+            );
+            throw qvi_runtime_error(QV_ERR_NOT_SUPPORTED);
+        }
+    }
+    if (qvi_unlikely(config.be_verbose)) {
+        qvi_log_info("Devices done with N={}, M={}", nsrc, ndst);
+        qvi_map_emit("Devices", map);
+        qvi_log_info(qvi_spadtolen("Devices Mapping Done ", "=", vmaxl));
+    }
+    return map;
+}
+
 void
 qvi_map_emit(
     const std::string &name,
