@@ -266,8 +266,8 @@ int main(int argc, char **argv)
     }
 
     // Launch one kernel per GPU, if GPUs are available.
+    phase = get_phase_id();
     if (ngpus > 0) {
-        phase = get_phase_id();
         if (comm_rank == 0)
             printf("%c###-> GPU launch on sub_scope(s)\n", phase);
         printf("[%c%d]--> Launching %d GPU kernel(s)%s\n",
