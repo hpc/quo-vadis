@@ -363,7 +363,7 @@ int main(int argc, char **argv)
                phase, comm_rank, my_numa_rank);
         do_omp_things(numa_scope, comm_rank, phase);
     } else {
-        printf("[%c%d]-> NUMA ID %d\n",
+        printf("[%c%d]-> NUMA ID %d: Resting\n",
                phase, comm_rank, my_numa_rank);
     }
 
