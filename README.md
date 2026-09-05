@@ -45,6 +45,10 @@ cmake -DQV_SANITIZE=address ..
 | QV_SANITIZE         | none    | Available: address;thread;undefined          |
 | QV_DEVELOPER_MODE   | depends | If in repo, ON by default; OFF otherwise     |
 
+## Developer Documentation
+See [Git Workflow](docs/git-workflow.md) for our typical branching, pull
+request, and rebasing conventions.
+
 ## Testing
 ```shell
 ctest
