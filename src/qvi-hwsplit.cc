@@ -15,6 +15,7 @@
 #include "qvi-task.h"
 #include "qvi-rmi.h"
 #include "qvi-coll.h"
+#include "qvi-map.h"
 #include "qvi-scope.h"
 
 // TODOs
@@ -67,7 +68,8 @@ qvi_hwsplit::qvi_hwsplit(
     size_t group_size,
     size_t split_size,
     qv_hw_obj_type_t split_at_type
-) : m_my_rmi(parent->group().task().rmi())
+) : m_be_verbose(qvi_envset(QVI_ENV_VMAP))
+  , m_my_rmi(parent->group().task().rmi())
   , m_my_hwpool(parent->hwpool())
   , m_group_size(group_size)
   , m_split_size(split_size)
@@ -335,6 +337,9 @@ qvi_hwsplit::m_split_base_hwpool(void)
 int
 qvi_hwsplit::m_split(void)
 {
+    if (qvi_unlikely(m_be_verbose)) {
+        qvi_log_info(qvi_sbanner("# Split start", qvi_maxolen));
+    }
     // Update m_colors: verify and normalize input colors.
     m_colors = normalize_colors(m_colors, m_split_size);
     // Split the base hardware pool based on the request.
@@ -350,7 +355,7 @@ qvi_hwsplit::m_split(void)
     // Calculate the task to hardware pool resource mapping.
     const auto hwpool_map = map_config.map_fn(map_config);
 
-    if (qvi_unlikely(map_config.be_verbose)) {
+    if (qvi_unlikely(m_be_verbose)) {
         qvi_map_emit("\n## Task ID to Host Hardware Pool", hwpool_map);
     }
     // Perform final task to hardware pool assignments
@@ -361,11 +366,12 @@ qvi_hwsplit::m_split(void)
             m_colors.at(taski) = static_cast<int>(hwpooli);
         }
     }
-    if (qvi_unlikely(map_config.be_verbose)) {
+    if (qvi_unlikely(m_be_verbose)) {
         qvi_log_info(
             "\n## Final Color assignments:\n{}",
             format_coloring(m_colors)
         );
+        qvi_log_info(qvi_sbanner("# Split done", qvi_maxolen));
     }
     return QV_SUCCESS;
 }

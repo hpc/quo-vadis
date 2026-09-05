@@ -17,7 +17,6 @@
 #include "qvi-common.h"
 #include "qvi-hwloc.h"
 #include "qvi-hwpool.h"
-#include "qvi-map.h" // IWYU pragma: begin_keep
 #include "qvi-scope.h"
 
 /**
@@ -45,6 +44,8 @@ private:
     );
     /** Destructor. */
     ~qvi_hwsplit(void) = default;
+    /** Verbosity flag. */
+    bool m_be_verbose = false;
     /** A const reference to my RMI. */
     qvi_rmi_client &m_my_rmi;
     /** A const reference to my base hardware pool. */

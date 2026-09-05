@@ -17,19 +17,6 @@
 // Verbose output max length.
 static constexpr size_t vmaxl = qvi_maxolen;
 
-qvi_map_t
-qvi_map_invert(
-    const qvi_map_t &original
-) {
-    qvi_map_t inverted;
-    for (const auto &[key, values] : original) {
-        for (size_t value : values) {
-            inverted[value].insert(key);
-        }
-    }
-    return inverted;
-}
-
 template<typename T>
 std::set<T>
 k_set_intersection(
@@ -78,160 +65,6 @@ format_assignments(
     }
     oss << "\n}";
     return oss.str();
-}
-
-qvi_map_t
-qvi_map_uniq(
-    const qvi_map_t &map
-) {
-    qvi_map_t result;
-    std::set<size_t> seen;
-    for (const auto &[src, dsts] : map) {
-        for (const auto &dst : dsts) {
-            // Destination is mapped, skip.
-            if (seen.contains(dst)) continue;
-            // Destination is not mapped, so map it. Note that our intent
-            // is to not allow multiple destinations per source to be mapped.
-            result.insert({src, {dst}});
-            // Make note that we have seen that destination.
-            seen.insert(dst);
-            // Done with this src.
-            break;
-        }
-    }
-    return result;
-}
-
-qvi_map_t
-qvi_map_calc_affinities(
-    const std::vector<qvi_hwloc_bitmap> &src,
-    const std::vector<qvi_hwloc_bitmap> &dst
-) {
-    qvi_map_t result;
-    // Number of sources.
-    const size_t nsrc = src.size();
-    // Number of destinations we are mapping to.
-    const size_t ndst = dst.size();
-
-    for (size_t srci = 0; srci < nsrc; ++srci) {
-        for (size_t dsti = 0; dsti < ndst; ++dsti) {
-            const int intersects = hwloc_bitmap_intersects(
-                src.at(srci).cdata(), dst.at(dsti).cdata()
-            );
-            if (intersects) {
-                result[srci].insert(dsti);
-            }
-        }
-    }
-    return result;
-}
-
-qvi_map_t
-qvi_map_colors(
-    const qvi_map_config &config
-) {
-    if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info(qvi_spadtolen("Color Mapping Started ", "=", vmaxl));
-    }
-    auto &src_colors = config.src_colors;
-    const size_t n = src_colors.size();
-    // Sanity check: this mapper accepts non-negative colors and the special
-    // QV_SPLIT_UNDEFINED sentinel. QV_SPLIT_UNDEFINED sources are excluded from
-    // the split, so they are intentionally left unmapped here.
-    assert(
-        std::ranges::all_of(config.src_colors, [](int val) {
-            return val >= 0 || val == QV_SPLIT_UNDEFINED;
-        })
-    );
-    qvi_map_t map;
-    // Assign each source to the piece indicated by its color. Sources colored
-    // QV_SPLIT_UNDEFINED are skipped so they receive no resources (an empty
-    // scope), per the documented semantics in quo-vadis.h.
-    for (size_t i = 0; i < n; ++i) {
-        if (src_colors[i] == QV_SPLIT_UNDEFINED) continue;
-        map[i].insert(src_colors[i]);
-    }
-    if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info("Color Mapping done with N={}", n);
-        qvi_map_emit("Color Mapping", map);
-        qvi_log_info(qvi_spadtolen("Color Mapping Done ", "=", vmaxl));
-    }
-    return map;
-}
-
-qvi_map_t
-qvi_map_packed(
-    const qvi_map_config &config
-) {
-    if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info(qvi_spadtolen("Packed Mapping Started ", "=", vmaxl));
-    }
-    const size_t n = config.nsrc;
-    const size_t m = config.ndst;
-    qvi_map_t map;
-    // Nothing to do.
-    if (n == 0 || m == 0) {
-        return map;
-    }
-    // Calculate base number of sources per destination and remainder.
-    const size_t base_count = n / m;
-    const size_t extra = n % m;
-    // Distribute sources to destinations.
-    size_t source_id = 0;
-    for (size_t dest_id = 0; dest_id < m; ++dest_id) {
-        // First extra destinations get one additional source.
-        const size_t count = base_count + (dest_id < extra ? 1 : 0);
-        for (size_t i = 0; i < count; ++i) {
-            map[source_id++].insert(dest_id);
-        }
-    }
-    if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info(
-            "Packed Mapping done with N={}, M={}", n, m
-        );
-        qvi_map_emit("Packed", map);
-        qvi_log_info(qvi_spadtolen("Packed Mapping Done ", "=", vmaxl));
-    }
-    return map;
-}
-
-qvi_map_t
-qvi_map_spread(
-    const qvi_map_config &config
-) {
-    if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info(qvi_spadtolen("Spread Mapping Started ", "=", vmaxl));
-    }
-    const size_t n = config.nsrc;
-    const size_t m = config.ndst;
-    qvi_map_t map;
-    // Nothing to do.
-    if (n == 0 || m == 0) {
-        return map;
-    }
-    if (n < m) {
-        // Spread sources out across destinations.
-        const size_t stride = m / n;
-        for (size_t srci = 0, dsti = 0; srci < n; ++srci) {
-            map[srci].insert(dsti);
-            dsti += stride;
-        }
-    }
-    else {
-        // When n >= m, spread acts like a cyclic distribution.
-        for (size_t srci = 0, dsti = 0; srci < n; ++srci) {
-            // Mod to loop around destination IDs.
-            map[srci].insert((dsti++) % m);
-        }
-    }
-    if (qvi_unlikely(config.be_verbose)) {
-        qvi_log_info(
-            "Spread Mapping done with N={}, M={}", n, m
-        );
-        qvi_map_emit("Spread", map);
-        qvi_log_info(qvi_spadtolen("Spread Mapping Done ", "=", vmaxl));
-    }
-    return map;
 }
 
 class stable_marriage_solver {
@@ -635,7 +468,7 @@ public:
 /**
  * Solves the mapping problem with STRONG affinity preference.
  */
-qvi_map_t
+static qvi_map_t
 solve_ap_mapping(
     size_t n,
     size_t m,
@@ -650,6 +483,198 @@ solve_ap_mapping(
         throw qvi_runtime_error(QV_ERR_NOT_SUPPORTED);
     }
     return solver.get_matching();
+}
+
+qvi_map_t
+qvi_map_invert(
+    const qvi_map_t &original
+) {
+    qvi_map_t inverted;
+    for (const auto &[key, values] : original) {
+        for (size_t value : values) {
+            inverted[value].insert(key);
+        }
+    }
+    return inverted;
+}
+
+qvi_map_t
+qvi_map_uniq(
+    const qvi_map_t &map
+) {
+    qvi_map_t result;
+    std::set<size_t> seen;
+    for (const auto &[src, dsts] : map) {
+        for (const auto &dst : dsts) {
+            // Destination is mapped, skip.
+            if (seen.contains(dst)) continue;
+            // Destination is not mapped, so map it. Note that our intent
+            // is to not allow multiple destinations per source to be mapped.
+            result.insert({src, {dst}});
+            // Make note that we have seen that destination.
+            seen.insert(dst);
+            // Done with this src.
+            break;
+        }
+    }
+    return result;
+}
+
+qvi_map_t
+qvi_map_calc_affinities(
+    const std::vector<qvi_hwloc_bitmap> &src,
+    const std::vector<qvi_hwloc_bitmap> &dst
+) {
+    qvi_map_t result;
+    // Number of sources.
+    const size_t nsrc = src.size();
+    // Number of destinations we are mapping to.
+    const size_t ndst = dst.size();
+
+    for (size_t srci = 0; srci < nsrc; ++srci) {
+        for (size_t dsti = 0; dsti < ndst; ++dsti) {
+            const int intersects = hwloc_bitmap_intersects(
+                src.at(srci).cdata(), dst.at(dsti).cdata()
+            );
+            if (intersects) {
+                result[srci].insert(dsti);
+            }
+        }
+    }
+    return result;
+}
+
+std::vector<int>
+qvi_map_clamp_colors(
+    const std::vector<int> &colors
+) {
+    // Recall: sets are ordered. QV_SPLIT_UNDEFINED marks a member that opts out
+    // of the split, so it is excluded from the distinct-color ranking and
+    // passed through unchanged rather than folded into a real color.
+    std::set<int> colorset(colors.begin(), colors.end());
+    colorset.erase(QV_SPLIT_UNDEFINED);
+    // Maps the input vector colors to their clamped values.
+    std::map<int, int> color2clamped;
+    // color': the clamped color.
+    int colorp = 0;
+    for (const auto val : colorset) {
+        color2clamped.insert({val, colorp++});
+    }
+    std::vector<int> result(colors.size());
+    for (size_t i = 0; i < colors.size(); ++i) {
+        result[i] = colors[i] == QV_SPLIT_UNDEFINED
+            ? QV_SPLIT_UNDEFINED
+            : color2clamped[colors[i]];
+    }
+    return result;
+}
+
+qvi_map_t
+qvi_map_colors(
+    const qvi_map_config &config
+) {
+    if (qvi_unlikely(config.be_verbose)) {
+        qvi_log_info(qvi_spadtolen("Color Mapping Started ", "=", vmaxl));
+    }
+    auto &src_colors = config.src_colors;
+    const size_t n = src_colors.size();
+    // Sanity check: this mapper accepts non-negative colors and the special
+    // QV_SPLIT_UNDEFINED sentinel. QV_SPLIT_UNDEFINED sources are excluded from
+    // the split, so they are intentionally left unmapped here.
+    assert(
+        std::ranges::all_of(config.src_colors, [](int val) {
+            return val >= 0 || val == QV_SPLIT_UNDEFINED;
+        })
+    );
+    qvi_map_t map;
+    // Assign each source to the piece indicated by its color. Sources colored
+    // QV_SPLIT_UNDEFINED are skipped so they receive no resources (an empty
+    // scope), per the documented semantics in quo-vadis.h.
+    for (size_t i = 0; i < n; ++i) {
+        if (src_colors[i] == QV_SPLIT_UNDEFINED) continue;
+        map[i].insert(src_colors[i]);
+    }
+    if (qvi_unlikely(config.be_verbose)) {
+        qvi_log_info("Color Mapping done with N={}", n);
+        qvi_map_emit("Color Mapping", map);
+        qvi_log_info(qvi_spadtolen("Color Mapping Done ", "=", vmaxl));
+    }
+    return map;
+}
+
+qvi_map_t
+qvi_map_packed(
+    const qvi_map_config &config
+) {
+    if (qvi_unlikely(config.be_verbose)) {
+        qvi_log_info(qvi_spadtolen("Packed Mapping Started ", "=", vmaxl));
+    }
+    const size_t n = config.nsrc;
+    const size_t m = config.ndst;
+    qvi_map_t map;
+    // Nothing to do.
+    if (n == 0 || m == 0) {
+        return map;
+    }
+    // Calculate base number of sources per destination and remainder.
+    const size_t base_count = n / m;
+    const size_t extra = n % m;
+    // Distribute sources to destinations.
+    size_t source_id = 0;
+    for (size_t dest_id = 0; dest_id < m; ++dest_id) {
+        // First extra destinations get one additional source.
+        const size_t count = base_count + (dest_id < extra ? 1 : 0);
+        for (size_t i = 0; i < count; ++i) {
+            map[source_id++].insert(dest_id);
+        }
+    }
+    if (qvi_unlikely(config.be_verbose)) {
+        qvi_log_info(
+            "Packed Mapping done with N={}, M={}", n, m
+        );
+        qvi_map_emit("Packed", map);
+        qvi_log_info(qvi_spadtolen("Packed Mapping Done ", "=", vmaxl));
+    }
+    return map;
+}
+
+qvi_map_t
+qvi_map_spread(
+    const qvi_map_config &config
+) {
+    if (qvi_unlikely(config.be_verbose)) {
+        qvi_log_info(qvi_spadtolen("Spread Mapping Started ", "=", vmaxl));
+    }
+    const size_t n = config.nsrc;
+    const size_t m = config.ndst;
+    qvi_map_t map;
+    // Nothing to do.
+    if (n == 0 || m == 0) {
+        return map;
+    }
+    if (n < m) {
+        // Spread sources out across destinations.
+        const size_t stride = m / n;
+        for (size_t srci = 0, dsti = 0; srci < n; ++srci) {
+            map[srci].insert(dsti);
+            dsti += stride;
+        }
+    }
+    else {
+        // When n >= m, spread acts like a cyclic distribution.
+        for (size_t srci = 0, dsti = 0; srci < n; ++srci) {
+            // Mod to loop around destination IDs.
+            map[srci].insert((dsti++) % m);
+        }
+    }
+    if (qvi_unlikely(config.be_verbose)) {
+        qvi_log_info(
+            "Spread Mapping done with N={}, M={}", n, m
+        );
+        qvi_map_emit("Spread", map);
+        qvi_log_info(qvi_spadtolen("Spread Mapping Done ", "=", vmaxl));
+    }
+    return map;
 }
 
 qvi_map_t
@@ -784,31 +809,6 @@ qvi_map_emit(
     const qvi_map_t &map
 ) {
     qvi_log_info("{} assignments:\n{}", name, format_assignments(map));
-}
-
-std::vector<int>
-qvi_map_clamp_colors(
-    const std::vector<int> &colors
-) {
-    // Recall: sets are ordered. QV_SPLIT_UNDEFINED marks a member that opts out
-    // of the split, so it is excluded from the distinct-color ranking and
-    // passed through unchanged rather than folded into a real color.
-    std::set<int> colorset(colors.begin(), colors.end());
-    colorset.erase(QV_SPLIT_UNDEFINED);
-    // Maps the input vector colors to their clamped values.
-    std::map<int, int> color2clamped;
-    // color': the clamped color.
-    int colorp = 0;
-    for (const auto val : colorset) {
-        color2clamped.insert({val, colorp++});
-    }
-    std::vector<int> result(colors.size());
-    for (size_t i = 0; i < colors.size(); ++i) {
-        result[i] = colors[i] == QV_SPLIT_UNDEFINED
-            ? QV_SPLIT_UNDEFINED
-            : color2clamped[colors[i]];
-    }
-    return result;
 }
 
 /*
