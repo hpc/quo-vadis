@@ -1,8 +1,3 @@
----
-layout: default
-title: Git Workflow
----
-
 This document describes the typical git workflow used by developers of this
 project: how we branch off `master`, open pull requests, keep a clean history
 when CI fails, and rebase topic branches that have diverged from `master`.
@@ -17,7 +12,7 @@ upstream, then create a topic branch to work on.
 git checkout master
 git fetch
 git merge
-# Create and switch to a topic branch.
+# Rename the current branch to a topic branch.
 git branch -m topic-name
 ```
 
@@ -78,4 +73,26 @@ git checkout topic-name
 git rebase master
 # Update the pull request with the rebased history.
 git push -u origin topic-name --force
+```
+
+## Cleaning Up After a Merge
+
+Once a topic branch has been merged into `master`, we tidy up both the remote
+(upstream) and local copies of the branch.
+
+Delete the remote branch either with the "Delete branch" button in the GitHub
+pull request interface, or on the command line:
+
+```shell
+git push -u origin topic-name --delete
+```
+
+To delete the local branch, first switch to another branch (the topic branch
+cannot be deleted while it is checked out), then delete it:
+
+```shell
+# Switch to master (or any branch other than the topic branch).
+git checkout master
+# Delete the local topic branch.
+git branch -D topic-name
 ```
