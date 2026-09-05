@@ -302,6 +302,12 @@ qvi_hwsplit::m_split_base_hwpool(void)
     for (const auto &cpuset : split_cpusets) {
         result.emplace_back(qvi_hwpool(cpuset));
     }
+    // How shall we assign devices? If coming from a split() requeest, perform
+    // assignments using an algorithm that performs global affinity matching
+    // optimization. For split_at() use a greedy algorithm. This choice tends to
+    // produce nice assignments.
+    const auto dev_map_fn = (m_split_at_type == QV_HW_OBJ_LAST)
+                          ? qvi_map_close : qvi_map_afpacked;
     // Now iterate over supported device types and add
     // devices based on affinity to the split cpusets.
     for (const auto devt : qvi_hwloc::supported_devices()) {
@@ -314,7 +320,7 @@ qvi_hwsplit::m_split_base_hwpool(void)
             dev_affinities,
             split_cpusets
         };
-        const auto devs2hres_map = qvi_map_afpacked(devs2hres_config);
+        const auto devs2hres_map = dev_map_fn(devs2hres_config);
 
         if (qvi_unlikely(devs2hres_config.be_verbose)) {
             const auto label = "Final device (devt="
