@@ -302,7 +302,7 @@ qvi_hwsplit::m_split_base_hwpool(void)
     for (const auto &cpuset : split_cpusets) {
         result.emplace_back(qvi_hwpool(cpuset));
     }
-    // How shall we assign devices? If coming from a split() requeest, perform
+    // How shall we assign devices? If coming from a split() request, perform
     // assignments using an algorithm that performs global affinity matching
     // optimization. For split_at() use a greedy algorithm. This choice tends to
     // produce nice assignments.
