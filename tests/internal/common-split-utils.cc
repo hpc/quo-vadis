@@ -54,29 +54,50 @@ expected_chunks(
     const qvi_hwloc_bitmap &base,
     int npieces
 ) {
-    // Enumerate the base PUs in hwloc iteration order.
-    std::vector<hwloc_obj_t> pus;
-    hwloc_obj_t pu = nullptr;
-    while ((pu = hwloc_get_next_obj_inside_cpuset_by_type(
-                topo, base.cdata(), HWLOC_OBJ_PU, pu)) != nullptr) {
-        pus.push_back(pu);
-    }
-    const int n = static_cast<int>(pus.size());
-    const int base_chunk = n / npieces;
-    const int remainder = n % npieces;
+    ctu_assert(npieces > 0, "expected_chunks: invalid npieces %d", npieces);
 
     std::vector<qvi_hwloc_bitmap> chunks(npieces);
-    int pos = 0;
-    for (int i = 0; i < npieces; ++i) {
-        const int sz = base_chunk + (i < remainder ? 1 : 0);
-        for (int k = 0; k < sz; ++k) {
-            const int orrc = hwloc_bitmap_or(
-                chunks[i].data(), chunks[i].cdata(), pus[pos++]->cpuset
-            );
-            ctu_assert(orrc == 0, "hwloc_bitmap_or() failed");
-        }
+
+    // Reproduce qvi_hwloc::bitmap_split's tree-aware distribution:
+    // build the set of largest topology objects tiling |base| and use them as
+    // hwloc_distrib() roots, then clamp each returned piece back to |base|. This
+    // mirrors the library implementation using the same hwloc primitives so the
+    // exact-cpuset assertions verify the real (topology-aware) split boundaries.
+    std::vector<hwloc_obj_t> roots;
+    qvi_hwloc_bitmap remaining(base.cdata());
+    while (!hwloc_bitmap_iszero(remaining.cdata())) {
+        hwloc_obj_t obj = hwloc_get_first_largest_obj_inside_cpuset(
+            topo, remaining.cdata()
+        );
+        ctu_assert(
+            obj != nullptr && obj->cpuset != nullptr,
+            "expected_chunks: no largest object inside cpuset"
+        );
+        roots.push_back(obj);
+        const int arc = hwloc_bitmap_andnot(
+            remaining.data(), remaining.cdata(), obj->cpuset
+        );
+        ctu_assert(arc == 0, "hwloc_bitmap_andnot() failed");
     }
-    ctu_assert(pos == n, "chunking consumed %d of %d PUs", pos, n);
+    ctu_assert(!roots.empty(), "expected_chunks: empty base cpuset");
+
+    // hwloc_distrib() allocates a fresh cpuset per slot; the caller owns them.
+    std::vector<hwloc_cpuset_t> sets(npieces, nullptr);
+
+    const int rc = hwloc_distrib(
+        topo, roots.data(), static_cast<unsigned>(roots.size()),
+        sets.data(), static_cast<unsigned>(npieces), INT_MAX, 0
+    );
+    ctu_assert(rc == 0, "hwloc_distrib() failed");
+
+    for (int i = 0; i < npieces; ++i) {
+        ctu_assert(sets[i] != nullptr, "hwloc_distrib() produced no set");
+        const int arc = hwloc_bitmap_and(
+            chunks[i].data(), sets[i], base.cdata()
+        );
+        ctu_assert(arc == 0, "hwloc_bitmap_and() failed");
+        hwloc_bitmap_free(sets[i]);
+    }
     return chunks;
 }
 

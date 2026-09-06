@@ -81,12 +81,13 @@ cpuset_str(
 );
 
 /**
- * Independently recomputes the expected contiguous chunks of an |npieces|-way
- * split of |base|, mirroring the specification of qvi_hwloc::bitmap_split. PUs
- * are enumerated in hwloc order (the order the library consumes them), then
- * partitioned into |npieces| contiguous chunks: chunk i holds
- * floor(N/npieces) PUs, and the first N%npieces chunks hold one extra PU.
- * Returns |npieces| cpusets.
+ * Recomputes the expected pieces of an |npieces|-way split of |base|, mirroring
+ * qvi_hwloc::bitmap_split. The split is topology-aware: the largest hwloc
+ * objects tiling |base| are used as hwloc_distrib() roots so the |npieces|
+ * cpusets are distributed recursively over the hardware hierarchy (respecting
+ * Core/cache/NUMA boundaries) rather than partitioned in flat PU logical-index
+ * order. Each returned piece is clamped back to |base|. Returns |npieces|
+ * cpusets.
  */
 std::vector<qvi_hwloc_bitmap>
 expected_chunks(

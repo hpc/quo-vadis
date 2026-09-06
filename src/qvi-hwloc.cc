@@ -358,23 +358,80 @@ qvi_hwloc::bitmap_split(
     if (qvi_unlikely(npieces == 0 || npus == 0 || npieces > npus)) {
         return result;
     }
+    // We split the resources by distributing npieces cpusets over the topology
+    // subtree(s) spanned by the given cpuset. Rather than partitioning PUs in
+    // flat logical-index order, we defer to hwloc_distrib(), which recursively
+    // distributes the pieces linearly over the topology. This respects the
+    // hardware hierarchy (Cores, caches, NUMA boundaries) so that each piece
+    // tends to keep its PUs local, mirroring the topology-aware distribution
+    // used by tools like mpibind.
+    //
+    // Note: on hybrid/asymmetric platforms (e.g. mixed P-/E-cores, or an
+    // uneven number of cores below packages/caches) hwloc's top-down recursive
+    // partitioning may be suboptimal because it ignores per-subtree object
+    // counts until it reaches their levels. See the hwloc_distrib()
+    // documentation in hwloc/helper.h for details.
+    //
+    // hwloc_distrib() requires root objects that have a CPU set. Since the
+    // given cpuset is generally an arbitrary union (a subset of the machine),
+    // build the set of largest topology objects tiling the cpuset and use them
+    // as the distribution roots so we only distribute over the pool's actual
+    // resources.
+    std::vector<hwloc_obj_t> roots;
+    {
+        qvi_hwloc_bitmap remaining(bitmap.cdata());
+        while (!hwloc_bitmap_iszero(remaining.cdata())) {
+            hwloc_obj_t obj = hwloc_get_first_largest_obj_inside_cpuset(
+                m_topo, remaining.cdata()
+            );
+            if (qvi_unlikely(!obj || !obj->cpuset)) {
+                // Should not happen for a valid, non-empty cpuset.
+                return result;
+            }
+            roots.push_back(obj);
+            // Clear this object's PUs from the remaining work set.
+            const int arc = hwloc_bitmap_andnot(
+                remaining.data(), remaining.cdata(), obj->cpuset
+            );
+            if (qvi_unlikely(arc != 0)) return result;
+        }
+    }
+    if (qvi_unlikely(roots.empty())) return result;
     // Prepare for storing non-empty split.
     result.resize(npieces);
-
-    const size_t base_chunk_size = npus / npieces;
-    const size_t remainder = npus % npieces;
-    size_t current_pos = 0;
-
-    for (size_t i = 0; i < npieces; ++i) {
-        const size_t cur_chunk_size = base_chunk_size + (i < remainder ? 1 : 0);
-
-        rc = m_split_cpuset_by_range(
-            bitmap, current_pos, cur_chunk_size, result[i]
-        );
-        if (qvi_unlikely(rc != QV_SUCCESS)) break;
-        current_pos += cur_chunk_size;
+    // hwloc_distrib() allocates a fresh cpuset for each of the npieces slots
+    // and stores the new pointers into this array; the caller owns and must
+    // free them. It does not fill caller-provided bitmaps.
+    std::vector<hwloc_cpuset_t> sets(npieces, nullptr);
+    // Distribute npieces over the roots, down to the finest level.
+    rc = hwloc_distrib(
+        m_topo, roots.data(), static_cast<unsigned>(roots.size()),
+        sets.data(), static_cast<unsigned>(npieces), INT_MAX, 0
+    );
+    if (qvi_unlikely(rc != 0)) {
+        for (auto &s : sets) if (s) hwloc_bitmap_free(s);
+        result.clear();
+        return result;
     }
-    if (qvi_unlikely(rc != QV_SUCCESS)) result.clear();
+    // Copy each distributed cpuset into the result, clamping to the input
+    // cpuset. The roots are included in the input cpuset, so hwloc_distrib()
+    // stays within it; this and is defensive to guarantee no piece ever exceeds
+    // the pool's resources. Free hwloc's allocations as we go.
+    for (size_t i = 0; i < npieces; ++i) {
+        int arc = 0;
+        if (sets[i]) {
+            arc = hwloc_bitmap_and(
+                result[i].data(), sets[i], bitmap.cdata()
+            );
+            hwloc_bitmap_free(sets[i]);
+            sets[i] = nullptr;
+        }
+        if (qvi_unlikely(arc != 0)) {
+            for (auto &s : sets) if (s) hwloc_bitmap_free(s);
+            result.clear();
+            return result;
+        }
+    }
     return result;
 }
 
@@ -754,6 +811,18 @@ qvi_hwloc::m_set_device_info(
  * Basically we are avoiding somewhat speculative setups by discovering device
  * affinities in this way. A bonus is that synthetic topologies work with this
  * approach.
+ *
+ * We prefer the tightest accurate affinity bound for the device. Starting from
+ * the device's closest non-I/O ancestor (the CPU/memory node the PCI bus is
+ * physically wired to), we consider two candidate cpusets:
+ *   1. The NUMA-local cpuset, derived from the ancestor's nodeset. On
+ *      sub-NUMA-clustering machines (multiple NUMA nodes per package) this is
+ *      tighter than the package and more accurately reflects memory locality.
+ *   2. The enclosing Package (CPU socket) cpuset, found by walking up parents.
+ * We select whichever is narrower (fewer PUs), which never broadens affinity
+ * relative to using the package alone and tightens it when NUMA locality is
+ * more specific. If neither is resolvable (e.g. a non-NUMA architecture with no
+ * package), we fall back to the allowed topology resources.
  */
 int
 qvi_hwloc::m_set_device_affinity_by_pci_bus_id(
@@ -772,13 +841,49 @@ qvi_hwloc::m_set_device_affinity_by_pci_bus_id(
         // Jump to the closest non-I/O ancestor. This is the
         // CPU/Memory node the PCI bus is physically wired to.
         hwloc_obj_t ancestor = hwloc_get_non_io_ancestor_obj(m_topo, pci_dev);
-        // Walk up the parents until we find the package (i.e., CPU socket).
+        if (qvi_unlikely(!ancestor)) {
+            rc = QV_ERR_NOT_FOUND;
+            break;
+        }
+        // The NUMA-local cpuset. NUMA nodes are memory objects and
+        // are not part of the normal parent chain, so we derive their locality
+        // from the ancestor's nodeset rather than by walking parents. This is
+        // only meaningful when the topology actually exposes NUMA structure.
+        qvi_hwloc_bitmap numa_cpuset;
+        bool have_numa = false;
+        if (hwloc_get_nbobjs_by_depth(m_topo, HWLOC_TYPE_DEPTH_NUMANODE) > 0 &&
+            ancestor->nodeset != nullptr &&
+            !hwloc_bitmap_iszero(ancestor->nodeset)) {
+            const int frc = hwloc_cpuset_from_nodeset(
+                m_topo, numa_cpuset.data(), ancestor->nodeset
+            );
+            if (qvi_likely(frc == 0) &&
+                !hwloc_bitmap_iszero(numa_cpuset.cdata())) {
+                have_numa = true;
+            }
+        }
+        // The enclosing package (i.e., CPU socket) cpuset.
         hwloc_obj_t package = ancestor;
         while (package && package->type != HWLOC_OBJ_PACKAGE) {
             package = package->parent;
         }
-        // Found it!
-        if (package) {
+        const bool have_package = (package != nullptr);
+        // Select the tightest (narrowest) available candidate.
+        if (have_numa && have_package) {
+            const int numa_w = hwloc_bitmap_weight(numa_cpuset.cdata());
+            const int pack_w = hwloc_bitmap_weight(package->cpuset);
+            // Prefer NUMA on ties: it reflects memory locality most directly.
+            if (numa_w <= pack_w) {
+                dev->affinity.set(numa_cpuset.cdata());
+            }
+            else {
+                dev->affinity.set(package->cpuset);
+            }
+        }
+        else if (have_numa) {
+            dev->affinity.set(numa_cpuset.cdata());
+        }
+        else if (have_package) {
             dev->affinity.set(package->cpuset);
         }
         else {
@@ -1095,38 +1200,6 @@ qvi_hwloc::get_device_id_in_cpuset(
         [[unlikely]] default:
             rc = QV_ERR_INVLD_ARG;
             break;
-    }
-    return rc;
-}
-
-int
-qvi_hwloc::m_split_cpuset_by_range(
-    const qvi_hwloc_bitmap &bitmap,
-    uint_t base,
-    uint_t extent,
-    qvi_hwloc_bitmap &result
-) const {
-    // Zero-out the result bitmap that will encode the split.
-    hwloc_bitmap_zero(result.data());
-    // We use PUs to split resources. Each set bit represents a PU. The number
-    // of bits set represents the number of PUs present on the system. The
-    // right-most bit represents logical ID 0.
-    int pu_depth = 0;
-    int rc = obj_type_depth(QV_HW_OBJ_PU, &pu_depth);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-    // Calculate split based on given range.
-    for (uint_t i = base; i < base + extent; ++i) {
-        hwloc_obj_t dobj;
-        rc = get_obj_in_cpuset_by_depth(bitmap.cdata(), pu_depth, i, &dobj);
-        if (qvi_unlikely(rc != QV_SUCCESS)) break;
-
-        const int orrc = hwloc_bitmap_or(
-            result.data(), result.cdata(), dobj->cpuset
-        );
-        if (qvi_unlikely(orrc != 0)) {
-            rc = QV_ERR_HWLOC;
-            break;
-        }
     }
     return rc;
 }
