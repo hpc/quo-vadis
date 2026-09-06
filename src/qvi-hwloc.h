@@ -141,13 +141,6 @@ private:
         size_t &nobjs
     ) const;
 
-    int
-    m_split_cpuset_by_range(
-        const qvi_hwloc_bitmap &bitmap,
-        uint_t base,
-        uint_t extent,
-        qvi_hwloc_bitmap &result
-    ) const;
     /**
      * Restricts the hardware topology such that SMT is disabled.
      */
