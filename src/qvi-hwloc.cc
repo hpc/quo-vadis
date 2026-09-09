@@ -22,12 +22,6 @@
  * ROCR_VISIBLE_DEVICES, etc.
  */
 
-/** Maps a string identifier to a device. */
-using qvi_hwloc_pci2dev = std::map<
-    std::string,
-    std::shared_ptr<qvi_hwloc_device>
->;
-
 static inline const qvi_hwloc_dev_list &
 cget_dev_list(
     const qvi_hwloc_dev_map &map,
@@ -901,6 +895,12 @@ qvi_hwloc::m_set_device_affinity_by_pci_bus_id(
 int
 qvi_hwloc::m_discover_devices(void)
 {
+    // Maps a string identifier to a device.
+    using qvi_hwloc_pci2dev = std::map<
+        std::string,
+        std::shared_ptr<qvi_hwloc_device>
+    >;
+
     int rc = QV_SUCCESS;
     // This will maintain a mapping of PCI bus IDs to devices.
     qvi_hwloc_pci2dev devmap;

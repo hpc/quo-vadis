@@ -516,8 +516,8 @@ qvi_hwsplit::thread_split(
     rc = hwsplit.m_split();
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Now populate the hardware pools as the result.
-    khwpools = hwsplit.m_hwpools;
-    kcolorps = hwsplit.m_colors;
+    khwpools = std::move(hwsplit.m_hwpools);
+    kcolorps = std::move(hwsplit.m_colors);
     return QV_SUCCESS;
 }
 
