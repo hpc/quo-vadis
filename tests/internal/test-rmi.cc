@@ -213,7 +213,7 @@ check_get_nobjs_in_cpuset(
     qvi_rmi_client *client,
     qvi_hwloc &lhwloc
 ) {
-    const qvi_hwloc_bitmap machine(lhwloc.topology_get_cpuset());
+    const qvi_hwloc_bitmap machine(lhwloc.topology_get_cpuset().cdata());
 
     const qv_hw_obj_type_t types[] = {
         QV_HW_OBJ_PACKAGE, QV_HW_OBJ_CORE, QV_HW_OBJ_PU
@@ -257,7 +257,7 @@ check_get_cpuset_for_nobjs(
     qvi_rmi_client *client,
     qvi_hwloc &lhwloc
 ) {
-    const qvi_hwloc_bitmap machine(lhwloc.topology_get_cpuset());
+    const qvi_hwloc_bitmap machine(lhwloc.topology_get_cpuset().cdata());
 
     qvi_hwloc_bitmap result;
     int rc = client->get_cpuset_for_nobjs(machine, QV_HW_OBJ_CORE, 1, result);
@@ -296,7 +296,7 @@ check_get_device_in_cpuset(
     qvi_rmi_client *client,
     qvi_hwloc &lhwloc
 ) {
-    const qvi_hwloc_bitmap machine(lhwloc.topology_get_cpuset());
+    const qvi_hwloc_bitmap machine(lhwloc.topology_get_cpuset().cdata());
 
     size_t ngpus = 0;
     int rc = lhwloc.get_nobjs_in_cpuset(QV_HW_OBJ_GPU, machine.cdata(), ngpus);
@@ -342,9 +342,10 @@ check_get_device_in_cpuset(
 }
 
 /**
- * Verifies get_intrinsic_hwpool for the intrinsic scopes. QV_SCOPE_USER and
- * QV_SCOPE_PROCESS must succeed and yield a non-empty cpuset; QV_SCOPE_SYSTEM
- * is documented as unsupported and must report that (not silently succeed).
+ * Verifies get_intrinsic_hwpool for the intrinsic scopes. QV_SCOPE_USER,
+ * QV_SCOPE_PROCESS, and QV_SCOPE_SYSTEM must succeed and yield a non-empty
+ * cpuset. QV_SCOPE_SYSTEM must cover the whole-system cpuset, which is a
+ * superset of the (cgroup-obeying) QV_SCOPE_USER cpuset.
  */
 static void
 check_get_intrinsic_hwpool(
@@ -367,7 +368,7 @@ check_get_intrinsic_hwpool(
             "get_intrinsic_hwpool(USER) yielded an empty cpuset"
         );
         // USER scope is the whole available machine cpuset.
-        const qvi_hwloc_bitmap machine(lhwloc.topology_get_cpuset());
+        const qvi_hwloc_bitmap machine(lhwloc.topology_get_cpuset().cdata());
         ctu_assert(
             hwpool.cpuset() == machine,
             "get_intrinsic_hwpool(USER) cpuset=%s != machine=%s",
@@ -403,19 +404,39 @@ check_get_intrinsic_hwpool(
         printf("# [%d] ✓ get_intrinsic_hwpool(PROCESS) = %s\n",
             who, qvi_hwloc::bitmap_string(hwpool.cpuset()).c_str());
     }
-    // SYSTEM scope: explicitly unsupported per the server implementation.
+    // SYSTEM scope: the whole-system cpuset, including resources disallowed by
+    // mechanisms such as cgroups.
     {
         qvi_hwpool hwpool;
         int rc = client->get_intrinsic_hwpool(
             std::vector<pid_t>{}, QV_SCOPE_SYSTEM, QV_SCOPE_FLAG_NONE, hwpool
         );
         ctu_assert(
-            rc == QV_ERR_NOT_SUPPORTED,
-            "get_intrinsic_hwpool(SYSTEM) expected QV_ERR_NOT_SUPPORTED, got %s",
-            qv_strerr(rc)
+            rc == QV_SUCCESS,
+            "get_intrinsic_hwpool(SYSTEM) failed (rc=%s)", qv_strerr(rc)
         );
-        printf("# [%d] ✓ get_intrinsic_hwpool(SYSTEM) reported unsupported\n",
-            who);
+        ctu_assert(
+            !hwloc_bitmap_iszero(hwpool.cpuset().cdata()),
+            "get_intrinsic_hwpool(SYSTEM) yielded an empty cpuset"
+        );
+        // SYSTEM scope is the whole-system (allowed + disallowed) cpuset.
+        const qvi_hwloc_bitmap system(lhwloc.topology_get_system_cpuset().cdata());
+        ctu_assert(
+            hwpool.cpuset() == system,
+            "get_intrinsic_hwpool(SYSTEM) cpuset=%s != system=%s",
+            qvi_hwloc::bitmap_string(hwpool.cpuset()).c_str(),
+            qvi_hwloc::bitmap_string(system).c_str()
+        );
+        // The whole-system cpuset must include the (cgroup-obeying) USER cpuset.
+        const qvi_hwloc_bitmap user(lhwloc.topology_get_cpuset().cdata());
+        ctu_assert(
+            hwloc_bitmap_isincluded(user.cdata(), hwpool.cpuset().cdata()),
+            "get_intrinsic_hwpool(SYSTEM) cpuset=%s does not include USER=%s",
+            qvi_hwloc::bitmap_string(hwpool.cpuset()).c_str(),
+            qvi_hwloc::bitmap_string(user).c_str()
+        );
+        printf("# [%d] ✓ get_intrinsic_hwpool(SYSTEM) = %s\n",
+            who, qvi_hwloc::bitmap_string(hwpool.cpuset()).c_str());
     }
 }
 

@@ -61,6 +61,17 @@ target_link_libraries(
     quo-vadis
 )
 
+add_executable(
+    test-process-intrinsic-scopes
+    test-process-intrinsic-scopes.c
+)
+
+target_link_libraries(
+    test-process-intrinsic-scopes
+    common-test-utils
+    quo-vadis
+)
+
 add_test(
     NAME
       process-scopes
@@ -79,16 +90,39 @@ add_test(
       ${CMAKE_CURRENT_BINARY_DIR}/test-process-hardware"
 )
 
+add_test(
+    NAME
+      process-intrinsic-scopes
+    COMMAND
+      bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+      ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+      ${CMAKE_CURRENT_BINARY_DIR}/test-process-intrinsic-scopes"
+)
+
+add_test(
+    NAME
+      process-intrinsic-scopes-restricted
+    COMMAND
+      bash -c "HWLOC_XMLFILE=${CMAKE_CURRENT_SOURCE_DIR}/internal/synthetic-topologies/topo-01N-02P-04C-04PU-restricted.xml \
+      QVI_TEST_EXPECT_RESTRICTED=1 \
+      QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+      ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+      ${CMAKE_CURRENT_BINARY_DIR}/test-process-intrinsic-scopes"
+)
+
 # Use the C linker to test for C/C++ linkage problems.
 set_target_properties(
     test-process-scopes
     test-process-hardware
+    test-process-intrinsic-scopes
     PROPERTIES LINKER_LANGUAGE C
 )
 
 set_tests_properties(
     process-scopes
     process-hardware
+    process-intrinsic-scopes
+    process-intrinsic-scopes-restricted
     PROPERTIES
       TIMEOUT 60
     LABELS "process"

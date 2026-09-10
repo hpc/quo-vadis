@@ -81,7 +81,7 @@ echo_gpu_info(
 
     size_t ngpus = 0;
     int rc = hwl.get_nobjs_in_cpuset(
-        QV_HW_OBJ_GPU, hwl.topology_get_cpuset(), ngpus
+        QV_HW_OBJ_GPU, hwl.topology_get_cpuset().cdata(), ngpus
     );
     if (rc != QV_SUCCESS) return rc;
 
@@ -95,7 +95,7 @@ echo_gpu_info(
             std::string devids;
             rc = hwl.get_device_id_in_cpuset(
                 QV_HW_OBJ_GPU, i,
-                hwl.topology_get_cpuset(),
+                hwl.topology_get_cpuset().cdata(),
                 ctu_devid_name_to_id_tab[j].devid, devids
             );
             if (rc != QV_SUCCESS) return rc;
@@ -130,6 +130,23 @@ main(void)
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_topology_load() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+    }
+
+    // The allowed (cgroup-obeying) cpuset must always be a subset of the
+    // whole-system cpuset, which includes resources disallowed by mechanisms
+    // such as cgroups.
+    {
+        const qvi_hwloc_bitmap user(hwl.topology_get_cpuset());
+        const qvi_hwloc_bitmap system(hwl.topology_get_system_cpuset());
+        if (!hwloc_bitmap_isincluded(user.cdata(), system.cdata())) {
+            ers = "topology_get_cpuset() is not a subset of "
+                  "topology_get_system_cpuset()";
+            ctu_panic(
+                "%s (user=%s, system=%s)", ers,
+                qvi_hwloc::bitmap_string(user).c_str(),
+                qvi_hwloc::bitmap_string(system).c_str()
+            );
+        }
     }
 
     rc = echo_hw_info(hwl);

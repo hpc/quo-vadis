@@ -670,10 +670,15 @@ qvi_rmi_server::m_valid_topo_flags(
 
 int
 qvi_rmi_server::m_get_iscope_bitmap_system(
-    qvi_hwloc_flags_t /*flags*/,
-    qvi_hwloc_bitmap &/*bitmap*/
+    qvi_hwloc_flags_t flags,
+    qvi_hwloc_bitmap &bitmap
 ) {
-    return QV_ERR_NOT_SUPPORTED;
+    // Include all system resources, even those disallowed by mechanisms such as
+    // Linux cgroups. The topology is loaded with
+    // HWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED, so the whole-system cpuset is
+    // available here.
+    bitmap = std::move(m_hwlocs.get(flags).topology_get_system_cpuset());
+    return QV_SUCCESS;
 }
 
 int
@@ -681,7 +686,8 @@ qvi_rmi_server::m_get_iscope_bitmap_user(
     qvi_hwloc_flags_t flags,
     qvi_hwloc_bitmap &bitmap
 ) {
-    return bitmap.set(m_hwlocs.get(flags).topology_get_cpuset());
+    bitmap = std::move(m_hwlocs.get(flags).topology_get_cpuset());
+    return QV_SUCCESS;
 }
 
 int
