@@ -87,6 +87,12 @@ private:
     );
     /** */
     int
+    m_get_iscope_bitmap_system(
+        qvi_hwloc_flags_t flags,
+        qvi_hwloc_bitmap &bitmap
+    );
+    /** */
+    int
     m_get_iscope_bitmap_user(
         qvi_hwloc_flags_t flags,
         qvi_hwloc_bitmap &bitmap
