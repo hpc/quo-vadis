@@ -669,6 +669,14 @@ qvi_rmi_server::m_valid_topo_flags(
 }
 
 int
+qvi_rmi_server::m_get_iscope_bitmap_system(
+    qvi_hwloc_flags_t /*flags*/,
+    qvi_hwloc_bitmap &/*bitmap*/
+) {
+    return QV_ERR_NOT_SUPPORTED;
+}
+
+int
 qvi_rmi_server::m_get_iscope_bitmap_user(
     qvi_hwloc_flags_t flags,
     qvi_hwloc_bitmap &bitmap
@@ -692,7 +700,7 @@ qvi_rmi_server::m_get_iscope_bitmap_job(
     }
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
-    bitmap = qvi_hwloc_bitmap::op_or(bitmaps);
+    bitmap = std::move(qvi_hwloc_bitmap::op_or(bitmaps));
 
     return QV_SUCCESS;
 }
@@ -741,7 +749,7 @@ qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
 
         switch (iscope) {
             case QV_SCOPE_SYSTEM:
-                rpcrc = QV_ERR_NOT_SUPPORTED;
+                rpcrc = server->m_get_iscope_bitmap_system(hwloc_flags, sbitmap);
                 break;
             case QV_SCOPE_USER:
                 rpcrc = server->m_get_iscope_bitmap_user(hwloc_flags, sbitmap);

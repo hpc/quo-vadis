@@ -748,7 +748,9 @@ qvi_map_afpacked(
     };
     // Returns the first (lowest-index) destination satisfying the predicate for
     // source srci that is also under capacity, or ndst if none qualifies.
-    const auto first_fit = [&](size_t srci, const auto &predicate) -> size_t {
+    const auto first_fit = [&](
+        size_t srci, const auto &predicate
+    ) -> size_t {
         for (size_t dsti = 0; dsti < ndst; ++dsti) {
             if (predicate(srci, dsti) && count[dsti] < cap) return dsti;
         }
@@ -756,7 +758,9 @@ qvi_map_afpacked(
     };
     // Returns the first (lowest-index) destination satisfying the predicate for
     // source srci, ignoring capacity, or ndst if none qualifies.
-    const auto first_affinity = [&](size_t srci, const auto &predicate) -> size_t {
+    const auto first_affinity = [&](
+        size_t srci, const auto &predicate
+    ) -> size_t {
         for (size_t dsti = 0; dsti < ndst; ++dsti) {
             if (predicate(srci, dsti)) return dsti;
         }
