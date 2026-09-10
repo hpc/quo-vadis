@@ -269,18 +269,22 @@ public:
     bool
     topology_is_this_system(void);
     /**
-     * Returns a cpuset that obeys cgroups. That is, return a cpuset
-     * that is allowed when under restrictions by other mechanisms.
+     * Returns a copy of the the allowed (cgroup-obeying) cpuset, computed as
+     * the intersection of hwloc's allowed cpuset and the whole-system topology
+     * cpuset. The result is always a subset of topology_get_system_cpuset() and
+     * reflects the resources usable under restrictions imposed by other
+     * mechanisms such as Linux cgroups.
      */
-    hwloc_const_cpuset_t
+    qvi_hwloc_bitmap
     topology_get_cpuset(void);
     /**
-     * Returns a cpuset that includes all topological information provided by
-     * hwloc, including that which is disallowed or restricted by other
-     * mechanisms such as cgroups.
+     * Returns a copy of the whole-system cpuset, i.e., all topological
+     * information provided by hwloc, including resources disallowed or
+     * restricted by other mechanisms such as cgroups. This is a superset of
+     * topology_get_cpuset().
      */
-    hwloc_const_cpuset_t
-    topology_get_disallowed_cpuset(void);
+    qvi_hwloc_bitmap
+    topology_get_system_cpuset(void);
     /**
      * Returns the underlying hwloc type from the given qv_hw_obj_type_t type.
      */

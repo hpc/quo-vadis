@@ -639,16 +639,23 @@ qvi_hwloc::topology_is_this_system(void)
     return !!hwloc_topology_is_thissystem(topology_get());
 }
 
-hwloc_const_cpuset_t
+qvi_hwloc_bitmap
 qvi_hwloc::topology_get_cpuset(void)
 {
-    return hwloc_topology_get_allowed_cpuset(m_topo);
+    qvi_hwloc_bitmap result;
+    const int rc = hwloc_bitmap_and(
+        result.data(),
+        hwloc_topology_get_allowed_cpuset(m_topo),
+        hwloc_topology_get_topology_cpuset(m_topo)
+    );
+    if (qvi_unlikely(rc != 0)) throw qvi_runtime_error(QV_ERR_HWLOC);
+    return result;
 }
 
-hwloc_const_cpuset_t
-qvi_hwloc::topology_get_disallowed_cpuset(void)
+qvi_hwloc_bitmap
+qvi_hwloc::topology_get_system_cpuset(void)
 {
-    return hwloc_topology_get_topology_cpuset(m_topo);
+    return qvi_hwloc_bitmap(hwloc_topology_get_topology_cpuset(m_topo));
 }
 
 int
@@ -887,7 +894,7 @@ qvi_hwloc::m_set_device_affinity_by_pci_bus_id(
     } while (false);
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         // Do our best here: just set it to the allowed resources.
-        return dev->affinity.set(topology_get_cpuset());
+        return dev->affinity.set(topology_get_cpuset().cdata());
     }
     return QV_SUCCESS;
 }
@@ -966,6 +973,18 @@ qvi_hwloc::task_get_cpubind(
         m_topo, who, result.data(), HWLOC_CPUBIND_THREAD
     );
     if (qvi_unlikely(rc != 0)) return QV_ERR_HWLOC;
+    // A task's binding may map onto topology resources that are disallowed by
+    // mechanisms such as cgroups. Constrain the result to the allowed
+    // (cgroup-obeying) cpuset so that per-task scopes never exceed the
+    // user-visible resources.
+    const int arc = hwloc_bitmap_and(
+        result.data(),
+        result.cdata(),
+        topology_get_cpuset().cdata()
+    );
+    if (qvi_unlikely(arc != 0)) {
+        return QV_ERR_HWLOC;
+    }
     return QV_SUCCESS;
 }
 
@@ -1233,7 +1252,7 @@ int
 qvi_hwloc::m_disable_smt(void)
 {
     // Get the entire topology.
-    qvi_hwloc_bitmap orig_bitmap(topology_get_disallowed_cpuset());
+    qvi_hwloc_bitmap orig_bitmap = topology_get_system_cpuset();
     // How many cores are in the unmodified bitmap?
     const uint_t ncores = hwloc_get_nbobjs_inside_cpuset_by_type(
         m_topo, orig_bitmap.cdata(), HWLOC_OBJ_CORE
