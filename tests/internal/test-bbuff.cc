@@ -206,7 +206,7 @@ test_9(void)
     int out_i = 0;
     double out_d = 0.0;
     ctu_assert(
-        qvi_bbuff::unpack(bbuff.data(), out_i, out_d) == QV_SUCCESS,
+        qvi_bbuff::unpack(bbuff.data(), bbuff.size(), out_i, out_d) == QV_SUCCESS,
         "unpack failed"
     );
     ctu_assert(out_i == in_i, "unpacked int mismatch");
@@ -229,7 +229,7 @@ test_10(void)
     std::string out_s;
     std::vector<int> out_v;
     ctu_assert(
-        qvi_bbuff::unpack(bbuff.data(), out_s, out_v) == QV_SUCCESS,
+        qvi_bbuff::unpack(bbuff.data(), bbuff.size(), out_s, out_v) == QV_SUCCESS,
         "unpack failed"
     );
     ctu_assert(out_s == in_s, "unpacked string mismatch");
