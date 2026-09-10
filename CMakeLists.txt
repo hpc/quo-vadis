@@ -156,6 +156,9 @@ include(cmake/QVSanitize.cmake)
 # Check include files
 include(cmake/QVCheckIncludes.cmake)
 
+# Determine L1 data cache line size
+include(cmake/QVCheckCacheLineSize.cmake)
+
 # Add generated configuration file
 configure_file(config.h.in include/${PROJECT_NAME}/config.h)
 

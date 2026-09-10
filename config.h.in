@@ -72,6 +72,9 @@
 #cmakedefine QVI_SIZEOF_INT   ${QVI_SIZEOF_INT}
 #cmakedefine QVI_SIZEOF_PID_T ${QVI_SIZEOF_PID_T}
 
+/** L1 data cache line size in bytes (detected at configure time). */
+#cmakedefine QVI_L1_CACHE_LINESIZE ${QVI_L1_CACHE_LINESIZE}
+
 #cmakedefine QV_GPU_SUPPORT
 #cmakedefine CUDAToolkit_FOUND
 #cmakedefine ROCmSMI_FOUND

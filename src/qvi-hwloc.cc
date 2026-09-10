@@ -895,15 +895,8 @@ qvi_hwloc::m_set_device_affinity_by_pci_bus_id(
 int
 qvi_hwloc::m_discover_devices(void)
 {
-    // Maps a string identifier to a device.
-    using qvi_hwloc_pci2dev = std::map<
-        std::string,
-        std::shared_ptr<qvi_hwloc_device>
-    >;
-
-    int rc = QV_SUCCESS;
     // This will maintain a mapping of PCI bus IDs to devices.
-    qvi_hwloc_pci2dev devmap;
+    std::map<std::string, std::shared_ptr<qvi_hwloc_device>> devmap;
 
     hwloc_obj_t obj = nullptr;
     while ((obj = hwloc_get_next_osdev(m_topo, obj)) != nullptr) {
@@ -927,7 +920,7 @@ qvi_hwloc::m_discover_devices(void)
         }
         // Set the information on the device. This could be the first time that
         // the device has been seen, or the nth time.
-        rc = m_set_device_info(obj, busid, dev.get());
+        const int rc = m_set_device_info(obj, busid, dev.get());
         if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     }
     // Now that we have all the device information that we are going to get,

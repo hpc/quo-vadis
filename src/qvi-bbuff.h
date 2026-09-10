@@ -49,7 +49,7 @@ private:
      * Minimum number of bytes by which the backing store grows on a resize.
      * Over-allocating amortizes the cost of repeated small appends.
      */
-    static constexpr size_t s_min_growth = 256;
+    static constexpr size_t s_min_growth = QVI_L1_CACHE_LINESIZE;
     /** Number of bytes currently allocated in the backing store. */
     size_t m_capacity = 0;
     /** Number of bytes of valid data currently stored (m_size <= m_capacity). */
