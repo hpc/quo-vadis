@@ -28,7 +28,7 @@ gather(
     const TYPE &send,
     std::vector<TYPE> &recv
 ) {
-    const uint_t group_size = group.size();
+    const size_t group_size = group.size();
     // Pack the send type into a buffer.
     qvi_bbuff txbuff;
     int rc = txbuff.pack(send);
@@ -41,7 +41,7 @@ gather(
     if (group.rank() == rootid) {
         recv.resize(group_size);
         // Unpack the data.
-        for (uint_t i = 0; i < group_size; ++i) {
+        for (size_t i = 0; i < group_size; ++i) {
             rc = qvi_bbuff::unpack(
                 bbuffs[i].data(), bbuffs[i].size(), recv[i]
             );
@@ -65,10 +65,10 @@ scatter(
     std::vector<qvi_bbuff> txbuffs;
 
     if (group.rank() == rootid) {
-        const uint_t group_size = group.size();
+        const size_t group_size = group.size();
         txbuffs.resize(group_size);
         // Pack the data.
-        for (uint_t i = 0; i < group_size; ++i) {
+        for (size_t i = 0; i < group_size; ++i) {
             rc = txbuffs[i].pack(send[i]);
             if (qvi_unlikely(rc != QV_SUCCESS)) break;
         }
