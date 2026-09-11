@@ -17,7 +17,7 @@ void *
 qvi_group_pthread::call_first_from_pthread_create(
     void *arg
 ) {
-    auto args = (qvi_pthread_create_args *)arg;
+    auto args = static_cast<qvi_pthread_create_args *>(arg);
     const qvi_pthread_routine_fun_ptr_t thread_routine = args->throutine;
     void *const th_routine_argp = args->throutine_argp;
     // Free the provided argument container.

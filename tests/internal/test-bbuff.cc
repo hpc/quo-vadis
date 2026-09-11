@@ -101,7 +101,7 @@ test_5(void)
     const size_t n = 1024;
     std::vector<byte_t> src(n);
     for (size_t i = 0; i < n; ++i) {
-        src[i] = (byte_t)(i & 0xff);
+        src[i] = static_cast<byte_t>(i & 0xff);
     }
 
     ctu_assert(bbuff.append(src.data(), n) == QV_SUCCESS, "large append failed");
@@ -114,7 +114,7 @@ test_5(void)
     // Append again to force another growth.
     ctu_assert(bbuff.append(src.data(), n) == QV_SUCCESS, "second append failed");
     ctu_assert(bbuff.size() == 2 * n, "size mismatch after second append");
-    const byte_t *raw = (const byte_t *)bbuff.cdata();
+    const byte_t *raw = static_cast<const byte_t *>(bbuff.cdata());
     ctu_assert(
         memcmp(raw, src.data(), n) == 0,
         "first chunk corrupted after growth"

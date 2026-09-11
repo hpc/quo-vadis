@@ -154,7 +154,7 @@ data_trim(
     void *msg,
     size_t trim
 ) {
-    byte_t *new_base = (byte_t *)msg;
+    byte_t *new_base = static_cast<byte_t *>(msg);
     new_base += trim;
     return new_base;
 }

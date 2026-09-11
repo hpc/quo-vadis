@@ -295,7 +295,7 @@ qvi_hwloc_bitmap_nbits(
     const int inbits = hwloc_bitmap_last(cpuset);
     if (qvi_unlikely(inbits == -1)) return QV_ERR_HWLOC;
 
-    *nbits = size_t(inbits) + 1;
+    *nbits = static_cast<size_t>(inbits) + 1;
     return QV_SUCCESS;
 }
 
@@ -1008,7 +1008,7 @@ qvi_hwloc::m_obj_get_by_type(
 ) {
     const hwloc_obj_type_t obj_type = qvi_hwloc::obj_get_type(type);
     *obj = hwloc_get_obj_by_type(
-        m_topo, obj_type, (uint_t)type_index
+        m_topo, obj_type, static_cast<uint_t>(type_index)
     );
     return (*obj != nullptr ? QV_SUCCESS : QV_ERR_HWLOC);
 }

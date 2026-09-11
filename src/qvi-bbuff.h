@@ -182,7 +182,9 @@ public:
                 return QV_ERR_RPC;
             }
 
-            std::stringstream ss(std::string((const char *)pos, slen));
+            std::stringstream ss(
+                std::string(reinterpret_cast<const char *>(pos), slen)
+            );
             // Scoped so the archive's destructor runs before ss goes away.
             {
                 cereal::BinaryInputArchive iarchive(ss);

@@ -43,7 +43,7 @@ static void *
 qvi_pthread_start_routine(
     void *arg
 ) {
-    qvi_pthread_args *args = (qvi_pthread_args *)arg;
+    qvi_pthread_args *args = static_cast<qvi_pthread_args *>(arg);
 
     int rc = args->scope->bind_push();
     if (qvi_unlikely(rc != QV_SUCCESS)) {
