@@ -95,7 +95,7 @@ qvi_bbuff::append(
         m_capacity = new_capacity;
         m_data = new_data;
     }
-    byte_t *dest = (byte_t *)m_data;
+    byte_t *dest = static_cast<byte_t *>(m_data);
     dest += m_size;
     memmove(dest, data, size);
     m_size += size;

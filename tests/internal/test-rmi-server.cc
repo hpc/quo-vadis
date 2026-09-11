@@ -430,7 +430,7 @@ static void
 case_bogus_length_prefix(
     const std::string &url
 ) {
-    const size_t bogus_len = (size_t)1 << 40; // ~1 TiB claimed
+    const size_t bogus_len = static_cast<size_t>(1) << 40; // ~1 TiB claimed
     const auto msg = build_message(
         QVI_RMI_FID_GET_CPUBIND, &bogus_len, sizeof(bogus_len)
     );
@@ -448,7 +448,7 @@ case_garbage_payload(
     std::vector<byte_t> payload(sizeof(size_t) + claimed);
     memcpy(payload.data(), &claimed, sizeof(size_t));
     for (size_t i = 0; i < claimed; ++i) {
-        payload[sizeof(size_t) + i] = (byte_t)(0xDE ^ (i * 7));
+        payload[sizeof(size_t) + i] = static_cast<byte_t>(0xDE ^ (i * 7));
     }
     const auto msg = build_message(
         QVI_RMI_FID_GET_INTRINSIC_HWPOOL, payload.data(), payload.size()

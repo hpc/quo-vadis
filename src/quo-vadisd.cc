@@ -52,7 +52,7 @@ struct qvid {
         int64_t maxfd = 1024;
         if (rl.rlim_max != RLIM_INFINITY) {
             // Not RLIM_INFINITY, so set to resource limit.
-            maxfd = (int64_t)rl.rlim_max;
+            maxfd = static_cast<int64_t>(rl.rlim_max);
         }
         // Close all the file descriptors.
         for (int64_t fd = 0; fd < maxfd; ++fd) {

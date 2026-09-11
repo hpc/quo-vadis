@@ -73,7 +73,7 @@ qvi_mpi_group::gather_bbuffs(
     int root,
     std::vector<qvi_bbuff> &rxbuffs
 ) const {
-    const int send_count = (int)txbuff.size();
+    const int send_count = static_cast<int>(txbuff.size());
     const int group_id = qvcomm.m_rank;
     const int group_size = qvcomm.m_size;
 
@@ -141,7 +141,7 @@ qvi_mpi_group::scatter_bbuffs(
         displs.resize(group_size);
 
         for (int i = 0; i < group_size; ++i) {
-            txcounts[i] = (int)txbuffs[i].size();
+            txcounts[i] = static_cast<int>(txbuffs[i].size());
             displs[i] = total_bytes;
             total_bytes += txcounts[i];
         }

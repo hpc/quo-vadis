@@ -62,7 +62,7 @@ qvi_time(void)
 
     const auto n = steady_clock::now();
     const auto m = time_point_cast<microseconds>(n).time_since_epoch().count();
-    return double(m) / 1e6;
+    return static_cast<double>(m) / 1e6;
 }
 
 bool
