@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2025 Triad National Security, LLC
+ * Copyright (c) 2021-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -42,7 +42,9 @@ gather(
         recv.resize(group_size);
         // Unpack the data.
         for (uint_t i = 0; i < group_size; ++i) {
-            rc = qvi_bbuff::unpack(bbuffs[i].data(), recv[i]);
+            rc = qvi_bbuff::unpack(
+                bbuffs[i].data(), bbuffs[i].size(), recv[i]
+            );
             if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
         }
     }
@@ -77,7 +79,7 @@ scatter(
     rc = group.scatter(txbuffs, rootid, rxbuff);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Unpack the results.
-    return qvi_bbuff::unpack(rxbuff.data(), recv);
+    return qvi_bbuff::unpack(rxbuff.data(), rxbuff.size(), recv);
 }
 
 template <typename TYPE>

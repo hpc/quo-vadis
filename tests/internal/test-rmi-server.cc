@@ -403,7 +403,8 @@ case_empty_message(
 }
 
 // Case: message shorter than the header. Exercises unpack_msg_header()'s
-// unconditional memmove of sizeof(header) bytes from a short buffer.
+// bounds check, which must reject a buffer too small to hold a full header
+// (returning QV_ERR_RPC) rather than performing an out-of-bounds read.
 static void
 case_truncated_header(
     const std::string &url

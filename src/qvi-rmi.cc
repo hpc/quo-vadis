@@ -159,24 +159,14 @@ data_trim(
     return new_base;
 }
 
-static inline size_t
-unpack_msg_header(
-    void *data,
-    qvi_rmi_msg_header *hdr
-) {
-    const size_t hdrsize = sizeof(*hdr);
-    memmove(hdr, data, hdrsize);
-    return hdrsize;
-}
-
 /**
- * Safely unpacks a message header from a buffer of the provided size. Guards
- * against short/truncated messages that cannot contain a full header (which
- * would otherwise cause an out-of-bounds read). On success, *hdr is populated
- * and the number of header bytes consumed is returned via *trim.
+ * Unpacks a message header from a buffer of the provided size. Guards against
+ * short/truncated messages that cannot contain a full header (which would
+ * otherwise cause an out-of-bounds read). On success, *hdr is populated and the
+ * number of header bytes consumed is returned via *trim.
  */
 static inline int
-unpack_msg_header_safe(
+unpack_msg_header(
     void *data,
     size_t data_size,
     qvi_rmi_msg_header *hdr,
@@ -186,7 +176,8 @@ unpack_msg_header_safe(
     if (qvi_unlikely(!data || data_size < hdrsize)) {
         return QV_ERR_RPC;
     }
-    *trim = unpack_msg_header(data, hdr);
+    memmove(hdr, data, hdrsize);
+    *trim = hdrsize;
     return QV_SUCCESS;
 }
 
@@ -301,12 +292,19 @@ template <typename... Types>
 static inline int
 rpc_unpack(
     void *data,
+    size_t data_size,
     Types &&...args
 ) {
     qvi_rmi_msg_header hdr;
-    const size_t trim = unpack_msg_header(data, &hdr);
+    size_t trim = 0;
+    // Guard against truncated/empty replies that cannot hold a full header,
+    // which would otherwise cause an out-of-bounds read in the header memmove.
+    const int rc = unpack_msg_header(data, data_size, &hdr, &trim);
+    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
+
     return qvi_bbuff::unpack(
         data_trim(data, trim),
+        data_size - trim,
         std::forward<Types>(args)...
     );
 }
@@ -438,7 +436,10 @@ qvi_rmi_client::rpc_rep(
     do {
         rc = m_recv_msg(&msg);
         if (qvi_unlikely(rc != QV_SUCCESS)) break;
-        rc = rpc_unpack(zmq_msg_data(&msg), std::forward<Types>(args)...);
+        rc = rpc_unpack(
+            zmq_msg_data(&msg), zmq_msg_size(&msg),
+            std::forward<Types>(args)...
+        );
     } while (false);
 
     zmq_msg_close(&msg);
@@ -742,7 +743,7 @@ qvi_rmi_server::s_rpc_get_intrinsic_hwpool(
         std::vector<pid_t> who;
         qv_scope_intrinsic_t iscope = {};
         qv_scope_flags_t scope_flags;
-        rpcrc = qvi_bbuff::unpack_checked(
+        rpcrc = qvi_bbuff::unpack(
             input, input_size, hwloc_flags, who, iscope, scope_flags
         );
         // Drop the message. Send an empty hardware pool with the error code.
@@ -821,7 +822,7 @@ qvi_rmi_server::s_rpc_hello(
     size_t client_version = 0;
     qvi_hwloc_flags_t flags = QVI_HWLOC_FLAG_TOPO_FULL;
     pid_t whoisit;
-    const int rc = qvi_bbuff::unpack_checked(
+    const int rc = qvi_bbuff::unpack(
         input, input_size, client_version, flags, whoisit
     );
     // On a malformed request, reply with the error and a valid (default)
@@ -866,7 +867,7 @@ qvi_rmi_server::s_rpc_get_cpubind(
     do {
         qvi_hwloc_flags_t flags;
         pid_t who;
-        const int qvrc = qvi_bbuff::unpack_checked(input, input_size, flags, who);
+        const int qvrc = qvi_bbuff::unpack(input, input_size, flags, who);
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {
             rpcrc = qvrc;
             break;
@@ -895,7 +896,7 @@ qvi_rmi_server::s_rpc_set_cpubind(
         qvi_hwloc_flags_t flags;
         pid_t who;
         qvi_hwloc_bitmap cpuset;
-        const int qvrc = qvi_bbuff::unpack_checked(
+        const int qvrc = qvi_bbuff::unpack(
             input, input_size, flags, who, cpuset
         );
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {
@@ -928,7 +929,7 @@ qvi_rmi_server::s_rpc_obj_type_depth(
     do {
         qvi_hwloc_flags_t flags;
         qv_hw_obj_type_t obj;
-        const int qvrc = qvi_bbuff::unpack_checked(input, input_size, flags, obj);
+        const int qvrc = qvi_bbuff::unpack(input, input_size, flags, obj);
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {
             rpcrc = qvrc;
             break;
@@ -958,7 +959,7 @@ qvi_rmi_server::s_rpc_get_nobjs_in_cpuset(
         qvi_hwloc_flags_t flags;
         qv_hw_obj_type_t target_obj;
         qvi_hwloc_bitmap cpuset;
-        const int qvrc = qvi_bbuff::unpack_checked(
+        const int qvrc = qvi_bbuff::unpack(
             input, input_size, flags, target_obj, cpuset
         );
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {
@@ -993,7 +994,7 @@ qvi_rmi_server::s_rpc_get_cpuset_for_nobjs(
         qvi_hwloc_bitmap cpuset;
         qv_hw_obj_type_t obj_type;
         int nobjs;
-        const int qvrc = qvi_bbuff::unpack_checked(
+        const int qvrc = qvi_bbuff::unpack(
             input, input_size, flags, cpuset, obj_type, nobjs
         );
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {
@@ -1029,7 +1030,7 @@ qvi_rmi_server::s_rpc_get_device_in_cpuset(
         int dev_i;
         qvi_hwloc_bitmap cpuset;
         qv_device_id_type_t devid_type;
-        const int qvrc = qvi_bbuff::unpack_checked(
+        const int qvrc = qvi_bbuff::unpack(
             input, input_size, flags, dev_obj, dev_i, cpuset, devid_type
         );
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {
@@ -1069,7 +1070,7 @@ qvi_rmi_server::m_rpc_dispatch(
         qvi_rmi_msg_header hdr;
         size_t trim = 0;
         // Guard against truncated/empty messages that cannot hold a header.
-        const int mrc = unpack_msg_header_safe(data, data_size, &hdr, &trim);
+        const int mrc = unpack_msg_header(data, data_size, &hdr, &trim);
         if (qvi_unlikely(mrc != QV_SUCCESS)) {
             qvi_log_warn(
                 "Dropping malformed RPC message (size={}).", data_size

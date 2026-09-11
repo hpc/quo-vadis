@@ -136,55 +136,11 @@ public:
     }
 
     /**
-     * Deserializes values previously written by pack() from a raw buffer.
+     * Deserializes values previously written by pack() from a raw buffer,
+     * validating the buffer before dereferencing it.
      *
-     * @warning This overload trusts the length prefix stored in data and does
-     * NOT validate it against any known buffer size: it reads a size_t at the
-     * front of data and then reads that many payload bytes. Only use it on data
-     * that was produced by pack() and is known to be intact (e.g., a buffer we
-     * created locally). For data from an untrusted or possibly truncated source
-     * (such as a message received over the wire), use unpack_checked() instead
-     * to avoid out-of-bounds reads.
-     *
-     * @tparam Types Any types serializable by cereal.
-     * @param  data  Pointer to the start of a length-prefixed packed region.
-     * @param  args  Output values to deserialize into, in the same order they
-     *               were packed.
-     * @return QV_SUCCESS on success, or an error code on deserialization
-     *         failure.
-     */
-    template<typename ...Types>
-    static int
-    unpack(
-        void *data,
-        Types &&...args
-    ) {
-        try {
-            byte_t *pos = static_cast<byte_t *>(data);
-
-            // Read the length prefix that pack() wrote.
-            size_t slen;
-            memmove(&slen, pos, sizeof(slen));
-            pos += sizeof(slen);
-
-            std::stringstream ss(std::string((const char *)pos, slen));
-            // Scoped so the archive's destructor runs before ss goes away.
-            {
-                cereal::BinaryInputArchive iarchive(ss);
-                iarchive(std::forward<Types>(args)...);
-            }
-
-            return QV_SUCCESS;
-        }
-        qvi_catch_and_return();
-    }
-
-    /**
-     * Bounds-checked counterpart to unpack() for data that may originate from
-     * an untrusted or possibly corrupt source (e.g., a message received over
-     * the wire).
-     *
-     * Unlike unpack(), this validates the buffer before dereferencing it: it
+     * This is safe to use on data that may originate from an untrusted or
+     * possibly corrupt source (e.g., a message received over the wire): it
      * confirms that data is large enough to hold the length prefix, and that
      * the payload length advertised by the prefix fits within the remaining
      * bytes. This defends against out-of-bounds reads driven by a bogus/oversized
@@ -202,7 +158,7 @@ public:
      */
     template<typename ...Types>
     static int
-    unpack_checked(
+    unpack(
         void *data,
         size_t data_size,
         Types &&...args
