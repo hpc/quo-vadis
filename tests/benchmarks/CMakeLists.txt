@@ -133,6 +133,50 @@ if(MPI_FOUND)
           TIMEOUT 120
           LABELS "benchmark;mpi"
     )
+
+    ############################################################################
+    # MPI message-rate (throughput vs. concurrency) benchmark. Each MPI rank is
+    # an independent client of quo-vadisd, so the number of concurrent clients
+    # is the launcher-chosen communicator size (`mpiexec -n N`). It measures the
+    # effective public-API message rate a user should expect; see
+    # docs/mpi-msg-rate.md. Written in C++ (hence no LINKER_LANGUAGE C override).
+    add_executable(
+        qvb-mpi-msg-rate
+        qvb.h
+        qvb-mpi-msg-rate.cc
+    )
+
+    target_link_libraries(
+        qvb-mpi-msg-rate
+        quo-vadis
+        quo-vadis-mpi
+        m
+    )
+
+    # Smoke test: a short, fixed-count run that only verifies the benchmark
+    # builds, runs, and tears the daemon down cleanly. Publication-grade sweeps
+    # are run manually (see docs/mpi-msg-rate.md).
+    add_test(
+        NAME
+          bench-mpi-msg-rate
+        COMMAND
+          bash -c "QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
+          ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \
+          ${MPIEXEC_EXECUTABLE} \
+          ${MPIEXEC_NUMPROC_FLAG} \
+          ${MPIEXEC_MAX_NUMPROCS} \
+          ${CMAKE_CURRENT_BINARY_DIR}/qvb-mpi-msg-rate \
+          --requests 200 --warmup 0 --trials 2"
+        WORKING_DIRECTORY
+          ${CMAKE_BINARY_DIR}/tests
+    )
+
+    set_tests_properties(
+        bench-mpi-msg-rate
+        PROPERTIES
+          TIMEOUT 120
+          LABELS "benchmark;mpi"
+    )
 endif()
 
 # vim: ts=4 sts=4 sw=4 expandtab
