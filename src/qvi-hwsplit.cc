@@ -21,10 +21,6 @@
 // TODOs
 // * Resource reference counting.
 // * Need to deal with resource unavailability.
-// * Split and attach devices properly.
-// * Have bitmap scratch pad that is initialized once, then destroyed? This
-//   approach may be a nice allocation optimization, but in heavily threaded
-//   code may be a bottleneck.
 // * Add RMI to acquire/release resources.
 
 // Notes:
