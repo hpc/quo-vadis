@@ -17,12 +17,10 @@ static void
 scopei_free(
     scopei *sinfo
 ) {
-    char *ers = NULL;
-    const int rc = qv_thread_free(sinfo->th_scopes, sinfo->nthreads);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_thread_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(
+        qv_thread_free(sinfo->th_scopes, sinfo->nthreads),
+        "qv_thread_free"
+    );
 }
 
 /**
@@ -32,38 +30,27 @@ static void
 scopei_ep(
     scopei *sinfo
 ) {
-    char *ers = NULL;
-
     qv_scope_t *base_scope;
-    int rc = qv_process_scope(
-        QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &base_scope
+    ctu_check(
+        qv_process_scope(QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &base_scope),
+        "qv_process_scope"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_thread_scope_get() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
     // Use the number of cores to determine how many thread scopes to create.
-    rc = qv_hw_obj_count(base_scope, QV_HW_OBJ_CORE, &sinfo->nthreads);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(
+        qv_hw_obj_count(base_scope, QV_HW_OBJ_CORE, &sinfo->nthreads),
+        "qv_hw_obj_count"
+    );
 
     int *thread_coloring = QV_THREAD_SPLIT_CLOSE;
-    rc = qv_thread_split_at(
-        base_scope, QV_HW_OBJ_CORE, thread_coloring,
-        sinfo->nthreads, &sinfo->th_scopes
+    ctu_check(
+        qv_thread_split_at(
+            base_scope, QV_HW_OBJ_CORE, thread_coloring,
+            sinfo->nthreads, &sinfo->th_scopes
+        ),
+        "qv_thread_split_at"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_thread_split_at() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
-    rc = qv_free(base_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_free(base_scope), "qv_free");
 }
 
 static void
@@ -71,11 +58,7 @@ scopei_ep_push(
     scopei *sinfo,
     int rank
 ) {
-    const int rc = qv_bind_push(sinfo->th_scopes[rank]);
-    if (rc != QV_SUCCESS) {
-        char *ers = "qv_bind_push() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_bind_push(sinfo->th_scopes[rank]), "qv_bind_push");
 }
 
 static void
@@ -83,11 +66,7 @@ scopei_ep_pop(
     scopei *sinfo,
     int rank
 ) {
-    const int rc = qv_bind_pop(sinfo->th_scopes[rank]);
-    if (rc != QV_SUCCESS) {
-        char *ers = "qv_bind_pop() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_bind_pop(sinfo->th_scopes[rank]), "qv_bind_pop");
 }
 
 static void
@@ -96,16 +75,11 @@ emit_iter_info(
     int rank,
     int i
 ) {
-    char const *ers = NULL;
-
     char *binds;
-    const int rc = qv_bind_string(
-        sinfo->th_scopes[rank], QV_BIND_STRING_LOGICAL, &binds
+    ctu_check(
+        qv_bind_string(sinfo->th_scopes[rank], QV_BIND_STRING_LOGICAL, &binds),
+        "qv_bind_string"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_string() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
     printf(
         "[%d]: thread=%03d of nthread=%03d handling iter %03d on %s\n",
         ctu_gettid(), omp_get_thread_num(), omp_get_num_threads(), i, binds

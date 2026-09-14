@@ -24,7 +24,7 @@ make_root_scope(qvb_backend_t *self)
 {
     (void)self;
     qv_scope_t *scope = NULL;
-    qvb_check(
+    ctu_check(
         qv_process_scope(QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &scope),
         "qv_process_scope"
     );
@@ -50,13 +50,13 @@ body_thread_split(void *v)
 {
     thread_ctx_t *c = (thread_ctx_t *)v;
     qv_scope_t **subs = NULL;
-    qvb_check(
+    ctu_check(
         qv_thread_split(
             c->base, 1, QV_THREAD_SPLIT_PACKED, c->nthreads, &subs
         ),
         "qv_thread_split"
     );
-    qvb_check(qv_thread_free(subs, c->nthreads), "qv_thread_free");
+    ctu_check(qv_thread_free(subs, c->nthreads), "qv_thread_free");
 }
 
 // qv_thread_split_at + qv_thread_free as a balanced cycle.
@@ -65,14 +65,14 @@ body_thread_split_at(void *v)
 {
     thread_ctx_t *c = (thread_ctx_t *)v;
     qv_scope_t **subs = NULL;
-    qvb_check(
+    ctu_check(
         qv_thread_split_at(
             c->base, QV_HW_OBJ_CORE,
             QV_THREAD_SPLIT_PACKED, c->nthreads, &subs
         ),
         "qv_thread_split_at"
     );
-    qvb_check(qv_thread_free(subs, c->nthreads), "qv_thread_free");
+    ctu_check(qv_thread_free(subs, c->nthreads), "qv_thread_free");
 }
 
 // qv_pthread_create + join, using a scope from a fresh split each iteration.
@@ -81,7 +81,7 @@ body_pthread_create(void *v)
 {
     thread_ctx_t *c = (thread_ctx_t *)v;
     qv_scope_t **subs = NULL;
-    qvb_check(
+    ctu_check(
         qv_thread_split(
             c->base, 1, QV_THREAD_SPLIT_PACKED, 1, &subs
         ),
@@ -91,21 +91,21 @@ body_pthread_create(void *v)
     pthread_t tid;
     const int rc = qv_pthread_create(&tid, NULL, noop_routine, NULL, subs[0]);
     if (rc != 0) {
-        qvb_panic("qv_pthread_create failed (rc=%d)", rc);
+        ctu_panic("qv_pthread_create failed (rc=%d)", rc);
     }
     pthread_join(tid, NULL);
 
-    qvb_check(qv_thread_free(subs, 1), "qv_thread_free");
+    ctu_check(qv_thread_free(subs, 1), "qv_thread_free");
 }
 
 int
 main(void)
 {
     qvb_reporter_t reporter;
-    qvb_reporter_init(&reporter, QVB_KIND_THREAD, /*active=*/true);
+    qvb_reporter_init(&reporter, CTU_SCOPE_KIND_THREAD, /*active=*/true);
 
     qvb_backend_t backend = {
-        .kind = QVB_KIND_THREAD,
+        .kind = CTU_SCOPE_KIND_THREAD,
         .reporting = true,
         .make_root_scope = make_root_scope,
         .data = NULL
@@ -113,13 +113,13 @@ main(void)
 
     // A base scope for the thread-specific splits.
     qv_scope_t *base = NULL;
-    qvb_check(
+    ctu_check(
         qv_process_scope(QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &base),
         "qv_process_scope"
     );
 
     int ncores = 0;
-    qvb_check(
+    ctu_check(
         qv_hw_obj_count(base, QV_HW_OBJ_CORE, &ncores), "qv_hw_obj_count"
     );
     if (ncores < 1) ncores = 1;
@@ -135,7 +135,7 @@ main(void)
         &reporter, "qv_pthread_create", iters, body_pthread_create, &tctx
     );
 
-    qvb_check(qv_free(base), "qv_free");
+    ctu_check(qv_free(base), "qv_free");
 
     // Everything scope-kind-agnostic is shared.
     qvb_run_common(&backend, &reporter);

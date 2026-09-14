@@ -23,7 +23,7 @@ make_root_scope(qvb_backend_t *self)
 {
     (void)self;
     qv_scope_t *scope = NULL;
-    qvb_check(
+    ctu_check(
         qv_process_scope(QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &scope),
         "qv_process_scope"
     );
@@ -36,11 +36,11 @@ body_process_scope(void *v)
 {
     (void)v;
     qv_scope_t *scope = NULL;
-    qvb_check(
+    ctu_check(
         qv_process_scope(QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &scope),
         "qv_process_scope"
     );
-    qvb_check(qv_free(scope), "qv_free");
+    ctu_check(qv_free(scope), "qv_free");
 }
 
 // Global, non-scope entry points shared by all APIs; benchmarked once here
@@ -50,7 +50,7 @@ body_version(void *v)
 {
     (void)v;
     int major = 0, minor = 0, patch = 0;
-    qvb_check(qv_version(&major, &minor, &patch), "qv_version");
+    ctu_check(qv_version(&major, &minor, &patch), "qv_version");
 }
 
 static void
@@ -65,10 +65,10 @@ int
 main(void)
 {
     qvb_reporter_t reporter;
-    qvb_reporter_init(&reporter, QVB_KIND_PROCESS, /*active=*/true);
+    qvb_reporter_init(&reporter, CTU_SCOPE_KIND_PROCESS, /*active=*/true);
 
     qvb_backend_t backend = {
-        .kind = QVB_KIND_PROCESS,
+        .kind = CTU_SCOPE_KIND_PROCESS,
         .reporting = true,
         .make_root_scope = make_root_scope,
         .data = NULL

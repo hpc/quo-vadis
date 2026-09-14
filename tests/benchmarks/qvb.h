@@ -25,6 +25,7 @@
 #ifndef QVB_H
 #define QVB_H
 
+#include "common-test-utils.h"
 #include "quo-vadis.h"
 
 #ifndef _GNU_SOURCE
@@ -44,64 +45,6 @@ extern "C" {
 
 /** Default number of timed iterations per function. Override with QVB_ITERS. */
 #define QVB_DEFAULT_ITERS 10
-
-/** Scope kind, used only for labeling output. */
-typedef enum {
-    QVB_KIND_PROCESS = 0,
-    QVB_KIND_THREAD,
-    QVB_KIND_MPI
-} qvb_kind_t;
-
-static inline const char *
-qvb_kind_name(qvb_kind_t kind)
-{
-    switch (kind) {
-        case QVB_KIND_PROCESS: return "process";
-        case QVB_KIND_THREAD:  return "thread";
-        case QVB_KIND_MPI:     return "mpi";
-        default:               return "?";
-    }
-}
-
-/**
- * Fatal-error helper shared by all benchmarks.
- */
-#define qvb_panic(...)                                                         \
-do {                                                                           \
-    fprintf(stderr, "\nqvb error %s@%d: ", __func__, __LINE__);                \
-    fprintf(stderr, __VA_ARGS__);                                              \
-    fprintf(stderr, "\n");                                                     \
-    fflush(stderr);                                                            \
-    exit(EXIT_FAILURE);                                                        \
-} while (0)
-
-/**
- * Asserts that a quo-vadis call returned QV_SUCCESS.
- */
-#define qvb_check(rc, what)                                                    \
-do {                                                                           \
-    const int qvbrc = (rc);                                                    \
-    if (qvbrc != QV_SUCCESS) {                                                 \
-        qvb_panic("%s failed (rc=%s)", (what), qv_strerr(qvbrc));              \
-    }                                                                          \
-} while (0)
-
-/**
- * Asserts that an MPI call returned MPI_SUCCESS. On failure it prints the MPI
- * error string (when available) and aborts.
- */
-#define qvb_mpi_check(rc, what)                                                \
-do {                                                                           \
-    const int mpirc = (rc);                                                    \
-    if (mpirc != MPI_SUCCESS) {                                                \
-        char mpiestr[MPI_MAX_ERROR_STRING] = {0};                              \
-        int elen = 0;                                                          \
-        if (MPI_Error_string(mpirc, mpiestr, &elen) != MPI_SUCCESS) {          \
-            mpiestr[0] = '\0';                                                 \
-        }                                                                      \
-        qvb_panic("%s failed (rc=%d: %s)", (what), mpirc, mpiestr);            \
-    }                                                                          \
-} while (0)
 
 /**
  * Monotonic wall-clock in nanoseconds.
@@ -176,7 +119,7 @@ typedef void (*qvb_reduce_fn)(
  * driver and each backend so all functions are reported through one table.
  */
 typedef struct {
-    qvb_kind_t kind;
+    ctu_scope_kind_t kind;
     bool active;   /**< Only the "reporting" rank prints (rank 0 for MPI). */
     bool header_emitted;
     /**
@@ -189,7 +132,7 @@ typedef struct {
 } qvb_reporter_t;
 
 static inline void
-qvb_reporter_init(qvb_reporter_t *r, qvb_kind_t kind, bool active)
+qvb_reporter_init(qvb_reporter_t *r, ctu_scope_kind_t kind, bool active)
 {
     r->kind = kind;
     r->active = active;
@@ -214,7 +157,8 @@ qvb_emit_header(qvb_reporter_t *r)
 {
     if (!r->active || r->header_emitted) return;
     printf(
-        "# quo-vadis micro-benchmarks [%s scope]\n", qvb_kind_name(r->kind)
+        "# quo-vadis micro-benchmarks [%s scope]\n",
+        ctu_scope_kind_name(r->kind)
     );
     if (r->reduce) {
         // Multi-instance: stats are reduced across all instances (ranks).
@@ -370,7 +314,7 @@ qvb_measure2(
  * shared. This is what removes duplication across process/thread/MPI suites.
  */
 typedef struct qvb_backend_s {
-    qvb_kind_t kind;
+    ctu_scope_kind_t kind;
     /** True if this rank/instance should print results. */
     bool reporting;
     /**

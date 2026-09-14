@@ -25,93 +25,65 @@ main(
     char const *ers = NULL;
     MPI_Comm comm = MPI_COMM_WORLD;
 
-    int rc = MPI_Init(&argc, &argv);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Init() failed";
-        ctu_panic("%s (rc=%d)", ers, rc);
-    }
+    ctu_mpi_check(MPI_Init(&argc, &argv), "MPI_Init");
 
     int wsize;
-    rc = MPI_Comm_size(comm, &wsize);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_size() failed";
-        ctu_panic("%s (rc=%d)", ers, rc);
-    }
+    ctu_mpi_check(MPI_Comm_size(comm, &wsize), "MPI_Comm_size");
 
     int wrank;
-    rc = MPI_Comm_rank(comm, &wrank);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Comm_rank() failed";
-        ctu_panic("%s (rc=%d)", ers, rc);
-    }
+    ctu_mpi_check(MPI_Comm_rank(comm, &wrank), "MPI_Comm_rank");
     ////////////////////////////////////////////////////////////////////////////
     // Use the process interface for NUMA.
     ////////////////////////////////////////////////////////////////////////////
     // Get the base scope: RM-given resources.
     qv_scope_t *base_scope;
-    rc = qv_mpi_scope(
-        comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &base_scope
+    ctu_check(
+        qv_mpi_scope(comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &base_scope),
+        "qv_mpi_scope"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_scope() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
     int nnumas;
-    rc = qv_hw_obj_count(base_scope, QV_HW_OBJ_NUMANODE, &nnumas);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(
+        qv_hw_obj_count(base_scope, QV_HW_OBJ_NUMANODE, &nnumas),
+        "qv_hw_obj_count"
+    );
     // Split at NUMA domains.
     qv_scope_t *numa_scope;
-    rc = qv_split_at(
-        base_scope, QV_HW_OBJ_NUMANODE,
-        wrank % nnumas, &numa_scope
+    ctu_check(
+        qv_split_at(
+            base_scope, QV_HW_OBJ_NUMANODE,
+            wrank % nnumas, &numa_scope
+        ),
+        "qv_split_at"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_split_at() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
     // When there's more tasks than NUMAs,
     // make sure each task has exclusive resources.
     int lrank;
-    rc = qv_group_rank(numa_scope, &lrank);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_group_rank() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_group_rank(numa_scope, &lrank), "qv_group_rank");
 
     int ntasks_per_numa;
-    rc = qv_group_size(numa_scope, &ntasks_per_numa);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_group_size() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_group_size(numa_scope, &ntasks_per_numa), "qv_group_size");
 
     qv_scope_t *subnuma;
-    rc = qv_split(
-        numa_scope, ntasks_per_numa,
-        lrank % ntasks_per_numa, &subnuma
+    ctu_check(
+        qv_split(
+            numa_scope, ntasks_per_numa,
+            lrank % ntasks_per_numa, &subnuma
+        ),
+        "qv_split"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_split() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
     // Get the number of cores and pus per NUMA part.
     int ncores;
-    rc = qv_hw_obj_count(subnuma, QV_HW_OBJ_CORE, &ncores);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(
+        qv_hw_obj_count(subnuma, QV_HW_OBJ_CORE, &ncores),
+        "qv_hw_obj_count"
+    );
 
     int npus;
-    rc = qv_hw_obj_count(subnuma, QV_HW_OBJ_PU, &npus);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(
+        qv_hw_obj_count(subnuma, QV_HW_OBJ_PU, &npus),
+        "qv_hw_obj_count"
+    );
     ////////////////////////////////////////////////////////////////////////////
     // OpenMP: Launch one thread per core.
     ////////////////////////////////////////////////////////////////////////////
@@ -122,13 +94,12 @@ main(
     );
     int *thread_coloring = NULL; // Default thread assignment.
     qv_scope_t **th_scopes;
-    rc = qv_thread_split_at(
-        subnuma, QV_HW_OBJ_CORE, thread_coloring, nthreads, &th_scopes
+    ctu_check(
+        qv_thread_split_at(
+            subnuma, QV_HW_OBJ_CORE, thread_coloring, nthreads, &th_scopes
+        ),
+        "qv_thread_split_at"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_thread_split_at() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
     omp_set_num_threads(nthreads);
     #pragma omp parallel
@@ -139,11 +110,7 @@ main(
         thread_work(th_scopes[tid]);
     }
     // When we are done with the scope, clean up.
-    rc = qv_thread_free(th_scopes, nthreads);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_thread_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_thread_free(th_scopes, nthreads), "qv_thread_free");
     ctu_pemit(
         base_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
         "# Done!\n"
@@ -158,8 +125,8 @@ main(
         base_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
         "# Starting Pthread test (nthreads/process=%d)\n", nthreads
     );
-    thread_coloring = QV_THREAD_SPLIT_PACKED,
-    rc = qv_thread_split_at(
+    thread_coloring = QV_THREAD_SPLIT_PACKED;
+    int rc = qv_thread_split_at(
         subnuma, QV_HW_OBJ_PU, thread_coloring, nthreads, &th_scopes
     );
     if (rc != QV_SUCCESS) {
@@ -192,11 +159,7 @@ main(
         "# Done!\n"
     );
     // When we are done with the scope, clean up.
-    rc = qv_thread_free(th_scopes, nthreads);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_thread_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_thread_free(th_scopes, nthreads), "qv_thread_free");
     // Clean up.
     qv_free(subnuma);
     qv_free(numa_scope);

@@ -25,7 +25,14 @@ add_executable(
 
 target_link_libraries(
     qvb-process
+    common-test-utils
     quo-vadis
+)
+
+target_include_directories(
+    qvb-process
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
 # Use the C linker to test for C/C++ linkage problems.
@@ -62,8 +69,15 @@ add_executable(
 
 target_link_libraries(
     qvb-thread
+    common-test-utils
     quo-vadis
     Threads::Threads
+)
+
+target_include_directories(
+    qvb-thread
+    PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}/..
 )
 
 # Use the C linker to test for C/C++ linkage problems.
@@ -103,8 +117,15 @@ if(MPI_FOUND)
 
     target_link_libraries(
         qvb-mpi
+        common-test-utils
         quo-vadis
         quo-vadis-mpi
+    )
+
+    target_include_directories(
+        qvb-mpi
+        PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/..
     )
 
     # Use the C linker to test for C/C++ linkage problems.
@@ -148,9 +169,16 @@ if(MPI_FOUND)
 
     target_link_libraries(
         qvb-mpi-msg-rate
+        common-test-utils
         quo-vadis
         quo-vadis-mpi
         m
+    )
+
+    target_include_directories(
+        qvb-mpi-msg-rate
+        PRIVATE
+          ${CMAKE_CURRENT_SOURCE_DIR}/..
     )
 
     # Smoke test: a short, fixed-count run that only verifies the benchmark

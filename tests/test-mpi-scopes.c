@@ -14,76 +14,63 @@ main(
 ) {
     const int npieces = 2;
 
-    char const *ers = NULL;
     MPI_Comm comm = MPI_COMM_WORLD;
 
-    int rc = MPI_Init(&argc, &argv);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Init() failed";
-        ctu_panic("%s (rc=%d)", ers, rc);
-    }
+    ctu_mpi_check(MPI_Init(&argc, &argv), "MPI_Init");
 
     // Self scope test.
     qv_scope_t *self_scope;
-    rc = qv_mpi_scope(
-        comm,
-        QV_SCOPE_PROCESS,
-        QV_SCOPE_FLAG_NONE,
-        &self_scope
+    ctu_check(
+        qv_mpi_scope(
+            comm,
+            QV_SCOPE_PROCESS,
+            QV_SCOPE_FLAG_NONE,
+            &self_scope
+        ),
+        "qv_mpi_scope"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_scope(QV_SCOPE_PROCESS) failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
     ctu_emit_scope_report(
         self_scope, CTU_SCOPE_KIND_MPI, "   self_scope"
     );
 
-    rc = qv_free(self_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_free(self_scope), "qv_free");
 
     // Base scope test
     qv_scope_t *base_scope;
-    rc = qv_mpi_scope(
-        comm,
-        QV_SCOPE_JOB,
-        QV_SCOPE_FLAG_NONE,
-        &base_scope
+    ctu_check(
+        qv_mpi_scope(
+            comm,
+            QV_SCOPE_JOB,
+            QV_SCOPE_FLAG_NONE,
+            &base_scope
+        ),
+        "qv_mpi_scope"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_scope() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
     int base_scope_rank;
-    rc = qv_group_rank(
-        base_scope,
-        &base_scope_rank
+    ctu_check(
+        qv_group_rank(
+            base_scope,
+            &base_scope_rank
+        ),
+        "qv_group_rank"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_group_rank() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
     ctu_emit_scope_report(
         base_scope, CTU_SCOPE_KIND_MPI, "   base_scope"
     );
 
     qv_scope_t *sub_scope;
-    rc = qv_split(
-        base_scope,
-        npieces,
-        QV_SPLIT_PACKED,
-        &sub_scope
+    ctu_check(
+        qv_split(
+            base_scope,
+            npieces,
+            QV_SPLIT_PACKED,
+            &sub_scope
+        ),
+        "qv_split"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_split() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
     ctu_emit_scope_report(
         sub_scope, CTU_SCOPE_KIND_MPI, "    sub_scope"
@@ -91,27 +78,22 @@ main(
 
     if (base_scope_rank == 0) {
         qv_scope_t *create_scope;
-        rc = qv_create_scope(
-            sub_scope,
-            QV_SCOPE_FLAG_NONE,
-            QV_HW_OBJ_CORE,
-            1,
-            &create_scope
+        ctu_check(
+            qv_create_scope(
+                sub_scope,
+                QV_SCOPE_FLAG_NONE,
+                QV_HW_OBJ_CORE,
+                1,
+                &create_scope
+            ),
+            "qv_create_scope"
         );
-        if (rc != QV_SUCCESS) {
-            ers = "qv_create_scope() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
 
         ctu_emit_scope_report(
             create_scope, CTU_SCOPE_KIND_MPI, " create_scope"
         );
 
-        rc = qv_free(create_scope);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_free() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
+        ctu_check(qv_free(create_scope), "qv_free");
     }
     else {
         // Matching emit to avoid hangs.
@@ -119,38 +101,25 @@ main(
     }
 
     qv_scope_t *sub_sub_scope;
-    rc = qv_split(
-        sub_scope,
-        npieces,
-        QV_SPLIT_SPREAD,
-        &sub_sub_scope
+    ctu_check(
+        qv_split(
+            sub_scope,
+            npieces,
+            QV_SPLIT_SPREAD,
+            &sub_sub_scope
+        ),
+        "qv_split"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_split() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
     ctu_emit_scope_report(
         sub_sub_scope, CTU_SCOPE_KIND_MPI, "sub_sub_scope"
     );
 
-    rc = qv_free(base_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_free(base_scope), "qv_free");
 
-    rc = qv_free(sub_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_free(sub_scope), "qv_free");
 
-    rc = qv_free(sub_sub_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_free(sub_sub_scope), "qv_free");
 
     MPI_Finalize();
 

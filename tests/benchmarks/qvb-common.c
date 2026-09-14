@@ -38,21 +38,21 @@ static void
 body_group_rank(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
-    qvb_check(qv_group_rank(c->scope, &c->i_out), "qv_group_rank");
+    ctu_check(qv_group_rank(c->scope, &c->i_out), "qv_group_rank");
 }
 
 static void
 body_group_size(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
-    qvb_check(qv_group_size(c->scope, &c->i_out), "qv_group_size");
+    ctu_check(qv_group_size(c->scope, &c->i_out), "qv_group_size");
 }
 
 static void
 body_hw_obj_count(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
-    qvb_check(
+    ctu_check(
         qv_hw_obj_count(c->scope, c->obj_type, &c->i_out), "qv_hw_obj_count"
     );
 }
@@ -61,14 +61,14 @@ static void
 body_barrier(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
-    qvb_check(qv_barrier(c->scope), "qv_barrier");
+    ctu_check(qv_barrier(c->scope), "qv_barrier");
 }
 
 static void
 body_bind_string(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
-    qvb_check(
+    ctu_check(
         qv_bind_string(c->scope, QV_BIND_STRING_LOGICAL, &c->str_out),
         "qv_bind_string"
     );
@@ -80,14 +80,14 @@ static void
 body_bind_push(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
-    qvb_check(qv_bind_push(c->scope), "qv_bind_push");
+    ctu_check(qv_bind_push(c->scope), "qv_bind_push");
 }
 
 static void
 body_bind_pop(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
-    qvb_check(qv_bind_pop(c->scope), "qv_bind_pop");
+    ctu_check(qv_bind_pop(c->scope), "qv_bind_pop");
 }
 
 static void
@@ -114,8 +114,8 @@ body_split(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
     qv_scope_t *sub = NULL;
-    qvb_check(qv_split(c->scope, 1, 0, &sub), "qv_split");
-    qvb_check(qv_free(sub), "qv_free");
+    ctu_check(qv_split(c->scope, 1, 0, &sub), "qv_split");
+    ctu_check(qv_free(sub), "qv_free");
 }
 
 static void
@@ -123,10 +123,10 @@ body_split_at(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
     qv_scope_t *sub = NULL;
-    qvb_check(
+    ctu_check(
         qv_split_at(c->scope, QV_HW_OBJ_CORE, 0, &sub), "qv_split_at"
     );
-    qvb_check(qv_free(sub), "qv_free");
+    ctu_check(qv_free(sub), "qv_free");
 }
 
 static void
@@ -134,11 +134,11 @@ body_create_scope(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
     qv_scope_t *sub = NULL;
-    qvb_check(
+    ctu_check(
         qv_create_scope(c->scope, QV_SCOPE_FLAG_NONE, QV_HW_OBJ_CORE, 1, &sub),
         "qv_create_scope"
     );
-    qvb_check(qv_free(sub), "qv_free");
+    ctu_check(qv_free(sub), "qv_free");
 }
 
 void
@@ -150,7 +150,7 @@ qvb_run_common(qvb_backend_t *backend, qvb_reporter_t *reporter)
     // against it. This is the sole scope-kind-specific bit in this file.
     qv_scope_t *root = backend->make_root_scope(backend);
     if (!root) {
-        qvb_panic("backend->make_root_scope() returned NULL");
+        ctu_panic("backend->make_root_scope() returned NULL");
     }
 
     qvb_common_ctx_t ctx = {
@@ -193,7 +193,7 @@ qvb_run_common(qvb_backend_t *backend, qvb_reporter_t *reporter)
         iters, &ctx
     );
 
-    qvb_check(qv_free(root), "qv_free");
+    ctu_check(qv_free(root), "qv_free");
 }
 
 /*
