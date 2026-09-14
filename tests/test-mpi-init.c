@@ -12,29 +12,17 @@ main(
     int argc,
     char **argv
 ) {
-    char const *ers = NULL;
     MPI_Comm comm = MPI_COMM_WORLD;
 
-    int rc = MPI_Init(&argc, &argv);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Init() failed";
-        ctu_panic("%s (rc=%d)", ers, rc);
-    }
+    ctu_mpi_check(MPI_Init(&argc, &argv), "MPI_Init");
 
     qv_scope_t *scope = NULL;
-    rc = qv_mpi_scope(
-        comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &scope
+    ctu_check(
+        qv_mpi_scope(comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &scope),
+        "qv_mpi_scope"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_scope() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
-    rc = qv_free(scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_free(scope), "qv_free");
 
     MPI_Finalize();
 

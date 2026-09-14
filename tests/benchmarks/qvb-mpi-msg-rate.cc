@@ -168,7 +168,7 @@ qvb_parse_double(
     char *end = nullptr;
     const double v = strtod(s, &end);
     if (end == s || *end != '\0') {
-        qvb_panic("invalid value for %s: %s", what, s);
+        ctu_panic("invalid value for %s: %s", what, s);
     }
     return v;
 }
@@ -180,7 +180,7 @@ qvb_parse_long(
 ) {
     char *end = nullptr;
     const long v = strtol(s, &end, 10);
-    if (end == s || *end != '\0') qvb_panic("invalid value for %s: %s", what, s);
+    if (end == s || *end != '\0') ctu_panic("invalid value for %s: %s", what, s);
     return v;
 }
 
@@ -212,12 +212,12 @@ qvb_parse_args(
         }
         else {
             qvb_usage(argv[0]);
-            qvb_panic("unrecognized argument: %s", argv[i]);
+            ctu_panic("unrecognized argument: %s", argv[i]);
         }
     }
-    if (cfg.trials <= 0) qvb_panic("--trials must be > 0");
+    if (cfg.trials <= 0) ctu_panic("--trials must be > 0");
     if (cfg.requests <= 0 && cfg.duration_s <= 0.0) {
-        qvb_panic("one of --duration (> 0) or --requests (> 0) is required");
+        ctu_panic("one of --duration (> 0) or --requests (> 0) is required");
     }
 }
 
@@ -257,8 +257,8 @@ qvb_run_trial(
     const uint64_t warm_end = qvb_now_ns() +
         static_cast<uint64_t>(cfg.warmup_s * 1e9);
     while (qvb_now_ns() < warm_end) {
-        qvb_check(qv_bind_push(scope), "qv_bind_push");
-        qvb_check(qv_bind_pop(scope), "qv_bind_pop");
+        ctu_check(qv_bind_push(scope), "qv_bind_push");
+        ctu_check(qv_bind_pop(scope), "qv_bind_pop");
     }
 
     qvb_hist hist;
@@ -267,7 +267,7 @@ qvb_run_trial(
 
     // Align all processes so their measurement windows overlap.
     for (size_t i = 0; i < nbarrier; ++i) {
-        qvb_mpi_check(
+        ctu_mpi_check(
             MPI_Barrier(comm),
             "MPI_Reduce(messages)"
         );
@@ -291,9 +291,9 @@ qvb_run_trial(
         static constexpr int msgs_per_iter = 2;
 
         const uint64_t a0 = qvb_now_ns();
-        qvb_check(qv_bind_push(scope), "qv_bind_push");
+        ctu_check(qv_bind_push(scope), "qv_bind_push");
         const uint64_t a1 = qvb_now_ns();
-        qvb_check(qv_bind_pop(scope), "qv_bind_pop");
+        ctu_check(qv_bind_pop(scope), "qv_bind_pop");
         const uint64_t a2 = qvb_now_ns();
 
         // Each call is one daemon round-trip; record both latencies.
@@ -308,7 +308,7 @@ qvb_run_trial(
 
     // Close the window; keeps processes in lock-step before the reductions.
     for (size_t i = 0; i < nbarrier; ++i) {
-        qvb_mpi_check(
+        ctu_mpi_check(
             MPI_Barrier(comm),
             "MPI_Reduce(messages)"
         );
@@ -317,35 +317,35 @@ qvb_run_trial(
     // Reduce scalar aggregates across all processes.
     uint64_t total_msgs = 0, sum_total_ns = 0, max_window_ns = 0;
     uint64_t global_min = 0, global_max = 0;
-    qvb_mpi_check(
+    ctu_mpi_check(
         MPI_Reduce(
             &local_msgs, &total_msgs, 1,
             MPI_UINT64_T, MPI_SUM, 0, comm
         ),
         "MPI_Reduce(messages)"
     );
-    qvb_mpi_check(
+    ctu_mpi_check(
         MPI_Reduce(
             &total_ns, &sum_total_ns, 1,
             MPI_UINT64_T, MPI_SUM, 0, comm
         ),
         "MPI_Reduce(total_ns)"
     );
-    qvb_mpi_check(
+    ctu_mpi_check(
         MPI_Reduce(
             &local_window_ns, &max_window_ns, 1,
             MPI_UINT64_T, MPI_MAX, 0, comm
         ),
         "MPI_Reduce(window)"
     );
-    qvb_mpi_check(
+    ctu_mpi_check(
         MPI_Reduce(
             &hist.min_ns, &global_min, 1,
             MPI_UINT64_T, MPI_MIN, 0, comm
         ),
         "MPI_Reduce(min)"
     );
-    qvb_mpi_check(
+    ctu_mpi_check(
         MPI_Reduce(
             &hist.max_ns, &global_max, 1,
             MPI_UINT64_T, MPI_MAX, 0, comm
@@ -355,7 +355,7 @@ qvb_run_trial(
 
     // Reduce the latency histogram bucket-wise for global percentiles.
     qvb_hist global_hist;
-    qvb_mpi_check(
+    ctu_mpi_check(
         MPI_Reduce(
             hist.count.data(),
             global_hist.count.data(),
@@ -398,7 +398,7 @@ qvb_print_metadata(
     }
 
     int vmaj = 0, vmin = 0, vpatch = 0;
-    qvb_check(qv_version(&vmaj, &vmin, &vpatch), "qv_version");
+    ctu_check(qv_version(&vmaj, &vmin, &vpatch), "qv_version");
 
     char mpiver[MPI_MAX_LIBRARY_VERSION_STRING] = {0};
     int mpiverlen = 0;
@@ -441,11 +441,11 @@ main(
     int argc, char **argv
 ) {
     const MPI_Comm target_comm = MPI_COMM_WORLD;
-    qvb_mpi_check(MPI_Init(&argc, &argv), "MPI_Init");
+    ctu_mpi_check(MPI_Init(&argc, &argv), "MPI_Init");
 
     int wrank = 0, nranks = 0;
-    qvb_mpi_check(MPI_Comm_rank(target_comm, &wrank), "MPI_Comm_rank");
-    qvb_mpi_check(MPI_Comm_size(target_comm, &nranks), "MPI_Comm_size");
+    ctu_mpi_check(MPI_Comm_rank(target_comm, &wrank), "MPI_Comm_rank");
+    ctu_mpi_check(MPI_Comm_size(target_comm, &nranks), "MPI_Comm_size");
     const bool reporting = (wrank == 0);
 
     qvb_cfg cfg;
@@ -454,7 +454,7 @@ main(
     // Each process is an independent client:
     // its own scope means its own connection.
     qv_scope_t *scope = nullptr;
-    qvb_check(
+    ctu_check(
         qv_mpi_scope(target_comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &scope),
         "qv_mpi_scope"
     );
@@ -464,7 +464,7 @@ main(
     FILE *csv = nullptr;
     if (reporting && !cfg.csv_path.empty()) {
         csv = fopen(cfg.csv_path.c_str(), "a");
-        if (!csv) qvb_panic("could not open CSV file: %s", cfg.csv_path.c_str());
+        if (!csv) ctu_panic("could not open CSV file: %s", cfg.csv_path.c_str());
         // Header only if the file is empty.
         if (ftell(csv) == 0) {
             fprintf(
@@ -555,9 +555,9 @@ main(
         if (csv) fclose(csv);
     }
 
-    qvb_check(qv_free(scope), "qv_free");
+    ctu_check(qv_free(scope), "qv_free");
 
-    qvb_mpi_check(MPI_Finalize(), "MPI_Finalize");
+    ctu_mpi_check(MPI_Finalize(), "MPI_Finalize");
     return exit_status;
 }
 

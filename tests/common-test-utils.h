@@ -58,6 +58,37 @@ do {                                                                           \
     }                                                                          \
 } while (0)
 
+/**
+ * Asserts that a quo-vadis call returned QV_SUCCESS, aborting with the
+ * qv_strerr() string otherwise.
+ */
+#define ctu_check(rc, what)                                                    \
+do {                                                                           \
+    const int ctu_rc = (rc);                                                   \
+    if (ctu_rc != QV_SUCCESS) {                                                \
+        ctu_panic("%s failed (rc=%s)", (what), qv_strerr(ctu_rc));             \
+    }                                                                          \
+} while (0)
+
+/**
+ * Asserts that an MPI call returned MPI_SUCCESS. On failure it prints the MPI
+ * error string (when available) and aborts. Defined as a macro so callers that
+ * never touch MPI (e.g. the process/thread suites) need not include <mpi.h>.
+ */
+#define ctu_mpi_check(rc, what)                                                \
+do {                                                                           \
+    const int ctu_mpirc = (rc);                                                \
+    if (ctu_mpirc != MPI_SUCCESS) {                                            \
+        char ctu_mpiestr[MPI_MAX_ERROR_STRING] = {0};                          \
+        int ctu_elen = 0;                                                      \
+        if (MPI_Error_string(ctu_mpirc, ctu_mpiestr, &ctu_elen) !=             \
+            MPI_SUCCESS) {                                                     \
+            ctu_mpiestr[0] = '\0';                                             \
+        }                                                                      \
+        ctu_panic("%s failed (rc=%d: %s)", (what), ctu_mpirc, ctu_mpiestr);    \
+    }                                                                          \
+} while (0)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -67,6 +98,19 @@ typedef enum {
     CTU_SCOPE_KIND_THREAD,
     CTU_SCOPE_KIND_MPI
 } ctu_scope_kind_t;
+
+// Returns a human-readable name for a scope kind (used for labeling output).
+static inline const char *
+ctu_scope_kind_name(
+    ctu_scope_kind_t kind
+) {
+    switch (kind) {
+        case CTU_SCOPE_KIND_PROCESS: return "process";
+        case CTU_SCOPE_KIND_THREAD:  return "thread";
+        case CTU_SCOPE_KIND_MPI:     return "mpi";
+        default:                     return "?";
+    }
+}
 
 typedef struct {
     char const *name;

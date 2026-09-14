@@ -9,7 +9,6 @@ main(
     int argc,
     char **argv
 ) {
-    char const *ers = NULL;
     MPI_Comm comm = MPI_COMM_WORLD;
 
     const int ndevs_tested = 2;
@@ -21,43 +20,25 @@ main(
     int base_ndev[ndevs_tested];
     int rank_ndev[ndevs_tested];
 
-    int rc = MPI_Init(&argc, &argv);
-    if (rc != MPI_SUCCESS) {
-        ers = "MPI_Init() failed";
-        ctu_panic("%s (rc=%d)", ers, rc);
-    }
+    ctu_mpi_check(MPI_Init(&argc, &argv), "MPI_Init");
     // Get base scope.
     qv_scope_t *base_scope;
-    rc = qv_mpi_scope(
-        comm,
-        QV_SCOPE_USER,
-        QV_SCOPE_FLAG_NONE,
-        &base_scope
+    ctu_check(
+        qv_mpi_scope(comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &base_scope),
+        "qv_mpi_scope"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_mpi_scope() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
     // Get my base_scope's size and my rank.
     int base_scope_size;
-    rc = qv_group_size(
-        base_scope,
-        &base_scope_size
+    ctu_check(
+        qv_group_size(base_scope, &base_scope_size),
+        "qv_group_size"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_group_size() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
     int base_scope_rank;
-    rc = qv_group_rank(
-        base_scope,
-        &base_scope_rank
+    ctu_check(
+        qv_group_rank(base_scope, &base_scope_rank),
+        "qv_group_rank"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_group_rank() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
     if (base_scope_rank == 0) {
         ctu_emit_device_info(
@@ -78,27 +59,16 @@ main(
     }
     // Split the base scope evenly across workers.
     qv_scope_t *rank_scope;
-    rc = qv_split(
-        base_scope,
-        base_scope_size,
-        base_scope_rank,
-        &rank_scope
+    ctu_check(
+        qv_split(base_scope, base_scope_size, base_scope_rank, &rank_scope),
+        "qv_split"
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_split() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
     // Get number of tested devices in my rank_scope.
     for (int i = 0; i < ndevs_tested; ++i) {
-        rc = qv_hw_obj_count(
-            rank_scope,
-            devs_tested[i],
-            &rank_ndev[i]
+        ctu_check(
+            qv_hw_obj_count(rank_scope, devs_tested[i], &rank_ndev[i]),
+            "qv_hw_obj_count"
         );
-        if (rc != QV_SUCCESS) {
-            ers = "qv_hw_obj_count() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
     }
 
     ctu_emit_device_info(
@@ -116,21 +86,17 @@ main(
     // Verify results.
     for (int i = 0; i < ndevs_tested; ++i) {
         // Get total number of GPUs in base_scope.
-        rc = qv_hw_obj_count(
-            base_scope, devs_tested[i], &base_ndev[i]
+        ctu_check(
+            qv_hw_obj_count(base_scope, devs_tested[i], &base_ndev[i]),
+            "qv_hw_obj_count"
         );
-        if (rc != QV_SUCCESS) {
-            ers = "qv_hw_obj_count() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
         int total_ndevs;
-        rc = MPI_Reduce(
-            &rank_ndev[i], &total_ndevs, 1, MPI_INT, MPI_SUM, 0, comm
+        ctu_mpi_check(
+            MPI_Reduce(
+                &rank_ndev[i], &total_ndevs, 1, MPI_INT, MPI_SUM, 0, comm
+            ),
+            "MPI_Reduce"
         );
-        if (rc != MPI_SUCCESS) {
-            ers = "MPI_Reduce() failed";
-            ctu_panic("%s (rc=%d)", ers, rc);
-        }
 
         if (base_ndev[i] == total_ndevs) {
             ctu_pemit(

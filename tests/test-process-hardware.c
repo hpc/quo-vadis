@@ -22,18 +22,11 @@ main(void)
 
     const size_t n_setups = sizeof(setup_tab) / sizeof(setup_name_to_flags_t);
     for (size_t i = 0; i < n_setups; i++) {
-        char const *ers = NULL;
-
         qv_scope_t *base_scope;
-        int rc = qv_process_scope(
-            QV_SCOPE_USER,
-            setup_tab[i].flags,
-            &base_scope
+        ctu_check(
+            qv_process_scope(QV_SCOPE_USER, setup_tab[i].flags, &base_scope),
+            "qv_process_scope"
         );
-        if (rc != QV_SUCCESS) {
-            ers = "qv_scope_get(QV_SCOPE_USER) failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
 
         ctu_emit_host_hw_info(
             base_scope, CTU_SCOPE_KIND_PROCESS, setup_tab[i].name
@@ -50,11 +43,7 @@ main(void)
         );
         ctu_emit(base_scope, CTU_SCOPE_KIND_PROCESS, "\n");
 
-        rc = qv_free(base_scope);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_free() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-        }
+        ctu_check(qv_free(base_scope), "qv_free");
     }
     return EXIT_SUCCESS;
 }
