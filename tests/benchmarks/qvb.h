@@ -80,9 +80,26 @@ do {                                                                           \
  */
 #define qvb_check(rc, what)                                                    \
 do {                                                                           \
-    const int qvb_rc_ = (rc);                                                  \
-    if (qvb_rc_ != QV_SUCCESS) {                                               \
-        qvb_panic("%s failed (rc=%s)", (what), qv_strerr(qvb_rc_));            \
+    const int qvbrc = (rc);                                                    \
+    if (qvbrc != QV_SUCCESS) {                                                 \
+        qvb_panic("%s failed (rc=%s)", (what), qv_strerr(qvbrc));              \
+    }                                                                          \
+} while (0)
+
+/**
+ * Asserts that an MPI call returned MPI_SUCCESS. On failure it prints the MPI
+ * error string (when available) and aborts.
+ */
+#define qvb_mpi_check(rc, what)                                                \
+do {                                                                           \
+    const int mpirc = (rc);                                                    \
+    if (mpirc != MPI_SUCCESS) {                                                \
+        char mpiestr[MPI_MAX_ERROR_STRING] = {0};                              \
+        int elen = 0;                                                          \
+        if (MPI_Error_string(mpirc, mpiestr, &elen) != MPI_SUCCESS) {          \
+            mpiestr[0] = '\0';                                                 \
+        }                                                                      \
+        qvb_panic("%s failed (rc=%d: %s)", (what), mpirc, mpiestr);            \
     }                                                                          \
 } while (0)
 

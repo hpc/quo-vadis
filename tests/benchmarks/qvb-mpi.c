@@ -22,26 +22,6 @@
 
 #include "mpi.h"
 
-/**
- * Asserts that an MPI call returned MPI_SUCCESS, mirroring qvb_check for the
- * quo-vadis calls. On failure it prints the MPI error string (when available)
- * and aborts.
- */
-#define qvb_mpi_check(rc, what)                                                \
-do {                                                                           \
-    const int qvb_mpi_rc_ = (rc);                                              \
-    if (qvb_mpi_rc_ != MPI_SUCCESS) {                                          \
-        char qvb_mpi_estr_[MPI_MAX_ERROR_STRING] = {0};                        \
-        int qvb_mpi_elen_ = 0;                                                 \
-        if (MPI_Error_string(                                                  \
-                qvb_mpi_rc_, qvb_mpi_estr_, &qvb_mpi_elen_                     \
-            ) != MPI_SUCCESS) {                                                \
-            qvb_mpi_estr_[0] = '\0';                                           \
-        }                                                                      \
-        qvb_panic("%s failed (rc=%d: %s)", (what), qvb_mpi_rc_, qvb_mpi_estr_);\
-    }                                                                          \
-} while (0)
-
 typedef struct {
     MPI_Comm comm;
 } mpi_ctx_t;
