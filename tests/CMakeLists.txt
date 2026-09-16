@@ -99,11 +99,20 @@ add_test(
       ${CMAKE_CURRENT_BINARY_DIR}/test-process-intrinsic-scopes"
 )
 
+set(
+    QV_RESTRICTED_TOPO_DIR
+    "${CMAKE_CURRENT_SOURCE_DIR}/internal/synthetic-topologies"
+)
+set(
+    QV_RESTRICTED_TOPO_XML
+    "${QV_RESTRICTED_TOPO_DIR}/topo-01N-02P-04C-04PU-restricted.xml"
+)
+
 add_test(
     NAME
       process-intrinsic-scopes-restricted
     COMMAND
-      bash -c "HWLOC_XMLFILE=${CMAKE_CURRENT_SOURCE_DIR}/internal/synthetic-topologies/topo-01N-02P-04C-04PU-restricted.xml \
+      bash -c "HWLOC_XMLFILE=${QV_RESTRICTED_TOPO_XML} \
       QVI_TEST_EXPECT_RESTRICTED=1 \
       QV_DAEMON=$<TARGET_FILE:quo-vadisd> \
       ${CMAKE_SOURCE_DIR}/tests/run-dtest.sh \

@@ -160,7 +160,8 @@ if(MPI_FOUND)
     # an independent client of quo-vadisd, so the number of concurrent clients
     # is the launcher-chosen communicator size (`mpiexec -n N`). It measures the
     # effective public-API message rate a user should expect; see
-    # docs/mpi-msg-rate.md. Written in C++ (hence no LINKER_LANGUAGE C override).
+    # docs/mpi-msg-rate.md. Written in C++ (hence no LINKER_LANGUAGE C
+    # override).
     add_executable(
         qvb-mpi-msg-rate
         qvb.h
