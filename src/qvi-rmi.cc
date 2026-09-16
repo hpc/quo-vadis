@@ -328,6 +328,24 @@ int
 qvi_rmi_client::discover(
     int &portno
 ) {
+    // The discovered port is invariant for the lifetime of a process: it comes
+    // either from QVI_ENV_PORT (fixed) or from an already-running daemon whose
+    // port does not change. Threaded groups (e.g. OpenMP) construct one
+    // qvi_task per thread, each of which calls discover() before opening its
+    // own connection. Without memoization every such call re-scans all of
+    // /proc, which dominated discovery hit counts in coverage/profiling.
+    // Cache the resolved port so the (expensive) /proc scan runs at most once
+    // per process; each thread still establishes its own connection afterward.
+    static std::mutex s_mutex;
+    static bool s_have_port = false;
+    static int s_cached_port = QVI_PORT_UNSET;
+
+    std::lock_guard<std::mutex> guard(s_mutex);
+    if (s_have_port) {
+        portno = s_cached_port;
+        return QV_SUCCESS;
+    }
+
     int rc = QV_SUCCESS;
     // If this fails, envport is set to QVI_COMM_PORT_UNSET.
     int envport = qvi_port_from_env();
@@ -337,11 +355,18 @@ qvi_rmi_client::discover(
         // Found it!
         if (rc == QV_SUCCESS) {
             portno = envport;
+            s_cached_port = envport;
+            s_have_port = true;
             return rc;
         }
     }
     // Try to discover an arbitrary, active session.
-    return qvi_session_discover(1024, portno);
+    rc = qvi_session_discover(1024, portno);
+    if (rc == QV_SUCCESS) {
+        s_cached_port = portno;
+        s_have_port = true;
+    }
+    return rc;
 }
 
 int
