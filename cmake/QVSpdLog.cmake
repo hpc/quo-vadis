@@ -12,7 +12,7 @@
 # Includes support for external projects
 include(ExternalProject)
 
-set(QVI_SPDLOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/spdlog/v1.17.0.tar.gz)
+set(QVI_SPDLOG_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rd-party/spdlog/v1.17.0.tar.gz)
 set(QVI_SPDLOG_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/spdlog)
 set(QVI_SPDLOG_STATIC_LIB ${QVI_SPDLOG_PREFIX}/lib/libspdlog.a)
 set(QVI_SPDLOG_INCLUDES ${QVI_SPDLOG_PREFIX}/include)

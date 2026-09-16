@@ -12,7 +12,7 @@
 # Includes support for external projects
 include(ExternalProject)
 
-set(QVI_CEREAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/deps/cereal/v1.3.2.tar.gz)
+set(QVI_CEREAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rd-party/cereal/v1.3.2.tar.gz)
 set(QVI_CEREAL_PREFIX ${CMAKE_CURRENT_BINARY_DIR}/cereal)
 set(QVI_CEREAL_BYPRODUCT ${QVI_CEREAL_PREFIX}/include/cereal/cereal.hpp)
 set(QVI_CEREAL_INCLUDES ${QVI_CEREAL_PREFIX}/include)
