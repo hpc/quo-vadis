@@ -43,6 +43,7 @@ cmake -DQV_SANITIZE=address ..
 | Option              | Default | Comment                                      |
 | ------------------- | ------- | -------------------------------------------- |
 | QV_SANITIZE         | none    | Available: address;thread;undefined          |
+| QV_COVERAGE         | OFF     | Enable gcov code coverage instrumentation    |
 | QV_DEVELOPER_MODE   | depends | If in repo, ON by default; OFF otherwise     |
 
 ## Developer Documentation
@@ -57,6 +58,31 @@ ctest -L core
 # Or verbosely
 ctest -V
 ```
+
+## Code Coverage
+Coverage reports are generated with [gcovr](https://gcovr.com), so install it
+first (e.g, `pip install gcovr`).
+
+Configure with coverage instrumentation enabled. This forces an unoptimized,
+debuggable build so that line-level coverage maps accurately back to the
+source:
+```shell
+cmake -DQV_COVERAGE=ON ..
+make
+```
+Then run the test suite and generate a report. The `coverage` target runs
+`ctest` and writes an HTML report plus a Cobertura XML file under
+`build/coverage/`:
+```shell
+make coverage
+# Or, using ninja:
+ninja coverage
+```
+Open `build/coverage/index.html` to view the results.
+
+The `coverage` target is only registered when `gcovr` is found at configure
+time. If `gcovr` is not installed, the build is still instrumented and the
+resulting `.gcda`/`.gcno` files can be processed manually with `gcov`.
 
 ## Benchmarking
 A micro-benchmark suite under `tests/benchmarks/` measures the average (plus

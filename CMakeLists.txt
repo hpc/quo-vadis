@@ -153,6 +153,9 @@ endif()
 # Specify sanitizers
 include(cmake/QVSanitize.cmake)
 
+# Specify code coverage
+include(cmake/QVCoverage.cmake)
+
 # Check include files
 include(cmake/QVCheckIncludes.cmake)
 
