@@ -451,12 +451,8 @@ client(
     int portno = 0;
     const pid_t who = qvi_gettid();
 
-    qvi_rmi_client *client = nullptr;
-    int rc = qvi_new(&client);
-    if (rc != QV_SUCCESS) {
-        ers = "qvi_new(&client) failed";
-        goto out;
-    }
+    qvi_rmi_client *client = new qvi_rmi_client();
+    int rc = QV_SUCCESS;
 
     rc = get_portno(url, &portno);
     if (rc != 0) {

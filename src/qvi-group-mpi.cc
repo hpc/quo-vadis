@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2025 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -24,11 +24,10 @@ qvi_group_mpi::qvi_group_mpi(
 ) : qvi_group(flags)
   , m_created_mpi_ctx(true)
 {
-    int rc = qvi_new(&m_mpi, comm);
-    if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
+    m_mpi = new qvi_mpi(comm);
     // Finish task initialization after we finish MPI initialization because
     // the server daemon may have been started during qvi_mpi_init().
-    rc = m_task.connect_to_server(m_flags);
+    int rc = m_task.connect_to_server(m_flags);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
 }
 
@@ -65,7 +64,7 @@ qvi_group_mpi::make_intrinsic(
         case QV_SCOPE_PROCESS:
             mpi_group_type = QVI_MPI_GROUP_SELF;
             break;
-        default:
+        [[unlikely]] default:
             return QV_ERR_INVLD_ARG;
     }
 
@@ -78,18 +77,11 @@ int
 qvi_group_mpi::self(
     qvi_group **child
 ) {
-    int rc = QV_SUCCESS;
-    qvi_group_mpi *ichild = nullptr;
-    do {
-        // Create the child with the parent's MPI context.
-        rc = qvi_new(&ichild, m_flags, m_mpi);
-        if (qvi_unlikely(rc != QV_SUCCESS)) break;
-        // Create the underlying group using MPI_COMM_SELF.
-        rc = m_mpi->group_from_mpi_comm(
-            MPI_COMM_SELF, ichild->m_mpi_group
-        );
-    } while (false);
-
+    qvi_group_mpi *ichild = new qvi_group_mpi(m_flags, m_mpi);
+    // Create the underlying group using MPI_COMM_SELF.
+    const int rc = m_mpi->group_from_mpi_comm(
+        MPI_COMM_SELF, ichild->m_mpi_group
+    );
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);
     }
@@ -105,15 +97,11 @@ qvi_group_mpi::split(
 ) {
     int rc = QV_SUCCESS;
     // Create the child with the parent's MPI context.
-    qvi_group_mpi *ichild = nullptr;
-    do {
-        rc = qvi_new(&ichild, m_flags, m_mpi);
-        if (qvi_unlikely(rc != QV_SUCCESS)) break;
-        // Split this group using MPI.
-        rc = m_mpi->group_from_split(
-            m_mpi_group, color, key, ichild->m_mpi_group
-        );
-    } while (false);
+    qvi_group_mpi *ichild = new qvi_group_mpi(m_flags, m_mpi);
+    // Split this group using MPI.
+    rc = m_mpi->group_from_split(
+        m_mpi_group, color, key, ichild->m_mpi_group
+    );
 
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);

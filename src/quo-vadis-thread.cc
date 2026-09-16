@@ -110,9 +110,9 @@ qv_thread_split(
     qv_scope_t ***subscopes
 ) {
     const bool invalid_args = !scope || npieces < 0 || k < 0 || !subscopes;
-    if (qvi_unlikely(invalid_args)) {
-        return QV_ERR_INVLD_ARG;
-    }
+    if (qvi_unlikely(invalid_args)) return QV_ERR_INVLD_ARG;
+    // Protect against some failure modes: return something reasonable.
+    *subscopes = nullptr;
     try {
         std::vector<int> color_fixup;
         const int rc = split_color_fixup(kcolors, k, color_fixup);
@@ -137,6 +137,8 @@ qv_thread_split_at(
     if (qvi_unlikely(!scope || k < 0 || !subscopes)) {
         return QV_ERR_INVLD_ARG;
     }
+    // Protect against some failure modes: return something reasonable.
+    *subscopes = nullptr;
     try {
         std::vector<int> color_fixup;
         const int rc = split_color_fixup(kcolors, k, color_fixup);
@@ -176,19 +178,20 @@ qv_pthread_create(
 ) {
     // Memory will be freed in qv_pthread_routine to avoid memory leaks.
     qvi_pthread_args *pthread_start_args = nullptr;
-    int rc = qvi_new(&pthread_start_args, scope, thread_routine, arg);
-    // Since this is meant to behave similarly to
-    // pthread_create(), return a reasonable errno.
-    if (qvi_unlikely(rc != QV_SUCCESS)) return ENOMEM;
-    // Note: The provided scope should have been created by
-    // qv_pthread_scope_split*. That is why we can safely cast the scope's
-    // underlying group it to a qvi_group_pthread *.
-    auto group = dynamic_cast<qvi_group_pthread *>(&scope->group());
     qvi_pthread_create_args *cargs = nullptr;
-    rc = qvi_new(
-        &cargs, group, qvi_pthread_start_routine, pthread_start_args
-    );
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
+    try {
+        pthread_start_args = new qvi_pthread_args(scope, thread_routine, arg);
+        // Note: The provided scope should have been created by
+        // qv_pthread_scope_split*. That is why we can safely cast the scope's
+        // underlying group it to a qvi_group_pthread *.
+        auto group = dynamic_cast<qvi_group_pthread *>(&scope->group());
+        cargs = new qvi_pthread_create_args(
+            group, qvi_pthread_start_routine, pthread_start_args
+        );
+    }
+    catch (...) {
+        // Since this is meant to behave similarly to
+        // pthread_create(), return a reasonable errno.
         qvi_delete(&pthread_start_args);
         return ENOMEM;
     }

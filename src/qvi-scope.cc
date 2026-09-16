@@ -64,11 +64,8 @@ qv_scope::make_intrinsic(
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Create and initialize the scope.
-    rc = qvi_new(scope, group, hwpool);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_delete(scope);
-    }
-    return rc;
+    *scope = new qv_scope(group, hwpool);
+    return QV_SUCCESS;
 }
 
 // TODO(skg) Implement use of hints.
@@ -102,13 +99,9 @@ qv_scope::create(
         return rc;
     }
     // Create and initialize the new scope.
-    qv_scope_t *ichild = nullptr;
-    rc = qvi_new(&ichild, group, hwpool);
-    if (rc != QV_SUCCESS) {
-        qvi_delete(&ichild);
-    }
+    qv_scope_t *ichild = new qv_scope(group, hwpool);
     *child = ichild;
-    return rc;
+    return QV_SUCCESS;
 }
 
 qvi_group &
@@ -222,7 +215,7 @@ qv_scope::split(
         // discarded below since it is not wrapped in a scope.
         if (color == QV_SPLIT_UNDEFINED) break;
         // Create and initialize the new scope.
-        rc = qvi_new(&ichild, group, hwpool);
+        ichild = new qv_scope(group, hwpool);
     } while (false);
 
     if (qvi_unlikely(rc != QV_SUCCESS) || color == QV_SPLIT_UNDEFINED) {
@@ -269,22 +262,15 @@ qv_scope::thread_split(
     qv_scope_t **ithchildren = new qv_scope_t *[group_size];
     for (uint_t i = 0; i < group_size; ++i) {
         // Create and initialize the new scope.
-        qv_scope_t *child = nullptr;
-        rc = qvi_new(&child, thgroup, hwpools[i]);
-        if (rc != QV_SUCCESS) break;
+        qv_scope_t *child = new qv_scope(thgroup, hwpools[i]);
         thgroup->retain();
         ithchildren[i] = child;
     }
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qv_scope::thread_destroy(&ithchildren, k);
-    }
-    else {
-        // Subtract one to account for the parent's
-        // implicit retain during construct.
-        thgroup->release();
-    }
+    // Subtract one to account for the parent's
+    // implicit retain during construct.
+    thgroup->release();
     *thchildren = ithchildren;
-    return rc;
+    return QV_SUCCESS;
 }
 
 int
