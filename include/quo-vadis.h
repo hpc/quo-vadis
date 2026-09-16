@@ -254,7 +254,17 @@ qv_strerr(
 );
 
 /**
- * Creates a process context.
+ * Creates a scope whose group comprises only the calling process.
+ *
+ * @param[in] iscope The intrinsic scope type used to determine the hardware
+ * resources included in the resulting scope.
+ *
+ * @param[in] flags Flags that influence how the scope is created.
+ *
+ * @param[out] scope Address of a pointer that will receive the newly created
+ * scope. The caller is responsible for freeing this scope with qv_free().
+ *
+ * @retval QV_SUCCESS if the operation completed successfully.
  */
 int
 qv_process_scope(
@@ -264,7 +274,23 @@ qv_process_scope(
 );
 
 /**
+ * Creates a subscope of the provided scope spanning a requested number of
+ * hardware objects of a given type.
  *
+ * @param[in] scope The parent scope from whose resources the subscope is
+ * carved.
+ *
+ * @param[in] flags Flags that influence how the subscope is created.
+ *
+ * @param[in] type The hardware object type used to size the subscope.
+ *
+ * @param[in] nobjs The number of hardware objects of the given type to include
+ * in the subscope. Must be non-negative.
+ *
+ * @param[out] subscope Address of a pointer that will receive the newly created
+ * subscope. The caller is responsible for freeing this scope with qv_free().
+ *
+ * @retval QV_SUCCESS if the operation completed successfully.
  */
 int
 qv_create_scope(
@@ -325,7 +351,25 @@ qv_hw_obj_count(
 );
 
 /**
+ * Returns a string identifier for a device in the provided scope.
  *
+ * @param[in] scope The scope whose devices are queried.
+ *
+ * @param[in] dev_obj The device hardware object type to query, such as
+ * QV_HW_OBJ_GPU or QV_HW_OBJ_NIC.
+ *
+ * @param[in] dev_index The zero-based index selecting which device of the
+ * given type to identify. Must be non-negative and less than the number of
+ * such devices in the scope.
+ *
+ * @param[in] id_type The device identifier format to return, such as
+ * QV_DEVICE_ID_UUID, QV_DEVICE_ID_PCI_BUS_ID, or QV_DEVICE_ID_ORDINAL.
+ *
+ * @param[out] dev_id Address of a pointer that will receive a newly allocated,
+ * null-terminated string containing the device identifier. The caller is
+ * responsible for freeing this string.
+ *
+ * @retval QV_SUCCESS if the operation completed successfully.
  */
 int
 qv_device_id(

@@ -149,10 +149,7 @@ qvi_delete(
     T **t
 ) {
     if (qvi_unlikely(!t)) return;
-    T *it = *t;
-    if (it) {
-        delete it;
-    }
+    delete *t;
     *t = nullptr;
 }
 

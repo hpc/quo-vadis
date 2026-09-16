@@ -247,7 +247,8 @@ qvi_hwloc::bitmap_delete(
     hwloc_cpuset_t *cpuset
 ) {
     if (qvi_unlikely(!cpuset)) return;
-    if (*cpuset) hwloc_bitmap_free(*cpuset);
+    // If bitmap is NULL, no operation is performed, so skip double check.
+    hwloc_bitmap_free(*cpuset);
     *cpuset = nullptr;
 }
 
