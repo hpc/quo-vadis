@@ -124,23 +124,6 @@ qvi_envset(
 ) noexcept;
 
 /**
- * Constructs a new object of a given type. *t will be valid if successful,
- * undefined otherwise. Returns QV_SUCCESS if successful.
- */
-template <class T, typename... Types>
-int
-qvi_new(
-    T **t,
-    Types&&... args
-) {
-    try {
-        *t = new T(std::forward<Types>(args)...);
-        return QV_SUCCESS;
-    }
-    qvi_catch_and_return();
-}
-
-/**
  * Simple wrapper around delete that also nullifies the input pointer.
  */
 template <class T>
@@ -151,38 +134,6 @@ qvi_delete(
     if (qvi_unlikely(!t)) return;
     delete *t;
     *t = nullptr;
-}
-
-/**
- * Simple wrapper that duplicates the provided instance.
- */
-template <class T>
-int
-qvi_dup(
-    const T &t,
-    T **dup
-) {
-    try {
-        *dup = new T(t);
-        return QV_SUCCESS;
-    }
-    qvi_catch_and_return();
-}
-
-/**
- * Simple wrapper that copies the provided instance.
- */
-template <class T>
-int
-qvi_copy(
-    const T &t,
-    T *copy
-) {
-    try {
-        *copy = t;
-        return QV_SUCCESS;
-    }
-    qvi_catch_and_return();
 }
 
 /**

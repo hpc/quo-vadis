@@ -270,10 +270,8 @@ rpc_pack(
     Types &&...args
 ) {
     int rc = QV_SUCCESS;
-    qvi_bbuff *ibuff = nullptr;
+    qvi_bbuff *ibuff = new qvi_bbuff();
     do {
-        rc = qvi_new(&ibuff);
-        if (qvi_unlikely(rc != QV_SUCCESS)) break;
         // Fill and add header.
         rc = buffer_append_header(ibuff, fid);
         if (qvi_unlikely(rc != QV_SUCCESS)) break;

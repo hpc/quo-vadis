@@ -30,13 +30,9 @@ qvi_group::thread_split(
 ) {
     // This is the entry point for creating a new thread group. Also note this is
     // called by a single thread of execution (i.e., the parent process).
-    qvi_group_thread *ichild = nullptr;
-    const int rc = qvi_new(&ichild, m_flags, nthreads, colors);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        qvi_delete(&ichild);
-    }
+    qvi_group_thread *ichild = new qvi_group_thread(m_flags, nthreads, colors);
     *child = ichild;
-    return rc;
+    return QV_SUCCESS;
 }
 
 int

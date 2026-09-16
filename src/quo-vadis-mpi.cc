@@ -62,10 +62,7 @@ qvi_mpi_scope_get(
 ) {
     *scope = nullptr;
     // Create and initialize the base group.
-    qvi_group_mpi *izgroup = nullptr;
-    const int rc = qvi_new(&izgroup, flags, comm);
-    if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
-
+    qvi_group_mpi *izgroup = new qvi_group_mpi(flags, comm);
     return qv_scope::make_intrinsic(izgroup, iscope, flags, scope);
 }
 

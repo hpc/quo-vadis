@@ -88,13 +88,9 @@ public:
     ) {
         // Because this is in the context of a process, the concept of splitting
         // doesn't really apply here, so just create another process group.
-        qvi_group_process *ichild = nullptr;
-        const int rc = qvi_new(&ichild, m_flags);
-        if (qvi_unlikely(rc != QV_SUCCESS)) {
-            qvi_delete(&ichild);
-        }
+        qvi_group_process *ichild = new qvi_group_process(m_flags);
         *child = ichild;
-        return rc;
+        return QV_SUCCESS;
     }
 
     virtual int
