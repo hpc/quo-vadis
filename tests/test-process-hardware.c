@@ -24,8 +24,7 @@ main(void)
     for (size_t i = 0; i < n_setups; i++) {
         qv_scope_t *base_scope;
         ctu_check(
-            qv_process_scope(QV_SCOPE_USER, setup_tab[i].flags, &base_scope),
-            "qv_process_scope"
+            qv_process_scope(QV_SCOPE_USER, setup_tab[i].flags, &base_scope)
         );
 
         ctu_emit_host_hw_info(
@@ -43,7 +42,7 @@ main(void)
         );
         ctu_emit(base_scope, CTU_SCOPE_KIND_PROCESS, "\n");
 
-        ctu_check(qv_free(base_scope), "qv_free");
+        ctu_check(qv_free(base_scope));
     }
     return EXIT_SUCCESS;
 }

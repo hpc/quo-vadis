@@ -14,17 +14,11 @@ main(
 ) {
     MPI_Comm comm = MPI_COMM_WORLD;
 
-    ctu_mpi_check(MPI_Init(&argc, &argv), "MPI_Init");
+    ctu_mpi_check(MPI_Init(&argc, &argv));
 
     qv_scope_t *base_scope;
     ctu_check(
-        qv_mpi_scope(
-            comm,
-            QV_SCOPE_USER,
-            QV_SCOPE_FLAG_NONE,
-            &base_scope
-        ),
-        "qv_mpi_scope"
+        qv_mpi_scope(comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &base_scope)
     );
 
     ctu_emit_scope_report(
@@ -38,8 +32,7 @@ main(
             QV_HW_NUMANODE,
             QV_SPLIT_PACKED,
             &split_at_numa
-        ),
-        "qv_split_at"
+        )
     );
 
     ctu_emit_scope_report(
@@ -47,13 +40,7 @@ main(
     );
 
     int ntask_per_numa;
-    ctu_check(
-        qv_group_size(
-            split_at_numa,
-            &ntask_per_numa
-        ),
-        "qv_group_size"
-    );
+    ctu_check(qv_group_size(split_at_numa, &ntask_per_numa));
 
     qv_scope_t *split_cores_from_numa;
     ctu_check(
@@ -62,8 +49,7 @@ main(
             ntask_per_numa,
             QV_SPLIT_PACKED,
             &split_cores_from_numa
-        ),
-        "qv_split"
+        )
     );
 
     ctu_emit_scope_report(
@@ -72,12 +58,7 @@ main(
 
     // How many GPUs do we have in the base scope?
     int ngpus;
-    ctu_check(
-        qv_hw_count(
-            base_scope, QV_HW_GPU, &ngpus
-        ),
-        "qv_hw_count"
-    );
+    ctu_check(qv_hw_count(base_scope, QV_HW_GPU, &ngpus));
 
     if (ngpus > 0) {
         qv_scope_t *split_at_gpu;
@@ -87,8 +68,7 @@ main(
                 QV_HW_GPU,
                 QV_SPLIT_PACKED,
                 &split_at_gpu
-            ),
-            "qv_split_at"
+            )
         );
 
         ctu_emit_device_info(
@@ -96,15 +76,15 @@ main(
             QV_HW_GPU, "         split_at_gpu"
         );
 
-        ctu_check(qv_free(split_at_gpu), "qv_free");
+        ctu_check(qv_free(split_at_gpu));
     }
 
     // Free base_scope first to test scope free out-of-order operations.
-    ctu_check(qv_free(base_scope), "qv_free");
+    ctu_check(qv_free(base_scope));
 
-    ctu_check(qv_free(split_at_numa), "qv_free");
+    ctu_check(qv_free(split_at_numa));
 
-    ctu_check(qv_free(split_cores_from_numa), "qv_free");
+    ctu_check(qv_free(split_cores_from_numa));
 
     MPI_Finalize();
 

@@ -54,24 +54,21 @@ mpi_reduce_samples(
     ctu_mpi_check(
         MPI_Allreduce(
             &local->total_ns, out_total, 1, MPI_UINT64_T, MPI_SUM, c->comm
-        ),
-        "MPI_Allreduce(total)"
+        )
     );
     ctu_mpi_check(
         MPI_Allreduce(
             &local->min_ns, out_min, 1, MPI_UINT64_T, MPI_MIN, c->comm
-        ),
-        "MPI_Allreduce(min)"
+        )
     );
     ctu_mpi_check(
         MPI_Allreduce(
             &local->max_ns, out_max, 1, MPI_UINT64_T, MPI_MAX, c->comm
-        ),
-        "MPI_Allreduce(max)"
+        )
     );
 
     int size = 1;
-    ctu_mpi_check(MPI_Comm_size(c->comm, &size), "MPI_Comm_size");
+    ctu_mpi_check(MPI_Comm_size(c->comm, &size));
     *out_ninst = (long)size;
 }
 
@@ -80,10 +77,7 @@ make_root_scope(qvb_backend_t *self)
 {
     mpi_ctx_t *c = (mpi_ctx_t *)self->data;
     qv_scope_t *scope = NULL;
-    ctu_check(
-        qv_mpi_scope(c->comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &scope),
-        "qv_mpi_scope"
-    );
+    ctu_check(qv_mpi_scope(c->comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &scope));
     return scope;
 }
 
@@ -93,11 +87,8 @@ body_mpi_scope(void *v)
 {
     mpi_ctx_t *c = (mpi_ctx_t *)v;
     qv_scope_t *scope = NULL;
-    ctu_check(
-        qv_mpi_scope(c->comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &scope),
-        "qv_mpi_scope"
-    );
-    ctu_check(qv_free(scope), "qv_free");
+    ctu_check(qv_mpi_scope(c->comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &scope));
+    ctu_check(qv_free(scope));
 }
 
 // qv_mpi_comm_dup + MPI_Comm_free cycle against a persistent scope.
@@ -110,17 +101,17 @@ body_mpi_comm_dup(void *v)
 {
     mpi_dup_ctx_t *c = (mpi_dup_ctx_t *)v;
     MPI_Comm dup = MPI_COMM_NULL;
-    ctu_check(qv_mpi_comm_dup(c->scope, &dup), "qv_mpi_comm_dup");
-    ctu_mpi_check(MPI_Comm_free(&dup), "MPI_Comm_free");
+    ctu_check(qv_mpi_comm_dup(c->scope, &dup));
+    ctu_mpi_check(MPI_Comm_free(&dup));
 }
 
 int
 main(int argc, char **argv)
 {
-    ctu_mpi_check(MPI_Init(&argc, &argv), "MPI_Init");
+    ctu_mpi_check(MPI_Init(&argc, &argv));
 
     int wrank = 0;
-    ctu_mpi_check(MPI_Comm_rank(MPI_COMM_WORLD, &wrank), "MPI_Comm_rank");
+    ctu_mpi_check(MPI_Comm_rank(MPI_COMM_WORLD, &wrank));
 
     // Only rank 0 prints the table; all ranks execute so collective calls
     // (e.g. qv_barrier, qv_split) don't deadlock.
@@ -152,17 +143,16 @@ main(int argc, char **argv)
     ctu_check(
         qv_mpi_scope(
             MPI_COMM_WORLD, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &dup_scope
-        ),
-        "qv_mpi_scope"
+        )
     );
     mpi_dup_ctx_t dctx = { .scope = dup_scope };
     qvb_measure(&reporter, "qv_mpi_comm_dup", iters, body_mpi_comm_dup, &dctx);
-    ctu_check(qv_free(dup_scope), "qv_free");
+    ctu_check(qv_free(dup_scope));
 
     // Everything scope-kind-agnostic is shared.
     qvb_run_common(&backend, &reporter);
 
-    ctu_mpi_check(MPI_Finalize(), "MPI_Finalize");
+    ctu_mpi_check(MPI_Finalize());
     return EXIT_SUCCESS;
 }
 

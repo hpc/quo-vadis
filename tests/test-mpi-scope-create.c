@@ -31,8 +31,7 @@ test_create_scope(
             QV_HW_CORE,
             ncores,
             &core_scope
-        ),
-        "qv_create_scope"
+        )
     );
 
     ctu_emit_scope_report(
@@ -42,7 +41,7 @@ test_create_scope(
     free(scope_name);
 
     if (free_scope) {
-        ctu_check(qv_free(core_scope), "qv_free");
+        ctu_check(qv_free(core_scope));
         core_scope = NULL;
     }
     return core_scope;
@@ -55,36 +54,18 @@ main(
 ) {
     MPI_Comm comm = MPI_COMM_WORLD;
 
-    ctu_mpi_check(MPI_Init(&argc, &argv), "MPI_Init");
+    ctu_mpi_check(MPI_Init(&argc, &argv));
 
     qv_scope_t *base_scope;
     ctu_check(
-        qv_mpi_scope(
-            comm,
-            QV_SCOPE_USER,
-            QV_SCOPE_FLAG_NONE,
-            &base_scope
-        ),
-        "qv_mpi_scope"
+        qv_mpi_scope(comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &base_scope)
     );
 
     int base_scope_size;
-    ctu_check(
-        qv_group_size(
-            base_scope,
-            &base_scope_size
-        ),
-        "qv_group_size"
-    );
+    ctu_check(qv_group_size(base_scope, &base_scope_size));
 
     int base_scope_rank;
-    ctu_check(
-        qv_group_rank(
-            base_scope,
-            &base_scope_rank
-        ),
-        "qv_group_rank"
-    );
+    ctu_check(qv_group_rank(base_scope, &base_scope_rank));
 
     ctu_emit_scope_report(
         base_scope, CTU_SCOPE_KIND_MPI, "base_scope"
@@ -98,13 +79,7 @@ main(
     // Split the base scope evenly across workers.
     qv_scope_t *sub_scope;
     ctu_check(
-        qv_split(
-            base_scope,
-            base_scope_size,
-            base_scope_rank,
-            &sub_scope
-        ),
-        "qv_split"
+        qv_split(base_scope, base_scope_size, base_scope_rank, &sub_scope)
     );
 
     ctu_emit_scope_report(
@@ -135,12 +110,12 @@ main(
     core_scopes[3] = test_create_scope(sub_scope, ncore1, true);
 
     for (int i = 0; i < n_core_scopes; ++i) {
-        ctu_check(qv_free(core_scopes[i]), "qv_free");
+        ctu_check(qv_free(core_scopes[i]));
     }
 
-    ctu_check(qv_free(sub_scope), "qv_free");
+    ctu_check(qv_free(sub_scope));
 
-    ctu_check(qv_free(base_scope), "qv_free");
+    ctu_check(qv_free(base_scope));
 
     MPI_Finalize();
 

@@ -28,12 +28,11 @@ main(
 ) {
     MPI_Comm comm = MPI_COMM_WORLD;
 
-    ctu_mpi_check(MPI_Init(&argc, &argv), "MPI_Init");
+    ctu_mpi_check(MPI_Init(&argc, &argv));
 
     qv_scope_t *base_scope;
     ctu_check(
-        qv_mpi_scope(comm, QV_SCOPE_JOB, QV_SCOPE_FLAG_NONE, &base_scope),
-        "qv_mpi_scope"
+        qv_mpi_scope(comm, QV_SCOPE_JOB, QV_SCOPE_FLAG_NONE, &base_scope)
     );
 
     ctu_emit_scope_report(
@@ -42,14 +41,11 @@ main(
 
     // The number of members participating in the split.
     int group_size;
-    ctu_check(qv_group_size(base_scope, &group_size), "qv_group_size");
+    ctu_check(qv_group_size(base_scope, &group_size));
 
     // The total number of PUs available in the parent scope.
     int parent_npus;
-    ctu_check(
-        qv_hw_count(base_scope, QV_HW_PU, &parent_npus),
-        "qv_hw_count"
-    );
+    ctu_check(qv_hw_count(base_scope, QV_HW_PU, &parent_npus));
 
     // Deliberately request more pieces than there are members. With the other
     // QV_SPLIT_* options this would carve the parent's resources into
@@ -59,10 +55,7 @@ main(
     int npieces = group_size + 2;
 
     qv_scope_t *sub_scope;
-    ctu_check(
-        qv_split(base_scope, npieces, QV_SPLIT_AUTO, &sub_scope),
-        "qv_split"
-    );
+    ctu_check(qv_split(base_scope, npieces, QV_SPLIT_AUTO, &sub_scope));
 
     ctu_emit_scope_report(
         sub_scope, CTU_SCOPE_KIND_MPI, "      sub_scope"
@@ -70,10 +63,7 @@ main(
 
     // The number of PUs this member received from the split.
     int my_npus;
-    ctu_check(
-        qv_hw_count(sub_scope, QV_HW_PU, &my_npus),
-        "qv_hw_count"
-    );
+    ctu_check(qv_hw_count(sub_scope, QV_HW_PU, &my_npus));
 
     // Every member should have received a non-empty piece of the parent.
     ctu_assert(
@@ -87,8 +77,7 @@ main(
     // total number of parent PUs.
     int total_npus = 0;
     ctu_mpi_check(
-        MPI_Allreduce(&my_npus, &total_npus, 1, MPI_INT, MPI_SUM, comm),
-        "MPI_Allreduce"
+        MPI_Allreduce(&my_npus, &total_npus, 1, MPI_INT, MPI_SUM, comm)
     );
 
     ctu_assert(
@@ -104,7 +93,7 @@ main(
         group_size, npieces, parent_npus, my_npus, total_npus
     );
 
-    ctu_check(qv_free(sub_scope), "qv_free");
+    ctu_check(qv_free(sub_scope));
 
     // Now test the other possibility: the group size is >= the requested split
     // size. Here QV_SPLIT_AUTO has no need to clamp the split size, so it
@@ -115,20 +104,14 @@ main(
     // counting one representative member per piece.
     npieces = (group_size > 1) ? (group_size - 1) : 1;
 
-    ctu_check(
-        qv_split(base_scope, npieces, QV_SPLIT_AUTO, &sub_scope),
-        "qv_split"
-    );
+    ctu_check(qv_split(base_scope, npieces, QV_SPLIT_AUTO, &sub_scope));
 
     ctu_emit_scope_report(
         sub_scope, CTU_SCOPE_KIND_MPI, "      sub_scope"
     );
 
     // The number of PUs this member received from the split.
-    ctu_check(
-        qv_hw_count(sub_scope, QV_HW_PU, &my_npus),
-        "qv_hw_count"
-    );
+    ctu_check(qv_hw_count(sub_scope, QV_HW_PU, &my_npus));
 
     // Every member should have received a non-empty piece of the parent.
     ctu_assert(
@@ -142,7 +125,7 @@ main(
     // requested split size, QV_SPLIT_AUTO must honor the requested number of
     // pieces exactly (no clamping occurs).
     int my_piece_rank;
-    ctu_check(qv_group_rank(sub_scope, &my_piece_rank), "qv_group_rank");
+    ctu_check(qv_group_rank(sub_scope, &my_piece_rank));
 
     // Only the representative (rank 0) of each piece contributes its PU count,
     // so summing over representatives recovers the parent's total PU count
@@ -150,8 +133,7 @@ main(
     int contrib_npus = (my_piece_rank == 0) ? my_npus : 0;
     total_npus = 0;
     ctu_mpi_check(
-        MPI_Allreduce(&contrib_npus, &total_npus, 1, MPI_INT, MPI_SUM, comm),
-        "MPI_Allreduce"
+        MPI_Allreduce(&contrib_npus, &total_npus, 1, MPI_INT, MPI_SUM, comm)
     );
 
     ctu_assert(
@@ -166,8 +148,7 @@ main(
     int is_rep = (my_piece_rank == 0) ? 1 : 0;
     int num_pieces = 0;
     ctu_mpi_check(
-        MPI_Allreduce(&is_rep, &num_pieces, 1, MPI_INT, MPI_SUM, comm),
-        "MPI_Allreduce"
+        MPI_Allreduce(&is_rep, &num_pieces, 1, MPI_INT, MPI_SUM, comm)
     );
 
     ctu_assert(
@@ -183,9 +164,9 @@ main(
         group_size, npieces, parent_npus, my_npus, total_npus, num_pieces
     );
 
-    ctu_check(qv_free(sub_scope), "qv_free");
+    ctu_check(qv_free(sub_scope));
 
-    ctu_check(qv_free(base_scope), "qv_free");
+    ctu_check(qv_free(base_scope));
 
     MPI_Finalize();
 

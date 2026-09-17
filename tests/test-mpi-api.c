@@ -15,23 +15,20 @@ main(
     char const *ers = NULL;
     MPI_Comm comm = MPI_COMM_WORLD;
 
-    ctu_mpi_check(MPI_Init(&argc, &argv), "MPI_Init");
+    ctu_mpi_check(MPI_Init(&argc, &argv));
 
     int wsize = 0;
-    ctu_mpi_check(MPI_Comm_size(comm, &wsize), "MPI_Comm_size");
+    ctu_mpi_check(MPI_Comm_size(comm, &wsize));
 
     int wrank = 0;
-    ctu_mpi_check(MPI_Comm_rank(comm, &wrank), "MPI_Comm_rank");
+    ctu_mpi_check(MPI_Comm_rank(comm, &wrank));
 
     int vmajor, vminor, vpatch;
-    ctu_check(qv_version(&vmajor, &vminor, &vpatch), "qv_version");
+    ctu_check(qv_version(&vmajor, &vminor, &vpatch));
 
     qv_scope_t *world_scope = NULL;
     ctu_check(
-        qv_mpi_scope(
-            comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &world_scope
-        ),
-        "qv_mpi_scope"
+        qv_mpi_scope(comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &world_scope)
     );
 
     ctu_pemit(
@@ -40,13 +37,13 @@ main(
     );
 
     MPI_Comm wscope_comm = MPI_COMM_NULL;
-    ctu_check(qv_mpi_comm_dup(world_scope, &wscope_comm), "qv_mpi_comm_dup");
+    ctu_check(qv_mpi_comm_dup(world_scope, &wscope_comm));
 
     int wscope_size = 0;
-    ctu_mpi_check(MPI_Comm_size(wscope_comm, &wscope_size), "MPI_Comm_size");
+    ctu_mpi_check(MPI_Comm_size(wscope_comm, &wscope_size));
 
     int wscope_rank = 0;
-    ctu_mpi_check(MPI_Comm_rank(wscope_comm, &wscope_rank), "MPI_Comm_rank");
+    ctu_mpi_check(MPI_Comm_rank(wscope_comm, &wscope_rank));
 
     if (wscope_size != wsize) {
         ers = "MPI communicator size mismatch!";
@@ -59,24 +56,13 @@ main(
     }
 
     qv_scope_t *sub_scope = NULL;
-    ctu_check(
-        qv_split(
-            world_scope, wsize, wrank, &sub_scope
-        ),
-        "qv_split"
-    );
+    ctu_check(qv_split(world_scope, wsize, wrank, &sub_scope));
 
     MPI_Comm split_wscope_comm = MPI_COMM_NULL;
-    ctu_check(
-        qv_mpi_comm_dup(sub_scope, &split_wscope_comm),
-        "qv_mpi_comm_dup"
-    );
+    ctu_check(qv_mpi_comm_dup(sub_scope, &split_wscope_comm));
 
     int split_wscope_size = 0;
-    ctu_mpi_check(
-        MPI_Comm_size(split_wscope_comm, &split_wscope_size),
-        "MPI_Comm_size"
-    );
+    ctu_mpi_check(MPI_Comm_size(split_wscope_comm, &split_wscope_size));
 
     ctu_pemit(
         world_scope, CTU_SCOPE_KIND_MPI, wrank == 0,
@@ -100,13 +86,13 @@ main(
         split_wscope_size, wsize
     );
 
-    ctu_check(qv_free(sub_scope), "qv_free");
+    ctu_check(qv_free(sub_scope));
 
-    ctu_check(qv_free(world_scope), "qv_free");
+    ctu_check(qv_free(world_scope));
 
-    ctu_mpi_check(MPI_Comm_free(&wscope_comm), "MPI_Comm_free");
+    ctu_mpi_check(MPI_Comm_free(&wscope_comm));
 
-    ctu_mpi_check(MPI_Comm_free(&split_wscope_comm), "MPI_Comm_free");
+    ctu_mpi_check(MPI_Comm_free(&split_wscope_comm));
 
     MPI_Finalize();
 

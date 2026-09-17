@@ -20,25 +20,18 @@ main(
     int base_ndev[ndevs_tested];
     int rank_ndev[ndevs_tested];
 
-    ctu_mpi_check(MPI_Init(&argc, &argv), "MPI_Init");
+    ctu_mpi_check(MPI_Init(&argc, &argv));
     // Get base scope.
     qv_scope_t *base_scope;
     ctu_check(
-        qv_mpi_scope(comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &base_scope),
-        "qv_mpi_scope"
+        qv_mpi_scope(comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &base_scope)
     );
     // Get my base_scope's size and my rank.
     int base_scope_size;
-    ctu_check(
-        qv_group_size(base_scope, &base_scope_size),
-        "qv_group_size"
-    );
+    ctu_check(qv_group_size(base_scope, &base_scope_size));
 
     int base_scope_rank;
-    ctu_check(
-        qv_group_rank(base_scope, &base_scope_rank),
-        "qv_group_rank"
-    );
+    ctu_check(qv_group_rank(base_scope, &base_scope_rank));
 
     if (base_scope_rank == 0) {
         ctu_emit_device_info(
@@ -60,15 +53,11 @@ main(
     // Split the base scope evenly across workers.
     qv_scope_t *rank_scope;
     ctu_check(
-        qv_split(base_scope, base_scope_size, base_scope_rank, &rank_scope),
-        "qv_split"
+        qv_split(base_scope, base_scope_size, base_scope_rank, &rank_scope)
     );
     // Get number of tested devices in my rank_scope.
     for (int i = 0; i < ndevs_tested; ++i) {
-        ctu_check(
-            qv_hw_count(rank_scope, devs_tested[i], &rank_ndev[i]),
-            "qv_hw_count"
-        );
+        ctu_check(qv_hw_count(rank_scope, devs_tested[i], &rank_ndev[i]));
     }
 
     ctu_emit_device_info(
@@ -86,16 +75,12 @@ main(
     // Verify results.
     for (int i = 0; i < ndevs_tested; ++i) {
         // Get total number of GPUs in base_scope.
-        ctu_check(
-            qv_hw_count(base_scope, devs_tested[i], &base_ndev[i]),
-            "qv_hw_count"
-        );
+        ctu_check(qv_hw_count(base_scope, devs_tested[i], &base_ndev[i]));
         int total_ndevs;
         ctu_mpi_check(
             MPI_Reduce(
                 &rank_ndev[i], &total_ndevs, 1, MPI_INT, MPI_SUM, 0, comm
-            ),
-            "MPI_Reduce"
+            )
         );
 
         if (base_ndev[i] == total_ndevs) {
