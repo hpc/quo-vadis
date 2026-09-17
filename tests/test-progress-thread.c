@@ -55,33 +55,29 @@ int main(int argc, char *argv[])
 {
     MPI_Comm comm = MPI_COMM_WORLD;
 
-    ctu_mpi_check(MPI_Init(&argc, &argv), "MPI_Init");
+    ctu_mpi_check(MPI_Init(&argc, &argv));
 
     int wsize;
-    ctu_mpi_check(MPI_Comm_size(comm, &wsize), "MPI_Comm_size");
+    ctu_mpi_check(MPI_Comm_size(comm, &wsize));
 
     int wrank;
-    ctu_mpi_check(MPI_Comm_rank(comm, &wrank), "MPI_Comm_rank");
+    ctu_mpi_check(MPI_Comm_rank(comm, &wrank));
 
     qv_scope_t *user_scope;
     ctu_check(
-        qv_mpi_scope(comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &user_scope),
-        "qv_mpi_scope"
+        qv_mpi_scope(comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &user_scope)
     );
 
     /* Split user scope evenly across tasks */
     qv_scope_t *task_scope;
-    ctu_check(qv_split(user_scope, wsize, wrank, &task_scope), "qv_split");
+    ctu_check(qv_split(user_scope, wsize, wrank, &task_scope));
 
     /* Push into my task scope */
-    ctu_check(qv_bind_push(task_scope), "qv_bind_push");
+    ctu_check(qv_bind_push(task_scope));
 
     /* Where did I end up? */
     char *binds;
-    ctu_check(
-        qv_bind_string(task_scope, QV_BIND_STRING_LOGICAL, &binds),
-        "qv_bind_string"
-    );
+    ctu_check(qv_bind_string(task_scope, QV_BIND_STRING_LOGICAL, &binds));
     printf("[%d] Split: running on %s\n", wrank, binds);
     free(binds);
 
@@ -108,51 +104,40 @@ int main(int argc, char *argv[])
      */
 
     int ncores;
-    ctu_check(
-        qv_hw_count(task_scope, QV_HW_CORE, &ncores),
-        "qv_hw_count"
-    );
+    ctu_check(qv_hw_count(task_scope, QV_HW_CORE, &ncores));
 
     qv_scope_t *wk_scope;
     ctu_check(
         qv_create_scope(
             task_scope, QV_SCOPE_FLAG_NONE, QV_HW_CORE, ncores-1, &wk_scope
-        ),
-        "qv_create_scope"
+        )
     );
 
     qv_scope_t *ut_scope;
     ctu_check(
         qv_create_scope(
             task_scope, QV_SCOPE_FLAG_NONE, QV_HW_CORE, 1, &ut_scope
-        ),
-        "qv_create_scope"
+        )
     );
 
     /* Test work scope */
-    ctu_check(qv_bind_push(wk_scope), "qv_bind_push");
-    ctu_check(
-        qv_bind_string(wk_scope, QV_BIND_STRING_LOGICAL, &binds),
-        "qv_bind_string"
-    );
+    ctu_check(qv_bind_push(wk_scope));
+    ctu_check(qv_bind_string(wk_scope, QV_BIND_STRING_LOGICAL, &binds));
     printf("[%d] Work scope: running on %s\n", wrank, binds);
     free(binds);
-    ctu_check(qv_bind_pop(wk_scope), "qv_bind_pop");
+    ctu_check(qv_bind_pop(wk_scope));
 
     /* Test utility scope */
-    ctu_check(qv_bind_push(ut_scope), "qv_bind_push");
-    ctu_check(
-        qv_bind_string(ut_scope, QV_BIND_STRING_LOGICAL, &binds),
-        "qv_bind_string"
-    );
+    ctu_check(qv_bind_push(ut_scope));
+    ctu_check(qv_bind_string(ut_scope, QV_BIND_STRING_LOGICAL, &binds));
     printf("[%d] Utility scope: running on %s\n", wrank, binds);
     free(binds);
-    ctu_check(qv_bind_pop(ut_scope), "qv_bind_pop");
+    ctu_check(qv_bind_pop(ut_scope));
 
     /* Clean up for now */
-    ctu_check(qv_free(ut_scope), "qv_free");
+    ctu_check(qv_free(ut_scope));
 
-    ctu_check(qv_free(wk_scope), "qv_free");
+    ctu_check(qv_free(wk_scope));
 
 
     /***************************************

@@ -23,10 +23,7 @@ make_root_scope(qvb_backend_t *self)
 {
     (void)self;
     qv_scope_t *scope = NULL;
-    ctu_check(
-        qv_process_scope(QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &scope),
-        "qv_process_scope"
-    );
+    ctu_check(qv_process_scope(QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &scope));
     return scope;
 }
 
@@ -36,11 +33,8 @@ body_process_scope(void *v)
 {
     (void)v;
     qv_scope_t *scope = NULL;
-    ctu_check(
-        qv_process_scope(QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &scope),
-        "qv_process_scope"
-    );
-    ctu_check(qv_free(scope), "qv_free");
+    ctu_check(qv_process_scope(QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &scope));
+    ctu_check(qv_free(scope));
 }
 
 // Global, non-scope entry points shared by all APIs; benchmarked once here
@@ -50,7 +44,7 @@ body_version(void *v)
 {
     (void)v;
     int major = 0, minor = 0, patch = 0;
-    ctu_check(qv_version(&major, &minor, &patch), "qv_version");
+    ctu_check(qv_version(&major, &minor, &patch));
 }
 
 static void

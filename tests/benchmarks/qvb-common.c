@@ -38,40 +38,35 @@ static void
 body_group_rank(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
-    ctu_check(qv_group_rank(c->scope, &c->i_out), "qv_group_rank");
+    ctu_check(qv_group_rank(c->scope, &c->i_out));
 }
 
 static void
 body_group_size(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
-    ctu_check(qv_group_size(c->scope, &c->i_out), "qv_group_size");
+    ctu_check(qv_group_size(c->scope, &c->i_out));
 }
 
 static void
 body_hw_obj_count(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
-    ctu_check(
-        qv_hw_count(c->scope, c->obj_type, &c->i_out), "qv_hw_count"
-    );
+    ctu_check(qv_hw_count(c->scope, c->obj_type, &c->i_out));
 }
 
 static void
 body_barrier(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
-    ctu_check(qv_barrier(c->scope), "qv_barrier");
+    ctu_check(qv_barrier(c->scope));
 }
 
 static void
 body_bind_string(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
-    ctu_check(
-        qv_bind_string(c->scope, QV_BIND_STRING_LOGICAL, &c->str_out),
-        "qv_bind_string"
-    );
+    ctu_check(qv_bind_string(c->scope, QV_BIND_STRING_LOGICAL, &c->str_out));
     free(c->str_out);
     c->str_out = NULL;
 }
@@ -80,14 +75,14 @@ static void
 body_bind_push(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
-    ctu_check(qv_bind_push(c->scope), "qv_bind_push");
+    ctu_check(qv_bind_push(c->scope));
 }
 
 static void
 body_bind_pop(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
-    ctu_check(qv_bind_pop(c->scope), "qv_bind_pop");
+    ctu_check(qv_bind_pop(c->scope));
 }
 
 static void
@@ -114,8 +109,8 @@ body_split(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
     qv_scope_t *sub = NULL;
-    ctu_check(qv_split(c->scope, 1, 0, &sub), "qv_split");
-    ctu_check(qv_free(sub), "qv_free");
+    ctu_check(qv_split(c->scope, 1, 0, &sub));
+    ctu_check(qv_free(sub));
 }
 
 static void
@@ -123,10 +118,8 @@ body_split_at(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
     qv_scope_t *sub = NULL;
-    ctu_check(
-        qv_split_at(c->scope, QV_HW_CORE, 0, &sub), "qv_split_at"
-    );
-    ctu_check(qv_free(sub), "qv_free");
+    ctu_check(qv_split_at(c->scope, QV_HW_CORE, 0, &sub));
+    ctu_check(qv_free(sub));
 }
 
 static void
@@ -135,10 +128,9 @@ body_create_scope(void *v)
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
     qv_scope_t *sub = NULL;
     ctu_check(
-        qv_create_scope(c->scope, QV_SCOPE_FLAG_NONE, QV_HW_CORE, 1, &sub),
-        "qv_create_scope"
+        qv_create_scope(c->scope, QV_SCOPE_FLAG_NONE, QV_HW_CORE, 1, &sub)
     );
-    ctu_check(qv_free(sub), "qv_free");
+    ctu_check(qv_free(sub));
 }
 
 void
@@ -193,7 +185,7 @@ qvb_run_common(qvb_backend_t *backend, qvb_reporter_t *reporter)
         iters, &ctx
     );
 
-    ctu_check(qv_free(root), "qv_free");
+    ctu_check(qv_free(root));
 }
 
 /*

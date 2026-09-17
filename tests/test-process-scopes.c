@@ -11,21 +11,17 @@ main(void)
 
     qv_scope_t *self_scope = NULL;
     ctu_check(
-        qv_process_scope(QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &self_scope),
-        "qv_process_scope"
+        qv_process_scope(QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &self_scope)
     );
 
     ctu_emit_scope_report(
         self_scope, CTU_SCOPE_KIND_PROCESS, "     self_scope"
     );
 
-    ctu_check(qv_free(self_scope), "qv_free");
+    ctu_check(qv_free(self_scope));
 
     qv_scope_t *base_scope;
-    ctu_check(
-        qv_process_scope(QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &base_scope),
-        "qv_process_scope"
-    );
+    ctu_check(qv_process_scope(QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &base_scope));
 
     ctu_emit_scope_report(
         base_scope, CTU_SCOPE_KIND_PROCESS, "     base_scope"
@@ -51,17 +47,11 @@ main(void)
     // Provided color in range, so we will get the LHS of the split.
     // That is, with 2 pieces, the in-range coloring values are 0 and 1.
     qv_scope_t *sub_scope_left;
-    ctu_check(
-        qv_split(base_scope, npieces, 0, &sub_scope_left),
-        "qv_split"
-    );
+    ctu_check(qv_split(base_scope, npieces, 0, &sub_scope_left));
     // Provided color in range, so we will get the RHS of the split.
     // That is, with 2 pieces, the in-range coloring values are 0 and 1.
     qv_scope_t *sub_scope_right;
-    ctu_check(
-        qv_split(base_scope, npieces, 1, &sub_scope_right),
-        "qv_split"
-    );
+    ctu_check(qv_split(base_scope, npieces, 1, &sub_scope_right));
 
     ctu_emit_host_hw_info(
         sub_scope_left, CTU_SCOPE_KIND_PROCESS, " sub_scope_left"
@@ -77,11 +67,11 @@ main(void)
         sub_scope_right, CTU_SCOPE_KIND_PROCESS, "sub_scope_right"
     );
 
-    ctu_check(qv_free(base_scope), "qv_free");
+    ctu_check(qv_free(base_scope));
 
-    ctu_check(qv_free(sub_scope_left), "qv_free");
+    ctu_check(qv_free(sub_scope_left));
 
-    ctu_check(qv_free(sub_scope_right), "qv_free");
+    ctu_check(qv_free(sub_scope_right));
 
     return EXIT_SUCCESS;
 }

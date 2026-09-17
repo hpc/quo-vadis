@@ -14,15 +14,12 @@ main(
 ) {
     MPI_Comm comm = MPI_COMM_WORLD;
 
-    ctu_mpi_check(MPI_Init(&argc, &argv), "MPI_Init");
+    ctu_mpi_check(MPI_Init(&argc, &argv));
 
     qv_scope_t *scope = NULL;
-    ctu_check(
-        qv_mpi_scope(comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &scope),
-        "qv_mpi_scope"
-    );
+    ctu_check(qv_mpi_scope(comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &scope));
 
-    ctu_check(qv_free(scope), "qv_free");
+    ctu_check(qv_free(scope));
 
     MPI_Finalize();
 

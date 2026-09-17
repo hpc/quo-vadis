@@ -62,11 +62,11 @@ do {                                                                           \
  * Asserts that a quo-vadis call returned QV_SUCCESS, aborting with the
  * qv_strerr() string otherwise.
  */
-#define ctu_check(rc, what)                                                    \
+#define ctu_check(rc)                                                          \
 do {                                                                           \
     const int ctu_rc = (rc);                                                   \
     if (ctu_rc != QV_SUCCESS) {                                                \
-        ctu_panic("%s failed (rc=%s)", (what), qv_strerr(ctu_rc));             \
+        ctu_panic("%s failed (rc=%s)", #rc, qv_strerr(ctu_rc));                \
     }                                                                          \
 } while (0)
 
@@ -75,7 +75,7 @@ do {                                                                           \
  * error string (when available) and aborts. Defined as a macro so callers that
  * never touch MPI (e.g. the process/thread suites) need not include <mpi.h>.
  */
-#define ctu_mpi_check(rc, what)                                                \
+#define ctu_mpi_check(rc)                                                      \
 do {                                                                           \
     const int ctu_mpirc = (rc);                                                \
     if (ctu_mpirc != MPI_SUCCESS) {                                            \
@@ -85,7 +85,7 @@ do {                                                                           \
             MPI_SUCCESS) {                                                     \
             ctu_mpiestr[0] = '\0';                                             \
         }                                                                      \
-        ctu_panic("%s failed (rc=%d: %s)", (what), ctu_mpirc, ctu_mpiestr);    \
+        ctu_panic("%s failed (rc=%d: %s)", #rc, ctu_mpirc, ctu_mpiestr);       \
     }                                                                          \
 } while (0)
 

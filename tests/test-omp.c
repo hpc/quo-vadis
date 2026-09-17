@@ -17,10 +17,7 @@ static void
 scopei_free(
     scopei *sinfo
 ) {
-    ctu_check(
-        qv_thread_free(sinfo->th_scopes, sinfo->nthreads),
-        "qv_thread_free"
-    );
+    ctu_check(qv_thread_free(sinfo->th_scopes, sinfo->nthreads));
 }
 
 /**
@@ -32,25 +29,20 @@ scopei_ep(
 ) {
     qv_scope_t *base_scope;
     ctu_check(
-        qv_process_scope(QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &base_scope),
-        "qv_process_scope"
+        qv_process_scope(QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &base_scope)
     );
     // Use the number of cores to determine how many thread scopes to create.
-    ctu_check(
-        qv_hw_count(base_scope, QV_HW_CORE, &sinfo->nthreads),
-        "qv_hw_count"
-    );
+    ctu_check(qv_hw_count(base_scope, QV_HW_CORE, &sinfo->nthreads));
 
     int *thread_coloring = QV_THREAD_SPLIT_CLOSE;
     ctu_check(
         qv_thread_split_at(
             base_scope, QV_HW_CORE, thread_coloring,
             sinfo->nthreads, &sinfo->th_scopes
-        ),
-        "qv_thread_split_at"
+        )
     );
 
-    ctu_check(qv_free(base_scope), "qv_free");
+    ctu_check(qv_free(base_scope));
 }
 
 static void
@@ -58,7 +50,7 @@ scopei_ep_push(
     scopei *sinfo,
     int rank
 ) {
-    ctu_check(qv_bind_push(sinfo->th_scopes[rank]), "qv_bind_push");
+    ctu_check(qv_bind_push(sinfo->th_scopes[rank]));
 }
 
 static void
@@ -66,7 +58,7 @@ scopei_ep_pop(
     scopei *sinfo,
     int rank
 ) {
-    ctu_check(qv_bind_pop(sinfo->th_scopes[rank]), "qv_bind_pop");
+    ctu_check(qv_bind_pop(sinfo->th_scopes[rank]));
 }
 
 static void
@@ -77,8 +69,7 @@ emit_iter_info(
 ) {
     char *binds;
     ctu_check(
-        qv_bind_string(sinfo->th_scopes[rank], QV_BIND_STRING_LOGICAL, &binds),
-        "qv_bind_string"
+        qv_bind_string(sinfo->th_scopes[rank], QV_BIND_STRING_LOGICAL, &binds)
     );
     printf(
         "[%d]: thread=%03d of nthread=%03d handling iter %03d on %s\n",

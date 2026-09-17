@@ -257,8 +257,8 @@ qvb_run_trial(
     const uint64_t warm_end = qvb_now_ns() +
         static_cast<uint64_t>(cfg.warmup_s * 1e9);
     while (qvb_now_ns() < warm_end) {
-        ctu_check(qv_bind_push(scope), "qv_bind_push");
-        ctu_check(qv_bind_pop(scope), "qv_bind_pop");
+        ctu_check(qv_bind_push(scope));
+        ctu_check(qv_bind_pop(scope));
     }
 
     qvb_hist hist;
@@ -267,10 +267,7 @@ qvb_run_trial(
 
     // Align all processes so their measurement windows overlap.
     for (size_t i = 0; i < nbarrier; ++i) {
-        ctu_mpi_check(
-            MPI_Barrier(comm),
-            "MPI_Reduce(messages)"
-        );
+        ctu_mpi_check(MPI_Barrier(comm));
     }
 
     const uint64_t t_start = qvb_now_ns();
@@ -291,9 +288,9 @@ qvb_run_trial(
         static constexpr int msgs_per_iter = 2;
 
         const uint64_t a0 = qvb_now_ns();
-        ctu_check(qv_bind_push(scope), "qv_bind_push");
+        ctu_check(qv_bind_push(scope));
         const uint64_t a1 = qvb_now_ns();
-        ctu_check(qv_bind_pop(scope), "qv_bind_pop");
+        ctu_check(qv_bind_pop(scope));
         const uint64_t a2 = qvb_now_ns();
 
         // Each call is one daemon round-trip; record both latencies.
@@ -308,10 +305,7 @@ qvb_run_trial(
 
     // Close the window; keeps processes in lock-step before the reductions.
     for (size_t i = 0; i < nbarrier; ++i) {
-        ctu_mpi_check(
-            MPI_Barrier(comm),
-            "MPI_Reduce(messages)"
-        );
+        ctu_mpi_check(MPI_Barrier(comm));
     }
 
     // Reduce scalar aggregates across all processes.
@@ -321,36 +315,31 @@ qvb_run_trial(
         MPI_Reduce(
             &local_msgs, &total_msgs, 1,
             MPI_UINT64_T, MPI_SUM, 0, comm
-        ),
-        "MPI_Reduce(messages)"
+        )
     );
     ctu_mpi_check(
         MPI_Reduce(
             &total_ns, &sum_total_ns, 1,
             MPI_UINT64_T, MPI_SUM, 0, comm
-        ),
-        "MPI_Reduce(total_ns)"
+        )
     );
     ctu_mpi_check(
         MPI_Reduce(
             &local_window_ns, &max_window_ns, 1,
             MPI_UINT64_T, MPI_MAX, 0, comm
-        ),
-        "MPI_Reduce(window)"
+        )
     );
     ctu_mpi_check(
         MPI_Reduce(
             &hist.min_ns, &global_min, 1,
             MPI_UINT64_T, MPI_MIN, 0, comm
-        ),
-        "MPI_Reduce(min)"
+        )
     );
     ctu_mpi_check(
         MPI_Reduce(
             &hist.max_ns, &global_max, 1,
             MPI_UINT64_T, MPI_MAX, 0, comm
-        ),
-        "MPI_Reduce(max)"
+        )
     );
 
     // Reduce the latency histogram bucket-wise for global percentiles.
@@ -362,8 +351,7 @@ qvb_run_trial(
             qvb_hist::nbuckets,
             MPI_UINT64_T, MPI_SUM,
             0, comm
-        ),
-        "MPI_Reduce(histogram)"
+        )
     );
 
     // nsamples for the reduced histogram == total messages.
@@ -398,7 +386,7 @@ qvb_print_metadata(
     }
 
     int vmaj = 0, vmin = 0, vpatch = 0;
-    ctu_check(qv_version(&vmaj, &vmin, &vpatch), "qv_version");
+    ctu_check(qv_version(&vmaj, &vmin, &vpatch));
 
     char mpiver[MPI_MAX_LIBRARY_VERSION_STRING] = {0};
     int mpiverlen = 0;
@@ -441,11 +429,11 @@ main(
     int argc, char **argv
 ) {
     const MPI_Comm target_comm = MPI_COMM_WORLD;
-    ctu_mpi_check(MPI_Init(&argc, &argv), "MPI_Init");
+    ctu_mpi_check(MPI_Init(&argc, &argv));
 
     int wrank = 0, nranks = 0;
-    ctu_mpi_check(MPI_Comm_rank(target_comm, &wrank), "MPI_Comm_rank");
-    ctu_mpi_check(MPI_Comm_size(target_comm, &nranks), "MPI_Comm_size");
+    ctu_mpi_check(MPI_Comm_rank(target_comm, &wrank));
+    ctu_mpi_check(MPI_Comm_size(target_comm, &nranks));
     const bool reporting = (wrank == 0);
 
     qvb_cfg cfg;
@@ -455,8 +443,7 @@ main(
     // its own scope means its own connection.
     qv_scope_t *scope = nullptr;
     ctu_check(
-        qv_mpi_scope(target_comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &scope),
-        "qv_mpi_scope"
+        qv_mpi_scope(target_comm, QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &scope)
     );
 
     if (reporting) qvb_print_metadata(nranks, cfg);
@@ -555,9 +542,9 @@ main(
         if (csv) fclose(csv);
     }
 
-    ctu_check(qv_free(scope), "qv_free");
+    ctu_check(qv_free(scope));
 
-    ctu_mpi_check(MPI_Finalize(), "MPI_Finalize");
+    ctu_mpi_check(MPI_Finalize());
     return exit_status;
 }
 
