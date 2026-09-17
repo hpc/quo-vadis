@@ -27,26 +27,19 @@ thread_work(
 int
 main(void)
 {
-    char const *ers = NULL;
     const pid_t tid = ctu_gettid();
 
     fprintf(stdout,"# Starting Pthreads test.\n");
 
     qv_scope_t *base_scope;
-    int rc = qv_process_scope(
-        QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &base_scope
+    ctu_check(
+        qv_process_scope(
+            QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &base_scope
+        )
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_process_scope() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
     int ncores = 0;
-    rc = qv_hw_count(base_scope, QV_HW_CORE, &ncores);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_hw_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_hw_count(base_scope, QV_HW_CORE, &ncores));
 
     ctu_emit_task_bind(base_scope, CTU_SCOPE_KIND_PROCESS);
     //
@@ -61,15 +54,13 @@ main(void)
     );
 
     qv_scope_t **th_scopes = NULL;
-    rc = qv_thread_split(
-        base_scope, npieces,
-        QV_THREAD_SPLIT_PACKED,
-        nthreads, &th_scopes
+    ctu_check(
+        qv_thread_split(
+            base_scope, npieces,
+            QV_THREAD_SPLIT_PACKED,
+            nthreads, &th_scopes
+        )
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_pthread_scope_split() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
     thargs_t thargs[nthreads];
     for (int i = 0 ; i < nthreads; i ++) {
@@ -85,8 +76,7 @@ main(void)
             &thid[i], attr, thread_work, &thargs[i], th_scopes[i]
         );
         if (ptrc != 0) {
-            ers = "qv_pthread_create() failed";
-            ctu_panic("%s (rc=%s)", ers, strerror(rc));
+            ctu_panic("qv_pthread_create() failed (rc=%s)", strerror(ptrc));
         }
     }
 
@@ -99,11 +89,7 @@ main(void)
         //fprintf(stdout,"Thread finished with '%s'\n", (char *)ret);
     }
     // Clean up.
-    rc = qv_thread_free(th_scopes, nthreads);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_pthread_scope_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_thread_free(th_scopes, nthreads));
     //
     //Test qv_pthread_scope_split_at
     //
@@ -112,15 +98,13 @@ main(void)
         tid, nthreads, npieces
     );
 
-    rc = qv_thread_split_at(
-        base_scope, QV_HW_CORE,
-        QV_THREAD_SPLIT_PACKED,
-        nthreads, &th_scopes
+    ctu_check(
+        qv_thread_split_at(
+            base_scope, QV_HW_CORE,
+            QV_THREAD_SPLIT_PACKED,
+            nthreads, &th_scopes
+        )
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_pthread_scope_split_at() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
     thargs_t thargs2[nthreads];
     for (int i = 0 ; i < nthreads; i++) {
@@ -134,8 +118,7 @@ main(void)
             &thid2[i], attr, thread_work, &thargs2[i], th_scopes[i]
         );
         if (ptrc != 0) {
-            ers = "qv_pthread_create() failed";
-            ctu_panic("%s (rc=%s)", ers, strerror(rc));
+            ctu_panic("qv_pthread_create() failed (rc=%s)", strerror(ptrc));
         }
     }
 
@@ -147,17 +130,9 @@ main(void)
         //fprintf(stdout,"Thread finished with '%s'\n", (char *)ret);
     }
     // Clean up.
-    rc = qv_thread_free(th_scopes, nthreads);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_pthread_scope_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_thread_free(th_scopes, nthreads));
 
-    rc = qv_free(base_scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_free(base_scope));
 
     return EXIT_SUCCESS;
 }

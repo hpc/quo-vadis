@@ -22,7 +22,6 @@ int
 main(
     int argc, char **argv
 ) {
-    char const *ers = NULL;
     MPI_Comm comm = MPI_COMM_WORLD;
 
     ctu_mpi_check(MPI_Init(&argc, &argv));
@@ -110,18 +109,15 @@ main(
         "# Starting Pthread test (nthreads/process=%d)\n", nthreads
     );
     thread_coloring = QV_THREAD_SPLIT_PACKED;
-    int rc = qv_thread_split_at(
-        subnuma, QV_HW_PU, thread_coloring, nthreads, &th_scopes
+    ctu_check(
+        qv_thread_split_at(
+            subnuma, QV_HW_PU, thread_coloring, nthreads, &th_scopes
+        )
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_thread_split_at() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
 
     pthread_t *pthrds = calloc(nthreads, sizeof(pthread_t));
     if (!pthrds) {
-        ers = "calloc() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("calloc() failed");
     }
 
     for (int i = 0; i < nthreads; i++) {
