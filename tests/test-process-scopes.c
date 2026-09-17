@@ -6,9 +6,6 @@
 int
 main(void)
 {
-    char const *ers = NULL;
-    int rc = QV_SUCCESS;
-
     qv_scope_t *self_scope = NULL;
     ctu_check(
         qv_process_scope(QV_SCOPE_PROCESS, QV_SCOPE_FLAG_NONE, &self_scope)
@@ -28,14 +25,9 @@ main(void)
     );
 
     int sgsize;
-    rc = qv_group_size(base_scope, &sgsize);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_group_size() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_group_size(base_scope, &sgsize));
     if (sgsize != 1) {
-        ers = "Invalid number of tasks detected";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("Invalid number of tasks detected (size=%d)", sgsize);
     }
 
     ctu_emit_host_hw_info(

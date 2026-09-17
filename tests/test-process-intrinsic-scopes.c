@@ -23,7 +23,6 @@ int
 main(void)
 {
     char const *ers = NULL;
-    int rc = QV_SUCCESS;
 
     // PU counts observed for each intrinsic scope type, indexed by the
     // qv_scope_intrinsic_t value (QV_SCOPE_SYSTEM=0, USER=1, JOB=2, PROCESS=3).
@@ -34,36 +33,20 @@ main(void)
         const qv_scope_intrinsic_t iscope = intrinsic_name_to_scope_tab[i].iscope;
 
         qv_scope_t *scope = NULL;
-        rc = qv_process_scope(iscope, QV_SCOPE_FLAG_NONE, &scope);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_process_scope() failed";
-            ctu_panic("%s for %s (rc=%s)", ers, name, qv_strerr(rc));
-        }
+        ctu_check(qv_process_scope(iscope, QV_SCOPE_FLAG_NONE, &scope));
 
         ctu_emit_scope_report(scope, CTU_SCOPE_KIND_PROCESS, name);
         ctu_emit_host_hw_info(scope, CTU_SCOPE_KIND_PROCESS, name);
 
         int sgsize = 0;
-        rc = qv_group_size(scope, &sgsize);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_group_size() failed";
-            ctu_panic("%s for %s (rc=%s)", ers, name, qv_strerr(rc));
-        }
+        ctu_check(qv_group_size(scope, &sgsize));
 
         int sgrank = 0;
-        rc = qv_group_rank(scope, &sgrank);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_group_rank() failed";
-            ctu_panic("%s for %s (rc=%s)", ers, name, qv_strerr(rc));
-        }
+        ctu_check(qv_group_rank(scope, &sgrank));
 
         // Record the number of PUs in this scope for cross-scope comparison.
         int npu = 0;
-        rc = qv_hw_count(scope, QV_HW_PU, &npu);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_hw_count(QV_HW_PU) failed";
-            ctu_panic("%s for %s (rc=%s)", ers, name, qv_strerr(rc));
-        }
+        ctu_check(qv_hw_count(scope, QV_HW_PU, &npu));
         npus[iscope] = npu;
 
         ctu_emit(
@@ -82,30 +65,14 @@ main(void)
         // corresponding color (0 for the left half, 1 for the right half).
         const int npieces = 2;
         qv_scope_t *left = NULL;
-        rc = qv_split(scope, npieces, 0, &left);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_split() failed";
-            ctu_panic("%s for %s (rc=%s)", ers, name, qv_strerr(rc));
-        }
+        ctu_check(qv_split(scope, npieces, 0, &left));
         qv_scope_t *right = NULL;
-        rc = qv_split(scope, npieces, 1, &right);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_split() failed";
-            ctu_panic("%s for %s (rc=%s)", ers, name, qv_strerr(rc));
-        }
+        ctu_check(qv_split(scope, npieces, 1, &right));
 
         int npu_left = 0;
-        rc = qv_hw_count(left, QV_HW_PU, &npu_left);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_hw_count(QV_HW_PU) failed";
-            ctu_panic("%s for %s left half (rc=%s)", ers, name, qv_strerr(rc));
-        }
+        ctu_check(qv_hw_count(left, QV_HW_PU, &npu_left));
         int npu_right = 0;
-        rc = qv_hw_count(right, QV_HW_PU, &npu_right);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_hw_count(QV_HW_PU) failed";
-            ctu_panic("%s for %s right half (rc=%s)", ers, name, qv_strerr(rc));
-        }
+        ctu_check(qv_hw_count(right, QV_HW_PU, &npu_right));
 
         // A split in half must conserve PUs and, for these topologies, divide
         // them evenly. These invariants hold regardless of the topology.
@@ -136,44 +103,20 @@ main(void)
         // explicitly requested the whole system. For the other intrinsic scopes
         // both halves only ever cover allowed resources.
         char *bind_left = NULL;
-        rc = qv_bind_push(left);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_bind_push() failed";
-            ctu_panic("%s for %s left half (rc=%s)", ers, name, qv_strerr(rc));
-        }
-        rc = qv_bind_string(left, QV_BIND_STRING_PHYSICAL, &bind_left);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_bind_string() failed";
-            ctu_panic("%s for %s left half (rc=%s)", ers, name, qv_strerr(rc));
-        }
+        ctu_check(qv_bind_push(left));
+        ctu_check(qv_bind_string(left, QV_BIND_STRING_PHYSICAL, &bind_left));
         if (bind_left == NULL || bind_left[0] == '\0') {
             ctu_panic("%s left half produced an empty binding string", name);
         }
-        rc = qv_bind_pop(left);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_bind_pop() failed";
-            ctu_panic("%s for %s left half (rc=%s)", ers, name, qv_strerr(rc));
-        }
+        ctu_check(qv_bind_pop(left));
 
         char *bind_right = NULL;
-        rc = qv_bind_push(right);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_bind_push() failed";
-            ctu_panic("%s for %s right half (rc=%s)", ers, name, qv_strerr(rc));
-        }
-        rc = qv_bind_string(right, QV_BIND_STRING_PHYSICAL, &bind_right);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_bind_string() failed";
-            ctu_panic("%s for %s right half (rc=%s)", ers, name, qv_strerr(rc));
-        }
+        ctu_check(qv_bind_push(right));
+        ctu_check(qv_bind_string(right, QV_BIND_STRING_PHYSICAL, &bind_right));
         if (bind_right == NULL || bind_right[0] == '\0') {
             ctu_panic("%s right half produced an empty binding string", name);
         }
-        rc = qv_bind_pop(right);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_bind_pop() failed";
-            ctu_panic("%s for %s right half (rc=%s)", ers, name, qv_strerr(rc));
-        }
+        ctu_check(qv_bind_pop(right));
 
         ctu_emit(
             scope, CTU_SCOPE_KIND_PROCESS,
@@ -213,24 +156,12 @@ main(void)
         free(bind_left);
         free(bind_right);
 
-        rc = qv_free(left);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_free() failed";
-            ctu_panic("%s for %s left half (rc=%s)", ers, name, qv_strerr(rc));
-        }
-        rc = qv_free(right);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_free() failed";
-            ctu_panic("%s for %s right half (rc=%s)", ers, name, qv_strerr(rc));
-        }
+        ctu_check(qv_free(left));
+        ctu_check(qv_free(right));
 
         ctu_emit(scope, CTU_SCOPE_KIND_PROCESS, "\n");
 
-        rc = qv_free(scope);
-        if (rc != QV_SUCCESS) {
-            ers = "qv_free() failed";
-            ctu_panic("%s for %s (rc=%s)", ers, name, qv_strerr(rc));
-        }
+        ctu_check(qv_free(scope));
     }
 
     // The intrinsic scopes are nested by construction: the whole-system scope

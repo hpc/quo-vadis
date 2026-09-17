@@ -238,14 +238,8 @@ public:
         const std::string &msg
     ) override {
         int world_rank = -1, world_size = -1;
-        int rc = MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-        if (rc != MPI_SUCCESS) {
-            ctu_panic("%s failed (rc=%d)", "MPI_Comm_rank", rc);
-        }
-        rc = MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-        if (rc != MPI_SUCCESS) {
-            ctu_panic("%s failed (rc=%d)", "MPI_Comm_size", rc);
-        }
+        ctu_mpi_check(MPI_Comm_rank(MPI_COMM_WORLD, &world_rank));
+        ctu_mpi_check(MPI_Comm_size(MPI_COMM_WORLD, &world_size));
         // Determine if this process has a message to log.
         const bool have_message = !msg.empty();
         const int msg_len = static_cast<int>(msg.size());
@@ -256,14 +250,13 @@ public:
             // Check if we're in the communicator.
             int in_comm = (m_comm != MPI_COMM_NULL) ? 1 : 0;
             // Gather participation info.
-            rc = MPI_Allgather(
-                &in_comm, 1, MPI_INT,
-                participating_ranks.data(),
-                1, MPI_INT, MPI_COMM_WORLD
+            ctu_mpi_check(
+                MPI_Allgather(
+                    &in_comm, 1, MPI_INT,
+                    participating_ranks.data(),
+                    1, MPI_INT, MPI_COMM_WORLD
+                )
             );
-            if (rc != MPI_SUCCESS) {
-                ctu_panic("%s failed (rc=%d)", "MPI_Allgather", rc);
-            }
             // Print own message first if we have one.
             if (have_message) {
                 logger::the_logger().log(msg);
@@ -273,22 +266,20 @@ public:
                 if (participating_ranks[src]) {
                     // This rank is in the communicator
                     int recv_len = 0;
-                    rc = MPI_Recv(
-                        &recv_len, 1, MPI_INT, src, 0,
-                        MPI_COMM_WORLD, MPI_STATUS_IGNORE
+                    ctu_mpi_check(
+                        MPI_Recv(
+                            &recv_len, 1, MPI_INT, src, 0,
+                            MPI_COMM_WORLD, MPI_STATUS_IGNORE
+                        )
                     );
-                    if (rc != MPI_SUCCESS) {
-                        ctu_panic("%s failed (rc=%d)", "MPI_Recv", rc);
-                    }
                     if (recv_len > 0) {
                         std::vector<char> buffer(recv_len + 1, '\0');
-                        rc = MPI_Recv(
-                            buffer.data(), recv_len, MPI_CHAR, src,
-                            1, MPI_COMM_WORLD, MPI_STATUS_IGNORE
+                        ctu_mpi_check(
+                            MPI_Recv(
+                                buffer.data(), recv_len, MPI_CHAR, src,
+                                1, MPI_COMM_WORLD, MPI_STATUS_IGNORE
+                            )
                         );
-                        if (rc != MPI_SUCCESS) {
-                            ctu_panic("%s failed (rc=%d)", "MPI_Recv", rc);
-                        }
                         logger::the_logger().log(std::string(buffer.data()));
                     }
                 }
@@ -299,37 +290,31 @@ public:
             const int in_comm = (m_comm != MPI_COMM_NULL && pred) ? 1 : 0;
             // Participate in gather.
             std::vector<int> participating_ranks(world_size, 0);
-            rc = MPI_Allgather(
-                &in_comm, 1, MPI_INT,
-                participating_ranks.data(),
-                1, MPI_INT, MPI_COMM_WORLD
+            ctu_mpi_check(
+                MPI_Allgather(
+                    &in_comm, 1, MPI_INT,
+                    participating_ranks.data(),
+                    1, MPI_INT, MPI_COMM_WORLD
+                )
             );
-            if (rc != MPI_SUCCESS) {
-                ctu_panic("%s failed (rc=%d)", "MPI_Allgather", rc);
-            }
             // If we're in the communicator, send to world rank 0.
             if (in_comm) {
-                rc = MPI_Send(&msg_len, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-                if (rc != MPI_SUCCESS) {
-                    ctu_panic("%s failed (rc=%d)", "MPI_Send", rc);
-                }
+                ctu_mpi_check(
+                    MPI_Send(&msg_len, 1, MPI_INT, 0, 0, MPI_COMM_WORLD)
+                );
                 if (msg_len > 0) {
-                    rc = MPI_Send(
-                        msg.c_str(), msg_len,
-                        MPI_CHAR,0, 1, MPI_COMM_WORLD
+                    ctu_mpi_check(
+                        MPI_Send(
+                            msg.c_str(), msg_len,
+                            MPI_CHAR,0, 1, MPI_COMM_WORLD
+                        )
                     );
-                    if (rc != MPI_SUCCESS) {
-                        ctu_panic("%s failed (rc=%d)", "MPI_Send", rc);
-                    }
                 }
             }
         }
         // Barrier on world communicator to ensure all
         // processes wait for logging to complete.
-        rc = MPI_Barrier(MPI_COMM_WORLD);
-        if (rc != MPI_SUCCESS) {
-            ctu_panic("%s failed (rc=%d)", "MPI_Barrier", rc);
-        }
+        ctu_mpi_check(MPI_Barrier(MPI_COMM_WORLD));
     }
 };
 
@@ -339,21 +324,11 @@ static std::pair<int, int>
 ctu_scope_size_rank(
     qv_scope_t *scope
 ) {
-    char const *ers = NULL;
-
     int sgsize;
-    int rc = qv_group_size(scope, &sgsize);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_group_size() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_group_size(scope, &sgsize));
 
     int sgrank;
-    rc = qv_group_rank(scope, &sgrank);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_group_rank() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_group_rank(scope, &sgrank));
 
     return {sgsize, sgrank};
 }
@@ -362,18 +337,15 @@ static std::string
 ctu_current_binding(
     qv_scope_t *scope
 ) {
-    char const *ers = NULL;
     // Get current binding.
     char *cpusets;
-    const int rc = qv_bind_string(
-        scope,
-        QV_BIND_STRING_LOGICAL | QV_BIND_STRING_PHYSICAL,
-        &cpusets
+    ctu_check(
+        qv_bind_string(
+            scope,
+            QV_BIND_STRING_LOGICAL | QV_BIND_STRING_PHYSICAL,
+            &cpusets
+        )
     );
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_string() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
     std::string result(cpusets);
     free(cpusets);
     return result;
@@ -383,21 +355,12 @@ static std::string
 ctu_scope_cpuset(
     qv_scope_t *scope
 ) {
-    char const *ers = NULL;
     // Change binding to get the scope's underlying cpuset.
-    int rc = qv_bind_push(scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_push() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_bind_push(scope));
     // Get the current binding after push.
     auto result = ctu_current_binding(scope);
     // Pop to not affect other calls related to the scope.
-    rc = qv_bind_pop(scope);
-    if (rc != QV_SUCCESS) {
-        ers = "qv_bind_pop() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_bind_pop(scope));
     return result;
 }
 
@@ -481,15 +444,9 @@ ctu_emit_host_hw_info(
 
     for (size_t i = 0; i < ctu_hw_obj_name_to_type_tab_size; ++i) {
         int n;
-        int rc = qv_hw_count(
-            scope, ctu_hw_obj_name_to_type_tab[i].type, &n
+        ctu_check(
+            qv_hw_count(scope, ctu_hw_obj_name_to_type_tab[i].type, &n)
         );
-        if (rc != QV_SUCCESS) {
-            ctu_panic(
-                "qv_hw_count(%s) failed\n",
-                ctu_hw_obj_name_to_type_tab[i].name
-            );
-        }
         myoutput += fstring(
             "[%s] %s: %s: n = %d\n",
             myid.c_str(), scope_name,
@@ -511,11 +468,7 @@ ctu_emit_device_info(
     std::string myoutput;
     // Get number of devices.
     int ndevs;
-    int rc = qv_hw_count(scope, dev_type, &ndevs);
-    if (rc != QV_SUCCESS) {
-        const char *ers = "qv_hw_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-    }
+    ctu_check(qv_hw_count(scope, dev_type, &ndevs));
 
     std::string bind_report = {};
 
@@ -532,17 +485,15 @@ ctu_emit_device_info(
     for (int i = 0; i < ndevs; ++i) {
         for (size_t j = 0; j < ctu_devid_name_to_id_tab_size; ++j) {
             char *devids = NULL;
-            int rc = qv_device_id(
-                scope,
-                dev_type,
-                i,
-                ctu_devid_name_to_id_tab[j].devid,
-                &devids
+            ctu_check(
+                qv_device_id(
+                    scope,
+                    dev_type,
+                    i,
+                    ctu_devid_name_to_id_tab[j].devid,
+                    &devids
+                )
             );
-            if (rc != QV_SUCCESS) {
-                const char *ers = "qv_device_id() failed";
-                ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
-            }
             myoutput += fstring(
                 "[%s] Device %d %s = %s\n",
                 myid.c_str(), i, ctu_devid_name_to_id_tab[j].name, devids
