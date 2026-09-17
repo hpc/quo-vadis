@@ -86,7 +86,7 @@ main(
 
     ctu_check(qv_free(split_cores_from_numa));
 
-    MPI_Finalize();
+    ctu_mpi_check(MPI_Finalize());
 
     return EXIT_SUCCESS;
 }
