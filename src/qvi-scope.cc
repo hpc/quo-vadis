@@ -72,7 +72,7 @@ qv_scope::make_intrinsic(
 int
 qv_scope::create(
     qv_scope_flags_t,
-    qv_hw_obj_type_t type,
+    qv_hw_type_t type,
     int nobjs,
     qv_scope_t **child
 ) {
@@ -130,14 +130,14 @@ qv_scope::group_rank(void) const
 
 size_t
 qv_scope::hwpool_nobjects(
-    qv_hw_obj_type_t obj
+    qv_hw_type_t obj
 ) const {
     return m_hwpool.nobjects(m_group->hwloc(), obj);
 }
 
 int
 qv_scope::device_id(
-    qv_hw_obj_type_t dev_type,
+    qv_hw_type_t dev_type,
     int dev_index,
     qv_device_id_type_t format,
     char **result
@@ -190,7 +190,7 @@ int
 qv_scope::split(
     int npieces,
     int color,
-    qv_hw_obj_type_t maybe_obj_type,
+    qv_hw_type_t maybe_obj_type,
     qv_scope_t **child
 ) {
     int rc = QV_SUCCESS;
@@ -228,7 +228,7 @@ qv_scope::split(
 
 int
 qv_scope::split_at(
-    qv_hw_obj_type_t type,
+    qv_hw_type_t type,
     int color,
     qv_scope_t **child
 ) {
@@ -240,7 +240,7 @@ qv_scope::thread_split(
     uint_t npieces,
     int *kcolors,
     uint_t k,
-    qv_hw_obj_type_t maybe_obj_type,
+    qv_hw_type_t maybe_obj_type,
     qv_scope_t ***thchildren
 ) {
     *thchildren = nullptr;
@@ -275,7 +275,7 @@ qv_scope::thread_split(
 
 int
 qv_scope::thread_split_at(
-    qv_hw_obj_type_t type,
+    qv_hw_type_t type,
     int *kcolors,
     uint_t k,
     qv_scope_t ***kchildren

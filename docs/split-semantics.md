@@ -23,7 +23,7 @@ This operation focuses on partitioning the most abundant resource, usually Cores
 ```C
 // Device-based split
 int
-qv_split_at(qv_scope_t *in_scope, qv_hw_obj_type_t device_type, int color,
+qv_split_at(qv_scope_t *in_scope, qv_hw_type_t device_type, int color,
             qv_scope_t **out_subscope);
 ```
 
@@ -33,11 +33,11 @@ This operation focuses on creating as many pieces as devices and guarantees that
 
 ```C
 // Commonly used device types
-QV_HW_OBJ_NUMANODE;
-QV_HW_OBJ_GPU;
-QV_HW_OBJ_CORE;
-QV_HW_OBJ_PU;
-QV_HW_OBJ_NIC;
+QV_HW_NUMANODE;
+QV_HW_GPU;
+QV_HW_CORE;
+QV_HW_PU;
+QV_HW_NIC;
 ```
 
 ## Implicit colors

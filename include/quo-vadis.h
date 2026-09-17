@@ -132,22 +132,22 @@ typedef long long qv_scope_flags_t;
  * Hardware object types.
  */
 typedef enum {
-    QV_HW_OBJ_MACHINE = 0,
-    QV_HW_OBJ_PACKAGE,
-    QV_HW_OBJ_CORE,
-    QV_HW_OBJ_PU,
-    QV_HW_OBJ_L1CACHE,
-    QV_HW_OBJ_L2CACHE,
-    QV_HW_OBJ_L3CACHE,
-    QV_HW_OBJ_L4CACHE,
-    QV_HW_OBJ_L5CACHE,
-    QV_HW_OBJ_NUMANODE,
+    QV_HW_MACHINE = 0,
+    QV_HW_PACKAGE,
+    QV_HW_CORE,
+    QV_HW_PU,
+    QV_HW_L1CACHE,
+    QV_HW_L2CACHE,
+    QV_HW_L3CACHE,
+    QV_HW_L4CACHE,
+    QV_HW_L5CACHE,
+    QV_HW_NUMANODE,
     /** Device types. */
-    QV_HW_OBJ_GPU,
-    QV_HW_OBJ_NIC,
+    QV_HW_GPU,
+    QV_HW_NIC,
     /** Sentinel value. */
-    QV_HW_OBJ_LAST
-} qv_hw_obj_type_t;
+    QV_HW_LAST
+} qv_hw_type_t;
 
 /**
  * Binding string representation format flags.
@@ -296,7 +296,7 @@ int
 qv_create_scope(
     qv_scope_t *scope,
     qv_scope_flags_t flags,
-    qv_hw_obj_type_t type,
+    qv_hw_type_t type,
     int nobjs,
     qv_scope_t **subscope
 );
@@ -344,9 +344,9 @@ qv_group_size(
  * @retval QV_SUCCESS if the operation completed successfully.
  */
 int
-qv_hw_obj_count(
+qv_hw_count(
     qv_scope_t *scope,
-    qv_hw_obj_type_t obj,
+    qv_hw_type_t obj,
     int *nobjs
 );
 
@@ -356,7 +356,7 @@ qv_hw_obj_count(
  * @param[in] scope The scope whose devices are queried.
  *
  * @param[in] dev_obj The device hardware object type to query, such as
- * QV_HW_OBJ_GPU or QV_HW_OBJ_NIC.
+ * QV_HW_GPU or QV_HW_NIC.
  *
  * @param[in] dev_index The zero-based index selecting which device of the
  * given type to identify. Must be non-negative and less than the number of
@@ -374,7 +374,7 @@ qv_hw_obj_count(
 int
 qv_device_id(
     qv_scope_t *scope,
-    qv_hw_obj_type_t dev_obj,
+    qv_hw_type_t dev_obj,
     int dev_index,
     qv_device_id_type_t id_type,
     char **dev_id
@@ -441,7 +441,7 @@ qv_split(
 int
 qv_split_at(
     qv_scope_t *scope,
-    qv_hw_obj_type_t type,
+    qv_hw_type_t type,
     int group_id,
     qv_scope_t **subscope
 );

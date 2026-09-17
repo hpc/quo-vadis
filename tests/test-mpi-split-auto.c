@@ -47,8 +47,8 @@ main(
     // The total number of PUs available in the parent scope.
     int parent_npus;
     ctu_check(
-        qv_hw_obj_count(base_scope, QV_HW_OBJ_PU, &parent_npus),
-        "qv_hw_obj_count"
+        qv_hw_count(base_scope, QV_HW_PU, &parent_npus),
+        "qv_hw_count"
     );
 
     // Deliberately request more pieces than there are members. With the other
@@ -71,8 +71,8 @@ main(
     // The number of PUs this member received from the split.
     int my_npus;
     ctu_check(
-        qv_hw_obj_count(sub_scope, QV_HW_OBJ_PU, &my_npus),
-        "qv_hw_obj_count"
+        qv_hw_count(sub_scope, QV_HW_PU, &my_npus),
+        "qv_hw_count"
     );
 
     // Every member should have received a non-empty piece of the parent.
@@ -126,8 +126,8 @@ main(
 
     // The number of PUs this member received from the split.
     ctu_check(
-        qv_hw_obj_count(sub_scope, QV_HW_OBJ_PU, &my_npus),
-        "qv_hw_obj_count"
+        qv_hw_count(sub_scope, QV_HW_PU, &my_npus),
+        "qv_hw_count"
     );
 
     // Every member should have received a non-empty piece of the parent.

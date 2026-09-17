@@ -52,7 +52,7 @@ public:
     int
     create(
         qv_scope_flags_t flags,
-        qv_hw_obj_type_t type,
+        qv_hw_type_t type,
         int nobjs,
         qv_scope_t **child
     );
@@ -80,7 +80,7 @@ public:
     /** Returns the number of hardware objects in the provided scope. */
     size_t
     hwpool_nobjects(
-        qv_hw_obj_type_t obj
+        qv_hw_type_t obj
     ) const;
     /**
      * Returns the device ID string according to the ID
@@ -88,7 +88,7 @@ public:
      */
     int
     device_id(
-        qv_hw_obj_type_t dev_type,
+        qv_hw_type_t dev_type,
         int dev_index,
         qv_device_id_type_t format,
         char **result
@@ -111,13 +111,13 @@ public:
         uint_t npieces,
         int *kcolors,
         uint_t k,
-        qv_hw_obj_type_t maybe_obj_type,
+        qv_hw_type_t maybe_obj_type,
         qv_scope_t ***kchildren
     );
 
     int
     thread_split_at(
-        qv_hw_obj_type_t type,
+        qv_hw_type_t type,
         int *kcolors,
         uint_t k,
         qv_scope_t ***kchildren
@@ -127,13 +127,13 @@ public:
     split(
         int ncolors,
         int color,
-        qv_hw_obj_type_t maybe_obj_type,
+        qv_hw_type_t maybe_obj_type,
         qv_scope_t **child
     );
 
     int
     split_at(
-        qv_hw_obj_type_t type,
+        qv_hw_type_t type,
         int group_id,
         qv_scope_t **child
     );

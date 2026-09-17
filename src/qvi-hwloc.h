@@ -32,7 +32,7 @@ using qvi_hwloc_dev_list = std::vector<
 
 /** Maps supported device types to a list of devices of that type. */
 using qvi_hwloc_dev_map = std::map<
-    qv_hw_obj_type_t, qvi_hwloc_dev_list
+    qv_hw_type_t, qvi_hwloc_dev_list
 >;
 
 /** Flags that influence how the hwloc instance behaves. */
@@ -101,7 +101,7 @@ private:
     /** */
     int
     m_task_obj_xop_by_type_id(
-        qv_hw_obj_type_t type,
+        qv_hw_type_t type,
         pid_t task_id,
         int type_index,
         task_xop_obj_id opid,
@@ -110,7 +110,7 @@ private:
     /** */
     int
     m_obj_get_by_type(
-        qv_hw_obj_type_t type,
+        qv_hw_type_t type,
         int type_index,
         hwloc_obj_t *obj
     );
@@ -129,7 +129,7 @@ private:
     /** */
     int
     m_get_nobjs_in_cpuset(
-        qv_hw_obj_type_t target_obj,
+        qv_hw_type_t target_obj,
         hwloc_const_cpuset_t cpuset,
         size_t &nobjs
     ) const;
@@ -286,25 +286,25 @@ public:
     qvi_hwloc_bitmap
     topology_get_system_cpuset(void);
     /**
-     * Returns the underlying hwloc type from the given qv_hw_obj_type_t type.
+     * Returns the underlying hwloc type from the given qv_hw_type_t type.
      */
     static hwloc_obj_type_t
     obj_get_type(
-        qv_hw_obj_type_t external
+        qv_hw_type_t external
     );
     /**
      * Returns the type's general resource class.
      */
     static qvi_hwloc_res_class
     obj_res_class(
-        qv_hw_obj_type_t type
+        qv_hw_type_t type
     );
     /**
      *
      */
     int
     obj_type_depth(
-        qv_hw_obj_type_t type,
+        qv_hw_type_t type,
         int *depth
     ) const;
     /**
@@ -312,7 +312,7 @@ public:
      */
     int
     get_devices_included_in_cpuset(
-        qv_hw_obj_type_t obj_type,
+        qv_hw_type_t obj_type,
         hwloc_const_cpuset_t cpuset,
         qvi_hwloc_dev_list &devs
     ) const;
@@ -321,7 +321,7 @@ public:
      */
     int
     get_device_id_in_cpuset(
-        qv_hw_obj_type_t dev_obj,
+        qv_hw_type_t dev_obj,
         int i,
         hwloc_const_cpuset_t cpuset,
         qv_device_id_type_t dev_id_type,
@@ -332,12 +332,12 @@ public:
      */
     int
     devices_emit(
-        qv_hw_obj_type_t obj_type
+        qv_hw_type_t obj_type
     ) const;
     /**
      * Returns a reference to vector of supported device types.
      */
-    static const std::vector<qv_hw_obj_type_t> &
+    static const std::vector<qv_hw_type_t> &
     supported_devices(void);
     /**
      *
@@ -358,7 +358,7 @@ public:
     /** */
     int
     task_intersects_obj_by_type_id(
-        qv_hw_obj_type_t type,
+        qv_hw_type_t type,
         pid_t task_id,
         int type_index,
         int *result
@@ -368,7 +368,7 @@ public:
      */
     int
     task_includedin_obj_by_type_id(
-        qv_hw_obj_type_t type,
+        qv_hw_type_t type,
         pid_t task_id,
         int type_index,
         int *result
@@ -382,13 +382,13 @@ public:
     /** */
     int
     get_nobjs_by_type(
-       qv_hw_obj_type_t target_type,
+       qv_hw_type_t target_type,
        int *out_nobjs
     );
     /** */
     int
     get_nobjs_in_cpuset(
-        qv_hw_obj_type_t target_obj,
+        qv_hw_type_t target_obj,
         hwloc_const_cpuset_t cpuset,
         size_t &nobjs
     ) const;
@@ -404,7 +404,7 @@ public:
     int
     get_cpuset_for_nobjs(
         const qvi_hwloc_bitmap &cpuset,
-        qv_hw_obj_type_t obj_type,
+        qv_hw_type_t obj_type,
         uint_t nobjs,
         qvi_hwloc_bitmap &result
     );
@@ -590,7 +590,7 @@ struct qvi_hwloc_device {
     /** ID used to indicate an invalid or unset ID. */
     static constexpr int INVALID_ID = -1;
     /** Device type. */
-    qv_hw_obj_type_t type = QV_HW_OBJ_LAST;
+    qv_hw_type_t type = QV_HW_LAST;
     /** Device affinity. */
     qvi_hwloc_bitmap affinity;
     /** Device ID. Note: this is not the device's ordinal. */

@@ -40,7 +40,7 @@ private:
         qv_scope *parent,
         size_t group_size,
         size_t split_size,
-        qv_hw_obj_type_t split_at_type
+        qv_hw_type_t split_at_type
     );
     /** Destructor. */
     ~qvi_hwsplit(void) = default;
@@ -55,12 +55,12 @@ private:
     /** The number of pieces in the split. */
     size_t m_split_size = 0;
     /**
-     * The potential hardware resource that we are splitting at. QV_HW_OBJ_LAST
+     * The potential hardware resource that we are splitting at. QV_HW_LAST
      * indicates that we are called from a split() context. Any other hardware
      * resource type indicates that we are splitting at that type: called from a
      * split_at() context.
      */
-    qv_hw_obj_type_t m_split_at_type;
+    qv_hw_type_t m_split_at_type;
     /**
      * The base hardware pool that is to be split and operated on. This hardware
      * pool is created by the root by calculating a hardware union over the
@@ -126,7 +126,7 @@ private:
      */
     qvi_hwloc_bitmap
     m_primary_cpuset_for_split(
-        qv_hw_obj_type_t requested_type
+        qv_hw_type_t requested_type
     ) const;
     /** */
     std::vector<qvi_hwloc_bitmap>
@@ -149,7 +149,7 @@ public:
         qv_scope_t *parent,
         size_t npieces,
         int color,
-        qv_hw_obj_type_t maybe_obj_type,
+        qv_hw_type_t maybe_obj_type,
         int *colorp,
         qvi_hwpool &result
     );
@@ -160,7 +160,7 @@ public:
         size_t npieces,
         int *kcolors,
         size_t k,
-        qv_hw_obj_type_t maybe_obj_type,
+        qv_hw_type_t maybe_obj_type,
         std::vector<int> &kcolorps,
         std::vector<qvi_hwpool> &khwpools
     );

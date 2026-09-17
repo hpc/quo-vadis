@@ -114,7 +114,7 @@ ctu_scope_kind_name(
 
 typedef struct {
     char const *name;
-    qv_hw_obj_type_t type;
+    qv_hw_type_t type;
 } ctu_hw_obj_name_to_type_t;
 
 typedef struct {
@@ -124,16 +124,16 @@ typedef struct {
 
 // Maps QV object type names to their underlying values.
 static const ctu_hw_obj_name_to_type_t ctu_hw_obj_name_to_type_tab[] = {
-    {CTU_TOSTRING(QV_HW_OBJ_MACHINE),  QV_HW_OBJ_MACHINE},
-    {CTU_TOSTRING(QV_HW_OBJ_PACKAGE),  QV_HW_OBJ_PACKAGE},
-    {CTU_TOSTRING(QV_HW_OBJ_NUMANODE), QV_HW_OBJ_NUMANODE},
-    {CTU_TOSTRING(QV_HW_OBJ_CORE),     QV_HW_OBJ_CORE},
-    {CTU_TOSTRING(QV_HW_OBJ_PU),       QV_HW_OBJ_PU},
-    {CTU_TOSTRING(QV_HW_OBJ_L1CACHE),  QV_HW_OBJ_L1CACHE},
-    {CTU_TOSTRING(QV_HW_OBJ_L2CACHE),  QV_HW_OBJ_L2CACHE},
-    {CTU_TOSTRING(QV_HW_OBJ_L3CACHE),  QV_HW_OBJ_L3CACHE},
-    {CTU_TOSTRING(QV_HW_OBJ_L4CACHE),  QV_HW_OBJ_L4CACHE},
-    {CTU_TOSTRING(QV_HW_OBJ_L5CACHE),  QV_HW_OBJ_L5CACHE}
+    {CTU_TOSTRING(QV_HW_MACHINE),  QV_HW_MACHINE},
+    {CTU_TOSTRING(QV_HW_PACKAGE),  QV_HW_PACKAGE},
+    {CTU_TOSTRING(QV_HW_NUMANODE), QV_HW_NUMANODE},
+    {CTU_TOSTRING(QV_HW_CORE),     QV_HW_CORE},
+    {CTU_TOSTRING(QV_HW_PU),       QV_HW_PU},
+    {CTU_TOSTRING(QV_HW_L1CACHE),  QV_HW_L1CACHE},
+    {CTU_TOSTRING(QV_HW_L2CACHE),  QV_HW_L2CACHE},
+    {CTU_TOSTRING(QV_HW_L3CACHE),  QV_HW_L3CACHE},
+    {CTU_TOSTRING(QV_HW_L4CACHE),  QV_HW_L4CACHE},
+    {CTU_TOSTRING(QV_HW_L5CACHE),  QV_HW_L5CACHE}
 };
 
 static const size_t ctu_hw_obj_name_to_type_tab_size =
@@ -152,22 +152,22 @@ static const size_t ctu_devid_name_to_id_tab_size =
 
 static inline const char *
 ctu_obj_name(
-    qv_hw_obj_type_t type
+    qv_hw_type_t type
 ) {
     switch(type) {
-        case QV_HW_OBJ_MACHINE:  return CTU_TOSTRING(QV_HW_OBJ_MACHINE);
-        case QV_HW_OBJ_PACKAGE:  return CTU_TOSTRING(QV_HW_OBJ_PACKAGE);
-        case QV_HW_OBJ_CORE:     return CTU_TOSTRING(QV_HW_OBJ_CORE);
-        case QV_HW_OBJ_PU:       return CTU_TOSTRING(QV_HW_OBJ_PU);
-        case QV_HW_OBJ_L1CACHE:  return CTU_TOSTRING(QV_HW_OBJ_L1CACHE);
-        case QV_HW_OBJ_L2CACHE:  return CTU_TOSTRING(QV_HW_OBJ_L2CACHE);
-        case QV_HW_OBJ_L3CACHE:  return CTU_TOSTRING(QV_HW_OBJ_L3CACHE);
-        case QV_HW_OBJ_L4CACHE:  return CTU_TOSTRING(QV_HW_OBJ_L4CACHE);
-        case QV_HW_OBJ_L5CACHE:  return CTU_TOSTRING(QV_HW_OBJ_L5CACHE);
-        case QV_HW_OBJ_NUMANODE: return CTU_TOSTRING(QV_HW_OBJ_NUMANODE);
+        case QV_HW_MACHINE:  return CTU_TOSTRING(QV_HW_MACHINE);
+        case QV_HW_PACKAGE:  return CTU_TOSTRING(QV_HW_PACKAGE);
+        case QV_HW_CORE:     return CTU_TOSTRING(QV_HW_CORE);
+        case QV_HW_PU:       return CTU_TOSTRING(QV_HW_PU);
+        case QV_HW_L1CACHE:  return CTU_TOSTRING(QV_HW_L1CACHE);
+        case QV_HW_L2CACHE:  return CTU_TOSTRING(QV_HW_L2CACHE);
+        case QV_HW_L3CACHE:  return CTU_TOSTRING(QV_HW_L3CACHE);
+        case QV_HW_L4CACHE:  return CTU_TOSTRING(QV_HW_L4CACHE);
+        case QV_HW_L5CACHE:  return CTU_TOSTRING(QV_HW_L5CACHE);
+        case QV_HW_NUMANODE: return CTU_TOSTRING(QV_HW_NUMANODE);
         /** Device types. */
-        case QV_HW_OBJ_GPU:      return CTU_TOSTRING(QV_HW_OBJ_GPU);
-        case QV_HW_OBJ_NIC:      return CTU_TOSTRING(QV_HW_OBJ_NIC);
+        case QV_HW_GPU:      return CTU_TOSTRING(QV_HW_GPU);
+        case QV_HW_NIC:      return CTU_TOSTRING(QV_HW_NIC);
         default: return "?";
     }
 }
@@ -241,7 +241,7 @@ void
 ctu_emit_device_info(
     qv_scope_t *scope,
     ctu_scope_kind_t kind,
-    qv_hw_obj_type_t dev_type,
+    qv_hw_type_t dev_type,
     const char *scope_name
 );
 

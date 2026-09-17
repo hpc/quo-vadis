@@ -118,7 +118,7 @@ qvi_hwpool::cpuset(void) const
 
 const qvi_hwpool::dev_list_t &
 qvi_hwpool::devices(
-    qv_hw_obj_type_t obj_type
+    qv_hw_type_t obj_type
 ) const {
     static const dev_list_t empty_list = {};
     if (!m_dev_map.contains(obj_type)) return empty_list;
@@ -127,7 +127,7 @@ qvi_hwpool::devices(
 
 std::vector<qvi_hwloc_bitmap>
 qvi_hwpool::device_affinities(
-    qv_hw_obj_type_t obj_type
+    qv_hw_type_t obj_type
 ) const {
     switch (qvi_hwloc::obj_res_class(obj_type)) {
         case QVI_HWLOC_RES_CLASS_DEV: {
@@ -145,7 +145,7 @@ qvi_hwpool::device_affinities(
 size_t
 qvi_hwpool::nobjects(
     const qvi_hwloc &hwloc,
-    qv_hw_obj_type_t obj_type
+    qv_hw_type_t obj_type
 ) const {
     switch (qvi_hwloc::obj_res_class(obj_type)) {
         case QVI_HWLOC_RES_CLASS_HOST: {
@@ -158,7 +158,7 @@ qvi_hwpool::nobjects(
         }
         default:
         // Note that this path also covers QVI_HWLOC_RES_LAST because result
-        // will be 0 in the case that obj_type is QV_HW_OBJ_LAST.
+        // will be 0 in the case that obj_type is QV_HW_LAST.
         return devices(obj_type).size();
     }
 }

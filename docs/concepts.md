@@ -48,7 +48,7 @@ qv_process_scope(QV_SCOPE_USER, QV_SCOPE_FLAG_NONE, &uscope);
 
 ```C
 // Hardware topology queries
-rc = qv_hw_obj_count(uscope, QV_HW_OBJ_GPU, &ngpus);
+rc = qv_hw_count(uscope, QV_HW_GPU, &ngpus);
 
 // Caller-state queries
 qv_bind_string(uscope, QV_BIND_STRING_LOGICAL, &bindstr);
@@ -63,10 +63,10 @@ qv_bind_string(uscope, QV_BIND_STRING_LOGICAL, &bindstr);
 qv_split(ctx, base_scope, size, rank, &sub_scope);
 
 // Or split by a specific resource type
-qv_split_at(ctx, base_scope, QV_HW_OBJ_NUMANODE, rank%nnumas, &numa_scope);
+qv_split_at(ctx, base_scope, QV_HW_NUMANODE, rank%nnumas, &numa_scope);
 
 // including accelerators
-qv_split_at(ctx, base_scope, QV_HW_OBJ_GPU, rank%ngpus, &gpu_scope);
+qv_split_at(ctx, base_scope, QV_HW_GPU, rank%ngpus, &gpu_scope);
 ```
 
 ### Stack-Based Semantics to Map Workers to Hardware
@@ -99,7 +99,7 @@ qv_barrier(ctx, numa_scope);
 
 ```C
 // Get the PCI bus ID of the ith GPU of a given scope
-qv_scope_get_device(ctx, scope, QV_HW_OBJ_GPU, i, QV_DEVICE_ID_PCI_BUS_ID, &gpu);
+qv_scope_get_device(ctx, scope, QV_HW_GPU, i, QV_DEVICE_ID_PCI_BUS_ID, &gpu);
 
 // For HIP (similar for CUDA)
 hipDeviceGetByPCIBusId(&device, gpu);
@@ -170,15 +170,15 @@ main(
     }
 
     int nnumas;
-    rc = qv_hw_obj_count(base_scope, QV_HW_OBJ_NUMANODE, &nnumas);
+    rc = qv_hw_count(base_scope, QV_HW_NUMANODE, &nnumas);
     if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
+        ers = "qv_hw_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     // Split at NUMA domains.
     qv_scope_t *numa_scope;
     rc = qv_split_at(
-        base_scope, QV_HW_OBJ_NUMANODE,
+        base_scope, QV_HW_NUMANODE,
         wrank % nnumas, &numa_scope
     );
     if (rc != QV_SUCCESS) {
@@ -212,16 +212,16 @@ main(
     }
     // Get the number of cores and pus per NUMA part.
     int ncores;
-    rc = qv_hw_obj_count(subnuma, QV_HW_OBJ_CORE, &ncores);
+    rc = qv_hw_count(subnuma, QV_HW_CORE, &ncores);
     if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
+        ers = "qv_hw_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int npus;
-    rc = qv_hw_obj_count(subnuma, QV_HW_OBJ_PU, &npus);
+    rc = qv_hw_count(subnuma, QV_HW_PU, &npus);
     if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
+        ers = "qv_hw_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     ////////////////////////////////////////////////////////////////////////////
@@ -231,7 +231,7 @@ main(
     int *thread_coloring = NULL; // Default thread assignment.
     qv_scope_t **th_scopes;
     rc = qv_thread_split_at(
-        subnuma, QV_HW_OBJ_CORE, thread_coloring, nthreads, &th_scopes
+        subnuma, QV_HW_CORE, thread_coloring, nthreads, &th_scopes
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_thread_split_at() failed";
@@ -260,7 +260,7 @@ main(
     ////////////////////////////////////////////////////////////////////////////
     thread_coloring = QV_THREAD_SCOPE_SPLIT_PACKED,
     rc = qv_thread_split_at(
-        subnuma, QV_HW_OBJ_PU, thread_coloring, nthreads, &th_scopes
+        subnuma, QV_HW_PU, thread_coloring, nthreads, &th_scopes
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_thread_split_at() failed";

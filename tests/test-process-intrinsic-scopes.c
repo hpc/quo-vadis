@@ -59,9 +59,9 @@ main(void)
 
         // Record the number of PUs in this scope for cross-scope comparison.
         int npu = 0;
-        rc = qv_hw_obj_count(scope, QV_HW_OBJ_PU, &npu);
+        rc = qv_hw_count(scope, QV_HW_PU, &npu);
         if (rc != QV_SUCCESS) {
-            ers = "qv_hw_obj_count(QV_HW_OBJ_PU) failed";
+            ers = "qv_hw_count(QV_HW_PU) failed";
             ctu_panic("%s for %s (rc=%s)", ers, name, qv_strerr(rc));
         }
         npus[iscope] = npu;
@@ -95,15 +95,15 @@ main(void)
         }
 
         int npu_left = 0;
-        rc = qv_hw_obj_count(left, QV_HW_OBJ_PU, &npu_left);
+        rc = qv_hw_count(left, QV_HW_PU, &npu_left);
         if (rc != QV_SUCCESS) {
-            ers = "qv_hw_obj_count(QV_HW_OBJ_PU) failed";
+            ers = "qv_hw_count(QV_HW_PU) failed";
             ctu_panic("%s for %s left half (rc=%s)", ers, name, qv_strerr(rc));
         }
         int npu_right = 0;
-        rc = qv_hw_obj_count(right, QV_HW_OBJ_PU, &npu_right);
+        rc = qv_hw_count(right, QV_HW_PU, &npu_right);
         if (rc != QV_SUCCESS) {
-            ers = "qv_hw_obj_count(QV_HW_OBJ_PU) failed";
+            ers = "qv_hw_count(QV_HW_PU) failed";
             ctu_panic("%s for %s right half (rc=%s)", ers, name, qv_strerr(rc));
         }
 

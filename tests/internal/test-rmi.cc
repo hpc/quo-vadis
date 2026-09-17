@@ -166,7 +166,7 @@ check_get_obj_depth(
     qvi_hwloc &lhwloc
 ) {
     for (size_t i = 0; i < ctu_hw_obj_name_to_type_tab_size; ++i) {
-        const qv_hw_obj_type_t type = ctu_hw_obj_name_to_type_tab[i].type;
+        const qv_hw_type_t type = ctu_hw_obj_name_to_type_tab[i].type;
 
         int rmi_depth = -424242;
         int rc = client->get_obj_depth(type, rmi_depth);
@@ -215,8 +215,8 @@ check_get_nobjs_in_cpuset(
 ) {
     const qvi_hwloc_bitmap machine(lhwloc.topology_get_cpuset().cdata());
 
-    const qv_hw_obj_type_t types[] = {
-        QV_HW_OBJ_PACKAGE, QV_HW_OBJ_CORE, QV_HW_OBJ_PU
+    const qv_hw_type_t types[] = {
+        QV_HW_PACKAGE, QV_HW_CORE, QV_HW_PU
     };
     for (const auto type : types) {
         size_t rmi_nobjs = SIZE_MAX;
@@ -260,7 +260,7 @@ check_get_cpuset_for_nobjs(
     const qvi_hwloc_bitmap machine(lhwloc.topology_get_cpuset().cdata());
 
     qvi_hwloc_bitmap result;
-    int rc = client->get_cpuset_for_nobjs(machine, QV_HW_OBJ_CORE, 1, result);
+    int rc = client->get_cpuset_for_nobjs(machine, QV_HW_CORE, 1, result);
     ctu_assert(
         rc == QV_SUCCESS,
         "get_cpuset_for_nobjs() failed (rc=%s)", qv_strerr(rc)
@@ -299,7 +299,7 @@ check_get_device_in_cpuset(
     const qvi_hwloc_bitmap machine(lhwloc.topology_get_cpuset().cdata());
 
     size_t ngpus = 0;
-    int rc = lhwloc.get_nobjs_in_cpuset(QV_HW_OBJ_GPU, machine.cdata(), ngpus);
+    int rc = lhwloc.get_nobjs_in_cpuset(QV_HW_GPU, machine.cdata(), ngpus);
     ctu_assert(
         rc == QV_SUCCESS,
         "local get_nobjs_in_cpuset(GPU) failed (rc=%s)", qv_strerr(rc)
@@ -313,7 +313,7 @@ check_get_device_in_cpuset(
     for (size_t i = 0; i < ngpus; ++i) {
         std::string rmi_id;
         rc = client->get_device_in_cpuset(
-            QV_HW_OBJ_GPU, static_cast<int>(i), machine, QV_DEVICE_ID_ORDINAL, rmi_id
+            QV_HW_GPU, static_cast<int>(i), machine, QV_DEVICE_ID_ORDINAL, rmi_id
         );
         ctu_assert(
             rc == QV_SUCCESS,
@@ -322,7 +322,7 @@ check_get_device_in_cpuset(
 
         std::string local_id;
         rc = lhwloc.get_device_id_in_cpuset(
-            QV_HW_OBJ_GPU, static_cast<int>(i), machine.cdata(),
+            QV_HW_GPU, static_cast<int>(i), machine.cdata(),
             QV_DEVICE_ID_ORDINAL, local_id
         );
         ctu_assert(

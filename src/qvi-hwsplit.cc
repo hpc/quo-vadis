@@ -63,7 +63,7 @@ qvi_hwsplit::qvi_hwsplit(
     qv_scope *parent,
     size_t group_size,
     size_t split_size,
-    qv_hw_obj_type_t split_at_type
+    qv_hw_type_t split_at_type
 ) : m_be_verbose(qvi_envset(QVI_ENV_VMAP))
   , m_my_rmi(parent->group().task().rmi())
   , m_my_hwpool(parent->hwpool())
@@ -92,12 +92,12 @@ qvi_hwsplit::m_reserve(void)
 
 qvi_hwloc_bitmap
 qvi_hwsplit::m_primary_cpuset_for_split(
-    qv_hw_obj_type_t requested_type
+    qv_hw_type_t requested_type
 ) const {
     const auto res_class = qvi_hwloc::obj_res_class(requested_type);
     switch (res_class) {
         // Were we provided a real resource type that we have to split? Or was
-        // QV_HW_OBJ_LAST instead provided to indicate that we were called from
+        // QV_HW_LAST instead provided to indicate that we were called from
         // a split() context.
         case QVI_HWLOC_RES_CLASS_LAST:
         case QVI_HWLOC_RES_CLASS_HOST:
@@ -302,7 +302,7 @@ qvi_hwsplit::m_split_base_hwpool(void)
     // assignments using an algorithm that performs global affinity matching
     // optimization. For split_at() use a greedy algorithm. This choice tends to
     // produce nice assignments.
-    const auto dev_map_fn = (m_split_at_type == QV_HW_OBJ_LAST)
+    const auto dev_map_fn = (m_split_at_type == QV_HW_LAST)
                           ? qvi_map_close : qvi_map_afpacked;
     // Now iterate over supported device types and add
     // devices based on affinity to the split cpusets.
@@ -438,7 +438,7 @@ qvi_hwsplit::split(
     qv_scope_t *parent,
     size_t npieces,
     int color,
-    qv_hw_obj_type_t maybe_obj_type,
+    qv_hw_type_t maybe_obj_type,
     int *colorp,
     qvi_hwpool &result
 ) {
@@ -479,7 +479,7 @@ qvi_hwsplit::thread_split(
     size_t npieces,
     int *kcolors,
     size_t k,
-    qv_hw_obj_type_t maybe_obj_type,
+    qv_hw_type_t maybe_obj_type,
     std::vector<int> &kcolorps,
     std::vector<qvi_hwpool> &khwpools
 ) {

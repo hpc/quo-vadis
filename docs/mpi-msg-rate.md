@@ -34,7 +34,7 @@ The benchmark follows the standard closed-loop server-benchmarking method.
   The pair is issued together every iteration to keep the bind stack balanced,
   so each timed iteration generates two daemon messages.
 
-  > **Why not other calls?** Many public functions---`qv_hw_obj_count`,
+  > **Why not other calls?** Many public functions---`qv_hw_count`,
   > `qv_group_size`, `qv_bind_string`, `qv_device_id`, `qv_barrier`---are served
   > entirely from the client-local `hwloc` cache populated at connect time. They
   > perform no daemon round-trips and are unsuitable for measuring the daemon

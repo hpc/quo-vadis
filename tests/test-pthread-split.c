@@ -42,9 +42,9 @@ main(void)
     }
 
     int ncores = 0;
-    rc = qv_hw_obj_count(base_scope, QV_HW_OBJ_CORE, &ncores);
+    rc = qv_hw_count(base_scope, QV_HW_CORE, &ncores);
     if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
+        ers = "qv_hw_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -113,7 +113,7 @@ main(void)
     );
 
     rc = qv_thread_split_at(
-        base_scope, QV_HW_OBJ_CORE,
+        base_scope, QV_HW_CORE,
         QV_THREAD_SPLIT_PACKED,
         nthreads, &th_scopes
     );

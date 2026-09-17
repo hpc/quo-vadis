@@ -67,7 +67,7 @@ body_thread_split_at(void *v)
     qv_scope_t **subs = NULL;
     ctu_check(
         qv_thread_split_at(
-            c->base, QV_HW_OBJ_CORE,
+            c->base, QV_HW_CORE,
             QV_THREAD_SPLIT_PACKED, c->nthreads, &subs
         ),
         "qv_thread_split_at"
@@ -120,7 +120,7 @@ main(void)
 
     int ncores = 0;
     ctu_check(
-        qv_hw_obj_count(base, QV_HW_OBJ_CORE, &ncores), "qv_hw_obj_count"
+        qv_hw_count(base, QV_HW_CORE, &ncores), "qv_hw_count"
     );
     if (ncores < 1) ncores = 1;
 

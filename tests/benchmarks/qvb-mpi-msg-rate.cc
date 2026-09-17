@@ -24,7 +24,7 @@
  * path each of these is exactly one synchronous RMI round-trip, so each timed
  * iteration issues exactly two daemon messages. The pair is kept balanced every
  * iteration to preserve the bind stack. (Note: many public calls such as
- * qv_hw_obj_count, qv_group_size, qv_bind_string, and qv_barrier are served
+ * qv_hw_count, qv_group_size, qv_bind_string, and qv_barrier are served
  * from the client-local hwloc cache and do NOT contact the daemon; they are
  * therefore unsuitable for a message-rate measurement.)
  *

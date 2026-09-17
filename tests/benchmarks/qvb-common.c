@@ -30,7 +30,7 @@ typedef struct {
     int i_out;
     char *str_out;
     char *devid_out;
-    qv_hw_obj_type_t obj_type;
+    qv_hw_type_t obj_type;
     qv_device_id_type_t devid_type;
 } qvb_common_ctx_t;
 
@@ -53,7 +53,7 @@ body_hw_obj_count(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
     ctu_check(
-        qv_hw_obj_count(c->scope, c->obj_type, &c->i_out), "qv_hw_obj_count"
+        qv_hw_count(c->scope, c->obj_type, &c->i_out), "qv_hw_count"
     );
 }
 
@@ -124,7 +124,7 @@ body_split_at(void *v)
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
     qv_scope_t *sub = NULL;
     ctu_check(
-        qv_split_at(c->scope, QV_HW_OBJ_CORE, 0, &sub), "qv_split_at"
+        qv_split_at(c->scope, QV_HW_CORE, 0, &sub), "qv_split_at"
     );
     ctu_check(qv_free(sub), "qv_free");
 }
@@ -135,7 +135,7 @@ body_create_scope(void *v)
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
     qv_scope_t *sub = NULL;
     ctu_check(
-        qv_create_scope(c->scope, QV_SCOPE_FLAG_NONE, QV_HW_OBJ_CORE, 1, &sub),
+        qv_create_scope(c->scope, QV_SCOPE_FLAG_NONE, QV_HW_CORE, 1, &sub),
         "qv_create_scope"
     );
     ctu_check(qv_free(sub), "qv_free");
@@ -158,7 +158,7 @@ qvb_run_common(qvb_backend_t *backend, qvb_reporter_t *reporter)
         .i_out = 0,
         .str_out = NULL,
         .devid_out = NULL,
-        .obj_type = QV_HW_OBJ_CORE,
+        .obj_type = QV_HW_CORE,
         .devid_type = QV_DEVICE_ID_ORDINAL
     };
 
@@ -170,7 +170,7 @@ qvb_run_common(qvb_backend_t *backend, qvb_reporter_t *reporter)
     } table[] = {
         {"qv_group_rank",   body_group_rank},
         {"qv_group_size",   body_group_size},
-        {"qv_hw_obj_count", body_hw_obj_count},
+        {"qv_hw_count", body_hw_obj_count},
         {"qv_bind_string",  body_bind_string},
         {"qv_device_id",    body_device_id},
         {"qv_barrier",      body_barrier},

@@ -44,14 +44,14 @@ main(
 
     int nnumas;
     ctu_check(
-        qv_hw_obj_count(base_scope, QV_HW_OBJ_NUMANODE, &nnumas),
-        "qv_hw_obj_count"
+        qv_hw_count(base_scope, QV_HW_NUMANODE, &nnumas),
+        "qv_hw_count"
     );
     // Split at NUMA domains.
     qv_scope_t *numa_scope;
     ctu_check(
         qv_split_at(
-            base_scope, QV_HW_OBJ_NUMANODE,
+            base_scope, QV_HW_NUMANODE,
             wrank % nnumas, &numa_scope
         ),
         "qv_split_at"
@@ -75,14 +75,14 @@ main(
     // Get the number of cores and pus per NUMA part.
     int ncores;
     ctu_check(
-        qv_hw_obj_count(subnuma, QV_HW_OBJ_CORE, &ncores),
-        "qv_hw_obj_count"
+        qv_hw_count(subnuma, QV_HW_CORE, &ncores),
+        "qv_hw_count"
     );
 
     int npus;
     ctu_check(
-        qv_hw_obj_count(subnuma, QV_HW_OBJ_PU, &npus),
-        "qv_hw_obj_count"
+        qv_hw_count(subnuma, QV_HW_PU, &npus),
+        "qv_hw_count"
     );
     ////////////////////////////////////////////////////////////////////////////
     // OpenMP: Launch one thread per core.
@@ -96,7 +96,7 @@ main(
     qv_scope_t **th_scopes;
     ctu_check(
         qv_thread_split_at(
-            subnuma, QV_HW_OBJ_CORE, thread_coloring, nthreads, &th_scopes
+            subnuma, QV_HW_CORE, thread_coloring, nthreads, &th_scopes
         ),
         "qv_thread_split_at"
     );
@@ -127,7 +127,7 @@ main(
     );
     thread_coloring = QV_THREAD_SPLIT_PACKED;
     int rc = qv_thread_split_at(
-        subnuma, QV_HW_OBJ_PU, thread_coloring, nthreads, &th_scopes
+        subnuma, QV_HW_PU, thread_coloring, nthreads, &th_scopes
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_thread_split_at() failed";

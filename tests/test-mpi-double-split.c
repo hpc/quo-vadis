@@ -35,7 +35,7 @@ main(
     ctu_check(
         qv_split_at(
             base_scope,
-            QV_HW_OBJ_NUMANODE,
+            QV_HW_NUMANODE,
             QV_SPLIT_PACKED,
             &split_at_numa
         ),
@@ -73,10 +73,10 @@ main(
     // How many GPUs do we have in the base scope?
     int ngpus;
     ctu_check(
-        qv_hw_obj_count(
-            base_scope, QV_HW_OBJ_GPU, &ngpus
+        qv_hw_count(
+            base_scope, QV_HW_GPU, &ngpus
         ),
-        "qv_hw_obj_count"
+        "qv_hw_count"
     );
 
     if (ngpus > 0) {
@@ -84,7 +84,7 @@ main(
         ctu_check(
             qv_split_at(
                 base_scope,
-                QV_HW_OBJ_GPU,
+                QV_HW_GPU,
                 QV_SPLIT_PACKED,
                 &split_at_gpu
             ),
@@ -93,7 +93,7 @@ main(
 
         ctu_emit_device_info(
             split_at_gpu, CTU_SCOPE_KIND_MPI,
-            QV_HW_OBJ_GPU, "         split_at_gpu"
+            QV_HW_GPU, "         split_at_gpu"
         );
 
         ctu_check(qv_free(split_at_gpu), "qv_free");
