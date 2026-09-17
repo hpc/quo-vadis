@@ -235,7 +235,7 @@ int main(int argc, char *argv[])
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 #endif
-    MPI_Finalize();
+    ctu_mpi_check(MPI_Finalize());
 
     return EXIT_SUCCESS;
 }

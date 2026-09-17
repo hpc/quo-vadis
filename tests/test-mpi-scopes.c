@@ -91,7 +91,7 @@ main(
 
     ctu_check(qv_free(sub_sub_scope));
 
-    MPI_Finalize();
+    ctu_mpi_check(MPI_Finalize());
 
     return EXIT_SUCCESS;
 }

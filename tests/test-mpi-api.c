@@ -94,7 +94,7 @@ main(
 
     ctu_mpi_check(MPI_Comm_free(&split_wscope_comm));
 
-    MPI_Finalize();
+    ctu_mpi_check(MPI_Finalize());
 
     return EXIT_SUCCESS;
 }
