@@ -31,6 +31,11 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CXX_STANDARD_REQUIRED TRUE)
 
+# Verify the compiler actually provides the C++20 features we require. This
+# must run right after the C++ standard is set so we fail fast with a clear
+# message instead of partway through the build on inadequate toolchains.
+include(cmake/QVCheckCXXTraits.cmake)
+
 # Append our module path.
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
