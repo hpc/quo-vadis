@@ -115,7 +115,7 @@ qv_thread_split(
 int
 qv_thread_split_at(
     qv_scope_t *scope,
-    qv_hw_obj_type_t type,
+    qv_hw_type_t type,
     int *kcolors,
     int k,
     qv_scope_t ***subscopes

@@ -149,8 +149,8 @@ main(void)
     // process suite cannot), but cap it so colorings stay small and fast.
     int ncores = 0;
     check(
-        qv_hw_obj_count(base_scope, QV_HW_OBJ_CORE, &ncores),
-        "qv_hw_obj_count(QV_HW_OBJ_CORE) failed"
+        qv_hw_count(base_scope, QV_HW_CORE, &ncores),
+        "qv_hw_count(QV_HW_CORE) failed"
     );
     const int k = std::max(1, std::min(ncores, 8));
 

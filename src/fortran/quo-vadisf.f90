@@ -54,19 +54,19 @@ module quo_vadisf
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Hardware Object Types
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    integer(c_int), parameter :: QV_HW_OBJ_MACHINE = 0
-    integer(c_int), parameter :: QV_HW_OBJ_PACKAGE = 1
-    integer(c_int), parameter :: QV_HW_OBJ_CORE = 2
-    integer(c_int), parameter :: QV_HW_OBJ_PU = 3
-    integer(c_int), parameter :: QV_HW_OBJ_L1CACHE = 4
-    integer(c_int), parameter :: QV_HW_OBJ_L2CACHE = 5
-    integer(c_int), parameter :: QV_HW_OBJ_L3CACHE = 6
-    integer(c_int), parameter :: QV_HW_OBJ_L4CACHE = 7
-    integer(c_int), parameter :: QV_HW_OBJ_L5CACHE = 8
-    integer(c_int), parameter :: QV_HW_OBJ_NUMANODE = 9
-    integer(c_int), parameter :: QV_HW_OBJ_GPU = 10
-    integer(c_int), parameter :: QV_HW_OBJ_NIC = 11
-    integer(c_int), parameter :: QV_HW_OBJ_LAST = 12
+    integer(c_int), parameter :: QV_HW_MACHINE = 0
+    integer(c_int), parameter :: QV_HW_PACKAGE = 1
+    integer(c_int), parameter :: QV_HW_CORE = 2
+    integer(c_int), parameter :: QV_HW_PU = 3
+    integer(c_int), parameter :: QV_HW_L1CACHE = 4
+    integer(c_int), parameter :: QV_HW_L2CACHE = 5
+    integer(c_int), parameter :: QV_HW_L3CACHE = 6
+    integer(c_int), parameter :: QV_HW_L4CACHE = 7
+    integer(c_int), parameter :: QV_HW_L5CACHE = 8
+    integer(c_int), parameter :: QV_HW_NUMANODE = 9
+    integer(c_int), parameter :: QV_HW_GPU = 10
+    integer(c_int), parameter :: QV_HW_NIC = 11
+    integer(c_int), parameter :: QV_HW_LAST = 12
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Binding string representation format flags.
@@ -169,14 +169,14 @@ interface
     end function qv_split_at_c
 
     integer(c_int) &
-    function qv_hw_obj_count_c(scope, obj, nobjs) &
-        bind(c, name='qv_hw_obj_count')
+    function qv_hw_count_c(scope, obj, nobjs) &
+        bind(c, name='qv_hw_count')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), value :: obj
         integer(c_int), intent(out) :: nobjs
-    end function qv_hw_obj_count_c
+    end function qv_hw_count_c
 
     integer(c_int) &
     function qv_group_rank_c(scope, rank) &
@@ -348,15 +348,15 @@ contains
         )
     end subroutine qv_split_at
 
-    subroutine qv_hw_obj_count(scope, obj, nobjs, info)
+    subroutine qv_hw_count(scope, obj, nobjs, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
         integer(c_int), value :: obj
         integer(c_int), intent(out) :: nobjs
         integer(c_int), intent(out) :: info
-        info = qv_hw_obj_count_c(scope, obj, nobjs)
-    end subroutine qv_hw_obj_count
+        info = qv_hw_count_c(scope, obj, nobjs)
+    end subroutine qv_hw_count
 
     subroutine qv_group_rank(scope, rank, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int

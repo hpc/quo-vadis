@@ -38,9 +38,9 @@ static void
 do_omp_things(qv_scope_t *scope, int rank, char phase)
 {
     int npus;
-    int rc = qv_hw_obj_count(scope, QV_HW_OBJ_PU, &npus);
+    int rc = qv_hw_count(scope, QV_HW_PU, &npus);
     if (rc != QV_SUCCESS) {
-        char const *ers = "qv_hw_obj_count() failed";
+        char const *ers = "qv_hw_count() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%c%d]-> Doing OpenMP things on %d PUs...\n",
@@ -51,9 +51,9 @@ static void
 do_pthread_things(qv_scope_t *scope, int rank, char phase)
 {
     int ncores;
-    int rc = qv_hw_obj_count(scope, QV_HW_OBJ_CORE, &ncores);
+    int rc = qv_hw_count(scope, QV_HW_CORE, &ncores);
     if (rc != QV_SUCCESS) {
-        char const *ers = "qv_hw_obj_count() failed";
+        char const *ers = "qv_hw_count() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%c%d]-> Doing Pthread things on %d Cores...\n",
@@ -82,23 +82,23 @@ print_resources(int rank, char *header, qv_scope_t *scope, char phase)
     free(binds);
 
     int nnumas;
-    rc = qv_hw_obj_count(scope, QV_HW_OBJ_NUMANODE, &nnumas);
+    rc = qv_hw_count(scope, QV_HW_NUMANODE, &nnumas);
     if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
+        ers = "qv_hw_count() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int ncores;
-    rc = qv_hw_obj_count(scope, QV_HW_OBJ_CORE, &ncores);
+    rc = qv_hw_count(scope, QV_HW_CORE, &ncores);
     if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
+        ers = "qv_hw_count() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
     int ngpus;
-    rc = qv_hw_obj_count(scope, QV_HW_OBJ_GPU, &ngpus);
+    rc = qv_hw_count(scope, QV_HW_GPU, &ngpus);
     if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
+        ers = "qv_hw_count() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -112,7 +112,7 @@ print_resources(int rank, char *header, qv_scope_t *scope, char phase)
                        phase, rank);
         char *gpu;
         for (int i = 0; i < ngpus; i++) {
-            qv_device_id(scope, QV_HW_OBJ_GPU, i,
+            qv_device_id(scope, QV_HW_GPU, i,
                          QV_DEVICE_ID_PCI_BUS_ID, &gpu);
             nc += snprintf(str+nc, sizeof(str)-nc, "%s ", gpu);
             free(gpu);
@@ -124,7 +124,7 @@ print_resources(int rank, char *header, qv_scope_t *scope, char phase)
 
 static void
 split_at_device(int rank, qv_scope_t *scope,
-                qv_hw_obj_type_t device, int color,
+                qv_hw_type_t device, int color,
                 char phase, char *header)
 {
     qv_scope_t *dev_scope;
@@ -257,9 +257,9 @@ int main(int argc, char **argv)
     }
 
     int ngpus;
-    rc = qv_hw_obj_count(sub_scope, QV_HW_OBJ_GPU, &ngpus);
+    rc = qv_hw_count(sub_scope, QV_HW_GPU, &ngpus);
     if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
+        ers = "qv_hw_count() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -274,7 +274,7 @@ int main(int argc, char **argv)
 
     for (int i = 0; i < ngpus; i++) {
         char *gpu;
-        qv_device_id(sub_scope, QV_HW_OBJ_GPU, i,
+        qv_device_id(sub_scope, QV_HW_GPU, i,
                      QV_DEVICE_ID_PCI_BUS_ID, &gpu);
         printf("[%c%d]--> PCI Bus ID = %s\n", phase, comm_rank, gpu);
         // Here are examples on how a user might
@@ -313,7 +313,7 @@ int main(int argc, char **argv)
     qv_scope_t *numa_scope;
     rc = qv_split_at(
         base_scope,
-        QV_HW_OBJ_NUMANODE,
+        QV_HW_NUMANODE,
         QV_SPLIT_AUTO,
         &numa_scope
     );
@@ -345,13 +345,13 @@ int main(int argc, char **argv)
 
     // How many NUMAs did I get
     int nnumas;
-    rc = qv_hw_obj_count(
+    rc = qv_hw_count(
         numa_scope,
-        QV_HW_OBJ_NUMANODE,
+        QV_HW_NUMANODE,
         &nnumas
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
+        ers = "qv_hw_count() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -380,16 +380,16 @@ int main(int argc, char **argv)
     }
 
     // Test NUMA split using ordinal color
-    rc = qv_hw_obj_count(
+    rc = qv_hw_count(
         base_scope,
-        QV_HW_OBJ_NUMANODE,
+        QV_HW_NUMANODE,
         &nnumas
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
+        ers = "qv_hw_count() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
-    split_at_device(comm_rank, base_scope, QV_HW_OBJ_NUMANODE,
+    split_at_device(comm_rank, base_scope, QV_HW_NUMANODE,
                     comm_rank % nnumas, get_phase_id(),
                     "Phase 2: NUMA split w/comm_rank % nnumas");
 
@@ -400,13 +400,13 @@ int main(int argc, char **argv)
 
     // Get the number of GPUs so that we can
     // specify the color/groupid of split_at.
-    rc = qv_hw_obj_count(
+    rc = qv_hw_count(
         base_scope,
-        QV_HW_OBJ_GPU,
+        QV_HW_GPU,
         &ngpus
     );
     if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
+        ers = "qv_hw_count() failed";
         panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
@@ -418,19 +418,19 @@ int main(int argc, char **argv)
     }
 
     // Split 1: Use ordinal color
-    split_at_device(comm_rank, base_scope, QV_HW_OBJ_GPU,
+    split_at_device(comm_rank, base_scope, QV_HW_GPU,
                     comm_rank % ngpus, get_phase_id(),
                     "Phase 3: GPU split w/comm_rank % ngpus");
     // Split 2: Use QV_SPLIT_SPREAD
-    split_at_device(comm_rank, base_scope, QV_HW_OBJ_GPU,
+    split_at_device(comm_rank, base_scope, QV_HW_GPU,
                     QV_SPLIT_SPREAD, get_phase_id(),
                     "Phase 3: GPU split w/QV_SPLIT_SPREAD");
     // Split 3: Use QV_SPLIT_PACKED
-    split_at_device(comm_rank, base_scope, QV_HW_OBJ_GPU,
+    split_at_device(comm_rank, base_scope, QV_HW_GPU,
                     QV_SPLIT_PACKED, get_phase_id(),
                     "Phase 3: GPU split w/QV_SPLIT_PACKED");
     // Split 4: Use QV_SPLIT_AUTO
-    split_at_device(comm_rank, base_scope, QV_HW_OBJ_GPU,
+    split_at_device(comm_rank, base_scope, QV_HW_GPU,
                     QV_SPLIT_AUTO, get_phase_id(),
                     "Phase 3: GPU split w/QV_SPLIT_AUTO");
 

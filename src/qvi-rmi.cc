@@ -553,7 +553,7 @@ qvi_rmi_client::get_intrinsic_hwpool(
 
 int
 qvi_rmi_client::get_obj_depth(
-    qv_hw_obj_type_t type,
+    qv_hw_type_t type,
     int &depth
 ) {
     int qvrc = rpc_req(QVI_RMI_FID_OBJ_TYPE_DEPTH, m_hwloc.flags(), type);
@@ -567,7 +567,7 @@ qvi_rmi_client::get_obj_depth(
 
 int
 qvi_rmi_client::get_nobjs_in_cpuset(
-    qv_hw_obj_type_t target_obj,
+    qv_hw_type_t target_obj,
     const qvi_hwloc_bitmap &cpuset,
     size_t &nobjs
 ) {
@@ -585,7 +585,7 @@ qvi_rmi_client::get_nobjs_in_cpuset(
 
 int
 qvi_rmi_client::get_device_in_cpuset(
-    qv_hw_obj_type_t dev_obj,
+    qv_hw_type_t dev_obj,
     int dev_i,
     const qvi_hwloc_bitmap &cpuset,
     qv_device_id_type_t dev_id_type,
@@ -606,7 +606,7 @@ qvi_rmi_client::get_device_in_cpuset(
 int
 qvi_rmi_client::get_cpuset_for_nobjs(
     const qvi_hwloc_bitmap &cpuset,
-    qv_hw_obj_type_t obj_type,
+    qv_hw_type_t obj_type,
     int nobjs,
     qvi_hwloc_bitmap &result
 ) {
@@ -951,7 +951,7 @@ qvi_rmi_server::s_rpc_obj_type_depth(
 
     do {
         qvi_hwloc_flags_t flags;
-        qv_hw_obj_type_t obj;
+        qv_hw_type_t obj;
         const int qvrc = qvi_bbuff::unpack(input, input_size, flags, obj);
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {
             rpcrc = qvrc;
@@ -980,7 +980,7 @@ qvi_rmi_server::s_rpc_get_nobjs_in_cpuset(
 
     do {
         qvi_hwloc_flags_t flags;
-        qv_hw_obj_type_t target_obj;
+        qv_hw_type_t target_obj;
         qvi_hwloc_bitmap cpuset;
         const int qvrc = qvi_bbuff::unpack(
             input, input_size, flags, target_obj, cpuset
@@ -1015,7 +1015,7 @@ qvi_rmi_server::s_rpc_get_cpuset_for_nobjs(
     do {
         qvi_hwloc_flags_t flags;
         qvi_hwloc_bitmap cpuset;
-        qv_hw_obj_type_t obj_type;
+        qv_hw_type_t obj_type;
         int nobjs;
         const int qvrc = qvi_bbuff::unpack(
             input, input_size, flags, cpuset, obj_type, nobjs
@@ -1049,7 +1049,7 @@ qvi_rmi_server::s_rpc_get_device_in_cpuset(
 
     do {
         qvi_hwloc_flags_t flags;
-        qv_hw_obj_type_t dev_obj;
+        qv_hw_type_t dev_obj;
         int dev_i;
         qvi_hwloc_bitmap cpuset;
         qv_device_id_type_t devid_type;

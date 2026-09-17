@@ -109,14 +109,14 @@ int main(int argc, char *argv[])
 
     int ncores;
     ctu_check(
-        qv_hw_obj_count(task_scope, QV_HW_OBJ_CORE, &ncores),
-        "qv_hw_obj_count"
+        qv_hw_count(task_scope, QV_HW_CORE, &ncores),
+        "qv_hw_count"
     );
 
     qv_scope_t *wk_scope;
     ctu_check(
         qv_create_scope(
-            task_scope, QV_SCOPE_FLAG_NONE, QV_HW_OBJ_CORE, ncores-1, &wk_scope
+            task_scope, QV_SCOPE_FLAG_NONE, QV_HW_CORE, ncores-1, &wk_scope
         ),
         "qv_create_scope"
     );
@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
     qv_scope_t *ut_scope;
     ctu_check(
         qv_create_scope(
-            task_scope, QV_SCOPE_FLAG_NONE, QV_HW_OBJ_CORE, 1, &ut_scope
+            task_scope, QV_SCOPE_FLAG_NONE, QV_HW_CORE, 1, &ut_scope
         ),
         "qv_create_scope"
     );
@@ -187,9 +187,9 @@ int main(int argc, char *argv[])
 
     /* Test we have PUs to use in the base scope */
     int npus;
-    rc = qv_hw_obj_count(ctx2, base_scope, QV_HW_OBJ_PU, &npus);
+    rc = qv_hw_count(ctx2, base_scope, QV_HW_PU, &npus);
     if (rc != QV_SUCCESS) {
-        ers = "qv_hw_obj_count() failed";
+        ers = "qv_hw_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
     printf("[%d] Base scope: npus=%d\n", wrank, npus);
@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
     /* Create the progress thread scope */
     qv_scope_t *pt_scope = user_scope;
     if (npus > 0) {
-        rc = qv_create_scope(ctx2, base_scope, QV_HW_OBJ_PU, 1, 0, &pt_scope);
+        rc = qv_create_scope(ctx2, base_scope, QV_HW_PU, 1, 0, &pt_scope);
         if (rc != QV_SUCCESS) {
             ers = "qv_create_scope() failed";
             ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));

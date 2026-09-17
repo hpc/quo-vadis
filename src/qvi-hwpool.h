@@ -80,7 +80,7 @@ struct qvi_hwpool_dev : qvi_hwpool_res {
     friend class cereal::access;
 private:
     /** Device type. */
-    qv_hw_obj_type_t m_type = QV_HW_OBJ_LAST;
+    qv_hw_type_t m_type = QV_HW_LAST;
     /** Device ID (ordinal). */
     int m_id = qvi_hwloc_device::INVALID_ID;
     /** The PCI bus ID. */
@@ -119,7 +119,7 @@ public:
         return equals(other);
     }
     /** Returns the device's type. */
-    qv_hw_obj_type_t
+    qv_hw_type_t
     type(void)
         const {
         return m_type;
@@ -160,7 +160,7 @@ struct qvi_hwpool {
     using dev_list_t = std::vector<std::shared_ptr<qvi_hwpool_dev>>;
 private:
     /** Maps device types to devices of those types. */
-    using dev_map_t = std::map<qv_hw_obj_type_t, dev_list_t>;
+    using dev_map_t = std::map<qv_hw_type_t, dev_list_t>;
     /** The hardware pool's CPU. */
     qvi_hwpool_cpu m_cpu;
     /** The hardware pool's devices. */
@@ -204,7 +204,7 @@ public:
      */
     const qvi_hwpool::dev_list_t &
     devices(
-        qv_hw_obj_type_t obj_type
+        qv_hw_type_t obj_type
     ) const;
     /**
      * Returns a vector of affinities, one for each given device type present in
@@ -212,7 +212,7 @@ public:
      */
     std::vector<qvi_hwloc_bitmap>
     device_affinities(
-        qv_hw_obj_type_t obj_type
+        qv_hw_type_t obj_type
     ) const;
     /**
      * Returns the number of objects in the hardware pool.
@@ -220,7 +220,7 @@ public:
     size_t
     nobjects(
         const qvi_hwloc &hwloc,
-        qv_hw_obj_type_t obj_type
+        qv_hw_type_t obj_type
     ) const;
     /**
      * Adds a qvi_hwpool_dev_s device. Attempts to insert the same device

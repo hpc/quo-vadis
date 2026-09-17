@@ -82,7 +82,7 @@ main(
             qv_create_scope(
                 sub_scope,
                 QV_SCOPE_FLAG_NONE,
-                QV_HW_OBJ_CORE,
+                QV_HW_CORE,
                 1,
                 &create_scope
             ),

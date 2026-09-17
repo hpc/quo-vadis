@@ -25,7 +25,7 @@
 static inline const qvi_hwloc_dev_list &
 cget_dev_list(
     const qvi_hwloc_dev_map &map,
-    qv_hw_obj_type_t type
+    qv_hw_type_t type
 ) {
     static const qvi_hwloc_dev_list empty_list;
 
@@ -36,32 +36,32 @@ cget_dev_list(
 
 hwloc_obj_type_t
 qvi_hwloc::obj_get_type(
-    qv_hw_obj_type_t external
+    qv_hw_type_t external
 ) {
     switch (external) {
-        case(QV_HW_OBJ_MACHINE):
+        case(QV_HW_MACHINE):
             return HWLOC_OBJ_MACHINE;
-        case(QV_HW_OBJ_PACKAGE):
+        case(QV_HW_PACKAGE):
             return HWLOC_OBJ_PACKAGE;
-        case(QV_HW_OBJ_CORE):
+        case(QV_HW_CORE):
             return HWLOC_OBJ_CORE;
-        case(QV_HW_OBJ_PU):
+        case(QV_HW_PU):
             return HWLOC_OBJ_PU;
-        case(QV_HW_OBJ_L1CACHE):
+        case(QV_HW_L1CACHE):
             return HWLOC_OBJ_L1CACHE;
-        case(QV_HW_OBJ_L2CACHE):
+        case(QV_HW_L2CACHE):
             return HWLOC_OBJ_L2CACHE;
-        case(QV_HW_OBJ_L3CACHE):
+        case(QV_HW_L3CACHE):
             return HWLOC_OBJ_L3CACHE;
-        case(QV_HW_OBJ_L4CACHE):
+        case(QV_HW_L4CACHE):
             return HWLOC_OBJ_L4CACHE;
-        case(QV_HW_OBJ_L5CACHE):
+        case(QV_HW_L5CACHE):
             return HWLOC_OBJ_L5CACHE;
-        case(QV_HW_OBJ_NUMANODE):
+        case(QV_HW_NUMANODE):
             return HWLOC_OBJ_NUMANODE;
-        case(QV_HW_OBJ_GPU):
+        case(QV_HW_GPU):
             return HWLOC_OBJ_OS_DEVICE;
-        case(QV_HW_OBJ_NIC):
+        case(QV_HW_NIC):
             return HWLOC_OBJ_OS_DEVICE;
         [[unlikely]] default:
             // This is likely an internal development error.
@@ -159,24 +159,24 @@ get_obj_info_by_name(
 
 qvi_hwloc_res_class
 qvi_hwloc::obj_res_class(
-    qv_hw_obj_type_t type
+    qv_hw_type_t type
 ) {
     switch (type) {
-        case(QV_HW_OBJ_MACHINE):
-        case(QV_HW_OBJ_PACKAGE):
-        case(QV_HW_OBJ_CORE):
-        case(QV_HW_OBJ_PU):
-        case(QV_HW_OBJ_L1CACHE):
-        case(QV_HW_OBJ_L2CACHE):
-        case(QV_HW_OBJ_L3CACHE):
-        case(QV_HW_OBJ_L4CACHE):
-        case(QV_HW_OBJ_L5CACHE):
-        case(QV_HW_OBJ_NUMANODE):
+        case(QV_HW_MACHINE):
+        case(QV_HW_PACKAGE):
+        case(QV_HW_CORE):
+        case(QV_HW_PU):
+        case(QV_HW_L1CACHE):
+        case(QV_HW_L2CACHE):
+        case(QV_HW_L3CACHE):
+        case(QV_HW_L4CACHE):
+        case(QV_HW_L5CACHE):
+        case(QV_HW_NUMANODE):
             return QVI_HWLOC_RES_CLASS_HOST;
-        case(QV_HW_OBJ_GPU):
-        case(QV_HW_OBJ_NIC):
+        case(QV_HW_GPU):
+        case(QV_HW_NIC):
             return QVI_HWLOC_RES_CLASS_DEV;
-        case(QV_HW_OBJ_LAST):
+        case(QV_HW_LAST):
             return QVI_HWLOC_RES_CLASS_LAST;
         [[unlikely]] default:
             // This is likely an internal development error.
@@ -345,7 +345,7 @@ qvi_hwloc::bitmap_split(
 ) const {
     size_t npus = 0;
     int rc = m_get_nobjs_in_cpuset(
-        QV_HW_OBJ_PU, bitmap.cdata(), npus
+        QV_HW_PU, bitmap.cdata(), npus
     );
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
     // An empty split.
@@ -661,7 +661,7 @@ qvi_hwloc::topology_get_system_cpuset(void)
 
 int
 qvi_hwloc::obj_type_depth(
-    qv_hw_obj_type_t type,
+    qv_hw_type_t type,
     int *depth
 ) const {
     *depth = hwloc_get_type_depth(
@@ -761,7 +761,7 @@ qvi_hwloc::m_set_device_info(
     std::string uuid_info_name = {};
     switch (obj->attr->osdev.type) {
         case HWLOC_OBJ_OSDEV_GPU: {
-            device->type = QV_HW_OBJ_GPU;
+            device->type = QV_HW_GPU;
             const auto vendor_info = get_obj_info_by_name(obj, "GPUVendor");
             // Expecting something like AMD or NVIDIA Corporation.
             const auto vendor = qvi_split_string(vendor_info, " ").at(0);
@@ -769,19 +769,19 @@ qvi_hwloc::m_set_device_info(
             break;
         }
         case HWLOC_OBJ_OSDEV_COPROC: {
-            device->type = QV_HW_OBJ_GPU;
+            device->type = QV_HW_GPU;
             if (obj_has_subtype(obj, "LevelZero")) {
                 uuid_info_name = "LevelZeroUUID";
             }
             break;
         }
         case HWLOC_OBJ_OSDEV_OPENFABRICS: {
-            device->type = QV_HW_OBJ_NIC;
+            device->type = QV_HW_NIC;
             uuid_info_name = "NodeGUID";
             break;
         }
         case HWLOC_OBJ_OSDEV_NETWORK: {
-            device->type = QV_HW_OBJ_NIC;
+            device->type = QV_HW_NIC;
             if (obj_has_subtype(obj, "BXI")) uuid_info_name = "BXIUUID";
             else uuid_info_name = "Address";
             break;
@@ -954,7 +954,7 @@ qvi_hwloc::m_discover_devices(void)
 
 int
 qvi_hwloc::get_nobjs_by_type(
-   qv_hw_obj_type_t target_type,
+   qv_hw_type_t target_type,
    int *out_nobjs
 ) {
     int depth = HWLOC_TYPE_DEPTH_UNKNOWN;
@@ -1003,7 +1003,7 @@ qvi_hwloc::task_set_cpubind_from_cpuset(
 
 int
 qvi_hwloc::m_obj_get_by_type(
-    qv_hw_obj_type_t type,
+    qv_hw_type_t type,
     int type_index,
     hwloc_obj_t *obj
 ) {
@@ -1019,7 +1019,7 @@ qvi_hwloc::m_obj_get_by_type(
  */
 int
 qvi_hwloc::m_task_obj_xop_by_type_id(
-    qv_hw_obj_type_t type,
+    qv_hw_type_t type,
     pid_t task_id,
     int type_index,
     task_xop_obj_id opid,
@@ -1049,7 +1049,7 @@ qvi_hwloc::m_task_obj_xop_by_type_id(
 
 int
 qvi_hwloc::task_intersects_obj_by_type_id(
-    qv_hw_obj_type_t type,
+    qv_hw_type_t type,
     pid_t task_id,
     int type_index,
     int *result
@@ -1061,7 +1061,7 @@ qvi_hwloc::task_intersects_obj_by_type_id(
 
 int
 qvi_hwloc::task_includedin_obj_by_type_id(
-    qv_hw_obj_type_t type,
+    qv_hw_type_t type,
     pid_t task_id,
     int type_index,
     int *result
@@ -1086,7 +1086,7 @@ qvi_hwloc::m_get_nosdevs_in_cpuset(
 
 int
 qvi_hwloc::m_get_nobjs_in_cpuset(
-    qv_hw_obj_type_t target_obj,
+    qv_hw_type_t target_obj,
     hwloc_const_cpuset_t cpuset,
     size_t &nobjs
 ) const {
@@ -1107,13 +1107,13 @@ qvi_hwloc::m_get_nobjs_in_cpuset(
 
 int
 qvi_hwloc::get_nobjs_in_cpuset(
-    qv_hw_obj_type_t target_obj,
+    qv_hw_type_t target_obj,
     hwloc_const_cpuset_t cpuset,
     size_t &nobjs
 ) const {
     switch (target_obj) {
-        case(QV_HW_OBJ_GPU) :
-        case(QV_HW_OBJ_NIC) :
+        case(QV_HW_GPU) :
+        case(QV_HW_NIC) :
             return m_get_nosdevs_in_cpuset(
                 cget_dev_list(m_devmap, target_obj), cpuset, nobjs
             );
@@ -1136,18 +1136,18 @@ qvi_hwloc::get_obj_in_cpuset_by_depth(
     return (*result_obj != nullptr ? QV_SUCCESS : QV_ERR_HWLOC);
 }
 
-const std::vector<qv_hw_obj_type_t> &
+const std::vector<qv_hw_type_t> &
 qvi_hwloc::supported_devices(void) {
-    static const std::vector<qv_hw_obj_type_t> supported_devices = {
-        QV_HW_OBJ_GPU,
-        QV_HW_OBJ_NIC
+    static const std::vector<qv_hw_type_t> supported_devices = {
+        QV_HW_GPU,
+        QV_HW_NIC
     };
     return supported_devices;
 }
 
 int
 qvi_hwloc::devices_emit(
-    qv_hw_obj_type_t obj_type
+    qv_hw_type_t obj_type
 ) const {
     for (auto &dev : cget_dev_list(m_devmap, obj_type)) {
         const std::string cpusets = qvi_hwloc::bitmap_list_string(
@@ -1179,7 +1179,7 @@ get_devices_in_cpuset_from_dev_list(
 
 int
 qvi_hwloc::get_devices_included_in_cpuset(
-    qv_hw_obj_type_t obj_type,
+    qv_hw_type_t obj_type,
     hwloc_const_cpuset_t cpuset,
     qvi_hwloc_dev_list &devs
 ) const {
@@ -1190,7 +1190,7 @@ qvi_hwloc::get_devices_included_in_cpuset(
 
 int
 qvi_hwloc::get_device_id_in_cpuset(
-    qv_hw_obj_type_t dev_obj,
+    qv_hw_type_t dev_obj,
     int i,
     hwloc_const_cpuset_t cpuset,
     qv_device_id_type_t dev_id_type,
@@ -1220,7 +1220,7 @@ qvi_hwloc::get_device_id_in_cpuset(
 int
 qvi_hwloc::get_cpuset_for_nobjs(
     const qvi_hwloc_bitmap &cpuset,
-    qv_hw_obj_type_t obj_type,
+    qv_hw_type_t obj_type,
     uint_t nobjs,
     qvi_hwloc_bitmap &result
 ) {

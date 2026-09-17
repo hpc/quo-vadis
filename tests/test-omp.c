@@ -37,14 +37,14 @@ scopei_ep(
     );
     // Use the number of cores to determine how many thread scopes to create.
     ctu_check(
-        qv_hw_obj_count(base_scope, QV_HW_OBJ_CORE, &sinfo->nthreads),
-        "qv_hw_obj_count"
+        qv_hw_count(base_scope, QV_HW_CORE, &sinfo->nthreads),
+        "qv_hw_count"
     );
 
     int *thread_coloring = QV_THREAD_SPLIT_CLOSE;
     ctu_check(
         qv_thread_split_at(
-            base_scope, QV_HW_OBJ_CORE, thread_coloring,
+            base_scope, QV_HW_CORE, thread_coloring,
             sinfo->nthreads, &sinfo->th_scopes
         ),
         "qv_thread_split_at"

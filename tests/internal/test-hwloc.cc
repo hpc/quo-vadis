@@ -81,20 +81,20 @@ echo_gpu_info(
 
     size_t ngpus = 0;
     int rc = hwl.get_nobjs_in_cpuset(
-        QV_HW_OBJ_GPU, hwl.topology_get_cpuset().cdata(), ngpus
+        QV_HW_GPU, hwl.topology_get_cpuset().cdata(), ngpus
     );
     if (rc != QV_SUCCESS) return rc;
 
     printf("# Number of GPUs: %zu\n", ngpus);
 
-    rc = hwl.devices_emit(QV_HW_OBJ_GPU);
+    rc = hwl.devices_emit(QV_HW_GPU);
     if (rc != QV_SUCCESS) return rc;
 
     for (size_t i = 0; i < ngpus; ++i) {
         for (size_t j = 0; j < ctu_devid_name_to_id_tab_size; ++j) {
             std::string devids;
             rc = hwl.get_device_id_in_cpuset(
-                QV_HW_OBJ_GPU, i,
+                QV_HW_GPU, i,
                 hwl.topology_get_cpuset().cdata(),
                 ctu_devid_name_to_id_tab[j].devid, devids
             );

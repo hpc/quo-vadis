@@ -28,7 +28,7 @@ test_create_scope(
         qv_create_scope(
             scope_to_test,
             QV_SCOPE_FLAG_NONE,
-            QV_HW_OBJ_CORE,
+            QV_HW_CORE,
             ncores,
             &core_scope
         ),

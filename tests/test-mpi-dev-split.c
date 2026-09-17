@@ -12,9 +12,9 @@ main(
     MPI_Comm comm = MPI_COMM_WORLD;
 
     const int ndevs_tested = 2;
-    const qv_hw_obj_type_t devs_tested[2] = {
-        QV_HW_OBJ_GPU,
-        QV_HW_OBJ_NIC
+    const qv_hw_type_t devs_tested[2] = {
+        QV_HW_GPU,
+        QV_HW_NIC
     };
 
     int base_ndev[ndevs_tested];
@@ -43,11 +43,11 @@ main(
     if (base_scope_rank == 0) {
         ctu_emit_device_info(
             base_scope, CTU_SCOPE_KIND_MPI,
-            QV_HW_OBJ_GPU, "base_scope"
+            QV_HW_GPU, "base_scope"
         );
         ctu_emit_device_info(
             base_scope, CTU_SCOPE_KIND_MPI,
-            QV_HW_OBJ_NIC, "base_scope"
+            QV_HW_NIC, "base_scope"
         );
         ctu_emit(base_scope, CTU_SCOPE_KIND_MPI, "\n");
     }
@@ -66,20 +66,20 @@ main(
     // Get number of tested devices in my rank_scope.
     for (int i = 0; i < ndevs_tested; ++i) {
         ctu_check(
-            qv_hw_obj_count(rank_scope, devs_tested[i], &rank_ndev[i]),
-            "qv_hw_obj_count"
+            qv_hw_count(rank_scope, devs_tested[i], &rank_ndev[i]),
+            "qv_hw_count"
         );
     }
 
     ctu_emit_device_info(
         rank_scope, CTU_SCOPE_KIND_MPI,
-        QV_HW_OBJ_GPU, "rank_scope"
+        QV_HW_GPU, "rank_scope"
     );
     ctu_pemit(rank_scope, CTU_SCOPE_KIND_MPI, base_scope_rank == 0, "\n");
 
     ctu_emit_device_info(
         rank_scope, CTU_SCOPE_KIND_MPI,
-        QV_HW_OBJ_NIC, "rank_scope"
+        QV_HW_NIC, "rank_scope"
     );
     ctu_pemit(rank_scope, CTU_SCOPE_KIND_MPI, base_scope_rank == 0, "\n");
 
@@ -87,8 +87,8 @@ main(
     for (int i = 0; i < ndevs_tested; ++i) {
         // Get total number of GPUs in base_scope.
         ctu_check(
-            qv_hw_obj_count(base_scope, devs_tested[i], &base_ndev[i]),
-            "qv_hw_obj_count"
+            qv_hw_count(base_scope, devs_tested[i], &base_ndev[i]),
+            "qv_hw_count"
         );
         int total_ndevs;
         ctu_mpi_check(

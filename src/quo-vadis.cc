@@ -117,9 +117,9 @@ qv_free(
 }
 
 int
-qv_hw_obj_count(
+qv_hw_count(
     qv_scope_t *scope,
-    qv_hw_obj_type_t obj,
+    qv_hw_type_t obj,
     int *nobjs
 ) {
     if (qvi_unlikely(!scope || !nobjs)) {
@@ -179,7 +179,7 @@ int
 qv_create_scope(
     qv_scope_t *scope,
     qv_scope_flags_t flags,
-    qv_hw_obj_type_t type,
+    qv_hw_type_t type,
     int nobjs,
     qv_scope_t **subscope
 ) {
@@ -209,10 +209,10 @@ qv_split(
     // even if an exception is thrown below.
     *subscope = nullptr;
     try {
-        // We use the sentinel value QV_HW_OBJ_LAST to differentiate between
+        // We use the sentinel value QV_HW_LAST to differentiate between
         // calls from split() and split_at(). Since this call doesn't have a
-        // hardware type argument, we use QV_HW_OBJ_LAST as the hardware type.
-        return scope->split(npieces, group_id, QV_HW_OBJ_LAST, subscope);
+        // hardware type argument, we use QV_HW_LAST as the hardware type.
+        return scope->split(npieces, group_id, QV_HW_LAST, subscope);
     }
     qvi_catch_and_return();
 }
@@ -220,7 +220,7 @@ qv_split(
 int
 qv_split_at(
     qv_scope_t *scope,
-    qv_hw_obj_type_t type,
+    qv_hw_type_t type,
     int group_id,
     qv_scope_t **subscope
 ) {
@@ -239,7 +239,7 @@ qv_split_at(
 int
 qv_device_id(
     qv_scope_t *scope,
-    qv_hw_obj_type_t dev_obj,
+    qv_hw_type_t dev_obj,
     int dev_index,
     qv_device_id_type_t id_type,
     char **dev_id

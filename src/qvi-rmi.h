@@ -318,20 +318,20 @@ public:
     /** Returns the depth of the provided object type. */
     int
     get_obj_depth(
-        qv_hw_obj_type_t type,
+        qv_hw_type_t type,
         int &depth
     );
     /** Returns the number of objects in the provided cpuset. */
     int
     get_nobjs_in_cpuset(
-        qv_hw_obj_type_t target_obj,
+        qv_hw_type_t target_obj,
         const qvi_hwloc_bitmap &cpuset,
         size_t &nobjs
     );
     /** Returns a device ID string for the requested device. */
     int
     get_device_in_cpuset(
-        qv_hw_obj_type_t dev_obj,
+        qv_hw_type_t dev_obj,
         int dev_i,
         const qvi_hwloc_bitmap &cpuset,
         qv_device_id_type_t dev_id_type,
@@ -341,7 +341,7 @@ public:
     int
     get_cpuset_for_nobjs(
         const qvi_hwloc_bitmap &cpuset,
-        qv_hw_obj_type_t obj_type,
+        qv_hw_type_t obj_type,
         int nobjs,
         qvi_hwloc_bitmap &result
     );

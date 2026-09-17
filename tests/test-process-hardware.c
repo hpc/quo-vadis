@@ -34,12 +34,12 @@ main(void)
         ctu_emit(base_scope, CTU_SCOPE_KIND_PROCESS, "\n");
         ctu_emit_device_info(
             base_scope, CTU_SCOPE_KIND_PROCESS,
-            QV_HW_OBJ_GPU, setup_tab[i].name
+            QV_HW_GPU, setup_tab[i].name
         );
         ctu_emit(base_scope, CTU_SCOPE_KIND_PROCESS, "\n");
         ctu_emit_device_info(
             base_scope, CTU_SCOPE_KIND_PROCESS,
-            QV_HW_OBJ_NIC, setup_tab[i].name
+            QV_HW_NIC, setup_tab[i].name
         );
         ctu_emit(base_scope, CTU_SCOPE_KIND_PROCESS, "\n");
 

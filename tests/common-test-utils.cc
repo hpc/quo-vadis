@@ -481,12 +481,12 @@ ctu_emit_host_hw_info(
 
     for (size_t i = 0; i < ctu_hw_obj_name_to_type_tab_size; ++i) {
         int n;
-        int rc = qv_hw_obj_count(
+        int rc = qv_hw_count(
             scope, ctu_hw_obj_name_to_type_tab[i].type, &n
         );
         if (rc != QV_SUCCESS) {
             ctu_panic(
-                "qv_hw_obj_count(%s) failed\n",
+                "qv_hw_count(%s) failed\n",
                 ctu_hw_obj_name_to_type_tab[i].name
             );
         }
@@ -503,7 +503,7 @@ void
 ctu_emit_device_info(
     qv_scope_t *scope,
     ctu_scope_kind_t kind,
-    qv_hw_obj_type_t dev_type,
+    qv_hw_type_t dev_type,
     const char *scope_name
 ) {
     auto reporter = ctu_reporter(scope, kind);
@@ -511,9 +511,9 @@ ctu_emit_device_info(
     std::string myoutput;
     // Get number of devices.
     int ndevs;
-    int rc = qv_hw_obj_count(scope, dev_type, &ndevs);
+    int rc = qv_hw_count(scope, dev_type, &ndevs);
     if (rc != QV_SUCCESS) {
-        const char *ers = "qv_hw_obj_count() failed";
+        const char *ers = "qv_hw_count() failed";
         ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
     }
 
