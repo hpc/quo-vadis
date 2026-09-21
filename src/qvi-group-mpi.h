@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2025 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -17,11 +17,8 @@
 #ifndef QVI_GROUP_MPI_H
 #define QVI_GROUP_MPI_H
 
-#include "qvi-common.h"
-#include "qvi-task.h"
 #include "qvi-group.h"
 #include "qvi-mpi.h"
-#include "qvi-bbuff.h"
 
 struct qvi_group_mpi : public qvi_group {
 protected:

@@ -12,8 +12,6 @@
  */
 
 #include "qvi-hwsplit.h"
-#include "qvi-task.h"
-#include "qvi-rmi.h"
 #include "qvi-coll.h"
 #include "qvi-map.h"
 #include "qvi-scope.h"

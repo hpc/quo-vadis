@@ -119,12 +119,12 @@ typedef long long qv_scope_flags_t;
 #define QV_SCOPE_FLAG_NO_SMT         (1LL << 0)
 
 /**
- * Attempt to create with resources with high affinity to the parent
+ * Attempt to create with resources with high affinity to the parent.
  */
 #define QV_SCOPE_FLAG_HINT_CLOSE     (1LL << 1)
 
 /**
- *
+ * TODO(skg) Ignored: not yet implemented.
  */
 #define QV_SCOPE_FLAG_HINT_EXCLUSIVE (1LL << 2)
 

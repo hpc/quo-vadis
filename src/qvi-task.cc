@@ -15,7 +15,6 @@
  */
 
 #include "qvi-task.h"
-#include "qvi-utils.h"
 
 pid_t
 qvi_task::mytid(void)

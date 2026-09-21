@@ -14,8 +14,8 @@
 #ifndef QVI_MAP_H
 #define QVI_MAP_H
 
-#include "qvi-utils.h"
 #include "qvi-hwloc.h"
+#include "qvi-utils.h"
 
 struct qvi_map_config;
 

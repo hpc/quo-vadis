@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c)      2025 Triad National Security, LLC
+ * Copyright (c) 2025-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -14,9 +14,7 @@
 #ifndef QVI_GROUP_THREAD_H
 #define QVI_GROUP_THREAD_H
 
-#include "qvi-common.h"
 #include "qvi-group.h"
-#include "qvi-task.h"
 
 /**
  * Base thread group class.

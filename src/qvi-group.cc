@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2025 Triad National Security, LLC
+ * Copyright (c) 2021-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -13,7 +13,6 @@
 
 #include "qvi-group.h"
 #include "qvi-group-thread.h"
-#include "qvi-utils.h"
 
 qvi_hwloc &
 qvi_group::hwloc(void)
@@ -30,8 +29,7 @@ qvi_group::thread_split(
 ) {
     // This is the entry point for creating a new thread group. Also note this is
     // called by a single thread of execution (i.e., the parent process).
-    qvi_group_thread *ichild = new qvi_group_thread(m_flags, nthreads, colors);
-    *child = ichild;
+    *child = new qvi_group_thread(m_flags, nthreads, colors);
     return QV_SUCCESS;
 }
 

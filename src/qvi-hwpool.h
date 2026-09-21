@@ -17,7 +17,6 @@
 #ifndef QVI_HWPOOL_H
 #define QVI_HWPOOL_H
 
-#include "qvi-common.h"
 #include "qvi-hwloc.h"
 
 /**

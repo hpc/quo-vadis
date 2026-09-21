@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2025 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -21,8 +21,6 @@
 #include "quo-vadis/config.h"
 #include "qvi-macros.h"
 #include "quo-vadis.h"
-
-#include "hwloc.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -79,13 +77,6 @@
 using byte_t = uint8_t;
 using cstr_t = char const *;
 using uint_t = unsigned int;
-
-// Forward declarations.
-struct qvi_bbuff;
-struct qvi_hwloc;
-struct qvi_rmi_client;
-struct qvi_hwpool;
-struct qvi_task;
 
 // Constants
 /** Unset port number constant. */
