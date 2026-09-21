@@ -15,8 +15,6 @@
  */
 
 #include "qvi-group-mpi.h"
-#include "qvi-task.h"
-#include "qvi-utils.h"
 
 qvi_group_mpi::qvi_group_mpi(
     qv_scope_flags_t flags,

@@ -12,7 +12,6 @@
  */
 
 #include "qvi-map.h"
-#include <string>
 
 // Verbose output max length.
 static constexpr size_t vmaxl = qvi_maxolen;

@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2025 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * This file is part of the quo-vadis project. See the LICENSE file at the
@@ -14,10 +14,7 @@
 #ifndef QVI_GROUP_PROCESS_H
 #define QVI_GROUP_PROCESS_H
 
-#include "qvi-common.h"
-#include "qvi-task.h"
 #include "qvi-group.h"
-#include "qvi-bbuff.h"
 
 struct qvi_group_process : public qvi_group {
 private:

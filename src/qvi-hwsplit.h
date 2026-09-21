@@ -14,10 +14,9 @@
 #ifndef QVI_HWSPLIT_H
 #define QVI_HWSPLIT_H
 
-#include "qvi-common.h"
-#include "qvi-hwloc.h"
+#include "qvi-rmi.h"
+#include "qvi-group.h"
 #include "qvi-hwpool.h"
-#include "qvi-scope.h"
 
 /**
  * A collection of information relevant to split operations requiring aggregated

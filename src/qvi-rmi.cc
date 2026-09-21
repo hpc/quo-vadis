@@ -17,8 +17,6 @@
  */
 
 #include "qvi-rmi.h"
-#include "qvi-bbuff.h"
-#include "qvi-utils.h"
 
 // So spdlog can print values in the qvi_rmi_rpc_fid_t enum.
 constexpr auto

@@ -18,6 +18,7 @@
 #define QVI_HWLOC_H
 
 #include "qvi-common.h"
+#include "hwloc.h" // IWYU pragma: keep
 
 // Forward declarations.
 struct qvi_hwloc_bitmap;

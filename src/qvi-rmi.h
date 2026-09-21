@@ -20,6 +20,7 @@
 #define QVI_RMI_H
 
 #include "qvi-common.h"
+#include "qvi-bbuff.h"
 #include "qvi-hwpool.h"
 #include "zmq.h"
 

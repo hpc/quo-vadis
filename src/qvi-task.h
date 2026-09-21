@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2020-2025 Triad National Security, LLC
+ * Copyright (c) 2020-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c) 2020-2021 Lawrence Livermore National Security, LLC
@@ -17,9 +17,8 @@
 #ifndef QVI_TASK_H
 #define QVI_TASK_H
 
-#include "qvi-common.h"
-#include "qvi-rmi.h"
 #include "qvi-hwloc.h"
+#include "qvi-rmi.h"
 
 using qvi_task_bind_stack = std::stack<qvi_hwloc_bitmap>;
 

@@ -17,7 +17,7 @@
 #ifndef QVI_UTILS_H
 #define QVI_UTILS_H
 
-#include "qvi-common.h" // IWYU pragma: keep
+#include "qvi-common.h"
 
 // Max text output line length.
 static constexpr size_t qvi_maxolen = 80;

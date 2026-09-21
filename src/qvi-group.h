@@ -1,6 +1,6 @@
 /* -*- Mode: C++; c-basic-offset:4; indent-tabs-mode:nil -*- */
 /*
- * Copyright (c) 2021-2025 Triad National Security, LLC
+ * Copyright (c) 2021-2026 Triad National Security, LLC
  *                         All rights reserved.
  *
  * Copyright (c)      2021 Lawrence Livermore National Security, LLC
@@ -17,9 +17,8 @@
 #ifndef QVI_GROUP_H
 #define QVI_GROUP_H
 
-#include "qvi-common.h"
-#include "qvi-utils.h"
 #include "qvi-bbuff.h"
+#include "qvi-task.h"
 
 /** Group ID type. */
 using qvi_group_id_t = uint64_t;

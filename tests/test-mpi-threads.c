@@ -141,9 +141,9 @@ main(
     // When we are done with the scope, clean up.
     ctu_check(qv_thread_free(th_scopes, nthreads));
     // Clean up.
-    qv_free(subnuma);
-    qv_free(numa_scope);
-    qv_free(base_scope);
+    ctu_check(qv_free(subnuma));
+    ctu_check(qv_free(numa_scope));
+    ctu_check(qv_free(base_scope));
 
     ctu_mpi_check(MPI_Finalize());
 

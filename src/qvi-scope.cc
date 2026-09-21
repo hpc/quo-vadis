@@ -15,11 +15,8 @@
  */
 
 #include "qvi-scope.h"
-#include "qvi-rmi.h"
-#include "qvi-task.h"
 #include "qvi-hwpool.h"
 #include "qvi-hwsplit.h"
-#include "qvi-utils.h"
 
 qv_scope::qv_scope(
     qvi_group *group,
