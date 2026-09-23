@@ -37,7 +37,6 @@ add_library(
       qvi-scope.h
       qvi-log.cc
       qvi-utils.cc
-      qvi-bbuff.cc
       qvi-hwloc.cc
       qvi-hwpool.cc
       qvi-rmi.cc

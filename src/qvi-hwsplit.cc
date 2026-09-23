@@ -182,8 +182,8 @@ normalize_colors(
             }
         );
         const auto result = all_in_range
-            ? colors
-            : qvi_map_clamp_colors(colors);
+                          ? colors
+                          : qvi_map_clamp_colors(colors);
         // Validate the coloring. QV_SPLIT_UNDEFINED members do not occupy a
         // piece, so they do not count as distinct destinations.
         std::set<int> color_set(result.begin(), result.end());
