@@ -111,7 +111,9 @@ launch_gpu_kernels(in_args, &result);
 
 ## A simple but powerful example
 
-See [tests](../tests) for working examples.
+See [tests](https://github.com/hpc/quo-vadis/tree/master/tests) and
+[examples](https://github.com/hpc/quo-vadis/tree/master/examples) for
+working examples.
 
 
 ```C
