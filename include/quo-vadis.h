@@ -209,17 +209,17 @@ typedef enum {
      * Universally Unique Identifier (UUID) string:
      * GPU-00000000-0000-0000-0000-000000000000.
      */
-    QV_DEVICE_ID_UUID = 0,
+    QV_DEV_ID_UUID = 0,
     /**
      * PCI bus identifier string: 0000:00:00.0.
      */
-    QV_DEVICE_ID_PCI_BUS_ID,
+    QV_DEV_ID_PCI_BUS_ID,
     /**
      * Vendor-visible logical device number (ordinal) as a string:
      * the value used by CUDA_VISIBLE_DEVICES, for example.
      */
-    QV_DEVICE_ID_ORDINAL
-} qv_device_id_type_t;
+    QV_DEV_ID_ORDINAL
+} qv_dev_id_type_t;
 
 /**
  * Version query function.
@@ -363,7 +363,7 @@ qv_hw_count(
  * such devices in the scope.
  *
  * @param[in] id_type The device identifier format to return, such as
- * QV_DEVICE_ID_UUID, QV_DEVICE_ID_PCI_BUS_ID, or QV_DEVICE_ID_ORDINAL.
+ * QV_DEV_ID_UUID, QV_DEV_ID_PCI_BUS_ID, or QV_DEV_ID_ORDINAL.
  *
  * @param[out] dev_id Address of a pointer that will receive a newly allocated,
  * null-terminated string containing the device identifier. The caller is
@@ -372,11 +372,11 @@ qv_hw_count(
  * @retval QV_SUCCESS if the operation completed successfully.
  */
 int
-qv_device_id(
+qv_dev_id(
     qv_scope_t *scope,
     qv_hw_type_t dev_obj,
     int dev_index,
-    qv_device_id_type_t id_type,
+    qv_dev_id_type_t id_type,
     char **dev_id
 );
 

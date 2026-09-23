@@ -132,13 +132,13 @@ public:
     /** Returns the device's ID string formatted as specified. */
     int
     id(
-        qv_device_id_type_t format,
+        qv_dev_id_type_t format,
         char **result
     ) const;
     /** Returns the device's ID string formatted as specified. */
     std::string
     id(
-        qv_device_id_type_t format
+        qv_dev_id_type_t format
     ) const;
 
     template <class Archive>

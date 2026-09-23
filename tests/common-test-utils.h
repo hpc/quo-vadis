@@ -119,7 +119,7 @@ typedef struct {
 
 typedef struct {
     char const *name;
-    qv_device_id_type_t devid;
+    qv_dev_id_type_t devid;
 } ctu_devid_name_to_id_t;
 
 // Maps QV object type names to their underlying values.
@@ -141,9 +141,9 @@ static const size_t ctu_hw_obj_name_to_type_tab_size =
 
 // Maps QV device ID type names to their underlying values.
 static const ctu_devid_name_to_id_t ctu_devid_name_to_id_tab[] = {
-    {CTU_TOSTRING(QV_DEVICE_ID_UUID),       QV_DEVICE_ID_UUID},
-    {CTU_TOSTRING(QV_DEVICE_ID_PCI_BUS_ID), QV_DEVICE_ID_PCI_BUS_ID},
-    {CTU_TOSTRING(QV_DEVICE_ID_ORDINAL),    QV_DEVICE_ID_ORDINAL}
+    {CTU_TOSTRING(QV_DEV_ID_UUID),       QV_DEV_ID_UUID},
+    {CTU_TOSTRING(QV_DEV_ID_PCI_BUS_ID), QV_DEV_ID_PCI_BUS_ID},
+    {CTU_TOSTRING(QV_DEV_ID_ORDINAL),    QV_DEV_ID_ORDINAL}
 };
 
 static const size_t ctu_devid_name_to_id_tab_size =

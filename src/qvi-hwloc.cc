@@ -1193,7 +1193,7 @@ qvi_hwloc::get_device_id_in_cpuset(
     qv_hw_type_t dev_obj,
     int i,
     hwloc_const_cpuset_t cpuset,
-    qv_device_id_type_t dev_id_type,
+    qv_dev_id_type_t dev_id_type,
     std::string &dev_id
 ) {
     qvi_hwloc_dev_list devs;
@@ -1201,13 +1201,13 @@ qvi_hwloc::get_device_id_in_cpuset(
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
 
     switch (dev_id_type) {
-        case (QV_DEVICE_ID_UUID):
+        case (QV_DEV_ID_UUID):
             dev_id = devs.at(i)->uuid;
             break;
-        case (QV_DEVICE_ID_PCI_BUS_ID):
+        case (QV_DEV_ID_PCI_BUS_ID):
             dev_id = devs.at(i)->pci_bus_id;
             break;
-        case (QV_DEVICE_ID_ORDINAL):
+        case (QV_DEV_ID_ORDINAL):
             dev_id = std::to_string(devs.at(i)->id);
             break;
         [[unlikely]] default:

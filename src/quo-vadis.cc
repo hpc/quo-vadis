@@ -237,11 +237,11 @@ qv_split_at(
 }
 
 int
-qv_device_id(
+qv_dev_id(
     qv_scope_t *scope,
     qv_hw_type_t dev_obj,
     int dev_index,
-    qv_device_id_type_t id_type,
+    qv_dev_id_type_t id_type,
     char **dev_id
 ) {
     if (qvi_unlikely(!scope || (dev_index < 0) || !dev_id)) {
