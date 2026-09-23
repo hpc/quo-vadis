@@ -60,46 +60,46 @@ qv_bind_string(uscope, QV_BIND_STRING_LOGICAL, &bindstr);
 // Splits are collective operations: Every caller gets its own subscope
 
 // For example: comm_size as num_workers, comm_rank as color
-qv_split(ctx, base_scope, size, rank, &sub_scope);
+qv_split(base_scope, size, rank, &sub_scope);
 
 // Or split by a specific resource type
-qv_split_at(ctx, base_scope, QV_HW_NUMANODE, rank%nnumas, &numa_scope);
+qv_split_at(base_scope, QV_HW_NUMANODE, rank%nnumas, &numa_scope);
 
 // including accelerators
-qv_split_at(ctx, base_scope, QV_HW_GPU, rank%ngpus, &gpu_scope);
+qv_split_at(base_scope, QV_HW_GPU, rank%ngpus, &gpu_scope);
 ```
 
 ### Stack-Based Semantics to Map Workers to Hardware
 
 ```C
-qv_bind_push(ctx, sub_scope);
+qv_bind_push(sub_scope);
 
 a_library_call(in_args, &result);
 
-qv_bind_pop(ctx);
+qv_bind_pop(sub_scope);
 ```
 
 ### Leader selection through scope-based task IDs and scope-based barriers
 
 ```C
-qv_scope_taskid(ctx, numa_scope, &my_numa_id);
+qv_group_rank(numa_scope, &my_numa_id);
 
 // I'm the leader, taking over NUMA domain
 if (my_numa_id == 0) {
-   qv_bind_push(ctx, numa_scope);
+   qv_bind_push(numa_scope);
    a_library_call(in_args, &result);
-   qv_bind_pop(ctx);
+   qv_bind_pop(numa_scope);
 }
 
 // Everybody else waits
-qv_barrier(ctx, numa_scope);
+qv_barrier(numa_scope);
 ```
 
 ### Accelerator support
 
 ```C
 // Get the PCI bus ID of the ith GPU of a given scope
-qv_scope_get_device(ctx, scope, QV_HW_GPU, i, QV_DEV_ID_PCI_BUS_ID, &gpu);
+qv_dev_id(scope, QV_HW_GPU, i, QV_DEV_ID_PCI_BUS_ID, &gpu);
 
 // For HIP (similar for CUDA)
 hipDeviceGetByPCIBusId(&device, gpu);
