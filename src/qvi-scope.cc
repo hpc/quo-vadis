@@ -136,7 +136,7 @@ int
 qv_scope::device_id(
     qv_hw_type_t dev_type,
     int dev_index,
-    qv_device_id_type_t format,
+    qv_dev_id_type_t format,
     char **result
 ) const {
     // Look for the requested device.

@@ -312,19 +312,19 @@ check_get_device_in_cpuset(
 
     for (size_t i = 0; i < ngpus; ++i) {
         std::string rmi_id;
-        rc = client->get_device_in_cpuset(
-            QV_HW_GPU, static_cast<int>(i), machine, QV_DEVICE_ID_ORDINAL, rmi_id
-        );
+         rc = client->get_device_in_cpuset(
+             QV_HW_GPU, static_cast<int>(i), machine, QV_DEV_ID_ORDINAL, rmi_id
+         );
         ctu_assert(
             rc == QV_SUCCESS,
             "get_device_in_cpuset(GPU, %zu) failed (rc=%s)", i, qv_strerr(rc)
         );
 
         std::string local_id;
-        rc = lhwloc.get_device_id_in_cpuset(
-            QV_HW_GPU, static_cast<int>(i), machine.cdata(),
-            QV_DEVICE_ID_ORDINAL, local_id
-        );
+         rc = lhwloc.get_device_id_in_cpuset(
+             QV_HW_GPU, static_cast<int>(i), machine.cdata(),
+             QV_DEV_ID_ORDINAL, local_id
+         );
         ctu_assert(
             rc == QV_SUCCESS,
             "local get_device_id_in_cpuset(GPU, %zu) failed (rc=%s)",

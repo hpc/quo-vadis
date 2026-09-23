@@ -325,7 +325,7 @@ public:
         qv_hw_type_t dev_obj,
         int i,
         hwloc_const_cpuset_t cpuset,
-        qv_device_id_type_t dev_id_type,
+        qv_dev_id_type_t dev_id_type,
         std::string &dev_id
     );
     /**

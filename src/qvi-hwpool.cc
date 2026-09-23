@@ -41,14 +41,14 @@ qvi_hwpool_dev::qvi_hwpool_dev(
 
 std::string
 qvi_hwpool_dev::id(
-    qv_device_id_type_t format
+    qv_dev_id_type_t format
 ) const {
     switch (format) {
-        case (QV_DEVICE_ID_UUID):
+        case (QV_DEV_ID_UUID):
             return m_uuid;
-        case (QV_DEVICE_ID_PCI_BUS_ID):
+        case (QV_DEV_ID_PCI_BUS_ID):
             return m_pci_bus_id;
-        case (QV_DEVICE_ID_ORDINAL):
+        case (QV_DEV_ID_ORDINAL):
             return std::to_string(m_id);
         [[unlikely]] default:
             throw qvi_runtime_error(QV_ERR_INVLD_ARG);
@@ -57,7 +57,7 @@ qvi_hwpool_dev::id(
 
 int
 qvi_hwpool_dev::id(
-    qv_device_id_type_t format,
+    qv_dev_id_type_t format,
     char **result
 ) const {
     int rc = QV_SUCCESS;

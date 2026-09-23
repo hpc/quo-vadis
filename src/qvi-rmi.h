@@ -335,7 +335,7 @@ public:
         qv_hw_type_t dev_obj,
         int dev_i,
         const qvi_hwloc_bitmap &cpuset,
-        qv_device_id_type_t dev_id_type,
+        qv_dev_id_type_t dev_id_type,
         std::string &dev_id
     );
     /** Returns a cpuset representing n objects of the requested type. */

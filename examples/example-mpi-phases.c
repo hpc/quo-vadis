@@ -112,8 +112,7 @@ print_resources(int rank, char *header, qv_scope_t *scope, char phase)
                        phase, rank);
         char *gpu;
         for (int i = 0; i < ngpus; i++) {
-            qv_device_id(scope, QV_HW_GPU, i,
-                         QV_DEVICE_ID_PCI_BUS_ID, &gpu);
+            qv_dev_id(scope, QV_HW_GPU, i, QV_DEV_ID_PCI_BUS_ID, &gpu);
             nc += snprintf(str+nc, sizeof(str)-nc, "%s ", gpu);
             free(gpu);
         }
@@ -274,8 +273,7 @@ int main(int argc, char **argv)
 
     for (int i = 0; i < ngpus; i++) {
         char *gpu;
-        qv_device_id(sub_scope, QV_HW_GPU, i,
-                     QV_DEVICE_ID_PCI_BUS_ID, &gpu);
+        qv_dev_id(sub_scope, QV_HW_GPU, i, QV_DEV_ID_PCI_BUS_ID, &gpu);
         printf("[%c%d]--> PCI Bus ID = %s\n", phase, comm_rank, gpu);
         // Here are examples on how a user might
         // target the GPUs they got in a QV scope.

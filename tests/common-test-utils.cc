@@ -486,7 +486,7 @@ ctu_emit_device_info(
         for (size_t j = 0; j < ctu_devid_name_to_id_tab_size; ++j) {
             char *devids = NULL;
             ctu_check(
-                qv_device_id(
+                qv_dev_id(
                     scope,
                     dev_type,
                     i,

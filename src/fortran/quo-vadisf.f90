@@ -89,9 +89,9 @@ module quo_vadisf
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Device ID types
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    integer(c_int), parameter :: QV_DEVICE_ID_UUID = 0
-    integer(c_int), parameter :: QV_DEVICE_ID_PCI_BUS_ID = 1
-    integer(c_int), parameter :: QV_DEVICE_ID_ORDINAL = 2
+    integer(c_int), parameter :: QV_DEV_ID_UUID = 0
+    integer(c_int), parameter :: QV_DEV_ID_PCI_BUS_ID = 1
+    integer(c_int), parameter :: QV_DEV_ID_ORDINAL = 2
 
 interface
     pure function qvif_strlen_c(s) &
@@ -205,10 +205,10 @@ interface
     end function qv_barrier_c
 
     integer(c_int) &
-    function qv_device_id_c( &
+    function qv_dev_id_c( &
         scope, dev_obj, dev_index, id_type, dev_id &
     ) &
-        bind(c, name='qv_device_id')
+        bind(c, name='qv_dev_id')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         type(c_ptr), value :: scope
@@ -216,7 +216,7 @@ interface
         integer(c_int), value :: dev_index
         integer(c_int), value :: id_type
         type(c_ptr), intent(out) :: dev_id
-    end function qv_device_id_c
+    end function qv_dev_id_c
 
     integer(c_int) &
     function qv_bind_push_c(scope) &
@@ -384,7 +384,7 @@ contains
         info = qv_barrier_c(scope)
     end subroutine qv_barrier
 
-    subroutine qv_device_id( &
+    subroutine qv_dev_id( &
         scope, dev_obj, dev_index, id_type, dev_id, info &
     )
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
@@ -400,16 +400,14 @@ contains
         integer(c_size_t) :: strlen
         character, pointer, dimension(:) :: fstrp
 
-        info = qv_device_id_c( &
-            scope, dev_obj, dev_index, id_type, cstr &
-        )
+        info = qv_dev_id_c(scope, dev_obj, dev_index, id_type, cstr)
         ! Now deal with the string
         strlen = qvif_strlen_c(cstr)
         call c_f_pointer(cstr, fstrp, [strlen])
         allocate(character(strlen) :: dev_id(1))
         dev_id = fstrp
         call qvif_free_c(cstr)
-    end subroutine qv_device_id
+    end subroutine qv_dev_id
 
     subroutine qv_bind_push(scope, info)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int

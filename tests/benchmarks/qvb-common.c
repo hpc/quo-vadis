@@ -31,7 +31,7 @@ typedef struct {
     char *str_out;
     char *devid_out;
     qv_hw_type_t obj_type;
-    qv_device_id_type_t devid_type;
+    qv_dev_id_type_t devid_type;
 } qvb_common_ctx_t;
 
 static void
@@ -89,7 +89,7 @@ static void
 body_device_id(void *v)
 {
     qvb_common_ctx_t *c = (qvb_common_ctx_t *)v;
-    const int rc = qv_device_id(
+    const int rc = qv_dev_id(
         c->scope, c->obj_type, 0, c->devid_type, &c->devid_out
     );
     // Devices may be absent; only free on success.
@@ -151,7 +151,7 @@ qvb_run_common(qvb_backend_t *backend, qvb_reporter_t *reporter)
         .str_out = NULL,
         .devid_out = NULL,
         .obj_type = QV_HW_CORE,
-        .devid_type = QV_DEVICE_ID_ORDINAL
+        .devid_type = QV_DEV_ID_ORDINAL
     };
 
     // The shared function coverage table. Adding a public scope function here
@@ -162,9 +162,9 @@ qvb_run_common(qvb_backend_t *backend, qvb_reporter_t *reporter)
     } table[] = {
         {"qv_group_rank",   body_group_rank},
         {"qv_group_size",   body_group_size},
-        {"qv_hw_count", body_hw_obj_count},
+        {"qv_hw_count",     body_hw_obj_count},
         {"qv_bind_string",  body_bind_string},
-        {"qv_device_id",    body_device_id},
+        {"qv_dev_id",       body_device_id},
         {"qv_barrier",      body_barrier},
         {"qv_split",        body_split},
         {"qv_split_at",     body_split_at},

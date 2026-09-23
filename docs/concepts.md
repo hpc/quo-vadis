@@ -99,7 +99,7 @@ qv_barrier(ctx, numa_scope);
 
 ```C
 // Get the PCI bus ID of the ith GPU of a given scope
-qv_scope_get_device(ctx, scope, QV_HW_GPU, i, QV_DEVICE_ID_PCI_BUS_ID, &gpu);
+qv_scope_get_device(ctx, scope, QV_HW_GPU, i, QV_DEV_ID_PCI_BUS_ID, &gpu);
 
 // For HIP (similar for CUDA)
 hipDeviceGetByPCIBusId(&device, gpu);

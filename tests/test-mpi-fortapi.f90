@@ -117,9 +117,9 @@ program mpi_fortapi
     print *, 'ngpu', n_gpu
 
     do n = 0, n_gpu - 1
-        call qv_device_id( &
+        call qv_dev_id( &
             scope_user, QV_HW_GPU, n, &
-            QV_DEVICE_ID_PCI_BUS_ID, dev_pci, info &
+            QV_DEV_ID_PCI_BUS_ID, dev_pci, info &
         )
         if (info .ne. QV_SUCCESS) then
             error stop

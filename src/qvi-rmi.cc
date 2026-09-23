@@ -586,7 +586,7 @@ qvi_rmi_client::get_device_in_cpuset(
     qv_hw_type_t dev_obj,
     int dev_i,
     const qvi_hwloc_bitmap &cpuset,
-    qv_device_id_type_t dev_id_type,
+    qv_dev_id_type_t dev_id_type,
     std::string &dev_id
 ) {
     int qvrc = rpc_req(
@@ -1050,7 +1050,7 @@ qvi_rmi_server::s_rpc_get_device_in_cpuset(
         qv_hw_type_t dev_obj;
         int dev_i;
         qvi_hwloc_bitmap cpuset;
-        qv_device_id_type_t devid_type;
+        qv_dev_id_type_t devid_type;
         const int qvrc = qvi_bbuff::unpack(
             input, input_size, flags, dev_obj, dev_i, cpuset, devid_type
         );
