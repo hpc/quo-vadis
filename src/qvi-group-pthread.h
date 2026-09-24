@@ -18,6 +18,25 @@
 
 typedef void *(*qvi_pthread_routine_fun_ptr_t)(void *);
 
+struct qvi_pthread_create_args {
+    /** Thread group. */
+    qvi_group_thread *group = nullptr;
+    /** The routine to call after group construction. */
+    qvi_pthread_routine_fun_ptr_t throutine = nullptr;
+    /** Thread routine arguments. */
+    void *throutine_argp = nullptr;
+    /** Default constructor. */
+    qvi_pthread_create_args(void) = delete;
+    /** Constructor. */
+    qvi_pthread_create_args(
+        qvi_group_thread *group_a,
+        qvi_pthread_routine_fun_ptr_t throutine_a,
+        void *throutine_argp_a
+    ) : group(group_a)
+      , throutine(throutine_a)
+      , throutine_argp(throutine_argp_a) { }
+};
+
 struct qvi_group_pthread : public qvi_group_thread {
     /** Default constructor. */
     qvi_group_pthread(void) = delete;
@@ -36,26 +55,15 @@ struct qvi_group_pthread : public qvi_group_thread {
     static void *
     call_first_from_pthread_create(
         void *arg
-    );
-};
-
-struct qvi_pthread_create_args {
-    /** Thread group. */
-    qvi_group_thread *group = nullptr;
-    /** The routine to call after group construction. */
-    qvi_pthread_routine_fun_ptr_t throutine = nullptr;
-    /** Thread routine arguments. */
-    void *throutine_argp = nullptr;
-    /** Default constructor. */
-    qvi_pthread_create_args(void) = delete;
-    /** Constructor. */
-    qvi_pthread_create_args(
-        qvi_group_thread *group_a,
-        qvi_pthread_routine_fun_ptr_t throutine_a,
-        void *throutine_argp_a
-    ) : group(group_a)
-      , throutine(throutine_a)
-      , throutine_argp(throutine_argp_a) { }
+    ) {
+        auto args = static_cast<qvi_pthread_create_args *>(arg);
+        const qvi_pthread_routine_fun_ptr_t thread_routine = args->throutine;
+        void *const th_routine_argp = args->throutine_argp;
+        // Free the provided argument container.
+        qvi_delete(&args);
+        // Finally, call the specified thread routine.
+        return thread_routine(th_routine_argp);
+    }
 };
 
 #endif

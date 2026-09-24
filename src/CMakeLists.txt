@@ -42,7 +42,6 @@ add_library(
       qvi-rmi.cc
       qvi-task.cc
       qvi-group.cc
-      qvi-group-pthread.cc
       qvi-map.cc
       qvi-hwsplit.cc
       qvi-scope.cc

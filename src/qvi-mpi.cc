@@ -40,6 +40,49 @@ sleepy_node_barrier(
     return QV_SUCCESS;
 }
 
+qvi_mpi::qvi_mpi(
+    MPI_Comm comm
+) {
+    // If MPI isn't initialized, then we can't continue.
+    int inited = 0;
+    const int mpirc = MPI_Initialized(&inited);
+    if (qvi_unlikely(mpirc != MPI_SUCCESS)) {
+        throw qvi_runtime_error(QV_ERR_MPI);
+    }
+    if (qvi_unlikely(!inited)) {
+        const cstr_t ers = "MPI is not initialized. Cannot continue.";
+        qvi_log_error(ers);
+        throw qvi_runtime_error(QV_ERR_MPI);
+    }
+
+    int rc = m_create_intrinsic_comms(comm);
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        throw qvi_runtime_error(rc);
+    }
+
+    rc = m_create_intrinsic_groups();
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        throw qvi_runtime_error(rc);
+    }
+
+    rc = m_create_admin_comms();
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        throw qvi_runtime_error(rc);
+    }
+
+    rc = m_start_daemons();
+    if (qvi_unlikely(rc != QV_SUCCESS)) {
+        throw qvi_runtime_error(rc);
+    }
+}
+
+qvi_mpi::~qvi_mpi(void)
+{
+    for (auto &i : m_group_tab) {
+        qvi_mpi_comm::free(i.second.qvcomm);
+    }
+}
+
 std::vector<pid_t>
 qvi_mpi_group::pids(void) const
 {
@@ -353,49 +396,6 @@ qvi_mpi::m_start_daemons(void)
     return ret;
 }
 
-qvi_mpi::qvi_mpi(
-    MPI_Comm comm
-) {
-    // If MPI isn't initialized, then we can't continue.
-    int inited = 0;
-    const int mpirc = MPI_Initialized(&inited);
-    if (qvi_unlikely(mpirc != MPI_SUCCESS)) {
-        throw qvi_runtime_error(QV_ERR_MPI);
-    }
-    if (qvi_unlikely(!inited)) {
-        const cstr_t ers = "MPI is not initialized. Cannot continue.";
-        qvi_log_error(ers);
-        throw qvi_runtime_error(QV_ERR_MPI);
-    }
-
-    int rc = m_create_intrinsic_comms(comm);
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        throw qvi_runtime_error(rc);
-    }
-
-    rc = m_create_intrinsic_groups();
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        throw qvi_runtime_error(rc);
-    }
-
-    rc = m_create_admin_comms();
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        throw qvi_runtime_error(rc);
-    }
-
-    rc = m_start_daemons();
-    if (qvi_unlikely(rc != QV_SUCCESS)) {
-        throw qvi_runtime_error(rc);
-    }
-}
-
-qvi_mpi::~qvi_mpi(void)
-{
-    for (auto &i : m_group_tab) {
-        qvi_mpi_comm::free(i.second.qvcomm);
-    }
-}
-
 int
 qvi_mpi::add_group(
     const qvi_mpi_group &group,
@@ -440,8 +440,8 @@ qvi_mpi::group_from_split(
     // non-negative color or the special MPI_UNDEFINED sentinel; the QV-level
     // QV_SPLIT_UNDEFINED value (-1) is neither, so translate it here.
     const int mpi_color = (color == QV_SPLIT_UNDEFINED)
-        ? MPI_UNDEFINED
-        : color;
+                        ? MPI_UNDEFINED
+                        : color;
 
     do {
         const int mpirc = MPI_Comm_split(
@@ -458,7 +458,6 @@ qvi_mpi::group_from_split(
             child = {};
             break;
         }
-
         rc = group_from_mpi_comm(split_comm, child);
     } while (false);
 
