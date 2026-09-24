@@ -14,7 +14,6 @@
 #ifndef QVI_COLL_H
 #define QVI_COLL_H
 
-#include "qvi-common.h"
 #include "qvi-bbuff.h"
 #include "qvi-group.h"
 

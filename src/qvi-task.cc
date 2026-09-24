@@ -94,7 +94,7 @@ qvi_task::connect_to_server(
     qv_scope_flags_t flags
 ) {
     // Connect to our server.
-    int rc = m_connect_to_server(flags);
+    const int rc = m_connect_to_server(flags);
     if (qvi_unlikely(rc != QV_SUCCESS)) return rc;
     // Initialize our bind stack.
     return m_init_bind_stack();
