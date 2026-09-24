@@ -57,22 +57,53 @@ private:
     /** Pointer to the heap-allocated backing store (nullptr until m_init()). */
     void *m_data = nullptr;
     /** Allocates the initial backing store and resets size/capacity. */
-    void m_init(void);
+    void m_init(void)
+    {
+        // Make sure we get rid of any data that may be present.
+        if (m_data) {
+            free(m_data);
+            m_data = nullptr;
+        }
+        m_size = 0;
+        m_capacity = s_min_growth;
+        m_data = calloc(m_capacity, sizeof(byte_t));
+        if (qvi_unlikely(!m_data)) throw qvi_runtime_error(QV_ERR_OOR);
+    }
 public:
     /** Constructs an empty buffer with a freshly allocated backing store. */
-    qvi_bbuff(void);
+    qvi_bbuff(void)
+    {
+        m_init();
+    }
     /** Copy constructor. Performs a deep copy of src's stored bytes. */
     qvi_bbuff(
         const qvi_bbuff &src
-    );
-    /** Destructor. Frees the backing store. */
-    ~qvi_bbuff(void);
+    ) {
+        *this = src;
+    }
     /** Copy-assignment. Performs a deep copy of src's stored bytes. */
     void
-    operator=(const qvi_bbuff &src);
+    operator=(
+        const qvi_bbuff &src
+    ) {
+        m_init();
+        const int rc = append(src.m_data, src.m_size);
+        if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
+    }
+    /** Destructor. Frees the backing store. */
+    ~qvi_bbuff(void)
+    {
+        if (m_data) {
+            free(m_data);
+            m_data = nullptr;
+        }
+    }
     /** Returns the number of valid data bytes currently stored. */
     size_t
-    size(void) const;
+    size(void) const
+    {
+        return m_size;
+    }
     /**
      * Appends size bytes from data to the end of the buffer, growing the
      * backing store if needed. Returns QV_SUCCESS on success or an error code
@@ -82,21 +113,45 @@ public:
     append(
         const void *const data,
         size_t size
-    );
+    ) {
+        const size_t req_capacity = size + m_size;
+        if (req_capacity > m_capacity) {
+            // New capacity.
+            const size_t new_capacity = req_capacity + s_min_growth;
+            void *new_data = calloc(new_capacity, sizeof(byte_t));
+            if (qvi_unlikely(!new_data)) return QV_ERR_OOR;
+            // Memory allocation successful.
+            memmove(new_data, m_data, m_size);
+            free(m_data);
+            m_capacity = new_capacity;
+            m_data = new_data;
+        }
+        byte_t *dest = static_cast<byte_t *>(m_data);
+        dest += m_size;
+        memmove(dest, data, size);
+        m_size += size;
+        return QV_SUCCESS;
+    }
     /**
      * Returns a mutable pointer to the start of the contiguous backing store.
      * Valid for size() bytes. The pointer is invalidated by any subsequent
      * operation that may reallocate the buffer (e.g., append(), pack()).
      */
     void *
-    data(void);
+    data(void)
+    {
+        return m_data;
+    }
     /**
      * Returns a const pointer to the start of the contiguous backing store.
      * Valid for size() bytes. The pointer is invalidated by any subsequent
      * operation that may reallocate the buffer (e.g., append(), pack()).
      */
     const void *
-    cdata(void) const;
+    cdata(void) const
+    {
+        return m_data;
+    }
     /**
      * Serializes the given arguments and appends them to the buffer using the
      * wire format documented on the class: a size_t length prefix followed by
