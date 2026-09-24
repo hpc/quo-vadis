@@ -178,14 +178,11 @@ public:
                 // Fold expression: serialize each argument in turn.
                 (oarchive(std::forward<Types>(args)), ...);
             }
-
-            const std::string archives(ss.str());
-            const size_t len = archives.length();
-
-            // Write the length prefix, then the encoded payload.
-            const int rc = append(&len, sizeof(size_t));
+            // Write the size prefix, then the encoded payload.
+            const size_t size = ss.view().length();
+            const int rc = append(&size, sizeof(size_t));
             if (qvi_unlikely(rc) != QV_SUCCESS) return rc;
-            return append(archives.data(), archives.size());
+            return append(ss.view().cbegin(), size);
         }
         qvi_catch_and_return();
     }
@@ -224,28 +221,27 @@ public:
                 return QV_ERR_RPC;
             }
             byte_t *pos = static_cast<byte_t *>(data);
-
             // Read the advertised payload length.
             size_t slen;
             memmove(&slen, pos, sizeof(slen));
             pos += sizeof(slen);
-
             // The advertised payload must fit within the bytes that remain
             // after the prefix; otherwise the buffer is truncated or the
             // prefix is bogus.
             if (qvi_unlikely(slen > data_size - sizeof(size_t))) {
                 return QV_ERR_RPC;
             }
-
+            // Ensure the stringstream is opened in binary mode, avoiding
+            // potential text-mode translations on some platforms.
             std::stringstream ss(
-                std::string(reinterpret_cast<const char *>(pos), slen)
+                std::string(reinterpret_cast<const char *>(pos), slen),
+                std::ios_base::in | std::ios_base::binary
             );
             // Scoped so the archive's destructor runs before ss goes away.
             {
                 cereal::BinaryInputArchive iarchive(ss);
                 iarchive(std::forward<Types>(args)...);
             }
-
             return QV_SUCCESS;
         }
         qvi_catch_and_return();
