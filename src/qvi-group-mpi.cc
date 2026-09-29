@@ -25,7 +25,7 @@ qvi_group_mpi::qvi_group_mpi(
     m_mpi = new qvi_mpi(comm);
     // Finish task initialization after we finish MPI initialization because
     // the server daemon may have been started during qvi_mpi_init().
-    int rc = m_task.connect_to_server(m_flags);
+    const int rc = m_task.connect_to_server(m_flags);
     if (qvi_unlikely(rc != QV_SUCCESS)) throw qvi_runtime_error(rc);
 }
 
@@ -65,7 +65,6 @@ qvi_group_mpi::make_intrinsic(
         [[unlikely]] default:
             return QV_ERR_INVLD_ARG;
     }
-
     return m_mpi->group_from_group_id(
         mpi_group_type, m_mpi_group
     );
@@ -93,14 +92,12 @@ qvi_group_mpi::split(
     int key,
     qvi_group **child
 ) {
-    int rc = QV_SUCCESS;
     // Create the child with the parent's MPI context.
     qvi_group_mpi *ichild = new qvi_group_mpi(m_flags, m_mpi);
     // Split this group using MPI.
-    rc = m_mpi->group_from_split(
+    const int rc = m_mpi->group_from_split(
         m_mpi_group, color, key, ichild->m_mpi_group
     );
-
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_delete(&ichild);
     }
