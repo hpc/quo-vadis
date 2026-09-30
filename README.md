@@ -177,6 +177,7 @@ git clone $PWD release
 mkdir release/build
 cd release/build
 cmake ..
+# Or  cmake -DQV_VERSION_SUFFIX=rc1 ..
 make package_source
 ```
 

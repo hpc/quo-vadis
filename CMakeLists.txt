@@ -21,6 +21,16 @@ project(
     LANGUAGES C CXX
 )
 
+# For rolling release candidates, alpha, betas, etc.
+# cmake -B build -DQV_VERSION_SUFFIX=rc1
+set(QV_VERSION_SUFFIX "" CACHE STRING "Pre-release suffix (e.g. rc1, beta2)")
+if(QV_VERSION_SUFFIX)
+    message(STATUS "Version suffix provided: ${QV_VERSION_SUFFIX}")
+    set(QV_VERSION_FULL "${PROJECT_VERSION}-${QV_VERSION_SUFFIX}")
+else()
+    set(QV_VERSION_FULL "${PROJECT_VERSION}")
+endif()
+
 # Specify the C standard.
 set(CMAKE_C_STANDARD 11)
 set(C_STANDARD_REQUIRED TRUE)
@@ -207,7 +217,7 @@ endif()
 # CPack
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 # Name the output source packages as quo-vadis-version[-RELID].*
-set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}")
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${QV_VERSION_FULL}")
 set(CPACK_SOURCE_GENERATOR "TBZ2;TGZ;ZIP")
 set(
     CPACK_SOURCE_IGNORE_FILES
