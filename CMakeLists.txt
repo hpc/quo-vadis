@@ -218,10 +218,15 @@ endif()
 set(CPACK_PACKAGE_NAME ${PROJECT_NAME})
 # Name the output source packages as quo-vadis-version[-RELID].*
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${QV_VERSION_FULL}")
-set(CPACK_SOURCE_GENERATOR "TBZ2;TGZ;ZIP")
+set(CPACK_GENERATOR "TGZ")
+set(CPACK_SOURCE_GENERATOR "TGZ")
 set(
     CPACK_SOURCE_IGNORE_FILES
-    "/\.cache/;/\.git/;/\.*.swp$;/build/;cscope.*;/\.gitignore;core.*"
+    "/build/"
+    "/\\.git/"
+    "~$"
+    "/\\.gitignore"
+    "/docs/releases/"
 )
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt)
 include(CPack)

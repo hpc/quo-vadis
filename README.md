@@ -171,14 +171,12 @@ mpiexec -n 2 build/tests/test-mpi-scopes
 ```shell
 # To generate source distributions, run the following:
 git branch -m roll-release
-# Modify CMakeLists.txt to change release version.
-git commit -a -m "Roll a release"
 git clone $PWD release
 mkdir release/build
 cd release/build
 cmake ..
 # Or  cmake -DQV_VERSION_SUFFIX=rc1 ..
-make package_source
+cpack --config CPackSourceConfig.cmake
 ```
 
 ## Los Alamos National Laboratory Code Release
