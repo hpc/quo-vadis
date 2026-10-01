@@ -124,9 +124,7 @@ private:
      * hardware affinities.
      */
     qvi_hwloc_bitmap
-    m_primary_cpuset_for_split(
-        qv_hw_type_t requested_type
-    ) const;
+    m_primary_cpuset_for_split(void) const;
     /** */
     std::vector<qvi_hwloc_bitmap>
     m_split_base_cpuset(void);
