@@ -41,7 +41,7 @@ do_omp_things(qv_scope_t *scope, int rank, char phase)
     int rc = qv_hw_count(scope, QV_HW_PU, &npus);
     if (rc != QV_SUCCESS) {
         char const *ers = "qv_hw_count() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
     printf("[%c%d]-> Doing OpenMP things on %d PUs...\n",
            phase, rank, npus);
@@ -54,7 +54,7 @@ do_pthread_things(qv_scope_t *scope, int rank, char phase)
     int rc = qv_hw_count(scope, QV_HW_CORE, &ncores);
     if (rc != QV_SUCCESS) {
         char const *ers = "qv_hw_count() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
     printf("[%c%d]-> Doing Pthread things on %d Cores...\n",
            phase, rank, ncores);
@@ -74,7 +74,7 @@ print_resources(int rank, char *header, qv_scope_t *scope, char phase)
     int rc = qv_bind_string(scope, QV_BIND_STRING_PHYSICAL, &binds);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_string() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
     nc += snprintf(str+nc, sizeof(str)-nc,
                    "[%c%d] Running on CPUs %s\n",
@@ -85,21 +85,21 @@ print_resources(int rank, char *header, qv_scope_t *scope, char phase)
     rc = qv_hw_count(scope, QV_HW_NUMANODE, &nnumas);
     if (rc != QV_SUCCESS) {
         ers = "qv_hw_count() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     int ncores;
     rc = qv_hw_count(scope, QV_HW_CORE, &ncores);
     if (rc != QV_SUCCESS) {
         ers = "qv_hw_count() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     int ngpus;
     rc = qv_hw_count(scope, QV_HW_GPU, &ngpus);
     if (rc != QV_SUCCESS) {
         ers = "qv_hw_count() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     nc += snprintf(str+nc, sizeof(str)-nc,
@@ -136,14 +136,14 @@ split_at_device(int rank, qv_scope_t *scope,
     char const *ers = NULL;
     if (rc != QV_SUCCESS) {
         ers = "qv_split_at() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     // Move into my scope
     rc = qv_bind_push(dev_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     print_resources(rank, header, dev_scope, phase);
@@ -151,13 +151,13 @@ split_at_device(int rank, qv_scope_t *scope,
     rc = qv_bind_pop(dev_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_pop() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     rc = qv_free(dev_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_free() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 }
 
@@ -204,7 +204,7 @@ int main(int argc, char **argv)
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_scope() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     // What resources do I have in the given scope
@@ -227,14 +227,14 @@ int main(int argc, char **argv)
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_split() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     /* Push into my sub_scope */
     rc = qv_bind_push(sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     // What resources did I get?
@@ -252,14 +252,14 @@ int main(int argc, char **argv)
     rc = qv_barrier(base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_barrier() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     int ngpus;
     rc = qv_hw_count(sub_scope, QV_HW_GPU, &ngpus);
     if (rc != QV_SUCCESS) {
         ers = "qv_hw_count() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     // Launch one kernel per GPU, if GPUs are available.
@@ -287,7 +287,7 @@ int main(int argc, char **argv)
     rc = qv_bind_pop(sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_pop() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     // Make sure everbody finishes GPU work
@@ -295,7 +295,7 @@ int main(int argc, char **argv)
     rc = qv_barrier(base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_barrier() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
 
@@ -317,14 +317,14 @@ int main(int argc, char **argv)
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_split_at() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     /* Push into my sub_scope */
     rc = qv_bind_push(numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_push() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     print_resources(comm_rank, "Phase 2: NUMA split w/SPLIT_AUTO",
@@ -338,7 +338,7 @@ int main(int argc, char **argv)
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_group_rank() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     // How many NUMAs did I get
@@ -350,7 +350,7 @@ int main(int argc, char **argv)
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_hw_count() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     phase = get_phase_id();
@@ -367,14 +367,14 @@ int main(int argc, char **argv)
     rc = qv_barrier(numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_barrier() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     // Pop back up to the base scope
     rc = qv_bind_pop(numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_pop() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     // Test NUMA split using ordinal color
@@ -385,7 +385,7 @@ int main(int argc, char **argv)
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_hw_count() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
     split_at_device(comm_rank, base_scope, QV_HW_NUMANODE,
                     comm_rank % nnumas, get_phase_id(),
@@ -405,7 +405,7 @@ int main(int argc, char **argv)
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_hw_count() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     if (ngpus == 0) {
@@ -440,19 +440,19 @@ done:
     rc = qv_free(numa_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_free() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     rc = qv_free(sub_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_free() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     rc = qv_free(base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_free() failed";
-        panic("%s (rc=%s)", ers, qv_strerr(rc));
+        panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     MPI_Finalize();

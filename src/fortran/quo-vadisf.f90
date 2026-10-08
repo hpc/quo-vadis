@@ -245,12 +245,12 @@ interface
     end function qv_bind_string_c
 
     type(c_ptr) &
-    function qv_strerr_c(ec) &
-        bind(c, name='qv_strerr')
+    function qv_err_string_c(ec) &
+        bind(c, name='qv_err_string')
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         integer(c_int), value :: ec
-    end function qv_strerr_c
+    end function qv_err_string_c
 
     subroutine qvif_free_c(p) &
         bind(c, name="free")
@@ -261,7 +261,7 @@ end interface
 
 contains
 
-    function qv_strerr(ec) result(fstrp)
+    function qv_err_string(ec) result(fstrp)
         use, intrinsic :: iso_c_binding, only: c_ptr, c_int
         implicit none
         integer(c_int), value :: ec
@@ -269,10 +269,10 @@ contains
 
         type(c_ptr) :: cstr
 
-        cstr = qv_strerr_c(ec)
+        cstr = qv_err_string_c(ec)
         ! Now deal with the string
         call c_f_pointer(cstr, fstrp, [qvif_strlen_c(cstr)])
-    end function qv_strerr
+    end function qv_err_string
 
     subroutine qv_version(major, minor, patch, info)
         use, intrinsic :: iso_c_binding, only: c_int

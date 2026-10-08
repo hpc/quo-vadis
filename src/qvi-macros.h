@@ -46,7 +46,7 @@ catch (const qvi_rterror &e)                                                   \
     if (qvi_envset(QVI_ENV_VEXCEPT)) {                                         \
         qvi_log_error(                                                         \
             "An exception occurred at {} ({})",                                \
-            e.what(), qv_strerr(e.rc())                                        \
+            e.what(), qv_err_string(e.rc())                                    \
         );                                                                     \
     }                                                                          \
     return e.rc();                                                             \

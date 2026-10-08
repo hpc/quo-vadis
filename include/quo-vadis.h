@@ -249,7 +249,7 @@ qv_version(
  * The caller must not free the returned string.
  */
 const char *
-qv_strerr(
+qv_err_string(
     int ec
 );
 

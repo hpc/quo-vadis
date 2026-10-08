@@ -48,7 +48,7 @@ qvi_pthread_start_routine(
     int rc = args->scope->bind_push();
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_log_error(
-            "An error occurred in bind_push(): {} ({})", rc, qv_strerr(rc)
+            "An error occurred in bind_push(): {} ({})", rc, qv_err_string(rc)
         );
         pthread_exit(nullptr);
     }
@@ -58,7 +58,7 @@ qvi_pthread_start_routine(
     rc = args->scope->bind_pop();
     if (qvi_unlikely(rc != QV_SUCCESS)) {
         qvi_log_warn(
-            "An error occurred in bind_pop(): {} ({})", rc, qv_strerr(rc)
+            "An error occurred in bind_pop(): {} ({})", rc, qv_err_string(rc)
         );
     }
 

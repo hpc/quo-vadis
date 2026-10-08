@@ -107,7 +107,7 @@ struct qvid {
         const int rc = rmi.start();
         if (qvi_unlikely(rc != QV_SUCCESS)) {
             const cstr_t ers = "rmi.start() failed";
-            qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
+            qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_err_string(rc));
         }
     }
 
@@ -179,7 +179,7 @@ struct qvid {
         const int rc = rmi.topology_export(session_dir);
         if (qvi_unlikely(rc != QV_SUCCESS)) {
             const cstr_t ers = "rmi.topology_export() failed";
-            qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_strerr(rc));
+            qvi_panic_log_error("{} (rc={}, {})", ers, rc, qv_err_string(rc));
         }
     }
 
