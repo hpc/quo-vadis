@@ -533,7 +533,7 @@ qvi_hwloc::topology_load(void)
     } while (false);
 
     if (qvi_unlikely(ers)) {
-        qvi_log_error("{} with rc={} ({})", ers, rc, qv_strerr(rc));
+        qvi_log_error("{} with rc={} ({})", ers, rc, qv_err_string(rc));
     }
     return rc;
 }
@@ -615,7 +615,7 @@ qvi_hwloc::topology_export(
     } while (false);
 
     if (qvi_unlikely(ers)) {
-        qvi_log_error("{} with rc={} ({})", ers, qvrc, qv_strerr(qvrc));
+        qvi_log_error("{} with rc={} ({})", ers, qvrc, qv_err_string(qvrc));
     }
     hwloc_free_xmlbuffer(m_topo, topo_xml);
     (void)close(fd);

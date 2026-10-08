@@ -37,7 +37,7 @@ static const std::map<uint_t, std::string> qvi_rc2str = {
 };
 
 const char *
-qv_strerr(int ec)
+qv_err_string(int ec)
 {
     const auto got = qvi_rc2str.find(ec);
     // Not found.

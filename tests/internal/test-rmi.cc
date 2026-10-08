@@ -71,7 +71,7 @@ server(
     }
 out:
     if (ers) {
-        fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
+        fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_err_string(rc));
         return 1;
     }
     return 0;
@@ -102,13 +102,13 @@ check_get_cpubind(
 ) {
     qvi_hwloc_bitmap rmi_bitmap;
     int rc = client->get_cpubind(who, rmi_bitmap);
-    ctu_assert(rc == QV_SUCCESS, "get_cpubind() failed (rc=%s)", qv_strerr(rc));
+    ctu_assert(rc == QV_SUCCESS, "get_cpubind() failed (rc=%s)", qv_err_string(rc));
 
     qvi_hwloc_bitmap local_bitmap;
     rc = lhwloc.task_get_cpubind(who, local_bitmap);
     ctu_assert(
         rc == QV_SUCCESS,
-        "local task_get_cpubind() failed (rc=%s)", qv_strerr(rc)
+        "local task_get_cpubind() failed (rc=%s)", qv_err_string(rc)
     );
 
     ctu_assert(
@@ -135,15 +135,15 @@ check_set_cpubind(
 ) {
     qvi_hwloc_bitmap before;
     int rc = client->get_cpubind(who, before);
-    ctu_assert(rc == QV_SUCCESS, "get_cpubind() failed (rc=%s)", qv_strerr(rc));
+    ctu_assert(rc == QV_SUCCESS, "get_cpubind() failed (rc=%s)", qv_err_string(rc));
 
     // Re-apply the existing binding. This should always be legal.
     rc = client->set_cpubind(who, before);
-    ctu_assert(rc == QV_SUCCESS, "set_cpubind() failed (rc=%s)", qv_strerr(rc));
+    ctu_assert(rc == QV_SUCCESS, "set_cpubind() failed (rc=%s)", qv_err_string(rc));
 
     qvi_hwloc_bitmap after;
     rc = client->get_cpubind(who, after);
-    ctu_assert(rc == QV_SUCCESS, "get_cpubind() failed (rc=%s)", qv_strerr(rc));
+    ctu_assert(rc == QV_SUCCESS, "get_cpubind() failed (rc=%s)", qv_err_string(rc));
 
     ctu_assert(
         before == after,
@@ -173,7 +173,7 @@ check_get_obj_depth(
         ctu_assert(
             rc == QV_SUCCESS,
             "get_obj_depth(%s) failed (rc=%s)",
-            ctu_hw_obj_name_to_type_tab[i].name, qv_strerr(rc)
+            ctu_hw_obj_name_to_type_tab[i].name, qv_err_string(rc)
         );
         // Sentinel must have been overwritten by the reply.
         ctu_assert(
@@ -187,7 +187,7 @@ check_get_obj_depth(
         ctu_assert(
             rc == QV_SUCCESS,
             "local obj_type_depth(%s) failed (rc=%s)",
-            ctu_hw_obj_name_to_type_tab[i].name, qv_strerr(rc)
+            ctu_hw_obj_name_to_type_tab[i].name, qv_err_string(rc)
         );
 
         ctu_assert(
@@ -224,7 +224,7 @@ check_get_nobjs_in_cpuset(
         ctu_assert(
             rc == QV_SUCCESS,
             "get_nobjs_in_cpuset(%s) failed (rc=%s)",
-            ctu_obj_name(type), qv_strerr(rc)
+            ctu_obj_name(type), qv_err_string(rc)
         );
 
         size_t local_nobjs = 0;
@@ -232,7 +232,7 @@ check_get_nobjs_in_cpuset(
         ctu_assert(
             rc == QV_SUCCESS,
             "local get_nobjs_in_cpuset(%s) failed (rc=%s)",
-            ctu_obj_name(type), qv_strerr(rc)
+            ctu_obj_name(type), qv_err_string(rc)
         );
 
         ctu_assert(
@@ -263,7 +263,7 @@ check_get_cpuset_for_nobjs(
     int rc = client->get_cpuset_for_nobjs(machine, QV_HW_CORE, 1, result);
     ctu_assert(
         rc == QV_SUCCESS,
-        "get_cpuset_for_nobjs() failed (rc=%s)", qv_strerr(rc)
+        "get_cpuset_for_nobjs() failed (rc=%s)", qv_err_string(rc)
     );
 
     // The result should be a non-empty subset of the machine cpuset.
@@ -302,7 +302,7 @@ check_get_device_in_cpuset(
     int rc = lhwloc.get_nobjs_in_cpuset(QV_HW_GPU, machine.cdata(), ngpus);
     ctu_assert(
         rc == QV_SUCCESS,
-        "local get_nobjs_in_cpuset(GPU) failed (rc=%s)", qv_strerr(rc)
+        "local get_nobjs_in_cpuset(GPU) failed (rc=%s)", qv_err_string(rc)
     );
 
     if (ngpus == 0) {
@@ -317,7 +317,7 @@ check_get_device_in_cpuset(
          );
         ctu_assert(
             rc == QV_SUCCESS,
-            "get_device_in_cpuset(GPU, %zu) failed (rc=%s)", i, qv_strerr(rc)
+            "get_device_in_cpuset(GPU, %zu) failed (rc=%s)", i, qv_err_string(rc)
         );
 
         std::string local_id;
@@ -328,7 +328,7 @@ check_get_device_in_cpuset(
         ctu_assert(
             rc == QV_SUCCESS,
             "local get_device_id_in_cpuset(GPU, %zu) failed (rc=%s)",
-            i, qv_strerr(rc)
+            i, qv_err_string(rc)
         );
 
         ctu_assert(
@@ -361,7 +361,7 @@ check_get_intrinsic_hwpool(
         );
         ctu_assert(
             rc == QV_SUCCESS,
-            "get_intrinsic_hwpool(USER) failed (rc=%s)", qv_strerr(rc)
+            "get_intrinsic_hwpool(USER) failed (rc=%s)", qv_err_string(rc)
         );
         ctu_assert(
             !hwloc_bitmap_iszero(hwpool.cpuset().cdata()),
@@ -386,14 +386,14 @@ check_get_intrinsic_hwpool(
         );
         ctu_assert(
             rc == QV_SUCCESS,
-            "get_intrinsic_hwpool(PROCESS) failed (rc=%s)", qv_strerr(rc)
+            "get_intrinsic_hwpool(PROCESS) failed (rc=%s)", qv_err_string(rc)
         );
         // PROCESS scope must match the caller's current binding.
         qvi_hwloc_bitmap local_bitmap;
         rc = lhwloc.task_get_cpubind(who, local_bitmap);
         ctu_assert(
             rc == QV_SUCCESS,
-            "local task_get_cpubind() failed (rc=%s)", qv_strerr(rc)
+            "local task_get_cpubind() failed (rc=%s)", qv_err_string(rc)
         );
         ctu_assert(
             hwpool.cpuset() == local_bitmap,
@@ -413,7 +413,7 @@ check_get_intrinsic_hwpool(
         );
         ctu_assert(
             rc == QV_SUCCESS,
-            "get_intrinsic_hwpool(SYSTEM) failed (rc=%s)", qv_strerr(rc)
+            "get_intrinsic_hwpool(SYSTEM) failed (rc=%s)", qv_err_string(rc)
         );
         ctu_assert(
             !hwloc_bitmap_iszero(hwpool.cpuset().cdata()),
@@ -491,7 +491,7 @@ client(
 out:
     qvi_delete(&client);
     if (ers) {
-        fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_strerr(rc));
+        fprintf(stderr, "\n%s (rc=%d, %s)\n", ers, rc, qv_err_string(rc));
         return 1;
     }
     printf("# [%d] ✓ All client checks PASSED\n", who);

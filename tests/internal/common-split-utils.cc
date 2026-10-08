@@ -30,7 +30,7 @@ check(
     const std::string &what
 ) {
     if (rc != QV_SUCCESS) {
-        ctu_panic("%s (rc=%s)", what.c_str(), qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", what.c_str(), qv_err_string(rc));
     }
 }
 

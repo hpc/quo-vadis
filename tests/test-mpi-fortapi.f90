@@ -128,11 +128,11 @@ program mpi_fortapi
         deallocate(dev_pci)
     end do
 
-    print *, 'testing qv_strerr'
-    strerr => qv_strerr(QV_SUCCESS)
+    print *, 'testing qv_err_string'
+    strerr => qv_err_string(QV_SUCCESS)
     print *, 'success is ', strerr
 
-    strerr => qv_strerr(QV_ERR_OOR)
+    strerr => qv_err_string(QV_ERR_OOR)
     print *, 'err oor is ', strerr
 
     call qv_free(scope_user, info)

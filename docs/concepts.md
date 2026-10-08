@@ -168,14 +168,14 @@ main(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_scope() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     int nnumas;
     rc = qv_hw_count(base_scope, QV_HW_NUMANODE, &nnumas);
     if (rc != QV_SUCCESS) {
         ers = "qv_hw_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
     // Split at NUMA domains.
     qv_scope_t *numa_scope;
@@ -185,7 +185,7 @@ main(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_split_at() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
     // When there's more tasks than NUMAs,
     // make sure each task has exclusive resources.
@@ -193,14 +193,14 @@ main(
     rc = qv_group_rank(numa_scope, &lrank);
     if (rc != QV_SUCCESS) {
         ers = "qv_group_rank() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     int ntasks_per_numa;
     rc = qv_group_size(numa_scope, &ntasks_per_numa);
     if (rc != QV_SUCCESS) {
         ers = "qv_group_size() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     qv_scope_t *subnuma;
@@ -210,21 +210,21 @@ main(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_split() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
     // Get the number of cores and pus per NUMA part.
     int ncores;
     rc = qv_hw_count(subnuma, QV_HW_CORE, &ncores);
     if (rc != QV_SUCCESS) {
         ers = "qv_hw_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     int npus;
     rc = qv_hw_count(subnuma, QV_HW_PU, &npus);
     if (rc != QV_SUCCESS) {
         ers = "qv_hw_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
     ////////////////////////////////////////////////////////////////////////////
     // OpenMP: Launch one thread per core.
@@ -237,7 +237,7 @@ main(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_thread_split_at() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     omp_set_num_threads(nthreads);
@@ -252,7 +252,7 @@ main(
     rc = qv_thread_free(nthreads, th_scopes);
     if (rc != QV_SUCCESS) {
         ers = "qv_thread_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
     ////////////////////////////////////////////////////////////////////////////
     // POSIX threads:
@@ -266,13 +266,13 @@ main(
     );
     if (rc != QV_SUCCESS) {
         ers = "qv_thread_split_at() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     pthread_t *pthrds = calloc(nthreads, sizeof(pthread_t));
     if (!pthrds) {
         ers = "calloc() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     for (int i = 0; i < nthreads; i++) {
@@ -293,7 +293,7 @@ main(
     rc = qv_thread_free(nthreads, th_scopes);
     if (rc != QV_SUCCESS) {
         ers = "qv_thread_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
     // Clean up.
     qv_free(subnuma);

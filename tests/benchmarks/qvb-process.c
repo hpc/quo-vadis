@@ -48,10 +48,10 @@ body_version(void *v)
 }
 
 static void
-body_strerr(void *v)
+body_err_string(void *v)
 {
     (void)v;
-    volatile const char *s = qv_strerr(QV_SUCCESS);
+    volatile const char *s = qv_err_string(QV_SUCCESS);
     (void)s;
 }
 
@@ -75,7 +75,7 @@ main(void)
 
     // Global, non-scope entry points.
     qvb_measure(&reporter, "qv_version", qvb_iters(), body_version, NULL);
-    qvb_measure(&reporter, "qv_strerr", qvb_iters(), body_strerr, NULL);
+    qvb_measure(&reporter, "qv_err_string", qvb_iters(), body_err_string, NULL);
 
     // Everything else is shared.
     qvb_run_common(&backend, &reporter);

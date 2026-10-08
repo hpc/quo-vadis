@@ -41,7 +41,7 @@ void *thread_work(void *arg)
 
     if (rc != QV_SUCCESS) {
         ers = "qv_bind_get_list_as_string() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     printf("Progress thread running on %s\n", binds);
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
     rc = qv_mpi_context_create(comm, &ctx2);
     if (rc != QV_SUCCESS) {
         ers = "qv_mpi_context_create() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     /* Get scope from which to derive the progress thread.
@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
     rc = qv_scope_get(ctx2, MY_INTRINSIC_SCOPE, &base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_scope_get() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     /* Test we have PUs to use in the base scope */
@@ -175,7 +175,7 @@ int main(int argc, char *argv[])
     rc = qv_hw_count(ctx2, base_scope, QV_HW_PU, &npus);
     if (rc != QV_SUCCESS) {
         ers = "qv_hw_count() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
     printf("[%d] Base scope: npus=%d\n", wrank, npus);
 
@@ -185,7 +185,7 @@ int main(int argc, char *argv[])
         rc = qv_create_scope(ctx2, base_scope, QV_HW_PU, 1, 0, &pt_scope);
         if (rc != QV_SUCCESS) {
             ers = "qv_create_scope() failed";
-            ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+            ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
         }
     }
 
@@ -209,13 +209,13 @@ int main(int argc, char *argv[])
     rc = qv_free(ctx2, pt_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     rc = qv_free(ctx2, base_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
 
@@ -226,13 +226,13 @@ int main(int argc, char *argv[])
     rc = qv_free(ctx, task_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     rc = qv_free(ctx, user_scope);
     if (rc != QV_SUCCESS) {
         ers = "qv_free() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 #endif
     ctu_mpi_check(MPI_Finalize());

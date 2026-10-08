@@ -655,14 +655,14 @@ qvi_rmi_server::qvi_rmi_server(void)
         int qvrc = hwloc.topology_init(topo_type);
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {
             static cstr_t ers = "hwloc.topology_init() failed";
-            qvi_log_error("{} (rc={}, {})", ers, qvrc, qv_strerr(qvrc));
+            qvi_log_error("{} (rc={}, {})", ers, qvrc, qv_err_string(qvrc));
             throw qvi_runtime_error(qvrc);
         }
 
         qvrc = hwloc.topology_load();
         if (qvi_unlikely(qvrc != QV_SUCCESS)) {
             static cstr_t ers = "hwloc.topology_load() failed";
-            qvi_log_error("{} (rc={}, {})", ers, qvrc, qv_strerr(qvrc));
+            qvi_log_error("{} (rc={}, {})", ers, qvrc, qv_err_string(qvrc));
             throw qvi_runtime_error(qvrc);
         }
     }
@@ -1129,7 +1129,7 @@ qvi_rmi_server::m_rpc_dispatch(
         else if (qvi_unlikely(rc != QV_SUCCESS)) {
             qvi_log_warn(
                 "RPC handler for FID {} failed with rc={} ({}).",
-                hdr.fid, rc, qv_strerr(rc)
+                hdr.fid, rc, qv_err_string(rc)
             );
             qvi_delete(&result);
             rc = rpc_pack(&result, hdr.fid, QV_ERR_RPC);
@@ -1171,7 +1171,7 @@ qvi_rmi_server::m_enter_main_server_loop(void)
     qvi_log_info("Server Sent {} bytes", bsentt);
 
     if (qvi_unlikely(rc != QV_SUCCESS && rc != QV_SUCCESS_SHUTDOWN)) {
-        qvi_log_error("RX/TX loop exited with rc={} ({})", rc, qv_strerr(rc));
+        qvi_log_error("RX/TX loop exited with rc={} ({})", rc, qv_err_string(rc));
         return rc;
     }
     return QV_SUCCESS;

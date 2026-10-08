@@ -60,13 +60,13 @@ do {                                                                           \
 
 /**
  * Asserts that a quo-vadis call returned QV_SUCCESS, aborting with the
- * qv_strerr() string otherwise.
+ * qv_err_string() string otherwise.
  */
 #define ctu_check(rc)                                                          \
 do {                                                                           \
     const int ctu_rc = (rc);                                                   \
     if (ctu_rc != QV_SUCCESS) {                                                \
-        ctu_panic("%s failed (rc=%s)", #rc, qv_strerr(ctu_rc));                \
+        ctu_panic("%s failed (rc=%s)", #rc, qv_err_string(ctu_rc));            \
     }                                                                          \
 } while (0)
 

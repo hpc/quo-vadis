@@ -60,7 +60,7 @@ int mpi_impl_progr_thread_create(pthread_t *restrict thread,
   rc = qv_pthread_context_create(&ctx);
   if (rc != QV_SUCCESS) {
     ers = "qv_pthread_context_create() failed";
-    panic("%s (rc=%s)", ers, qv_strerr(rc));
+    panic("%s (rc=%s)", ers, qv_err_string(rc));
   }
 
   /* Derive the resources from the USER or SYSTEM scope */
@@ -75,7 +75,7 @@ int mpi_impl_progr_thread_create(pthread_t *restrict thread,
   rc = qv_scope_get(ctx, BASE_SCOPE, &base_scope);
   if (rc != QV_SUCCESS) {
     ers = "qv_scope_get() failed";
-    panic("%s (rc=%s)", ers, qv_strerr(rc));
+    panic("%s (rc=%s)", ers, qv_err_string(rc));
   }
 
   /* Need to get a subscope to launch a progress thread */
@@ -93,7 +93,7 @@ int mpi_impl_progr_thread_create(pthread_t *restrict thread,
                &sub_scope);
   if (rc != QV_SUCCESS) {
     ers = "qv_create_scope() failed";
-    panic("%s (rc=%s)", ers, qv_strerr(rc));
+    panic("%s (rc=%s)", ers, qv_err_string(rc));
   }
 
   // [...]

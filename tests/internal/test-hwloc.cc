@@ -123,13 +123,13 @@ main(void)
     int rc = hwl.topology_init(QVI_HWLOC_FLAG_TOPO_FULL);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_topology_init() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     rc = hwl.topology_load();
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_topology_load() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     // The allowed (cgroup-obeying) cpuset must always be a subset of the
@@ -152,19 +152,19 @@ main(void)
     rc = echo_hw_info(hwl);
     if (rc != QV_SUCCESS) {
         ers = "echo_hw_info() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     rc = echo_gpu_info(hwl);
     if (rc != QV_SUCCESS) {
         ers = "echo_gpu_info() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     rc = hwl.task_get_cpubind(who, bitmap);
     if (rc != QV_SUCCESS) {
         ers = "qvi_hwloc_task_get_cpubind() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     std::string binds = qvi_hwloc::bitmap_string(bitmap);
@@ -173,7 +173,7 @@ main(void)
     rc = echo_task_intersections(hwl, binds.c_str());
     if (rc != QV_SUCCESS) {
         ers = "echo_task_intersections() failed";
-        ctu_panic("%s (rc=%s)", ers, qv_strerr(rc));
+        ctu_panic("%s (rc=%s)", ers, qv_err_string(rc));
     }
 
     printf("# Done\n");
