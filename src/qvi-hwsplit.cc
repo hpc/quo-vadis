@@ -89,10 +89,9 @@ qvi_hwsplit::m_reserve(void)
 }
 
 qvi_hwloc_bitmap
-qvi_hwsplit::m_primary_cpuset_for_split(
-    qv_hw_type_t requested_type
-) const {
-    const auto res_class = qvi_hwloc::obj_res_class(requested_type);
+qvi_hwsplit::m_primary_cpuset_for_split(void) const
+{
+    const auto res_class = qvi_hwloc::obj_res_class(m_split_at_type);
     switch (res_class) {
         // Were we provided a real resource type that we have to split? Or was
         // QV_HW_LAST instead provided to indicate that we were called from
@@ -103,7 +102,7 @@ qvi_hwsplit::m_primary_cpuset_for_split(
         case QVI_HWLOC_RES_CLASS_DEV: {
             // The cpuset will be the union over the devices affinities.
             qvi_hwloc_bitmap result;
-            for (const auto &dev : m_base_hwpool.devices(requested_type)) {
+            for (const auto &dev : m_base_hwpool.devices(m_split_at_type)) {
                 result = result | dev.get()->affinity();
             }
             return result;
@@ -116,9 +115,9 @@ qvi_hwsplit::m_primary_cpuset_for_split(
 std::vector<qvi_hwloc_bitmap>
 qvi_hwsplit::m_split_base_cpuset(void)
 {
-    // Determine the cpuset that we are splitting over.
-    const auto pri_cpuset = m_primary_cpuset_for_split(m_split_at_type);
-    return m_my_rmi.hwloc().bitmap_split(pri_cpuset, m_split_size);
+    return m_my_rmi.hwloc().bitmap_split(
+        m_primary_cpuset_for_split(), m_split_size
+    );
 }
 
 /**
@@ -175,15 +174,13 @@ normalize_colors(
         // internal consumption, unless they already sit in [0, split_size).
         // qvi_map_clamp_colors leaves QV_SPLIT_UNDEFINED members unchanged, so
         // they remain excluded from the split rather than folded into a color.
-        const bool all_in_range = std::ranges::all_of(
+        const bool all_in = std::ranges::all_of(
             colors, [split_size](int val) {
                 return val == QV_SPLIT_UNDEFINED ||
                        (val >= 0 && val < static_cast<int>(split_size));
             }
         );
-        const auto result = all_in_range
-                          ? colors
-                          : qvi_map_clamp_colors(colors);
+        const auto result = all_in ? colors : qvi_map_clamp_colors(colors);
         // Validate the coloring. QV_SPLIT_UNDEFINED members do not occupy a
         // piece, so they do not count as distinct destinations.
         std::set<int> color_set(result.begin(), result.end());
